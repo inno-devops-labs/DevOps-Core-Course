@@ -1,0 +1,11 @@
+---
+- name: Deploy app_python
+  hosts: all
+  become: yes
+  roles:
+    - web_app
+  vars:
+    web_app_name: "app_python"
+    app_internal_port: 8000
+    app_external_port: 8000
+    web_app_full_wipe: False

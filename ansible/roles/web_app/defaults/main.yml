@@ -1,0 +1,14 @@
+---
+web_app_name: "app_python"
+web_app_dir: "/opt/{{ web_app_name }}"
+
+docker_registry: docker.io
+docker_username: adeepresession
+
+docker_image_tag: "v1.0"
+docker_image: "{{ docker_registry }}/{{ docker_username }}/{{ web_app_name }}:{{ docker_image_tag }}"
+
+app_internal_port: 80
+app_external_port: 8000
+
+web_app_full_wipe: false
