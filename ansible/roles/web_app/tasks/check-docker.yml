@@ -1,0 +1,11 @@
+---
+- name: Check if Docker is installed
+  ansible.builtin.command: docker --version
+  register: docker_installed
+  changed_when: false
+  ignore_errors: true
+
+- name: Fail if Docker is not installed
+  ansible.builtin.fail:
+    msg: "Docker is not installed on this machine."
+  when: docker_installed.rc != 0

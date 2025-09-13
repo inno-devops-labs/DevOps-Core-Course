@@ -1,0 +1,42 @@
+---
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+
+- name: Configure Docker daemon security
+  ansible.builtin.copy:
+    dest: "/etc/docker/daemon.json"
+    content: |
+      {
+        "no-new-privileges": true,
+        "userns-remap": "default",
+        "restart": "always"
+      }
+    mode: "0644"
+  notify: Restart Docker
+
+- name: Check init system
+  ansible.builtin.shell: cat /proc/1/comm
+  register: init_system
+  changed_when: false
+
+- name: Enable Docker service (for Systemd only)
+  ansible.builtin.systemd:
+    name: docker
+    enabled: yes
+    state: started
+  when: init_system.stdout == "systemd"
+
+- name: Restart Docker (for Systemd only)
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted
+  become: true
+  when: init_system.stdout == "systemd"
+
+- name: Restart Docker (as Service)
+  ansible.builtin.command: service docker restart
+  become: true
+  when: init_system.stdout != "systemd"
