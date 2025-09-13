@@ -1,0 +1,28 @@
+linters:
+  enable:
+    - revive
+    - errcheck
+    - staticcheck
+    - unused
+    - typecheck
+    - lll
+    - gocritic
+  disable:
+    - depguard
+    - dupl
+    - gocyclo
+    - goconst
+    - gochecknoinits
+
+issues:
+  exclude:
+    - "Error return value is not checked"
+    - "const  should be of the form"
+    - "parameter  should be"
+
+  exclude-dirs:
+    - vendor
+
+run:
+  timeout: 2m
+  tests: true

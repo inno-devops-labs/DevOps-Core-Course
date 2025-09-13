@@ -1,0 +1,66 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+        files: \.ya?ml$
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/psf/black
+    rev: 24.2.0
+    hooks:
+      - id: black
+        files: \.py$
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - types-requests
+        files: \.py$
+
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint-fix
+        files: \.md$
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0
+    hooks:
+      - id: prettier
+        args: ["--parser", "markdown"]
+        files: \.md$
+      - id: prettier
+        args: ["--parser", "yaml"]
+        files: \.ya?ml$
+
+  - repo: local
+    hooks:
+      - id: rewrap
+        name: Rewrap
+        entry: "npx rewrap --in-place"
+        language: node
+        types: [markdown]
+        additional_dependencies: ["@stkb/rewrap"]
+        files: \.md$
+      - id: pylint
+        name: Pylint
+        entry: pylint
+        language: python
+        types: [python]
+        args: ["-rn", "-sn"]
+        additional_dependencies:
+          - pylint
+
+  - repo: https://github.com/pryorda/dockerfilelint-precommit-hooks
+    rev: v0.1.0
+    hooks:
+      - id: dockerfilelint
+        files: Dockerfile
+
+default_stages: [commit, push]

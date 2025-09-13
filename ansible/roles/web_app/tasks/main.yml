@@ -1,0 +1,11 @@
+---
+- name: Run pre-checks
+  ansible.builtin.import_tasks: check-docker.yml
+
+- name: Deploy web app
+  ansible.builtin.import_tasks: 1-deploy.yml
+  when: not web_app_full_wipe
+
+- name: Wipe web app data
+  ansible.builtin.import_tasks: 0-wipe.yml
+  when: web_app_full_wipe

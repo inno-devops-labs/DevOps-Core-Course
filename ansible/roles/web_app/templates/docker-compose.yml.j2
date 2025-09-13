@@ -1,0 +1,7 @@
+
+services:
+  web:
+    image: "{{ docker_image }}"
+    ports:
+      - "{{ app_internal_port }}:{{ app_external_port }}"
+    restart: always

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: library-chart
+description: A Helm library chart for common templates
+type: library
+version: 1.0.0

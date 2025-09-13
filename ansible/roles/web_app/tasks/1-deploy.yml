@@ -1,0 +1,42 @@
+---
+- name: Setup configuration files
+  block:
+    - name: Create app directory
+      ansible.builtin.file:
+        path: "{{ web_app_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+      become: true
+      tags:
+        - deploy
+
+    - name: Copy Docker Compose template
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ web_app_dir }}/docker-compose.yml"
+        mode: "0644"
+      become: true
+      tags:
+        - deploy
+
+- name: Start dockerized app
+  block:
+    - name: Ensure docker service is active
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
+      become: true
+      tags:
+        - deploy
+
+    - name: Create and start the application services
+      community.docker.docker_compose_v2:
+        project_src: "{{ web_app_dir }}"
+        remove_orphans: true
+        state: present
+      become: true
+      tags:
+        - deploy
