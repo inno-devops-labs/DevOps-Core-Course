@@ -1,0 +1,3 @@
+# Role dependency: ensure the docker role is applied before web_app
+dependencies:
+  - role: docker
