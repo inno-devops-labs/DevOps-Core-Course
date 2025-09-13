@@ -1,0 +1,23 @@
+---
+- name: Wipe container and sources
+  block:
+    - name: Check if web app directory exists
+      ansible.builtin.stat:
+        path: "{{ web_app_dir }}"
+      register: web_app_dir_status
+
+    - name: Stop and remove the web app container
+      ansible.builtin.command:
+        cmd: docker compose down --rmi all --volumes
+        chdir: "{{ web_app_dir }}"
+      when: web_app_dir_status.stat.exists
+
+    - name: Remove app sources
+      ansible.builtin.file:
+        path: "{{ web_app_dir }}"
+        state: absent
+      when: web_app_dir_status.stat.exists
+
+  when: web_app_full_wipe
+  tags:
+    - wipe
