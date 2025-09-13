@@ -1,0 +1,4 @@
+# Default variables for the web_app role
+docker_image: "ezzysoft/moscow-time:latest"
+app_port: 5000
+web_app_full_wipe: false

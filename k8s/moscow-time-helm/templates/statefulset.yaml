@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "moscow-time-helm.fullname" . }}
+  labels:
+    {{- include "moscow-time-helm.labels" . | nindent 4 }}
+spec:
+  serviceName: "{{ include "moscow-time-helm.fullname" . }}"
+  replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: Parallel  # <--- Add this line here!
+  selector:
+    matchLabels:
+      {{- include "moscow-time-helm.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "moscow-time-helm.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "moscow-time-helm.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 3
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
