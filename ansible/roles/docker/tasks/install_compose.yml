@@ -1,0 +1,5 @@
+- name: Download Docker Compose binary
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-{{ ansible_system | lower }}-{{ ansible_machine }}"
+    dest: /usr/local/bin/docker-compose
+    mode: 'u+x'
