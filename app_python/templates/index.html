@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title>Moscow Time</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>MOSCOW TIME</h1>
+    <div id="time-container">
+        <p id="time">{{ time }}</p>
+    </div>
+    <div id="bar"></div>
+</div>
+
+<script>
+    function updateTime() {
+        fetch('/api/time/')
+            .then(response => response.json())
+            .then(data => {
+                const timeElement = document.getElementById('time');
+                timeElement.textContent = data.time;
+            });
+    }
+
+    setInterval(updateTime, 1000);
+
+</script>
+</body>
+</html>
