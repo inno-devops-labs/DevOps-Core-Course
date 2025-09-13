@@ -1,0 +1,6 @@
+.terraform
+/github/config.auto.tfvars
+**.hcl
+
+*tfstate* 
+ 

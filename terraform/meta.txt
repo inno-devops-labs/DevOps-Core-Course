@@ -1,0 +1,8 @@
+#cloud-config
+users:
+  - name: ezzy
+    groups: sudo
+    shell: /bin/bash
+    sudo: 'ALL=(ALL) NOPASSWD:ALL'
+    ssh_authorized_keys:
+      - ezzy:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM+TOfIcOibPsJwS9Gtg2Zc5i4xDbo/XngqM5d638U ezzy@desktop

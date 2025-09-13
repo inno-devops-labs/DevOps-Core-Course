@@ -1,0 +1,11 @@
+- name: Stop and remove the application container using Docker Compose
+  command: docker-compose -f /tmp/docker-compose.yml down
+  args:
+    chdir: /tmp
+  tags: [wipe]
+
+- name: Remove docker-compose file
+  file:
+    path: /tmp/docker-compose.yml
+    state: absent
+  tags: [wipe]

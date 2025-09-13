@@ -1,0 +1,97 @@
+# docker_container.app_python:
+resource "docker_container" "app_python" {
+    attach                                      = false
+    bridge                                      = [90mnull[0m[0m
+    command                                     = [
+        "python",
+        "app.py",
+    ]
+    container_read_refresh_timeout_milliseconds = 15000
+    cpu_set                                     = [90mnull[0m[0m
+    cpu_shares                                  = 0
+    domainname                                  = [90mnull[0m[0m
+    entrypoint                                  = []
+    env                                         = []
+    hostname                                    = "16a7f7f5905b"
+    id                                          = "16a7f7f5905b2d164ccf60d0a6258e2dbfa92a54e349d506710d2b641e20e622"
+    image                                       = "sha256:4f302fcd823db29e333da296e90b58d195df4210df74bdea1f562f9c40c2d51f"
+    init                                        = false
+    ipc_mode                                    = "private"
+    log_driver                                  = "json-file"
+    logs                                        = false
+    max_retry_count                             = 0
+    memory                                      = 0
+    memory_swap                                 = 0
+    must_run                                    = true
+    name                                        = "app_python_container"
+    network_data                                = [
+        {
+            gateway                   = "172.17.0.1"
+            global_ipv6_address       = [90mnull[0m[0m
+            global_ipv6_prefix_length = 0
+            ip_address                = "172.17.0.2"
+            ip_prefix_length          = 16
+            ipv6_gateway              = [90mnull[0m[0m
+            mac_address               = "02:42:ac:11:00:02"
+            network_name              = "bridge"
+        },
+    ]
+    network_mode                                = "bridge"
+    pid_mode                                    = [90mnull[0m[0m
+    privileged                                  = false
+    publish_all_ports                           = false
+    read_only                                   = false
+    remove_volumes                              = true
+    restart                                     = "no"
+    rm                                          = false
+    runtime                                     = "runc"
+    security_opts                               = []
+    shm_size                                    = 64
+    start                                       = true
+    stdin_open                                  = false
+    stop_signal                                 = [90mnull[0m[0m
+    stop_timeout                                = 0
+    tty                                         = false
+    user                                        = "appuser"
+    userns_mode                                 = [90mnull[0m[0m
+    wait                                        = false
+    wait_timeout                                = 60
+    working_dir                                 = "/home/appuser/app"
+
+    ports {
+        external = 5000
+        internal = 5000
+        ip       = "0.0.0.0"
+        protocol = "tcp"
+    }
+}
+
+# docker_image.moscow_time:
+resource "docker_image" "moscow_time" {
+    id           = "sha256:4f302fcd823db29e333da296e90b58d195df4210df74bdea1f562f9c40c2d51fezzysoft/moscow-time:latest"
+    image_id     = "sha256:4f302fcd823db29e333da296e90b58d195df4210df74bdea1f562f9c40c2d51f"
+    keep_locally = false
+    name         = "ezzysoft/moscow-time:latest"
+    repo_digest  = [90mnull[0m[0m
+
+    build {
+        build_id       = [90mnull[0m[0m
+        cache_from     = []
+        cgroup_parent  = [90mnull[0m[0m
+        context        = "../app_python"
+        cpu_set_cpus   = [90mnull[0m[0m
+        cpu_set_mems   = [90mnull[0m[0m
+        dockerfile     = "Dockerfile"
+        extra_hosts    = []
+        isolation      = [90mnull[0m[0m
+        network_mode   = [90mnull[0m[0m
+        platform       = [90mnull[0m[0m
+        remote_context = [90mnull[0m[0m
+        remove         = true
+        security_opt   = []
+        session_id     = [90mnull[0m[0m
+        tag            = []
+        target         = [90mnull[0m[0m
+        version        = [90mnull[0m[0m
+    }
+}

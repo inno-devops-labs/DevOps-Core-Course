@@ -1,0 +1,6 @@
+all:
+  hosts:
+    my_cloud_vm:
+      ansible_host: 51.250.12.24
+      ansible_user: ezzy
+      ansible_ssh_private_key_file: /home/ezzy/.ssh/id_ed25519
