@@ -1,3 +1,5 @@
+![CI Pipeline](https://github.com/EzzySoft/S25-core-course-labs/actions/workflows/ci.yml/badge.svg)
+
 # DevOps Engineering Labs
 
 ## Introduction

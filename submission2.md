@@ -1,0 +1,100 @@
+Peers: 
+
+
+```shell
+PS C:\Users\EzzySoft\PycharmProjects\S25-core-course-labs\k8s> docker exec -it ipfs_host ipfs swarm peers
+/ip4/100.42.190.40/tcp/4001/p2p/12D3KooWSmQa5Gvo4mVygcBZXWp3xbw7cNgrYGC8kF5fibqrUWsW
+/ip4/107.173.203.216/tcp/4001/p2p/12D3KooWL9vvamUdkzTADqR4aiEJYtmdboykLTUEWL2Zft15gb1B
+/ip4/108.29.89.188/tcp/4001/p2p/12D3KooWCmtNhoUrKeQN7C1DrgkpZwfABp7PXeY9kH2DSTvZok5v
+/ip4/115.227.36.194/tcp/4006/p2p/12D3KooWDGJPXQLw544gjgqEs5pj1QxGr14zgN8jMkgdNvgbExnz
+/ip4/135.181.213.172/tcp/4001/p2p/12D3KooWKmjjfpTKVoxpf2HT8xpaEGU35EPLMzXCwmQTtSrZtcAY
+/ip4/136.244.65.10/tcp/4001/p2p/12D3KooWShqwAehnCvLLh2UQzikAPkCn9D1P8oXP6rHG6Q4UQYwx
+/ip4/139.178.88.95/udp/4001/quic-v1/p2p/QmZa1sAxajnQjVM8WjWXoMbmPd7NsWhfKsPkErzpm9wGkp
+/ip4/144.202.7.184/tcp/4001/p2p/12D3KooWQeeGvTHnrx2yxGuJ7j3VctuLM5X8s3882VAharpB3wj2
+/ip4/144.91.114.155/tcp/4001/p2p/12D3KooWCLGBqzon7Qo4ac2jnjVsFxNQA3UTUEHsDKWL613BhUUF
+/ip4/147.182.248.194/tcp/4001/p2p/12D3KooWFzVLKnVgAerjW8ycVatY2uoX7xEjPX43FEkTehQdAQxL
+/ip4/147.75.87.65/tcp/4001/p2p/12D3KooWCrBiagtZMzpZePCr1tfBbrZTh4BRQf7JurRqNMRi8YHF
+/ip4/148.113.10.53/tcp/4001/p2p/12D3KooWFytYMAEfgXa3twVJM3uUZsmaDcAEkPctdcaBjs9rUaGT
+/ip4/154.12.236.204/udp/4001/quic-v1/p2p/12D3KooWDHhd6FBJr53zVmEdUv9wTCNgB6Ke5EKKV1GuWtu37WYV
+/ip4/157.90.132.176/tcp/4008/p2p/12D3KooWLkmAk3MaexCmXim4h4hnBLUJtfBLmcqAfJK3KGcs8adb
+/ip4/158.247.197.31/udp/4001/quic-v1/p2p/12D3KooWHFBbC3AB3W7hFf6DPeHmjgRG12YkTNjhKr3Gu54QTLEZ
+/ip4/164.68.98.190/tcp/4001/p2p/Qmb9wLTCZQGxqfxo4ArAKepiJ8BQ2hMdFx3hc7AJfWQWku
+/ip4/167.235.197.94/udp/4001/quic-v1/p2p/12D3KooWA2Ejyn4iUE6XDJCVpw72Yvi4oqsvH4h3AVJPvkabDuyu
+/ip4/167.86.74.178/tcp/4001/p2p/12D3KooWSaWr4GFeoBQaPb2C377pTmHi2xyZUt2BPecLhJ8NmLXE
+/ip4/173.249.19.116/tcp/4001/p2p/QmZM1cfdwXGdFQHY9NX3j5nXzdubMy3JYnxhX4wKnQs7H4
+/ip4/176.194.78.97/udp/41631/quic-v1/p2p/12D3KooWEmVtSCtjTGneB8jkUuwD9iipsRY2Cf4NBMUkdKvTBk6f
+/ip4/178.187.18.154/udp/56883/quic-v1/p2p/12D3KooWCkGYJTXMWGDCPPEhNf6sZpdnTZ4x93mefMZ9ScLR4WsG
+/ip4/18.191.227.5/tcp/4001/p2p/12D3KooWQXeawCd9iEo8KvAj7sXGKwJ4T1RS1YfHu5yHcLs4tJ1t
+/ip4/185.113.211.30/udp/23641/quic-v1/p2p/12D3KooWEsMZ3SMQxbNYhLkPkZKjhvqYD1LohEqEgpMKTnvbcAxn
+/ip4/188.79.255.88/tcp/23897/p2p/12D3KooW9qdodPU1itb8ucaV9bjb68SsCwBZnKqTerkLkzfwT5Z4
+/ip4/192.210.229.94/tcp/4001/p2p/12D3KooWQ8vyzv13stHhVwpawTKKjqfdkFhVk7NkSQ5tH6fSuSda
+/ip4/192.3.105.110/tcp/4001/p2p/12D3KooWNzNf8tvVZrG7FF7gMdyEfyfeGkH4phi1FXAppqwkrw66
+/ip4/193.42.36.215/tcp/4001/p2p/12D3KooWJHRbxeJf98iQnEhrfQdBuZGJyik4bAiCmURah87rtSnm
+/ip4/193.8.130.198/tcp/4001/p2p/12D3KooWMtyyU2oapQ8UZhg4x8sJB8XTvJtgAaqNpEJ3WUshe6Ji
+/ip4/198.23.148.36/udp/4001/quic-v1/p2p/12D3KooWQmcqnjVzUd9JSqem9PZvsr4e8FNeGRbPFtCCHzHmvGBA
+/ip4/2.219.12.207/udp/36186/quic-v1/p2p/12D3KooWRVPPmg2y7MFUY8DaxH9mNehiQ8ADerecysB3qQHq9u67
+/ip4/207.180.219.215/tcp/4001/p2p/12D3KooWMwnkeHYnYqPSiEk9MSUJxwYWdMdzk1Wu2J9b5nGqpYFq
+/ip4/208.83.232.254/tcp/4001/p2p/12D3KooWCi5eeJnUwCrh9oxRyQVBStncV1PjKQvpoSe6NG3CXbnY
+/ip4/212.253.130.2/tcp/4001/p2p/QmduYc5yeg88EgFGHAqyKjaPtCNADm1JgiNcBbczhj6BVK
+/ip4/213.199.33.40/tcp/4001/p2p/12D3KooWNAVyXN8RuxieXqWbvoLfZKGLu2QWL58dsKewd5Lrr3wR
+/ip4/217.76.49.24/tcp/4001/p2p/12D3KooWBS3RFMgZNbki21uj48BeGkVoBZavTPH6C1GXtJiMKAjA
+/ip4/218.158.141.240/tcp/41678/p2p/QmWqerK38mbpkVdRaQYYM2f2yabjQ6mXCErG3r71mjzQqH
+/ip4/3.211.188.246/tcp/4001/p2p/12D3KooWHMn7Cit3J4cRt5SruNv7G9Fp6w4pTbdVJurBonzZyEK1
+/ip4/3.71.90.69/tcp/4001/p2p/12D3KooWFcShYQmAQfeLAr4UCwm24JTmc6AibLi55BuU3R5CEc3F
+/ip4/31.130.34.104/tcp/59306/p2p/12D3KooWB2cGFmZ4UDGXBvxRQZYrxaxpuxcUXZF9m1nfT3vWexKu
+/ip4/31.220.95.139/tcp/4001/p2p/12D3KooWNgcDuve6nC72uu5Tc6rVY55QUrDKyHU2GFraTvJ48H8K
+/ip4/45.136.236.219/udp/4001/quic-v1/p2p/12D3KooWFEzpYwuYzpxEsDhP8u3sZM3s4n32hTQ9HuCNchNvsCGa
+/ip4/45.32.132.10/udp/4001/quic-v1/p2p/12D3KooWP65wZxj888ND6r22kaHKAMemTstKrjrw391L5PRA3Ffc
+/ip4/45.32.152.100/tcp/4001/p2p/12D3KooWGeXGtUDnFqKh8Nix2WgdgHUQqaUoi8avMMhpBEZwFhVd
+/ip4/45.63.61.189/tcp/4001/p2p/12D3KooWPgHUYNzecCtQiPYBwqHwf13Eg2oF5S4cdsqBMdzeoZnA
+/ip4/45.76.175.142/tcp/4001/p2p/12D3KooWFRvVQj7zfLmExoqSXYedBGqipaxRF5MHhFhEBNGM9gFk
+/ip4/45.77.218.173/tcp/4001/p2p/12D3KooWMHjdWo1WzWXNKrnHG6Dz1ZmWLC8R4KiTLmhDNf5p2XRF
+/ip4/46.255.204.203/tcp/4001/p2p/12D3KooWSqMVaShoqJzP9q3cFe1tqafgxYpTryjPKzKzzLfYdF3M
+/ip4/49.12.135.14/udp/4001/quic-v1/p2p/QmZ733LpgA4nedg58CdJDoyPkxbMRWBK14943ZhSbnk36P
+/ip4/5.196.67.126/tcp/4001/p2p/Qmamk4pr4C8s7RtciqGbSF5Z2c75nYcFdDDTFGWtZMUAoB
+/ip4/51.158.61.105/tcp/4001/p2p/12D3KooWQy4waxqtD54aSiFSU9a8fcrpp6tQf69w1JXA9xbhurnp
+/ip4/51.89.64.28/tcp/4001/p2p/12D3KooWGqR8xjuwUJg2UcqyJ3386tgbHF4eFygxpmXFBEHzeonD
+/ip4/54.168.137.193/tcp/4001/p2p/12D3KooWPyvo4crL5DUCviLGejn7Y2cKAMUxFcaZnFmHY5ox8mvS
+/ip4/65.108.203.216/tcp/4001/p2p/12D3KooWQnna4Yskci2ihUVtVoYf8fMXeBzvMgTsUgVWRXcQJtJF
+/ip4/65.109.56.253/tcp/4001/p2p/12D3KooWQihHQgwyoev1HuurmHS8EYqPsTJ5WTKRngr4W584nBqP
+/ip4/65.109.88.95/udp/4001/quic-v1/p2p/12D3KooWFCdnQ9qzKdY8fPdLMcexwjEHRbVWcceumwyLty6MPcFW
+/ip4/65.20.79.8/udp/4001/quic-v1/p2p/12D3KooWEp2TQSezw72sT4kQtgF9FGjEPBEvDD4bDPaGq8GWE4jU
+/ip4/66.94.112.102/udp/4001/quic-v1/p2p/12D3KooWSSKRa5s18uzm3CEc33WFKL1CdZyS1pcNGNgPhW35eJdB
+/ip4/73.240.174.228/tcp/24075/p2p/QmTaqVy1m5MLUh2vPSU64m1nqBj5n3ghovXZ48V6ThLiLj
+/ip4/81.7.10.195/tcp/4001/p2p/12D3KooWLUcxM5eJVuosVpnyJAoS6vUuWRZ4R4YepDyVwmsSwELG
+/ip4/82.100.213.94/udp/4001/quic-v1/p2p/12D3KooWQPZ6tvxnzd9tZ2SZwpxWUEhKcHEqkMCZ927trfYmTAjC
+/ip4/82.65.168.4/tcp/4001/p2p/12D3KooWLBJenJ2PpdeWg7Fg2NdsQbg5z1xf7pCw4tUsKej4A1PG
+/ip4/84.247.176.142/tcp/4001/p2p/12D3KooWMkeNMyTugmymgdjHfBXVWCig5ZXMaFgvJtzpMVFBNnur
+/ip4/89.117.17.10/tcp/4001/p2p/12D3KooWPUjXEURSJYBwkaVZujLGzpPe4SqfPZsvK3cs9gRzf6Wd
+/ip4/90.246.2.8/udp/43102/quic-v1/p2p/12D3KooWRgmGkDyg1XJmSMMjmCtuT7mfCfuaqLSQzAK8Ftt6YQ3b
+/ip4/94.19.128.204/udp/63724/quic-v1/p2p/12D3KooWGWKgHfrTFi2u5FRcAKDWq1qiip3hjJ6ACMWXes9ZbCKT
+/ip4/94.23.149.119/udp/4001/quic-v1/p2p/12D3KooWFLpeNew7KyAcwp9ZyfHCj9P7t8RnB6gbKYGECrpw7pT2
+/ip4/94.241.19.53/udp/50044/quic-v1/p2p/12D3KooWJKrKzrdA1Tyf9ttQEnEGTHQowRNSBfV7j24Zah1rj3p3
+/ip4/94.251.61.202/tcp/4001/p2p/12D3KooWQxEEfUh5HBgjA8bikndUFs9JnA62qAF7w7wvs4wYrtXP
+/ip4/95.165.30.131/udp/12662/quic-v1/p2p/12D3KooWCr4s62L95dEC5o9EcB3iFghTBpRRnLJ1uSvdEdoyNSfy
+/ip4/95.214.54.82/tcp/4001/p2p/12D3KooWCDC7xJeyv28mcH9DGf6T4E7sb5rxtZu789KGhv15N9nz
+/ip4/95.217.41.96/tcp/4001/p2p/12D3KooWBA2qfdYFgyY3NhbdpUN18efVdHT4tewBbnRziyS1XwXu
+/ip4/95.78.127.101/tcp/19807/p2p/12D3KooWPwGj3grpfRb5Nej8iAwMy547c4hGzvbXP9tsbjWRZctd
+```
+
+
+Bandwith:
+
+```shell
+PS C:\Users\EzzySoft\PycharmProjects\S25-core-course-labs\k8s> docker exec -it ipfs_host ipfs stats bw
+Bandwidth
+TotalIn: 51 MB
+TotalOut: 30 MB
+RateIn: 1.8 kB/s
+RateOut: 117 B/s
+```
+
+CID: Qmc4TsknGDogqBpbdMFH2CRNcsxnYL7UEQ6zWbpApWSv9C
+
+Public url: https://ipfs.io/ipfs/Qmc4TsknGDogqBpbdMFH2CRNcsxnYL7UEQ6zWbpApWSv9C
+
+
+----
+
+IPFS: https://ipfs.io/ipfs/bafybeidk5rmwgadgro7tdfyfjyofv4dw22kdgug4b35xb3bjyevafovqhm/
+Domain: https://harsh-country-crashing.on-fleek.app/

@@ -1,0 +1,27 @@
+# Optionally include wipe tasks if enabled
+- name: Include wipe tasks if enabled
+  include_tasks: 0-wipe.yml
+  when: web_app_full_wipe | bool
+  tags: [wipe]
+
+# Deploy application container using a block and tags
+- name: Deploy Application Container
+  block:
+    - name: Pull Docker image
+      docker_image:
+        name: "{{ docker_image }}"
+        source: pull
+      tags: [docker]
+
+    - name: Render docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: /tmp/docker-compose.yml
+      tags: [compose]
+
+    - name: Start Application Container using Docker Compose
+      command: docker-compose -f /tmp/docker-compose.yml up -d
+      args:
+        chdir: /tmp
+      tags: [compose]
+  tags: [deploy]
