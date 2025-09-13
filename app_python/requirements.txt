@@ -1,0 +1,5 @@
+Flask==2.3.3
+pytz==2024.2
+pytest==8.3.4
+gunicorn==23.0.0
+prometheus_client==0.21.1

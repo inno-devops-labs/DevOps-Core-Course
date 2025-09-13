@@ -1,0 +1,18 @@
+---
+- hosts: all
+  become: true
+  roles:
+    - docker
+
+- name: Verify Docker Installation
+  hosts: all
+  become: true
+  tasks:
+    - name: Check Docker Version
+      ansible.builtin.command: docker --version
+      register: docker_version_output
+      changed_when: false
+
+    - name: Display Docker Version
+      ansible.builtin.debug:
+        msg: "Installed Docker version: {{ docker_version_output.stdout }}"
