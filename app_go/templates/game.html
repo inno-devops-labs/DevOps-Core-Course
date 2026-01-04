@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle Game</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .game-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            text-align: center;
+            color: #1e3c72;
+            margin-bottom: 30px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .attempts-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .attempt-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .letter-box {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            border: 2px solid #d3d6da;
+            border-radius: 5px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .letter-box.correct {
+            background-color: #6aaa64;
+            color: white;
+            border-color: #6aaa64;
+            animation: flip 0.5s ease;
+        }
+
+        .letter-box.present {
+            background-color: #c9b458;
+            color: white;
+            border-color: #c9b458;
+            animation: flip 0.5s ease;
+        }
+
+        .letter-box.absent {
+            background-color: #787c7e;
+            color: white;
+            border-color: #787c7e;
+            animation: flip 0.5s ease;
+        }
+
+        @keyframes flip {
+            0% { transform: rotateX(0); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0); }
+        }
+
+        .empty-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .empty-box {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #d3d6da;
+            border-radius: 5px;
+        }
+
+        .guess-form {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .guess-input {
+            width: 100%;
+            max-width: 350px;
+            padding: 15px;
+            font-size: 1.2rem;
+            text-align: center;
+            text-transform: uppercase;
+            border: 2px solid #1e3c72;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .guess-input:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 10px rgba(30, 60, 114, 0.3);
+        }
+
+        .btn-submit {
+            padding: 12px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(30, 60, 114, 0.4);
+        }
+
+        .game-status {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            animation: bounceIn 0.5s ease;
+        }
+
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .status-win {
+            background-color: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .status-lose {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .status-win h2, .status-lose h2 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+        }
+
+        .new-game-btn {
+            margin-top: 15px;
+            padding: 10px 30px;
+            font-size: 1rem;
+            border-radius: 20px;
+        }
+
+        .game-info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        .game-info span {
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        @media (max-width: 576px) {
+            .letter-box, .empty-box {
+                width: 45px;
+                height: 45px;
+                font-size: 1.5rem;
+            }
+
+            .game-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 Wordle Game</h1>
+
+        <div class="game-info">
+            Attempts: <span>{{len .Attempts}}/{{.MaxAttempts}}</span>
+        </div>
+
+        <div class="attempts-grid">
+            {{range .Attempts}}
+            <div class="attempt-row">
+                {{range .Status}}
+                <div class="letter-box {{.Status}}">{{.Letter}}</div>
+                {{end}}
+            </div>
+            {{end}}
+
+            {{$remaining := sub .MaxAttempts (len .Attempts)}}
+            {{if and (not .IsWon) (not .IsLost)}}
+                {{range $i := iterate $remaining}}
+                <div class="empty-row">
+                    <div class="empty-box"></div>
+                    <div class="empty-box"></div>
+                    <div class="empty-box"></div>
+                    <div class="empty-box"></div>
+                    <div class="empty-box"></div>
+                </div>
+                {{end}}
+            {{end}}
+        </div>
+
+        {{if .IsWon}}
+        <div class="game-status status-win">
+            <h2>🎉 Congratulations!</h2>
+            <p>You guessed the word in {{len .Attempts}} attempts!</p>
+            <p>The word was: <strong>{{.Word}}</strong></p>
+            <a href="/" class="btn btn-success new-game-btn">🔄 New Game</a>
+        </div>
+        {{else if .IsLost}}
+        <div class="game-status status-lose">
+            <h2>😢 Game Over!</h2>
+            <p>You've used all your attempts.</p>
+            <p>The word was: <strong>{{.Word}}</strong></p>
+            <a href="/" class="btn btn-danger new-game-btn">🔄 Try Again</a>
+        </div>
+        {{else}}
+        <div class="guess-form">
+            <form method="POST" action="/guess">
+                <input type="hidden" name="game_id" value="{{.ID}}">
+                <input
+                    type="text"
+                    name="guess"
+                    class="guess-input"
+                    placeholder="Enter 5-letter word"
+                    maxlength="5"
+                    pattern="[A-Za-z]{5}"
+                    required
+                    autofocus
+                >
+                <br>
+                <button type="submit" class="btn btn-primary btn-submit">Submit Guess</button>
+            </form>
+        </div>
+        {{end}}
+
+        <div class="text-center mt-4">
+            <small class="text-muted">
+                🟩 Correct position | 🟨 Wrong position | ⬜ Not in word
+            </small>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

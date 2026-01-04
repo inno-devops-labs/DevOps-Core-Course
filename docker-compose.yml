@@ -1,0 +1,38 @@
+services:
+  python-app:
+    build:
+      context: ./app_python
+      dockerfile: Dockerfile
+    container_name: moscow-time-app
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - lab01-network
+
+  go-app:
+    build:
+      context: ./app_go
+      dockerfile: Dockerfile
+    container_name: wordle-game-app
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - lab01-network
+
+networks:
+  lab01-network:
+    driver: bridge
