@@ -1,0 +1,8 @@
+# Go build outputs
+/devops-info-service
+*.exe
+*.out
+
+# Go tooling
+/bin/
+/dist/
