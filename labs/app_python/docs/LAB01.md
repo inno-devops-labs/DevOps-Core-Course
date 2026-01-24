@@ -123,7 +123,7 @@ curl http://localhost:8080/
 
 **Request:**
 ```bash
-curl http://localhost:5000/health
+curl http://localhost:8080/health
 ```
 
 **Response:**
@@ -154,8 +154,9 @@ http://localhost:8080/redoc
 # Start service
 python app.py
 ```
-![alt text](image-1.png)
-![alt text](image-2.png)
+![alt text](./screenshots/01-main-endpoint.png)
+![alt text](./screenshots/02-health-check.png)
+
 ---
 
 ## Challenges & Solutions
