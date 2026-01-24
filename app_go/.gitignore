@@ -1,0 +1,29 @@
+# Go
+# Build output
+devops-info-service
+devops-info-service.exe
+devops-info-service-linux
+devops-info-service-darwin
+devops-info-service-arm
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+*.test
+*.out
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Vendor directory (if using)
+vendor/
