@@ -1,0 +1,4 @@
+# Web Framework
+Flask==3.1.0
+# WSGI HTTP server ("Green Unicorn") for running Flask in production-like mode
+gunicorn==22.0.0
