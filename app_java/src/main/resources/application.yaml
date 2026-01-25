@@ -1,0 +1,9 @@
+server:
+    address: ${HOST:0.0.0.0}
+    port: ${PORT:8080}
+
+app:
+  service:
+    name: ${SERVICE_NAME:devops-info-service}
+    version: ${SERVICE_VERSION:1.0.0}
+    description: ${SERVICE_DESCRIPTION:DevOps course info service}
