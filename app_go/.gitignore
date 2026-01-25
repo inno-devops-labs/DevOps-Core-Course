@@ -1,0 +1,18 @@
+# Go binaries / build output
+devops-info-service
+*.exe
+*.out
+*.test
+bin/
+dist/
+
+# IDE/editor
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
