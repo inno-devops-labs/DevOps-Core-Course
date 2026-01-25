@@ -17,7 +17,7 @@ app = FastAPI()
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", 5000))
+PORT = int(os.getenv("PORT", 8000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 logging.basicConfig(
@@ -47,7 +47,7 @@ def get_system_info():
     return {
         "hostname": socket.gethostname(),
         "platform": platform.system(),
-        "platformVersion": platform.version(),
+        "platform_version": platform.version(),
         "architecture": platform.machine(),
         "cpu_count": os.cpu_count(),
         "python_version": platform.python_version(),
@@ -156,7 +156,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 if __name__ == "__main__":
-    """The entry point."""
+    # The entry point
     logger.info('Application starting...')
 
     uvicorn.run("app:app", host=HOST, port=PORT, reload=True)

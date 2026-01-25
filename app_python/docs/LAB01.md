@@ -183,9 +183,9 @@ async def root(request: Request):
 ## 4. Dependencies (requirements.txt)
 The project keeps dependencies minimal and focused on what is required to run a FastAPI service in production.
 ### requirements.txt
-```
-fastapi>=0.110
-uvicorn[standard]>=0.27
+```txt
+fastapi==0.122.0
+uvicorn[standard]==0.38.0
 ```
 **Why it matters**:
 - Faster builds & simpler setup: fewer packages mean faster installation and fewer moving parts.
@@ -226,7 +226,7 @@ The service exposes two endpoints: the main information endpoint and a health ch
 Returns comprehensive metadata about the service, system, runtime, request details, and available endpoints.
 **Request example:**
 ```bash
-curl -i http://127.0.0.1:5000/
+curl -i http://127.0.0.1:8000/
 ```
 **Response example (200 OK):**
 ```json
@@ -235,7 +235,7 @@ curl -i http://127.0.0.1:5000/
     "name": "devops-info-service",
     "version": "1.0.0",
     "description": "DevOps course info service",
-    "framework": "Flask"
+    "framework": "FastAPI"
   },
   "system": {
     "hostname": "my-laptop",
@@ -267,7 +267,7 @@ curl -i http://127.0.0.1:5000/
 **Description:**  
 Returns a simple status response to confirm the service is running.**Request example:**
 ```bash
-curl -i http://127.0.0.1:5000/health
+curl -i http://127.0.0.1:8000/health
 ```
 **Response example (200 OK):**
 ```json
@@ -280,12 +280,12 @@ curl -i http://127.0.0.1:5000/health
 ## Testing commands
 ### Basic tests
 ```bash
-curl http://127.0.0.1:5000/
-curl http://127.0.0.1:5000/health
+curl http://127.0.0.1:8000/
+curl http://127.0.0.1:8000/health
 ```
 ### Test 404 handling (unknown endpoint)
 ```bash
-curl -i http://127.0.0.1:5000/does-not-exist
+curl -i http://127.0.0.1:8000/does-not-exist
 ```
 Expected response (404):
 ```json

@@ -35,7 +35,7 @@ PORT=8080 python app.py
 
 The application is configured using environment variables.
 
-| Variable | Default | Description | Example |
-|---------|---------|-------------|---------|
-| `HOST`  | `127.0.0.1` | Host interface to bind the server to | `0.0.0.0` |
-| `PORT`  | `8000` | Port the server listens on | `8080` |
+| Variable | Default | Description | Example     |
+|---------|---------|-------------|-------------|
+| `HOST`  | `0.0.0.0` | Host interface to bind the server to | `127.0.0.1` |
+| `PORT`  | `8000` | Port the server listens on | `8080`      |
