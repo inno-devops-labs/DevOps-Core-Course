@@ -1,0 +1,24 @@
+# Binaries
+devops-info-service
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go build
+main
+
+# Go workspace file
+go.work
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
