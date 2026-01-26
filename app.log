@@ -1,0 +1,1416 @@
+2026-01-25 21:05:34,652 - __main__ - INFO - Starting application on 127.0.0.1:8000
+2026-01-25 21:05:34,652 - __main__ - INFO - Debug mode: True
+2026-01-25 21:05:34,661 - uvicorn.error - INFO - Started server process [28393]
+2026-01-25 21:05:34,662 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-25 21:05:34,662 - uvicorn.error - INFO - Application startup complete.
+2026-01-25 21:05:34,662 - uvicorn.error - INFO - Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+2026-01-25 21:05:43,563 - __main__ - INFO - Request started: GET /
+2026-01-25 21:05:43,565 - __main__ - ERROR - Request failed: GET / - Error: 'Request' object has no attribute 'path'
+2026-01-25 21:05:43,566 - __main__ - ERROR - Unhandled exception: 'Request' object has no attribute 'path' for request GET /
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-25 21:05:43,575 - uvicorn.access - INFO - 127.0.0.1:53502 - "GET / HTTP/1.1" 500
+2026-01-25 21:05:43,576 - uvicorn.error - ERROR - Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-25 21:05:45,879 - __main__ - INFO - Request started: GET /
+2026-01-25 21:05:45,881 - __main__ - ERROR - Request failed: GET / - Error: 'Request' object has no attribute 'path'
+2026-01-25 21:05:45,881 - __main__ - ERROR - Unhandled exception: 'Request' object has no attribute 'path' for request GET /
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-25 21:05:45,890 - uvicorn.access - INFO - 127.0.0.1:53504 - "GET / HTTP/1.1" 500
+2026-01-25 21:05:45,891 - uvicorn.error - ERROR - Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-25 21:05:47,194 - __main__ - INFO - Request started: GET /docs
+2026-01-25 21:05:47,194 - __main__ - INFO - Request completed: GET /docs - Status: 200 - Time: 0.62ms
+2026-01-25 21:05:47,195 - uvicorn.access - INFO - 127.0.0.1:53510 - "GET /docs HTTP/1.1" 200
+2026-01-25 21:05:47,581 - __main__ - INFO - Request started: GET /openapi.json
+2026-01-25 21:05:47,588 - __main__ - INFO - Request completed: GET /openapi.json - Status: 200 - Time: 6.74ms
+2026-01-25 21:05:47,589 - uvicorn.access - INFO - 127.0.0.1:53510 - "GET /openapi.json HTTP/1.1" 200
+2026-01-25 21:06:56,583 - uvicorn.error - INFO - Shutting down
+2026-01-25 21:06:56,687 - uvicorn.error - INFO - Waiting for application shutdown.
+2026-01-25 21:06:56,688 - uvicorn.error - INFO - Application shutdown complete.
+2026-01-25 21:06:56,688 - uvicorn.error - INFO - Finished server process [28393]
+2026-01-25 21:11:17,106 - __main__ - INFO - Starting application on 127.0.0.1:8000
+2026-01-25 21:11:17,106 - __main__ - INFO - Debug mode: True
+2026-01-25 21:11:17,116 - uvicorn.error - INFO - Started server process [30023]
+2026-01-25 21:11:17,116 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-25 21:11:17,116 - uvicorn.error - INFO - Application startup complete.
+2026-01-25 21:11:17,116 - uvicorn.error - INFO - Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+2026-01-25 21:11:36,161 - __main__ - INFO - Request started: GET /
+2026-01-25 21:11:36,162 - __main__ - ERROR - Request failed: GET / - Error: 'Request' object has no attribute 'path'
+2026-01-25 21:11:36,162 - __main__ - ERROR - Unhandled exception: 'Request' object has no attribute 'path' for request GET /
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-25 21:11:36,168 - uvicorn.access - INFO - 127.0.0.1:53609 - "GET / HTTP/1.1" 500
+2026-01-25 21:11:36,168 - uvicorn.error - ERROR - Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-25 21:11:46,705 - __main__ - INFO - Request started: GET /
+2026-01-25 21:11:46,706 - __main__ - ERROR - Request failed: GET / - Error: 'Request' object has no attribute 'path'
+2026-01-25 21:11:46,706 - __main__ - ERROR - Unhandled exception: 'Request' object has no attribute 'path' for request GET /
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-25 21:11:46,709 - uvicorn.access - INFO - 127.0.0.1:53612 - "GET / HTTP/1.1" 500
+2026-01-25 21:11:46,709 - uvicorn.error - ERROR - Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-25 21:11:52,332 - __main__ - INFO - Request started: GET /
+2026-01-25 21:11:52,333 - __main__ - ERROR - Request failed: GET / - Error: 'Request' object has no attribute 'path'
+2026-01-25 21:11:52,333 - __main__ - ERROR - Unhandled exception: 'Request' object has no attribute 'path' for request GET /
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-25 21:11:52,336 - uvicorn.access - INFO - 127.0.0.1:53614 - "GET / HTTP/1.1" 500
+2026-01-25 21:11:52,336 - uvicorn.error - ERROR - Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 61, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 143, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-26 22:31:49,292 - __main__ - INFO - Starting application on 127.0.0.1:8000
+2026-01-26 22:31:49,292 - __main__ - INFO - Debug mode: True
+2026-01-26 22:31:49,301 - uvicorn.error - INFO - Started server process [4991]
+2026-01-26 22:31:49,302 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-26 22:31:49,302 - uvicorn.error - INFO - Application startup complete.
+2026-01-26 22:31:49,302 - uvicorn.error - INFO - Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+2026-01-26 22:32:03,790 - __main__ - INFO - Request started: GET /
+2026-01-26 22:32:03,793 - __main__ - ERROR - Request failed: GET / - Error: 'Request' object has no attribute 'path'
+2026-01-26 22:32:03,793 - __main__ - ERROR - Unhandled exception: 'Request' object has no attribute 'path' for request GET /
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 58, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 140, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-26 22:32:03,803 - uvicorn.access - INFO - 127.0.0.1:49602 - "GET / HTTP/1.1" 500
+2026-01-26 22:32:03,803 - uvicorn.error - ERROR - Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 58, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 140, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-26 22:32:26,223 - __main__ - INFO - Request started: GET /
+2026-01-26 22:32:26,224 - __main__ - ERROR - Request failed: GET / - Error: 'Request' object has no attribute 'path'
+2026-01-26 22:32:26,224 - __main__ - ERROR - Unhandled exception: 'Request' object has no attribute 'path' for request GET /
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 58, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 140, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-26 22:32:26,227 - uvicorn.access - INFO - 127.0.0.1:49607 - "GET / HTTP/1.1" 500
+2026-01-26 22:32:26,227 - uvicorn.error - ERROR - Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 58, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 140, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-26 22:32:31,634 - uvicorn.error - INFO - Shutting down
+2026-01-26 22:32:31,736 - uvicorn.error - INFO - Waiting for application shutdown.
+2026-01-26 22:32:31,737 - uvicorn.error - INFO - Application shutdown complete.
+2026-01-26 22:32:31,737 - uvicorn.error - INFO - Finished server process [4991]
+2026-01-26 22:32:49,590 - __main__ - INFO - Starting application on 0.0.0.0:5000
+2026-01-26 22:32:49,590 - __main__ - INFO - Debug mode: False
+2026-01-26 22:32:49,597 - uvicorn.error - INFO - Started server process [5249]
+2026-01-26 22:32:49,597 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-26 22:32:49,598 - uvicorn.error - INFO - Application startup complete.
+2026-01-26 22:32:49,598 - uvicorn.error - ERROR - [Errno 48] error while attempting to bind on address ('0.0.0.0', 5000): [errno 48] address already in use
+2026-01-26 22:32:49,598 - uvicorn.error - INFO - Waiting for application shutdown.
+2026-01-26 22:32:49,598 - uvicorn.error - INFO - Application shutdown complete.
+2026-01-26 22:33:20,250 - __main__ - INFO - Starting application on 0.0.0.0:5001
+2026-01-26 22:33:20,251 - __main__ - INFO - Debug mode: False
+2026-01-26 22:33:20,260 - uvicorn.error - INFO - Started server process [5440]
+2026-01-26 22:33:20,260 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-26 22:33:20,260 - uvicorn.error - INFO - Application startup complete.
+2026-01-26 22:33:20,260 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:5001 (Press CTRL+C to quit)
+2026-01-26 22:33:25,781 - __main__ - INFO - Request started: GET /
+2026-01-26 22:33:25,784 - __main__ - ERROR - Request failed: GET / - Error: 'Request' object has no attribute 'path'
+2026-01-26 22:33:25,785 - __main__ - ERROR - Unhandled exception: 'Request' object has no attribute 'path' for request GET /
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 58, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 140, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-26 22:33:25,795 - uvicorn.access - INFO - 127.0.0.1:49614 - "GET / HTTP/1.1" 500
+2026-01-26 22:33:25,796 - uvicorn.error - ERROR - Exception in ASGI application
+Traceback (most recent call last):
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.0_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 58, in log_requests
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/fastapi/routing.py", line 245, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/starlette/concurrency.py", line 32, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/to_thread.py", line 63, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 2502, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/venv/lib/python3.14/site-packages/anyio/_backends/_asyncio.py", line 986, in run
+    result = context.run(func, *args)
+  File "/Users/abraham_barrett/Documents/Code/DevOps/DevOps-Core-Course/app_python/app.py", line 140, in main_page
+    logger.debug(f'Request: {request.method} {request.path}')
+                                              ^^^^^^^^^^^^
+AttributeError: 'Request' object has no attribute 'path'
+2026-01-26 22:33:25,811 - __main__ - INFO - Request started: GET /favicon.ico
+2026-01-26 22:33:25,811 - __main__ - WARNING - 404 Not Found: GET /favicon.ico from 127.0.0.1
+2026-01-26 22:33:25,812 - __main__ - INFO - Request completed: GET /favicon.ico - Status: 404 - Time: 0.44ms
+2026-01-26 22:33:25,812 - uvicorn.access - INFO - 127.0.0.1:49616 - "GET /favicon.ico HTTP/1.1" 404
+2026-01-26 22:34:25,916 - uvicorn.error - INFO - Shutting down
+2026-01-26 22:34:26,019 - uvicorn.error - INFO - Waiting for application shutdown.
+2026-01-26 22:34:26,020 - uvicorn.error - INFO - Application shutdown complete.
+2026-01-26 22:34:26,021 - uvicorn.error - INFO - Finished server process [5440]
+2026-01-26 22:34:31,071 - __main__ - INFO - Starting application on 0.0.0.0:5001
+2026-01-26 22:34:31,072 - __main__ - INFO - Debug mode: False
+2026-01-26 22:34:31,081 - uvicorn.error - INFO - Started server process [5853]
+2026-01-26 22:34:31,081 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-26 22:34:31,081 - uvicorn.error - INFO - Application startup complete.
+2026-01-26 22:34:31,082 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:5001 (Press CTRL+C to quit)
+2026-01-26 22:34:33,848 - __main__ - INFO - Request started: GET /
+2026-01-26 22:34:33,852 - __main__ - INFO - Request completed: GET / - Status: 200 - Time: 3.68ms
+2026-01-26 22:34:33,852 - uvicorn.access - INFO - 127.0.0.1:49623 - "GET / HTTP/1.1" 200
+2026-01-26 22:34:40,292 - uvicorn.error - INFO - Shutting down
+2026-01-26 22:34:40,395 - uvicorn.error - INFO - Waiting for application shutdown.
+2026-01-26 22:34:40,396 - uvicorn.error - INFO - Application shutdown complete.
+2026-01-26 22:34:40,396 - uvicorn.error - INFO - Finished server process [5853]
+2026-01-26 22:34:45,242 - __main__ - INFO - Starting application on 0.0.0.0:5001
+2026-01-26 22:34:45,242 - __main__ - INFO - Debug mode: False
+2026-01-26 22:34:45,249 - uvicorn.error - INFO - Started server process [6083]
+2026-01-26 22:34:45,249 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-26 22:34:45,250 - uvicorn.error - INFO - Application startup complete.
+2026-01-26 22:34:45,250 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:5001 (Press CTRL+C to quit)
+2026-01-26 22:34:52,539 - __main__ - INFO - Request started: GET /
+2026-01-26 22:34:52,542 - __main__ - INFO - Request completed: GET / - Status: 200 - Time: 3.12ms
+2026-01-26 22:34:52,542 - uvicorn.access - INFO - 127.0.0.1:49625 - "GET / HTTP/1.1" 200
+2026-01-26 22:34:59,625 - __main__ - INFO - Request started: GET /health
+2026-01-26 22:34:59,627 - __main__ - INFO - Request completed: GET /health - Status: 200 - Time: 2.49ms
+2026-01-26 22:34:59,628 - uvicorn.access - INFO - 127.0.0.1:49627 - "GET /health HTTP/1.1" 200
+2026-01-26 22:45:50,561 - uvicorn.error - INFO - Shutting down
+2026-01-26 22:45:50,668 - uvicorn.error - INFO - Waiting for application shutdown.
+2026-01-26 22:45:50,670 - uvicorn.error - INFO - Application shutdown complete.
+2026-01-26 22:45:50,670 - uvicorn.error - INFO - Finished server process [6083]
+2026-01-26 22:48:21,513 - __main__ - INFO - Starting application on 0.0.0.0:5001
+2026-01-26 22:48:21,513 - __main__ - INFO - Debug mode: False
+2026-01-26 22:48:21,524 - uvicorn.error - INFO - Started server process [9332]
+2026-01-26 22:48:21,524 - uvicorn.error - INFO - Waiting for application startup.
+2026-01-26 22:48:21,524 - uvicorn.error - INFO - Application startup complete.
+2026-01-26 22:48:21,525 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:5001 (Press CTRL+C to quit)
+2026-01-26 22:48:32,305 - __main__ - INFO - Request started: GET /
+2026-01-26 22:48:32,310 - __main__ - INFO - Request completed: GET / - Status: 200 - Time: 4.33ms
+2026-01-26 22:48:32,310 - uvicorn.access - INFO - 127.0.0.1:49837 - "GET / HTTP/1.1" 200
+2026-01-26 22:48:34,976 - uvicorn.error - INFO - Shutting down
+2026-01-26 22:48:35,078 - uvicorn.error - INFO - Waiting for application shutdown.
+2026-01-26 22:48:35,079 - uvicorn.error - INFO - Application shutdown complete.
+2026-01-26 22:48:35,080 - uvicorn.error - INFO - Finished server process [9332]
