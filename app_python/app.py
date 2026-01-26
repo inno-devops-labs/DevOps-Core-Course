@@ -21,7 +21,7 @@ logger.info("DevOps Info Service starting...")
 
 @app.route("/")
 def index():
-    logger.info(f"Request: {request.method} {request.path}")
+    logger.info(f"Request from {request.remote_addr}: {request.method} {request.path}")
 
     cur_time = datetime.now(timezone.utc)
     uptime = cur_time - START_TIME
