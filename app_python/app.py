@@ -10,7 +10,7 @@ PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 app = Flask(__name__)
-START_TIME = datetime.now()
+START_TIME = datetime.now(timezone.utc)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,7 +23,7 @@ logger.info("DevOps Info Service starting...")
 def index():
     logger.info(f"Request: {request.method} {request.path}")
 
-    cur_time = datetime.now()
+    cur_time = datetime.now(timezone.utc)
     uptime = cur_time - START_TIME
     data = {
         "service": {
@@ -44,7 +44,7 @@ def index():
             "uptime_seconds": uptime.total_seconds(),
             "uptime_human": f"{uptime.total_seconds() // 3600}h {uptime.total_seconds() % 3600 // 60}m",
             "current_time": cur_time.isoformat(),
-            "timezone": cur_time.tzinfo[0]
+            "timezone": "UTC"
         },
         "request": {
             "client_ip": request.remote_addr,
@@ -62,7 +62,7 @@ def index():
 
 @app.route("/health")
 def health():
-    cur_time = datetime.now()
+    cur_time = datetime.now(timezone.utc)
     uptime = cur_time - START_TIME
     return jsonify({
         "status": "healthy",
