@@ -171,6 +171,7 @@ HOST=0.0.0.0 PORT=8080 python app.py
 
 ## Containerization
 How to run application in the docker:
+from the root
 ```bash
 docker build -t app .
 docker run -p 8080:8080 app 
