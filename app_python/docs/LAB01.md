@@ -1,11 +1,14 @@
+# Lab 01
+
 ## Framework Selection
+
 Choice: FastAPI
 
 Why? FastAPI is designed specifically for building high-performance APIs with Python. It provides automatic data validation and generates interactive documentation (Swagger UI) out of the box.
 
 ## Best Practices Applied
 
-1. Environment configation:
+### Environment configation
 
 The application avoids hardcoding sensitive or environment-specific values. It uses os.getenv to allow configuration via container environments or .env files.
 
@@ -15,7 +18,7 @@ PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 ```
 
-2. Logging
+### Logging
 
 Instead of using print() statements, the service implements the standard logging library with configurable levels.
 
@@ -27,7 +30,9 @@ logging.basicConfig(
 ```
 
 ## API Documentation
+
 ### Endpoint: Root Info
+
 Path: /
 
 Method: GET
@@ -41,7 +46,9 @@ Response Example:
   "runtime": { "uptime_seconds": 120 }
 }
 ```
+
 ### Endpoint: Health Check
+
 Path: /health
 
 Method: GET
@@ -57,6 +64,7 @@ Response Example:
 ```
 
 ### Testing Commands
+
 To test the service via CLI, use curl:
 
 ```bash
@@ -71,7 +79,6 @@ curl http://localhost:5000/health
 
 ![application](screenshots/startup.png?raw=true "Running application")
 
-
 ![health endpoint](screenshots/health.png?raw=true "Health endpoint")
 
 ![root endpoint](screenshots/root.png?raw=true "Root info")
@@ -80,7 +87,8 @@ curl http://localhost:5000/health
 
 I forgot how to launch a fastapi application via uicorn without a direct command in the terminal.
 
-Solution: 
+Solution:
+
 ```python
 if __name__ == "__main__":
     import uvicorn
