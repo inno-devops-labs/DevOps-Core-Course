@@ -1,0 +1,5 @@
+# Web framework
+Flask==3.1.0
+
+# Virtual environment for python
+python-dotenv==1.0.1
