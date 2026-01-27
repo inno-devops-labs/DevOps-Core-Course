@@ -157,7 +157,7 @@ app_python/
 ├── requirements.txt    # Python dependencies
 ├── .gitignore         # Git ignore rules
 ├── README.md          # This file
-├── tests/             # Unit tests (Lab 3)
+├── tests/             # Unit tests
 │   └── __init__.py
 └── docs/              # Lab documentation
     ├── LAB01.md

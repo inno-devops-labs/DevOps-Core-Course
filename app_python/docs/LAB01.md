@@ -91,7 +91,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-logger.info('Starting DevOps Info Service on 127.0.0.1:8080')
+logger.info(f'Starting DevOps Info Service on {HOST}:{PORT}')
 logger.debug(f'Request: {request.method} {request.path}')
 ```
 
@@ -187,7 +187,7 @@ curl http://localhost:8080/
 
 ### Endpoint: `GET /health`
 
-**Description:** Health check endpoint for monitoring and Kubernetes probes.
+**Description:** Health check endpoint for monitoring.
 
 **Request:**
 
