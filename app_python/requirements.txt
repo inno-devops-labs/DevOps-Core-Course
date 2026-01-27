@@ -1,0 +1,5 @@
+# Web Framework
+Flask==3.1.0
+
+# WSGI server (optional, for production)
+Werkzeug==3.1.3
