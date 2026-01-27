@@ -169,3 +169,14 @@ HOST=localhost PORT=3000 DEBUG=true python app.py
 HOST=0.0.0.0 PORT=8080 python app.py
 ```
 
+## Containerization
+How to run application in the docker:
+```bash
+docker build -t app .
+docker run -p 8080:8080 app 
+
+```
+or 
+```bash
+docker run -p 8080:8080 reiterwurger/app:v1
+```
