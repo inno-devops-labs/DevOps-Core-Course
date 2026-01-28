@@ -139,9 +139,9 @@ curl -s http://localhost:5000/doesnotexist | jq
 
 ## Testing Evidence
 
-- ![Main endpoint](screenshots/main_endpoint.png)
-- ![Health endpoint](screenshots/health_endpoint.png)
-- ![Non existent endpoint](screenshots/non_existent_endpoint.png)
+- ![Main endpoint](screenshots/01-main-endpoint.png)
+- ![Health endpoint](screenshots/02-health-check.png)
+- ![Formatted output](screenshots/03-formatted-output.png)
 
 ## Challenges & Solutions
 
