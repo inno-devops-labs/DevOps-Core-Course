@@ -101,7 +101,6 @@ Add screenshots to `docs/screenshots/` and embed them here.
 - **Main endpoint:** `screenshots/01-main-endpoint.png`
 - **Health check:** `screenshots/02-health-check.png`
 - **Pretty-printed output:** `screenshots/03-formatted-output.png`
-- **Swagger UI:** `screenshots/04-swagger-ui.png`
 
 ## 5. Challenges & Solutions
 - **Timezone formatting:** Used UTC with ISO 8601 and `Z` suffix for consistency.
