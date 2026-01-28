@@ -25,7 +25,7 @@ This implementation is part of the **bonus task** for Lab 01 and is intended to 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/<your-username>/DevOps-Core-Course.git
+git clone https://github.com/Daniil20xx/DevOps-Core-Course.git
 ```
 
 2. Navigate to the Go application directory:
