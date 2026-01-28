@@ -1,0 +1,68 @@
+# .dockerignore
+# Игнорируем ненужные файлы для уменьшения размера образа
+
+# Python кэш и виртуальные окружения
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE файлы
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Логи и системные файлы
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Тесты и документация
+tests/
+test/
+docs/
+*.md
+*.rst
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# OS специфичные файлы
+.DS_Store
+Thumbs.db
+
+# Docker специфичные файлы
+.dockerignore
+Dockerfile
+docker-compose.yml
+docker-compose.yaml
+
+# Временные файлы
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Конфигурационные файлы (кроме необходимых)
+*.ini
+*.cfg
+*.conf
+*.yml
+*.yaml
+
+# Исходные коды (кроме app.py)
+*.py
+!app.py
+!requirements.txt

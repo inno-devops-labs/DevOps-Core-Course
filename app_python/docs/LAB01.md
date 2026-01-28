@@ -1,0 +1,1 @@
+I choose framework FastAPI because he is a modern and lightweight
