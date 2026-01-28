@@ -1,0 +1,18 @@
+# Go build outputs
+devops-info-service
+devops-info-service.exe
+*.exe
+*.out
+
+# Go module / tooling
+go.sum
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Environment files
+.env
