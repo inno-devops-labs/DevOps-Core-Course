@@ -109,9 +109,7 @@ Returns comprehensive service and system information.
   },
   "endpoints": [
     {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"},
-    {"path": "/docs", "method": "GET", "description": "OpenAPI documentation"},
-    {"path": "/redoc", "method": "GET", "description": "Alternative documentation"}
+    {"path": "/health", "method": "GET", "description": "Health check"}
   ]
 }
 ```
