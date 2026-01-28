@@ -310,24 +310,3 @@ Starring repositories is a fundamental way to participate in the open-source com
 Following developers on GitHub creates a professional network that extends beyond the classroom. It allows you to discover new projects through others' activity, learn from experienced developers' code and commit patterns, and stay updated on industry trends. In team projects, following classmates makes collaboration easier and builds a supportive learning community that can benefit your career long-term.
 
 ---
-
-## 7. Submission Checklist
-
-- [x] Flask application with both endpoints
-- [x] All required JSON fields in responses
-- [x] Environment variable configuration
-- [x] Error handling (404, 500)
-- [x] Logging configured
-- [x] `requirements.txt` with pinned versions
-- [x] `.gitignore` properly configured
-- [x] `README.md` with all required sections
-- [x] `LAB01.md` with framework justification
-- [x] Best practices documented
-- [x] API documentation with examples
-- [x] Testing evidence included
-- [x] GitHub Community section
-- [ ] Screenshots captured (manual step)
-- [ ] Course repository starred (manual step)
-- [ ] simple-container-com/api starred (manual step)
-- [ ] Professor and TAs followed (manual step)
-- [ ] 3 classmates followed (manual step)
