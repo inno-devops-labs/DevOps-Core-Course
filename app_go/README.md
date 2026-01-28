@@ -175,9 +175,4 @@ You can also open these URLs in a browser:
 
 ### Notes for screenshots 
 
-For the bonus task, screenshots were captered and saved into `app_go/docs/screenshots/`:
-
-- `01-main-endpoint-go.png` — full JSON from `GET /`
-- `02-health-check-go.png` — JSON from `GET /health`
-- `03-go-build-and-run.png` — terminal with `go run` or `go build` + execution
-
+For the bonus task, screenshots were captered and saved into `app_go/docs/screenshots/`
