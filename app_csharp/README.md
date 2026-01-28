@@ -3,7 +3,7 @@
 ## Overview
 A simple DevOps information service that displays system, runtime, and request data.  
 Includes a health-check endpoint for monitoring.
-Implemented as a **modules for [ModuWeb (self-made application)](https://github.com/Chaleshka/ModuWeb)** on top of ASP.NET Core. 
+Implemented as a **modules for [ModuWeb (self-made application)](https://github.com/Chaleshka/ModuWeb)** on top of ASP.NET Core. <br/>
 ***ModueWeb** - is a .NET web application that supports dynamic runtime loading, reloading, and unloading of external modules (.dll files). Each module is self-contained and can expose custom HTTP routes, CORS policies, and request handlers.*
 
 
