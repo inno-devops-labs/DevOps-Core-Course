@@ -22,7 +22,7 @@ PORT=8080 python3 app.py
 ### API Endpoints
 There are few main endpoints:
 - `GET /` - Service and system information
-- `GET /health` - Health check
+- `GET /health` - Health check.
 
 ### Configuration
 
