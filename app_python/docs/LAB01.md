@@ -205,16 +205,6 @@ curl http://localhost:5000/health
 }
 ```
 
-#### GET `/docs`
-**Description**: Interactive OpenAPI/Swagger documentation
-
-**Access**: Open in browser at `http://localhost:5000/docs`
-
-#### GET `/redoc`
-**Description**: Alternative API documentation interface
-
-**Access**: Open in browser at `http://localhost:5000/redoc`
-
 ### Testing Commands:
 
 ```bash
@@ -295,8 +285,6 @@ $ curl http://localhost:8080/health
 # Instead of: source venv/bin/activate
 # Use: source venv/bin/activate.fish
 ```
-
-This approach works across all shells (Fish, Bash, Zsh, PowerShell).
 
 ## GitHub Community
 
