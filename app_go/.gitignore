@@ -1,0 +1,7 @@
+# Binaries
+devops-info-service
+devops-info-service-small
+*.exe
+
+# OS
+.DS_Store
