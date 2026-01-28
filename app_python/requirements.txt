@@ -1,0 +1,5 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.10.0
+starlette==0.37.2
+typing-extensions==4.12.2
