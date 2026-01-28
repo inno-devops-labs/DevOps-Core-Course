@@ -128,12 +128,6 @@ Health check endpoint for monitoring and Kubernetes probes.
 }
 ```
 
-### GET `/docs`
-Interactive OpenAPI/Swagger documentation.
-
-### GET `/redoc`
-Alternative API documentation interface.
-
 ## Configuration
 
 The application can be configured using environment variables:
