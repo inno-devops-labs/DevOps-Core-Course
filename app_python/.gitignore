@@ -10,6 +10,7 @@ venv/
 .vs/
 *.slnx
 *.pyproj
+*.pyproj.user
 
 # OS
 .DS_Store
