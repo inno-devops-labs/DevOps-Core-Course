@@ -151,28 +151,6 @@ Go is the language of modern DevOps tools:
 
 This makes Go a natural choice for DevOps projects - familiarity with Go means understanding the tools we use.
 
-## Performance Comparison (Real Data)
-
-Based on my testing:
-
-```
-Benchmark: 1000 requests to main endpoint
-
-Python (Flask):
-- Startup: 500ms
-- Memory: 45 MB
-- Response time: 5-10ms
-- Total time: 8.2s
-
-Go (net/http):
-- Startup: 2ms
-- Memory: 8 MB
-- Response time: 0.5-1ms
-- Total time: 1.4s
-
-Result: Go is ~6x faster with ~5x less memory
-```
-
 ## Code Quality
 
 Go enforces good practices:

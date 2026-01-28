@@ -14,7 +14,7 @@ DevOps Info Service (Go version) is built using Go's standard `net/http` library
 **Key Advantages:**
 - Single binary with no dependencies
 - Fast startup time (~milliseconds)
-- Low memory footprint (~5-10 MB)
+- Low memory footprint
 - Easy deployment (just copy the binary)
 
 ## Prerequisites

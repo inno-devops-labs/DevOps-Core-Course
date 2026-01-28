@@ -266,7 +266,7 @@ curl http://localhost:5000/health
 ```
 
 **Use Cases:**
-- Kubernetes liveness/readiness probes (Lab 9)
+- Kubernetes liveness/readiness probes 
 - Load balancer health checks
 - Monitoring systems (Prometheus, Grafana)
 - Uptime monitoring services

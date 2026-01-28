@@ -11,9 +11,9 @@ See [GO.md](GO.md) for detailed justification of why Go was selected for this im
 **Key Reasons:**
 - Single binary deployment (no dependencies)
 - Fast startup time (~milliseconds)
-- Low memory footprint (~8 MB)
+- Low memory footprint 
 - Native to DevOps ecosystem (Docker, Kubernetes written in Go)
-- Perfect for containerization (Lab 2)
+- Perfect for containerization
 
 ## Implementation Details
 
