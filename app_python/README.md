@@ -66,6 +66,56 @@ DEBUG=true python app.py
 gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 
+## Docker
+
+The application is containerized and available on Docker Hub.
+
+### Building Locally
+
+```bash
+# Build the image
+docker build -t devops-info-service .
+
+# Run a container
+docker run -d -p 5000:5000 --name devops-app devops-info-service
+
+# Test it
+curl http://localhost:5000/
+curl http://localhost:5000/health
+
+# Stop and remove
+docker stop devops-app && docker rm devops-app
+```
+
+### Custom Configuration
+
+```bash
+# Run on a different port
+docker run -d -p 8080:8080 -e PORT=8080 devops-info-service
+
+# Run with debug mode
+docker run -d -p 5000:5000 -e DEBUG=true devops-info-service
+```
+
+### Pulling from Docker Hub
+
+```bash
+# Pull the image
+docker pull <your-dockerhub-username>/devops-info-service:latest
+
+# Run from Docker Hub
+docker run -d -p 5000:5000 <your-dockerhub-username>/devops-info-service:latest
+```
+
+### Docker Image Details
+
+| Property | Value |
+|----------|-------|
+| Base Image | `python:3.13-slim` |
+| User | Non-root (`appuser`, UID 1000) |
+| Exposed Port | 5000 |
+| Health Check | Built-in (`/health` endpoint) |
+
 ## API Endpoints
 
 ### `GET /` — Service Information
@@ -147,12 +197,15 @@ curl http://localhost:5000/health
 app_python/
 ├── app.py                    # Main application
 ├── requirements.txt          # Dependencies
+├── Dockerfile               # Container definition
+├── .dockerignore            # Docker build exclusions
 ├── .gitignore               # Git ignore rules
 ├── README.md                # This file
 ├── tests/                   # Unit tests (Lab 3)
 │   └── __init__.py
 └── docs/                    # Lab documentation
-    ├── LAB01.md            # Lab submission
+    ├── LAB01.md            # Lab 1 submission
+    ├── LAB02.md            # Lab 2 submission
     └── screenshots/        # Proof of work
 ```
 
