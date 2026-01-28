@@ -1,6 +1,6 @@
 ## 1. Framework
 
-For the compiled-language bonus task I used **C# + ASP\.NET Core** hosted inside the **[ModuWeb (self-made application)]((https://github.com/Chaleshka/ModuWeb))** application. I used C# because it was more familiar to me than the other options.
+For the compiled-language bonus task I used **C# + ASP\.NET Core** hosted inside the **[ModuWeb (self-made application)]((https://github.com/Chaleshka/ModuWeb))** application. I used C# because it was more familiar to me than the other options. <br/>
 ***ModueWeb** - is a .NET web application that supports dynamic runtime loading, reloading, and unloading of external modules (.dll files). Each module is self-contained and can expose custom HTTP routes, CORS policies, and request handlers.*
 
 ## 2. Implementation Overview
