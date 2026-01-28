@@ -1,0 +1,10 @@
+# Go build output
+bin/
+*.out
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
