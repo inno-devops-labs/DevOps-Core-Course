@@ -1,61 +1,15 @@
-# Lab 2 — Multi-Stage Build (Go App)
-
-This document explains the multi-stage containerization of the Go version of the DevOps Info Service, why multi-stage matters, image size comparisons, and technical details.
-
----
-
 ## Strategy Overview
 
 - **Stage 1 (Builder)**: Use `golang:1.22-alpine` to compile a static Linux binary with `CGO_ENABLED=0`, `-trimpath`, and stripped symbols (`-ldflags "-s -w"`). Cache Go modules and build artifacts to speed up incremental builds.
 - **Stage 2 (Runtime)**: Use `gcr.io/distroless/static:nonroot` to ship only the binary. No package manager, no shell, and runs as non-root by default → minimal attack surface.
 
-### Dockerfile (multi-stage)
-```dockerfile
-# ---- Builder stage ----
-FROM golang:1.22-alpine AS builder
-WORKDIR /src
-COPY go.mod ./
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    go mod download
-COPY . .
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -trimpath -ldflags="-s -w" -buildvcs=false -o /out/app ./main.go
-
-# ---- Runtime stage ----
-FROM gcr.io/distroless/static:nonroot
-WORKDIR /app
-COPY --from=builder /out/app /app/app
-USER nonroot:nonroot
-EXPOSE 5000
-ENV HOST=0.0.0.0 PORT=5000 DEBUG=false
-ENTRYPOINT ["/app/app"]
-```
-
----
-
 ## Size Comparison
 
-Build both images and compare:
 ```bash
-# build
-docker build -t ${DOCKER_USER}/devops-info-service-go:lab02 ./app_go
-
-# check sizes
-docker images | grep devops-info-service-go
+➜  app_go git:(lab2) ✗ docker images | grep devops-info-service-go
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+zsalavat/devops-info-service-go:lab02         067f534f40f3       13.3MB         2.99MB        
 ```
-
-- **Builder image base**: `golang:1.22-alpine` (hundreds of MB, includes toolchain)
-- **Final runtime image**: `distroless/static:nonroot` + your binary (typically under ~20MB for small Go services)
-- **Observation**: Multi-stage removes compilers and build tools from the final image → significant shrink.
-
-Paste actual output here:
-```text
-<docker images output>
-```
-
----
 
 ## Why Multi-Stage Matters
 
@@ -69,30 +23,13 @@ Paste actual output here:
 ## Build & Run Process
 
 ### Build
-```bash
-docker build -t ${DOCKER_USER}/devops-info-service-go:${TAG} ./app_go
-```
+![build-test](screenshots/docker-build-terminal.png)
 
 ### Run
-```bash
-docker run --rm \
-  -p ${HOST_PORT}:${CONTAINER_PORT} \
-  -e HOST=0.0.0.0 -e PORT=${CONTAINER_PORT} -e DEBUG=${DEBUG_FLAG} \
-  ${DOCKER_USER}/devops-info-service-go:${TAG}
-```
+![docker-run](screenshots/docker-run.png)
 
 ### Test Endpoints
-```bash
-curl http://localhost:${HOST_PORT}/health
-curl http://localhost:${HOST_PORT}/
-```
-
-Paste terminal outputs here:
-```text
-<build logs>
-<run logs>
-<curl outputs>
-```
+![build-test](screenshots/docker_curl_test.png)
 
 ---
 
@@ -109,30 +46,9 @@ Paste terminal outputs here:
   - Runs as non-root (`USER nonroot:nonroot`) by default.
   - `EXPOSE 5000` documents the port; environment variables allow overrides.
 
----
-
 ## Security Implications
 
 - **Reduced attack surface**: No compilers or package managers in runtime.
-- **Least privilege**: Non-root execution in runtime stage.
-- **Determinism**: Pinned base images and static linking reduce variability.
+- **Least privilege**
+- **Determinism**
 
----
-
-## Trade-offs and Decisions
-
-- **Static vs dynamic**: Static binaries are portable and simplify runtime images; dynamic linking may be needed for certain libraries (CGO), but increases base requirements.
-- **Distroless vs Alpine**: Distroless is smaller and more secure; Alpine offers a shell and package manager (useful for debugging), but larger and more components.
-
----
-
-## Docker Hub (Optional for Go Bonus)
-
-```bash
-docker tag ${DOCKER_USER}/devops-info-service-go:${TAG} ${DOCKER_USER}/devops-info-service-go:latest
-docker push ${DOCKER_USER}/devops-info-service-go:${TAG}
-docker push ${DOCKER_USER}/devops-info-service-go:latest
-```
-
-Repo URL pattern:
-- `https://hub.docker.com/r/${DOCKER_USER}/devops-info-service-go`
