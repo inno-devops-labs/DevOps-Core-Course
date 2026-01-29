@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.log
+
+# Virtualenv
+venv/
+.venv/
+
+# VCS / IDE
+.git/
+.vscode/
+.idea/
+
+# Docs / tests (не нужны для runtime)
+docs/
+tests/
+*.md
+
+# OS
+.DS_Store
