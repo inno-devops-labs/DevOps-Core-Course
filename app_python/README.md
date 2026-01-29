@@ -80,6 +80,39 @@ The application is configured via environment variables:
 | `PORT` | `5000` | TCP port |
 | `DEBUG` | `False` | Enables Flask debug mode and debug logging |
 
+## Docker
+
+> Note: Commands below are shown as **examples** using the Docker Hub repository
+> `egrapa/devops-core-course-lab2`. Replace the tag if you use a different one.
+
+### Build (local) — example
+```bash
+docker build -t egrapa/devops-core-course-lab2:lab02 app_python/
+```
+
+### Run — example
+```bash
+docker run --rm -p 8080:5000 --name devops-info egrapa/devops-core-course-lab2:lab02
+```
+
+Test from host:
+```bash
+curl -s http://127.0.0.1:8080/health | python -m json.tool
+curl -s http://127.0.0.1:8080/ | python -m json.tool
+```
+
+### Push to Docker Hub — example
+```bash
+docker login
+docker push egrapa/devops-core-course-lab2:lab02
+```
+
+### Pull from Docker Hub — example
+```bash
+docker pull egrapa/devops-core-course-lab2:lab02
+docker run --rm -p 8080:5000 egrapa/devops-core-course-lab2:lab02
+```
+
 ## Notes
 - All timestamps are returned in **UTC**
 - Uptime is calculated since process start
