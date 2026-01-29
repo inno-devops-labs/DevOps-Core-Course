@@ -24,3 +24,16 @@ From the `app_go/` directory:
 ## Docs
 - Implementation details: `docs/LAB01.md`
 - Language justification: `docs/GO.md`
+
+## Docker 
+
+### Build 
+
+```bash
+docker build -t ${DOCKER_USER}/devops-info-service-go:lab02 ./app_go
+```
+
+### Run
+```bash
+docker run --rm -p 5000:5000 ${DOCKER_USER}/devops-info-service-go:lab02
+```

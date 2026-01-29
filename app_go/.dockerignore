@@ -1,0 +1,16 @@
+.git
+.gitignore
+.vscode/
+.idea/
+
+bin/
+build/
+dist/
+coverage/
+*.out
+
+docs/
+tests/
+*.md
+
+__pycache__/
