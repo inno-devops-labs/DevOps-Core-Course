@@ -54,12 +54,13 @@ docker build -t <image-name>:<tag> .
 ### Run container
 Run the container with port publishing so the service is reachable from the host:
 ```bash
-docker run --rm -p <host-port>:<container-port> <image-name>:<tag>
+docker run --rm -p <host-port>:<container-port> gghost1/devops-lab-app-python:latest
 ```
 Pass configuration via environment variables (the app reads HOST, PORT, DEBUG):
 ```bash
-docker run --rm -e PORT=<port> -p <port>:<port> <image-name>:<tag>
+docker run --rm -e PORT=<port> -p <port>:<port> gghost1/devops-lab-app-python:latest
 ```
+For local built image replace `gghost1/devops-lab-app-python:latest` on your `<image-name>:<tag>`.
 
 ### Pull from Docker Hub
 Pull an already published image from Docker Hub:

@@ -42,3 +42,26 @@ HOST=127.0.0.1 PORT=3000 ./gradlew bootRun
 | SERVICE_VERSION     | 1.0.0                      | Service version     |
 | SERVICE_DESCRIPTION | DevOps course info service | Service description |
 
+## Docker
+### Build image (local)
+From the `app_java/` directory, build an image using the current folder as the build context:
+```bash
+docker build -t <image-name>:<tag> .
+```
+
+### Run container
+Run the container with port publishing so the service is reachable from the host:
+```bash
+docker run --rm -p <host-port>:<container-port> gghost1/devops-lab-app-java:latest
+```
+Pass configuration via environment variables (the app reads HOST, PORT, DEBUG):
+```bash
+docker run --rm -e PORT=<port> -p <port>:<port> gghost1/devops-lab-app-java:latest
+```
+For local built image replace `gghost1/devops-lab-app-java:latest` on your `<image-name>:<tag>`.
+
+### Pull from Docker Hub
+Pull an already published image from Docker Hub:
+```bash
+docker pull gghost1/devops-lab-app-java:latest
+```

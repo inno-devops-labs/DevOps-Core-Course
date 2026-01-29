@@ -1,0 +1,19 @@
+# VCS
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+
+# Gradle / build outputs
+.gradle/
+build/
+out/
+
+# OS junk
+.DS_Store
+
+# docs
+docs/
+*.md
