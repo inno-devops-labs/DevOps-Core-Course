@@ -1,0 +1,8 @@
+
+# Binaries
+devops-info-service
+*.exe
+
+# Build outputs
+*.out
+
