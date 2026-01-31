@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+.Python
+venv/
+env/
+.venv/
+.env
+*.log
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+docs/
+README.md
+
+# Tests
+tests/
+test*.py
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore

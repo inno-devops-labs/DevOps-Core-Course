@@ -35,6 +35,50 @@ PORT=8080 python app.py
 HOST=127.0.0.1 PORT=3000 python app.py
 ```
 
+## Docker
+
+This application is containerized and available as a Docker image. 
+
+### Building the Image Locally
+
+```bash
+docker build -t devops-info-service:latest .
+```
+
+### Running a Container
+
+```bash
+# Run with default port mapping 
+docker run -d -p 5000:5000 devops-info-service:latest
+
+# Run with custom port
+docker run -d -p 8080:5000 devops-info-service:latest
+
+# Run with environment variables
+docker run -d -p 3000:3000 -e PORT=3000 -e HOST=0.0.0.0 devops-info-service:latest
+```
+
+### Pulling from Docker Hub
+
+```bash
+# Pull the latest version
+docker pull your-username/devops-info-service:latest
+
+# Run pulled image
+docker run -d -p 5000:5000 your-username/devops-info-service:latest
+```
+
+### Environment Variables in Docker
+When running in Docker, you can pass environment variables using the `-e` flag:
+
+```bash
+docker run -d -p 5000:5000 \
+  -e HOST=0.0.0.0 \
+  -e PORT=5000 \
+  -e DEBUG=false \
+  devops-info-service:latest
+```
+
 ## API Endpoints
 
 ### `GET /`
