@@ -75,6 +75,26 @@ curl http://127.0.0.1:5000/
 curl http://127.0.0.1:5000/health
 ```
 
+## Docker
+
+Build the image locally (run from `app_python`):
+
+```bash
+docker build -t <image>:<tag> .
+```
+
+Run a container with port mapping:
+
+```bash
+docker run --rm -p <host_port>:5000 -e PORT=5000 <image>:<tag>
+```
+
+Pull from Docker Hub:
+
+```bash
+docker pull <dockerhub-username>/<image>:<tag>
+```
+
 ## API Endpoints
 
 - `GET /` - Service and system information

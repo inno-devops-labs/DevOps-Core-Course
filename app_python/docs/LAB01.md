@@ -129,9 +129,9 @@ python app.py
 ```
 
 Screenshots directory:
-- `app_python/docs/screenshots/01-main-endpoint.png`
-- `app_python/docs/screenshots/02-health-check.png`
-- `app_python/docs/screenshots/03-formatted-output.png`
+- `app_python/docs/screenshots/lab01/01-main-endpoint.png`
+- `app_python/docs/screenshots/lab01/02-health-check.png`
+- `app_python/docs/screenshots/lab01/03-formatted-output.png`
 
 Note: placeholder PNG files were created in this environment. Replace them with real screenshots from your machine, browser, or terminal.
 
@@ -146,4 +146,3 @@ Note: placeholder PNG files were created in this environment. Replace them with 
 Starring repositories helps with discovery, bookmarking, and signaling useful projects to others. Following developers (professor, TAs, and classmates) helps you learn from their activity and makes collaboration easier in team settings.
 
 Actions like starring and following must be done directly in GitHub.
-
