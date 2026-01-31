@@ -74,10 +74,11 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          file: ./coverage.xml
+          file: app_python/coverage.xml
           flags: unittests
           name: codecov-${{ matrix.python-version }}
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # ========================================
   # Job 2: Security Scanning with Snyk
@@ -111,7 +112,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=medium
+          args: --file=app_python/requirements.txt --severity-threshold=medium
 
   # ========================================
   # Job 3: Build and Push Docker Image

@@ -1,7 +1,7 @@
 # DevOps Info Service
 
 [![Python CI](https://github.com/pepegx/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/pepegx/DevOps-Core-Course/actions/workflows/python-ci.yml)
-[![codecov](https://codecov.io/gh/pepegx/DevOps-Core-Course/branch/lab03/graph/badge.svg?token=CODECOV_TOKEN)](https://codecov.io/gh/pepegx/DevOps-Core-Course)
+[![codecov](https://codecov.io/gh/pepegx/DevOps-Core-Course/graph/badge.svg)](https://codecov.io/gh/pepegx/DevOps-Core-Course)
 
 > A web service that provides comprehensive system and runtime information for DevOps monitoring and diagnostics.
 

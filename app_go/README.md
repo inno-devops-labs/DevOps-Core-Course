@@ -1,5 +1,7 @@
 # Go DevOps Info Service
 
+[![Go CI](https://github.com/pepegx/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)](https://github.com/pepegx/DevOps-Core-Course/actions/workflows/go-ci.yml)
+
 > A Go implementation of the DevOps Info Service providing system information and health checks via HTTP.
 
 ## Overview
