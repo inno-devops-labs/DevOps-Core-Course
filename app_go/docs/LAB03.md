@@ -98,6 +98,25 @@ Both run in parallel (6 min total instead of 12 min sequential)
 
 ### Testing
 
+**Test File:** `main_test.go` (12 tests)
+
+| Test | Description |
+|------|-------------|
+| `TestGetEnv` | Environment variable helper function |
+| `TestGetUptime` | Uptime calculation |
+| `TestGetSystemInfo` | System info collection |
+| `TestGetEndpoints` | Endpoint listing |
+| `TestHandleIndex` | Main endpoint handler (JSON structure, status code) |
+| `TestHandleIndexReturnsJSON` | Index endpoint JSON sections |
+| `TestHandleHealth` | Health endpoint handler |
+| `TestHandleHealthReturnsJSON` | Health endpoint JSON fields |
+| `TestHandleNotFound` | 404 handler |
+| `TestHandleNotFoundReturnsJSON` | 404 JSON structure |
+| `TestGetRequestInfo` | Request info extraction |
+| `TestNotFoundHandler` | Custom mux wrapper with subtests |
+
+**Run Tests Locally:**
+
 ```
 go test -v -race -coverprofile=coverage.out ./...
 ```

@@ -204,6 +204,39 @@ wget -q -O - http://localhost:8080/
 wget -q -O - http://localhost:8080/health
 ```
 
+### Unit Tests
+
+Run the unit test suite:
+
+```bash
+# Run all tests
+go test -v ./...
+
+# Run tests with race detection
+go test -v -race ./...
+
+# Run tests with coverage
+go test -v -race -coverprofile=coverage.out ./...
+
+# View coverage report
+go tool cover -func=coverage.out
+
+# Generate HTML coverage report
+go tool cover -html=coverage.out -o coverage.html
+```
+
+**Test Structure:**
+
+- `main_test.go` - Unit tests for all endpoints and helper functions
+  - `TestGetEnv` - Environment variable helper
+  - `TestGetUptime` - Uptime calculation
+  - `TestGetSystemInfo` - System info collection
+  - `TestGetEndpoints` - Endpoint listing
+  - `TestHandleIndex` - Main endpoint handler
+  - `TestHandleHealth` - Health endpoint handler
+  - `TestHandleNotFound` - 404 error handler
+  - `TestNotFoundHandler` - Custom mux wrapper
+
 ## Performance Comparison
 
 ### Binary Size
