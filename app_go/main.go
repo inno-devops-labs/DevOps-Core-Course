@@ -177,7 +177,9 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error encoding response: %v", err)
+	}
 
 	if debug {
 		log.Printf("Served / endpoint")
@@ -196,7 +198,9 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error encoding response: %v", err)
+	}
 
 	if debug {
 		log.Printf("Served /health endpoint")
@@ -207,12 +211,14 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 func handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"error":       "Not Found",
 		"message":     "The requested endpoint does not exist",
 		"status_code": 404,
 		"path":        r.URL.Path,
-	})
+	}); err != nil {
+		log.Printf("Error encoding 404 response: %v", err)
+	}
 }
 
 // notFoundHandler wraps the mux to handle 404s with JSON
