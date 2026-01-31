@@ -1,0 +1,10 @@
+*.class
+*.jar
+
+.git/
+.gitignore
+.idea/
+.vscode/
+
+docs/
+*.md

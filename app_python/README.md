@@ -39,6 +39,28 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Docker
+
+**Build image (pattern):**
+```bash
+docker build -t <image-name>:<tag> .
+```
+
+**Run container (pattern):**
+```bash
+docker run --rm -p <host-port>:8000 <image-name>:<tag>
+```
+
+**Pull from Docker Hub (pattern):**
+```bash
+docker pull <dockerhub-username>/<image-name>:<tag>
+```
+
+**Push my Docker Hub image:**
+```bash
+docker push nexonm22/devops-info-service:lab02
+```
+
 ## Running the Application
 
 **Default (0.0.0.0:8000):**

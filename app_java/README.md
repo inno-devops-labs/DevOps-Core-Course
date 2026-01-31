@@ -31,3 +31,17 @@ This is pure Java 21 with:
 - Both endpoints with identical JSON structure
 - Environment variable configuration
 - Logging to stdout
+
+# Docker Hub
+
+```bash
+# Pull the image
+docker pull nexonm22/devops-info-service-java:lab02
+
+# Run the container
+docker run --rm -p 8080:8080 --name devops-info-service-java nexonm22/devops-info-service-java:lab02
+
+# Test
+curl http://localhost:8080/
+curl http://localhost:8080/health
+```
