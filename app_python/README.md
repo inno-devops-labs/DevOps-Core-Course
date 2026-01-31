@@ -112,6 +112,26 @@ HOST=127.0.0.1 PORT=3000 DEBUG=true python app.py
 gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 
+## Docker
+
+### Build Image (pattern)
+
+```bash
+docker build -t <dockerhub-username>/devops-info-service:<tag> .
+```
+
+### Run Container (pattern)
+
+```bash
+docker run --rm -p <host-port>:3000 --name devops-info-service <dockerhub-username>/devops-info-service:<tag>
+```
+
+### Pull From Docker Hub (pattern)
+
+```bash
+docker pull <dockerhub-username>/devops-info-service:<tag>
+```
+
 ## API Endpoints
 
 ### `GET /`
