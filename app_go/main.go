@@ -229,11 +229,17 @@ func (h *notFoundHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mux.ServeHTTP(w, r)
 }
 
-func main() {
+// setupRouter creates and configures the HTTP router
+// This function is extracted for testability
+func setupRouter() http.Handler {
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("/", handleIndex)
 	mux.HandleFunc("/health", handleHealth)
+	return &notFoundHandler{mux: mux}
+}
+
+// printStartupBanner prints the startup information
+func printStartupBanner() {
 	fmt.Println("🚀 Starting DevOps Info Service...")
 	fmt.Printf("📍 Server: http://%s:%s\n", host, port)
 	fmt.Printf("📊 Debug mode: %v\n", debug)
@@ -242,10 +248,12 @@ func main() {
 	fmt.Println("  GET /       - Service and system information")
 	fmt.Println("  GET /health - Health check")
 	fmt.Println("\n" + strings.Repeat("=", 50) + "\n")
+}
 
-	// Wrap mux with 404 handler
-	handler := &notFoundHandler{mux: mux}
+func main() {
+	printStartupBanner()
 
+	handler := setupRouter()
 	addr := net.JoinHostPort(host, port)
 
 	log.Printf("Listening on %s", addr)

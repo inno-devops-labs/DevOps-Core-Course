@@ -334,3 +334,83 @@ func TestNotFoundHandler(t *testing.T) {
 		}
 	})
 }
+
+// TestSetupRouter tests the router setup function
+func TestSetupRouter(t *testing.T) {
+	handler := setupRouter()
+
+	if handler == nil {
+		t.Fatal("Expected non-nil handler from setupRouter")
+	}
+
+	// Test that the router handles requests correctly
+	t.Run("routes to index", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Result().StatusCode)
+		}
+	})
+
+	t.Run("routes to health", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Result().StatusCode)
+		}
+	})
+
+	t.Run("returns 404 for unknown", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/unknown", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Result().StatusCode != http.StatusNotFound {
+			t.Errorf("Expected status 404, got %d", w.Result().StatusCode)
+		}
+	})
+}
+
+// TestPrintStartupBanner tests that startup banner doesn't panic
+func TestPrintStartupBanner(t *testing.T) {
+	// Just ensure it doesn't panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("printStartupBanner panicked: %v", r)
+		}
+	}()
+
+	printStartupBanner()
+}
+
+// TestDebugMode tests handlers with debug mode enabled
+func TestDebugMode(t *testing.T) {
+	// Save original debug value and restore after test
+	originalDebug := debug
+	debug = true
+	defer func() { debug = originalDebug }()
+
+	t.Run("index with debug", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		w := httptest.NewRecorder()
+		handleIndex(w, req)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Result().StatusCode)
+		}
+	})
+
+	t.Run("health with debug", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		w := httptest.NewRecorder()
+		handleHealth(w, req)
+
+		if w.Result().StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", w.Result().StatusCode)
+		}
+	})
+}
