@@ -69,7 +69,7 @@ jobs:
         run: python -m ruff check .
 
       - name: Run unit tests with coverage
-        run: python -m pytest -v --cov=app --cov-report=xml --cov-report=term tests/
+        run: python -m pytest tests/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

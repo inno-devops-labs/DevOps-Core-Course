@@ -138,9 +138,11 @@ push/PR → lint-test (3.11) ─┬─→ docker-build-push → Docker Hub
 ### Test Coverage Integration
 
 - **Tool:** pytest-cov + codecov.io
-- **Current Coverage:** 80% (41/51 lines)
+- **Current Coverage:** 98% (40/41 lines)
+- **Threshold:** 70% minimum (configured in `pyproject.toml`)
 - **Upload:** Automated to codecov.io on each push
 - **Badge:** Added to app_python/README.md
+- **Fail on low coverage:** CI fails if coverage drops below 70%
 
 ---
 
@@ -149,7 +151,7 @@ push/PR → lint-test (3.11) ─┬─→ docker-build-push → Docker Hub
 ### Local Tests with Coverage
 
 ```
-$ python -m pytest --cov=app --cov-report=term tests/
+$ python -m pytest tests/
 ========================== test session starts ==========================
 collected 15 items
 
@@ -160,20 +162,21 @@ ___________ coverage: platform darwin, python 3.14.0-final-0 ____________
 
 Name     Stmts   Miss  Cover
 ----------------------------
-app.py      51     10    80%
+app.py      41      1    98%
 ----------------------------
-TOTAL       51     10    80%
+TOTAL       41      1    98%
 
-========================== 15 passed in 0.08s ===========================
+Required test coverage of 70% reached. Total coverage: 97.56%
+========================== 15 passed in 0.10s ===========================
 ```
 
 **Coverage Analysis:**
-- **Overall Coverage:** 80%
-- **Lines Tested:** 41 out of 51 lines
+- **Overall Coverage:** 98%
+- **Lines Tested:** 40 out of 41 lines
+- **Coverage Threshold:** 70% (CI fails if below)
 - **What's Covered:** All HTTP endpoints, helper functions, error handlers
 - **What's NOT Covered:** 
-  - `if __name__ == '__main__'` block (entry point, not testable without subprocess)
-  - Some edge case handling (not critical for this service)
+  - `if __name__ == '__main__'` block (entry point, excluded in pyproject.toml)
 
 ### Local Lint
 
