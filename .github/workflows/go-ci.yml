@@ -1,0 +1,193 @@
+# ============================================================================
+# GitHub Actions CI/CD Pipeline for Go DevOps Info Service
+# ============================================================================
+# Triggers: push/PR to master/lab03 branches (only for app_go changes)
+# Features:
+#   - Go build and test
+#   - Code linting with golangci-lint
+#   - Security scanning with Snyk
+#   - Docker build/push with CalVer versioning
+#   - Path-based triggers (only runs when app_go changes)
+# ============================================================================
+
+name: Go CI
+
+on:
+  push:
+    branches:
+      - master
+      - lab03
+    paths:
+      - "app_go/**"
+      - ".github/workflows/go-ci.yml"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "app_go/**"
+      - ".github/workflows/go-ci.yml"
+
+# Least Privilege Permissions
+permissions:
+  contents: read
+
+# Cancel in-progress runs when new commits are pushed
+concurrency:
+  group: go-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: "1.22"
+  DOCKER_IMAGE: pepegx/devops-info-service-go
+
+jobs:
+  # ==========================================================================
+  # Job 1: Lint Code with golangci-lint
+  # ==========================================================================
+  lint:
+    name: 🔍 Lint Code
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: app_go
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐹 Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: app_go/go.sum
+
+      - name: 🔍 Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: app_go
+          args: --timeout=5m
+
+  # ==========================================================================
+  # Job 2: Build and Test
+  # ==========================================================================
+  build-test:
+    name: 🔨 Build & Test
+    runs-on: ubuntu-latest
+    needs: lint
+
+    defaults:
+      run:
+        working-directory: app_go
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐹 Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: app_go/go.sum
+
+      - name: 📦 Download dependencies
+        run: go mod download
+
+      - name: 🔨 Build application
+        run: go build -v -o devops-info-service .
+
+      - name: 🧪 Run tests
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: 📊 Display coverage
+        run: go tool cover -func=coverage.out
+
+  # ==========================================================================
+  # Job 3: Security Scanning with Snyk
+  # ==========================================================================
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐹 Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: app_go/go.sum
+
+      - name: 🔒 Run Snyk security scan
+        uses: snyk/actions/golang@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  # ==========================================================================
+  # Job 4: Build and Push Docker Image
+  # ==========================================================================
+  docker:
+    name: 🐳 Build & Push Docker
+    runs-on: ubuntu-latest
+    needs: [lint, build-test]
+    if: github.event_name == 'push'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔐 Check Docker Hub credentials
+        id: check-secrets
+        run: |
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ] || [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "has_secrets=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Docker Hub credentials not configured."
+          else
+            echo "has_secrets=true" >> $GITHUB_OUTPUT
+            echo "✅ Docker Hub credentials found."
+          fi
+
+      - name: 🔧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Log in to Docker Hub
+        if: steps.check-secrets.outputs.has_secrets == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # CalVer versioning strategy: YYYY.MM.BUILD
+      - name: 🏷️ Generate CalVer version
+        id: version
+        run: |
+          CALVER=$(date +"%Y.%m")
+          VERSION="${CALVER}.${{ github.run_number }}"
+          echo "calver=${CALVER}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "📦 Generated version: ${VERSION}"
+
+      - name: 🐳 Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: app_go
+          file: app_go/Dockerfile
+          push: ${{ steps.check-secrets.outputs.has_secrets == 'true' }}
+          load: ${{ steps.check-secrets.outputs.has_secrets != 'true' }}
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.calver }}
+            ${{ env.DOCKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.title=DevOps Info Service (Go)
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
