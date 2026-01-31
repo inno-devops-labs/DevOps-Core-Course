@@ -2,10 +2,12 @@
 DevOps Info Service
 Main application module providing system information and health check.
 """
+
 import os
-import socket
 import platform
-from datetime import datetime, timezone
+import socket
+from datetime import UTC, datetime
+
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
@@ -16,7 +18,7 @@ PORT = int(os.getenv('PORT', 3000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # Application start time for uptime calculation
-START_TIME = datetime.now(timezone.utc)
+START_TIME = datetime.now(UTC)
 
 
 def get_system_info():
@@ -33,7 +35,7 @@ def get_system_info():
 
 def get_uptime():
     """Calculate application uptime."""
-    delta = datetime.now(timezone.utc) - START_TIME
+    delta = datetime.now(UTC) - START_TIME
     seconds = int(delta.total_seconds())
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
@@ -53,7 +55,7 @@ def get_runtime_info():
     return {
         'uptime_seconds': uptime['seconds'],
         'uptime_human': uptime['human'],
-        'current_time': datetime.now(timezone.utc).isoformat(),
+        'current_time': datetime.now(UTC).isoformat(),
         'timezone': 'UTC'
     }
 
@@ -118,7 +120,7 @@ def health():
     """
     response = {
         'status': 'healthy',
-        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'timestamp': datetime.now(UTC).isoformat(),
         'uptime_seconds': get_uptime()['seconds']
     }
 
