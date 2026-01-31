@@ -89,7 +89,7 @@ namespace IndexModule
     public class Index : ModuleBase
     {
         public override string ModuleName { get; } = "index";
-        static DateTime startTime = DateTime.Now;
+        static DateTime startTime;
 
         public Index()
         {
@@ -99,6 +99,7 @@ namespace IndexModule
         public override Task OnModuleLoad()
         {
             ModuleMessenger.Subscribe(MessageHandler);
+            startTime = DateTime.Now;
             return Task.CompletedTask;
         }
 
