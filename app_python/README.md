@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI](https://github.com/pepegx/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/pepegx/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 > A web service that provides comprehensive system and runtime information for DevOps monitoring and diagnostics.
 
 ## Overview
@@ -111,6 +113,37 @@ HOST=127.0.0.1 PORT=3000 DEBUG=true python app.py
 ```bash
 gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
+
+## Testing
+
+This project uses **pytest** with **pytest-flask** for testing.
+
+### Run Tests Locally
+
+```bash
+# From app_python directory
+python -m pytest -v tests/
+
+# With coverage (if pytest-cov installed)
+python -m pytest --cov=. --cov-report=term tests/
+```
+
+### Run Linter
+
+```bash
+# Check for style issues
+python -m ruff check .
+
+# Auto-fix issues
+python -m ruff check --fix .
+```
+
+### Test Structure
+
+- `tests/test_app.py` - Unit tests for all endpoints
+  - `TestIndexEndpoint` - Tests for `GET /`
+  - `TestHealthEndpoint` - Tests for `GET /health`
+  - `TestErrorHandling` - Tests for 404 handler
 
 ## Docker
 
