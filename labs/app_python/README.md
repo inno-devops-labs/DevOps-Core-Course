@@ -26,6 +26,16 @@ python app.py
 python app.py --host 127.0.0.1 --port 8080 --debug false
 ```
 
+#### Docker ####
+
+To run containerized:
+
+```bash
+docker build -t *your_tag* .
+docker run -p *port*:*port* *your_tag*
+docker pull thevex/simple-app:latest
+```
+
 #### Endpoints ####
    - `GET /` - Service and system information
    - `GET /health` - Health check
@@ -34,3 +44,4 @@ python app.py --host 127.0.0.1 --port 8080 --debug false
    - `--host` - Change host
    - `--port` - Change port
    - `--debug` - Turn on/off debug mode
+
