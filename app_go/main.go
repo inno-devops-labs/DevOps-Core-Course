@@ -1,0 +1,199 @@
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "os"
+    "runtime"
+    "strings"
+    "time"
+)
+
+// Структуры для JSON ответов
+type ServiceInfo struct {
+    Service  Service   `json:"service"`
+    System   System    `json:"system"`
+    Runtime  Runtime   `json:"runtime"`
+    Request  Request   `json:"request"`
+    Endpoints []Endpoint `json:"endpoints"`
+}
+
+type Service struct {
+    Name        string `json:"name"`
+    Version     string `json:"version"`
+    Description string `json:"description"`
+    Framework   string `json:"framework"`
+}
+
+type System struct {
+    Hostname        string `json:"hostname"`
+    Platform        string `json:"platform"`
+    PlatformVersion string `json:"platform_version"`
+    Architecture    string `json:"architecture"`
+    CPUCount        int    `json:"cpu_count"`
+    GoVersion       string `json:"go_version"`
+}
+
+type Runtime struct {
+    UptimeSeconds float64 `json:"uptime_seconds"`
+    UptimeHuman   string  `json:"uptime_human"`
+    CurrentTime   string  `json:"current_time"`
+    Timezone      string  `json:"timezone"`
+}
+
+type Request struct {
+    ClientIP  string `json:"client_ip"`
+    UserAgent string `json:"user_agent"`
+    Method    string `json:"method"`
+    Path      string `json:"path"`
+}
+
+type Endpoint struct {
+    Path        string `json:"path"`
+    Method      string `json:"method"`
+    Description string `json:"description"`
+}
+
+type HealthResponse struct {
+    Status        string  `json:"status"`
+    Timestamp     string  `json:"timestamp"`
+    UptimeSeconds float64 `json:"uptime_seconds"`
+}
+
+var startTime = time.Now()
+
+// Функция для получения hostname
+func getHostname() string {
+    hostname, err := os.Hostname()
+    if err != nil {
+        return "unknown"
+    }
+    return hostname
+}
+
+// Функция для форматирования uptime
+func formatUptime(seconds float64) string {
+    hours := int(seconds) / 3600
+    minutes := int(seconds) % 3600 / 60
+    secs := int(seconds) % 60
+    
+    parts := []string{}
+    if hours > 0 {
+        part := fmt.Sprintf("%d hour", hours)
+        if hours != 1 {
+            part += "s"
+        }
+        parts = append(parts, part)
+    }
+    if minutes > 0 {
+        part := fmt.Sprintf("%d minute", minutes)
+        if minutes != 1 {
+            part += "s"
+        }
+        parts = append(parts, part)
+    }
+    if secs > 0 || len(parts) == 0 {
+        part := fmt.Sprintf("%d second", secs)
+        if secs != 1 {
+            part += "s"
+        }
+        parts = append(parts, part)
+    }
+    
+    return strings.Join(parts, ", ")
+}
+
+// Функция для получения IP адреса клиента
+func getClientIP(r *http.Request) string {
+    // Проверяем заголовки прокси
+    ip := r.Header.Get("X-Forwarded-For")
+    if ip != "" {
+        return strings.Split(ip, ",")[0]
+    }
+    ip = r.Header.Get("X-Real-Ip")
+    if ip != "" {
+        return ip
+    }
+    // Берем IP из RemoteAddr
+    ip = r.RemoteAddr
+    if idx := strings.LastIndex(ip, ":"); idx != -1 {
+        ip = ip[:idx]
+    }
+    return ip
+}
+
+func mainHandler(w http.ResponseWriter, r *http.Request) {
+    uptimeSeconds := time.Since(startTime).Seconds()
+    
+    info := ServiceInfo{
+        Service: Service{
+            Name:        "devops-info-service",
+            Version:     "1.0.0",
+            Description: "DevOps course info service",
+            Framework:   "Go net/http",
+        },
+        System: System{
+            Hostname:        getHostname(),
+            Platform:        runtime.GOOS,
+            PlatformVersion: runtime.Version(),
+            Architecture:    runtime.GOARCH,
+            CPUCount:        runtime.NumCPU(),
+            GoVersion:       runtime.Version(),
+        },
+        Runtime: Runtime{
+            UptimeSeconds: roundFloat(uptimeSeconds, 2),
+            UptimeHuman:   formatUptime(uptimeSeconds),
+            CurrentTime:   time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+            Timezone:      "UTC",
+        },
+        Request: Request{
+            ClientIP:  getClientIP(r),
+            UserAgent: r.Header.Get("User-Agent"),
+            Method:    r.Method,
+            Path:      r.URL.Path,
+        },
+        Endpoints: []Endpoint{
+            {Path: "/", Method: "GET", Description: "Service information"},
+            {Path: "/health", Method: "GET", Description: "Health check"},
+        },
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(info)
+}
+
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+    uptimeSeconds := time.Since(startTime).Seconds()
+    
+    health := HealthResponse{
+        Status:        "healthy",
+        Timestamp:     time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+        UptimeSeconds: roundFloat(uptimeSeconds, 2),
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(health)
+}
+
+// Вспомогательная функция для округления float
+func roundFloat(val float64, precision int) float64 {
+    multiplier := 1.0
+    for i := 0; i < precision; i++ {
+        multiplier *= 10
+    }
+    return float64(int(val*multiplier+0.5)) / multiplier
+}
+
+func main() {
+    http.HandleFunc("/", mainHandler)
+    http.HandleFunc("/health", healthHandler)
+
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080"
+    }
+
+    http.ListenAndServe(":"+port, nil)
+}

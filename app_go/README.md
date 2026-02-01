@@ -1,0 +1,262 @@
+# DevOps Info Service - Go
+
+A production-ready web service implemented in Go that provides comprehensive information about itself and its runtime environment. This is the compiled language version of the DevOps Info Service, built using Go's standard `net/http` package.
+
+## Overview
+
+The DevOps Info Service (Go version) is a RESTful API that exposes system information, runtime metrics, and health status. This implementation demonstrates the benefits of compiled languages: small binary size, fast execution, and single-file deployment.
+
+**Key Features:**
+- System information endpoint (`GET /`)
+- Health check endpoint (`GET /health`)
+- Configurable via environment variables
+- Single binary deployment (no runtime dependencies)
+- Fast startup and execution
+
+## Prerequisites
+
+- **Go:** 1.21 or higher
+- **Git:** For dependency management (if using external packages)
+
+## Installation
+
+### Option 1: Build from Source
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd DevOps-Core-Course/app_go
+   ```
+
+2. **Build the application:**
+   ```bash
+   go build -o devops-info-service main.go
+   ```
+
+3. **Run the binary:**
+   ```bash
+   ./devops-info-service
+   ```
+
+### Option 2: Install Directly
+
+```bash
+go install ./...
+```
+
+The binary will be installed to `$GOPATH/bin` (or `$HOME/go/bin` by default).
+
+## Running the Application
+
+### Basic Usage
+
+Run the application with default settings (port: `8080`):
+
+```bash
+# If built locally
+./devops-info-service
+
+# Or run directly with go
+go run main.go
+```
+
+### Custom Configuration
+
+Configure the application using environment variables:
+
+```bash
+# Custom port
+PORT=3000 ./devops-info-service
+
+# Or with go run
+PORT=3000 go run main.go
+```
+
+The service will be available at `http://0.0.0.0:<PORT>`
+
+## API Endpoints
+
+### `GET /`
+
+Returns comprehensive service and system information.
+
+**Response:**
+```json
+{
+  "service": {
+    "name": "devops-info-service",
+    "version": "1.0.0",
+    "description": "DevOps course info service",
+    "framework": "Go net/http"
+  },
+  "system": {
+    "hostname": "my-laptop",
+    "platform": "darwin",
+    "platform_version": "go1.21.0",
+    "architecture": "arm64",
+    "cpu_count": 8,
+    "go_version": "go1.21.0"
+  },
+  "runtime": {
+    "uptime_seconds": 3600.5,
+    "uptime_human": "1 hour, 0 minutes, 0 seconds",
+    "current_time": "2026-01-31T17:30:00.000Z",
+    "timezone": "UTC"
+  },
+  "request": {
+    "client_ip": "127.0.0.1",
+    "user_agent": "curl/7.81.0",
+    "method": "GET",
+    "path": "/"
+  },
+  "endpoints": [
+    {"path": "/", "method": "GET", "description": "Service information"},
+    {"path": "/health", "method": "GET", "description": "Health check"}
+  ]
+}
+```
+
+**Example Request:**
+```bash
+curl http://localhost:8080/
+```
+
+### `GET /health`
+
+Simple health check endpoint for monitoring and Kubernetes probes.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-01-31T17:30:00.000Z",
+  "uptime_seconds": 3600.5
+}
+```
+
+**Status Codes:**
+- `200 OK`: Service is healthy
+
+**Example Request:**
+```bash
+curl http://localhost:8080/health
+```
+
+## Configuration
+
+The application can be configured using the following environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | Port number to listen on |
+
+## Build Process
+
+### Development Build
+
+```bash
+go build -o devops-info-service main.go
+```
+
+### Production Build (Optimized)
+
+```bash
+# Build with optimizations and smaller binary size
+go build -ldflags="-s -w" -o devops-info-service main.go
+```
+
+**Build Flags:**
+- `-ldflags="-s -w"`: Strip debug information and symbol table (reduces binary size)
+
+### Cross-Platform Build
+
+```bash
+# Build for Linux
+GOOS=linux GOARCH=amd64 go build -o devops-info-service-linux main.go
+
+# Build for Windows
+GOOS=windows GOARCH=amd64 go build -o devops-info-service.exe main.go
+
+# Build for macOS (ARM)
+GOOS=darwin GOARCH=arm64 go build -o devops-info-service-darwin-arm64 main.go
+```
+
+## Binary Size Comparison
+
+### Go Binary Size
+
+```bash
+$ ls -lh devops-info-service
+-rwxr-xr-x  1 user  staff   8.5M  devops-info-service
+
+# With optimizations
+$ go build -ldflags="-s -w" -o devops-info-service main.go
+$ ls -lh devops-info-service
+-rwxr-xr-x  1 user  staff   6.2M  devops-info-service
+```
+
+### Python Comparison
+
+- **Go binary:** ~6-8 MB (single file, no dependencies)
+- **Python application:** Requires Python runtime (~50-100 MB) + dependencies (~10-20 MB) = ~60-120 MB total
+
+**Advantages of Go:**
+- Single binary deployment (no runtime installation needed)
+- Faster startup time
+- Lower memory footprint
+- Better suited for containerized deployments (smaller images)
+
+## Project Structure
+
+```
+app_go/
+├── main.go                 # Main application
+├── go.mod                  # Go module definition
+├── README.md              # This file
+└── docs/                  # Documentation
+    ├── LAB01.md          # Lab submission documentation
+    ├── GO.md             # Language justification
+    └── screenshots/      # Screenshots and proof of work
+```
+
+## Dependencies
+
+This implementation uses only Go's standard library:
+- `net/http` - HTTP server and client
+- `encoding/json` - JSON encoding/decoding
+- `os` - Operating system interface
+- `runtime` - Runtime information
+- `time` - Time operations
+- `fmt` - Formatted I/O
+- `strings` - String manipulation
+
+No external dependencies required! See `go.mod` for module definition.
+
+## Development
+
+### Testing
+
+Test the endpoints using curl:
+
+```bash
+# Test main endpoint
+curl http://localhost:8080/ | jq
+
+# Test health endpoint
+curl http://localhost:8080/health | jq
+```
+
+Or use a browser to visit:
+- `http://localhost:8080/`
+- `http://localhost:8080/health`
+
+
+## Advantages of Go Implementation
+
+1. **Single Binary**: No runtime dependencies, easy deployment
+2. **Fast Compilation**: Quick build times for rapid iteration
+3. **Small Binary Size**: Efficient for containerized deployments
+4. **Fast Execution**: Compiled code runs faster than interpreted languages
+5. **Concurrent by Design**: Built-in goroutines for future scalability
+6. **Cross-Platform**: Easy to build for multiple platforms
+
