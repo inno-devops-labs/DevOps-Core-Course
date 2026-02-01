@@ -39,3 +39,28 @@ The application is configured using environment variables.
 |---------|---------|-------------|-------------|
 | `HOST`  | `0.0.0.0` | Host interface to bind the server to | `127.0.0.1` |
 | `PORT`  | `8000` | Port the server listens on | `8080`      |
+
+# Docker
+
+## Building the image locally
+Command pattern:
+```bash
+docker build -t <image_name>:<tag> <path_to_app>
+```
+
+## Running a container
+Command pattern:
+```bash
+docker run --rm -p <host_port>:<container_port> <image_name>:<tag>
+```
+
+## Pulling from Docker Hub
+Command pattern:
+```bash
+docker pull <dockerhub_username>/<repo_name>:<tag>
+```
+Then run:
+```bash
+docker run --rm -p <host_port>:<container_port> <dockerhub_username>/<repo_name>:<tag>
+```
+
