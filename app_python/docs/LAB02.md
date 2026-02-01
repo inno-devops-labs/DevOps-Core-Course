@@ -40,7 +40,7 @@
     ```
 
 ## Image Information & Decisions
-- Choosen base image: `python:3.12-slim`. On the local machine, I ran and tested the build on version 3.12. Therefore, 3.12 is more suitable for this. The Slim version is the version with the minimum set of required packages/components inside
+- Choosen base image: `python:3.12-slim`. On the local machine, I run and tested the build on version 3.12. Therefore, 3.12 is more suitable for this. The Slim version is the version with the minimum set of required packages/components inside
 - Final image size: 132MB. This weighs 10 times less if we install everything locally (installing python 3.12 and dependencies). 
 Thanks to this, we have optimized the amount of disk space required.
 - Layer structure explanation:
@@ -48,7 +48,7 @@ Thanks to this, we have optimized the amount of disk space required.
         ```
         `FROM python:3.12-slim`
         ```
-    2. **WORKDIR setup layer:** Set work directory for this application
+    2. **WORKDIR setup layer:** Set working directory for this application
         ```
         WORKDIR /app
         ```
