@@ -63,3 +63,33 @@ Custom configuration edit via editing `appsettings.json`. For this app configura
 | HOST | 0.0.0.0 | Host address |
 | PORT | 5000 | Listening port |
 | DEBUG | False | Enables Flask debug mode |
+
+## Docker
+
+The application can be run in a container. The image runs as a non-root user and listens on port 5000.
+
+### Build the image locally
+From the `app_csharp/` directory, run `docker build` with a tag (e.g. `devops-info-service-cs:latest`).
+```
+docker build -t <image-name>:<tag> .
+```
+
+### Run a container
+Use `docker run` with port mapping so the app is reachable on the host (e.g. map container port 5001 to a host port 5001):
+```
+docker run -d -p <host-port>:5001 --name <container-name> <image-name>:<tag>
+```
+After `docker run` you can view long via this command:
+```
+docker logs <container-name>
+```
+
+### Pull from Docker Hub
+You can pull latest app from docker hub:
+```
+docker pull chaleshka/devops-info-service-cs:latest
+```
+And run as:
+```
+docker run -d -p <host-port>:5000 --name <container-name> chaleshka/devops-info-service-cs:latest
+```

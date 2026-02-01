@@ -1,0 +1,6 @@
+modules_src/bin/*
+modules_src/obj/*
+.gitignore
+Dockerfile
+*.md
+docs/
