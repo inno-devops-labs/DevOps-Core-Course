@@ -101,18 +101,51 @@ curl http://localhost:8080/health
 | `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `8080` | Server port |
 
+## Docker
+
+### Build Multi-Stage Image
+
+```bash
+docker build -t aezuraa/devops-info-service:go .
+```
+
+### Run Container
+
+```bash
+docker run -p 8080:8080 aezuraa/devops-info-service:go
+```
+
+### Pull from Docker Hub
+
+```bash
+docker pull aezuraa/devops-info-service:go
+docker run -p 8080:8080 aezuraa/devops-info-service:go
+```
+
+### Custom Port
+
+```bash
+docker run -p 8090:8090 -e PORT=8090 aezuraa/devops-info-service:go
+```
+
 ## Comparison with Python
 
-**Size:**
-- Go binary: 5.2 MB
+**Binary Size:**
+- Go: 5.2 MB
 - Python venv: 21 MB
 
-**Memory:**
-- Go: 7 MB RSS
-- Python: 35.5 MB RSS
+**Container Image Size:**
+- Go (multi-stage): 26.2 MB (compressed 7.58 MB)
+- Python: 223 MB (compressed 48.4 MB)
+
+**Memory Usage (Running):**
+- Go: 2.9 MB RSS
+- Python: 39.4 MB RSS
 
 **Advantages:**
+- **8.5x smaller** container image
+- **13.6x less memory** usage
 - Single binary deployment
 - No external dependencies
-- Faster startup (~10-20ms vs ~300-500ms)
-- Lower memory footprint
+- Faster startup (~10-20ms vs ~200-300ms)
+- Lower CPU usage

@@ -173,6 +173,37 @@ The application follows Python best practices:
 - Structured logging
 - Environment-based configuration
 
+## Docker
+
+### Build Image
+
+```bash
+docker build -t aezuraa/devops-info-service:python .
+```
+
+### Run Container
+
+```bash
+docker run -p 8080:8080 aezuraa/devops-info-service:python
+```
+
+### Pull from Docker Hub
+
+```bash
+docker pull aezuraa/devops-info-service:python
+docker run -p 8080:8080 aezuraa/devops-info-service:python
+```
+
+### Custom Configuration
+
+```bash
+# Custom port
+docker run -p 3000:3000 -e PORT=3000 aezuraa/devops-info-service:python
+
+# Debug mode
+docker run -p 8080:8080 -e DEBUG=true aezuraa/devops-info-service:python
+```
+
 ## Testing
 
 Access the endpoints using curl, HTTPie, or Postman:

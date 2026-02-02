@@ -1,0 +1,21 @@
+# Compiled binary - will be built in container
+devops-info-service
+devops-info-service-*
+*.exe
+
+# Documentation
+docs/
+README.md
+*.md
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store

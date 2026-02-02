@@ -1,0 +1,41 @@
+# Virtual environment - not needed in container
+venv/
+env/
+ENV/
+*.venv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Tests - not needed in production image
+tests/
+*.test
+
+# Documentation - not needed at runtime
+docs/
+README.md
+*.md
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+*.pid
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
