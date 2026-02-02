@@ -212,3 +212,35 @@ Logged events:
 | `HOST`   | `0.0.0.0` | Bind address |
 | `PORT`   | `5000`    | Listen port |
 | `DEBUG`  | `False`   | `true` enables more verbose log flags |
+
+## Docker
+Below are the basic commands for building and running an application in a container.
+
+### Local image build
+```bash
+cd app_go
+docker build -t app-go:1.0 .
+```
+
+### Starting a container
+The container listens on port 5000 internally, so we forward it to the host port (in the case bellow 8080)
+```bash
+docker run --rm -p 8080:5000 app-go:1.0
+```
+Example of running with variables:
+```bash
+docker run --rm -p 8080:5000 -e PORT=5000 -e DEBUG=false app-go:1.0
+```
+After that you can check endpoints in browser or in defferent terminal:
+```bash 
+curl http://localhost:8080/
+curl http://localhost:8080/health
+```
+
+### Docker Hub (pull/run)
+The image of this container publlished in Docker Hub. Image can be download with the following method:
+```bash
+docker pull sergey173/app-go:1.0.0
+docker run --rm -p 8080:5000 sergey173/app-go:1.0.0
+```
+Docker Hub repository URL: https://hub.docker.com/repository/docker/sergey173/app-go

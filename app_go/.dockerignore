@@ -1,0 +1,51 @@
+# VCS 
+.git
+.gitignore
+
+# IDE / editors 
+.vscode/
+.idea/
+*.swp
+
+# OS junk 
+.DS_Store
+Thumbs.db
+
+# Docs (not needed for build/run) 
+docs/
+*.md
+README*
+LICENSE*
+
+# Secrets / env files (NEVER ship) 
+.env
+.env.*
+
+# Logs / reports 
+*.log
+coverage*
+*.out
+*.prof
+*.trace
+
+# Go build artifacts 
+bin/
+dist/
+build/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.o
+
+# Go test cache / tooling caches 
+**/*_test.go
+.golangci.yml
+.golangci-lint*
+.gotools/
+.tmp/
+tmp/
+
+

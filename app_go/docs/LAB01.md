@@ -164,18 +164,18 @@ Required screenshots are stored in `docs/screenshots/`:
 1) **Main endpoint showing complete JSON**
 - `docs/screenshots/01_root_complete_json.png`
 
-![GET / — complete JSON](./screenshots/01_root_complete_json.png)
+![GET / — complete JSON](./screenshots/LAB01/01_root_complete_json.png)
 
 
 2) **Health check response**
 - `docs/screenshots/02_health_check.png`
 
-![GET /health — health probe](./screenshots/02_health_check.png)
+![GET /health — health probe](./screenshots/LAB01/02_health_check.png)
 
 3) **Formatted/pretty-printed output**
 - `docs/screenshots/03_pretty_print_command.png`
 
-![Pretty-print example](./screenshots/03_pretty_print_command.png)
+![Pretty-print example](./screenshots/LAB01/03_pretty_print_command.png)
 
 
 ### Terminal output
@@ -280,7 +280,7 @@ go mod tidy
 go build -o devops-info-service .
 stat -c '%n %s bytes' devops-info-service
 ```
-![Binary size of go app](./screenshots/04_go_binary_size.png)
+![Binary size of go app](./screenshots/LAB01/04_go_binary_size.png)
 
 - Python application (13959512 bytes):
 ```bash
@@ -288,7 +288,7 @@ pip install pyinstaller
 pyinstaller --onefile app.py
 stat -c '%n %s bytes' dist/app
 ```
-![Binary size of python app](./screenshots/05_python_binary_size.png)
+![Binary size of python app](./screenshots/LAB01/05_python_binary_size.png)
 
 ### Summary
 According to measurements, the Go binary (8.19 MiB) is noticeably smaller than a Python onefile via PyInstaller (13.31 MiB) - a difference of about 5.12 MiB (around 38.5%). This is because Go builds a single native executable with runtime and dependencies, while PyInstaller in `--onefile` mode also packages the Python interpreter and a set of libraries, resulting in a larger final artifact. This gives Go an advantage in terms of size and portability for containers and fast deployments.

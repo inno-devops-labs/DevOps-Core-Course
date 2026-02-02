@@ -1,0 +1,45 @@
+# VCS
+.git
+.gitignore
+
+# Python bytecode / cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Packaging / build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Logs
+*.log
+.coverage
+htmlcov/
+
+# IDEs / editors
+.vscode/
+.idea/
+*.swp
+
+# Docs and misc (optional, but keeps build context small)
+docs/
+*.md
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Environment files / secrets (IMPORTANT)
+.env
+.env.*

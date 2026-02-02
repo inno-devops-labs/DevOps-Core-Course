@@ -234,15 +234,15 @@ Required screenshots should be stored in `docs/screenshots/`:
 
 1) **Main endpoint showing complete JSON**
 - `docs/screenshots/01_root_complete_json.png`
-![GET / — complete JSON](./screenshots/01_root_complete_json.png)
+![GET / — complete JSON](./screenshots/LAB01/01_root_complete_json.png)
 
 2) **Health check response**
 - `docs/screenshots/02_health_check.png`
-![GET /health — health probe](./screenshots/02_health_check.png)
+![GET /health — health probe](./screenshots/LAB01/02_health_check.png)
 
 3) **Formatted/pretty-printed output**
 - `docs/screenshots/03_pretty_print_command.png`
-![Pretty-print example](./screenshots/03_pretty_print_command.png)
+![Pretty-print example](./screenshots/LAB01/03_pretty_print_command.png)
 
 
 ### Terminal output
@@ -339,20 +339,20 @@ Starring repositories is a lightweight way to bookmark useful projects and also 
 
 ### My Stars:
 - Star the course repository
-![Course repository star](./screenshots/04_star_for_course.png)
+![Course repository star](./screenshots/LAB01/04_star_for_course.png)
 - Star simple-container-com/api
-![Simple-container-com/api repository star](./screenshots/05_star_for_simple-container-com.png)
+![Simple-container-com/api repository star](./screenshots/LAB01/05_star_for_simple-container-com.png)
 
 ### My Follows:
 - Following to Dmitriy Creed (Professor)
-![Follow to Professor](./screenshots/06_prof_follow.png)
+![Follow to Professor](./screenshots/LAB01/06_prof_follow.png)
 - Following to Du Tham Lieu (TA)
-![Follow to TA](./screenshots/07_ta1_follow.png)
+![Follow to TA](./screenshots/LAB01/07_ta1_follow.png)
 - Following to Marat Biriushev (TA)
-![Follow to TA](./screenshots/08_ta2_follow.png)
+![Follow to TA](./screenshots/LAB01/08_ta2_follow.png)
 - Following to Alexander Rozanov (classmate)
-![Follow to CM](./screenshots/09_cm1_follow.png)
+![Follow to CM](./screenshots/LAB01/09_cm1_follow.png)
 - Following to Ilvina Akhmetzyanova (classmate)
-![Follow to CM](./screenshots/10_cm2_follow.png)
+![Follow to CM](./screenshots/LAB01/10_cm2_follow.png)
 - Following to Klimentii Chistyakov (classmate)
-![Follow to CM](./screenshots/11_cm3_follow.png)
+![Follow to CM](./screenshots/LAB01/11_cm3_follow.png)
