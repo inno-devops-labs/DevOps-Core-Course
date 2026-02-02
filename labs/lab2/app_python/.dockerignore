@@ -1,0 +1,25 @@
+# VCS
+.git
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtualenv
+venv/
+.venv/
+
+# Docs
+docs/
+tests/
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

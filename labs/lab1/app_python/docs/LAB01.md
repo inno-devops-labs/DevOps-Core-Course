@@ -166,15 +166,6 @@ PORT=8080 HOST=127.0.0.1 python app.py
 
 ---
 
-## 7. GitHub Community Engagement (Course Requirement)
-These steps are required by the course and must be completed manually:
-- Star the course repository
-- Star https://github.com/simple-container-com/api
-- Follow professor/TAs: @Cre-eD, @marat-biriushev, @pierrepicaud
-- Follow at least 3 classmates
-
----
-
 ## Conclusion
 The Python/Flask implementation satisfies the core Lab 1 requirements:
 - Both endpoints work and return required data
