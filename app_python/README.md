@@ -24,6 +24,27 @@ pip install -r requirements.txt
 PORT=8080 python app.py
 ```
 
+## How to run using Docker
+
+### Build your own docker image
+
+```bash
+cd app_python
+docker build -t <tag> .
+```
+
+### OR pull from Docker Hub
+
+```bash
+docker pull bulatgazizov/app_python:0.0.1
+```
+
+### Run application
+
+```bash
+docker run -p 5000:<expose port> <tag>
+```
+
 ## API Endpoints
 
 | Method | Endpoint   | Description                             |

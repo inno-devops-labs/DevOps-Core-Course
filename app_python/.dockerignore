@@ -1,0 +1,4 @@
+.venv
+docs
+tests
+*.md
