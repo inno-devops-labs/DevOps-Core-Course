@@ -1,4 +1,4 @@
-﻿# Lab01 - DevOps Info Service: Web Application Development
+﻿# Lab02 - Docker
 
 ## Overview
 - Daniil Mayorov 
@@ -121,4 +121,5 @@ Run:
 ```bash
 docker run -p <host-port>:<container-port> daniil20xx/lab02-python:1.0.0
 ```
+
 
