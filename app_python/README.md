@@ -34,3 +34,19 @@ PORT=8080 python app.py
 | `PORT`     | `5000`    | Server port number |
 | `DEBUG`    | `false`   | Debug mode         |
 
+## Docker
+
+Build image locally:
+```bash
+docker build -t devops-info-python .
+```
+
+Run container:
+```bash
+docker run -p 8000:8000 devops-info-python
+```
+
+Pull from Docker Hub:
+```bash
+docker pull gpshfrd/devops-info-python:1.0.0
+```
