@@ -85,11 +85,11 @@ curl http://localhost:5000 | jq
 
 ## Testing Evidence
 ### Main Endpoint:
-![01-main-endpoint](screenshots/01-main-endpoint.png)
+![01-main-endpoint](screenshots/lab01/01-main-endpoint.png)
 ### Health Check:
-![02-health-check](screenshots/02-health-check.png)
+![02-health-check](screenshots/lab01/02-health-check.png)
 ### Formatted Output:
-![03-formatted-output](screenshots/03-formatted-output.png)
+![03-formatted-output](screenshots/lab01/03-formatted-output.png)
 
 ## Challenges & Solutions
 ### Correct Uptime Calculation
