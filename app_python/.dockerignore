@@ -1,0 +1,44 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Documentation and screenshots
+docs/
+*.md
+README.md
+
+# Test files
+tests/
+*.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker files 
+Dockerfile
+.dockerignore
+
+# Other development files
+*.log
+.env
+.env.*

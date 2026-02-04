@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
 
-# Configure logging
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -16,7 +16,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuration from environment variables
 try:
     HOST = os.getenv('HOST', '0.0.0.0')
     PORT = int(os.getenv('PORT', 5001))
@@ -27,23 +26,12 @@ except ValueError as e:
     PORT = 5001
     DEBUG = False
 
-# Create Flask application instance
 app = Flask(__name__)
-
-# Application start time for uptime calculation
 start_time = time.time()
 
 
 def format_uptime(seconds):
-    """
-    Format uptime in seconds to human-readable string.
-
-    Args:
-        seconds (float): Uptime in seconds
-
-    Returns:
-        str: Formatted uptime string (e.g., "1 hour, 30 minutes, 45 seconds")
-    """
+    """Format uptime in seconds to human-readable string."""
     try:
         hours = int(seconds // 3600)
         minutes = int((seconds % 3600) // 60)
@@ -60,12 +48,7 @@ def format_uptime(seconds):
 
 
 def get_system_info():
-    """
-    Get system information with error handling.
-
-    Returns:
-        dict: System information dictionary
-    """
+    """Get system information with error handling."""
     system_info = {}
 
     try:
@@ -110,12 +93,7 @@ def get_system_info():
 
 @app.route('/', methods=['GET'])
 def main():
-    """
-    Main endpoint returning service and system information.
-
-    Returns:
-        JSON response with service, system, runtime, and request information
-    """
+    """Main endpoint returning service and system information."""
     try:
         logger.info("Main endpoint accessed")
         uptime_seconds = time.time() - start_time
@@ -168,12 +146,7 @@ def main():
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """
-    Health check endpoint for monitoring (used in Kubernetes probes).
-
-    Returns:
-        JSON response with health status and uptime
-    """
+    """Health check endpoint for monitoring."""
     try:
         uptime_seconds = time.time() - start_time
         timestamp = datetime.now(timezone.utc).isoformat().replace(

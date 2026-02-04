@@ -171,6 +171,101 @@ app_python/
 
 See `requirements.txt` for pinned versions.
 
+## Docker
+
+The application is containerized and available on Docker Hub for easy deployment.
+
+### Prerequisites
+
+- **Docker:** 25+ or compatible version
+- **Docker Hub account:** For pulling public images (optional for local builds)
+
+### Building the Image Locally
+
+Build the Docker image from source:
+
+```bash
+cd app_python
+
+docker build -t <image-name>:<tag> .
+
+# Example:
+docker build -t devops-info-service:latest .
+```
+
+### Running a Container
+
+Run the containerized application with port mapping:
+
+```bash
+docker run -d -p <host-port>:<container-port> --name <container-name> <image-name>:<tag>
+
+# Example with default settings:
+docker run -d -p 5001:5001 --name devops-app devops-info-service:latest
+
+# Example with custom port and environment variables:
+docker run -d -p 8080:5001 \
+  -e PORT=5001 \
+  -e DEBUG=false \
+  --name devops-app \
+  devops-info-service:latest
+```
+
+**Access the application:**
+- Main endpoint: `http://localhost:5001/`
+- Health check: `http://localhost:5001/health`
+
+### Pulling from Docker Hub
+
+Pull and run the pre-built image from Docker Hub:
+
+```bash
+docker pull <dockerhub-username>/<repository>:<tag>
+
+# Example:
+docker pull mirana18/devops-info-service:latest
+
+# Run the pulled image
+docker run -d -p 5001:5001 --name devops-app mirana18/devops-info-service:latest
+```
+
+### Container Management
+
+```bash
+# View running containers
+docker ps
+
+# View container logs
+docker logs <container-name>
+docker logs devops-app
+
+# Stop a container
+docker stop <container-name>
+
+# Remove a container
+docker rm <container-name>
+
+# Stop and remove in one command
+docker stop devops-app && docker rm devops-app
+```
+
+### Image Information
+
+- **Base Image:** `python:3.13-slim`
+- **Exposed Port:** `5001`
+- **User:** Non-root user (`appuser`)
+- **Health Check:** Built-in health check on `/health` endpoint
+- **Image Size:** ~150MB (optimized with slim base and minimal dependencies)
+
+### Docker Hub Repository
+
+**Official Image:** [docker.io/mirana18/devops-info-service](https://hub.docker.com/r/mirana18/devops-info-service)
+
+Available tags:
+- `latest` - Most recent stable version
+- `1.0.0` - Semantic versioning tags
+- `lab02` - Lab-specific versions
+
 ## Development
 
 ### Testing
