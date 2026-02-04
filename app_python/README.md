@@ -42,3 +42,35 @@ GET /health - Health check
 | `PORT`   | Port number the application listens on | integer | `5000`    | `8000`      |
 | `DEBUG`  | Enables debug mode                     | boolean | `False`   | `True`      |
 
+## Docker
+
+1. Building the image
+    example:
+    ```bash
+    docker build -t <image_name>:<tag> <context>
+    ```
+    
+    to build our service used:
+    ```bash
+    docker duild -t devops-info-service:latest .
+    ```
+2. Running a container
+    example:
+    ```bash
+    docker run <options> <image_name>
+    ```
+    
+    to run our service used:
+    ```bash
+    docker run -d -p 5000:5000 devops-info-service
+    ```
+   
+3. Pulling from Docker Hub example:
+    ```bash
+    docker pull <repo_name> 
+    ```
+    
+    to pull our repo used:
+    ```bash
+    docker pull th1ef/devops-info-service:latest
+    ```
