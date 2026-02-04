@@ -48,6 +48,29 @@ go build -o devops-info-service main.go
 PORT=5000 ./devops-info-service
 ```
 
+---
+
+### Docker (containerized usage)
+
+- Building the image locally:
+
+```bash
+# From repository root
+docker build -t <your-dockerhub-username>/devops-info-service:go-lab02 -f app_go/Dockerfile app_go/
+```
+
+- Running a container:
+
+```bash
+docker run --rm -p 8080:8080 <your-dockerhub-username>/devops-info-service:go-lab02
+```
+
+- Pulling from Docker Hub:
+
+```bash
+docker pull <your-dockerhub-username>/devops-info-service:go-lab02
+```
+
 ## API Endpoints
 
 ### GET /
