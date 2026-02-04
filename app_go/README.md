@@ -251,6 +251,55 @@ Or use a browser to visit:
 - `http://localhost:8080/health`
 
 
+## Docker
+
+The application is available as a containerized Docker image using multi-stage builds for minimal size and maximum security.
+
+### Running with Docker
+
+Pull and run the image:
+
+```bash
+docker pull <your-dockerhub-username>/devops-go-multistage:latest
+docker run -d -p 8080:8080 --name devops-go <your-dockerhub-username>/devops-go-multistage:latest
+```
+
+### Building Locally
+
+Build the multi-stage Docker image:
+
+```bash
+docker build -t devops-go-multistage:latest .
+```
+
+Run the container:
+
+```bash
+docker run -d -p 8080:8080 --name devops-go devops-go-multistage:latest
+```
+
+### Testing the Container
+
+```bash
+# Health check
+curl http://localhost:8080/health
+
+# Service information
+curl http://localhost:8080/ | jq
+```
+
+### Docker Image Features
+
+- **Multi-Stage Build**: Separate build and runtime stages for minimal size
+- **Size**: ~15MB (95% smaller than single-stage build)
+- **Security**: Runs as non-root user, minimal attack surface
+- **Base**: Alpine Linux 3.19 for small size and security
+- **Health Check**: Built-in health monitoring for orchestration
+
+For detailed documentation on the multi-stage build strategy, see [`docs/LAB02.md`](docs/LAB02.md).
+
+---
+
 ## Advantages of Go Implementation
 
 1. **Single Binary**: No runtime dependencies, easy deployment

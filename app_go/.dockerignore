@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Build artifacts
+devops-info-service
+devops-info-service-*
+*.exe
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Test files
+*_test.go
+test/
+tests/
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+Jenkinsfile
+
+# Docker files 
+Dockerfile*
+.dockerignore
+
+# Screenshots and media
+screenshots/
+*.jpg
+*.png
+*.gif
+
+# Temporary files
+*.tmp
+*.log
