@@ -3,8 +3,25 @@
 ## Overview
 Service provides system and service information built with FastAPI.
 
+### Running by Docker
+To run the service using Docker, run the following commands:
+You can build the Docker image using the provided Dockerfile:
+```bash
+docker build -t <image-name>:<tag> <project-path>
+```
+Or pull the pre-built image from Docker Hub:
+```bash
+docker pull andiazdi/lab02
+```
+Then, run the container:
+```bash
+docker run -d -p <host-port>:<app-port> devops-app
+```
+You can also set custom settings by providing environment variables. For example, to change the port to 8080:
+```bash
+docker run -d -p <host-port>:<app-port> devops-app -e PORT=<app-port>
+```
 ### Prerequisites
-
 - Python 3.10 or higher
 - pip
 
