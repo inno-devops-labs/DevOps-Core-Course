@@ -71,7 +71,7 @@
 ```text
 # docker build -t pickpusha/devops-info-service-python:lab2 app_python
 ```
-[alt!](/app_python/docs/screenshots/docker-build.jpg)
+![alt](/app_python/docs/screenshots/docker-build.jpg)
 
 ### 3.2 Run Output
 
@@ -88,8 +88,8 @@
 # curl -s http://localhost:5000/health | jq .
 
 ```
-[alt!](/app_python/docs/screenshots/docker-run-main.jpg)
-[alt!](/app_python/docs/screenshots/docker-run-health.jpg)
+![alt](/app_python/docs/screenshots/docker-run-main.jpg)
+![alt](/app_python/docs/screenshots/docker-run-health.jpg)
 
 ### 3.4 Docker Hub Repository
 

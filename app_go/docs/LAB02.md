@@ -40,7 +40,7 @@
 
 ## 2. Image Size Comparison
 
-[alt!](/app_go/docs/screenshots/go-vs-python-docker.jpg)
+![alt](/app_go/docs/screenshots/go-vs-python-docker.jpg)
 
 - **Builder image (golang:1.21-alpine based)**
   - Contains: Go compiler, build tools, module cache, and full source tree.
@@ -58,14 +58,14 @@
 ```text
 # docker build -t go-app .
 ```
-[alt!](/app_go/docs/screenshots/go-build-docker.jpg)
+![alt](/app_go/docs/screenshots/go-build-docker.jpg)
 
 ### 3.2 Run Container
 
 ```text
 # docker run --rm -p 8080:8080 go-app
 ```
-[alt!](/app_go/docs/screenshots/go-start-docker.jpg)
+![alt](/app_go/docs/screenshots/go-start-docker.jpg)
 
 ### 3.3 Image Sizes
 
