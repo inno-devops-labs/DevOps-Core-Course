@@ -129,3 +129,107 @@ The application can be configured via environment variables:
 
   * `fastapi==0.115.0`
   * `uvicorn[standard]==0.32.0`
+
+
+
+
+---
+
+
+
+## Docker Usage
+
+The application is fully containerized and can be built, run, or pulled using Docker.
+
+This approach ensures a consistent runtime environment and simplifies deployment.
+
+---
+
+## Build Image Locally
+
+To build the Docker image locally, use the Dockerfile provided in the `app_python/` directory.
+
+Command pattern:
+
+```bash
+docker build -t <image-name>:<tag> .
+```
+
+This command:
+
+* Uses a slim Python base image
+* Installs dependencies in cached layers
+* Runs the application as a non-root user
+
+---
+
+### Run Container
+
+To run the application inside a container and expose it to the host machine, use the following pattern:
+
+```bash
+docker run -p <host-port>:<container-port> <image-name>:<tag>
+```
+
+Once running, the service will be available via:
+
+* Main endpoint: `http://localhost:<host-port>/`
+* Health check: `http://localhost:<host-port>/health`
+
+---
+
+### Pull from Docker Hub
+
+
+#### Image Tagging Strategy
+
+Tag format used:
+```bash
+<dockerhub-username>/<image-name>:<tag>
+```
+
+
+Applied tag:
+```bash
+egorlazutkin/devops-info-service:lab2
+```
+#### Successful push:
+```bash
+docker push egorlazutkin/devops-info-service:lab2
+...
+04cf8f664aa7: Pushed
+...
+a6866fe8c3d2: Pushed
+lab2: digest: sha256:...755ec
+```
+
+#### Pulling from Docker Hub
+The prebuilt image is available on Docker Hub and can be pulled directly without building locally.
+
+Command pattern:
+
+```bash
+docker pull <dockerhub-username>/<image-name>:<tag>
+```
+
+```bash
+docker pull egorlazutkin/devops-info-service:lab2
+...
+lab2: Pulling from egorlazutkin/devops-info-service
+Digest: sha256:...755ec
+Status: Image is up to date for egorlazutkin/devops-info-service:lab2
+```
+
+
+
+After pulling the image, it can be run using the same `docker run` pattern described above.
+
+---
+
+### Notes
+
+* The container listens on port **5000** by default
+* Environment variables can be passed at runtime using `-e`
+* The image is designed to be minimal, secure, and production-ready
+
+
