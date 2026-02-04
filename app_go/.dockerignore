@@ -1,0 +1,21 @@
+# Version control
+.git/
+.gitignore
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+docs/
+*.md
+README*
+
+*.exe
+*.test
+*.out

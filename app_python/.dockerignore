@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+venv/
+.venv/
+.env
+.env.*
+
+# Version control
+.git/
+.gitignore
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+docs/
+*.md
+README*
+
+tests/
+pytest.ini
+.pytest_cache/
+.coverage
+htmlcov/

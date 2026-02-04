@@ -63,3 +63,28 @@ HOST=127.0.0.1 PORT=8000 python app.py
 DEBUG=true python app.py
 ```
 
+### Docker
+
+The application can be run as a Docker container.
+
+**Build the image locally:**
+
+```bash
+docker build -t devops-info-service .
+```
+
+**Run a container:**
+
+```bash
+docker run -p 5000:5000 devops-info-service
+```
+
+Map the container port (5000) to a host port of your choice: `-p <host_port>:5000`.  
+Override `PORT` or `HOST` with environment variables if needed.
+
+**Pull from Docker Hub:**
+
+```bash
+docker pull jambulancia/devops-info-service
+docker run -p 5000:5000 jambulancia/devops-info-service
+```

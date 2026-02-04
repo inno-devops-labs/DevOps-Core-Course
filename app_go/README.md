@@ -54,6 +54,17 @@ HOST=127.0.0.1 PORT=3000 ./devops-info-service
 
 Python runs via interpreter + virtualenv; there is no single executable. The Go binary is self-contained and suitable for minimal Docker images (e.g. `scratch` or `alpine`).
 
+## Docker
+
+Multi-stage build (Lab 2 bonus):
+
+```bash
+docker build -t devops-info-service-go .
+docker run -p 5000:5000 devops-info-service-go
+```
+
+See `docs/LAB02.md` for the multi-stage strategy and size analysis.
+
 ## Test
 
 ```bash
