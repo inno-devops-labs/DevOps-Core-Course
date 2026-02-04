@@ -45,8 +45,50 @@ PORT=3000 python app.py            # Custom port
 app_python/
 ├── app.py              # Main application
 ├── requirements.txt    # Dependencies
+├── Dockerfile          # Container definition
+├── .dockerignore       # Docker build exclusions
 ├── README.md
 ├── tests/
 └── docs/
-    └── LAB01.md
+    ├── LAB01.md
+    └── LAB02.md
+```
+
+## Docker
+
+### Build Image Locally
+
+```bash
+docker build -t devops-info-service:latest .
+```
+
+### Run Container
+
+```bash
+docker run -d -p 8000:8000 --name devops-app devops-info-service:latest
+```
+
+Access the application at `http://localhost:8000`
+
+### Pull from Docker Hub
+
+```bash
+docker pull <your-dockerhub-username>/devops-info-service:latest
+docker run -d -p 8000:8000 <your-dockerhub-username>/devops-info-service:latest
+```
+
+### Useful Commands
+
+```bash
+# View container logs
+docker logs devops-app
+
+# Stop container
+docker stop devops-app
+
+# Remove container
+docker rm devops-app
+
+# Check running containers
+docker ps
 ```

@@ -154,11 +154,14 @@ curl http://localhost:8080/health
 app_go/
 ├── main.go              # Main application
 ├── go.mod               # Go module definition
+├── Dockerfile           # Multi-stage container build
+├── .dockerignore        # Docker build exclusions
 ├── README.md            # This file
 └── docs/
-    ├── LAB01.md        # Lab submission
-    ├── GO.md           # Language justification
-    └── screenshots/    # Proof of work
+    ├── LAB01.md         # Lab 1 submission
+    ├── LAB02.md         # Lab 2 submission
+    ├── GO.md            # Language justification
+    └── screenshots/     # Proof of work
 ```
 
 ## Binary Size Comparison
@@ -171,22 +174,34 @@ app_go/
 
 The Go binary is self-contained with no external dependencies, making it ideal for containerization.
 
-## Docker Usage (Preview for Lab 2)
+## Docker Usage
 
-```dockerfile
-# Multi-stage build
-FROM golang:1.21-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o devops-info-service
+### Build Image Locally
 
-FROM scratch
-COPY --from=builder /app/devops-info-service /devops-info-service
-EXPOSE 8080
-ENTRYPOINT ["/devops-info-service"]
+```bash
+docker build -t devops-info-service-go:latest .
 ```
 
-Final image size: ~5 MB (compared to ~100+ MB for Python)
+### Run Container
+
+```bash
+docker run -d -p 8080:8080 --name devops-go-app devops-info-service-go:latest
+```
+
+Access the application at `http://localhost:8080`
+
+### Pull from Docker Hub
+
+```bash
+docker pull Ravwvil/devops-info-service-go:latest
+docker run -d -p 8080:8080 Ravwvil/devops-info-service-go:latest
+```
+
+### Image Size Advantage
+
+The multi-stage build produces an image of only ~7-8 MB, compared to ~180-200 MB for Python.
+
+Final image size: ~7 MB (compared to ~200 MB for Python)
 
 ## Development
 
