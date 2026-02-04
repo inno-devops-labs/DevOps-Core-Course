@@ -37,3 +37,16 @@ PORT=8080 python app.py
 
 `DEBUG` - Enable Flask debug logging (False by default)
 
+## Docker
+- **Build image:**
+```
+docker build -t <image-name> .
+```
+- **Get image from dockerhub:**
+```
+docker pull saddogsec/devops-info-service:1.0.0
+```
+- **Run the image**
+```
+docker run -p 5000:5000 saddogsec/devops-info-service:1.0.0
+```
