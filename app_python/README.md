@@ -46,3 +46,21 @@ Environment variables:
 HOST — server host (default: 0.0.0.0)  
 PORT — server port (default: 5000)
 
+## Docker
+
+### Build image
+
+```bash
+docker build -t devops-info-service:lab2 .
+```
+
+Run container  
+```bash
+docker run --rm -p 5000:5000 devops-info-service:lab2
+```
+
+From Docker Hub  
+```bash
+docker pull fayzullin/devops-info-service:lab2
+docker run --rm -p 5000:5000 fayzullin/devops-info-service:lab2
+```
