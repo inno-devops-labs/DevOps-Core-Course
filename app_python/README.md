@@ -60,7 +60,31 @@ netstat -ano | findstr :5000
 taskkill /PID <pid> /F
 ```
 
+## Docker
+
+This application is containerized using Docker for easy deployment and consistency across environments.
+
+### Build Docker Image Locally
+
+```
+docker build -t sfedbro/app_python:lab02 .
+```
+
+### Run Container Locally
+
+```
+docker run -p 5000:5000 sfedbro/app_python:lab02
+```
+
+Access the app at http://localhost:5000 .
+
+### Pull and Run from Docker Hub
+
+```
+docker pull sfedbro/app_python:lab02
+docker run -p 5000:5000 sfedbro/app_python:lab02
+```
+
 ## Licence
 
 MIT Licence
-`To be made`

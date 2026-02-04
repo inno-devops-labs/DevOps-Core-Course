@@ -2,13 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
 	"runtime"
 	"time"
-	"fmt"
-	"log"
 )
 
 type Service struct {
@@ -139,11 +139,13 @@ func main() {
 		port = "8080"
 	}
 
-	addr := host + ":" + port
-    fmt.Printf("Starting server on %s", addr)
-    err := http.ListenAndServe(addr, nil)
-    if err != nil {
-        fmt.Printf("Server failed: %s\n", err)
-    }
+	http.HandleFunc("/", mainHandler)
+	http.HandleFunc("/health", healthHandler)
 
+	addr := host + ":" + port
+	fmt.Printf("Starting server on %s\n", addr)
+	err := http.ListenAndServe(addr, nil)
+	if err != nil {
+		fmt.Printf("Server failed: %s\n", err)
+	}
 }
