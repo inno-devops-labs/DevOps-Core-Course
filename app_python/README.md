@@ -46,3 +46,24 @@ Environment Variables table
 | `HOST`   | `0.0.0.0` | Address for the service to listen on |
 | `PORT`   | `5000`    | Port for the service to listen on    |
 | `DEBUG`  | `False`   | Enable Flask debug mode              |
+
+## Docker
+
+### Building the image locally
+
+```bash
+cd app_python
+docker build -t iucapstonead/devops-info-service:lab02 .
+```
+
+### Running the container
+
+```bash
+docker run -p 5000:5000 iucapstonead/devops-info-service:lab02
+```
+
+### Pulling and running from docker hub
+
+```bash
+docker pull iucapstonead/devops-info-service:lab02
+```
