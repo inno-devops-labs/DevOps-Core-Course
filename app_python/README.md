@@ -59,3 +59,24 @@ export DEBUG=true
 python app.py
 
 ```
+
+# Docker build
+
+```bash
+docker build -t plaffyyy9/devops-info-service:lab2 .
+```
+
+## Local run
+
+```
+docker run --rm -p 8081:5001 plaffyyy9/devops-info-service:lab2
+```
+
+Open http://localhost:8081/
+
+## Pull from Docker Hub
+
+```
+docker pull plaffyyy9/devops-info-service:lab2
+docker run --rm -p 8081:5001 plaffyyy9/devops-info-service:lab2
+```
