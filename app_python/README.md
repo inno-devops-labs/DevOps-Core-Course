@@ -46,3 +46,38 @@ DEBUG=True python app.py
 curl -s http://localhost:5000/ | jq .
 curl -s http://localhost:5000/health | jq .
 ```
+
+## Docker
+
+### Build Image
+
+Use the following pattern inside `app_python`:
+
+- **Build image**:
+  ```bash
+  docker build -t python-app .
+  ```
+
+### Run Container
+
+- **Run container with port mapping**:
+  ```bash
+  docker run --rm -p 5000:5000 python-app
+  ```
+
+- **Override host/port via environment variables (optional)**:
+  ```bash
+  docker run --rm -p 8080:8080 -e PORT=8080 -e HOST=0.0.0.0 python-app
+  ```
+
+### Pull from Docker Hub
+
+- **Pull image**:
+  ```bash
+  docker pull pickpusha/devops-info-service-python:lab2
+  ```
+
+- **Run pulled image**:
+  ```bash
+  docker run --rm -p 5000:5000 pickpusha/devops-info-service-python:lab2
+  ```
