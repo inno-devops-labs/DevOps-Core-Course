@@ -36,6 +36,26 @@ For production, use gunicorn:
 gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 
+## Docker
+
+Build image locally:
+
+```bash
+docker build -t <dockerhub-username>/<image-name>:<tag> .
+```
+
+Run container:
+
+```bash
+docker run --rm -p <host-port>:5000 --name <container-name> <dockerhub-username>/<image-name>:<tag>
+```
+
+Pull from Docker Hub:
+
+```bash
+docker pull <dockerhub-username>/<image-name>:<tag>
+```
+
 ## API Endpoints
 
 ### GET /

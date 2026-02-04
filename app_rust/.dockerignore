@@ -1,0 +1,6 @@
+target/
+.git/
+.gitignore
+.DS_Store
+docs/
+screenshots/
