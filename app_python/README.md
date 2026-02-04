@@ -144,18 +144,75 @@ curl http://localhost:5000/ | jq
 python -c "import requests; print(requests.get('http://localhost:5000/').json())"
 ```
 
+## Docker
+
+### Building the Image
+
+To build the Docker image locally, navigate to the `app_python` directory and run:
+
+```bash
+docker build -t devops-info-service:latest .
+```
+
+For a more specific tag (recommended):
+
+```bash
+docker build -t <your-dockerhub-username>/devops-info-service:v1.0.0 .
+```
+
+### Running the Container
+
+Run the container with port mapping to access the service:
+
+```bash
+# Run with default port mapping
+docker run -d -p 5000:5000 --name devops-info devops-info-service:latest
+
+# Run with custom environment variables
+docker run -d -p 8080:5000 -e PORT=5000 --name devops-info devops-info-service:latest
+
+# Run in the background and view logs
+docker run -d -p 5000:5000 --name devops-info devops-info-service:latest
+docker logs -f devops-info
+```
+
+### Pulling from Docker Hub
+
+If the image is published to Docker Hub:
+
+```bash
+# Pull the latest version
+docker pull <your-dockerhub-username>/devops-info-service:latest
+
+# Pull a specific version
+docker pull <your-dockerhub-username>/devops-info-service:v1.0.0
+
+# Run the pulled image
+docker run -d -p 5000:5000 <your-dockerhub-username>/devops-info-service:latest
+```
+
+### Docker Benefits
+
+- **Portability**: Runs the same way on any system with Docker installed
+- **Isolation**: No dependency conflicts with your local environment
+- **Security**: Runs as non-root user with minimal attack surface
+- **Consistency**: Same image from development to production
+
 ## Project Structure
 
 ```
 app_python/
 ├── app.py                    # Main application
 ├── requirements.txt          # Dependencies
+├── Dockerfile               # Docker image definition
+├── .dockerignore            # Files to exclude from Docker build
 ├── .gitignore               # Git ignore
 ├── README.md                # This file
 ├── tests/                   # Unit tests
 │   └── __init__.py
 └── docs/                    # Lab documentation
     ├── LAB01.md            # Lab submission
+    ├── LAB02.md            # Lab 2 documentation
     └── screenshots/        # Proof of work
 ```
 
@@ -172,7 +229,7 @@ app_python/
 ## Future Enhancements
 
 This service will evolve throughout the DevOps course:
-- **Lab 2:** Containerization with Docker
+- **Lab 2:** ✅ Containerization with Docker
 - **Lab 3:** Unit tests and CI/CD pipeline
 - **Lab 8:** Prometheus metrics endpoint
 - **Lab 9:** Kubernetes deployment
