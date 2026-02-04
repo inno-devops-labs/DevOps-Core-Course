@@ -73,6 +73,12 @@ In the directory app_python/docs/screenshots I provided three screenshots:
 - Health check response
 - Formatted output
 
+## Screenshots
+
+![Main endpoint](screenshots/lab01/01-main-endpoint.png)
+![Health check](screenshots/lab01/02-health-check.png)
+![Formatted output](screenshots/lab01/03-formatted-output.png)
+
 
 ## Challenges & Solutions
 

@@ -31,3 +31,29 @@ HOST="0.0.0.0"
 PORT="8080"
 DEBUG="False"
 ```
+
+## Docker (multi-stage build)
+
+This project includes a **multi-stage Dockerfile**:
+
+* **Stage 1 (builder):** compiles the Go binary
+* **Stage 2 (runtime):** copies only the binary into a minimal image
+
+Build final image:
+
+```bash
+cd app_go
+docker build -t devops-info-go:lab02 .
+```
+
+(Optional) build only the builder stage (for size comparison):
+
+```bash
+docker build --target builder -t devops-info-go:builder .
+```
+
+Run container:
+
+```bash
+docker run --rm -p 8080:8080 devops-info-go:lab02
+```

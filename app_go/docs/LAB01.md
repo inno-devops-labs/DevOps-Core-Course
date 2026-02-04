@@ -57,11 +57,16 @@ Run:
 
 
 ## Testing Evidence
-In the directory go_python/docs/screenshots I provided three screenshots:
+In the directory go_python/docs/screenshots/lab01 I provided three screenshots:
 
 * `01-main-endpoint.png` — `GET /` response
 * `02-health-check.png` — `GET /health` response
 * `03-binary-size.png` — `ls -lh devops-info-service`
+
+![Main](screenshots/lab01/01-main-endpoint.png)
+![Health](screenshots/lab01/02-health-check.png)
+![Size](screenshots/lab01/03-binary-size-go.png)
+
 
 ## Challenges & Solutions
 

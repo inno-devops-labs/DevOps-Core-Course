@@ -30,3 +30,21 @@ pip install -r requirements.txt
     PORT = "5000"
     DEBUG = "False"
     ```
+
+## Docker
+
+### Build
+```bash
+docker build -t <dockerhub-username>/devops-info-python:lab02 .
+```
+
+### Run
+```bash
+docker run --rm -p <host_port>:5000 <dockerhub-username>/devops-info-python:lab02
+```
+
+### Pull from Docker Hub
+```bash
+docker pull <dockerhub-username>/devops-info-python:lab02
+docker run --rm -p <host_port>:5000 <dockerhub-username>/devops-info-python:lab02
+```

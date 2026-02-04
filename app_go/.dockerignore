@@ -1,0 +1,17 @@
+# Binaries
+devops-info-service
+devops-info-service.exe
+*.exe
+*.out
+
+# Git / IDE
+.git/
+.vscode/
+.idea/
+
+# Docs not needed for image build
+docs/
+*.md
+
+# OS
+.DS_Store
