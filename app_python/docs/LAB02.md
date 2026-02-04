@@ -54,15 +54,15 @@ This size is acceptable for a Python application and reflects the use of a slim 
 
 ### Build & Run Process
 #### Build process
-![[screenshots/build.png]]
+![](./screenshots/build.png)
 #### Running dockerized app
-![[screenshots/run.png]]
+![](./screenshots/run.png)
 #### Testing output with curl
-![[screenshots/image.png]]
+![](./screenshots/image.png)
 #### Image showcase
-![[screenshots/images.png]]
+![](./screenshots/images.png)
 #### Push to DockerHub
-![[image.png]]
+![](./image.png)
 
 #### ⚠️ URL to [dokcerhub repo](https://hub.docker.com/repository/docker/cacucoh/testiks)
 
