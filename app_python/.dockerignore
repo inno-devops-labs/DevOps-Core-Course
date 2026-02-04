@@ -1,0 +1,29 @@
+# Exclude Python artifacts and local environment
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+*.egg-info/
+venv/
+.venv/
+.env
+.env.*
+
+# VCS and editor config
+.git
+.gitignore
+.vscode/
+.idea/
+
+# Documentation and tests (not needed at runtime)
+docs/
+tests/
+
+# Build artifacts and local files
+build/
+dist/
+*.log
+
+# OS files
+.DS_Store

@@ -63,6 +63,34 @@ INFO:devops-info-service: Starting DevOps Info Service (FastAPI)
 INFO:uvicorn.server:Uvicorn running on http://0.0.0.0:5000
 ```
 
+---
+
+### Docker (containerized usage)
+
+- Building the image locally:
+
+```bash
+# From repository root
+docker build -t <your-dockerhub-username>/devops-info-service:<tag> -f app_python/Dockerfile app_python/
+```
+![](docs/screenshots/06-local-build.png)
+
+- Running a container:
+
+```bash
+# Map container port 5000 to host
+docker run --rm -p 5000:5000 -e PORT=5000 <your-dockerhub-username>/devops-info-service:<tag>
+```
+![](docs/screenshots/07-running-a-container.png)
+
+- Pulling from Docker Hub:
+
+```bash
+docker pull <your-dockerhub-username>/devops-info-service:<tag>
+```
+![](docs/screenshots/08-pulling.png)
+
+
 ## API Endpoints
 
 ### GET /
