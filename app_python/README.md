@@ -191,3 +191,47 @@ The application includes error handlers for:
 
 All errors return JSON responses for consistency.
 
+## Docker
+
+You can run this application inside a Docker container instead of managing Python and dependencies directly on your host.
+
+### Build Image
+
+Run from the `app_python/` directory:
+
+```bash
+docker build -t <your-dockerhub-username>/devops-info-service:<your-tag> .
+```
+
+- **`-t`**: Names/tags the image (include your Docker Hub username)
+- **`.`**: Uses the current directory as the build context
+
+### Run Container
+
+
+```bash
+docker run \
+  -p 5000:5000 \
+  -e HOST=0.0.0.0 \
+  -e PORT=5000 \
+  <your-dockerhub-username>/devops-info-service:<your_tag>
+```
+
+- **`-p 5000:5000`**: Maps host port 5000 to container port 5000
+- **`-e`**: Overrides environment variables if needed
+
+You should then be able to access:
+
+- Main endpoint: `http://localhost:5000/`
+- Health check: `http://localhost:5000/health`
+
+### Pull from Docker Hub
+
+After pushing your image to Docker Hub, you (or anyone else) can pull and run it:
+
+```bash
+docker pull <your-dockerhub-username>/devops-info-service:<your_tag>
+
+docker run -p 5000:5000 <your-dockerhub-username>/devops-info-service:<your_tag>
+```
+
