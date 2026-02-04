@@ -31,3 +31,25 @@ There are few main endpoints:
 | Host     | string | A host to run app on                 |
 | Port     | int    | A port to assign for web application |
 | Debug    | bool   | Should debug output be enabled       |
+
+## Docker
+This application can be run in a containerized environment with Docker
+
+### Build the image locally
+To build the Docker image, use the Docker build command from the project directory, specifying the Dockerfile and an image name with a tag
+```bash
+cd app_python
+docker build -t <image-name> .
+```
+
+### Run a container
+To run the application, start a container from the built image and map the container port to a port on the host machine so the application can be accessed locally
+```bash
+docker run -p<any-port-on-your-machine>:5000 <created-image-name>
+```
+
+### Pull from Docker Hub
+The pre-built image is also available on Docker Hub and can be pulled using the standard Docker pull command with the repository name and desired tag
+```bash
+docker pull cacucoh/testiks:1.0
+```
