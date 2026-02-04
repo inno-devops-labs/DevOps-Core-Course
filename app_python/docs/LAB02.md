@@ -58,13 +58,13 @@ This size is acceptable for a Python application and reflects the use of a slim 
 #### Running dockerized app
 ![](./screenshots/run.png)
 #### Testing output with curl
-![](./screenshots/image.png)
+![](./screenshots/curl.png)
 #### Image showcase
 ![](./screenshots/images.png)
 #### Push to DockerHub
-![](./image.png)
+![](./screenshots/push.png)
 
-#### ⚠️ URL to [dokcerhub repo](https://hub.docker.com/repository/docker/cacucoh/testiks)
+#### ⚠️ URL to [dockerhub repo](https://hub.docker.com/repository/docker/cacucoh/testiks)
 
 ### Technical Analysis
 #### - Why does your Dockerfile work the way it does?
