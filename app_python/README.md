@@ -58,6 +58,56 @@ HOST=127.0.0.1 PORT=8080 DEBUG=True python app.py
 
 The service will start and listen on the configured host and port.
 
+## Docker
+
+The application can be containerized using Docker for consistent deployment across environments.
+
+### Building the Image
+
+Build the Docker image locally:
+
+```bash
+docker build -t <your-dockerhub-username>/devops-info-service:<tag> .
+```
+
+Replace `<your-dockerhub-username>` with your Docker Hub username and `<tag>` with a version tag (e.g., `latest`, `v1.0.0`).
+
+### Running the Container
+
+Run a container from the built image with port mapping:
+
+```bash
+docker run -p <host-port>:5000 <your-dockerhub-username>/devops-info-service:<tag>
+```
+
+Replace `<host-port>` with the port you want to use on your host machine (e.g., `8080`).
+
+**Example:**
+```bash
+docker run -p 8080:5000 <your-dockerhub-username>/devops-info-service:latest
+```
+
+The service will be accessible at `http://localhost:8080`.
+
+### Custom Configuration
+
+You can override environment variables when running the container:
+
+```bash
+docker run -p 8080:5000 -e PORT=5000 -e DEBUG=false <your-dockerhub-username>/devops-info-service:<tag>
+```
+
+### Pulling from Docker Hub
+
+If the image is published to Docker Hub, you can pull and run it:
+
+```bash
+docker pull <your-dockerhub-username>/devops-info-service:<tag>
+docker run -p 8080:5000 <your-dockerhub-username>/devops-info-service:<tag>
+```
+
+For detailed Docker implementation documentation, see [docs/LAB02.md](docs/LAB02.md).
+
 ## API Endpoints
 
 ### GET /
