@@ -218,6 +218,66 @@ ls -lh devops-info-service
    - Resource-constrained environments
    - High-traffic services
 
+## Docker
+
+The application is containerized using multi-stage builds for minimal image size.
+
+### Building the Image
+
+Build the Docker image using multi-stage build:
+
+```bash
+docker build -t <your-username>/devops-go-app:latest .
+```
+
+**Multi-stage build benefits:**
+- Builder stage: Uses full Go toolchain (~300MB+)
+- Runtime stage: Only contains compiled binary + alpine (~10-15MB total)
+- 20x+ size reduction compared to including build tools
+
+### Running the Container
+
+Run the container with port mapping:
+
+```bash
+docker run -d -p 8080:8080 --name devops-go-app <your-username>/devops-go-app:latest
+```
+
+Access the application at `http://localhost:8080/`
+
+### Pulling from Docker Hub
+
+Pull and run the pre-built image:
+
+```bash
+docker pull <your-username>/devops-go-app:latest
+docker run -d -p 8080:8080 <your-username>/devops-go-app:latest
+```
+
+### Docker Commands
+
+```bash
+# View logs
+docker logs devops-go-app
+
+# Stop container
+docker stop devops-go-app
+
+# Remove container
+docker rm devops-go-app
+
+# Check image size (should be ~10-15MB)
+docker images <your-username>/devops-go-app
+```
+
+### Size Comparison
+
+```
+Python image:     226MB (slim base + Flask)
+Go image:         ~12MB (alpine + static binary)
+Reduction:        ~95% smaller
+```
+
 ## Troubleshooting
 
 ### Port Already in Use
@@ -226,6 +286,17 @@ ls -lh devops-info-service
 # Use different port
 PORT=9090 ./devops-info-service
 
+# Or for Docker:
+docker run -d -p 9090:8080 <your-username>/devops-go-app:latest
+
 # Or find process using the port
 lsof -ti:8080 | xargs kill -9
+```
+
+### Docker Daemon Not Running
+
+```bash
+# Start Docker Desktop (macOS/Windows)
+# Or start Docker daemon (Linux):
+sudo systemctl start docker
 ```

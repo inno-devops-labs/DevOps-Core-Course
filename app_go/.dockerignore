@@ -1,0 +1,45 @@
+# Version Control
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+docs/
+*.md
+README.md
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+build/
+
+# Go specific
+*.test
+*.out
+coverage.txt
+*.prof
+
+# OS files
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*
+
+# Logs
+*.log
+logs/

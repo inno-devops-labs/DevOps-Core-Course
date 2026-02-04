@@ -229,6 +229,53 @@ The application handles common HTTP errors:
 
 All errors are logged for debugging purposes.
 
+## Docker
+
+The application is containerized and available as a Docker image.
+
+### Building the Image
+
+Build the Docker image locally:
+
+```bash
+docker build -t <your-username>/devops-python-app:latest .
+```
+
+### Running the Container
+
+Run the container with port mapping:
+
+```bash
+docker run -d -p 5000:5000 --name devops-app <your-username>/devops-python-app:latest
+```
+
+Access the application at `http://localhost:5000/`
+
+### Pulling from Docker Hub
+
+Pull and run the pre-built image:
+
+```bash
+docker pull <your-username>/devops-python-app:latest
+docker run -d -p 5000:5000 <your-username>/devops-python-app:latest
+```
+
+### Docker Commands
+
+```bash
+# View logs
+docker logs devops-app
+
+# Stop container
+docker stop devops-app
+
+# Remove container
+docker rm devops-app
+
+# View image details
+docker inspect <your-username>/devops-python-app:latest
+```
+
 ## Troubleshooting
 
 ### Port Already in Use
@@ -238,6 +285,9 @@ If you see "Address already in use" error:
 ```bash
 # Use a different port
 PORT=8080 python app.py
+
+# Or for Docker:
+docker run -d -p 8080:5000 <your-username>/devops-python-app:latest
 ```
 
 ### Module Not Found
@@ -250,4 +300,14 @@ source venv/bin/activate
 
 # Reinstall dependencies
 pip install -r requirements.txt
+```
+
+### Docker Daemon Not Running
+
+If you see "Cannot connect to the Docker daemon":
+
+```bash
+# Start Docker Desktop (macOS/Windows)
+# Or start Docker daemon (Linux):
+sudo systemctl start docker
 ```
