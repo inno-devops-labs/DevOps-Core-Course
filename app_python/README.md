@@ -57,3 +57,20 @@ DEBUG=true python app.py
 | `HOST`   | `0.0.0.0` | Host to bind the server to      |
 | `PORT`   | `5000`    | Port to listen on               |
 | `DEBUG`  | `False`   | Enable debug mode               |
+
+
+## Docker
+Building the image locally
+```bash
+docker build -t <image-name>:<tag> .
+```
+
+Running a container
+```bash
+docker run -d -p <host-port>:8000 --name <container-name> <image-name>:<tag>
+```
+
+Pulling from Docker Hub
+```bash
+docker pull aidarsarvartdinov/pythonapp:<tag>
+```

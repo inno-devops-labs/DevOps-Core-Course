@@ -1,0 +1,17 @@
+.git
+.gitignore
+
+__pycache__
+*.pyc
+*.pyo
+venv/
+.venv/
+
+.env
+*.pem
+secrets/
+
+*.md
+docs/
+
+tests/
