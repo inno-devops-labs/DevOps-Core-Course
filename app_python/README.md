@@ -117,6 +117,36 @@ The service can be configured using environment variables:
 | `PORT` | `5000` | Port number to listen on |
 | `DEBUG` | `False` | Enable debug mode |
 
+## Docker
+
+The application is containerized and available on Docker Hub.
+
+### Building the Image
+
+```bash
+docker build -t <your-username>/devops-info-service:latest .
+```
+
+### Running with Docker
+
+```bash
+docker run -d -p 5000:5000 --name devops-service <your-username>/devops-info-service:latest
+```
+
+### Pulling from Docker Hub
+
+```bash
+docker pull <your-username>/devops-info-service:latest
+docker run -d -p 5000:5000 --name devops-service <your-username>/devops-info-service:latest
+```
+
+### Testing the Container
+
+```bash
+curl http://localhost:5000/
+curl http://localhost:5000/health
+```
+
 ## Testing
 
 Test the endpoints using curl:
