@@ -12,3 +12,8 @@ This project delivers a Python-based web service that reports detailed system an
 1. Install dependencies: `python3 -m pip install -r requirements.txt`.
 2. Run the app: `python3 app.py` (defaults to host `0.0.0.0` and port `5000`).
 3. Override configuration with env vars: `HOST=127.0.0.1 PORT=8080 DEBUG=true python3 app.py` (reload follows `DEBUG`).
+
+## Docker
+- Build image: `docker build -t <user>/<repo>:<tag> .`
+- Run container: `docker run -d -p 5000:5000 --name devops-info -e HOST=0.0.0.0 -e PORT=5000 <user>/<repo>:<tag>`
+- Pull from Hub: `docker pull <user>/<repo>:<tag>`

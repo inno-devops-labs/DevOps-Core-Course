@@ -79,7 +79,7 @@ def main():
 
     import uvicorn
 
-    # When reload is enabled uvicorn expects an import string, not the app object.
+    # When reload is enabled uvicorn expects an import string, not the app object
     target = "app:app" if debug else app
     uvicorn.run(target, host=host, port=port, reload=debug)
 
