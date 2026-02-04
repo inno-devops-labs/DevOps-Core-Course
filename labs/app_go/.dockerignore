@@ -1,0 +1,21 @@
+# Compiled binary
+devops-info-service
+
+# Version control
+.git/
+.gitignore
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Documentation (not needed in container)
+docs/
+*.md
+
+# OS files
+.DS_Store
+Thumbs.db

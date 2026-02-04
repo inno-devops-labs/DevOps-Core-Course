@@ -158,6 +158,44 @@ app_go/
     └── screenshots/    # Proof of work
 ```
 
+## Docker
+
+This application uses a multi-stage Docker build for minimal production images.
+
+### Building the Image
+
+```bash
+docker build -t blxxdclxud/devops-info-service:go .
+```
+
+### Running a Container
+
+```bash
+# Run in foreground
+docker run -p 8080:8080 blxxdclxud/devops-info-service:go
+
+# Run in background
+docker run -d -p 8080:8080 --name devops-go blxxdclxud/devops-info-service:go
+```
+
+Access the application at `http://localhost:8080`
+
+### Pulling from Docker Hub
+
+```bash
+docker pull blxxdclxud/devops-info-service:go
+docker run -p 8080:8080 blxxdclxud/devops-info-service:go
+```
+
+### Image Size
+
+| Stage | Size |
+|-------|------|
+| Builder (golang:1.22-alpine) | ~400MB |
+| **Final (alpine:3.19)** | **~18MB** |
+
+The multi-stage build achieves 95%+ size reduction by including only the compiled binary in the final image.
+
 ## Future Enhancements
 
 This service will be extended in future labs:

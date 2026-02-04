@@ -155,6 +155,41 @@ FastAPI provides automatic interactive API documentation:
 - **Swagger UI**: http://localhost:5000/docs
 - **ReDoc**: http://localhost:5000/redoc
 
+## Docker
+
+This application is containerized using Docker for consistent deployment across environments.
+
+### Building the Image
+
+```bash
+docker build -t blxxdclxud/devops-info-service:python .
+```
+
+### Running a Container
+
+```bash
+# Run in foreground
+docker run -p 5000:5000 blxxdclxud/devops-info-service:python
+
+# Run in background
+docker run -d -p 5000:5000 --name devops-service blxxdclxud/devops-info-service:python
+```
+
+Access the application at `http://localhost:5000`
+
+### Pulling from Docker Hub
+
+```bash
+docker pull blxxdclxud/devops-info-service:python
+docker run -p 5000:5000 blxxdclxud/devops-info-service:python
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `5000` | Port inside container |
+
 ## Future Enhancements
 
 This service will be extended in future labs:
