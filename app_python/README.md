@@ -38,3 +38,8 @@ Environment variables:
 ## Notes
 - Logging is configured at startup; noisy werkzeug logs are suppressed to WARNING.
 - Error handlers return JSON for 404 and 500.
+
+## Docker
+- Build an image from this directory: `docker build -t devops:<tag> .`
+- Run the container (maps port 8080 by default): `docker run -p 8080:8080 devops:<tag>`
+- Pull from Docker Hub once published: `docker pull devops:<tag>`
