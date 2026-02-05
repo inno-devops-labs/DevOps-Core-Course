@@ -1,8 +1,9 @@
 # DevOps Course Info Service
 
-## CI/CD pipeline badget
+## CI/CD status & coverage
 
 ![Python CI/CD Pipeline](https://github.com/setterwars/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/setterwars/DevOps-Core-Course/branch/master/graph/badge.svg)](https://codecov.io/gh/setterwars/DevOps-Core-Course)
 
 
 ## Overview
@@ -69,3 +70,12 @@ docker pull zsalavat/devops-info-service-python
 docker run --rm -p 5000:5000 zsalavat/devops-info-service-python:latest
 ```
 
+### Test Running 
+
+For running tests used `pytest`
+
+for run test use:
+
+```bash
+pytest
+```

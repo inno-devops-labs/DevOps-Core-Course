@@ -1,6 +1,9 @@
 
 # DevOps Course Info Service (Go)
 
+![Go CI/CD Pipeline](https://github.com/setterwars/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)
+
+
 ## Overview
 Go implementation of the `app_python` DevOps Info Service.
 

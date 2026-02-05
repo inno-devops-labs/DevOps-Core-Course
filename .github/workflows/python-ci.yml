@@ -3,9 +3,14 @@ name: Python CI/CD Pipeline
 on:
   push:
     branches: [ "master", "lab3" ]
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
   pull_request:
     branches: [ "master", "lab3" ]
-
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
 env:
   REGISTRY: docker.io
   IMAGE_NAME: zsalavat/devops-info-service-python
@@ -46,10 +51,18 @@ jobs:
         run: |
           pylint --disable=R,C,W1203,W1514,W0621,W0611,E0401 app_python/app.py app_python/tests/
 
-      - name: Run unit tests
-        working-directory: app_python
+      - name: Run unit tests with coverage
         run: |
-          pytest -v --tb=short
+          pytest -v --tb=short --cov=app_python --cov-report=xml --cov-report=term
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: python
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
 
       - name: Run security scan with pip-audit
         working-directory: app_python
