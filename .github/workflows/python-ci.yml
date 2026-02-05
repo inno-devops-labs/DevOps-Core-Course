@@ -40,7 +40,7 @@ jobs:
           if [ -f app_python/requirements.txt ]; then
             pip install -r app_python/requirements.txt
           fi
-          pip install pytest pylint
+          pip install pytest pylint pip-audit
 
       - name: Lint with pylint
         run: |
@@ -51,20 +51,9 @@ jobs:
         run: |
           pytest -v --tb=short
 
-      - name: Setup Node.js for Snyk
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Snyk CLI
-        run: npm install -g snyk
-
-      - name: Run Snyk security scan
+      - name: Run security scan with pip-audit
         working-directory: app_python
-        run: snyk test --file=requirements.txt --severity-threshold=high
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        continue-on-error: true
+        run: pip-audit -r requirements.txt
 
   cd:
     needs: ci
