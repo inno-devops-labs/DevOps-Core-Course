@@ -56,7 +56,8 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --file=app_python/requirements.txt --package-manager=pip --skip-unresolved
+          path: app_python
+          args: --severity-threshold=high
 
   cd:
     needs: ci
