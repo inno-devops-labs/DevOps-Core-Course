@@ -1,0 +1,39 @@
+# Go build artifacts
+devops-service
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git files
+.git/
+.gitignore
+
+# Documentation (not needed at runtime)
+docs/
+*.md
+README.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
