@@ -94,6 +94,34 @@ Environment variables:
 | `PORT` | `5000` | Server port number |
 | `DEBUG` | `False` | Enable debug mode |
 
+## Docker
+
+### Build Image
+
+```bash
+docker build -t devops-info-service .
+```
+
+### Run Container
+
+```bash
+# Default port 5000
+docker run -p 5000:5000 devops-info-service
+
+# Custom port
+docker run -p 8080:5000 devops-info-service
+
+# With environment variables
+docker run -p 5000:5000 -e DEBUG=true devops-info-service
+```
+
+### Pull from Docker Hub
+
+```bash
+docker pull <your-username>/devops-info-service:latest
+docker run -p 5000:5000 <your-username>/devops-info-service:latest
+```
+
 ## Testing
 
 ```bash
