@@ -53,3 +53,17 @@ Configuration is done via environment variables:
 | `DEBUG` | `False`     | Enable Flask debug mode if `true`     |
 
 All configuration is read in `app.py` at startup, so restart the application after changing environment variables.
+
+## Docker
+
+How to use the containerized application (patterns):
+
+- **Build image (local):** `docker build -t <local-name>:<tag> <path-to-app-python>`
+- **Tag for Docker Hub:** `docker tag <local-name>:<tag> <username>/<repo>:<tag>`
+- **Run container (local):** `docker run -p <host-port>:<container-port> --name <container-name> <image>`
+- **Pull from Docker Hub:** `docker pull <username>/<repo>:<tag>`
+
+Notes:
+- The container exposes port `5002` by default (see `app.py`).
+- The image runs as a non-root user for improved security.
+
