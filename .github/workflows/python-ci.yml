@@ -40,7 +40,7 @@ jobs:
           if [ -f app_python/requirements.txt ]; then
             pip install -r app_python/requirements.txt
           fi
-          pip install pytest pylint snyk
+          pip install pytest pylint
 
       - name: Lint with pylint
         run: |
@@ -48,7 +48,6 @@ jobs:
 
       - name: Run unit tests
         run: |
-          cd app_python
           pytest -v --tb=short
 
       - name: Run Snyk to check for vulnerabilities
