@@ -99,12 +99,12 @@ def health():
 
 # error handlers
 @app.errorhandler(404)
-def not_found(error):
+def not_found(_error):
     return jsonify({"error": "Not Found", "message": "Endpoint does not exist"}), 404
 
 
 @app.errorhandler(500)
-def internal_error(error):
+def internal_error(_error):
     logger.exception("Internal server error")
     return (
         jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}),
