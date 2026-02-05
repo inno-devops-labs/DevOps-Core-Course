@@ -36,11 +36,11 @@ jobs:
 
       - name: Lint with pylint
         run: |
-          pylint --disable=R,C,W1203,W1514 app.py tests/
+          pylint --disable=R,C,W1203,W1514 app_python/app.py app_python/tests/
 
       - name: Run unit tests
         run: |
-          pytest tests/ -v --tb=short
+          pytest app_python/tests/ -v --tb=short
 
   cd:
     needs: ci
