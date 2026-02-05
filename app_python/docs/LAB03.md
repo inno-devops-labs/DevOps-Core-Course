@@ -28,3 +28,13 @@ As you can see CD job is skiped because it run only then we pushed something on 
 - Created Pipeline Budget in `app_python/README.md`
 ![pipeline-budget](screenshots/image.png)
 - Added caching in python libs
+- Try to add Synk but in proccess notice what sync now need paiment sub so used free pip-audit and found one lib with vulnerability. flask 3.1.0 changed to flask 3.1.1
+- CalVer tagging in Docker Images 
+- auto pushing in docker hub
+- non breacking scanning
+- verified action 
+- CI/CD separation
+
+![flask](screenshots/found-flask-error.png)
+
+![pipeline-with-best-practice](screenshots/pipeline-with-best-practice.png)
