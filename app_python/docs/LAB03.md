@@ -18,4 +18,13 @@ ruff==0.6.9
 - As actions I choose basic actions what I always use then create CI/CD pipelines.
 - As tagging of images I use Calendar Versioning. Because this stragegy is usefull and if in developing process we notice what some part of app is down by this tag we can find there it will down.
 
-- **Link to passed CI/CD:**
+- **Link to passed CI/CD:** https://github.com/setterwars/DevOps-Core-Course/actions/runs/21708886646
+![image-from-github](screenshots/image-from-github.png)
+
+As you can see CD job is skiped because it run only then we pushed something on main because in the docker hub we want see only the latest version of application.
+
+## Best practice CI/CD pipeline 
+
+- Created Pipeline Budget in `app_python/README.md`
+![pipeline-budget](screenshots/image.png)
+- Added caching in python libs

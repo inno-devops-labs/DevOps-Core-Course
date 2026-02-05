@@ -1,5 +1,10 @@
 # DevOps Course Info Service
 
+## CI/CD pipeline badget
+
+![Python CI/CD Pipeline](https://github.com/setterwars/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
+
 ## Overview
 
 DevOps Info Service - small Flask based service what return and report system metadata and information.
