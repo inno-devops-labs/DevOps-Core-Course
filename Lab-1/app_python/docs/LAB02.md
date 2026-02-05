@@ -27,7 +27,7 @@ Run as non-root for better security.
 
 ## Image Information & Decisions
 - Base image: `python:3.13-slim` because it is smaller but still works with `pip` and `glibc`.
-- Final image size: `30MB`.
+- Final image size: `127MB`.
 - Layer order: base -> env/workdir -> user -> deps -> app code -> user -> cmd.
 - Optimizations: slim image, cached deps, no pip cache.
 
@@ -76,10 +76,8 @@ Docker Hub repository URL:
 ```
 https://hub.docker.com/repository/docker/linktur/devops-lab2
 ```
-
 Screenshot with proof:
 `screenshots/docker-logs.png`
-
 ## Technical Analysis
 - The Dockerfile installs deps first, then copies app code. This keeps cache when only code changes.
 - If I copy code before deps, every change breaks cache and build is slower.

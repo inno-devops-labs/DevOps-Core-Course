@@ -43,6 +43,22 @@ $env:PORT=8080; python app.py
 $env:HOST='127.0.0.1'; $env:PORT=3000; $env:DEBUG='true'; python app.py
 ```
 
+## Docker
+Build image (pattern):
+```bash
+docker build -t linktur/devops-lab2:v1 .
+```
+
+Run container (pattern):
+```bash
+docker run --rm -p 5000:5000 --name devops-lab2 linktur/devops-lab2:v1
+```
+
+Pull from Docker Hub (pattern):
+```bash
+docker pull linktur/devops-lab2:v1
+```
+
 ## API Endpoints
 - `GET /` - Service and system information
 - `GET /health` - Health check
