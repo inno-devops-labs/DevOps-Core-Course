@@ -6,7 +6,7 @@
 	- Setup Go 1.22
 	- Lint with golangci-lint 
 	- go test ./... -v.
-	- Build & push Docker image
+	- Build & push Docker image using BUILDX
 	- latest and CalVer tags
 
 ## Path Filters (Selective CI)
@@ -17,8 +17,8 @@
 - Rationale: services deploy continuously; date-based tags communicate freshness and cadence.
 
 ## Evidence (Replace with your links)
-- Successful workflow run:
-- Docker Hub image/tags:
+- Successful workflow run
+- Docker Hub image/tags
 
 ## Best Practices Applied
 - Path filters to scope runs per app.

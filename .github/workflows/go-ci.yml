@@ -14,7 +14,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  GO_IMAGE_NAME: ${{ github.repository }}-go
+  IMAGE_NAME: zsalavat/devops-info-service-go
 
 jobs:
   ci:
