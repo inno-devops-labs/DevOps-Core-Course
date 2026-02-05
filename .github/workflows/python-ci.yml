@@ -29,8 +29,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
+          if [ -f app_python/requirements.txt ]; then
+            pip install -r app_python/requirements.txt
           fi
           pip install pytest pylint
 
@@ -40,7 +40,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pytest app_python/tests/ -v --tb=short
+          pytest -v --tb=short
 
   cd:
     needs: ci
