@@ -17,8 +17,10 @@
 - Rationale: services deploy continuously; date-based tags communicate freshness and cadence.
 
 ## Evidence (Replace with your links)
-- Successful workflow run
-- Docker Hub image/tags
+- Successful workflow run:https://github.com/setterwars/DevOps-Core-Course/actions/runs/21711862898
+- Docker Hub image/tags: https://hub.docker.com/repository/docker/zsalavat/devops-info-service-go/general
+![ci-cd-done](screenshots/worked-ci-cd.png)
+
 
 ## Best Practices Applied
 - Path filters to scope runs per app.
@@ -26,3 +28,7 @@
 - Job dependency: CD waits for CI to pass.
 - Conditional push: only on master/lab3 branches.
 - Buildx for reproducible multi-arch-friendly builds.
+
+## IMPORTANT NOTE
+
+Cant use synk in this part API TOKEN only in Enterprice Subscribtion
