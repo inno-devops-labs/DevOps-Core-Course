@@ -152,6 +152,36 @@ curl http://localhost:5000/health
 **Status Codes:**
 - `200 OK` - Service is healthy
 
+### `GET /metrics`
+
+Metrics endpoint for monitoring.
+
+## Docker
+
+### Building the Image
+
+To build the Docker image for this application, use the following command pattern:
+
+```bash
+docker build -t <your-dockerhub-username>/<image-name>:<tag> .
+```
+
+### Running the Container
+
+To run the container, use the following command, mapping the container's port 8080 to a port on your local machine (e.g., 8080):
+
+```bash
+docker run -p <local-port>:8080 <your-dockerhub-username>/<image-name>:<tag>
+```
+
+### Pulling from Docker Hub
+
+To pull the image from Docker Hub, use:
+
+```bash
+docker pull <your-dockerhub-username>/<image-name>:<tag>
+```
+
 ## Configuration
 
 The application supports the following environment variables:
