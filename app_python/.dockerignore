@@ -1,0 +1,39 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git files
+.git/
+.gitignore
+
+# Documentation (not needed at runtime)
+docs/
+*.md
+README.md
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -125,6 +125,56 @@ The application is configured via environment variables, with sensible defaults:
 
 These values are read in `app.py` using `os.getenv(...)` and passed to `uvicorn.run()` when the app is started with `python app.py`.
 
+## Docker
+
+The application can be containerized using Docker for consistent deployment across environments.
+
+### Building the Image
+
+Build the Docker image from the `app_python` directory:
+
+```bash
+docker build -t <image-name>:<tag> .
+```
+
+Example:
+```bash
+docker build -t devops-info-service:latest .
+```
+
+### Running a Container
+
+Run a container from the built image with port mapping:
+
+```bash
+docker run -d -p <host-port>:5000 --name <container-name> <image-name>:<tag>
+```
+
+Example:
+```bash
+docker run -d -p 5000:5000 --name devops-service devops-info-service:latest
+```
+
+The application will be accessible at `http://localhost:<host-port>/` and `http://localhost:<host-port>/health`.
+
+### Custom Configuration
+
+You can override environment variables when running the container:
+
+```bash
+docker run -d -p 8080:5000 -e PORT=5000 -e DEBUG=false <image-name>:<tag>
+```
+
+### Pulling from Docker Hub
+
+If the image is published to Docker Hub, you can pull and run it:
+
+```bash
+docker pull <docker-hub-username>/<image-name>:<tag>
+docker run -d -p 5000:5000 <docker-hub-username>/<image-name>:<tag>
+```
+
+
 ## Development Notes
 
 - The service is implemented with **FastAPI** and served by **uvicorn**.
