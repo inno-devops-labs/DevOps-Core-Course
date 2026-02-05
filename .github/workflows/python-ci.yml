@@ -36,7 +36,7 @@ jobs:
 
       - name: Lint with pylint
         run: |
-          pylint --disable=R,C,W1203,W1514,W0621,W0611,E401 app_python/app.py app_python/tests/
+          pylint --disable=R,C,W1203,W1514,W0621,W0611,E0401 app_python/app.py app_python/tests/
 
       - name: Run unit tests
         run: |
