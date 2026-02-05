@@ -16,6 +16,10 @@ Before running the application, make sure you have:
 - `pip` package manager
 - (Recommended) Virtual environment support
 
+To run the containerized version:
+
+- Docker **25+**
+
 Check your Python version:
 
 ```bash
@@ -95,6 +99,40 @@ Health check endpoint used for monitoring and readiness probes.
 
 ---
 
+## Running with Docker
+### Build the image locally
+
+```bash
+docker build -t devops-info-service .
+```
+
+### Run the container
+
+```bash
+docker run -p 5000:5000 devops-info-service
+```
+The service will be available at:
+
+- http://127.0.0.1:5000/
+
+- http://127.0.0.1:5000/health
+
+---
+
+## Pulling from Docker Hub
+
+The image is publicly available on Docker Hub:
+```bash
+docker pull amirhan3228/devops-info-service:1.0.0
+docker run -p 5000:5000 amirhan3228/devops-info-service:1.0.0
+```
+
+Docker Hub repository:
+https://hub.docker.com/r/amirhan3228/devops-info-service
+
+
+---
+
 ## Configuration
 
 The application can be configured using environment variables.
@@ -110,14 +148,9 @@ The application can be configured using environment variables.
 Run the application with a custom port:
 
 ```bash
-PORT=8080 uvicorn app:app --host 0.0.0.0 --port 8080
+docker run -e PORT=8080 -p 8080:8080 devops-info-service
 ```
 
-Bind the server to localhost only:
-
-```bash
-HOST=127.0.0.1 uvicorn app:app --host 127.0.0.1 --port 5000
-```
 
 ---
 
@@ -126,6 +159,8 @@ HOST=127.0.0.1 uvicorn app:app --host 127.0.0.1 --port 5000
 ```markdown
 app_python/
 ├── app.py
+├── Dockerfile
+├── .dockerignore
 ├── requirements.txt
 ├── .gitignore
 ├── README.md
@@ -133,6 +168,7 @@ app_python/
 │   └── __init__.py
 └── docs/
     ├── LAB01.md
+    ├── LAB02.md
     └── screenshots/
 ```
 
