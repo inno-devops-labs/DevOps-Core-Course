@@ -1,1 +1,4 @@
 test
+app_python/.venv
+app_python/.pytest_cache
+app_python/__pycache__
