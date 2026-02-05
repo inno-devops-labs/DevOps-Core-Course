@@ -118,6 +118,38 @@ the application can be configured via environment variables:
 | `PORT` | `5000` | port to listen on |
 | `DEBUG` | `False` | enable debug mode with auto-reload |
 
+## docker
+
+### building the image
+
+build the docker image from the `app_python` directory:
+
+```bash
+docker build -t devops-info-service .
+```
+
+### running the container
+
+run the container with port mapping:
+
+```bash
+docker run -d -p 5000:5000 devops-info-service
+```
+
+### pulling from docker hub
+
+pull the image from docker hub:
+
+```bash
+docker pull onemoreslacker/devops-info-service:v0
+```
+
+run the pulled image:
+
+```bash
+docker run -d -p 5000:5000 onemoreslacker/devops-info-service:v0
+```
+
 ## testing
 
 ```bash
