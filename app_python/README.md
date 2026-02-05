@@ -214,10 +214,10 @@ Test the endpoints using curl, HTTPie, or any HTTP client:
 
 ```bash
 # Main endpoint
-curl http://localhost:5000/ | jq
+curl http://localhost:5000/
 
 # Health check
-curl http://localhost:5000/health | jq
+curl http://localhost:5000/health
 
 # Pretty print output
 curl -s http://localhost:5000/ | python -m json.tool
@@ -241,3 +241,28 @@ pip install -r requirements.txt
 
 
 
+## Docker
+
+You can run this application as a Docker container. The Docker image is available on Docker Hub by [link](https://hub.docker.com/repository/docker/elinanotelina/devops-info-service/general)
+
+### Building the image locally
+
+```bash
+# From the app_python directory
+docker build -t devops-info-service .
+```
+### Running the container
+```bash
+# Map port 5000 of the container to localhost
+docker run -p 5000:5000 devops-info-service
+```
+Access the service at http://localhost:5000
+
+## Pull the image from Docker Hub
+```bash
+docker pull elinanotelina/devops-info-service:1.0.0
+```
+## Run the container
+```bash
+docker run -d -p 5000:5000 --name devops-test elinanotelina/devops-info-service:1.0.0
+```
