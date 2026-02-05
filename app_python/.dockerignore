@@ -1,0 +1,20 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+
+# Tests and docs (not needed at runtime)
+tests/
+docs/
+
+# Git & IDE files
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# OS files
+.DS_Store

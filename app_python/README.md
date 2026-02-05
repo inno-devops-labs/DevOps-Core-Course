@@ -45,3 +45,32 @@ Configure the application using environment variables:
 |----------|---------|-------------|
 | `PORT` | `5000` | Server port |
 | `HOST` | `127.0.0.1` | Server host address |
+
+## Docker Usage
+
+This application can be run inside a Docker container.
+
+### Build the image locally
+Use the Dockerfile to build the image from the project source.
+
+Pattern:
+```bash
+docker build -t <image-name> -f app_python/Dockerfile app_python
+```
+
+### Run the container
+Run the container interactively to start the application.
+
+Pattern:
+```bash
+docker run -p <port:port> -it <image-name>
+```
+
+### Pull from Docker Hub
+The image is publicly available on Docker Hub.
+
+Pattern:
+```bash
+docker pull <dockerhub-username>/<image-name>:latest
+docker run -it <dockerhub-username>/<image-name>:latest
+```
