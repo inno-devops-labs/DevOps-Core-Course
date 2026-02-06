@@ -48,7 +48,10 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-
+          format: cobertura
+          file: app_python/coverage.xml
+          flag-name: python
+          parallel: true
 
   security:
     runs-on: ubuntu-latest

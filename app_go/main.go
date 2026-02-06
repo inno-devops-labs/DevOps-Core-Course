@@ -20,10 +20,15 @@ func getUptime() (int64, string) {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed"})
+		return
+	}
+
 	uptimeSeconds, uptimeHuman := getUptime()
-
 	hostname, _ := os.Hostname()
-
 	response := map[string]interface{}{
 		"service": map[string]interface{}{
 			"name":        "devops-info-service",
@@ -56,22 +61,36 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			{"path": "/health", "method": "GET", "description": "Health check"},
 		},
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"error": "method not allowed"})
+		return
+	}
 	uptimeSeconds, _ := getUptime()
-
 	response := map[string]interface{}{
 		"status":          "healthy",
 		"timestamp":       time.Now().UTC().Format(time.RFC3339),
 		"uptime_seconds":  uptimeSeconds,
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func newServer(host, port string) *http.Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", indexHandler)
+	mux.HandleFunc("/health", healthHandler)
+	srv := &http.Server{
+		Addr:    host + ":" + port,
+		Handler: mux,
+	}
+	return srv
 }
 
 func main() {
@@ -85,9 +104,7 @@ func main() {
 		port = "8080"
 	}
 
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/health", healthHandler)
-
+	srv := newServer(host, port)
 	log.Println("Starting Go service on", host+":"+port)
-	log.Fatal(http.ListenAndServe(host+":"+port, nil))
+	log.Fatal(srv.ListenAndServe())
 }

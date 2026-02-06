@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+venv/
+*.log
+.DS_Store
+.vscode/
+.idea/
+.pytest_cache
+coverage.out
