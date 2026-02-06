@@ -52,21 +52,21 @@ Path filters prevent unnecessary CI runs, reduce resource usage, and speed up fe
 - Both workflows can run simultaneously without blocking each other
 - Actions tab shows separate runs for each workflow
 
-## Terminal Output / Actions Tab Evidence
-
-Add screenshot or link to Actions tab showing selective triggering and green checkmarks for each workflow.
+## Output / Actions Tab Evidence
+![pic](screenshots/workflow.png)
+https://github.com/sayfetik/DevOps-Core-Course/actions/runs/21755758378
+https://github.com/sayfetik/DevOps-Core-Course/actions/runs/21755758405
 
 ## Coverage Integration
+![pic](screenshots/go.png)
+![pic](screenshots/python.png)
+![pic](screenshots/codecov.png)
+https://app.codecov.io/gh/sayfetik/DevOps-Core-Course/tree/lab03
 
-- Go: Coverage uploaded to Codecov ([Codecov dashboard link])
-- Python: Coverage uploaded to Coveralls ([Coveralls dashboard link])
-- Coverage badges in README files
 
 ## Coverage Analysis
 
-- **Go:** Current coverage: [X]% (see Codecov)
-- **Python:** Current coverage: [Y]% (see Coveralls)
+- **Go:** Current coverage: [86]% (see Codecov)
+- **Python:** Current coverage: [95]% (see Codecov)
 - Coverage threshold: 70% (CI fails if below)
 - Not covered: error branches, startup code, trivial config
-
----
