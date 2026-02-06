@@ -47,7 +47,6 @@ jobs:
           args: --file=requirements.txt
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        working-directory: app_python
 
   docker:
     needs: lint-test
