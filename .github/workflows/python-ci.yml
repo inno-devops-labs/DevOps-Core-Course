@@ -43,7 +43,7 @@ jobs:
       - name: Snyk scan
         uses: snyk/actions/python@master
         with:
-          args: --file=requirements-dev.txt
+          args: --file=app_python/requirements-dev.txt
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
