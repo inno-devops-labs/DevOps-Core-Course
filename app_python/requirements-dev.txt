@@ -1,4 +1,4 @@
 pytest
 pytest-cov
 flake8
--r requirements.txt
+Flask==3.1.0
