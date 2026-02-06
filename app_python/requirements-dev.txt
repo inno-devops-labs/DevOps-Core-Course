@@ -1,0 +1,4 @@
+# requirements-dev.txt
+pytest
+pytest-cov
+flake8
