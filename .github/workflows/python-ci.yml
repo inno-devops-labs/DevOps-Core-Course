@@ -44,13 +44,10 @@ jobs:
           coverage report --fail-under=70
           coverage xml
 
-      - name: Upload coverage to Coveralls
-        uses: coverallsapp/github-action@v2
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          format: cobertura
-          file: app_python/coverage.xml
-          flag-name: python
-          parallel: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
 
   security:

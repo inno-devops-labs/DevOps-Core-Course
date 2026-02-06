@@ -2,7 +2,7 @@
 
 ![Python CI/CD](https://github.com/sayfetik/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
 
-[![Coverage Status](https://coveralls.io/github/sayfetik/DevOps-Core-Course/badge.svg?branch=lab03)](https://coveralls.io/github/sayfetik/DevOps-Core-Course?branch=lab03)
+[![Coverage](https://codecov.io/gh/sayfetik/DevOps-Core-Course/branch/lab03/graph/badge.svg)](https://codecov.io/gh/sayfetik/DevOps-Core-Course)
 
 ## Overview
 

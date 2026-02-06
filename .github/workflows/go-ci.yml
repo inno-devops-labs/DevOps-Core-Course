@@ -40,13 +40,10 @@ jobs:
       - name: Check Go coverage threshold
         run: |
           go tool cover -func=app_go/coverage.out | awk '/total:/ {print $3}' | grep -q '^[7-9][0-9]\.[0-9]%\|100.00%' || (echo 'Coverage below 70%' && exit 1)
-      - name: Upload coverage
-        uses: coverallsapp/github-action@v2
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          format: cobertura
-          file: app_go/coverage.xml
-          flag-name: go
-          parallel: true
+          token: ${{ secrets.CODECOV_TOKEN }}
       - name: Snyk scan
         uses: snyk/actions/golang@v2
         with:
