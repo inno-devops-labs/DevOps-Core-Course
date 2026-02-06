@@ -40,6 +40,8 @@ jobs:
           file: ./coverage.xml
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Install prod dependencies for Snyk
+        run: pip install -r app_python/requirements.txt
       - name: Snyk scan
         uses: snyk/actions/python@master
         with:
