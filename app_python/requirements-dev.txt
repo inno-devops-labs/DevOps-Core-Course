@@ -1,4 +1,6 @@
 # requirements-dev.txt
+
 pytest
 pytest-cov
 flake8
+-r requirements.txt
