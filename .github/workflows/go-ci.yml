@@ -45,11 +45,12 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Snyk scan
-        uses: snyk/actions/golang@v2
-        with:
-          args: --file=go.mod
+        uses: snyk/actions/setup@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --file=app_go/go.mod
 
   docker:
     needs: lint-test
