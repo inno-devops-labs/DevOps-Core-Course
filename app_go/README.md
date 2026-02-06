@@ -1,5 +1,9 @@
 # DevOps Info Service — Go Version
 
+![CI/CD](https://github.com/sayfetik/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
+[![Coverage](https://codecov.io/gh/<your-username>/<repo>/branch/main/graph/badge.svg)](https://codecov.io/gh/<your-username>/<repo>)
+
 ## Overview
 
 This is a compiled Go implementation of the DevOps Info Service. It provides the same functionality as the Python version but is delivered as a single statically compiled binary.
