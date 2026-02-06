@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+![Python CI/CD](https://github.com/sayfetik/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
 ## Overview
 
 DevOps Info Service is a simple production-ready Python web application that provides detailed information about the running service, system environment, and runtime state. The service is designed for DevOps practices such as monitoring, health checks, and container readiness probes.
@@ -31,6 +33,7 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
+
 ## Running the Application
 
 Run with default configuration:
@@ -45,6 +48,21 @@ Run with custom configuration using environment variables:
 PORT=8080 python app.py
 HOST=127.0.0.1 PORT=3000 python app.py
 ```
+
+## Running Tests
+
+To run unit tests locally:
+
+1. Install all dependencies:
+    ```bash
+    pip install -r requirements.txt
+    pip install -r requirements-dev.txt
+    ```
+2. Run tests with pytest:
+    ```bash
+    pytest
+    ```
+Tests are located in the `tests/` directory. All endpoints and error cases are covered.
 
 ## API Endpoints
 
