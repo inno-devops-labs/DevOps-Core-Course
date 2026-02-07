@@ -78,13 +78,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
+      - name: Setup Snyk
+        uses: snyk/actions/setup@v3
+
       - name: Snyk scan
-        uses: snyk/actions/python@v1
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=labs/app_python/requirements.txt --severity-threshold=high
+        run: |
+          snyk test \
+            --file=requirements.txt \
+            --package-manager=pip \
+            --severity-threshold=high
 
   docker:
     name: Docker Build & Push
