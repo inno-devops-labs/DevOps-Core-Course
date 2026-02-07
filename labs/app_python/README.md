@@ -237,12 +237,14 @@ ruff check .
 **Chosen strategy:** Calendar Versioning (CalVer)
 
 **Format:** `YYYY.MM.DD` (UTC release date)
-
+![alt text](./docs/screenshots/lab-03-D-hub-tags.png)
 **Docker tags:**
 - `<username>/devops-info-service:YYYY.MM.DD`
 - `<username>/devops-info-service:latest`
 
 **Why:** simple, time-based releases for continuous delivery.
+
+[successful run](https://github.com/SinbadTheSailor2005/DevOps-Core-Course/actions/runs/21775115715/job/62830487398)
 
 ### Workflow Stages
 
