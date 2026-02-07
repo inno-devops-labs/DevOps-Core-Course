@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI/CD (FastAPI)](https://github.com/SinbadTheSailor2005/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/SinbadTheSailor2005/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 ## Overview
 
 A lightweight FastAPI-based service that provides comprehensive system and runtime information. This service exposes REST API endpoints to retrieve service metadata, system information, and health status. Ideal for monitoring, debugging, and DevOps observability in containerized environments.
@@ -53,7 +55,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-The service starts on `http://localhost:5000` by default.
+The service starts on `http://localhost:8080` by default.
 
 ### With Custom Configuration
 
@@ -153,7 +155,7 @@ All configuration is done via environment variables. Set them before running the
 | Variable | Default | Type | Description |
 |----------|---------|------|-------------|
 | `HOST` | `0.0.0.0` | String | Bind address for the service |
-| `PORT` | `5000` | Integer | Service port |
+| `PORT` | `8080` | Integer | Service port |
 | `DEBUG` | `False` | Boolean | Enable debug mode with auto-reload (accepts `"true"` or `"false"`) |
 
 ### Example Configuration
@@ -181,3 +183,92 @@ or
 ```bash
 docker run -p 8080:8080 reiterwurger/app:v1
 ```
+
+---
+
+## Testing
+
+### Testing Framework Choice
+
+**Chosen framework:** `pytest`
+
+**Why:**
+- Concise syntax and powerful assertions
+- Great ecosystem (fixtures, plugins, test discovery)
+- Works seamlessly with FastAPI’s `TestClient`
+
+### Test Structure
+
+Tests live in `tests/` and cover:
+- **GET `/`**: JSON structure and required fields
+- **GET `/health`**: health status and required fields
+- **Error cases**: 404 for unknown routes and 405 for invalid methods
+
+### Install Test Dependencies
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+### Run Tests Locally
+
+```bash
+pytest -q
+```
+
+### Run Linting Locally
+
+```bash
+ruff check .
+```
+
+---
+
+## CI/CD Pipeline (GitHub Actions)
+
+### Workflow Triggers
+
+- **push** to `master` and `lab*` branches
+- **pull_request** to `master` and `lab*` branches
+- manual **workflow_dispatch**
+
+### Versioning Strategy
+
+**Chosen strategy:** Calendar Versioning (CalVer)
+
+**Format:** `YYYY.MM.DD` (UTC release date)
+
+**Docker tags:**
+- `<username>/devops-info-service:YYYY.MM.DD`
+- `<username>/devops-info-service:latest`
+
+**Why:** simple, time-based releases for continuous delivery.
+
+### Workflow Stages
+
+1. **Lint & Test** (matrix on Python 3.11 and 3.12)
+2. **Security Scan** with Snyk
+3. **Docker Build & Push** (only on non-PR events)
+
+### Required Secrets
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `SNYK_TOKEN`
+
+---
+
+## CI Best Practices Applied
+
+1. **Dependency caching** (`actions/setup-python` pip cache) to speed up installs.
+2. **Matrix builds** across Python 3.11 and 3.12 for compatibility.
+3. **Least-privilege permissions** with `contents: read`.
+4. **Concurrency control** to cancel outdated runs on the same branch.
+5. **Pinned major versions** for Actions to reduce supply-chain risk.
+
+---
+
+## Security Scanning (Snyk)
+
+The workflow runs a Snyk dependency scan on every push/PR. Review results in the GitHub Actions run and address any high-severity findings before release.
+
