@@ -84,7 +84,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: test
-          args: --file=requirements.txt --severity-threshold=high
+          args: --file=labs/app_python/requirements.txt --severity-threshold=high
 
   docker:
     name: Docker Build & Push
