@@ -215,7 +215,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 ```bash
 pytest -q
 ```
-
+![alt text](./docs/screenshots/lab-03-tests-pass.png)
 ### Run Linting Locally
 
 ```bash
