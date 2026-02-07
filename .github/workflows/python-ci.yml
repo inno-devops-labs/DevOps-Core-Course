@@ -79,7 +79,7 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Setup Snyk
-        uses: snyk/actions/setup@v3
+        uses: snyk/actions/setup@master
 
       - name: Snyk scan
         env:
