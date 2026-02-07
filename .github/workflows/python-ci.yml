@@ -84,6 +84,7 @@ jobs:
       - name: Snyk scan
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
         run: |
           snyk test \
             --file=requirements.txt \
