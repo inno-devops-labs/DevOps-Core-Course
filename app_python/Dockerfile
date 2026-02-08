@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1         PYTHONUNBUFFERED=1
 # Create non-root user
 RUN useradd -m -u 10001 appuser
 
-WORKDIR /app
+WORKDIR /app 
 
 # Install dependencies first (better layer caching)
 COPY requirements.txt .
