@@ -121,15 +121,22 @@ ok      devops-info-service        0.458s
 
 ### GitHub Actions Workflows
 
+**Successful Python CI workflow:** https://github.com/ellilin/DevOps/actions/runs/21801614424
+
+**Successful Go CI workflow:** https://github.com/ellilin/DevOps/actions/runs/21801719606
+
 ![python_ci](screenshots/python_ci.jpg)
 
 ![go_ci](screenshots/go_ci.jpg)
 
 ### Docker Hub Images
-https://hub.docker.com/r/ellilin/devops-info-python/tags
+
+**Python Docker image:** https://hub.docker.com/r/ellilin/devops-info-python
+
+**Go Docker image:** https://hub.docker.com/r/ellilin/devops-info-go
+
 ![python_docker](screenshots/python_docker.jpg)
 
-https://hub.docker.com/r/ellilin/devops-info-go/tags
 ![go_docker](screenshots/go_docker.jpg)
 
 ---
