@@ -76,17 +76,13 @@ ok      devops-info-service        0.458s
 
 **Successful Go CI workflow:** https://github.com/ellilin/DevOps/actions/runs/21801719606
 
-**[SCREENSHOT NEEDED: GitHub Actions tab showing Go CI workflow with green checkmark]**
-
-**[SCREENSHOT NEEDED: Go CI workflow run details showing all jobs (lint, test, security scan, build)]**
-
-**[SCREENSHOT NEEDED: Go test job output showing all tests passing]**
+![go_ci](screenshots/go_ci.jpg)
 
 ### Docker Hub Images
 
 **Go Docker image:** https://hub.docker.com/r/ellilin/devops-info-go
 
-**[SCREENSHOT NEEDED: Docker Hub repository showing Go image with versioned tags (latest, YYYY.MM, lab03-sha)]**
+![go_docker](screenshots/go_docker.jpg)
 
 ---
 
