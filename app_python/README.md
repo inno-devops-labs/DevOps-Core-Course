@@ -1,4 +1,9 @@
-# DevOps Info Service
+# DevOps Info Service (Python)
+
+[![Python CI](https://github.com/ellilin/DevOps/workflows/Python%20CI%20-%20DevOps%20Info%20Service/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/python-ci.yml)
+[![codecov](https://codecov.io/gh/ellilin/DevOps/branch/master/graph/badge.svg?flag=python)](https://codecov.io/gh/ellilin/DevOps)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/release/python-3130/)
+[![Flask](https://img.shields.io/badge/flask-3.1.0-green.svg)](https://flask.palletsprojects.com/)
 
 A production-ready Python web service that provides comprehensive information about itself and its runtime environment.
 

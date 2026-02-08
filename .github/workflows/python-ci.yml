@@ -1,0 +1,170 @@
+name: Python CI - DevOps Info Service
+
+# Trigger the workflow on push and pull request to main branches
+# Only run when Python app files change
+on:
+  push:
+    branches: [master, main, lab03]
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+      - '!.gitignore'
+      - '!README.md'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+# Prevent concurrent workflow runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Docker configuration
+  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/devops-info-python
+  # Python version
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  # Job 1: Code quality and testing
+  test:
+    name: Test & Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'  # Built-in pip caching
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        id: cache-dependencies
+        with:
+          path: |
+            ~/.cache/pip
+            app_python/venv
+          key: ${{ runner.os }}-pip-${{ hashFiles('app_python/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          cd app_python
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Run linter (ruff)
+        run: |
+          cd app_python
+          ruff check . --output-format=github
+        continue-on-error: false
+
+      - name: Run type checker (optional)
+        run: |
+          cd app_python
+          pip install mypy
+          mypy app.py --ignore-missing-imports || true
+        continue-on-error: true
+
+      - name: Run tests with coverage
+        run: |
+          cd app_python
+          pytest --cov=. --cov-report=xml --cov-report=term --cov-report=html --verbose
+        env:
+          PYTHONPATH: ${{ github.workspace }}/app_python
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./app_python/coverage.xml
+          flags: python
+          name: python-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage reports as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-python
+          path: app_python/htmlcov/
+          retention-days: 7
+
+      - name: Security scan with Snyk
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --sarif-file-output=snyk.sarif
+        working-directory: app_python
+
+      - name: Upload Snyk results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: app_python/snyk.sarif
+
+  # Job 2: Build and push Docker image (only on push to main branches)
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test  # Only build if tests pass
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lab03')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata for Docker (CalVer)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            # Calendar versioning (CalVer) format: YYYY.MM
+            type=raw,value={{ date 'YYYY.MM' }}
+            # Latest tag
+            type=raw,value=latest
+            # Git commit SHA
+            type=sha,prefix={{ branch }}-
+            # Branch-specific tags
+            type=ref,event=branch
+          labels: |
+            org.opencontainers.image.title=DevOps Info Service (Python)
+            org.opencontainers.image.description=DevOps course info service built with Flask
+            org.opencontainers.image.vendor=DevOps Course
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: app_python
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Image digest
+        run: echo "Image pushed with digest ${{ steps.meta.outputs.digest }}"

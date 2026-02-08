@@ -1,5 +1,10 @@
 # DevOps Info Service (Go)
 
+[![Go CI](https://github.com/ellilin/DevOps/workflows/Go%20CI%20-%20DevOps%20Info%20Service/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/go-ci.yml)
+[![codecov](https://codecov.io/gh/ellilin/DevOps/branch/master/graph/badge.svg?flag=go)](https://codecov.io/gh/ellilin/DevOps)
+[![Go 1.21](https://img.shields.io/badge/go-1.21+-00ADD8?logo=go)](https://go.dev/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ellilin/DevOps)](https://goreportcard.com/report/github.com/ellilin/DevOps)
+
 A production-ready Go web service that provides comprehensive information about itself and its runtime environment. This is the compiled language version of the Python service, demonstrating multi-stage Docker build capabilities.
 
 ## Overview

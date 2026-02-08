@@ -1,0 +1,179 @@
+name: Go CI - DevOps Info Service
+
+# Trigger the workflow on push and pull request to main branches
+# Only run when Go app files change
+on:
+  push:
+    branches: [master, main, lab03]
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+      - '!.gitignore'
+      - '!README.md'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+# Prevent concurrent workflow runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Docker configuration
+  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/devops-info-go
+  # Go version
+  GO_VERSION: '1.21'
+
+jobs:
+  # Job 1: Code quality and testing
+  test:
+    name: Test & Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go ${{ env.GO_VERSION }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true  # Built-in Go module caching
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        id: cache-go-modules
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        working-directory: app_go
+        run: go mod download
+
+      - name: Verify dependencies
+        working-directory: app_go
+        run: go mod verify
+
+      - name: Run gofmt linter
+        working-directory: app_go
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "The following files are not formatted:"
+            gofmt -s -l .
+            exit 1
+          fi
+
+      - name: Run go vet
+        working-directory: app_go
+        run: go vet ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: app_go
+          args: --timeout=5m
+        continue-on-error: true
+
+      - name: Run tests with coverage
+        working-directory: app_go
+        run: |
+          go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Generate coverage report
+        working-directory: app_go
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./app_go/coverage.out
+          flags: go
+          name: go-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage reports as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-go
+          path: app_go/coverage.html
+          retention-days: 7
+
+      - name: Run gosec security scanner
+        uses: securego/gosec@master
+        with:
+          args: '-no-fail -fmt sarif -out gosec.sarif ./...'
+        working-directory: app_go
+        continue-on-error: true
+
+      - name: Upload gosec results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: app_go/gosec.sarif
+
+  # Job 2: Build and push Docker image (only on push to main branches)
+  build:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test  # Only build if tests pass
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lab03')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata for Docker (CalVer)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            # Calendar versioning (CalVer) format: YYYY.MM
+            type=raw,value={{ date 'YYYY.MM' }}
+            # Latest tag
+            type=raw,value=latest
+            # Git commit SHA
+            type=sha,prefix={{ branch }}-
+            # Branch-specific tags
+            type=ref,event=branch
+          labels: |
+            org.opencontainers.image.title=DevOps Info Service (Go)
+            org.opencontainers.image.description=DevOps course info service built with Go
+            org.opencontainers.image.vendor=DevOps Course
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: app_go
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Image digest
+        run: echo "Image pushed with digest ${{ steps.meta.outputs.digest }}"
