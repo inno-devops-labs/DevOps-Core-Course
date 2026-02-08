@@ -53,8 +53,7 @@ def test_root_ok_and_required_fields():
         assert r.status_code == 200
 
         data = r.json()
-        assert isinstance(data, dict), \
-        "Root endpoint must return a JSON object"
+        assert isinstance(data, dict))
 
         # Top-level required keys
         for key in ("service", "system", "runtime", "request", "endpoints"):
@@ -106,8 +105,7 @@ def test_health_ok_and_structure():
         assert r.status_code == 200
 
         data = r.json()
-        assert isinstance(data, dict), \
-        "Health endpoint must return a JSON object"
+        assert isinstance(data, dict))
 
         # Required fields
         assert data.get("status") == "healthy"
