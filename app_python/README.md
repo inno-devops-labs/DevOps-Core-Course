@@ -65,6 +65,30 @@ HOST=127.0.0.1 PORT=3000 python app.py
 DEBUG=True python app.py
 ```
 
+## Running Tests
+
+### Run All Tests
+```bash
+cd app_python
+pytest tests/ -v
+```
+
+### Run Tests with Coverage
+```bash
+pytest --cov=. --cov-report=html --cov-report=term --verbose
+```
+
+### Run Specific Test
+```bash
+pytest tests/test_app.py::TestMainEndpoint::test_main_endpoint_returns_200
+```
+
+### View Coverage Report
+```bash
+open htmlcov/index.html  # macOS
+xdg-open htmlcov/index.html  # Linux
+```
+
 ## API Endpoints
 
 ### GET /
