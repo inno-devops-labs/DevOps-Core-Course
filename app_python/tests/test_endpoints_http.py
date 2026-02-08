@@ -5,7 +5,6 @@ import time
 
 import requests
 
-
 PORT = int(os.environ.get("PORT", "5000"))
 BASE_URL = os.environ.get("BASE_URL", f"http://127.0.0.1:{PORT}")
 
@@ -22,8 +21,12 @@ def _start_server():
         "--port",
         str(PORT),
     ]
-    return subprocess.Popen(cmd, stdout=subprocess.PIPE, 
-    stderr=subprocess.STDOUT, text=True)
+    return subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
 
 
 def _wait_ready(timeout=10):
@@ -42,15 +45,15 @@ def _wait_ready(timeout=10):
 def test_root_ok_and_required_fields():
     p = _start_server()
     try:
-        assert _wait_ready(), "Server did not become ready. \
-        Check how your app is started."
+        assert _wait_ready(), (
+            "Server did not become ready. Check how your app is started."
+        )
 
         r = requests.get(f"{BASE_URL}/", timeout=2)
         assert r.status_code == 200
 
         data = r.json()
-        assert isinstance(data, dict), "Root endpoint must \
-            return a JSON object"
+        assert isinstance(data, dict), "Root endpoint must return a JSON object"
 
         # Top-level required keys
         for key in ("service", "system", "runtime", "request", "endpoints"):
@@ -61,8 +64,9 @@ def test_root_ok_and_required_fields():
         assert isinstance(service, dict)
         for key in ("name", "version", "description", "framework"):
             assert key in service, f"service must contain '{key}'"
-            assert isinstance(service[key], str) and service[key], \
-            f"service.{key} must be a non-empty string"
+            assert isinstance(service[key], str) and service[key], (
+                f"service.{key} must be a non-empty string"
+            )
 
         assert service["framework"] == "FastAPI"
 
@@ -93,22 +97,26 @@ def test_root_ok_and_required_fields():
 def test_health_ok_and_structure():
     p = _start_server()
     try:
-        assert _wait_ready(), "Server did not become ready. \
-            Check how your app is started."
+        assert _wait_ready(), (
+            "Server did not become ready. Check how your app is started."
+        )
 
         r = requests.get(f"{BASE_URL}/health", timeout=2)
         assert r.status_code == 200
 
         data = r.json()
-        assert isinstance(data, dict), "Health endpoint \
-            must return a JSON object"
+        assert isinstance(data, dict), "Health endpoint must return a JSON object"
 
         # Required fields
         assert data.get("status") == "healthy"
-        assert "timestamp" in data and isinstance(data["timestamp"], str) \
+        assert (
+            "timestamp" in data
+            and isinstance(data["timestamp"], str)
             and data["timestamp"]
-        assert "uptime_seconds" in data and isinstance(data["uptime_seconds"], \
-            (int, float))
+        )
+        assert "uptime_seconds" in data and isinstance(
+            data["uptime_seconds"], (int, float)
+        )
         assert data["uptime_seconds"] >= 0
     finally:
         p.terminate()
@@ -118,8 +126,9 @@ def test_health_ok_and_structure():
 def test_error_case_not_found():
     p = _start_server()
     try:
-        assert _wait_ready(), "Server did not become ready. \
-            Check how your app is started."
+        assert _wait_ready(), (
+            "Server did not become ready. Check how your app is started."
+        )
 
         r = requests.get(f"{BASE_URL}/nope", timeout=2)
         assert r.status_code == 404
