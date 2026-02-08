@@ -105,8 +105,8 @@ jobs:
           args: --severity-threshold=high --sarif-file-output=snyk.sarif
 
       - name: Upload Snyk results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('app_python/snyk.sarif') != ''
         with:
           sarif_file: app_python/snyk.sarif
 

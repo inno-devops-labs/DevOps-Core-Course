@@ -21,12 +21,12 @@ type Service struct {
 
 // System information
 type System struct {
-	Hostname       string `json:"hostname"`
-	Platform       string `json:"platform"`
+	Hostname        string `json:"hostname"`
+	Platform        string `json:"platform"`
 	PlatformVersion string `json:"platform_version"`
-	Architecture   string `json:"architecture"`
-	CPUCount       int    `json:"cpu_count"`
-	GoVersion      string `json:"go_version"`
+	Architecture    string `json:"architecture"`
+	CPUCount        int    `json:"cpu_count"`
+	GoVersion       string `json:"go_version"`
 }
 
 // Runtime information
@@ -63,9 +63,9 @@ type ServiceInfo struct {
 
 // Health response
 type HealthResponse struct {
-	Status       string `json:"status"`
-	Timestamp    string `json:"timestamp"`
-	UptimeSeconds int   `json:"uptime_seconds"`
+	Status        string `json:"status"`
+	Timestamp     string `json:"timestamp"`
+	UptimeSeconds int    `json:"uptime_seconds"`
 }
 
 // Error response
@@ -153,9 +153,9 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			Description: "DevOps course info service",
 			Framework:   "Go net/http",
 		},
-		System:    getSystemInfo(),
-		Runtime:   uptime,
-		Request:   getRequestInfo(r),
+		System:  getSystemInfo(),
+		Runtime: uptime,
+		Request: getRequestInfo(r),
 		Endpoints: []Endpoint{
 			{Path: "/", Method: "GET", Description: "Service information"},
 			{Path: "/health", Method: "GET", Description: "Health check"},
