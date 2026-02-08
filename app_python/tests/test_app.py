@@ -197,10 +197,10 @@ class TestEdgeCases:
     """Tests for edge cases and special scenarios."""
 
     def test_post_to_main_endpoint(self, client):
-        """Test that POST to main endpoint works (should return 200)."""
+        """Test that POST to main endpoint returns 405 Method Not Allowed."""
         response = client.post("/")
-        # The endpoint accepts any method but logs it
-        assert response.status_code == 200
+        # Flask routes only accept GET by default unless specified
+        assert response.status_code == 405
 
     def test_main_endpoint_with_query_params(self, client):
         """Test main endpoint with query parameters."""
