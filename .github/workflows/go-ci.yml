@@ -6,16 +6,16 @@ on:
   push:
     branches: [master, main, lab03]
     paths:
-      - 'app_go/**'
-      - '.github/workflows/go-ci.yml'
-      - '!.gitignore'
-      - '!README.md'
+      - "app_go/**"
+      - ".github/workflows/go-ci.yml"
+      - "!.gitignore"
+      - "!README.md"
   pull_request:
     branches: [master, main]
     paths:
-      - 'app_go/**'
-      - '.github/workflows/go-ci.yml'
-  workflow_dispatch:  # Allow manual trigger
+      - "app_go/**"
+      - ".github/workflows/go-ci.yml"
+  workflow_dispatch: # Allow manual trigger
 
 # Prevent concurrent workflow runs on the same branch
 concurrency:
@@ -26,7 +26,7 @@ env:
   # Docker configuration
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/devops-info-go
   # Go version
-  GO_VERSION: '1.21'
+  GO_VERSION: "1.21"
 
 jobs:
   # Job 1: Code quality and testing
@@ -42,7 +42,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache: true  # Built-in Go module caching
+          cache: true # Built-in Go module caching
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -56,15 +56,15 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Download dependencies
-        working-directory: app_go
+        working-directory: ./app_go
         run: go mod download
 
       - name: Verify dependencies
-        working-directory: app_go
+        working-directory: ./app_go
         run: go mod verify
 
       - name: Run gofmt linter
-        working-directory: app_go
+        working-directory: ./app_go
         run: |
           if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
             echo "The following files are not formatted:"
@@ -73,24 +73,24 @@ jobs:
           fi
 
       - name: Run go vet
-        working-directory: app_go
+        working-directory: ./app_go
         run: go vet ./...
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          working-directory: app_go
+          working-directory: ./app_go
           args: --timeout=5m
         continue-on-error: true
 
       - name: Run tests with coverage
-        working-directory: app_go
+        working-directory: ./app_go
         run: |
           go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Generate coverage report
-        working-directory: app_go
+        working-directory: ./app_go
         run: go tool cover -html=coverage.out -o coverage.html
 
       - name: Upload coverage to Codecov
@@ -112,8 +112,8 @@ jobs:
       - name: Run gosec security scanner
         uses: securego/gosec@master
         with:
-          args: '-no-fail -fmt sarif -out gosec.sarif ./...'
-        working-directory: app_go
+          args: "-no-fail -fmt sarif -out gosec.sarif ./..."
+        working-directory: ./app_go
         continue-on-error: true
 
       - name: Upload gosec results to GitHub Security
@@ -126,7 +126,7 @@ jobs:
   build:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    needs: test  # Only build if tests pass
+    needs: test # Only build if tests pass
     if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lab03')
 
     steps:
