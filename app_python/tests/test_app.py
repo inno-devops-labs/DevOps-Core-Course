@@ -9,6 +9,8 @@ Tests cover:
 - Data type validation
 """
 
+from datetime import datetime
+
 import pytest
 from app import app
 
