@@ -1,6 +1,6 @@
 name: Python Tests
 
-"on":
+on:
   push:
     branches: ["lab03"]
     paths:
