@@ -78,5 +78,5 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/python_app:${{ env.VERSION }}
             ${{ secrets.DOCKER_USERNAME }}/python_app:${{ github.sha }}
             ${{ secrets.DOCKER_USERNAME }}/python_app:latest
-          сache-from: type=gha
+          cache-from: type=gha
           cache-to: type=gha,mode=max
