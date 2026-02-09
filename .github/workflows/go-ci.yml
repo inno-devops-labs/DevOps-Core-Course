@@ -1,0 +1,97 @@
+name: Go ci
+
+on:
+  push:
+    branches: ["lab03", "master"]
+    paths:
+      - "app_go/**"
+      - ".github/workflows/go-ci.yml"
+  pull_request:
+    branches: ["lab03", "master"]
+    paths:
+      - "app_go/**"
+      - ".github/workflows/go-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app_go
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Go fmt check
+        run: |
+          test -z "$(gofmt -l .)"
+
+      - name: Run tests with coverage
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage
+          path: app_go/coverage.out
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: app_go/coverage.out
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app_go
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.61.0
+          working-directory: app_go
+
+  docker:
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/lab03' || github.ref == 'refs/heads/master')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Generate version
+        run: echo "VERSION=$(date -u +%Y.%m.%d)" >> $GITHUB_ENV
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app_go
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/go_app:${{ env.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/go_app:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/go_app:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
