@@ -1,0 +1,48 @@
+name: Python Tests
+
+"on":
+  push:
+    branches: ["lab03"]
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+
+      - name: Install dependencies
+        run: pip install -r app_python/requirements.txt
+
+      - name: Run linter
+        run: flake8
+
+      - name: Run tests
+        run: pytest
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Generate version
+        run: echo "VERSION=$(date -u +%Y.%m.%d)" >> $GITHUB_ENV
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app_python
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/python_app:${{ env.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/python_app:latest
