@@ -33,24 +33,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
           cache: "pip"
           cache-dependency-path: app_python/requirements.txt
 
       - name: Install dependencies
         run: pip install -r app_python/requirements.txt
 
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@master
+
       - name: Run Snyk (dependencies)
-        uses: snyk/actions/python@master
+        working-directory: app_python
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --file=app_python/requirements.txt
+        run: snyk test --severity-threshold=high
 
   docker:
-    needs: test
+    needs: [test, security]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
