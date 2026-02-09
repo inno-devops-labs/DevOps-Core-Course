@@ -31,7 +31,15 @@ jobs:
         run: flake8
 
       - name: Run tests
-        run: pytest
+        run: pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: app_python/coverage.xml
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   security:
     runs-on: ubuntu-latest

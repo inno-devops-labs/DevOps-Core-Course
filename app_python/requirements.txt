@@ -3,3 +3,4 @@ uvicorn[standard]==0.38.0
 pytest==8.4.2
 flake8==7.3.0
 httpx==0.28.1
+pytest-cov==7.0.0
