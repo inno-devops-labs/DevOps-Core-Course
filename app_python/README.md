@@ -1,3 +1,5 @@
+[![Python CI](https://github.com/newspec/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab03)](https://github.com/newspec/DevOps-Core-Course/actions/workflows/python-ci.yml?query=branch%3Alab03)
+
 # devops-info-service
 
 ## Overview
@@ -64,3 +66,8 @@ Then run:
 docker run --rm -p <host_port>:<container_port> <dockerhub_username>/<repo_name>:<tag>
 ```
 
+# Testing
+To run test locally use command:
+```bash
+pytest
+```

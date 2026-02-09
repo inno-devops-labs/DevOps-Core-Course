@@ -3,7 +3,12 @@ name: Python ci
 
 on:
   push:
-    branches: [ "lab03" ]
+    branches: [ "lab03", "master" ]
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+  pull_request:
+    branches: [ "lab03", "master" ]
     paths:
       - 'app_python/**'
       - '.github/workflows/python-ci.yml'
@@ -54,6 +59,7 @@ jobs:
   docker:
     needs: [ test, security ]
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/lab03' || github.ref == 'refs/heads/master')
     steps:
       - uses: actions/checkout@v4
 
