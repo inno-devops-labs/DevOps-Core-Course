@@ -52,7 +52,7 @@ jobs:
         run: snyk test --severity-threshold=high
 
   docker:
-    needs: [test, security]
+    needs: [ test, security ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,3 +80,4 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/python_app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
