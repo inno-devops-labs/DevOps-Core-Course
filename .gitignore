@@ -1,3 +1,4 @@
 test
 .venv
 .vscode
+authorized_key.*
