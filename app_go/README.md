@@ -1,5 +1,7 @@
 [![Go CI](https://github.com/newspec/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg?branch=lab03)](https://github.com/newspec/DevOps-Core-Course/actions/workflows/go-ci.yml?query=branch%3Alab03)
-[![Coverage](https://codecov.io/gh/newspec/DevOps-Core-Course/branch/lab03/graph/badge.svg)](https://codecov.io/gh/newspec/DevOps-Core-Course?flag=go)
+[![Coverage](https://codecov.io/gh/newspec/DevOps-Core-Course/branch/lab03/graph/badge.svg?flag=go)](https://codecov.io/gh/newspec/DevOps-Core-Course/branch/lab03?flag=go)
+
+
 # devops-info-service (Go)
 
 ## Overview
