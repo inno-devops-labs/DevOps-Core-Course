@@ -80,3 +80,4 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/python_app:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
