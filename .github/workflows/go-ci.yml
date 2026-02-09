@@ -31,6 +31,7 @@ jobs:
           test -z "$(gofmt -l .)"
 
       - name: Run tests with coverage
+        working-directory: app_go
         run: go test -coverprofile=coverage.out ./...
 
       - name: Upload coverage artifact
