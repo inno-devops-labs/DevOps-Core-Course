@@ -31,6 +31,7 @@ jobs:
         run: flake8
 
       - name: Run tests
+        working-directory: app_python
         run: pytest --cov=. --cov-report=xml:coverage.xml --cov-report=term
 
       - name: Upload coverage to Codecov
