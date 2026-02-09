@@ -3,7 +3,7 @@ name: Python ci
 
 on:
   push:
-    branches: ["lab03"]
+    branches: [ "lab03" ]
     paths:
       - 'app_python/**'
       - '.github/workflows/python-ci.yml'
@@ -27,6 +27,18 @@ jobs:
 
       - name: Run tests
         run: pytest
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Snyk (dependencies)
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file
 
   docker:
     needs: test
