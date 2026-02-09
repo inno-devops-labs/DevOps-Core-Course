@@ -39,6 +39,7 @@ jobs:
         with:
           files: app_python/coverage.xml
           fail_ci_if_error: true
+          flags: python
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 

@@ -1,5 +1,5 @@
 [![Python CI](https://github.com/newspec/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab03)](https://github.com/newspec/DevOps-Core-Course/actions/workflows/python-ci.yml?query=branch%3Alab03)
-[![Coverage](https://codecov.io/gh/newspec/DevOps-Core-Course/branch/lab03/graph/badge.svg)](https://codecov.io/gh/newspec/DevOps-Core-Course)
+[![Coverage](https://codecov.io/gh/newspec/DevOps-Core-Course/branch/lab03/graph/badge.svg)](https://codecov.io/gh/newspec/DevOps-Core-Course?flag=python)
 
 # devops-info-service
 

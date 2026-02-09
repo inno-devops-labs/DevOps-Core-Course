@@ -38,6 +38,7 @@ jobs:
         with:
           name: go-coverage
           path: app_go/coverage.out
+          flags: go
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
