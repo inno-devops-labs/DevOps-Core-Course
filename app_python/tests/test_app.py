@@ -5,11 +5,10 @@ from pathlib import Path
 import sys
 
 import pytest
+import app
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-
-import app
 
 
 @pytest.fixture()
