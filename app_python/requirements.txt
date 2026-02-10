@@ -40,3 +40,11 @@ uvicorn==0.40.0
 uvloop==0.22.1
 watchfiles==1.1.1
 websockets==16.0
+iniconfig==2.3.0
+pluggy==1.6.0
+pytest==9.0.2
+jsonschema==4.23.0
+flake8==7.3.0
+mccabe==0.7.0
+pycodestyle==2.14.0
+pyflakes==3.4.0
