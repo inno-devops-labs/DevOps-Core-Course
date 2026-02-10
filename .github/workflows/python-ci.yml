@@ -43,7 +43,7 @@ jobs:
         run: echo "VERSION=$(date +%Y.%m.%d)" >> $GITHUB_ENV
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v6 
         with:
           context: app_python
           push: true
