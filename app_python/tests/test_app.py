@@ -4,13 +4,11 @@ import pytest
 from app import app
 
 
-# --- Test-only endpoint to trigger 500 (without touching production code) ---
 def _crash():
     """Test-only endpoint to trigger 500."""
     1 / 0
 
 
-# Register the route once (pytest may import this module multiple times in some setups)
 if "__test_crash__" not in app.view_functions:
     app.add_url_rule(
         "/__test__/crash",
@@ -24,7 +22,8 @@ if "__test_crash__" not in app.view_functions:
 def client():
     """
     Flask test client (no real server).
-    Important: disable exception propagation so errorhandler(500) returns JSON instead of raising.
+    Important: disable exception propagation so errorhandler(500)
+    returns JSON instead of raising.
     """
     app.config["TESTING"] = True
     app.config["PROPAGATE_EXCEPTIONS"] = False
@@ -53,7 +52,8 @@ def test_index_payload_structure(client):
     assert isinstance(data["system"]["hostname"], str)
     assert isinstance(data["system"]["python_version"], str)
 
-    # Runtime section (values change over time => check type/range, not equality)
+    # Runtime section
+    # values change over time => check type/range, not equality)
     assert isinstance(data["runtime"]["uptime_seconds"], int)
     assert data["runtime"]["uptime_seconds"] >= 0
     assert isinstance(data["runtime"]["current_time"], str)
@@ -80,7 +80,9 @@ def test_health_payload(client):
 
     assert isinstance(data["timestamp"], str)
     # ISO-like UTC format: 2026-02-10T12:34:56Z
-    assert re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", data["timestamp"])
+    assert re.match(
+        r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", data["timestamp"]
+    )
 
 
 def test_unknown_route_returns_404_json(client):
@@ -97,7 +99,9 @@ def test_unknown_route_returns_404_json(client):
 
 def test_x_forwarded_for_sets_client_ip(client):
     """X-Forwarded-For first IP should be used as client_ip."""
-    resp = client.get("/", headers={"X-Forwarded-For": "203.0.113.10, 10.0.0.1"})
+    resp = client.get(
+        "/",
+        headers={"X-Forwarded-For": "203.0.113.10, 10.0.0.1"})
     assert resp.status_code == 200
 
     data = resp.get_json()
@@ -111,7 +115,10 @@ def test_method_not_allowed_returns_405(client):
 
 
 def test_500_handler_returns_json(client):
-    """Internal error returns JSON via 500 handler (triggered by test-only endpoint)."""
+    """
+    Internal error returns JSON via 500 handler
+    (triggered by test-only endpoint).
+    """
     resp = client.get("/__test__/crash")
     assert resp.status_code == 500
 
