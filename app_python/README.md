@@ -1,6 +1,8 @@
+Python CI badge
+
 # DevOps Info Service (Python)
 
-Lab 1 Python web application that exposes system info and a health check endpoint.
+Python web application that exposes system info and a health check endpoint.
 
 ## Overview
 This service reports:
@@ -45,6 +47,19 @@ DEBUG=True python app.py
 ```bash
 curl -s http://localhost:5000/ | jq .
 curl -s http://localhost:5000/health | jq .
+```
+
+## Testing & Linting
+
+Run locally from inside `app_python/`:
+
+```bash
+# unit tests (with coverage)
+pytest
+
+# lint + format checks
+ruff check .
+ruff format --check .
 ```
 
 ## Docker
