@@ -79,10 +79,8 @@ jobs:
 
       - name: Run Snyk to check for vulnerabilities
         if: github.ref == 'refs/heads/lab3'
-        working-directory: app_python
-        uses: snyk/actions/python@v1
+        run: |
+          cd app_python
+          snyk test --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: >
-            --severity-threshold=medium
