@@ -64,14 +64,16 @@ jobs:
           files: lab3c/app_python/coverage.xml
           token: ${{ env.CODECOV_TOKEN }}
 
+      - name: Install Snyk CLI
+        if: ${{ env.SNYK_TOKEN != '' }}
+        run: npm install -g snyk
+
       - name: Snyk scan
         if: ${{ env.SNYK_TOKEN != '' }}
-        uses: snyk/actions/python@master
+        working-directory: lab3c/app_python
+        run: snyk test --file=requirements.txt --package-manager=pip
         env:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=lab3c/app_python/requirements.txt
 
   docker:
     name: Build and Push Docker Image
