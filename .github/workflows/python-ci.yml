@@ -36,7 +36,12 @@ jobs:
         id: version
         run: |
             VERSION=${GITHUB_REF#refs/tags/v}
-            echo "image_tag=$VERSION" >> $GITHUB_OUTPUT
+            MAJOR=$(echo $VERSION | cut -d. -f1)
+            MINOR=$(echo $VERSION | cut -d. -f1-2)
+            
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "major=$MAJOR" >> $GITHUB_OUTPUT
+            echo "minor=$MINOR" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         run: |
