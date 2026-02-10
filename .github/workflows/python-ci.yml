@@ -37,7 +37,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: labs/app_python --file=labs/app_python/requirements.txt --severity-threshold=high --skip-unresolved
+          args: labs/app_python --file=requirements.txt --severity-threshold=high --skip-unresolved
 
 
       - name: Launch app and test
