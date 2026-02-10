@@ -16,16 +16,14 @@ jobs:
         run: pip install -r labs/app_python/requirements.txt
       - name: Linter
         run: flake8 --max-complexity 10 labs/app_python/app.py
-      - name: Launch app
+      - name: Launch app and test
         run:
           python labs/app_python/app.py &
           sleep 3
           && cd labs/app_python && pytest
   docker:
     runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        
+    needs: test  
     steps:
       - uses: actions/checkout@v4
         
