@@ -3,9 +3,34 @@
 ## Overview
 A Python-based web service designed to furnish details about itself and its operational environment. This service serves as a foundation for subsequent experiments in containerization, continuous integration and continuous deployment (CI/CD), monitoring, and deployment processes.
 
-## CI/CD Status
-
+## CI/CD Pipeline
 ![Python CI/CD](https://github.com/s3rap1s/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
+### Overview
+This project uses GitHub Actions for continuous integration and deployment. The pipeline includes:
+
+1. **Code Quality Checks**
+   - Linting with flake8
+   - Code formatting with black
+   - Security scanning with Snyk
+
+2. **Testing**
+   - Unit tests with pytest
+   - Test coverage tracking
+   - 90%+ code coverage requirement
+
+3. **Docker Build & Deployment**
+   - Multi-stage Docker builds
+   - Automated tagging with Calendar Versioning
+   - Push to Docker Hub
+
+### Versioning Strategy
+We use **Calendar Versioning (CalVer)** with the format `YYYY.MM.MICRO`:
+
+- **YYYY.MM.DD** - Specific date of build
+- **YYYY.MM.MICRO** - Version with micro release number
+- **latest** - Most recent stable build
+
 
 ## Prerequisites
 - Python 3.11 or higher
@@ -37,6 +62,12 @@ PORT=8080 python app.py
 
 # With custom port and host
 HOST=127.0.0.1 PORT=3000 python app.py
+```
+
+## Testing the Application
+```bash
+pytest  # Run all tests
+pytest --cov=app --cov-report=term-missing  # Run with coverage
 ```
 
 ## Docker
