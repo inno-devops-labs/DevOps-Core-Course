@@ -35,23 +35,31 @@ jobs:
       - name: Generate version tag
         id: version
         run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}
-            MAJOR=$(echo $VERSION | cut -d. -f1)
-            MINOR=$(echo $VERSION | cut -d. -f1-2)
-            
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-            echo "major=$MAJOR" >> $GITHUB_OUTPUT
-            echo "minor=$MINOR" >> $GITHUB_OUTPUT
-
+            echo "image_tag=$VERSION" >> $GITHUB_OUTPUT
+            echo "is_release=true" >> $GITHUB_OUTPUT
+          else
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            echo "image_tag=sha-$SHORT_SHA" >> $GITHUB_OUTPUT
+            echo "is_release=false" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Build and push Docker image
         run: |
           docker build -f labs/app_python/Dockerfile \
-          -t ${{ secrets.DOCKER_USERNAME }}/simple-app:${{ steps.version.outputs.image_tag }} \
-          labs/app_python
+            -t ${{ secrets.DOCKER_USERNAME }}/simple-app:${{ steps.version.outputs.image_tag }} \
+            labs/app_python
           
-          docker tag ${{ secrets.DOCKER_USERNAME }}/simple-app:${{ steps.version.outputs.image_tag }} \
-                   ${{ secrets.DOCKER_USERNAME }}/simple-app:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/simple-app:latest
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ steps.version.outputs.is_release }}" == "true" ]]; then
+            docker tag ${{ secrets.DOCKER_USERNAME }}/simple-app:${{ steps.version.outputs.image_tag }} \
+                     ${{ secrets.DOCKER_USERNAME }}/simple-app:latest
+            docker push ${{ secrets.DOCKER_USERNAME }}/simple-app:latest
+          fi
           docker push ${{ secrets.DOCKER_USERNAME }}/simple-app:${{ steps.version.outputs.image_tag }}
-
+          
+          echo "   - ${{ secrets.DOCKER_USERNAME }}/simple-app:${{ steps.version.outputs.image_tag }}"
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ steps.version.outputs.is_release }}" == "true" ]]; then
+            echo "   - ${{ secrets.DOCKER_USERNAME }}/simple-app:latest"
+          fi
    
