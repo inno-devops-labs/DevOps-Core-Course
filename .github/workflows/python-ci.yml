@@ -13,7 +13,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r labs/app_python/requirements.txt
       - name: Linter
         run: flake8 --max-complexity 10 labs/app_python/app.py
       - name: Launch app
