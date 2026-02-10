@@ -8,9 +8,8 @@ I added a separate workflow for the Go app with its own path filters. This keeps
 - Python workflow runs only when `lab3c/app_python/**` or its workflow file changes.
 
 ## Workflow Evidence
-Add real links after CI runs:
-- ✅ **Go workflow run:** `<paste GitHub Actions URL>`
-- ✅ **Docker image on Docker Hub:** `<paste Docker Hub URL>`
+- **Go workflow run:**
+- **Docker image on Docker Hub:**
 
 ## Notes
 - Go CI uses `go test` and a basic lint step.

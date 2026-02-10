@@ -11,7 +11,7 @@
 
 ## 2. Workflow Evidence
 Add real links and outputs after you run CI:
-- **Successful workflow run:** `<GitHub Actions URL>`
+- **Successful workflow run:** https://github.com/TsixPhoenix/DevOps-CC/actions/runs/21865003310/job/63103839665
 - **Tests passing locally:**
 pytest
 ============================================================================================ test session starts ============================================================================================
@@ -24,8 +24,8 @@ collected 5 items
 tests\test_app.py .....                                                                                                                                                                                [100%]
 
 ============================================================================================= 5 passed in 0.36s =============================================================================================
-- **Docker image on Docker Hub:** `<Docker Hub URL>`
-- **Status badge:** `<confirm badge works in README>`
+- **Docker image on Docker Hub:** https://hub.docker.com/repository/docker/tsixphoenix/devops-info-python/general
+- **Status badge:** Works, shows green check
 
 ## 3. Best Practices Implemented
 - **Dependency caching:** `actions/setup-python` caches pip packages to speed up installs.
@@ -33,16 +33,24 @@ tests\test_app.py .....                                                         
 - **Conditional push:** Docker images only push on `push` events (not on PRs).
 - **Concurrency:** newer runs cancel older runs for the same branch.
 - **Path filters:** CI runs only when the Python app changes (monorepo friendly).
-- **Snyk scanning:** dependency scan runs in CI (requires token).
+- **Snyk scanning:** dependency scan runs in CI.
 
-Caching time saved:
-```
-<paste before/after timing notes or cache hit log>
-```
 
 Snyk result:
 ```
-<paste snyk output or note "no vulnerabilities found">
+Run snyk test --file=requirements.txt --package-manager=pip
+
+Testing /home/runner/work/DevOps-CC/DevOps-CC/lab3c/app_python...
+
+Organization:      tsixphoenix
+Package manager:   pip
+Target file:       requirements.txt
+Project name:      app_python
+Open source:       no
+Project path:      /home/runner/work/DevOps-CC/DevOps-CC/lab3c/app_python
+Licenses:          enabled
+
+✔ Tested 13 dependencies for known issues, no vulnerable paths found.
 ```
 
 ## 4. Key Decisions
@@ -54,5 +62,5 @@ Snyk result:
 
 **Test Coverage:** Core endpoints and helper functions are tested. I did not try to cover every logging line.
 
-## 5. Challenges (Optional)
+## 5. Challenges
 - Everything was clear, because of experience of setting up CI/CD in my company workspace.
