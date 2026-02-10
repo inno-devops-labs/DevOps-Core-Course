@@ -54,8 +54,7 @@ jobs:
         uses: snyk/actions/python@master
         with:
           command: test
-        env:
-          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+          args: --file=app_python/requirements.txt --package-manager=pip
 
       - name: Lint (ruff)
         run: |
