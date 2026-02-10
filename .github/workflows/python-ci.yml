@@ -19,9 +19,7 @@ jobs:
       - name: Launch app
         run:
           python labs/app_python/app.py &
-          APP_PID=$!
-          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
-          sleep 5
+          sleep 3
           cd labs/app_python && pytest
   docker:
     runs-on: ubuntu-latest
