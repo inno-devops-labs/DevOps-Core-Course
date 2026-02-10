@@ -35,6 +35,6 @@ jobs:
         
       - name: Build and push
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/simple-app:latest .
+          cd labs/app_python && docker build -t ${{ secrets.DOCKER_USERNAME }}/simple-app:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/simple-app:latest    
    
