@@ -21,6 +21,7 @@ pip install -r requirements.txt
 #### Running ####
 
 ```bash
+cd labs/app_python
 python app.py
 # Or with custom config
 python app.py --host 127.0.0.1 --port 8080 --debug false
@@ -37,11 +38,19 @@ docker pull thevex/simple-app:latest
 ```
 
 #### Endpoints ####
+
    - `GET /` - Service and system information
    - `GET /health` - Health check
 
 #### Configuration ####
+
    - `--host` - Change host
    - `--port` - Change port
    - `--debug` - Turn on/off debug mode
 
+#### Run tests ####
+
+```bash
+cd labs/app_python
+pytest
+```

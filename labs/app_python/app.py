@@ -5,7 +5,6 @@ DevOps main application
 import platform
 import socket
 import os
-import requests
 import uvicorn
 import logging
 import argparse
@@ -18,7 +17,8 @@ app = FastAPI()
 parser = argparse.ArgumentParser()
 parser.add_argument("--host", default=os.getenv('HOST', '0.0.0.0'))
 parser.add_argument("--port", type=int, default=int(os.getenv('PORT', 8000)))
-parser.add_argument("--debug", action="store_true", default=os.getenv('DEBUG', 'False').lower() == 'true')
+parser.add_argument("--debug", action="store_true",
+                    default=os.getenv('DEBUG', 'False').lower() == 'true')
 args = parser.parse_args()
 
 
