@@ -4,11 +4,11 @@ on:
   push:
     branches: [ "main", "lab3" ]
     paths:
-      - "app_python/**"
+      - "app_python/app.py"
+      - "app_python/Dockerfile"
+      - "app_python/requirements.txt"
+      - "app_python/tests/**"
       - ".github/workflows/python-ci.yml"
-    paths-ignore:
-      - "app_python/docs/**"
-      - "app_python/**/*.md"
 
 jobs:
   build-test-and-push:
