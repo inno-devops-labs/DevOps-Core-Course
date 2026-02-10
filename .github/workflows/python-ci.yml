@@ -17,11 +17,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('app_python/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
 
       - name: Install dependencies
         run: |
@@ -50,3 +57,11 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/devops-info-python:${{ env.VERSION }}
             ${{ secrets.DOCKERHUB_USERNAME }}/devops-info-python:latest
+
+      - name: Install Snyk
+        run: npm install -g snyk
+
+      - name: Run Snyk test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test --all-projects --severity-threshold=high
