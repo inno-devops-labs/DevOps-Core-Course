@@ -4,18 +4,17 @@ on:
   push:
     # Run CI only if something has changed in the application folder or in the workflow itself
     paths:
-      - "app_python/**"
+      - "app_python/**/*.py"
+      - "app_python/requirements*.txt"
+      - "app_python/Dockerfile"
       - ".github/workflows/python-ci.yml"
-    # Documentation should not trigger CI
-    paths-ignore:
-      - "app_python/docs/**"
+
   pull_request:
-    # Similar for PR
     paths:
-      - "app_python/**"
+      - "app_python/**/*.py"
+      - "app_python/requirements*.txt"
+      - "app_python/Dockerfile"
       - ".github/workflows/python-ci.yml"
-    paths-ignore:
-      - "app_python/docs/**"
 
 # Prevents old launches from replaying when new pushes are made
 concurrency:
@@ -32,6 +31,8 @@ env:
   PYTHON_VERSION: "3.12"
   # Image repository on Docker Hub (tags added separately)
   IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/app_python
+  # SNYK token
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
 jobs:
   test:
@@ -73,32 +74,23 @@ jobs:
       # Security scan
       - name: Setup Snyk
         # Run Snyk only on the push branches we need and only if SNYK_TOKEN is specified (otherwise skip this step)
-        if: >
-          github.event_name == 'push' &&
-          (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) &&
-          secrets.SNYK_TOKEN != ''
+        if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) && env.SNYK_TOKEN != '' }}
         uses: snyk/actions/setup@master
 
       # Checking dependencies for vulnerabilities (build stops at high+)
       - name: Snyk dependency scan (fail on high+)
-        if: >
-          github.event_name == 'push' &&
-          (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) &&
-          secrets.SNYK_TOKEN != ''
+        if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) && env.SNYK_TOKEN != '' }}
         working-directory: ${{ env.APP_DIR }}
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
         run: snyk test --severity-threshold=high
 
       # Checking code for vulnerabilities (build stops at high+)
       - name: Snyk code scan (SAST)
-        if: >
-          github.event_name == 'push' &&
-          (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) &&
-          secrets.SNYK_TOKEN != ''
+        if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) && env.SNYK_TOKEN != '' }}
         working-directory: ${{ env.APP_DIR }}
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
         run: snyk code test --severity-threshold=high
 
   docker:
@@ -108,9 +100,7 @@ jobs:
     timeout-minutes: 15
 
     # push image only on push 
-    if: >
-      github.event_name == 'push' &&
-      (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab'))
+    if: ${{ github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) }}
 
     steps:
       - name: Checkout
