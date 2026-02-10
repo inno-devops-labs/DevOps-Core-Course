@@ -79,3 +79,21 @@ And run as:
 ```
 docker run -d -p <host-port>:5000 --name <container-name> chaleshka/devops-info-service:latest
 ```
+
+## Testing
+Install dependencies (pytest), then run:
+```
+python -m pytest
+```
+After run and all passed tests you must see something like this:
+
+=================================== test session starts ====================================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0
+rootdir: G:\DevOps\DevOps-Core-Course\app_python
+plugins: anyio-4.9.0, langsmith-0.3.15
+collected 4 items                                                                           
+
+tests\test_app.py <span style="color:green">.... [100%]</span>
+
+<span style="color:green">==================================== 4 passed in 0.44s =====================================</span>
+
