@@ -106,6 +106,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx (for GHA cache)
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          install: true
+
       # CalVer - version by date
       # SHA — a unique tag for each commit
       - name: Generate CalVer + SHA tag
