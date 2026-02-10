@@ -1,0 +1,6 @@
+encryptionsalt: v1:2htrVIRkn74=:v1:X/3059FziFNHP63d:r1mmZ8UQDX+bvHf0cbwZvGXB/p7S/Q==
+config:
+  yandex:cloudId: b1g1rs4u1clppvv49r7g
+  yandex:folderId: b1g0u4o89j3n6i6tnd9s
+  yandex:zone: ru-central1-a
+  yandex:serviceAccountKeyFile: ../terraform/authorized_key.json
