@@ -40,6 +40,22 @@ venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
+## Testing
+
+We use **pytest** because it is lightweight, has a clean test syntax, and works well with Flask's built-in test client.
+
+Install dev dependencies:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Run tests:
+
+```bash
+pytest
+```
+
 ## Running the Application
 
 **Default run:**

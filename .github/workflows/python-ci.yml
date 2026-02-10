@@ -1,0 +1,88 @@
+name: Python CI (app_python)
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "app_python/**"
+      - ".github/workflows/python-ci.yml"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "app_python/**"
+      - ".github/workflows/python-ci.yml"
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_APP_DIR: app_python
+  IMAGE_NAME: devops-info-service
+
+jobs:
+  test:
+    name: Lint & Test (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.PYTHON_APP_DIR }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: |
+          ruff check .
+
+      - name: Unit tests (pytest)
+        run: |
+          pytest
+
+  docker:
+    name: Docker build & push (CalVer)
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ github.event_name == 'push' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute CalVer tags (UTC)
+        id: calver
+        run: |
+          echo "date=$(date -u +'%Y.%m.%d')" >> "$GITHUB_OUTPUT"
+          echo "month=$(date -u +'%Y.%m')" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ env.PYTHON_APP_DIR }}
+          file: ./${{ env.PYTHON_APP_DIR }}/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.calver.outputs.date }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.calver.outputs.month }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+
