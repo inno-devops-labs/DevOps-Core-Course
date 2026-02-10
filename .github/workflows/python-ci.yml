@@ -20,7 +20,7 @@ jobs:
         run:
           python labs/app_python/app.py &
           sleep 3
-          cd labs/app_python && pytest
+          && cd labs/app_python && pytest
   docker:
     runs-on: ubuntu-latest
     needs: test
