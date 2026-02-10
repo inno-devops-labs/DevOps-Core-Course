@@ -39,9 +39,26 @@ jobs:
         run: terraform fmt -check -recursive -diff
         continue-on-error: true
 
-      - name: Terraform Init
+      - name: Terraform Init (with retries)
         id: init
-        run: terraform init -backend=false
+        timeout-minutes: 10
+        env:
+          TF_REGISTRY_CLIENT_TIMEOUT: "60"
+        run: |
+          set -e
+          attempts=3
+          for attempt in $(seq 1 $attempts); do
+            echo "Terraform init attempt ${attempt}/${attempts}"
+            if terraform init -backend=false; then
+              exit 0
+            fi
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "Terraform init failed. Retrying in 20s..."
+              sleep 20
+            fi
+          done
+          echo "Terraform init failed after ${attempts} attempts."
+          exit 1
 
       - name: Terraform Validate
         id: validate
