@@ -5,6 +5,8 @@ on:
     branches: [master]
     types: [ opened, synchronize, reopened ]
   push:
+    branches:
+      - '**'
 
 jobs:
   test:
