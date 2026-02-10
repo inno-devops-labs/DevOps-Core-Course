@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI](https://github.com/Gpshfrd/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Gpshfrd/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 ## Overview
 A lightweight web service, that exposes the system, runtime, and request information.
 Used as a foundation for DevOps labs (Docker, CI/CD, monitoring).
@@ -50,6 +52,3 @@ Pull from Docker Hub:
 ```bash
 docker pull gpshfrd/devops-info-python:1.0.0
 ```
-
-Status Badge
-[![Python CI](https://github.com/Gpshfrd/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Gpshfrd/DevOps-Core-Course/actions/workflows/python-ci.yml)
