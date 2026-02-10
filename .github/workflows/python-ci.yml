@@ -30,8 +30,9 @@ jobs:
           pytest tests/ --doctest-modules --junitxml=junit/test-results.xml
 
   push_to_docker:
-
+    needs: build
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     defaults:
       run:
         working-directory: ./app_python
@@ -71,8 +72,19 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/python@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    - name: Checkout code
+      uses: actions/checkout@v5
+    - name: Install Snyk CLI
+      run: |
+        curl https://downloads.snyk.io/cli/stable/snyk-linux -o snyk-linux
+        curl https://downloads.snyk.io/cli/stable/snyk-linux.sha256 -o snyk.sha256
+        sha256sum -c snyk.sha256
+        chmod +x snyk-linux
+        sudo mv snyk-linux /usr/local/bin/snyk
+    - name: Run Snyk to test project dependencies
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: |
+        cd app_python
+        pip install -r requirements.txt --break-system-packages
+        snyk test
