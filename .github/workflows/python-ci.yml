@@ -55,8 +55,9 @@ jobs:
 
       - name: Security scan (Snyk)
         if: ${{ env.SNYK_TOKEN != '' }}
-        run: |
-          snyk test --file=requirements.txt
+        uses: snyk/actions/python@master
+        with:
+          command: test
         env:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
 
