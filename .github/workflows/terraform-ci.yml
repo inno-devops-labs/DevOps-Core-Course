@@ -1,0 +1,128 @@
+name: Terraform CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - 'lab*'
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+  pull_request:
+    branches:
+      - master
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+
+jobs:
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive -diff
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        id: tflint
+        run: tflint --format compact
+        continue-on-error: true
+
+      - name: Post Validation Summary
+        run: |
+          echo "## Terraform Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Format | ${{ steps.fmt.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Init | ${{ steps.init.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | ${{ steps.validate.outcome == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| TFLint | ${{ steps.tflint.outcome == 'success' && '✅ Passed' || '⚠️ Warnings' }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for failures
+        if: steps.fmt.outcome == 'failure' || steps.init.outcome == 'failure' || steps.validate.outcome == 'failure'
+        run: |
+          echo "❌ Terraform validation failed!"
+          echo ""
+          echo "Failures detected in:"
+          if [ "${{ steps.fmt.outcome }}" == "failure" ]; then
+            echo "  - terraform fmt (run 'terraform fmt -recursive' to fix)"
+          fi
+          if [ "${{ steps.init.outcome }}" == "failure" ]; then
+            echo "  - terraform init"
+          fi
+          if [ "${{ steps.validate.outcome }}" == "failure" ]; then
+            echo "  - terraform validate"
+          fi
+          exit 1
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: validate
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'terraform'
+          format: 'table'
+          exit-code: '0'  # Don't fail on findings (informational)
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Checking for potential secrets in Terraform files..."
+
+          # Check for potential AWS credentials
+          if grep -rE "AKIA[0-9A-Z]{16}" . --include="*.tf" 2>/dev/null; then
+            echo "⚠️ Potential AWS Access Key found!"
+            exit 1
+          fi
+
+          # Check for potential passwords
+          if grep -rE "password\s*=\s*\"[^\"]+\"" . --include="*.tf" 2>/dev/null | grep -v "var\." | grep -v "random_password"; then
+            echo "⚠️ Potential hardcoded password found!"
+            exit 1
+          fi
+
+          echo "✅ No obvious secrets found in Terraform files"

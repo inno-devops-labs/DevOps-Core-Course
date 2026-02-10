@@ -185,6 +185,12 @@ $ python -m ruff check .
 All checks passed!
 ```
 
+### GitHub Actions Workflow Success
+
+![CI Workflow Success](screenshots/04-ci-workflow-success.jpg)
+
+*Screenshot: Successful CI/CD workflow run showing all jobs passing (lint-test, security, docker-build-push)*
+
 ### Links
 
 - **Workflow Runs:** https://github.com/pepegx/DevOps-Core-Course/actions/workflows/python-ci.yml
