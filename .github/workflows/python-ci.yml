@@ -1,10 +1,10 @@
 name: python-app
 
 on: 
-  push:
   pull_request:
     branches: [master]
     types: [ opened, synchronize, reopened ]
+  push:
 
 jobs:
   test:
