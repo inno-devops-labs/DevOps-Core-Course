@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI (app_python)](https://github.com/MariaRokkel/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab03)](https://github.com/MariaRokkel/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 ## Overview
 DevOps Info Service is a Python web application that provides detailed information about the service itself, the host system, runtime, and HTTP requests. It also includes a health check endpoint for monitoring and Kubernetes probes. The service is lightweight, configurable via environment variables, and suitable for DevOps experiments and labs.
 
