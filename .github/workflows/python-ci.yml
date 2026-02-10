@@ -33,9 +33,11 @@ jobs:
         run: flake8 --max-complexity 10 labs/app_python/app.py
 
       - name: Snyk scan
-        run:
-          npm install -g snyk
-          snyk auth ${{ secrets.SNYK_TOKEN }}
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: app_python --file=requirements.txt --severity-threshold=high --skip-unresolved
 
 
       - name: Launch app and test
