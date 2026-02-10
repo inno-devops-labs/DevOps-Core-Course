@@ -3,6 +3,10 @@
 ## Overview
 A Python-based web service designed to furnish details about itself and its operational environment. This service serves as a foundation for subsequent experiments in containerization, continuous integration and continuous deployment (CI/CD), monitoring, and deployment processes.
 
+## CI/CD Status
+
+![Python CI/CD](https://github.com/s3rap1s/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
 ## Prerequisites
 - Python 3.11 or higher
 - pip (Python Package manager)
