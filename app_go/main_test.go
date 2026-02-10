@@ -58,7 +58,9 @@ func TestMainHandler_SystemFields(t *testing.T) {
 	mainHandler(w, req)
 
 	var data ServiceInfo
-	json.NewDecoder(w.Body).Decode(&data)
+	if err := json.NewDecoder(w.Body).Decode(&data); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
 
 	if data.System.Hostname == "" {
 		t.Error("hostname should not be empty")
@@ -80,7 +82,9 @@ func TestMainHandler_RuntimeFields(t *testing.T) {
 	mainHandler(w, req)
 
 	var data ServiceInfo
-	json.NewDecoder(w.Body).Decode(&data)
+	if err := json.NewDecoder(w.Body).Decode(&data); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
 
 	if data.Runtime.UptimeSeconds < 0 {
 		t.Errorf("uptime should be non-negative, got %d", data.Runtime.UptimeSeconds)
@@ -100,7 +104,9 @@ func TestMainHandler_RequestFields(t *testing.T) {
 	mainHandler(w, req)
 
 	var data ServiceInfo
-	json.NewDecoder(w.Body).Decode(&data)
+	if err := json.NewDecoder(w.Body).Decode(&data); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
 
 	if data.Request.Method != "GET" {
 		t.Errorf("expected method 'GET', got %s", data.Request.Method)
@@ -119,7 +125,9 @@ func TestMainHandler_Endpoints(t *testing.T) {
 	mainHandler(w, req)
 
 	var data ServiceInfo
-	json.NewDecoder(w.Body).Decode(&data)
+	if err := json.NewDecoder(w.Body).Decode(&data); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
 
 	if len(data.Endpoints) != 2 {
 		t.Fatalf("expected 2 endpoints, got %d", len(data.Endpoints))
@@ -193,7 +201,9 @@ func TestNotFoundHandler(t *testing.T) {
 	}
 
 	var data map[string]string
-	json.NewDecoder(w.Body).Decode(&data)
+	if err := json.NewDecoder(w.Body).Decode(&data); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
 
 	if data["error"] != "Not Found" {
 		t.Errorf("expected error 'Not Found', got %s", data["error"])

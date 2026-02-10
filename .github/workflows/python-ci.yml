@@ -112,10 +112,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r app_python/requirements.txt
 
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/python@master
+        run: snyk test --file=app_python/requirements.txt --severity-threshold=high --package-manager=pip
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --file=app_python/requirements.txt --severity-threshold=high
         continue-on-error: true
