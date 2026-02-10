@@ -49,10 +49,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Setup Snyk
-        if: ${{ env.SNYK_TOKEN != '' }}
-        uses: snyk/actions/setup@v4
-
       - name: Security scan (Snyk)
         if: ${{ env.SNYK_TOKEN != '' }}
         uses: snyk/actions/python@master
@@ -110,5 +106,3 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.calver.outputs.date }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.calver.outputs.month }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-
-
