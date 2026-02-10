@@ -39,7 +39,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install flake8 black pytest pytest-cov snyk-python
+        pip install flake8 black pytest pytest-cov
 
     - name: Lint with flake8
       run: |
@@ -58,11 +58,12 @@ jobs:
         pytest --cov=app --cov-report=term-missing -v
 
     - name: Security scan with Snyk
+      uses: snyk/actions/python@master
+      continue-on-error: true
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      run: |
-        echo "Running Snyk security scan..."
-        snyk test --severity-threshold=high --file=requirements.txt || echo "Snyk scan completed (warnings only)"
+      with:
+        args: --severity-threshold=high --file=requirements.txt
 
   docker-build-and-push:
     name: Docker Build & Push
