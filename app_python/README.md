@@ -1,5 +1,7 @@
 # DevOps Info Service (Python)
 
+![Python CI and Docker](https://github.com/chomosuce/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
 ## Overview
 Simple Flask web service that reports service metadata, system details, runtime uptime, and request info. Includes a `/health` endpoint for liveness probes.
 
@@ -12,6 +14,15 @@ Simple Flask web service that reports service metadata, system details, runtime 
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+```
+
+## Testing
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+pytest
 ```
 
 ## Running the Application
