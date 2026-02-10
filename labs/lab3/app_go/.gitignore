@@ -1,0 +1,6 @@
+devops-info-service
+*.exe
+*.log
+.DS_Store
+.idea/
+.vscode/

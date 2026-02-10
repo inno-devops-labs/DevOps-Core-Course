@@ -1,6 +1,5 @@
 # Lab 2 Report — Docker Containerization (Python)
 
-## Student Information
 - **Name:** Alexander Rozanov
 - **Group:** CBS-02
 - **Email:** al.rozanov@innopolis.university

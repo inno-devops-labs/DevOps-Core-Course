@@ -1,0 +1,134 @@
+name: Python CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - "app_python/**"
+      - ".github/workflows/python-ci.yml"
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - "app_python/**"
+      - ".github/workflows/python-ci.yml"
+  workflow_dispatch:
+
+# A small best practice: cancel older runs for the same branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Change ONLY the repository name if you want a different image.
+  # Docker Hub repo will be: <DOCKERHUB_USERNAME>/<IMAGE_REPO>
+  IMAGE_REPO: devops-info-python
+
+jobs:
+  test:
+    name: Lint + Tests (with coverage)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.12", "3.13" ]
+
+    defaults:
+      run:
+        working-directory: app_python
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            app_python/requirements.txt
+            app_python/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: |
+          ruff check .
+
+      - name: Run unit tests + coverage
+        run: |
+          pytest -q             --cov=.             --cov-report=term-missing             --cov-report=xml             --cov-fail-under=70
+
+      # Optional but recommended (bonus): upload coverage to Codecov
+      - name: Upload coverage to Codecov
+        if: ${{ always() && matrix.python-version == '3.12' }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # required for private repos, optional for public repos
+          files: app_python/coverage.xml
+          flags: python
+          fail_ci_if_error: false
+
+      # Required by the lab: Snyk dependency scan
+      # Snyk requires dependencies to be installed before it runs. See Snyk docs.
+      - name: Snyk scan (dependencies)
+        if: ${{ matrix.python-version == '3.12' }}
+        uses: snyk/actions/python@master
+        continue-on-error: true # keep workflow green while you fix/report vulnerabilities
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  docker:
+    name: Docker build & push (versioned)
+    runs-on: ubuntu-latest
+    needs: test
+    # Best practice: push images only from main/master on direct pushes (not PRs).
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') }}
+
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        working-directory: app_python
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare version (CalVer)
+        run: |
+          # CalVer: YYYY.MM.DD-<run_number>
+          echo "VERSION=$(date -u +'%Y.%m.%d')-${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app_python
+          file: ./app_python/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_REPO }}:${{ env.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_REPO }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_REPO }}:sha-${{ github.sha }}
+          # Docker layer caching (best practice)
+          cache-from: type=gha,scope=python
+          cache-to: type=gha,mode=max,scope=python
