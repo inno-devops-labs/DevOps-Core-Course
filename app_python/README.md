@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+![Python CI](https://github.com/AEZuraa/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
 A lightweight web service that provides comprehensive system and runtime information for DevOps monitoring and diagnostics.
 
 ## Overview
@@ -206,7 +208,20 @@ docker run -p 8080:8080 -e DEBUG=true aezuraa/devops-info-service:python
 
 ## Testing
 
-Access the endpoints using curl, HTTPie, or Postman:
+### Unit Tests
+
+```bash
+# Install dev dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+pytest tests/ -v
+
+# Run tests with coverage
+pytest tests/ -v --cov=. --cov-report=term-missing
+```
+
+### Manual Testing
 
 ```bash
 # Test main endpoint
@@ -217,7 +232,4 @@ curl http://localhost:8080/health
 
 # Pretty print with jq
 curl -s http://localhost:8080/ | jq
-
-# Using HTTPie
-http localhost:8080/
 ```

@@ -45,13 +45,13 @@ def get_uptime():
     seconds = int(delta.total_seconds())
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
-    
+
     # Format human-readable uptime
     if hours > 0:
         human = f"{hours} hour{'s' if hours != 1 else ''}, {minutes} minute{'s' if minutes != 1 else ''}"
     else:
         human = f"{minutes} minute{'s' if minutes != 1 else ''}"
-    
+
     return {
         'seconds': seconds,
         'human': human
@@ -62,10 +62,10 @@ def get_uptime():
 def index():
     """Main endpoint - service and system information."""
     logger.debug(f'Request: {request.method} {request.path}')
-    
+
     uptime = get_uptime()
     system = get_system_info()
-    
+
     response = {
         'service': {
             'name': 'devops-info-service',
@@ -99,7 +99,7 @@ def index():
             }
         ]
     }
-    
+
     return jsonify(response)
 
 
@@ -107,9 +107,9 @@ def index():
 def health():
     """Health check endpoint for monitoring."""
     logger.debug(f'Health check: {request.method} {request.path}')
-    
+
     uptime = get_uptime()
-    
+
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now(timezone.utc).isoformat(),

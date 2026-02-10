@@ -1,0 +1,9 @@
+# Development & testing dependencies
+-r requirements.txt
+
+# Testing
+pytest==8.3.4
+pytest-cov==6.0.0
+
+# Linting
+flake8==7.1.1

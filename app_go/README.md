@@ -1,5 +1,7 @@
 # DevOps Info Service (Go)
 
+![Go CI](https://github.com/AEZuraa/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)
+
 Go implementation of the DevOps Info Service using standard `net/http` library.
 
 ## Prerequisites
@@ -126,6 +128,17 @@ docker run -p 8080:8080 aezuraa/devops-info-service:go
 
 ```bash
 docker run -p 8090:8090 -e PORT=8090 aezuraa/devops-info-service:go
+```
+
+## Testing
+
+```bash
+# Run tests
+go test -v ./...
+
+# Run tests with coverage
+go test -v -coverprofile=coverage.out ./...
+go tool cover -func=coverage.out
 ```
 
 ## Comparison with Python
