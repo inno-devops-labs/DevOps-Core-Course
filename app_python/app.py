@@ -19,6 +19,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.info("DevOps Info Service starting...")
 
+
 @app.route("/")
 def index():
     logger.info(f"Request from {request.remote_addr}: {request.method} {request.path}")
@@ -72,6 +73,7 @@ def health():
         "uptime_seconds": uptime.total_seconds()
     }), 200
 
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({"error": "Not Found", "message": "Endpoint does not exist"}), 404
@@ -80,6 +82,7 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     return jsonify({"error": "Internal Server Error", "message": "Unexpected error"}), 500
+
 
 if __name__ == "__main__":
     logger.info(f"Running on http://{HOST}:{PORT}")
