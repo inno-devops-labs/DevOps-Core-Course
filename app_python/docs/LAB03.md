@@ -77,7 +77,7 @@ CI produces:
 Run on PRs to validate changes early, and only push images on `master` and `lab03` (`lab03` for showing the working pipeline) pushes to avoid publishing images from unmerged code.
 
 ### Test Coverage
-Covered: main endpoints and error handlers.
-Not covered (if any): nothing.
+- Covered: main endpoints and error handlers.
+- Not covered (if any): nothing.
 
 ---
