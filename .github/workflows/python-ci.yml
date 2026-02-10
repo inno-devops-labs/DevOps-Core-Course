@@ -1,0 +1,144 @@
+name: Python CI
+
+on:
+  push:
+    # Run CI only if something has changed in the application folder or in the workflow itself
+    paths:
+      - "app_python/**"
+      - ".github/workflows/python-ci.yml"
+    # Documentation should not trigger CI
+    paths-ignore:
+      - "app_python/docs/**"
+  pull_request:
+    # Similar for PR
+    paths:
+      - "app_python/**"
+      - ".github/workflows/python-ci.yml"
+    paths-ignore:
+      - "app_python/docs/**"
+
+# Prevents old launches from replaying when new pushes are made
+concurrency:
+  group: python-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimum required privileges are provided
+permissions:
+  contents: read
+
+env:
+  # To avoid duplicating paths/versions throughout the file
+  APP_DIR: app_python
+  PYTHON_VERSION: "3.12"
+  # Image repository on Docker Hub (tags added separately)
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/app_python
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # We're grabbing the repository code for the runner
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Prepare the required version of Python and enable the pip cache (to speed up the work during subsequent launches)
+      - name: Setup Python (pip cache)
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+          cache-dependency-path: |
+            app_python/requirements.txt
+            app_python/requirements-dev.txt
+      
+      # Installing dependencies
+      - name: Install deps
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      # Code Quality Check: Style + Typical Errors (Before Testing)
+      - name: Lint (flake8)
+        working-directory: ${{ env.APP_DIR }}
+        run: flake8 app.py tests
+
+      # Running unit tests
+      - name: Tests (pytest)
+        working-directory: ${{ env.APP_DIR }}
+        run: pytest -q
+
+      # Security scan
+      - name: Setup Snyk
+        # Run Snyk only on the push branches we need and only if SNYK_TOKEN is specified (otherwise skip this step)
+        if: >
+          github.event_name == 'push' &&
+          (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) &&
+          secrets.SNYK_TOKEN != ''
+        uses: snyk/actions/setup@master
+
+      # Checking dependencies for vulnerabilities (build stops at high+)
+      - name: Snyk dependency scan (fail on high+)
+        if: >
+          github.event_name == 'push' &&
+          (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) &&
+          secrets.SNYK_TOKEN != ''
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test --severity-threshold=high
+
+      # Checking code for vulnerabilities (build stops at high+)
+      - name: Snyk code scan (SAST)
+        if: >
+          github.event_name == 'push' &&
+          (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab')) &&
+          secrets.SNYK_TOKEN != ''
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk code test --severity-threshold=high
+
+  docker:
+    # Docker job is started only if tests/linter passed
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # push image only on push 
+    if: >
+      github.event_name == 'push' &&
+      (github.ref_name == 'main' || github.ref_name == 'master' || startsWith(github.ref_name, 'lab'))
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # CalVer - version by date
+      # SHA — a unique tag for each commit
+      - name: Generate CalVer + SHA tag
+        run: |
+          echo "CALVER=$(date -u +'%Y.%m.%d')" >> $GITHUB_ENV
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+      
+      # Authorization in Docker Hub using a token from GitHub Secrets
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      # Build and push the image (Layers are cached to make rebuilds faster)
+      - name: Build and push (with cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ env.APP_DIR }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.CALVER }}
+            ${{ env.IMAGE_NAME }}:sha-${{ env.SHORT_SHA }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
