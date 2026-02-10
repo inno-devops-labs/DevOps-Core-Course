@@ -1,7 +1,7 @@
 # DevOps Info Service (FastAPI)
 
 [![Python CI](https://github.com/TsixPhoenix/DevOps-CC/actions/workflows/python-ci.yml/badge.svg?branch=lab03)](https://github.com/TsixPhoenix/DevOps-CC/actions/workflows/python-ci.yml)
-[![Coverage](https://codecov.io/gh/TsixPhoenix/DevOps-CC/branch/lab03/graph/badge.svg)](https://codecov.io/gh/TsixPhoenix/DevOps-CC)
+
 
 ## Overview
 Small service returning system info about the machine it runs on, plus a health check.
