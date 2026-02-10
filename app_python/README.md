@@ -50,3 +50,6 @@ Pull from Docker Hub:
 ```bash
 docker pull gpshfrd/devops-info-python:1.0.0
 ```
+
+Status Badge
+[![Python CI](https://github.com/Gpshfrd/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Gpshfrd/DevOps-Core-Course/actions/workflows/python-ci.yml)
