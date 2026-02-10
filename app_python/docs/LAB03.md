@@ -22,27 +22,15 @@
 ## 2. Workflow Evidence
 
 **GitHub Actions CI Run:** [Link to successful workflow](https://github.com/Gpshfrd/DevOps-Core-Course/actions/runs/21863939737)  
+![run-complete](screenshots/lab03/run_complete.png)
 
 **Local Test Run:**  
-```bash
-$ cd app_python
-$ pytest
-======================== test session starts ========================
-...
-collected 6 items
-
-app_python/tests/test_main.py ......   [100%]
-
-========================= 6 passed in 0.25s =========================
-```
+![tests-passed](screenshots/lab03/tests_passed.png)
 
 Docker Image on Docker Hub:
+![tags](screenshots/lab03/tags.png)
 
-gpshfrd/devops-info-python:latest
-
-gpshfrd/devops-info-python:2026.02.10
-
-Status Badge: displayed at the top of the README, shows the current CI status (passing/failing)
+[![Python CI](https://github.com/Gpshfrd/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Gpshfrd/DevOps-Core-Course/actions/workflows/python-ci.yml) displayed at the top of the README, shows the current CI status (passing/failing)
 
 ## 3. Best Practices Implemented
 
