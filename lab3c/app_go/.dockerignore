@@ -1,0 +1,7 @@
+*.exe
+*.log
+.git/
+.gitignore
+.idea/
+.vscode/
+docs/
