@@ -55,10 +55,12 @@ jobs:
     name: Docker build & push (CalVer)
     runs-on: ubuntu-latest
     needs: test
-    # Only publish images from main/master branches on push
+    # Only publish images from main/master/lab03 branches on push
     if: >
       github.event_name == 'push' &&
-      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+      (github.ref == 'refs/heads/master' ||
+       github.ref == 'refs/heads/main' ||
+       github.ref == 'refs/heads/lab03')
     permissions:
       contents: read
     steps:
