@@ -77,10 +77,12 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
 
 
-      - name: Run Snyk to check for vulnerabilities
-        if: github.ref == 'refs/heads/lab3'
-        run: |
-          cd app_python
-          snyk test --severity-threshold=medium
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+
+      - name: Run Snyk test
+        working-directory: app_python
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test --severity-threshold=medium
