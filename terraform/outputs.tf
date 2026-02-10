@@ -67,9 +67,11 @@ output "vm_zone" {
 output "github_repo_url" {
   description = "GitHub repository URL"
   value       = var.github_token != "" ? github_repository.course_repo[0].html_url : "GitHub provider not configured"
+  sensitive   = true
 }
 
 output "github_repo_clone_url" {
   description = "GitHub repository clone URL"
   value       = var.github_token != "" ? github_repository.course_repo[0].git_clone_url : "GitHub provider not configured"
+  sensitive   = true
 }
