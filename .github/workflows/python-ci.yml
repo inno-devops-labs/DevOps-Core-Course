@@ -26,6 +26,8 @@ jobs:
   test:
     name: Lint & Test (pytest)
     runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     defaults:
       run:
         working-directory: ${{ env.PYTHON_APP_DIR }}
@@ -48,15 +50,15 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Setup Snyk
-        if: ${{ secrets.SNYK_TOKEN != '' }}
-        uses: snyk/actions/setup@master
+        if: ${{ env.SNYK_TOKEN != '' }}
+        uses: snyk/actions/setup@v4
 
       - name: Security scan (Snyk)
-        if: ${{ secrets.SNYK_TOKEN != '' }}
+        if: ${{ env.SNYK_TOKEN != '' }}
         run: |
           snyk test --file=requirements.txt
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
 
       - name: Lint (ruff)
         run: |

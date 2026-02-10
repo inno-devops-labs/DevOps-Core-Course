@@ -134,9 +134,9 @@ Additionally, one more tag is added:
   - this reduces pipeline duration and load on package registries
 
 **Measured improvement (GitHub Actions):**
-- Cold cache run: _[fill in duration from Actions]_  
-- Warm cache run: _[fill in duration from Actions]_  
-- Improvement: _[fill in percent]_
+- Cold cache run: ~6 seconds for the *Install dependencies* step  
+- Warm cache run: ~4 seconds for the *Install dependencies* step  
+- Approximate improvement: about **33% faster** dependency installation
 
 ### Security Scanning with Snyk
 - Integrated **Snyk** security scanning into the `test` job:
