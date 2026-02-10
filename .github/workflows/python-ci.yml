@@ -8,14 +8,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Python set up
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        id: pip-cache
+        with:
+          path: |
+            ~\AppData\Local\pip\Cache
+            ~\.cache\pip
+            ~\AppData\Local\pip\Cache\http
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+        
       - name: Install dependencies
         run: pip install -r labs/app_python/requirements.txt
+
       - name: Linter
         run: flake8 --max-complexity 10 labs/app_python/app.py
+
+      - name: Snyk scan
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: app_python --file=requirements.txt --severity-threshold=high --skip-unresolved
+
+
       - name: Launch app and test
         run:
           python labs/app_python/app.py &
