@@ -78,6 +78,6 @@ jobs:
           file: ./labs/app_python/Dockerfile
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/simple-app:${{ env.VERSION }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/simple-app:latest
+            ${{ secrets.DOCKER_USERNAME }}/simple-app:${{ env.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/simple-app:latest
    
