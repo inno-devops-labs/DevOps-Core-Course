@@ -1,0 +1,49 @@
+name: Python CI
+
+on:
+  push:
+    paths:
+      - "app_python/**"
+      - ".github/workflows/python-ci.yml"
+  pull_request:
+    paths:
+      - "app_python/**"
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r app_python/requirements.txt
+          pip install -r app_python/requirements-dev.txt
+
+      - name: Run tests
+        run: |
+          cd app_python
+          pytest
+
+      - name: gpshfrd
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: app_python
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-info-python:${{ env.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-info-python:latest
