@@ -18,7 +18,7 @@ jobs:
         run: flake8 --max-complexity 10 labs/app_python/app.py
       - name: Launch app
         run:
-          poetry run python app/main.py &
+          python labs/app_python/app.py &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
           sleep 5
