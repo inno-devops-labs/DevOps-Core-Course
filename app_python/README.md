@@ -1,4 +1,4 @@
-Python CI badge
+![Python CI badge](https://github.com/ilyalinhnguyen/DevOps-Core-Course/actions/workflows/lint-and-docker.yaml/badge.svg)
 
 # DevOps Info Service (Python)
 
