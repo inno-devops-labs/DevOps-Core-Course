@@ -64,7 +64,11 @@ jobs:
           file: ./app_python/coverage.xml
           flags: python
           name: python-coverage
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
+          verbose: true
+          slug: ${{ github.repository }}
+          branch: ${{ github.head_ref || github.ref_name }}
 
   docker-build-push:
     name: Docker Build & Push

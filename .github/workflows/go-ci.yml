@@ -126,6 +126,11 @@ jobs:
           file: ./app_go/coverage.out
           flags: go
           name: go-coverage
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+          verbose: true
+          slug: ${{ github.repository }}
+          branch: ${{ github.head_ref || github.ref_name }}
 
   docker-build-push:
     name: Docker Build & Push
