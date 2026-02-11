@@ -27,6 +27,7 @@ START_TIME = datetime.now(timezone.utc)
 
 app = Flask(__name__)
 
+
 def get_system_info():
     """Collect system information."""
     return {
@@ -37,6 +38,7 @@ def get_system_info():
         'cpu_count': os.cpu_count() or 0,
         'python_version': platform.python_version()
     }
+
 
 def get_uptime():
     """Calculate uptime since application start."""
@@ -49,11 +51,13 @@ def get_uptime():
         'human': f"{hours} hours, {minutes} minutes"
     }
 
+
 @app.route('/')
 def index():
     """Main endpoint - service and system information."""
-    logger.info(f'Request: {request.method} {request.path} from {request.remote_addr}')
-    
+    logger.info(f'Request: {request.method} {request.path} ' +
+                'from {request.remote_addr}')
+
     return jsonify({
         "service": {
             "name": "devops-info-service",
@@ -75,10 +79,19 @@ def index():
             "path": request.path
         },
         "endpoints": [
-            {"path": "/", "method": "GET", "description": "Service information"},
-            {"path": "/health", "method": "GET", "description": "Health check"}
+            {
+                "path": "/",
+                "method": "GET",
+                "description": "Service information"
+            },
+            {
+                "path": "/health",
+                "method": "GET",
+                "description": "Health check"
+            }
         ]
     })
+
 
 @app.route('/health')
 def health():
@@ -89,6 +102,7 @@ def health():
         'uptime_seconds': get_uptime()['seconds']
     })
 
+
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors with JSON response."""
@@ -96,6 +110,7 @@ def not_found(error):
         'error': 'Not Found',
         'message': 'Endpoint does not exist'
     }), 404
+
 
 @app.errorhandler(500)
 def internal_error(error):
@@ -105,6 +120,7 @@ def internal_error(error):
         'message': 'An unexpected error occurred'
     }), 500
 
+
 if __name__ == '__main__':
-    logger.info(f'Starting DevOps Info Service on {HOST}:{PORT} (debug={DEBUG})')
+    logger.info(f'Starting DevOps Service on {HOST}:{PORT} (debug={DEBUG})')
     app.run(host=HOST, port=PORT, debug=DEBUG)
