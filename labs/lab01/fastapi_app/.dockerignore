@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -8,11 +9,13 @@ dist/
 build/
 *.egg
 
+# Virtual environments
 venv/
 .venv/
 env/
 ENV/
 
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -20,22 +23,23 @@ ENV/
 *~
 .DS_Store
 
+# Version control
 .git/
 .gitignore
 
+# Documentation (not needed at runtime)
 *.md
 docs/
 
+# Testing
 .pytest_cache/
 .coverage
 htmlcov/
 *.cover
-.tox/
 
+# Environment files
 .env
 .env.local
 
+# Logs
 *.log
-
-Dockerfile
-.dockerignore
