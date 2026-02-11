@@ -71,7 +71,7 @@ jobs:
       - name: Snyk scan (deps)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk test --file=app_python/requirements.txt --severity-threshold=high
+        run: snyk test --file=requirements.txt --severity-threshold=high
 
   docker-build-push:
     runs-on: ubuntu-latest
