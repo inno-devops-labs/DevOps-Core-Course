@@ -1,5 +1,23 @@
 # DevOps Info Service
 
+## Docker images
+
+https://hub.docker.com/repository/docker/plaffyyy9/devops-info-service/image-management
+
+## Quick Start
+
+```bash
+pip install -r requirements.txt
+python app.py
+```
+
+## Testing
+
+```
+pytest tests/ -v --cov=app --cov-report=html
+open htmlcov/index.html  # 94% coverage
+```
+
 ## Overview
 
 Lightweight web service providing system information, runtime status, and health checks. Foundation for comprehensive DevOps monitoring throughout the course.
