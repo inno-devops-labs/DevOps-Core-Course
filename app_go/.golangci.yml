@@ -1,9 +1,6 @@
 linters-settings:
-  errcheck:
-    check-type-assertions: false
-    check-blank: false
-  govet:
-    check-shadowing: false
+  gofmt:
+    simplify: true
 
 linters:
   disable-all: true
@@ -12,10 +9,10 @@ linters:
     - goimports
 
 issues:
-  max-issues-per-linter: 100
-  max-same-issues: 50
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
-        - govet
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-use-default: false
+  exclude:
+    - "should have a package comment"
+    - "should have comment or be unexported"
+    - "File is not `gofmt`-ed"
