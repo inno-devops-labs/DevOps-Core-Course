@@ -1,3 +1,4 @@
+[![Python CI](https://github.com/SerggAidd/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/SerggAidd/DevOps-Core-Course/actions/workflows/python-ci.yml)
 # DevOps Info Service (Lab 01)
 
 Small Flask web app for DevOps labs.
@@ -221,4 +222,21 @@ The image of this container publlished in Docker Hub. Image can be download with
 ```bash
 docker pull sergey173/app_python:1.0.0
 docker run --rm -p 8080:5000 sergey173/app_python:1.0.0
+```
+
+### Local Testing:
+1. Install dependencies:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+```
+2. Lint:
+```bash
+flake8 app.py tests
+```
+3. Unit tests:
+```bash
+pytest -q
 ```
