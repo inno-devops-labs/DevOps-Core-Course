@@ -118,3 +118,25 @@ the compiled go binary is significantly smaller than a python application with i
 |----------------|------|
 | go binary | ~6-8 mb |
 | python + flask | ~50+ mb (with venv) |
+
+## docker
+
+### building the image
+
+```bash
+docker build -t devops-info-service-go .
+```
+
+### running the container
+
+```bash
+docker run -p 8080:8080 devops-info-service-go
+```
+
+### multi-stage build
+
+the dockerfile uses multi-stage build:
+- stage 1 (builder): compiles the binary using golang:1.21-alpine
+- stage 2 (runtime): copies only the binary to scratch image
+
+this results in a final image of ~5-8 mb instead of ~300+ mb
