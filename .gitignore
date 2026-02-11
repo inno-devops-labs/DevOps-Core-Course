@@ -1,1 +1,14 @@
-test
+# Python
+__pycache__/
+*.py[cod]
+venv/
+*.log
+app_python/venv/
+app_python/__pycache__/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
