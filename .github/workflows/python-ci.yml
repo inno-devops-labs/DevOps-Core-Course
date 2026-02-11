@@ -2,7 +2,12 @@ name: Python CI
 
 on:
   push:
+    paths:
+      - 'app_python/**'
   pull_request:
+    paths:
+      - 'app_python/**'
+
 
 jobs:
   test:
@@ -37,10 +42,8 @@ jobs:
     - name: Run Snyk Test
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      run: snyk test --all-projects || true
+      run: snyk test --severity-threshold=high
 
-
-    
 
   docker:
     if: github.ref == 'refs/heads/main'

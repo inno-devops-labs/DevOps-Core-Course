@@ -35,12 +35,12 @@
 
 **GitHub Actions:**
 
-- Workflow файл: `.github/workflows/python-ci.yml`
+- Workflow file: `.github/workflows/python-ci.yml`
 - Status of steps:
   - Linting (ruff)
   - Unit tests (pytest)
   - Docker build & push
-- Workflow run (example): [link to Actions](https://github.com/Daniil20xx/DevOps-Core-Course/actions/runs/21914051127)   
+- Workflow run (example): [![Python CI](https://github.com/Daniil20xx/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Daniil20xx/DevOps-Core-Course/actions/workflows/python-ci.yml) 
 
 **Local tests:**
 
