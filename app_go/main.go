@@ -64,7 +64,11 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		log.Printf("encode health response: %v", err)
+		return
+	}
 }
 
 func handleInfo(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +94,11 @@ func handleInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		log.Printf("encode info response: %v", err)
+		return
+	}
 }
 
 func logMiddleware(next http.Handler) http.Handler {
