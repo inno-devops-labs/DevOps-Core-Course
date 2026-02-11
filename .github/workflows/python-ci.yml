@@ -88,14 +88,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Snyk security scan
-        uses: snyk/actions/python@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=app_python/requirements.txt --severity-threshold=high
+      - name: Run pip-audit security scan
+        working-directory: app_python
+        run: |
+          pip install pip-audit
+          pip-audit --desc || true
 
   docker:
     name: Build and Push Docker Image

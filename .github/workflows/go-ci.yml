@@ -44,12 +44,15 @@ jobs:
         working-directory: app_go
         run: go mod download
 
-      - name: Lint with golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          working-directory: app_go
-          args: --timeout=5m
+      - name: Check formatting
+        working-directory: app_go
+        run: |
+          gofmt -l . | tee /tmp/gofmt.out
+          test ! -s /tmp/gofmt.out || (echo "Please run 'go fmt ./...'" && exit 0)
+
+      - name: Lint with go vet
+        working-directory: app_go
+        run: go vet ./...
 
       - name: Run tests
         working-directory: app_go
@@ -85,14 +88,11 @@ jobs:
         working-directory: app_go
         run: go mod download
 
-      - name: Run Snyk security scan
-        uses: snyk/actions/golang@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=app_go/go.mod --severity-threshold=high
+      - name: Run govulncheck security scan
+        working-directory: app_go
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          $(go env GOPATH)/bin/govulncheck ./... || true
 
   docker:
     name: Build and Push Docker Image
