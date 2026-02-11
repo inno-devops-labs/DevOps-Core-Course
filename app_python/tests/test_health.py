@@ -2,7 +2,6 @@
 Unit tests for GET /health endpoint.
 Tests cover health check response structure and validation.
 """
-import pytest
 
 
 class TestHealthEndpoint:

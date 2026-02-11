@@ -2,7 +2,6 @@
 Unit tests for error handling.
 Tests cover 404 responses and error response structure.
 """
-import pytest
 
 
 class TestErrorHandling:

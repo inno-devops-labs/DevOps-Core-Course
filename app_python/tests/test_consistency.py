@@ -2,7 +2,6 @@
 Unit tests for endpoint consistency.
 Tests verify that data is consistent across different endpoints.
 """
-import pytest
 
 
 class TestEndpointConsistency:

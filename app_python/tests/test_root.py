@@ -2,7 +2,6 @@
 Unit tests for GET / endpoint.
 Tests cover JSON structure, required fields, and data validation.
 """
-import pytest
 
 
 class TestRootEndpoint:
