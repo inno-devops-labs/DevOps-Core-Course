@@ -17,6 +17,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'app_python/requirements.txt'
 
       - name: Install dependencies
         working-directory: ./app_python
@@ -29,6 +31,14 @@ jobs:
       - name: Run tests
         working-directory: ./app_python
         run: python -m pytest tests/ -v
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/python@v3
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --file=app_python/requirements.txt
 
   docker-build-and-push:
     name: Docker Build & Push
