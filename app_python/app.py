@@ -2,6 +2,7 @@
 DevOps Info Service
 LAB01: Python Web Application (Flask)
 """
+
 import os
 import socket
 import logging
