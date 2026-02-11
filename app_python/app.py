@@ -34,11 +34,13 @@ logging.basicConfig(
     handlers=[handler],
 )
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     set_start_time()
     logging.info(f"Starting {SERVICE_TITLE}")
     yield
+
 
 app = FastAPI(
     title=SERVICE_TITLE,
@@ -50,5 +52,5 @@ app = FastAPI(
 app.include_router(api_router)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     uvicorn.run(app, host=settings.HOST, port=settings.PORT)

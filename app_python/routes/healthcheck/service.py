@@ -13,7 +13,7 @@ class HealthCheckService:
             return HealthCheckResponse(
                 status="healthy",
                 timestamp=datetime.now().isoformat(),
-                uptime_seconds=get_uptime()['seconds']
+                uptime_seconds=get_uptime()["seconds"],
             )
         except Exception as e:
             logging.error(f"Health check failed: {e}")

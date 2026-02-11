@@ -5,6 +5,6 @@ from routes.root.schemas import SystemInfoResponse
 root_router = APIRouter()
 
 
-@root_router.get('/')
-async def health_check(service: RootServiceDep, request: Request) -> SystemInfoResponse:
+@root_router.get("/")
+async def system_info(service: RootServiceDep, request: Request) -> SystemInfoResponse:
     return service.system_info(request)
