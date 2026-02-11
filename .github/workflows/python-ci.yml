@@ -2,10 +2,7 @@ name: Python CI - Test, Lint & Docker Build
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
   pull_request:
-    branches: [ master ]
 
 jobs:
   code-review-and-testing:
