@@ -40,12 +40,12 @@ jobs:
         run: go mod download
 
       - name: Run linter (golangci-lint)
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: v1.60.0
-          working-directory: ./app_go
-          args: --timeout=5m
-          only-new-issues: false
+        working-directory: ./app_go
+        run: |
+          # Install golangci-lint
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /tmp v1.60.0
+          /tmp/golangci-lint --version
+          /tmp/golangci-lint run --timeout=5m
 
       - name: Run unit tests
         working-directory: ./app_go
