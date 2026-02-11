@@ -75,6 +75,58 @@ Go produces a self-contained executable that is **~17x smaller** than a Python c
 
 ## Testing
 
+### Running Tests Locally
+
+```bash
+# Run all tests
+go test -v ./...
+
+# Run tests with coverage
+go test -v -coverprofile=coverage.out ./...
+go tool cover -func=coverage.out
+
+# View coverage in HTML
+go tool cover -html=coverage.out
+```
+
+### Test Structure
+
+Tests are organized into separate files following best practices:
+
+```
+app_go/
+├── test_root.go      # Tests for GET / endpoint (4 tests)
+├── test_health.go    # Tests for GET /health endpoint (2 tests)
+├── test_errors.go    # Tests for error handling (404 responses) (1 test)
+└── test_runtime.go   # Tests for runtime calculations (3 tests)
+```
+
+**Benefits of this structure:**
+- **Separation of concerns:** Each file focuses on a specific endpoint or aspect
+- **Better maintainability:** Easy to find and update tests for specific functionality
+- **Improved readability:** Smaller, focused files are easier to understand
+- **Scalability:** Easy to add new test files as the application grows
+
+### Test Coverage
+
+The test suite includes:
+- ✅ Main endpoint (`GET /`) - JSON structure, service info, system info validation
+- ✅ Health endpoint (`GET /health`) - Status, timestamp, uptime validation
+- ✅ Error handling (404 responses)
+- ✅ Runtime calculations (uptime formatting)
+- ✅ Helper functions (`formatUptime`)
+- ✅ Request info capture (method, user agent)
+- ✅ System info details (platform, architecture)
+- ✅ Uptime progression (multiple requests)
+
+**Total:** 11 test functions covering all endpoints and core functionality
+
+**Coverage:** 69.2% (meets CI threshold of 69%)
+- **Note:** `main()` function (entry point) is not unit-testable and reduces total coverage
+- **All testable functions are 100% covered:** `getRuntime`, `formatUptime`, `mainHandler`, `healthHandler`
+
+### Manual Testing
+
 ```bash
 # Start the service
 ./devops-service

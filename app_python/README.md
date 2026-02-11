@@ -1,6 +1,7 @@
 # DevOps Info Service (Python / FastAPI)
 
 ![CI/CD Pipeline](https://github.com/McLavrushka/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+![Codecov](https://codecov.io/gh/McLavrushka/DevOps-Core-Course/branch/lab03/graph/badge.svg)
 
 ## Overview
 

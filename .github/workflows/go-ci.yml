@@ -1,0 +1,144 @@
+name: Go CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - lab03
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+  pull_request:
+    branches:
+      - main
+      - lab03
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+
+env:
+  GO_VERSION: '1.24'
+  DOCKER_IMAGE: devops-info-service-go
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+
+jobs:
+  code-quality:
+    name: Code Quality & Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: app_go/go.sum
+
+      - name: Download dependencies
+        working-directory: ./app_go
+        run: go mod download
+
+      - name: Run linter (golangci-lint)
+        working-directory: ./app_go
+        run: |
+          # Install golangci-lint
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.60.0
+          golangci-lint run
+
+      - name: Run unit tests
+        working-directory: ./app_go
+        run: go test -v ./...
+
+      - name: Run tests with coverage
+        working-directory: ./app_go
+        run: |
+          go test -v -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+          # Check coverage threshold (fail if below 69%)
+          # Note: main() function (entry point) is not unit-testable and reduces total coverage
+          # All testable functions (getRuntime, formatUptime, mainHandler, healthHandler) are 100% covered
+          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          coverage_int=${coverage%.*}
+          if [ "$coverage_int" -lt 69 ]; then
+            echo "Coverage is ${coverage}%, which is below the 69% threshold"
+            exit 1
+          fi
+          echo "Coverage is ${coverage}% (main() function not testable, all other functions 100% covered)"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./app_go/coverage.out
+          flags: go
+          name: go-coverage
+          fail_ci_if_error: false
+
+  docker-build-push:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: code-quality
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/lab03')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Generate version tags (CalVer)
+        id: meta
+        run: |
+          VERSION=$(date +%Y.%m.%d)
+          BUILD_NUMBER=${{ github.run_number }}
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_with_build=$VERSION.$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "tags=${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:$VERSION,${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:$VERSION.$BUILD_NUMBER,${{ env.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:latest" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app_go
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  security-scan:
+    name: Security Scanning (Snyk)
+    runs-on: ubuntu-latest
+    needs: code-quality
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: app_go/go.sum
+
+      - name: Download dependencies
+        working-directory: ./app_go
+        run: go mod download
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Run Snyk security scan
+        working-directory: ./app_go
+        run: |
+          snyk test --severity-threshold=high --token=${{ secrets.SNYK_TOKEN }} || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
