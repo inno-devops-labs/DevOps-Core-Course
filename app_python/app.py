@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 import uvicorn
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
@@ -81,8 +82,11 @@ async def health():
     }
 
 @app.exception_handler(404)
-async def custom_404_handler(request: Request, __):
-    return {"error": "Not Found", "message": f"Endpoint {request.url.path} does not exist"}, 404
+async def custom_404_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=404,
+        content={"error": "Not Found", "message": f"Endpoint {request.url.path} does not exist"}
+    )
 
 if __name__ == "__main__":
     logger.info(f"Starting service on {HOST}:{PORT}")

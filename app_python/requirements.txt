@@ -1,2 +1,7 @@
 fastapi==0.128.0
 uvicorn[standard]==0.40.0
+
+# Testing dependencies
+pytest==8.3.4
+pytest-cov==6.0.0
+httpx==0.27.2
