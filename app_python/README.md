@@ -1,5 +1,10 @@
 # DevOps Info Service
 
+[![Python CI](https://github.com/karishka1222/DevOps-Core-Course/workflows/Python%20CI%2FCD/badge.svg?branch=lab3)](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![codecov](https://codecov.io/gh/karishka1222/DevOps-Core-Course/branch/main/graph/badge.svg)](https://codecov.io/gh/karishka1222/DevOps-Core-Course)
+![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
+![Flask](https://img.shields.io/badge/flask-3.1.0-green)
+
 A Python web service that provides comprehensive information about itself and its runtime environment. This service reports system information, runtime metrics, and health status through a RESTful API.
 
 ## Overview
@@ -24,7 +29,7 @@ This service serves as a foundation for DevOps practices and will evolve through
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/karishka1222/DevOps-Core-Course.git
 cd DevOps-Core-Course/app_python
 ```
 
@@ -183,26 +188,70 @@ Simply navigate to:
 - Main endpoint: `http://localhost:5000/`
 - Health check: `http://localhost:5000/health`
 
+### Running Unit Tests
+
+**Install Test Dependencies:**
+```bash
+pip install -r requirements-dev.txt
+```
+
+**Run Tests:**
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest --verbose
+
+# Run with coverage report
+pytest --cov=. --cov-report=term-missing
+
+# Generate HTML coverage report
+pytest --cov=. --cov-report=html
+# Open htmlcov/index.html in browser
+```
+
+**Test Structure:**
+- 20 comprehensive test cases
+- 94% code coverage
+- Tests for all endpoints, error handling, and edge cases
+- Automated in CI/CD pipeline
+
 ## Project Structure
 
 ```
 app_python/
 ├── app.py                  # Main application code
 ├── requirements.txt        # Python dependencies
+├── requirements-dev.txt    # Development dependencies (testing, linting)
+├── pytest.ini             # Pytest configuration
 ├── .gitignore             # Git ignore patterns
+├── .dockerignore          # Docker ignore patterns
+├── Dockerfile             # Docker image definition
 ├── README.md              # This file
 ├── tests/                 # Unit tests (Lab 3)
-│   └── __init__.py
+│   ├── __init__.py
+│   └── test_app.py        # Test suite (20 test cases)
 └── docs/                  # Lab documentation
-    ├── LAB01.md          # Lab submission document
-    └── screenshots/      # Proof of work
+    ├── LAB01.md           # Lab 1 submission
+    ├── LAB02.md           # Lab 2 submission
+    ├── LAB03.md           # Lab 3 submission (CI/CD)
+    └── screenshots/       # Proof of work
 ```
 
 ## Dependencies
 
+**Production Dependencies:**
 - **Flask 3.1.0:** Web framework for building the API
 - **Werkzeug 3.1.3:** WSGI utility library for Flask
 - **requests 2.32.3:** HTTP library for making requests
+
+**Development Dependencies:**
+- **pytest 8.3.4:** Testing framework
+- **pytest-cov 6.0.0:** Coverage plugin for pytest
+- **pytest-flask 1.3.0:** Flask testing utilities
+- **flake8 7.3.0:** Code linting and style checking
+- **autopep8 2.3.2:** Automatic PEP 8 formatting
 
 All dependencies are pinned to specific versions for reproducibility.
 
@@ -311,3 +360,29 @@ If you see "Cannot connect to the Docker daemon":
 # Or start Docker daemon (Linux):
 sudo systemctl start docker
 ```
+
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment.
+
+**Workflow Triggers:**
+- Push to main/master/lab03 branches
+- Pull requests to main/master
+- Only when Python app files change (path filters)
+
+**Pipeline Steps:**
+1. **Test:** Install dependencies, lint with flake8, run pytest
+2. **Security:** Scan dependencies with Snyk
+3. **Build:** Build Docker image and push to Docker Hub
+
+**Docker Images:**
+- Latest builds available at: `karishka1222/devops-python-app`
+- Tagged with CalVer: `latest` (on main/master) and `YYYY.MM.DD`
+
+**View Workflow:** [GitHub Actions Tab](.github/workflows/python-ci.yml)
+
+**Badges:**
+- CI Status: Shows if tests are passing
+- Coverage: Shows code coverage percentage
+- Python Version: Python 3.11+ required
+- Flask Version: Flask 3.1.0 used
