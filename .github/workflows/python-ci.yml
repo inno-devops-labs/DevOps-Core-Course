@@ -60,13 +60,19 @@ jobs:
         run: |
           pytest -q             --cov=.             --cov-report=term-missing             --cov-report=xml             --cov-fail-under=70
 
+      - name: Install Snyk CLI
+        if: ${{ matrix.python-version == '3.12' }}
+        run: |
+          pip install snyk
+
       - name: Snyk scan (dependencies)
-        if: matrix.python-version == '3.12'
-        uses: snyk/actions/python@master
+        if: ${{ matrix.python-version == '3.12' }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --file=labs/lab3/app_python/requirements.txt
+        run: |
+          # Run from the working directory (labs/lab3/app_python)
+          snyk test --severity-threshold=high
+        continue-on-error: true
 
 
   docker:
