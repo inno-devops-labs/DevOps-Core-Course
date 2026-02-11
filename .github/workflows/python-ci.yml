@@ -1,0 +1,77 @@
+name: Python CI/CD
+
+on:
+  push:
+    branches: [master, main, lab03]
+    paths:
+      - "app_python/**"
+      - ".github/workflows/python-ci.yml"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "app_python/**"
+      - ".github/workflows/python-ci.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app_python
+
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+          python -m pip install ruff==0.6.8
+
+      - name: Lint
+        run: ruff check . --select E9,F63,F7,F82
+
+      - name: Run unit tests
+        run: python -m unittest -v
+
+  docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'main' || github.ref_name == 'lab03')
+    env:
+      IMAGE_NAME: devops-info
+
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Generate CalVer tags
+        run: |
+          echo "CALVER_DAY=$(date -u +'%Y.%m.%d')" >> "$GITHUB_ENV"
+          echo "CALVER_MONTH=$(date -u +'%Y.%m')" >> "$GITHUB_ENV"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app_python
+          file: ./app_python/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.CALVER_DAY }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.CALVER_MONTH }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
