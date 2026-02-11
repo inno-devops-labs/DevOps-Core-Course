@@ -67,7 +67,7 @@ jobs:
           verbose: true
 
       - name: Snyk scan
-        if: ${{ secrets.SNYK_TOKEN != '' }}
+        if: ${{ env.SNYK_TOKEN != '' }}
         uses: snyk/actions/python@v1
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
