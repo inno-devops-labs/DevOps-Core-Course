@@ -13,7 +13,7 @@ The tests cover the key functionality of the application's HTTP layer:
 - correct responses (body/format/expected values) to typical requests;
 - basic negative scenarios (e.g., invalid/missing parameters where relevant).
 
-The `app.run(...)` command is not tested—it is the starting point of the dev server; unit tests check it using the Flask test client.
+The `app.run(...)` command is not tested - it is the starting point of the dev server; unit tests check it using the Flask test client.
 
 ### CI workflow trigger configuration 
 **Push** and **pull_request**, but only if files inside `app_python/**` (code/requirements/Dockerfile) or the workflow itself have changed. On PRs, this is necessary to ensure that the linter and tests pass before merging, and to avoid breaking the main branch. Docker builds and image pushes are performed only on pushes to `main/master` or the `lab*` branch (after successful tests).
@@ -26,15 +26,12 @@ The `app.run(...)` command is not tested—it is the starting point of the dev s
 ---
 
 ## Workflow Evidence
-- Successful workflow run - 
-- Tests passing locally (terminal output):
-- Docker image on Docker Hub:
-    explanation
-    img
+- **Successful workflow run** - https://github.com/SerggAidd/DevOps-Core-Course/actions/runs/21884873193/job/63177056944
+- **Tests passing locally (terminal output):** ![Tests passing locally](./screenshots/LAB03/01_local_test_passing.png)
+- **Docker images on Docker Hub:** ![Docker images on Docker Hub](./screenshots/LAB03/02_Docker_hub.png)
 
-Status badge working in README:
-    link
-    img
+- **Status badge working in README:**![Status badge](./screenshots/LAB03/03_status_badge_working.png)
+    
 ---
 
 ## Best Practices Implemented
@@ -44,7 +41,7 @@ Status badge working in README:
 
 - **Caching:** — `setup-python` pip cache and buildx cache (GHA) are enabled. When last During pipeline runs, dependencies/layers are pulled from the cache, and repeat runs are faster due to the elimination of re-downloads/builds.
 
-- **Snyk:** No vulnerabilities were found and no corrective actions were required. ![Cnyk scan results](./screenshots/LAB03/02_snyk_results.png)
+- **Snyk:** No vulnerabilities were found and no corrective actions were required. ![Cnyk scan results](./screenshots/LAB03/04_snyk_results.png)
 
 ---
 
