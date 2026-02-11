@@ -206,7 +206,7 @@ Required test coverage of 80% reached. Total coverage: 95.28%
    - Push to Docker Hub
    - Uses GitHub Actions cache for Docker layers
 
-**Workflow Link:** `https://github.com/karishka1222/DevOps-Core-Course/actions/runs/21879712345`
+**Workflow Link:** [GitHub Actions — Python CI/CD](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/python-ci.yml)
 
 ### Docker Hub Images
 
@@ -220,35 +220,6 @@ Required test coverage of 80% reached. Total coverage: 95.28%
 ```bash
 docker pull karishka1222/devops-python-app:latest
 docker pull karishka1222/devops-python-app:2026.02.10
-```
-
-### Status Badge
-
-**Badge Added to README:**
-```markdown
-![Python CI](https://github.com/karishka1222/DevOps-Core-Course/workflows/Python%20CI%2FCD/badge.svg?branch=lab3)
-```
-
-**Badge Shows:**
-- ✅ Green checkmark when all tests pass
-- ❌ Red X when tests fail
-- 🟡 Yellow dot when workflow is running
-
-### Terminal Output: Workflow Performance
-
-After a successful run, GitHub Actions shows job and step durations. Example (from Actions tab → workflow run → job summary):
-
-```
-Run time
-Learn about OS pricing on GitHub Actions
-Job	Run time	
-Test Python Application
-21s	
-Security Scan
-23s	
-Build and Push Docker Image
-35s	
-1m 19s	
 ```
 
 ---
@@ -499,8 +470,6 @@ Main execution block (`if __name__ == '__main__'`)
 
 ### Findings
 
-**Scan Date:** [Will be updated after workflow runs]
-
 **Vulnerabilities Found:**
 - **Critical:** 0
 - **High:** 0
@@ -517,15 +486,13 @@ Main execution block (`if __name__ == '__main__'`)
 - No high-severity vulnerabilities detected
 - Will monitor Snyk dashboard for future advisories
 
-**Note:** Using pinned versions ensures reproducible builds and prevents unexpected breaking changes.
-
 ---
 
 ## 6. Test Coverage Badge
 
 ### Codecov Integration
 
-**Service:** codecov.io (free for public repositories)
+**Service:** codecov.io
 
 **Setup Steps:**
 1. Sign in to codecov.io with GitHub
@@ -546,13 +513,6 @@ Main execution block (`if __name__ == '__main__'`)
     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 ```
 
-### Coverage Badge
-
-**Added to README:**
-```markdown
-[![codecov](https://codecov.io/gh/<username>/<repo>/branch/main/graph/badge.svg)](https://codecov.io/gh/<username>/<repo>)
-```
-
 **Current Coverage:** 95.28% (Total)
 
 **Coverage Breakdown:**
@@ -561,34 +521,21 @@ Main execution block (`if __name__ == '__main__'`)
 - `tests/test_app.py`: 100% (177 statements)
 - **Total:** 95.28% (233 statements, 11 missed)
 
-**Missing Coverage in app.py:**
-- Lines 42-44: Exception handling in `get_system_info()` (hard to test without mocking)
-- Line 56: Alternative uptime format branch
-- Line 58: Alternative uptime format branch
-- Lines 146-147: Internal server error handler (requires forced failure)
-- Lines 154-158: Main execution block (tested manually, not in unit tests)
-
 **Coverage Threshold:**
 - Minimum: 80% (configured in pytest.ini)
-- Current: 95.28% 
-- Goal: Maintain 80%+ for future changes
+- Current: 95.28%
 
 ### Coverage Goals (Python)
 
 **What's Covered:**
-- ✅ All endpoint handlers
-- ✅ All response fields
-- ✅ Error handlers (404, 405)
-- ✅ Utility functions (uptime, system info)
+- All endpoint handlers
+- All response fields
+- Error handlers (404, 405)
+- Utility functions (uptime, system info)
 
 **What's Not Covered (By Design):**
 - Exception handlers (difficult to trigger)
 - Main execution block (tested manually)
-
-**Future Improvements:**
-- Add integration tests for error conditions
-- Test exception paths with mocking
-- Add performance/load tests
 
 ---
 
@@ -631,14 +578,14 @@ curl http://localhost:5000/health
 4. Review logs if any failures
 
 **What CI Does:**
-1. ✅ Install Python 3.12
-2. ✅ Install dependencies (with caching)
-3. ✅ Run flake8 linter
-4. ✅ Run pytest with coverage
-5. ✅ Upload coverage to Codecov
-6. ✅ Run Snyk security scan
-7. ✅ Build Docker image (on push)
-8. ✅ Push to Docker Hub with CalVer tags
+1. Install Python 3.12
+2. Install dependencies (with caching)
+3. Run flake8 linter
+4. Run pytest with coverage
+5. Upload coverage to Codecov
+6. Run Snyk security scan
+7. Build Docker image (on push)
+8. Push to Docker Hub with CalVer tags
 
 ---
 
@@ -680,85 +627,3 @@ curl http://localhost:5000/health
 - Create access tokens (not passwords)
 - Reference with `${{ secrets.NAME }}`
 - Never commit secrets to repository
-
----
-
-## 9. Resources Used
-
-**Official Documentation:**
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [pytest Documentation](https://docs.pytest.org/)
-- [Flask Testing Guide](https://flask.palletsprojects.com/en/stable/testing/)
-- [Docker Metadata Action](https://github.com/docker/metadata-action)
-- [Snyk Documentation](https://docs.snyk.io/)
-- [Codecov Documentation](https://docs.codecov.com/)
-
-**GitHub Actions:**
-- actions/checkout@v4
-- actions/setup-python@v5
-- docker/build-push-action@v6
-- docker/login-action@v3
-- docker/metadata-action@v5
-- codecov/codecov-action@v4
-- snyk/actions/python@master
-
-**Tools:**
-- pytest 8.3.4
-- pytest-cov 6.0.0
-- flake8 7.3.0
-- Snyk (security scanning)
-- Codecov (coverage reporting)
-
----
-
-## 10. Conclusion
-
-### Achievements (Python App)
-
-✅ **Task 1 - Unit Testing (3 pts):**
-- Chose pytest framework with clear justification
-- Created comprehensive test suite (20 test cases)
-- Achieved 95.28% code coverage
-- Tests pass locally and in CI
-
-✅ **Task 2 - GitHub Actions CI (4 pts):**
-- Created complete CI/CD workflow (`.github/workflows/python-ci.yml`)
-- Implemented linting (flake8), testing (pytest), and Docker build
-- Applied CalVer versioning strategy
-- Automated Docker Hub publishing
-
-✅ **Task 3 - Best Practices (3 pts):**
-- Added status badge to README
-- Implemented pip and Docker layer caching
-- Integrated Snyk security scanning
-- Applied 8+ CI best practices
-
-✅ **Bonus - Test Coverage (1 pt):**
-- Integrated Codecov
-- Added coverage badge
-- Achieved 95.28% total coverage
-- Set 80% coverage threshold in pytest.ini
-
-### Python Lab 3 Complete
-
-**Go (Bonus Task) documentation:** See `app_go/docs/LAB03.md` for Go CI/CD workflow, path filters, and coverage.
-
-### Key Takeaways
-
-1. **CI/CD is a Safety Net:** Catches bugs before they reach production
-2. **Automation Saves Time:** One-time setup, continuous benefits
-3. **Tests Give Confidence:** Refactor fearlessly with good test coverage
-4. **Caching Matters:** Significant time savings with proper caching
-5. **Security is Continuous:** Automated scanning prevents vulnerable deployments
-
-### Next Steps
-
-- Set up branch protection rules requiring passing CI
-- Add integration tests for more complex scenarios
-- Explore workflow reusability for DRY principle
-- Add performance testing to CI pipeline
-- Implement automatic dependency updates (Dependabot)
-
----
-
-**Lab 3 Complete!** 🚀

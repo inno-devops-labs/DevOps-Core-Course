@@ -1,5 +1,9 @@
 # DevOps Info Service (Go)
 
+[![Go CI](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg?branch=lab3)](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/go-ci.yml)
+[![codecov](https://codecov.io/gh/karishka1222/DevOps-Core-Course/branch/lab3/graph/badge.svg?flag=go)](https://codecov.io/gh/karishka1222/DevOps-Core-Course)
+![Go Version](https://img.shields.io/badge/go-1.21%2B-00ADD8?logo=go)
+
 A lightweight Go web service that provides comprehensive information about itself and its runtime environment. This is a compiled language implementation of the DevOps Info Service, offering improved performance and smaller deployment size.
 
 ## Overview
@@ -27,7 +31,7 @@ DevOps Info Service (Go version) is built using Go's standard `net/http` library
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/karishka1222/DevOps-Core-Course.git
 cd DevOps-Core-Course/app_go
 ```
 
@@ -181,6 +185,42 @@ curl http://localhost:8080/ | python -m json.tool
 # Test 404 handling
 curl http://localhost:8080/nonexistent
 ```
+
+## Running Unit Tests
+
+Go has built-in testing — no extra dependencies needed.
+
+**Run all tests:**
+```bash
+cd app_go
+go test ./...
+```
+
+**Run tests with verbose output:**
+```bash
+go test -v ./...
+```
+
+**Run tests with race detector and coverage:**
+```bash
+go test -v -race -coverprofile=coverage.out ./...
+```
+
+**View coverage report:**
+```bash
+# Terminal summary (after running with -coverprofile)
+go tool cover -func=coverage.out
+
+# HTML report (opens in browser)
+go tool cover -html=coverage.out -o coverage.html
+open coverage.html   # macOS
+# or: xdg-open coverage.html   # Linux
+```
+
+**Test structure:**
+- `main_test.go` — 7 test cases: main endpoint, health, system info, uptime, 404, concurrent requests, uptime increase
+- Tests run without starting the server (httptest)
+- Coverage is generated for CI (Codecov)
 
 ## Binary Size Comparison
 
