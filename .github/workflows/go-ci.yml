@@ -30,7 +30,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: lab3/app_go
+        working-directory: labs/lab3/app_go
 
     steps:
       - name: Checkout
@@ -72,7 +72,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: lab3/app_go
+        working-directory: labs/lab3/app_go
 
     steps:
       - name: Checkout
