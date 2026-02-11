@@ -37,7 +37,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: app_python
+        working-directory: lab3/app_python
 
     steps:
       - name: Checkout
@@ -99,7 +99,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: app_python
+        working-directory: lab3/app_python
 
     steps:
       - name: Checkout

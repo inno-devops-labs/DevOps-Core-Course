@@ -30,7 +30,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: app_go
+        working-directory: lab3/app_go
 
     steps:
       - name: Checkout
@@ -44,7 +44,6 @@ jobs:
 
       - name: Format check (gofmt)
         run: |
-          # gofmt prints files that are not formatted
           test -z "$(gofmt -l .)"
 
       - name: Vet
@@ -73,7 +72,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: app_go
+        working-directory: lab3/app_go
 
     steps:
       - name: Checkout
