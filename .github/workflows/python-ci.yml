@@ -1,5 +1,12 @@
 name: Python CI/CD
 
+permissions:
+  contents: read
+
+concurrency:
+  group: python-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [master, main, lab03]
@@ -17,6 +24,7 @@ jobs:
   test:
     name: Lint and Test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: app_python
@@ -29,6 +37,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            app_python/requirements.txt
+            app_python/requirements-dev.txt
 
       - name: Install dependencies
         run: |
@@ -45,6 +57,7 @@ jobs:
   docker:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: test
     if: github.event_name == 'push' && (github.ref_name == 'master' || github.ref_name == 'main' || github.ref_name == 'lab03')
     env:
@@ -70,7 +83,10 @@ jobs:
         with:
           context: ./app_python
           file: ./app_python/Dockerfile
+          pull: true
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.CALVER_DAY }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.CALVER_MONTH }}

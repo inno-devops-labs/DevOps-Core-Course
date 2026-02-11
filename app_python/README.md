@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI/CD](https://github.com/ebortsov/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab03)](https://github.com/ebortsov/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 This project delivers a Python-based web service that reports detailed system and runtime information. It will be expanded across the labs to include health monitoring, containerization, CI/CD, and persistence. The app uses FastAPI.
 
 ## Structure

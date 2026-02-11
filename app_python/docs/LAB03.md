@@ -9,7 +9,8 @@
 
 ## 2. Workflow Evidence
 Provide links/terminal output for:
-- ✅ Successful workflow run (GitHub Actions link): Pending Task 2.
+- ✅ Successful workflow run (GitHub Actions link): `https://github.com/ebortsov/DevOps-Core-Course/actions/runs/21915480909/`
+- ✅ Screenshot of successful workflow: `app_python/docs/screenshots/lab3-task2-successful-workflow.png`
 - ✅ Tests passing locally (terminal output):
 
 ```bash
@@ -28,20 +29,27 @@ OK
 ```
 
 - ✅ Docker image on Docker Hub (link to your image): `https://hub.docker.com/r/ebortsov/devops-info/tags`
-- ✅ Status badge working in README: Pending Task 3.
+- ✅ Status badge working in README: `app_python/README.md`
+- ✅ Caching evidence (fill after two Task 3 runs):
+  - Cache miss run link: `<add-link>`
+  - Cache hit run link: `<add-link>`
+  - Time comparison: `<before>` vs `<after>` (saved: `<delta>`)
 
 ## 3. Best Practices Implemented
-- **Practice 1:** Endpoint-level tests validate actual HTTP behavior (status codes and payloads), not only internal function calls.
-- **Practice 2:** Included error-path tests (`404`, `405`) to catch regressions in routing and method handling.
-- **Practice 3:** Separated dev dependencies into `requirements-dev.txt` to keep runtime image minimal and reproducible.
+- **Practice 1 (job dependencies):** Docker push job depends on successful lint/tests (`needs: test`) so broken code is never published.
+- **Practice 2 (concurrency control):** Added workflow concurrency with cancel-in-progress to stop outdated runs and reduce CI waste.
+- **Practice 3 (timeouts):** Added explicit job timeouts to avoid stuck runners and provide predictable CI behavior.
+- **Practice 4 (principle of least privilege):** Workflow permissions are limited to `contents: read`.
 - **Actions selection:** Used official maintained actions (`actions/checkout`, `actions/setup-python`, `docker/login-action`, `docker/build-push-action`) for predictable behavior and security support.
-- **Caching:** Pending Task 3.
-- **Snyk:** Pending Task 3.
+- **Caching:** Enabled pip dependency caching in `actions/setup-python` and Docker layer cache (`cache-from/cache-to` in build step).
+- **Caching metrics:** Fill after two runs: `<before>` vs `<after>`, improvement `<delta>`.
+- **Snyk:** Not integrated because a paid plan/token was not available for this repository. For this lab submission we prioritized a working free pipeline and documented this limitation explicitly.
 
 ## 4. Key Decisions
 - **Versioning Strategy:** **CalVer** (`YYYY.MM.DD`) was chosen because this app behaves like a continuously updated service where release date is a clear and practical version marker.
 - **Docker Tags:** CI creates three tags per push: `YYYY.MM.DD`, `YYYY.MM`, and `latest`. This provides both precise and rolling references.
 - **Workflow Triggers:** Push and PR triggers enforce quality checks automatically, while the Docker push job runs only on push events after tests pass.
+- **Security Scanning Decision:** Snyk was intentionally skipped due unavailable paid access in this setup; this tradeoff is documented instead of pretending the check exists.
 - **Test Coverage:** Current tests cover both public endpoints and common HTTP error paths; deeper coverage metrics will be added in the bonus coverage task.
 
 ## 5. Challenges (Optional)
