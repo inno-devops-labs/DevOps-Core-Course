@@ -56,7 +56,15 @@ jobs:
       - name: Run tests with coverage
         working-directory: ./app_python
         run: |
-          pytest tests/ --cov=app --cov-report=xml --cov-report=term
+          pytest tests/ --cov=app --cov-report=xml --cov-report=term --cov-report=html --cov-fail-under=70
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./app_python/coverage.xml
+          flags: python
+          name: python-coverage
+          fail_ci_if_error: false
 
   docker-build-push:
     name: Docker Build & Push
