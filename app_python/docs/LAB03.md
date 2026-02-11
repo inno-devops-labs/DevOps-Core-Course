@@ -74,6 +74,7 @@ Caching implementation and speed improvement metrics:
 Snyk integration results and vulnerability handling:
 - Added Snyk scan step using `snyk/actions/python@v3` with `SNYK_TOKEN` secret.
 - Snyk runs on the test job after dependency install.
+- `SNYK_TOKEN` is stored in GitHub repo secrets (Settings → Secrets and variables → Actions). If it’s missing, the Snyk step is skipped.
 - Findings:
   - `<fill: none found>` or `<list vulnerabilities>`
 - Mitigation:
