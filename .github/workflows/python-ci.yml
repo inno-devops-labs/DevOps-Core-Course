@@ -2,7 +2,7 @@ name: Python CI
 
 on:
   push:
-    branches: [ "main", "lab3" ]
+    branches: [ "lab3" ]
     paths:
       - "app_python/app.py"
       - "app_python/Dockerfile"
