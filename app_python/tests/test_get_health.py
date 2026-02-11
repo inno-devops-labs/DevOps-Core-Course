@@ -1,7 +1,6 @@
 """
 Unit tests for the GET /health endpoint (health check)
 """
-import pytest
 from datetime import datetime
 
 
@@ -25,7 +24,7 @@ class TestHealthEndpoint:
         """Test that health response has all required fields"""
         response = client.get("/health")
         data = response.json()
-        
+
         required_fields = ["status", "timestamp", "uptime_seconds"]
         for field in required_fields:
             assert field in data, f"Missing required field: {field}"
@@ -34,7 +33,7 @@ class TestHealthEndpoint:
         """Test that health status returns 'healthy'"""
         response = client.get("/health")
         data = response.json()
-        
+
         assert isinstance(data["status"], str)
         assert data["status"] == "healthy"
 
@@ -42,7 +41,7 @@ class TestHealthEndpoint:
         """Test that timestamp is in ISO format"""
         response = client.get("/health")
         timestamp = response.json()["timestamp"]
-        
+
         assert isinstance(timestamp, str)
         # Should be ISO format
         try:
@@ -50,18 +49,18 @@ class TestHealthEndpoint:
             is_valid = True
         except ValueError:
             is_valid = False
-        
+
         assert is_valid, f"Timestamp is not in ISO format: {timestamp}"
 
     def test_health_endpoint_timestamp_is_recent(self, client):
         """Test that timestamp is recent (within last 5 seconds)"""
         response = client.get("/health")
         timestamp_str = response.json()["timestamp"]
-        
+
         # Parse timestamp
         timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
         now = datetime.now(timestamp.tzinfo)
-        
+
         # Check that timestamp is within 5 seconds of now
         time_diff = abs((now - timestamp).total_seconds())
         assert time_diff < 5, f"Timestamp is not recent: {time_diff} seconds old"
@@ -70,7 +69,7 @@ class TestHealthEndpoint:
         """Test that uptime_seconds is an integer"""
         response = client.get("/health")
         uptime = response.json()["uptime_seconds"]
-        
+
         assert isinstance(uptime, int)
         assert uptime >= 0
 
@@ -78,29 +77,29 @@ class TestHealthEndpoint:
         """Test that uptime is non-negative"""
         response = client.get("/health")
         uptime = response.json()["uptime_seconds"]
-        
+
         assert uptime >= 0, "Uptime should never be negative"
 
     def test_health_endpoint_response_size(self, client):
         """Test that response size is reasonable (not excessively large)"""
         response = client.get("/health")
         content_length = len(response.content)
-        
+
         # Health check response should be small (typically < 500 bytes)
         assert content_length < 1000, f"Response is too large: {content_length} bytes"
 
     def test_health_endpoint_multiple_calls_increase_uptime(self, client):
         """Test that uptime increases with multiple calls"""
         import time
-        
+
         response1 = client.get("/health")
         uptime1 = response1.json()["uptime_seconds"]
-        
+
         time.sleep(0.1)  # Small delay
-        
+
         response2 = client.get("/health")
         uptime2 = response2.json()["uptime_seconds"]
-        
+
         # Uptime should be equal or greater
         assert uptime2 >= uptime1
 
@@ -115,12 +114,12 @@ class TestHealthEndpoint:
         """Test that response maintains consistent structure"""
         response = client.get("/health")
         data = response.json()
-        
+
         # Verify all fields exist and have correct types
         assert isinstance(data["status"], str)
         assert isinstance(data["timestamp"], str)
         assert isinstance(data["uptime_seconds"], int)
-        
+
         # Verify no extra or unexpected fields (should only have these 3)
         assert len(data) == 3, f"Unexpected fields in response: {data.keys()}"
 
@@ -131,7 +130,7 @@ class TestHealthEndpointEdgeCases:
     def test_health_endpoint_is_deterministic(self, client):
         """Test that repeated calls return consistent structure"""
         responses = [client.get("/health").json() for _ in range(3)]
-        
+
         # All should have same keys
         for response in responses:
             assert set(response.keys()) == {"status", "timestamp", "uptime_seconds"}

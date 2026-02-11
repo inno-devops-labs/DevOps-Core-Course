@@ -3,6 +3,7 @@ Test configuration and fixtures for the DevOps Info Service
 """
 import pytest
 from fastapi.testclient import TestClient
+
 from app import app
 
 

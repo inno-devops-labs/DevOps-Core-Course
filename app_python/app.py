@@ -2,16 +2,16 @@
 DevOps Info Service
 Main application module
 """
+import logging
+import os
+import platform
+import socket
+from datetime import datetime, timezone
+
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-import uvicorn
-import socket
-import platform
-from datetime import datetime
-import os
-from datetime import datetime, timezone
-import logging  
 
 app = FastAPI()
 
