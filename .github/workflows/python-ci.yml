@@ -120,7 +120,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/devops-info-service
+          images: ${{ secrets.DOCKER_USERNAME }}/app-python
           tags: |
             type=raw,value=${{ steps.version.outputs.version }}
             type=raw,value=${{ steps.version.outputs.version }}-${{ steps.version.outputs.commit-sha }}

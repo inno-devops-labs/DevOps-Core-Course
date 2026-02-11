@@ -112,9 +112,9 @@ tests/test_get_root.py::TestGetRootEndpoint::test_root_endpoint_consistent_hostn
 
 ### Docker Images on Docker Hub
 Docker images are built and pushed automatically with CalVer tags:
-- `username/devops-info-service:2024.02.11` (date version)
-- `username/devops-info-service:2024.02.11-a1b2c3d` (date + commit SHA)
-- `username/devops-info-service:latest` (latest stable)
+- `username/app-python:2024.02.11` (date version)
+- `username/app-python:2024.02.11-a1b2c3d` (date + commit SHA)
+- `username/app-python:latest` (latest stable)
 
 ### Status Badges
 Status badges are now displayed in the README:

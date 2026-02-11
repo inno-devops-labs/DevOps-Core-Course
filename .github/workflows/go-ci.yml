@@ -6,18 +6,12 @@ on:
       - main
       - master
       - develop
-    paths:
-      - 'app_go/**'
-      - '.github/workflows/go-ci.yml'
-      - 'go.mod'
-      - 'go.sum'
+      - lab03
   pull_request:
     branches:
       - main
       - master
-    paths:
-      - 'app_go/**'
-      - '.github/workflows/go-ci.yml'
+      - lab03
 
 jobs:
   # Phase 1: Code Quality & Testing for Go
@@ -77,7 +71,7 @@ jobs:
     name: Build & Push Go Docker Image
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/lab03')
     
     permissions:
       contents: read
@@ -111,7 +105,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/devops-info-service-go
+          images: ${{ secrets.DOCKER_USERNAME }}/app-go
           tags: |
             type=raw,value=${{ steps.version.outputs.date-version }}
             type=raw,value=${{ steps.version.outputs.date-version }}-${{ steps.version.outputs.commit-sha }}
