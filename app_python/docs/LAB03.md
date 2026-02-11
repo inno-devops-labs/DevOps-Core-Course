@@ -9,7 +9,7 @@
 - Supports plugins, including `pytest-cov` for code coverage
 - Modern standard for Python projects
 
-**Что покрывают тесты:**
+**ЧWhat cover tests:**
 - `GET /health` — status checks, JSON structure, uptime
 - `GET /` — JSON structure, blocks: service, system, runtime, request, endpoints
 - Error Handlers:
@@ -21,8 +21,8 @@
   - checks User-Agent and IP in request in block
 
 **CI Workflow Trigger:**  
-- Push
-- Pull request
+- **push:** 'app_python/'
+- **pull_request:** 'app_python/'
 
 **Versioning Strategy:** Calendar Versioning (CalVer)
 - Version format: `YYYY.MM.DD`
@@ -45,6 +45,8 @@
 **Local tests:**
 
 ![pytest debug](screenshots/lab03-pytest-passed.png)
+![ruff debug](screenshots/lab03-ruff.png)
+![pytest cov debug](screenshots/lab03-pytest-cov.png)
 
 3. Best Practices Implemented
 - **Dependency caching**: speeds up pip dependency installation in CI
