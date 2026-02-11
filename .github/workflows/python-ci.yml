@@ -52,8 +52,7 @@ jobs:
         run: pytest
 
       - name: Snyk scan
-        uses: snyk/actions/python@v1.0.0
-        working-directory: app_python
+        uses: snyk/actions/python-3.11@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
