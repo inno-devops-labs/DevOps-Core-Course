@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI](https://github.com/almax07082005/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/almax07082005/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 A production-ready Python web service that provides comprehensive system and runtime information.
 
 ## Overview
@@ -149,16 +151,22 @@ curl http://localhost:5000/health
 
 ## Testing
 
-Test the endpoints using curl:
+### Unit Tests
+
+Install dev dependencies and run tests:
 
 ```bash
-# Main endpoint
+pip install -r requirements.txt -r requirements-dev.txt
+pytest tests/ -v
+```
+
+With venv: `source venv/bin/activate && pytest tests/ -v`
+
+### Manual Testing
+
+```bash
 curl http://localhost:5000/
-
-# Health check
 curl http://localhost:5000/health
-
-# Pretty print with jq
 curl http://localhost:5000/ | jq .
 ```
 
