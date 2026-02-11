@@ -149,7 +149,7 @@ Additionally, one more tag is added:
   - document accepted risks if upgrading is not feasible
 
 **Snyk result (proof):**
-- _[optional: add a screenshot of the Snyk step output from GitHub Actions]_ 
+- The Snyk step in GitHub Actions completed successfully and reported no blocking vulnerabilities for `app_python/requirements.txt` at the time of the scan.
 
 ### CI Best Practices Applied
 In this lab the following CI best practices were applied:
