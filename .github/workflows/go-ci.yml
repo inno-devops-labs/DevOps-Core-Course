@@ -1,0 +1,148 @@
+name: Go CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+      - 'go.mod'
+      - 'go.sum'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+
+jobs:
+  # Phase 1: Code Quality & Testing for Go
+  test:
+    name: Test & Lint (Go)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+          cache-dependency-path: app_go/go.sum
+
+      - name: Run linting with golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: app_go
+          args: --timeout 5m
+
+      - name: Run unit tests with coverage
+        run: |
+          cd app_go
+          go test -v -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
+          go test -coverprofile=coverage.out ./... -covermode=atomic
+          
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./app_go/coverage.out
+          flags: go-tests
+          name: go-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Generate test report
+        if: always()
+        run: |
+          cd app_go
+          go test -v -json ./... > test-results.json || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-test-results
+          path: app_go/test-*.json
+
+  # Phase 2: Docker Build & Push for Go
+  build-and-push:
+    name: Build & Push Go Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Generate version
+        id: version
+        run: |
+          # Calendar Versioning (CalVer): YYYY.MM.DD format
+          VERSION=$(date -u +'%Y.%m.%d')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "date-version=${VERSION}" >> $GITHUB_OUTPUT
+          
+          # Also capture short commit SHA for uniqueness
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          echo "commit-sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/devops-info-service-go
+          tags: |
+            type=raw,value=${{ steps.version.outputs.date-version }}
+            type=raw,value=${{ steps.version.outputs.date-version }}-${{ steps.version.outputs.commit-sha }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: app_go
+          file: app_go/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Phase 3: Notification
+  notify:
+    name: Go Workflow Notification
+    needs: [test, build-and-push]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Go Workflow Status
+        run: |
+          if [ "${{ needs.test.result }}" == "success" ] && [ "${{ needs.build-and-push.result }}" == "success" ]; then
+            echo "[OK] Go CI/CD pipeline completed successfully!"
+          elif [ "${{ needs.test.result }}" == "failure" ] || [ "${{ needs.build-and-push.result }}" == "failure" ]; then
+            echo "[ERROR] Go workflow failed - check logs for details"
+            exit 1
+          else
+            echo "[WARN] Go workflow has warnings - check build-and-push job (may be skipped for PRs)"
+          fi

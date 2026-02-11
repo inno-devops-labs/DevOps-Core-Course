@@ -17,6 +17,56 @@ Master **production-grade DevOps practices** through hands-on labs. Build, conta
 
 ---
 
+## Project Structure
+
+This monorepo contains multiple microservices demonstrating DevOps practices:
+
+```
+├── app_python/              # Python/FastAPI service
+│   ├── app.py              # Main application
+│   ├── tests/              # Unit tests (25 tests)
+│   ├── Dockerfile          # Container image
+│   ├── requirements.txt     # Dependencies
+│   └── docs/LAB03.md       # CI/CD Documentation
+│
+├── app_go/                  # Go HTTP service (Lab 3 Bonus)
+│   ├── main.go             # HTTP server
+│   ├── main_test.go        # Unit tests (5 tests)
+│   ├── go.mod & go.sum     # Go dependencies
+│   ├── Dockerfile          # Multi-stage build
+│   └── README.md           # Go-specific docs
+│
+├── .github/workflows/
+│   ├── python-ci.yml       # Python CI/CD workflow
+│   └── go-ci.yml           # Go CI/CD workflow (path filters)
+│
+└── labs/                    # Course labs 1-18
+    ├── lab01.md
+    ├── lab02.md
+    ├── lab03.md
+    └── ...
+```
+
+### Multi-App CI/CD Architecture
+
+Starting with Lab 3, this monorepo uses **GitHub Actions** with intelligent path-based triggers:
+
+**Features:**
+- [YES] **Path-based triggers** - Only run CI when relevant app changes
+- [YES] **Parallel workflows** - Python and Go workflows run independently
+- [YES] **Shared versioning** - Both apps use Calendar Versioning (YYYY.MM.DD)
+- [YES] **Coverage tracking** - Codecov integration for both languages
+- [YES] **Security scanning** - Snyk vulnerability detection
+- [YES] **Docker push** - Automatic Docker Hub publishing
+
+**Workflow Status:**
+- [![Python CI/CD](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/python-ci.yml)
+- [Go CI/CD](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/go-ci.yml)
+
+See [CI_CD.md](CI_CD.md) and [SETUP_GITHUB_ACTIONS.md](SETUP_GITHUB_ACTIONS.md) for detailed CI/CD documentation.
+
+---
+
 ## Course Roadmap
 
 | Week | Lab | Topic | Key Technologies |
@@ -256,13 +306,13 @@ git push -u origin lab1
 
 After completing all 16 core labs (+ optional Labs 17-18), you'll have:
 
-✅ Full-stack DevOps expertise
-✅ Production-ready portfolio with 16-18 projects
-✅ Container and Kubernetes mastery
-✅ CI/CD pipeline experience
-✅ Infrastructure as Code skills
-✅ Monitoring and observability knowledge
-✅ GitOps workflow experience
+[YES] Full-stack DevOps expertise
+[YES] Production-ready portfolio with 16-18 projects
+[YES] Container and Kubernetes mastery
+[YES] CI/CD pipeline experience
+[YES] Infrastructure as Code skills
+[YES] Monitoring and observability knowledge
+[YES] GitOps workflow experience
 
 ---
 

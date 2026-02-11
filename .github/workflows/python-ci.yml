@@ -121,10 +121,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/devops-info-service
-          tags:
-            - type=raw,value=${{ steps.version.outputs.version }}
-            - type=raw,value=${{ steps.version.outputs.version }}-${{ steps.version.outputs.commit-sha }}
-            - type=raw,value=latest
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=${{ steps.version.outputs.version }}-${{ steps.version.outputs.commit-sha }}
+            type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
