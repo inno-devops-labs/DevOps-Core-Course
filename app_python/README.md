@@ -49,6 +49,7 @@ DEBUG=true python app.py
 returns comprehensive service and system information
 
 **response example:**
+
 ```json
 {
   "service": {
@@ -78,8 +79,8 @@ returns comprehensive service and system information
     "path": "/"
   },
   "endpoints": [
-    {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"}
+    { "path": "/", "method": "GET", "description": "Service information" },
+    { "path": "/health", "method": "GET", "description": "Health check" }
   ]
 }
 ```
@@ -89,6 +90,7 @@ returns comprehensive service and system information
 returns service health status for monitoring
 
 **response example:**
+
 ```json
 {
   "status": "healthy",
@@ -99,11 +101,11 @@ returns service health status for monitoring
 
 ## configuration
 
-| variable | default | description |
-|----------|---------|-------------|
-| HOST | 0.0.0.0 | server bind address |
-| PORT | 5000 | server port |
-| DEBUG | false | enable debug mode |
+| variable | default | description         |
+| -------- | ------- | ------------------- |
+| HOST     | 0.0.0.0 | server bind address |
+| PORT     | 5000    | server port         |
+| DEBUG    | false   | enable debug mode   |
 
 ## testing
 
@@ -116,4 +118,25 @@ curl http://localhost:5000/health
 
 # pretty print json output
 curl http://localhost:5000/ | python -m json.tool
+```
+
+## docker
+
+### building the image
+
+```bash
+docker build -t devops-info-service .
+```
+
+### running the container
+
+```bash
+docker run -p 5173:5173 devops-info-service
+```
+
+### pulling from docker hub
+
+```bash
+docker pull mashfeii/devops-info-service:latest
+docker run -p 5173:5173 mashfeii/devops-info-service:latest
 ```
