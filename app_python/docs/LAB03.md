@@ -9,7 +9,7 @@
 - Supports plugins, including `pytest-cov` for code coverage
 - Modern standard for Python projects
 
-**ЧWhat cover tests:**
+**What cover tests:**
 - `GET /health` — status checks, JSON structure, uptime
 - `GET /` — JSON structure, blocks: service, system, runtime, request, endpoints
 - Error Handlers:
@@ -44,7 +44,7 @@
 
 **Local tests:**
 
-![pytest debug](screenshots/lab03-pytest-passed.png)
+![pytest debug](screenshots/lab03-pytest.png)
 ![ruff debug](screenshots/lab03-ruff.png)
 ![pytest cov debug](screenshots/lab03-pytest-cov.png)
 
