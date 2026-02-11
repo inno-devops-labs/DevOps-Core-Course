@@ -58,8 +58,6 @@ jobs:
         working-directory: ./app_go
         run: |
           go tool cover -func=coverage.out
-          echo "## Go Test Coverage" >> $GITHUB_STEP_SUMMARY
-          go tool cover -func=coverage.out >> $GITHUB_STEP_SUMMARY
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -69,6 +67,13 @@ jobs:
           name: go-coverage
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage-report
+          path: go_python/coverage.xml
+          retention-days: 7
 
   docker:
     name: Build & Push Docker Image

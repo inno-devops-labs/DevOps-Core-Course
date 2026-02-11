@@ -1,6 +1,6 @@
 # Lab 3 Bonus — Multi-App CI with Path Filters + Test Coverage
 
-## Part 1: Multi-App CI (1.5 pts)
+## Part 1: Multi-App CI
 
 ### 1.1 Second CI Workflow: Go
 
@@ -49,29 +49,29 @@
 
 ```
 Modified files: app_python/app.py
-→ Python CI: ✅ runs
-→ Go CI: ❌ skipped (no matching paths)
+→ Python CI: runs
+→ Go CI: skipped (no matching paths)
 ```
 
 **Scenario 2: Only Go changes**
 
 ```
 Modified files: app_go/main.go
-→ Python CI: ❌ skipped
-→ Go CI: ✅ runs
+→ Python CI: skipped
+→ Go CI: runs
 ```
 
 **Scenario 3: Both apps changed**
 
 ```
 Modified files: app_python/app.py, app_go/main.go
-→ Python CI: ✅ runs
-→ Go CI: ✅ runs (in parallel)
+→ Python CI: runs
+→ Go CI: runs (in parallel)
 ```
 
 ---
 
-## Part 2: Test Coverage (1 pt)
+## Part 2: Test Coverage 
 
 ### 2.1 Coverage Tools
 
@@ -94,12 +94,12 @@ Added to README files:
 - **app_python/README.md:** Python CI badge + Codecov (python flag)
 - **app_go/README.md:** Go CI badge + Codecov (go flag)
 
-**Badge URLs (replace with your repo):**
+**Badge URLs:**
 ```
-https://github.com/mirana18/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg
-https://github.com/mirana18/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg
-https://codecov.io/gh/mirana18/DevOps-Core-Course/graph/badge.svg?flag=python
-https://codecov.io/gh/mirana18/DevOps-Core-Course/graph/badge.svg?flag=go
+https://github.com/Arino4kaMyr/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg
+https://github.com/Arino4kaMyr/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg
+https://codecov.io/gh/Arino4kaMyr/DevOps-Core-Course/graph/badge.svg?flag=python
+https://codecov.io/gh/Arino4kaMyr/DevOps-Core-Course/graph/badge.svg?flag=go
 ```
 
 ### 2.4 Coverage Analysis
