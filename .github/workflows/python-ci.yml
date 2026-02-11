@@ -39,11 +39,11 @@ jobs:
         run: python -m pytest tests/ -v
 
       - name: Run Snyk security scan
-        run: |
-          pip install -r app_python/requirements.txt
-          snyk test --file=app_python/requirements.txt --all-projects --skip-unresolved
+        uses: snyk/actions/python@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=app_python/requirements.txt
 
   docker-build-and-push:
     name: Docker Build & Push
