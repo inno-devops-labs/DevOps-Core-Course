@@ -14,3 +14,7 @@ venv/
 
 # OS
 .DS_Store
+
+# Coverage files
+.coverage
+htmlcov/

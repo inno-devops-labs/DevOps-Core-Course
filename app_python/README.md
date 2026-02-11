@@ -1,3 +1,5 @@
+![CI](https://github.com/Ray3264/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
 # DevOps Info Service
 
 ## Overview
