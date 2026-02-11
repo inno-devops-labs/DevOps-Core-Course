@@ -9,7 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+    defaults:
+      run:
+        working-directory: ./app_python
+        
     steps:
     - uses: actions/checkout@v4
     
@@ -22,7 +25,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('app_python/**/requirements.txt') }}
         
     - name: Install dependencies
       run: |
@@ -39,7 +42,7 @@ jobs:
       run: |
         pip install bandit
         bandit -r app.py -f json -o bandit-report.json || true
-        
+
   docker:
     needs: test
     runs-on: ubuntu-latest
@@ -70,7 +73,7 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
-        context: .
+        context: ./app_python
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         cache-from: type=gha
