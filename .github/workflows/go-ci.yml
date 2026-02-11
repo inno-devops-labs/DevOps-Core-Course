@@ -76,7 +76,6 @@ jobs:
             echo "Linter found issues. Exit code: $?"
             exit 0  # Don't fail the build, just report issues
           }
-        continue-on-error: true
 
       - name: Run unit tests
         working-directory: ./app_go
@@ -127,7 +126,6 @@ jobs:
           file: ./app_go/coverage.out
           flags: go
           name: go-coverage
-          fail_ci_if_error: false
 
   docker-build-push:
     name: Docker Build & Push
