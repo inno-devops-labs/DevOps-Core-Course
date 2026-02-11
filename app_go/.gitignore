@@ -1,0 +1,10 @@
+# Binary
+devops-info-service
+*.exe
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
