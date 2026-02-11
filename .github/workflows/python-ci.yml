@@ -52,7 +52,6 @@ jobs:
         run: pytest
 
       - name: Snyk scan
-        if: ${{ secrets.SNYK_TOKEN != '' }}
         uses: snyk/actions/python@v3
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
