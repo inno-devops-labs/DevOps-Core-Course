@@ -1,9 +1,9 @@
 use actix_web::{web, App, HttpRequest, HttpServer, Responder, Result};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::sync::Arc;
 use std::time::SystemTime;
-use chrono::{DateTime, Utc};
 use sysinfo::System;
 
 #[derive(Serialize, Deserialize)]
@@ -75,7 +75,7 @@ fn get_uptime(start_time: SystemTime) -> (u64, String) {
     let hours = seconds / 3600;
     let minutes = (seconds % 3600) / 60;
 
-    let human = format!("{} hours, {} minutes", hours, minutes);
+    let human = format!("{hours} hours, {minutes} minutes");
     (seconds, human)
 }
 
@@ -118,7 +118,8 @@ fn get_runtime_info(start_time: SystemTime) -> RuntimeInfo {
 
 fn get_request_info(req: &HttpRequest) -> RequestInfo {
     let connection_info = req.connection_info();
-    let client_ip = connection_info.realip_remote_addr()
+    let client_ip = connection_info
+        .realip_remote_addr()
         .unwrap_or("unknown")
         .to_string();
 
@@ -183,7 +184,7 @@ async fn main() -> std::io::Result<()> {
 
     let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
-    let bind_addr = format!("{}:{}", host, port);
+    let bind_addr = format!("{host}:{port}");
 
     let app_state = Arc::new(AppState {
         start_time: SystemTime::now(),
@@ -191,7 +192,7 @@ async fn main() -> std::io::Result<()> {
 
     log::info!("Application starting...");
     log::info!("Service: devops-info-service v1.0.0");
-    log::info!("Listening on {}", bind_addr);
+    log::info!("Listening on {bind_addr}");
 
     HttpServer::new(move || {
         App::new()

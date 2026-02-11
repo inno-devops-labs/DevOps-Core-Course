@@ -2,6 +2,9 @@
 
 A Python web service that reports system information and health status through a simple REST API.
 
+[![Python CI](https://github.com/hikariatama/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab3)](https://github.com/hikariatama/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![Coverage](https://codecov.io/gh/hikariatama/DevOps-Core-Course/branch/lab3/graph/badge.svg?flag=app_python)](https://codecov.io/gh/hikariatama/DevOps-Core-Course)
+
 ## Prerequisites
 
 - Python 3.11+
@@ -14,6 +17,12 @@ cd app_python
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+Install development dependencies:
+
+```bash
+pip install -r requirements-dev.txt
 ```
 
 ## Running
@@ -34,6 +43,26 @@ For production, use gunicorn:
 
 ```bash
 gunicorn -w 4 -b 0.0.0.0:5000 app:app
+```
+
+## Testing
+
+Run linting:
+
+```bash
+python -m ruff check app.py tests
+```
+
+Run unit tests:
+
+```bash
+python -m pytest
+```
+
+Run unit tests with coverage and threshold:
+
+```bash
+python -m pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=70
 ```
 
 ## Docker

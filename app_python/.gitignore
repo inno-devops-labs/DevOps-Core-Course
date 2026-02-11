@@ -36,5 +36,7 @@ Thumbs.db
 *.log
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 .tox/
+.ruff_cache/
