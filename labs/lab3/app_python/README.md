@@ -65,6 +65,21 @@ docker pull akakii98/devops-info-python:lab02
 docker run --rm -p 5000:5000 akakii98/devops-info-python:lab02
 ```
 
+## Status badge
+
+[![Python CI](https://github.com/Rozanalex/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=master)](https://github.com/Rozanalex/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
+
+## Testing (local)
+```bash
+cd labs/lab3/app_python
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+ruff check .
+pytest -q --cov=. --cov-report=term-missing --cov-report=xml
+```
+
 ## Screenshots / Evidence
 All screenshots are located here:
 - `app_python/docs/screenshots/`
