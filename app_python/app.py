@@ -54,6 +54,7 @@ def get_system_info():
         "python_version": platform.python_version()
     }
 
+
 # Main Endpoint: GET /
 @app.get("/")
 async def root(request: Request):
@@ -82,10 +83,15 @@ async def root(request: Request):
             "path": request.url.path
         },
         "endpoints": [
-            {"path": "/", "method": "GET", "description": "Service information"},
-            {"path": "/health", "method": "GET", "description": "Health check"}
+            {"path": "/",
+             "method": "GET",
+             "description": "Service information"},
+            {"path": "/health",
+             "method": "GET",
+             "description": "Health check"}
         ]
     }
+
 
 # Health Check: GET /health
 @app.get("/health")
@@ -96,6 +102,7 @@ def health():
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime["seconds"]
     }
+
 
 # Error Handling
 @app.exception_handler(404)

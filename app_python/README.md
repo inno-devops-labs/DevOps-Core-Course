@@ -1,3 +1,6 @@
+[![CI/CD](https://github.com/Boogyy/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Boogyy/DevOps-Core-Course/actions)
+
+
 # DevOps Info Service — FastAPI Implementation
 
 ## Overview
@@ -232,4 +235,27 @@ After pulling the image, it can be run using the same `docker run` pattern descr
 * Environment variables can be passed at runtime using `-e`
 * The image is designed to be minimal, secure, and production-ready
 
+
+---
+
+## Badge
+
+The Status Badge is a small dynamic image that shows the current status of the CI/CD pipeline (integrated link to GitHub Actions). Check it on the top
+
+## Testing
+
+This project uses `pytest` for unit testing.
+
+### Run tests locally
+
+1. Install development dependencies:
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+
+2. Run tests:
+   ```bash
+   cd app_python
+   pytest
+   ```
 
