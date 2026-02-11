@@ -1,0 +1,9 @@
+# Testing
+pytest==8.3.4
+pytest-cov==6.0.0
+
+# Linting
+ruff==0.9.4
+
+# HTTP client (for test client)
+httpx==0.28.0

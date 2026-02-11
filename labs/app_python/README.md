@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI](https://github.com/blxxdclxud/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/blxxdclxud/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 A production-ready web service providing detailed information about itself and its runtime environment. This service is built as part of the DevOps Core Course and will evolve throughout the course with containerization, CI/CD, monitoring, and persistence features.
 
 ## Overview
@@ -138,15 +140,21 @@ curl http://localhost:5000/health
 
 ```
 app_python/
-├── app.py                # Main application
-├── requirements.txt      # Dependencies
-├── .gitignore           # Git ignore rules
-├── README.md            # This file
-├── tests/               # Unit tests (Lab 3)
-│   └── __init__.py
-└── docs/                # Documentation
-    ├── LAB01.md        # Lab submission document
-    └── screenshots/    # Proof of work screenshots
+├── app.py                  # Main application
+├── requirements.txt        # Runtime dependencies
+├── requirements-dev.txt    # Dev/test dependencies
+├── Dockerfile              # Docker image definition
+├── .dockerignore           # Docker ignore rules
+├── .gitignore              # Git ignore rules
+├── README.md               # This file
+├── tests/                  # Unit tests
+│   ├── __init__.py
+│   └── test_app.py         # Endpoint tests
+└── docs/                   # Documentation
+    ├── LAB01.md
+    ├── LAB02.md
+    ├── LAB03.md
+    └── screenshots/
 ```
 
 ## API Documentation
@@ -154,6 +162,21 @@ app_python/
 FastAPI provides automatic interactive API documentation:
 - **Swagger UI**: http://localhost:5000/docs
 - **ReDoc**: http://localhost:5000/redoc
+
+## Testing
+
+Tests are in `tests/test_app.py` using **pytest** and FastAPI's `TestClient`.
+
+```bash
+# Install dev dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+pytest tests/ -v
+
+# Run with coverage report
+pytest tests/ -v --cov=. --cov-report=term
+```
 
 ## Docker
 
