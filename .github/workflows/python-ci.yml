@@ -1,6 +1,9 @@
 name: Python CI - Test, Lint & Docker Build
 
-on: push
+on:
+  push:
+    tags:
+      - 'v*.*.*'
 
 jobs:
   code-review-and-testing:
