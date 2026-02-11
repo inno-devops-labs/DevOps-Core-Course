@@ -2,12 +2,14 @@ name: Python CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    branches: 
+      - lab03
     paths:
       - 'app_python/**'
       - '.github/workflows/python-ci.yml'
   pull_request:
-    branches: [ "main" ]
+    branches: 
+      - lab03
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -31,7 +33,7 @@ jobs:
         run: |
           pip install -r app_python/requirements.txt
           pip install -r app_python/requirements-dev.txt
-          
+
       - name: Run Snyk
         uses: snyk/actions/python@master
         env:
