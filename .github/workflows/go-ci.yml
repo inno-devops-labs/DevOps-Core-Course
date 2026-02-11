@@ -4,12 +4,12 @@ on:
   push:
     branches: [ "main", "master" ]
     paths:
-      - "app_go/**"
+      - "labs/lab3/app_go/**"
       - ".github/workflows/go-ci.yml"
   pull_request:
     branches: [ "main", "master" ]
     paths:
-      - "app_go/**"
+      - "labs/lab3/app_go/**"
       - ".github/workflows/go-ci.yml"
   workflow_dispatch:
 
@@ -50,19 +50,9 @@ jobs:
         run: |
           go vet ./...
 
-      - name: Tests + coverage
+      - name: Tests
         run: |
           go test ./... -coverprofile=coverage.out -covermode=atomic
-          go tool cover -func=coverage.out | tail -n 1
-
-      - name: Upload coverage to Codecov
-        if: ${{ always() }}
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: app_go/coverage.out
-          flags: go
-          fail_ci_if_error: false
 
   docker:
     name: Docker build & push (versioned)
@@ -94,8 +84,8 @@ jobs:
       - name: Build & push
         uses: docker/build-push-action@v6
         with:
-          context: ./app_go
-          file: ./app_go/Dockerfile
+          context: ./labs/lab3//app_go
+          file: ./labs/lab3//app_go/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_REPO }}:${{ env.VERSION }}
