@@ -36,7 +36,6 @@ ignore = [
 [tool.ruff.format]
 # Use double quotes for strings
 quote-style = "double"
-indent-width = 4
 line-ending = "auto"
 
 [tool.pytest.ini_options]
