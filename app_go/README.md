@@ -1,7 +1,7 @@
 # DevOps Info Service - Go
 
 [![Go CI](https://github.com/Arino4kaMyr/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)](https://github.com/Arino4kaMyr/DevOps-Core-Course/actions/workflows/go-ci.yml)
-[![codecov](https://codecov.io/gh/Arino4kaMyr/DevOps-Core-Course/graph/badge.svg?flag=go)](https://codecov.io/gh/Arino4kaMyr/DevOps-Core-Course?flag=go)
+[![codecov](https://codecov.io/github/Arino4kaMyr/DevOps-Core-Course/graph/badge.svg?flag=go)](https://codecov.io/github/Arino4kaMyr/DevOps-Core-Course?flag=go)
 
 A production-ready web service implemented in Go that provides comprehensive information about itself and its runtime environment. This is the compiled language version of the DevOps Info Service, built using Go's standard `net/http` package.
 

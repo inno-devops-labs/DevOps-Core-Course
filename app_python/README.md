@@ -1,7 +1,7 @@
 # DevOps Info Service - Python
 
 [![Python CI](https://github.com/Arino4kaMyr/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Arino4kaMyr/DevOps-Core-Course/actions/workflows/python-ci.yml)
-[![codecov](https://codecov.io/gh/Arino4kaMyr/DevOps-Core-Course/graph/badge.svg?flag=python)](https://codecov.io/gh/Arino4kaMyr/DevOps-Core-Course?flag=python)
+[![codecov](https://codecov.io/github/Arino4kaMyr/DevOps-Core-Course/graph/badge.svg?flag=python)](https://codecov.io/github/Arino4kaMyr/DevOps-Core-Course?flag=python)
 
 A production-ready web service that provides comprehensive information about itself and its runtime environment. Built with Flask framework.
 
