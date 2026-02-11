@@ -48,6 +48,17 @@ jobs:
           python -m pytest
 
 
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+
+      - name: Run Snyk test
+        working-directory: app_python
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test --severity-threshold=medium
+
+
       - name: Set version
         id: set_version
         run: echo "VERSION=$(date +%Y.%m.%d)" >> $GITHUB_ENV
@@ -75,14 +86,3 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
             ${{ env.IMAGE_NAME }}:latest
-
-
-      - name: Install Snyk CLI
-        run: npm install -g snyk
-
-
-      - name: Run Snyk test
-        working-directory: app_python
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: snyk test --severity-threshold=medium
