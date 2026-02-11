@@ -1,6 +1,7 @@
 # DevOps Info Service (Go)
 
 ![Go CI](https://github.com/AEZuraa/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/AEZuraa/DevOps-Core-Course/branch/lab03/graph/badge.svg?flag=go)](https://codecov.io/gh/AEZuraa/DevOps-Core-Course)
 
 Go implementation of the DevOps Info Service using standard `net/http` library.
 

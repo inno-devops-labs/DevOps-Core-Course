@@ -44,6 +44,7 @@ on:
 ## 2. Workflow Evidence
 
 - **Workflow file:** `.github/workflows/python-ci.yml`
+- **Successful workflow run (Python CI):** []
 - **Docker Hub:** https://hub.docker.com/r/aezuraa/devops-info-service
 - **Status badge:** Added to `app_python/README.md`
 

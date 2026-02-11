@@ -4,6 +4,8 @@
 
 **File:** `.github/workflows/go-ci.yml`
 
+- **Successful workflow run (Go CI):** []
+
 ### Language-Specific Best Practices
 
 - **golangci-lint** — industry-standard Go linter (via `golangci/golangci-lint-action@v6`), checks for bugs, style issues, and unused code

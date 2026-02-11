@@ -1,6 +1,7 @@
 # DevOps Info Service
 
 ![Python CI](https://github.com/AEZuraa/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/AEZuraa/DevOps-Core-Course/branch/lab03/graph/badge.svg?flag=python)](https://codecov.io/gh/AEZuraa/DevOps-Core-Course)
 
 A lightweight web service that provides comprehensive system and runtime information for DevOps monitoring and diagnostics.
 
