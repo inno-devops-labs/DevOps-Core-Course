@@ -1,4 +1,6 @@
-# DevOps Info Service (Lab 01)
+![CI](https://github.com/ostxxp/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
+# DevOps Info Service (Labs 01–03)
 
 ## Overview
 Simple web service that returns service, system, runtime and request information.
