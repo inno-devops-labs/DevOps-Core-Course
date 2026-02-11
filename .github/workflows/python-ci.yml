@@ -7,19 +7,11 @@ on:
       - master
       - develop
       - lab03
-    paths:
-      - 'app_python/**'
-      - '.github/workflows/python-ci.yml'
-      - 'requirements.txt'
-      - 'requirements-dev.txt'
   pull_request:
     branches:
       - main
       - master
       - lab03
-    paths:
-      - 'app_python/**'
-      - '.github/workflows/python-ci.yml'
 
 jobs:
   test:
