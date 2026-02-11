@@ -1,0 +1,5 @@
+# Development and Testing Dependencies
+pytest==9.0.2
+pytest-cov==4.1.0
+pytest-html==4.1.1
+ruff==0.1.11

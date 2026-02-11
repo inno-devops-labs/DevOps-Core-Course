@@ -4,6 +4,7 @@ __pycache__/
 venv/
 .venv/
 *.log
+.pytest_cache/
 
 # IDE
 .vscode/
