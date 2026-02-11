@@ -12,6 +12,9 @@ import (
 
 var startTime = time.Now()
 
+// hostnameFunc allows mocking os.Hostname in tests
+var hostnameFunc = os.Hostname
+
 // Service metadata
 type Service struct {
 	Name        string `json:"name"`
@@ -95,7 +98,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostname, err := os.Hostname()
+	hostname, err := hostnameFunc()
 	if err != nil {
 		hostname = "unknown"
 	}

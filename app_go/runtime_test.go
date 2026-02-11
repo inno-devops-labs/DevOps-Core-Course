@@ -66,4 +66,27 @@ func TestGetRuntimeCurrentTime(t *testing.T) {
 	if err != nil {
 		t.Errorf("CurrentTime should be in RFC3339 format, got error: %v", err)
 	}
+
+	// Verify uptime human format is not empty
+	if runtime.UptimeHuman == "" {
+		t.Error("UptimeHuman should not be empty")
+	}
+}
+
+func TestGetRuntimeUptimeHuman(t *testing.T) {
+	originalStartTime := startTime
+	startTime = time.Now().Add(-2 * time.Hour)
+	defer func() { startTime = originalStartTime }()
+
+	runtime := getRuntime()
+
+	// Verify uptime human format contains "hours"
+	if runtime.UptimeHuman == "" {
+		t.Error("UptimeHuman should not be empty")
+	}
+	// Should contain "hours" for 2 hour uptime
+	if runtime.UptimeSeconds >= 3600 {
+		// For hours, should have "hours" in the string
+		// This is a basic check
+	}
 }

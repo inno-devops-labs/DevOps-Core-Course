@@ -543,10 +543,10 @@ Tests are organized into separate files following best practices:
 
 ```
 app_go/
-├── test_root.go      # Tests for GET / endpoint (4 tests)
-├── test_health.go    # Tests for GET /health endpoint (2 tests)
-├── test_errors.go    # Tests for error handling (404 responses) (1 test)
-└── test_runtime.go   # Tests for runtime calculations (3 tests)
+├── root_test.go      # Tests for GET / endpoint (7 tests)
+├── health_test.go    # Tests for GET /health endpoint (2 tests)
+├── errors_test.go    # Tests for error handling (404 responses) (1 test)
+└── runtime_test.go   # Tests for runtime calculations (4 tests)
 ```
 
 **Coverage:**
@@ -555,13 +555,16 @@ app_go/
 - ✅ Error handling (404 responses)
 - ✅ Runtime calculations (uptime formatting)
 - ✅ Helper functions (`formatUptime`)
-- ✅ Request info capture (method, user agent)
+- ✅ Request info capture (method, user agent, path)
 - ✅ System info details (platform, architecture)
 - ✅ Multiple requests handling
+- ✅ Endpoints list validation
+- ✅ Error handling for `os.Hostname()` failure (hostname fallback to "unknown")
 
-**Total:** 10 test functions covering all endpoints and core functionality
+**Total:** 14 test functions covering all endpoints and core functionality
 
-**Coverage:** 69.2% (meets CI threshold of 69%)
+**Coverage:** 71.4% (exceeds CI threshold of 70%)
+- `mainHandler`: 100% coverage (including error handling for `os.Hostname()`)
 - **Note:** `main()` function (entry point) is not unit-testable and reduces total coverage
 - **All testable functions are 100% covered:** `getRuntime`, `formatUptime`, `mainHandler`, `healthHandler`
 - **Coverage breakdown:**

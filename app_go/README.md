@@ -79,10 +79,10 @@ Go produces a self-contained executable that is **~17x smaller** than a Python c
 
 ```bash
 # Run all tests
-go test -v ./...
+go test -v .
 
 # Run tests with coverage
-go test -v -coverprofile=coverage.out ./...
+go test -v -coverprofile=coverage.out .
 go tool cover -func=coverage.out
 
 # View coverage in HTML
@@ -95,10 +95,10 @@ Tests are organized into separate files following best practices:
 
 ```
 app_go/
-├── test_root.go      # Tests for GET / endpoint (4 tests)
-├── test_health.go    # Tests for GET /health endpoint (2 tests)
-├── test_errors.go    # Tests for error handling (404 responses) (1 test)
-└── test_runtime.go   # Tests for runtime calculations (3 tests)
+├── root_test.go      # Tests for GET / endpoint (7 tests)
+├── health_test.go    # Tests for GET /health endpoint (2 tests)
+├── errors_test.go    # Tests for error handling (404 responses) (1 test)
+└── runtime_test.go   # Tests for runtime calculations (4 tests)
 ```
 
 **Benefits of this structure:**
@@ -119,11 +119,18 @@ The test suite includes:
 - ✅ System info details (platform, architecture)
 - ✅ Uptime progression (multiple requests)
 
-**Total:** 11 test functions covering all endpoints and core functionality
+**Total:** 14 test functions covering all endpoints and core functionality
 
-**Coverage:** 69.2% (meets CI threshold of 69%)
+**Coverage:** 71.4% (exceeds CI threshold of 70%)
+- `mainHandler`: 100% coverage (including error handling for `os.Hostname()`)
 - **Note:** `main()` function (entry point) is not unit-testable and reduces total coverage
 - **All testable functions are 100% covered:** `getRuntime`, `formatUptime`, `mainHandler`, `healthHandler`
+- **Coverage breakdown:**
+  - `getRuntime`: 100%
+  - `formatUptime`: 100%
+  - `mainHandler`: 100%
+  - `healthHandler`: 100%
+  - `main`: 0% (not unit-testable by design)
 
 ### Manual Testing
 
