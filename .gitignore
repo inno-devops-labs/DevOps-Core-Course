@@ -26,3 +26,4 @@ out/
 # Testing
 .pytest_cache/
 .coverage
+app_python/test_venv/*

@@ -82,9 +82,11 @@ def get_uptime() -> Dict[str, Any]:
     seconds = int(delta.total_seconds())
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
+    hours_text = f"{hours} hour{'s' if hours != 1 else ''}"
+    minutes_text = f"{minutes} minute{'s' if minutes != 1 else ''}"
     return {
         'seconds': seconds,
-        'human': f"{hours} hour{'s' if hours != 1 else ''}, {minutes} minute{'s' if minutes != 1 else ''}"
+        'human': f"{hours_text}, {minutes_text}"
     }
 
 def get_system_info() -> SystemInfo:
@@ -147,7 +149,8 @@ async def root(request: Request):
     """
     Main endpoint - comprehensive service and system information
     """
-    logger.info(f"Request: {request.method} {request.url.path} from {request.client.host if request.client else 'unknown'}")
+    client_host = request.client.host if request.client else 'unknown'
+    logger.info(f"Request: {request.method} {request.url.path} from {client_host}")
     
     response = MainResponse(
         service=get_service_info(),
