@@ -1,0 +1,176 @@
+name: Python CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - lab03
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+      - 'requirements.txt'
+      - 'requirements-dev.txt'
+  pull_request:
+    branches:
+      - main
+      - master
+      - lab03
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+
+jobs:
+  # Phase 1: Code Quality & Testing
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/requirements-dev.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          cd app_python
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint with ruff
+        run: |
+          cd app_python
+          pip install ruff
+          # Check code style issues
+          ruff check . --config pyproject.toml || ruff check . --show-source
+          # Format check (non-modifying)
+          ruff format . --check --diff || echo "Format issues detected (informational)"
+
+      - name: Run unit tests
+        run: |
+          cd app_python
+          pytest tests/ -v --tb=short --cov=app --cov-report=xml --cov-report=term
+          
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./app_python/coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Generate test report
+        if: always()
+        run: |
+          cd app_python
+          pytest tests/ -v --tb=short --junit-xml=test-results.xml --html=test-report.html --self-contained-html || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: app_python/test-*.xml
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/python-3.11@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+        continue-on-error: true
+
+  # Phase 2: Docker Build & Push
+  build-and-push:
+    name: Build & Push Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    # Only build on push to protected branches, not on PRs
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Generate version
+        id: version
+        run: |
+          # Calendar Versioning (CalVer): YYYY.MM.DD format
+          VERSION=$(date -u +'%Y.%m.%d')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "date-version=${VERSION}" >> $GITHUB_OUTPUT
+          
+          # Also capture short commit SHA for uniqueness
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          echo "commit-sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}-${COMMIT_SHA}"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKER_USERNAME }}/devops-info-service
+          tags: |
+            type=raw,value=${{ steps.version.outputs.date-version }}
+            type=raw,value=${{ steps.version.outputs.date-version }}-${{ steps.version.outputs.commit-sha }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: app_python
+          file: app_python/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image digest
+        run: echo "Pushed image digest: ${{ steps.docker_build.outputs.digest }}"
+
+  # Phase 3: Notification (Optional - for visibility)
+  notify:
+    name: Workflow Notification
+    needs: [test, build-and-push]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Workflow Status
+        run: |
+          if [ "${{ needs.test.result }}" == "success" ] && [ "${{ needs.build-and-push.result }}" == "success" ]; then
+            echo "[OK] All jobs completed successfully!"
+          elif [ "${{ needs.test.result }}" == "failure" ] || [ "${{ needs.build-and-push.result }}" == "failure" ]; then
+            echo "[ERROR] Workflow failed - check logs for details"
+            exit 1
+          else
+            echo "[WARN] Workflow has warnings - check build-and-push job (may be skipped for PRs)"
+          fi
