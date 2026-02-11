@@ -280,8 +280,13 @@ This generates three tags per build:
 
 ### Successful Workflow Run
 
-**GitHub Actions Link:** 
+**GitHub Actions Link:** `https://github.com/McLavrushka/DevOps-Core-Course/actions/runs/21900641968`
 
+**Workflow Execution Time:**
+- **Code Quality & Testing:** 20s
+- **Security Scanning (Snyk):** 22s
+- **Docker Build & Push:** 45s
+- **Total Duration:** 1m 27s
 
 **Workflow includes:**
 - ✅ Code quality checks (linting with ruff)
@@ -293,20 +298,19 @@ This generates three tags per build:
 
 **Terminal Output / Screenshot:**
 
+Workflow run details available at: https://github.com/McLavrushka/DevOps-Core-Course/actions/runs/21900641968
 
 ### Docker Image on Docker Hub
 
-**Image:** `USERNAME/devops-info-service`
+**Image:** `mclavrushka/devops-info-service`
+
 
 **Tags created (at least 2 per image as required):**
 - `YYYY.MM.DD` (date version, e.g., `2024.01.15`)
 - `YYYY.MM.DD.BUILD_NUMBER` (full version, e.g., `2024.01.15.42`)
 - `latest` (always latest build)
 
-**Docker Hub Link:**
-```
-
-```
+**Docker Hub Link:** `https://hub.docker.com/r/mclavrushka/devops-info-service`
 
 
 ## 3. Best Practices Implemented
@@ -356,10 +360,15 @@ This generates three tags per build:
 - **Docker cache:** GitHub Actions cache stores Docker build layers between runs, reusing unchanged layers
 
 **Performance improvement:**
-- **Before caching:** ~120 seconds (full dependency installation + Docker build from scratch)
-- **After caching:** ~30 seconds (cache hit - dependencies restored from cache, Docker layers reused)
-- **Time saved:** ~90 seconds per workflow run (75% improvement)
-- **Cache hit rate:** Typically 80-90% after first run (cache invalidates when `requirements.txt` changes)
+- **Current workflow time with caching:** 1m 27s (87 seconds)
+  - Code Quality & Testing: 20s
+  - Docker Build & Push: 45s (with Docker layer caching)
+  - Security Scanning: 22s
+- **Estimated time without caching:** ~2m 30s (150 seconds)
+  - Dependency installation: ~30s (vs ~5s with cache)
+  - Docker build from scratch: ~60s (vs ~30s with cache)
+- **Time saved:** ~63 seconds per workflow run (~42% improvement)
+- **Cache hit rate:** Typically 80-90% after first run (cache invalidates when `requirements.txt` or Dockerfile changes)
 
 **Measurement:** These metrics are based on typical GitHub Actions runner performance. Actual times may vary based on:
 - Runner availability and load
@@ -430,8 +439,18 @@ security-scan:
 - **Token:** Uses GitHub Secret `SNYK_TOKEN` for authentication
 
 **Vulnerabilities found:** 
-- (To be updated after first scan)
-- **Action taken:** (To be updated based on scan results)
+Testing /home/runner/work/DevOps-Core-Course/DevOps-Core-Course/app_python...
+
+Organization:      ***
+Package manager:   pip
+Target file:       requirements.txt
+Project name:      app_python
+Open source:       no
+Project path:      /home/runner/work/DevOps-Core-Course/DevOps-Core-Course/app_python
+Licenses:          enabled
+
+✔ Tested 23 dependencies for known issues, no vulnerable paths found.
+
 
 ### 4. Job Dependencies
 **Why it helps:** Ensures Docker build only runs if tests pass, preventing broken images from being published.

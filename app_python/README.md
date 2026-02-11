@@ -1,5 +1,7 @@
 # DevOps Info Service (Python / FastAPI)
 
+![CI/CD Pipeline](https://github.com/McLavrushka/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
 ## Overview
 
 This project implements a **DevOps Info Service** – a small web API that reports information about the service, the system it runs on, runtime uptime, and the current request.  
@@ -112,6 +114,44 @@ Example:
 ```bash
 curl -s http://127.0.0.1:5000/health | jq
 ```
+
+## Testing
+
+The project includes comprehensive unit tests using `pytest`. All tests are located in the `tests/` directory.
+
+### Running Tests Locally
+
+From the `app_python` directory:
+
+```bash
+# 1. Activate virtual environment
+source venv/bin/activate
+
+# 2. Install dependencies (includes pytest)
+pip install -r requirements.txt
+
+# 3. Run all tests
+pytest tests/ -v
+
+# 4. Run tests with coverage report
+pytest tests/ --cov=app --cov-report=term
+
+# 5. Run specific test file
+pytest tests/test_root.py -v
+pytest tests/test_health.py -v
+```
+
+### Test Structure
+
+Tests are organized into separate files:
+- `test_root.py` - Tests for `GET /` endpoint (8 tests)
+- `test_health.py` - Tests for `GET /health` endpoint (5 tests)
+- `test_errors.py` - Tests for error handling (404 responses) (3 tests)
+- `test_consistency.py` - Tests for consistency between endpoints (2 tests)
+
+**Total:** 17 tests covering all endpoints and error cases.
+
+**Test Coverage:** 88% (as measured by `pytest-cov`)
 
 ## Configuration
 
