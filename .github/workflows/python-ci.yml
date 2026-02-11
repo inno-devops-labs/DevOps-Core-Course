@@ -63,15 +63,15 @@ jobs:
       - name: Install Snyk CLI
         if: ${{ matrix.python-version == '3.12' }}
         run: |
-          pip install snyk
+          npm install -g snyk
 
       - name: Snyk scan (dependencies)
         if: ${{ matrix.python-version == '3.12' }}
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
-          # Run from the working directory (labs/lab3/app_python)
-          snyk test --severity-threshold=high
+          # We are already in labs/lab3/app_python via working-directory
+          snyk test --file=requirements.txt --package-manager=pip --severity-threshold=high --skip-unresolved
         continue-on-error: true
 
 
