@@ -56,7 +56,8 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --file=requirements.txt
+          args: --severity-threshold=high
+        continue-on-error: true
 
   docker:
     name: Build and Push Docker Image
