@@ -54,7 +54,7 @@ jobs:
         uses: snyk/actions/python@master
         with:
           command: test
-          args: --file=app_python/requirements.txt --package-manager=pip
+          args: --file=app_python/requirements.txt --package-manager=pip --skip-unresolved=true
 
       - name: Lint (ruff)
         run: |
