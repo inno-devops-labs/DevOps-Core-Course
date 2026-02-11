@@ -1,0 +1,5 @@
+# Testing & linting
+pytest>=8.0
+pytest-cov>=4.1
+httpx>=0.26
+ruff>=0.1

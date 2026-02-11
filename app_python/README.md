@@ -1,5 +1,8 @@
 # DevOps Info Service (Python / FastAPI)
 
+[![Python CI](https://github.com/Vlad1mirZhidkov/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Vlad1mirZhidkov/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![Coverage](https://codecov.io/gh/Vlad1mirZhidkov/DevOps-Core-Course/graph/badge.svg)](https://codecov.io/gh/Vlad1mirZhidkov/DevOps-Core-Course)
+
 ## Overview
 
 DevOps Info Service is a small web API that reports:
@@ -73,6 +76,30 @@ Try the endpoints:
 ```bash
 curl http://127.0.0.1:5000/
 curl http://127.0.0.1:5000/health
+```
+
+## Testing
+
+Install dev dependencies:
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+Run tests:
+
+```bash
+# From the repository root
+pytest app_python/tests
+
+# From the app_python directory
+pytest tests
+```
+
+Optional coverage report:
+
+```bash
+pytest app_python/tests --cov=app_python --cov-report=term-missing --cov-report=xml --cov-fail-under=70
 ```
 
 ## Docker
