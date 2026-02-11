@@ -50,6 +50,16 @@ Or by using Uvicorn:
 uvicorn app:app --host 0.0.0.0 --port 5000
 ```
 
+## Testing the service
+```bash
+cd app_python
+python -m pytest tests/
+```
+Or test with coverage:
+```bash
+python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term --cov-fail-under=70
+```
+
 ## ⚙️ Configuration 
 
 | Variable              | Default value              | Description                |
@@ -62,7 +72,7 @@ uvicorn app:app --host 0.0.0.0 --port 5000
 | `PORT`                | 5000                       | Server port                |
 
 
-## 📡 API Эндпоинты
+##  API Endpoints
 
 ### 1. Root endpoint
 

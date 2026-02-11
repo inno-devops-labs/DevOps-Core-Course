@@ -1,4 +1,4 @@
-name: Python CI - Test, Lint & Docker Build
+name: Test, Lint & Docker Build
 
 on:
   push:
@@ -36,7 +36,12 @@ jobs:
       
       - name: Run tests
         working-directory: ./app_python
-        run: python -m pytest tests/ -v
+        run: python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term --cov-fail-under=70
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./app_python/coverage.xml
 
       - name: Run Snyk security scan
         uses: snyk/actions/python@master
