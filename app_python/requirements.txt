@@ -1,3 +1,8 @@
 # Web framework
 fastapi==0.115.0
-uvicorn[standard]==0.23.2 # ASGI server
+uvicorn[standard]==0.23.2
+
+# Testing & Coverage
+pytest>=8.0
+pytest-cov>=4.1.0
+httpx>=0.24.0

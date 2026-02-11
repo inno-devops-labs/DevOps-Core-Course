@@ -1,5 +1,9 @@
 # DevOps Info Service - Python
 
+[![Python CI](https://github.com/alsstarikova/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab03)](https://github.com/alsstarikova/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![codecov](https://codecov.io/gh/alsstarikova/DevOps-Core-Course/branch/lab03/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/alsstarikova/DevOps-Core-Course)
+
+
 A production-ready web service providing comprehensive system information and health checks. Built with FastAPI for high performance and automatic API documentation.
 
 ## Overview
@@ -161,3 +165,52 @@ Simple health check endpoint.
 | HOST | 0.0.0.0 | Server bind address |
 | PORT | 5000 | Server port |
 | DEBUG | false | Enable debug mode and verbose logging |
+
+
+## Testing
+
+Run unit tests locally:  
+```bash
+cd app_python
+pip install -r requirements.txt
+pytest -v
+```
+
+To see coverage report:  
+```bash
+cd app_python
+pip install -r requirements.txt
+pytest tests/ -v --cov=. --cov-report=term-missing --cov-fail-under=70
+```
+
+Expected output:  
+```bash
+ pytest tests/ -v
+================================================= test session starts ==================================================
+platform linux -- Python 3.10.12, pytest-9.0.2, pluggy-1.6.0 -- /mnt/c/Users/1alen/Desktop/My_Py_Projects/DevOps-Core-Course/app_python/venv/bin/python3
+cachedir: .pytest_cache
+plugins: anyio-4.12.1, cov-7.0.0
+collected 19 items
+
+tests/test_app.py::TestRootEndpoint::test_success_response_code PASSED                                           [  5%]
+tests/test_app.py::TestRootEndpoint::test_response_content_type PASSED                                           [ 10%]
+tests/test_app.py::TestRootEndpoint::test_response_structure_validation PASSED                                   [ 15%]
+tests/test_app.py::TestRootEndpoint::test_service_section_validation PASSED                                      [ 21%]
+tests/test_app.py::TestRootEndpoint::test_system_section_validation PASSED                                       [ 26%]
+tests/test_app.py::TestRootEndpoint::test_runtime_section_validation PASSED                                      [ 31%]
+tests/test_app.py::TestRootEndpoint::test_request_section_validation PASSED                                      [ 36%]
+tests/test_app.py::TestRootEndpoint::test_endpoints_section_validation PASSED                                    [ 42%]
+tests/test_app.py::TestRootEndpoint::test_x_forwarded_for_header_handling PASSED                                 [ 47%]
+tests/test_app.py::TestRootEndpoint::test_uptime_increases_over_time PASSED                                      [ 52%]
+tests/test_app.py::TestHealthEndpoint::test_success_response_code PASSED                                         [ 57%]
+tests/test_app.py::TestHealthEndpoint::test_response_structure PASSED                                            [ 63%]
+tests/test_app.py::TestHealthEndpoint::test_status_field PASSED                                                  [ 68%]
+tests/test_app.py::TestHealthEndpoint::test_uptime_field PASSED                                                  [ 73%]
+tests/test_app.py::TestHealthEndpoint::test_timestamp_field PASSED                                               [ 78%]
+tests/test_app.py::TestHealthEndpoint::test_uptime_consistency_with_root PASSED                                  [ 84%]
+tests/test_app.py::TestErrorHandling::test_404_not_found PASSED                                                  [ 89%]
+tests/test_app.py::TestErrorHandling::test_method_not_allowed PASSED                                             [ 94%]
+tests/test_app.py::TestErrorHandling::test_method_not_allowed_health PASSED                                      [100%]
+
+================================================== 19 passed in 3.09s ==================================================
+```
