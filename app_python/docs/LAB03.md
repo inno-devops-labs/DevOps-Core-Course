@@ -31,9 +31,8 @@ OK
 - ✅ Docker image on Docker Hub (link to your image): `https://hub.docker.com/r/ebortsov/devops-info/tags`
 - ✅ Status badge working in README: `app_python/README.md`
 - ✅ Caching evidence (fill after two Task 3 runs):
-  - Cache miss run link: `<add-link>`
-  - Cache hit run link: `<add-link>`
-  - Time comparison: `<before>` vs `<after>` (saved: `<delta>`)
+  - Run link (cache miss is the attempt #1; cache hit is the attempt #2): `https://github.com/ebortsov/DevOps-Core-Course/actions/runs/21916277283`
+  - Time comparison: `75 s` vs `52 s` (saved: `23 s`)
 
 ## 3. Best Practices Implemented
 - **Practice 1 (job dependencies):** Docker push job depends on successful lint/tests (`needs: test`) so broken code is never published.
@@ -42,7 +41,7 @@ OK
 - **Practice 4 (principle of least privilege):** Workflow permissions are limited to `contents: read`.
 - **Actions selection:** Used official maintained actions (`actions/checkout`, `actions/setup-python`, `docker/login-action`, `docker/build-push-action`) for predictable behavior and security support.
 - **Caching:** Enabled pip dependency caching in `actions/setup-python` and Docker layer cache (`cache-from/cache-to` in build step).
-- **Caching metrics:** Fill after two runs: `<before>` vs `<after>`, improvement `<delta>`.
+- **Caching metrics:** Workflow time improved from `75 s` to `52 s` (saved `23 s`) between cache miss and cache hit runs.
 - **Snyk:** Not integrated because a paid plan/token was not available for this repository. For this lab submission we prioritized a working free pipeline and documented this limitation explicitly.
 
 ## 4. Key Decisions
