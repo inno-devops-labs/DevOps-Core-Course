@@ -12,6 +12,7 @@ on:
       - main
       - master
       - lab03
+  workflow_dispatch: {}
 
 jobs:
   test:
