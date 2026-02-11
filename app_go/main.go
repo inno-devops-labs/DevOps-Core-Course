@@ -190,7 +190,9 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(info)
+	if err := json.NewEncoder(w).Encode(info); err != nil {
+		log.Printf("Error encoding JSON: %v", err)
+	}
 }
 
 // healthHandler handles the health check endpoint
@@ -206,7 +208,9 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(health)
+	if err := json.NewEncoder(w).Encode(health); err != nil {
+		log.Printf("Error encoding JSON: %v", err)
+	}
 }
 
 // notFoundHandler handles 404 errors
@@ -221,7 +225,9 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
-	json.NewEncoder(w).Encode(errorResp)
+	if err := json.NewEncoder(w).Encode(errorResp); err != nil {
+		log.Printf("Error encoding JSON: %v", err)
+	}
 }
 
 func main() {
