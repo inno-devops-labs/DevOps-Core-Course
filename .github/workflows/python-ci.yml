@@ -53,10 +53,11 @@ jobs:
 
       - name: Snyk scan
         uses: snyk/actions/python@v1.0.0
+        working-directory: app_python
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --file=app_python/requirements.txt
+          args: --file=requirements.txt
 
   docker:
     name: Build and Push Docker Image
