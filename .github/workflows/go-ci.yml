@@ -2,19 +2,19 @@ name: Go CI
 
 on:
   push:
-    branches: [ main, master, lab03 ]
+    branches: [main, master, lab03]
     paths:
-      - 'app_go/**'
-      - '.github/workflows/go-ci.yml'
+      - "app_go/**"
+      - ".github/workflows/go-ci.yml"
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
     paths:
-      - 'app_go/**'
-      - '.github/workflows/go-ci.yml'
+      - "app_go/**"
+      - ".github/workflows/go-ci.yml"
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/go-devops-app
-  GO_VERSION: '1.23'
+  GO_VERSION: "1.23"
 
 jobs:
   test:
@@ -29,7 +29,16 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: app_go/go.sum
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('app_go/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Download dependencies
         working-directory: app_go
@@ -40,6 +49,7 @@ jobs:
         with:
           version: latest
           working-directory: app_go
+          args: --timeout=5m
 
       - name: Run tests
         working-directory: app_go
@@ -71,13 +81,18 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - name: Download dependencies
+        working-directory: app_go
+        run: go mod download
+
       - name: Run Snyk security scan
         uses: snyk/actions/golang@master
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --file=app_go/go.mod
+          command: test
+          args: --file=app_go/go.mod --severity-threshold=high
 
   docker:
     name: Build and Push Docker Image
