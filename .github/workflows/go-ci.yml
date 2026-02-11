@@ -49,6 +49,9 @@ jobs:
           go test -v -coverprofile=coverage.out ./...
           go tool cover -func=coverage.out
 
+      - name: Fix coverage paths for Codecov
+        run: sed -i 's|devops-info-service/|app_go/|g' coverage.out
+
       - name: Upload coverage to Codecov
         if: github.event_name == 'push'
         uses: codecov/codecov-action@v4
