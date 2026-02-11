@@ -1,1 +1,3 @@
-test
+.pytest_cache/
+.vscode/
+.venv
