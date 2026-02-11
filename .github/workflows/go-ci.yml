@@ -35,17 +35,37 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - name: Generate go.sum
+        working-directory: ./app_go
+        run: go mod tidy
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        if: hashFiles('app_go/go.sum') != ''
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('app_go/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Download dependencies
         working-directory: ./app_go
         run: go mod download
 
       - name: Run linter (golangci-lint)
-        uses: golangci/golangci-lint-action@v5
-        with:
-          version: v1.60.0
-          working-directory: ./app_go
-          args: --timeout=5m --verbose --out-format=colored-line-number
-          only-new-issues: false
+        working-directory: ./app_go
+        run: |
+          # Install golangci-lint using official installer
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /tmp v1.60.0
+          
+          # Verify installation
+          /tmp/golangci-lint --version
+          
+          # Run linter with verbose output
+          echo "Running golangci-lint..."
+          /tmp/golangci-lint run --timeout=5m --verbose --out-format=colored-line-number
         continue-on-error: true
 
       - name: Run unit tests
@@ -150,7 +170,21 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: app_go/go.sum
+
+      - name: Generate go.sum
+        working-directory: ./app_go
+        run: go mod tidy
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        if: hashFiles('app_go/go.sum') != ''
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('app_go/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Download dependencies
         working-directory: ./app_go
