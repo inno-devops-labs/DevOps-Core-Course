@@ -16,6 +16,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: 3.11
+        cache: "pip"
       
     - name: Install dependencies
       run: |
@@ -23,6 +24,35 @@ jobs:
         pip install -r app_python/requirements.txt
         pip install -r app_python/requirements-dev.txt
       
+    - name: Run linter
+      run: ruff check .
+      
     - name: Run tests
       run: |
         pytest -v
+    
+    
+    docker:
+      needs: test
+      runs-on: ubuntu-latest
+
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Log in to Docker Hub
+          uses: docker/login-action@v3
+          with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+        - name: Generate version
+          run: echo "VERSION=$(date +%Y.%m.%d)" >> $GITHUB_ENV
+
+        - name: Build and push Docker image
+          uses: docker/build-push-action@v6
+          with:
+            context: .
+            push: true
+            tags: |
+              ${{ secrets.DOCKERHUB_USERNAME }}/devops-info-service:${{ env.VERSION }}
+              ${{ secrets.DOCKERHUB_USERNAME }}/devops-info-service:latest
