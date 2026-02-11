@@ -56,6 +56,7 @@ jobs:
         run: go tool cover -html=coverage.out -o coverage.html
 
       - name: Fix coverage paths for Codecov
+        working-directory: ./app_go
         run: sed -i 's|devops-info-service/|app_go/|g' coverage.out
 
       - name: Upload coverage to Codecov
