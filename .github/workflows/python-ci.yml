@@ -52,7 +52,7 @@ jobs:
         run: pytest
 
       - name: Snyk scan
-        uses: snyk/actions/python@v3
+        uses: snyk/actions/python@v1.0.0
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
