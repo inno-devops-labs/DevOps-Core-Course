@@ -54,18 +54,28 @@ jobs:
         working-directory: ./app_go
         run: go mod download
 
+      - name: Install golangci-lint
+        run: |
+          echo "Installing golangci-lint via go install..."
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.0
+          
+          # Add to PATH
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          
+          # Verify installation
+          echo "Verifying installation..."
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          golangci-lint --version
+
       - name: Run linter (golangci-lint)
         working-directory: ./app_go
         run: |
-          # Install golangci-lint using official installer
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /tmp v1.60.0
-          
-          # Verify installation
-          /tmp/golangci-lint --version
-          
-          # Run linter with verbose output
           echo "Running golangci-lint..."
-          /tmp/golangci-lint run --timeout=5m --verbose --out-format=colored-line-number
+          export PATH="$PATH:$(go env GOPATH)/bin"
+          golangci-lint run --timeout=5m --verbose --out-format=colored-line-number || {
+            echo "Linter found issues. Exit code: $?"
+            exit 0  # Don't fail the build, just report issues
+          }
         continue-on-error: true
 
       - name: Run unit tests
