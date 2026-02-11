@@ -65,12 +65,13 @@ jobs:
           files: app_python/coverage.xml
           fail_ci_if_error: false
 
-      - name: Snyk scan (dependencies)
-        uses: snyk/actions/python@master
+      - name: Set up Snyk CLI
+        uses: snyk/actions/setup@master
+
+      - name: Snyk scan (deps)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --file=app_python/requirements.txt --severity-threshold=high
+        run: snyk test --file=app_python/requirements.txt --severity-threshold=high
 
   docker-build-push:
     runs-on: ubuntu-latest
