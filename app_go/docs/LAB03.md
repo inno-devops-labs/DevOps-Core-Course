@@ -4,7 +4,7 @@
 
 **File:** `.github/workflows/go-ci.yml`
 
-- **Successful workflow run (Go CI):** []
+- **Successful workflow run (Go CI):** https://github.com/AEZuraa/DevOps-Core-Course/actions/runs/21912674696
 
 ### Language-Specific Best Practices
 
