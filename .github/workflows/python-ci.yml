@@ -43,7 +43,8 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --file=app_python/requirements.txt
+          args: --file=requirements.txt --skip-unresolved
+        working-directory: ./app_python
 
   docker-build-and-push:
     name: Docker Build & Push
