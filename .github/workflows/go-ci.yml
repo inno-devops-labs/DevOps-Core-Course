@@ -1,12 +1,12 @@
-name: Python CI
+name: Go CI
 
 on:
   push:
     paths:
-      - 'app_python/**'
+      - 'app_go/**'
   pull_request:
     paths:
-      - 'app_python/**'
+      - 'app_go/**'
 
 jobs:
   go-test:
