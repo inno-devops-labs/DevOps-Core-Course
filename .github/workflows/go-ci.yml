@@ -1,0 +1,129 @@
+name: Go CI/CD Pipeline
+
+# Cancel in-progress runs when a new run is triggered
+concurrency:
+  group: go-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Path-based triggers: only run when app_go files change
+on:
+  push:
+    branches:
+      - main
+      - master
+      - lab03
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+
+env:
+  GO_VERSION: '1.21'
+  DOCKER_IMAGE: mirana18/devops-info-service-go
+
+jobs:
+  test:
+    name: Code Quality & Testing
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go ${{ env.GO_VERSION }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: app_go/go.mod
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: app_go
+          args: --timeout=5m
+
+      - name: Run tests
+        working-directory: ./app_go
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Generate coverage report
+        working-directory: ./app_go
+        run: |
+          go tool cover -func=coverage.out
+          echo "## Go Test Coverage" >> $GITHUB_STEP_SUMMARY
+          go tool cover -func=coverage.out >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: app_go/coverage.out
+          flags: go
+          name: go-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/lab03')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Generate version tags (CalVer)
+        id: meta
+        run: |
+          VERSION=$(date +%Y.%m)
+          BUILD_NUMBER=${{ github.run_number }}
+          FULL_VERSION="${VERSION}.${BUILD_NUMBER}"
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "full_version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Extract Docker metadata
+        id: docker_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=raw,value=${{ steps.meta.outputs.full_version }}
+            type=raw,value=${{ steps.meta.outputs.version }}
+            type=raw,value=latest
+            type=raw,value=sha-${{ steps.meta.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.title=DevOps Info Service (Go)
+            org.opencontainers.image.description=Go-based system information service
+            org.opencontainers.image.version=${{ steps.meta.outputs.full_version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app_go
+          file: ./app_go/Dockerfile
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:latest
+          cache-to: type=inline

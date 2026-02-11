@@ -1,5 +1,10 @@
 name: Python CI/CD Pipeline
 
+# Cancel in-progress runs when a new run is triggered
+concurrency:
+  group: python-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 # Workflow triggers
 on:
   push:
@@ -63,23 +68,27 @@ jobs:
           # Exit-zero treats all errors as warnings. Line length set to 100
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
       
-      # Step 5: Run unit tests with pytest
-      - name: Run tests with pytest
+      # Step 5: Run unit tests with pytest and coverage
+      - name: Run tests with pytest and coverage
         working-directory: ./app_python
         run: |
-          pytest -v --tb=short
+          pytest -v --tb=short --cov=. --cov-report=term --cov-report=xml --cov-fail-under=70
       
-      # Step 6: Generate test coverage report
-      - name: Generate coverage report
-        working-directory: ./app_python
-        run: |
-          pytest --cov=. --cov-report=term --cov-report=xml
+      # Step 6: Upload coverage to Codecov
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: app_python/coverage.xml
+          flags: python
+          name: python-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
       
-      # Step 7: Upload coverage to artifacts (optional, for review)
+      # Step 7: Upload coverage artifact (for review)
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: python-coverage-report
           path: app_python/coverage.xml
           retention-days: 7
 

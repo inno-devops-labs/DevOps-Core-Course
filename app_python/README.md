@@ -1,5 +1,8 @@
 # DevOps Info Service - Python
 
+[![Python CI](https://github.com/mirana18/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/mirana18/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![codecov](https://codecov.io/gh/mirana18/DevOps-Core-Course/graph/badge.svg?flag=python)](https://codecov.io/gh/mirana18/DevOps-Core-Course?flag=python)
+
 A production-ready web service that provides comprehensive information about itself and its runtime environment. Built with Flask framework.
 
 ## Overview
@@ -267,6 +270,25 @@ Available tags:
 - `lab02` - Lab-specific versions
 
 ## Development
+
+### Unit Tests and Coverage
+
+```bash
+# Install dev dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+pytest -v
+
+# Run tests with coverage (70% threshold enforced in CI)
+pytest --cov=. --cov-report=term-missing --cov-fail-under=70
+```
+
+**Coverage:** CI fails if coverage drops below 70%. Current coverage includes:
+- All API endpoints (`GET /`, `GET /health`)
+- JSON structure and required fields validation
+- Error handling (404, 405)
+- Helper functions (`format_uptime`, `get_system_info`)
 
 ### Testing
 
