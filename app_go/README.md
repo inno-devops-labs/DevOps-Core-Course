@@ -218,9 +218,10 @@ open coverage.html   # macOS
 ```
 
 **Test structure:**
-- `main_test.go` — 7 test cases: main endpoint, health, system info, uptime, 404, concurrent requests, uptime increase
+- `main_test.go` — 14 test cases: main/health/404 endpoints, system info (incl. hostname error), uptime and formatUptime (all branches), getRequestInfo (X-Forwarded-For, User-Agent), concurrent requests, and JSON write error paths for all handlers
 - Tests run without starting the server (httptest)
-- Coverage is generated for CI (Codecov)
+- Coverage target: minimum 70%; CI fails if coverage drops below 70%
+- Coverage is uploaded to Codecov
 
 ## Binary Size Comparison
 

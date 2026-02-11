@@ -13,6 +13,9 @@ import (
 // Application start time for uptime calculation
 var startTime = time.Now()
 
+// hostnameFunc is used to get hostname; can be overridden in tests
+var hostnameFunc = os.Hostname
+
 // Service represents service metadata
 type Service struct {
 	Name        string `json:"name"`
@@ -72,7 +75,7 @@ type HealthResponse struct {
 
 // getSystemInfo collects system information
 func getSystemInfo() System {
-	hostname, err := os.Hostname()
+	hostname, err := hostnameFunc()
 	if err != nil {
 		hostname = "unknown"
 		log.Printf("Error getting hostname: %v", err)
@@ -88,10 +91,9 @@ func getSystemInfo() System {
 	}
 }
 
-// getUptime calculates application uptime
-func getUptime() (int, string) {
-	duration := time.Since(startTime)
-	seconds := int(duration.Seconds())
+// formatUptime converts a duration to seconds and human-readable string (testable)
+func formatUptime(d time.Duration) (int, string) {
+	seconds := int(d.Seconds())
 	hours := seconds / 3600
 	minutes := (seconds % 3600) / 60
 
@@ -121,6 +123,11 @@ func getUptime() (int, string) {
 	}
 
 	return seconds, human
+}
+
+// getUptime calculates application uptime
+func getUptime() (int, string) {
+	return formatUptime(time.Since(startTime))
 }
 
 // getRequestInfo extracts request information

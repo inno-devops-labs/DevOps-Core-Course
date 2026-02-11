@@ -103,6 +103,12 @@ docker pull karishka1222/devops-go-app:2026.02.11
 - `TestNotFoundHandler` — 404 response and JSON
 - `TestConcurrentRequests` — Multiple concurrent GET /
 - `TestUptimeIncreases` — Uptime increases over time
+- `TestFormatUptime` — All branches of uptime formatting (seconds/minutes/hours, singular/plural)
+- `TestGetSystemInfoHostnameError` — getSystemInfo when hostname fails (fallback to "unknown")
+- `TestGetRequestInfo` — Request info extraction (X-Forwarded-For, empty User-Agent → "unknown")
+- `TestMainHandlerWriteError` — mainHandler when JSON encode/write fails
+- `TestHealthHandlerWriteError` — healthHandler when JSON encode/write fails
+- `TestNotFoundHandlerWriteError` — notFoundHandler when JSON encode/write fails
 
 **Run Tests Locally:**
 ```bash
@@ -296,23 +302,23 @@ When you push only Python changes, only **Python CI/CD** runs. When you change f
 
 ### Coverage Analysis
 
-**Current coverage:** 52.1% (total statements)
+**Current coverage:** 75.3% (total statements; target minimum 70%).
 
-| Function        | Coverage | Notes                          |
-|----------------|----------|--------------------------------|
-| mainHandler    | 85.7%    | Main endpoint, well tested    |
-| healthHandler  | 85.7%    | Health endpoint, well tested |
-| notFoundHandler| 83.3%    | 404 handler, tested           |
-| getRequestInfo | 85.7%    | Request parsing               |
-| getSystemInfo  | 60.0%    | Some branches (e.g. hostname error) not hit |
-| getUptime      | 52.2%    | Time-format branches          |
-| main           | 0%       | Entry point, not unit-tested  |
+| Function         | Coverage | Notes                                      |
+|-----------------|----------|--------------------------------------------|
+| mainHandler     | 100%     | Main endpoint, incl. JSON write error path |
+| healthHandler   | 100%     | Health endpoint, incl. JSON write error    |
+| notFoundHandler | 100%     | 404 handler, incl. JSON write error        |
+| getRequestInfo  | 100%     | Request parsing, X-Forwarded-For, User-Agent |
+| getSystemInfo   | 100%     | Incl. hostname error fallback to "unknown" |
+| formatUptime    | 100%     | All branches (seconds/minutes/hours, plural) |
+| getUptime       | 100%     | Delegates to formatUptime                  |
+| main            | 0%       | Entry point, not unit-tested               |
 
 **What's not covered (and why):**
-- `main` — server entry point; tested by integration/run, not unit tests
-- Parts of `getSystemInfo` / `getUptime` — error or rare format branches
+- `main` — server entry point; tested by integration/run, not unit tests.
 
-**Coverage threshold:** No fail-under set in CI for Go (52% &lt; 70%). Goal is to track trends in Codecov; a 70% threshold can be added later with more tests.
+**Coverage threshold:** Minimum 70%. Codecov tracks trends; all handlers and helpers are fully covered, including error paths (hostname failure, JSON write failure).
 
 ---
 

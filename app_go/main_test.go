@@ -2,11 +2,21 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 )
+
+// errWriter is an http.ResponseWriter that fails on Write (for testing error paths)
+type errWriter struct {
+	http.ResponseWriter
+}
+
+func (e *errWriter) Write([]byte) (int, error) {
+	return 0, errors.New("write failed")
+}
 
 // TestMainEndpoint tests the main endpoint
 func TestMainEndpoint(t *testing.T) {
@@ -212,5 +222,115 @@ func TestUptimeIncreases(t *testing.T) {
 
 	if seconds2 <= seconds1 {
 		t.Errorf("Uptime should increase: got %d then %d", seconds1, seconds2)
+	}
+}
+
+// TestFormatUptime tests all branches of formatUptime (seconds, minutes, hours; singular/plural)
+func TestFormatUptime(t *testing.T) {
+	tests := []struct {
+		duration   time.Duration
+		wantSec    int
+		wantSuffix string // substring that should appear in human string
+	}{
+		{0, 0, "0 second"},
+		{1 * time.Second, 1, "1 second"},
+		{2 * time.Second, 2, "2 seconds"},
+		{1 * time.Minute, 60, "1 minute"},
+		{2 * time.Minute, 120, "2 minutes"},
+		{1*time.Hour + 30*time.Minute, 5400, "1 hour"},
+		{2*time.Hour + 5*time.Minute, 7500, "2 hours"},
+	}
+	for _, tt := range tests {
+		sec, human := formatUptime(tt.duration)
+		if sec != tt.wantSec {
+			t.Errorf("formatUptime(%v) seconds = %d, want %d", tt.duration, sec, tt.wantSec)
+		}
+		if human == "" {
+			t.Errorf("formatUptime(%v) human empty", tt.duration)
+		}
+		if tt.wantSuffix != "" && len(human) < len(tt.wantSuffix) {
+			t.Errorf("formatUptime(%v) human = %q, want containing %q", tt.duration, human, tt.wantSuffix)
+		}
+	}
+}
+
+// TestGetSystemInfoHostnameError tests getSystemInfo when hostname fails
+func TestGetSystemInfoHostnameError(t *testing.T) {
+	old := hostnameFunc
+	defer func() { hostnameFunc = old }()
+	hostnameFunc = func() (string, error) {
+		return "", errors.New("hostname error")
+	}
+	info := getSystemInfo()
+	if info.Hostname != "unknown" {
+		t.Errorf("expected hostname 'unknown' on error, got %q", info.Hostname)
+	}
+	if info.Platform == "" || info.GoVersion == "" {
+		t.Error("other system fields should still be set")
+	}
+}
+
+// TestGetRequestInfo tests request info extraction (X-Forwarded-For, User-Agent)
+func TestGetRequestInfo(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/health", nil)
+	req.RemoteAddr = "192.168.1.1:12345"
+	req.Header.Set("User-Agent", "TestAgent/1.0")
+	info := getRequestInfo(req)
+	if info.ClientIP != "192.168.1.1:12345" {
+		t.Errorf("ClientIP = %q, want 192.168.1.1:12345", info.ClientIP)
+	}
+	if info.UserAgent != "TestAgent/1.0" {
+		t.Errorf("UserAgent = %q, want TestAgent/1.0", info.UserAgent)
+	}
+	if info.Method != "GET" || info.Path != "/health" {
+		t.Errorf("Method=%q Path=%q", info.Method, info.Path)
+	}
+
+	// X-Forwarded-For overrides RemoteAddr
+	req.Header.Set("X-Forwarded-For", "10.0.0.1")
+	info2 := getRequestInfo(req)
+	if info2.ClientIP != "10.0.0.1" {
+		t.Errorf("with X-Forwarded-For, ClientIP = %q, want 10.0.0.1", info2.ClientIP)
+	}
+
+	// Empty User-Agent becomes "unknown"
+	req.Header.Del("User-Agent")
+	req.Header.Del("X-Forwarded-For")
+	info3 := getRequestInfo(req)
+	if info3.UserAgent != "unknown" {
+		t.Errorf("empty User-Agent should become 'unknown', got %q", info3.UserAgent)
+	}
+}
+
+// TestMainHandlerWriteError tests mainHandler when JSON write fails
+func TestMainHandlerWriteError(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	rr := httptest.NewRecorder()
+	w := &errWriter{ResponseWriter: rr}
+	mainHandler(w, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("status should still be 200 before write, got %d", rr.Code)
+	}
+}
+
+// TestHealthHandlerWriteError tests healthHandler when JSON write fails
+func TestHealthHandlerWriteError(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/health", nil)
+	rr := httptest.NewRecorder()
+	w := &errWriter{ResponseWriter: rr}
+	healthHandler(w, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("status should still be 200 before write, got %d", rr.Code)
+	}
+}
+
+// TestNotFoundHandlerWriteError tests notFoundHandler when JSON write fails
+func TestNotFoundHandlerWriteError(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/missing", nil)
+	rr := httptest.NewRecorder()
+	w := &errWriter{ResponseWriter: rr}
+	notFoundHandler(w, req)
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("status should still be 404 before write, got %d", rr.Code)
 	}
 }
