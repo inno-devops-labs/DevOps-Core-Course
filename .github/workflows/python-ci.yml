@@ -31,13 +31,14 @@ jobs:
       run: |
         pytest -v
     
-          - name: Install Snyk CLI
-        run: npm install -g snyk
+    - name: Install Snyk CLI
+      run: npm install -g snyk
 
     - name: Run Snyk Test
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: snyk test --all-projects || true
+
 
     
 
