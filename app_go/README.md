@@ -1,5 +1,8 @@
 # DevOps Info Service - Go
 
+[![Go CI](https://github.com/mirana18/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)](https://github.com/mirana18/DevOps-Core-Course/actions/workflows/go-ci.yml)
+[![codecov](https://codecov.io/gh/mirana18/DevOps-Core-Course/graph/badge.svg?flag=go)](https://codecov.io/gh/mirana18/DevOps-Core-Course?flag=go)
+
 A production-ready web service implemented in Go that provides comprehensive information about itself and its runtime environment. This is the compiled language version of the DevOps Info Service, built using Go's standard `net/http` package.
 
 ## Overview
@@ -233,6 +236,17 @@ This implementation uses only Go's standard library:
 No external dependencies required! See `go.mod` for module definition.
 
 ## Development
+
+### Unit Tests and Coverage
+
+```bash
+# Run tests
+go test -v ./...
+
+# Run tests with coverage
+go test -coverprofile=coverage.out ./...
+go tool cover -func=coverage.out
+```
 
 ### Testing
 
