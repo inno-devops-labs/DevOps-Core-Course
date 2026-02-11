@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"time"
-	"fmt"
 )
 
 var startTime = time.Now()
@@ -55,11 +55,11 @@ type Endpoint struct {
 
 // Main response structure
 type InfoResponse struct {
-	Service   Service       `json:"service"`
-	System    System        `json:"system"`
-	Runtime   Runtime       `json:"runtime"`
-	Request   RequestInfo   `json:"request"`
-	Endpoints []Endpoint    `json:"endpoints"`
+	Service   Service     `json:"service"`
+	System    System      `json:"system"`
+	Runtime   Runtime     `json:"runtime"`
+	Request   RequestInfo `json:"request"`
+	Endpoints []Endpoint  `json:"endpoints"`
 }
 
 // Health check response
@@ -95,8 +95,11 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostname, _ := os.Hostname()
-	
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+
 	response := InfoResponse{
 		Service: Service{
 			Name:        "devops-info-service",
@@ -133,7 +136,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 // Health check handler
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	runtime := getRuntime()
-	
+
 	response := HealthResponse{
 		Status:        "healthy",
 		Timestamp:     time.Now().UTC().Format(time.RFC3339),

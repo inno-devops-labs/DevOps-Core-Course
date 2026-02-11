@@ -45,7 +45,9 @@ jobs:
         run: |
           # Install golangci-lint
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.60.0
-          golangci-lint run
+          # Add GOPATH/bin to PATH
+          export PATH=$PATH:$(go env GOPATH)/bin
+          golangci-lint run --timeout=5m
 
       - name: Run unit tests
         working-directory: ./app_go
