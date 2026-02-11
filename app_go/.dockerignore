@@ -1,0 +1,11 @@
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+docs/
+README.md
+devops-info-service
