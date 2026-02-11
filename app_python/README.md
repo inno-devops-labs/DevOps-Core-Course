@@ -1,5 +1,8 @@
 # DevOps Info Service
 
+![Python CI/CD](https://github.com/Ravwvil/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+![Coverage](https://coveralls.io/repos/github/Ravwvil/DevOps-Core-Course/badge.svg?branch=master)
+
 Web service providing system information and health status via REST API.
 
 ## Requirements
@@ -23,6 +26,16 @@ python app.py                      # Default: http://0.0.0.0:8000
 PORT=3000 python app.py            # Custom port
 ```
 
+## Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage report
+pytest tests/ -v --cov=. --cov-report=term
+```
+
 ## API Endpoints
 
 | Endpoint | Method | Description |
@@ -44,14 +57,17 @@ PORT=3000 python app.py            # Custom port
 ```
 app_python/
 ├── app.py              # Main application
-├── requirements.txt    # Dependencies
+├── requirements.txt    # Dependencies (incl. test & lint)
 ├── Dockerfile          # Container definition
 ├── .dockerignore       # Docker build exclusions
 ├── README.md
 ├── tests/
+│   ├── __init__.py
+│   └── test_app.py     # Unit tests (pytest)
 └── docs/
     ├── LAB01.md
-    └── LAB02.md
+    ├── LAB02.md
+    └── LAB03.md
 ```
 
 ## Docker

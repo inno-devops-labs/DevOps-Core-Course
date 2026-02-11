@@ -55,7 +55,7 @@ def get_uptime():
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     secs = seconds % 60
-    
+
     # Build human-readable string
     parts = []
     if hours > 0:
@@ -64,7 +64,7 @@ def get_uptime():
         parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
     if secs > 0 or not parts:
         parts.append(f"{secs} second{'s' if secs != 1 else ''}")
-    
+
     return {
         'seconds': seconds,
         'human': ', '.join(parts)
@@ -110,7 +110,7 @@ async def index(request: Request):
     """Main endpoint - service and system information."""
     client_ip = request.client.host if request.client else 'unknown'
     logger.info(f'Request: {request.method} {request.url.path} from {client_ip}')
-    
+
     return {
         'service': SERVICE_INFO,
         'system': get_system_info(),
@@ -124,7 +124,7 @@ async def index(request: Request):
 async def health():
     """Health check endpoint for monitoring."""
     logger.debug('Health check requested')
-    
+
     uptime = get_uptime()
     return {
         'status': 'healthy',

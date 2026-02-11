@@ -6,3 +6,11 @@ uvicorn[standard]==0.32.0
 
 # Development tools
 python-dotenv==1.0.1
+
+# Testing
+pytest==8.3.4
+httpx==0.28.1
+pytest-cov==6.0.0
+
+# Linting
+flake8==7.1.1
