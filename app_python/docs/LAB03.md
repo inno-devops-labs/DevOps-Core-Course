@@ -40,9 +40,9 @@
   - Linting (ruff)
   - Unit tests (pytest)
   - Docker build & push
-- Workflow run (example): [link to Actions](https://github.com/Daniil20xx/DevOps-Core-Course/actions/runs/21911923806/job/63268043841)   
+- Workflow run (example): [link to Actions](https://github.com/Daniil20xx/DevOps-Core-Course/actions/runs/21914051127)   
 
-**Тесты локально:**
+**Local tests:**
 
 ![pytest debug](screenshots/lab03-pytest-passed.png)
 

@@ -27,9 +27,18 @@ jobs:
     - name: Run linter
       run: ruff check .
       
-    - name: Run tests
+    - name: Run pytest tests
       run: |
         pytest -v
+    
+          - name: Install Snyk CLI
+        run: npm install -g snyk
+
+    - name: Run Snyk Test
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: snyk test --all-projects || true
+
     
 
   docker:
