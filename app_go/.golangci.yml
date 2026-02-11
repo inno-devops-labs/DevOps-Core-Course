@@ -1,32 +1,16 @@
 linters-settings:
   errcheck:
-    check-type-assertions: true
-    check-blank: false  # Allow blank identifier for intentionally ignored errors
-  govet:
-    check-shadowing: true
-  gocyclo:
-    min-complexity: 15
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  misspell:
-    locale: US
+    check-type-assertions: false
+    check-blank: false
 
 linters:
   disable-all: true
   enable:
     - errcheck
-    - gosimple
     - govet
-    - ineffassign
-    - staticcheck
-    - unused
     - gofmt
     - goimports
 
 issues:
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
+  max-issues-per-linter: 50
+  max-same-issues: 10

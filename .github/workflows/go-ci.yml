@@ -34,20 +34,18 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: app_go/go.sum
 
       - name: Download dependencies
         working-directory: ./app_go
         run: go mod download
 
       - name: Run linter (golangci-lint)
-        working-directory: ./app_go
-        run: |
-          # Install golangci-lint
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.60.0
-          # Add GOPATH/bin to PATH
-          export PATH=$PATH:$(go env GOPATH)/bin
-          golangci-lint run --timeout=5m
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.60.0
+          working-directory: ./app_go
+          args: --timeout=5m
+          only-new-issues: false
 
       - name: Run unit tests
         working-directory: ./app_go
