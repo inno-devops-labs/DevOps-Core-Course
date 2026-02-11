@@ -1,0 +1,187 @@
+name: Python CI/CD Pipeline
+
+# Workflow triggers
+on:
+  push:
+    branches:
+      - main
+      - master
+      - lab03
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'app_python/**'
+      - '.github/workflows/python-ci.yml'
+
+# Environment variables used across jobs
+env:
+  PYTHON_VERSION: '3.11'
+  DOCKER_IMAGE: mirana18/devops-info-service
+
+jobs:
+  # Job 1: Code Quality & Testing
+  test:
+    name: Code Quality & Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Step 2: Set up Python environment
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'  # Cache pip dependencies for faster runs
+          cache-dependency-path: |
+            app_python/requirements.txt
+            app_python/requirements-dev.txt
+      
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        working-directory: ./app_python
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          # Install linter
+          pip install flake8
+      
+      # Step 4: Run linter (flake8)
+      - name: Lint with flake8
+        working-directory: ./app_python
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings. Line length set to 100
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+      
+      # Step 5: Run unit tests with pytest
+      - name: Run tests with pytest
+        working-directory: ./app_python
+        run: |
+          pytest -v --tb=short
+      
+      # Step 6: Generate test coverage report
+      - name: Generate coverage report
+        working-directory: ./app_python
+        run: |
+          pytest --cov=. --cov-report=term --cov-report=xml
+      
+      # Step 7: Upload coverage to artifacts (optional, for review)
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: app_python/coverage.xml
+          retention-days: 7
+
+  # Job 2: Docker Build & Push (only runs if tests pass)
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test  # This job only runs if 'test' job succeeds
+    
+    # Only push to Docker Hub on push to main/master (not on PRs)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/lab03')
+    
+    steps:
+      # Step 1: Check out code
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Step 2: Set up Docker Buildx (for advanced build features)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      # Step 3: Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      # Step 4: Generate version tags using Calendar Versioning (CalVer)
+      - name: Generate version tags
+        id: meta
+        run: |
+          # CalVer format: YYYY.MM (e.g., 2026.02)
+          VERSION=$(date +%Y.%m)
+          
+          # Build number (GitHub run number)
+          BUILD_NUMBER=${{ github.run_number }}
+          
+          # Full version with build: YYYY.MM.BUILD (e.g., 2026.02.15)
+          FULL_VERSION="${VERSION}.${BUILD_NUMBER}"
+          
+          # Short commit SHA for traceability
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "full_version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          
+          echo "Generated version: ${FULL_VERSION}"
+          echo "Commit SHA: ${SHORT_SHA}"
+      
+      # Step 5: Extract Docker metadata for tags and labels
+      - name: Extract Docker metadata
+        id: docker_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            # CalVer version with build number (e.g., 2026.02.15)
+            type=raw,value=${{ steps.meta.outputs.full_version }}
+            # CalVer version without build (e.g., 2026.02)
+            type=raw,value=${{ steps.meta.outputs.version }}
+            # Latest tag
+            type=raw,value=latest
+            # Commit SHA (for traceability)
+            type=raw,value=sha-${{ steps.meta.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.title=DevOps Info Service
+            org.opencontainers.image.description=Flask-based system information service
+            org.opencontainers.image.version=${{ steps.meta.outputs.full_version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      
+      # Step 6: Build and push Docker image
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app_python
+          file: ./app_python/Dockerfile
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:latest
+          cache-to: type=inline
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.full_version }}
+      
+      # Step 7: Output image information
+      - name: Image digest and tags
+        run: |
+          echo "## Docker Image Published 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.DOCKER_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.meta.outputs.full_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.meta.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`sha-${{ steps.meta.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.meta.outputs.full_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
