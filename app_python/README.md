@@ -1,7 +1,7 @@
 # DevOps Info Service
 
-[![Python CI](https://github.com/karishka1222/DevOps-Core-Course/workflows/Python%20CI%2FCD/badge.svg?branch=lab3)](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/python-ci.yml)
-[![codecov](https://codecov.io/gh/karishka1222/DevOps-Core-Course/branch/main/graph/badge.svg)](https://codecov.io/gh/karishka1222/DevOps-Core-Course)
+[![Python CI](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab3)](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![codecov](https://codecov.io/gh/karishka1222/DevOps-Core-Course/branch/lab3/graph/badge.svg)](https://codecov.io/gh/karishka1222/DevOps-Core-Course)
 ![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Flask](https://img.shields.io/badge/flask-3.1.0-green)
 
