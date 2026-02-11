@@ -1,6 +1,6 @@
 # DevOps Info Service (Flask)
 
-[![Workflow](https://github.com/Chaleshka/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=main)](https://github.com/Chaleshka/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![Workflow](https://github.com/Chaleshka/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab3)](https://github.com/Chaleshka/DevOps-Core-Course/actions/workflows/python-ci.yml)
 
 ## Overview
 A simple DevOps information service that displays system, runtime, and request data.  
