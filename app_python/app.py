@@ -2,6 +2,7 @@
 DevOps Info Service
 Main application module providing system information and health status.
 """
+
 import os
 import socket
 import platform
@@ -85,9 +86,7 @@ def get_endpoints():
 def index():
     """Main endpoint - service and system information."""
     client_ip = request.remote_addr
-    logger.info(
-        f"Request: {request.method} {request.path} from {client_ip}"
-    )
+    logger.info(f"Request: {request.method} {request.path} from {client_ip}")
 
     uptime = get_uptime()
 

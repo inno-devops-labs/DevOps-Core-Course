@@ -2,6 +2,7 @@
 Unit tests for DevOps Info Service
 Tests all endpoints and error handling.
 """
+
 import pytest
 from datetime import datetime
 from app import app, get_service_info, get_system_info, get_endpoints, get_uptime
@@ -260,9 +261,7 @@ class TestHelperFunctions:
         assert isinstance(uptime["seconds"], int)
         assert uptime["seconds"] >= 0
         assert isinstance(uptime["human"], str)
-        assert (
-            "hour" in uptime["human"] or "minute" in uptime["human"]
-        )
+        assert "hour" in uptime["human"] or "minute" in uptime["human"]
 
 
 class TestHTTPMethods:
