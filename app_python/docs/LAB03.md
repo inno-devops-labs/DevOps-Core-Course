@@ -66,7 +66,7 @@ Also I used Git secrets:
 
 ### 2.3 Evidence
 
-#### - [👉 Link to successful CI](https://github.com/CacucoH/DevOps-Core-Course/actions/runs/21945226684/job/63380994126)
+#### - [👉 Link to successful CI (full lab done)](https://github.com/CacucoH/DevOps-Core-Course/actions/runs/21959626699)
 #### - Tests passing locally:
 ![all tests passing](./screenshots/lab3/tests.png)
 #### - [Docker image on Docker Hub](https://hub.docker.com/r/cacucoh/testiks) 
