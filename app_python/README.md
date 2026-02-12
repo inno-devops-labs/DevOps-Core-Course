@@ -1,5 +1,6 @@
 # DevOps Info Service (Python / Flask)
-![python-ci](https://github.com/egraPA006/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=master)
+![python-ci](https://github.com/egraPA006/DevOps-Core-Course/actions/workflows/python-ci.yaml/badge.svg)
+![version](https://img.shields.io/github/v/tag/egraPA006/DevOps-Core-Course?sort=semver)
 
 ## Overview
 DevOps Info Service is a small HTTP web service that exposes information about
