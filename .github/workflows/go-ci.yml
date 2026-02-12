@@ -1,0 +1,69 @@
+name: Go CI
+
+on:
+  push:
+    branches: [master, lab03]
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app_go
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: app_go/go.mod
+
+      - name: Lint with golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          working-directory: app_go
+
+      - name: Run tests
+        run: go test -v ./...
+
+  docker:
+    name: Build & Push Docker
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate CalVer tag
+        id: version
+        run: echo "TAG=$(date +%Y.%m).${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: app_go
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-info-service-go:${{ steps.version.outputs.TAG }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/devops-info-service-go:latest

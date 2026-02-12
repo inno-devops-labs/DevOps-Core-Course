@@ -34,3 +34,31 @@
 
 - Had to add `sys.path.insert` in test files because pytest runs from the repo root but the app modules are inside `app_python/`.
 - Snyk needs a separate API token — created a free account and added `SNYK_TOKEN` to GitHub Secrets.
+
+---
+
+## Bonus: Multi-App CI + Coverage
+
+### Go CI Workflow
+
+Created `.github/workflows/go-ci.yml` with the same structure as the Python workflow:
+- **Lint:** `golangci-lint` (standard Go linter)
+- **Test:** `go test -v ./...`
+- **Docker:** Multi-stage build, same CalVer tagging, pushes to `4hellboy4/devops-info-service-go`
+
+Path filters ensure Go CI only runs on `app_go/**` changes. Both workflows run in parallel when both apps change in one commit.
+
+### Path Filters
+
+Each workflow only triggers on its own app directory:
+- `python-ci.yml` → `app_python/**`
+- `go-ci.yml` → `app_go/**`
+
+This avoids wasting CI minutes. If you edit only Go code, the Python workflow doesn't run, and vice versa.
+
+### Coverage
+
+- Integrated `pytest-cov` into the Python CI — runs `pytest --cov=. --cov-report=xml`
+- Coverage reports uploaded to Codecov via `codecov/codecov-action@v4`
+- Coverage badge added to `app_python/README.md`
+- Testing all endpoints through the TestClient gives good coverage of routes, services, and models. Config and `__main__` block are intentionally untested (startup code, not logic).
