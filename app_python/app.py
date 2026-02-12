@@ -9,17 +9,18 @@ from fastapi import FastAPI, Request
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-#======== Parameters ========
+# ======== Parameters ========
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
-#======== Setup ========
-START_TIME = datetime.now(timezone.utc) # UTC for simplicity
+# ======== Setup ========
+START_TIME = datetime.now(timezone.utc)     # UTC for simplicity
 
 app = FastAPI()
 
-#======== Endpoints ========
+
+# ======== Endpoints ========
 @app.get("/")
 def main_endpoint(request: Request):
     return {
@@ -34,7 +35,7 @@ def main_endpoint(request: Request):
             "uptime_seconds": get_uptime()["seconds"],
             "uptime_human": get_uptime()["human"],
             "current_time": get_current_time(),
-            "timezone": "UTC", # Static
+            "timezone": "UTC",      # Static for simplicity
         },
         "request": {
             "client_ip": request.client.host,
@@ -42,11 +43,14 @@ def main_endpoint(request: Request):
             "method": request.method,
             "path": request.url.path,
         },
-        "endpoints": [ # TODO: make dynamic
-            {"path": "/", "method": "GET", "description": "Service information"},
-            {"path": "/health", "method": "GET", "description": "Health check"},
+        "endpoints": [
+            {"path": "/", "method": "GET",
+             "description": "Service information"},
+            {"path": "/health", "method": "GET",
+             "description": "Health check"},
         ],
     }
+
 
 @app.get("/health")
 def health():
@@ -56,7 +60,8 @@ def health():
         "uptime_seconds": get_uptime()["seconds"],
     }
 
-#======== Functions ========
+
+# ======== Functions ========
 def get_system_info():
     hostname = socket.gethostname()
     platform_name = platform.system()
@@ -71,6 +76,7 @@ def get_system_info():
         "python_version": python_version
     }
 
+
 def get_uptime():
     delta = datetime.now(timezone.utc) - START_TIME
     seconds = int(delta.total_seconds())
@@ -81,10 +87,12 @@ def get_uptime():
         'human': f"{hours} hours, {minutes} minutes"
     }
 
+
 def get_current_time():
     return datetime.now(timezone.utc).isoformat()
 
-#======== Launch ========
+
+# ======== Launch ========
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host=HOST, port=PORT, reload=DEBUG)

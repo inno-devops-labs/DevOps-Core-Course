@@ -1,5 +1,7 @@
 # devops-info-service (Python)
 
+[![Python CI + Docker Build](https://github.com/SfedBro/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab03)](https://github.com/SfedBro/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 ## Overview
 
 This is the Python implementation of the DevOps Info Service.  
@@ -85,6 +87,20 @@ docker pull sfedbro/app_python:lab02
 docker run -p 5000:5000 sfedbro/app_python:lab02
 ```
 
+## Testing
+
+This project uses pytest for unit testing.
+
+To run tests locally:
+
+```bash
+pytest -v
+```
+
 ## Licence
 
 MIT Licence
+
+```
+
+```
