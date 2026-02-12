@@ -1,0 +1,14 @@
+# Base requirements
+-r requirements.txt
+
+# Testing
+pytest==8.3.2
+pytest-cov==5.0.0
+
+# Linting and Code Quality
+pylint==3.2.6
+black==24.10.0
+flake8==7.1.1
+
+# Security scanning
+bandit==1.7.9
