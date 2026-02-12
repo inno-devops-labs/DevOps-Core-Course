@@ -2,7 +2,7 @@ name: Python CI/CD
 
 on:
   push:
-    branches: ["main", "master"]
+    branches: ["main", "master", "lab03"]
     paths:
       - "app_python/**"
       - ".github/workflows/python-ci.yml"
@@ -80,7 +80,7 @@ jobs:
     timeout-minutes: 20
     if: >
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'))
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/lab03'))
     steps:
       - uses: actions/checkout@v4
 
