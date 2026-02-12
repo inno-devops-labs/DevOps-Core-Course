@@ -1,0 +1,10 @@
+devops-info-service
+.git/
+.gitignore
+.vscode/
+.idea/
+*.md
+docs/
+.DS_Store
+Dockerfile
+.dockerignore

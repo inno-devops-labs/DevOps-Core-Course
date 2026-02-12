@@ -116,6 +116,33 @@ Example response:
 | `PORT`   | `8000`    | Server port          |
 | `DEBUG`  | `false`   | Enable debug mode    |
 
+## Docker
+
+### Build the image
+
+```bash
+docker build -t devops-info-service .
+```
+
+### Run a container
+
+```bash
+docker run -p 8000:8000 devops-info-service
+```
+
+With custom port:
+
+```bash
+docker run -p 3000:8000 devops-info-service
+```
+
+### Pull from Docker Hub
+
+```bash
+docker pull 4hellboy4/devops-info-service:latest
+docker run -p 8000:8000 4hellboy4/devops-info-service:latest
+```
+
 ## Project Structure
 
 ```
