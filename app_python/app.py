@@ -54,9 +54,6 @@ async def log_requests(request: fastapi.Request, call_next):
 
     logger.info(f"Request started: {request.method} {request.url.path}")
     logger.debug(f"Headers: {dict(request.headers)}")
-    logger.debug(
-        f"Client IP: {
-            request.client.host if request.client else 'Unknown'}")
 
     try:
         response = await call_next(request)
