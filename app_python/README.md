@@ -1,5 +1,8 @@
 # DevOps Info Service (FastAPI)
 
+[![Python CI (app_python)](https://github.com/fayz131/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/fayzullin/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
+
 ## Overview
 DevOps Info Service is a web application that provides information about the running service and the system it is running on. The application is designed as a foundation for future DevOps labs, including containerization, CI/CD, and monitoring.
 
@@ -64,3 +67,14 @@ From Docker Hub
 docker pull fayzullin/devops-info-service:lab2
 docker run --rm -p 5000:5000 fayzullin/devops-info-service:lab2
 ```
+
+## Testing
+
+Install dev dependencies and run tests:
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
+
+
