@@ -48,13 +48,14 @@ jobs:
         run: |
           pytest -q
 
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
       - name: Snyk scan (dependencies)
-        uses: snyk/actions@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=app_python/requirements.txt --severity-threshold=high
+        run: snyk test --file=requirements.txt --severity-threshold=high
+
 
   docker-build-and-push:
     runs-on: ubuntu-latest
