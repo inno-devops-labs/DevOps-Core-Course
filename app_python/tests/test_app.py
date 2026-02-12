@@ -119,4 +119,3 @@ def test_internal_error_handler_returns_json(client, monkeypatch):
     data = json.loads(response.data.decode())
     assert data["error"] == "Internal Server Error"
     assert "message" in data
-    
