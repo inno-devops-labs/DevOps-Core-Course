@@ -66,6 +66,8 @@ The workflow runs on:
 - ✅ **security-scan** job: Snyk security scanning completed
 - ✅ **build-and-push** job: Docker image built and pushed successfully (runs only on push events)
 
+![GitHub Actions Success](screenshots/lab3/04-github-actions-success.png)
+
 ### Tests Passing Locally
 
 ![Python Tests](screenshots/lab3/01-python-tests.png)
@@ -102,14 +104,16 @@ tests/test_app.py::TestHTTPMethods::test_post_not_allowed PASSED
 tests/test_app.py::TestHTTPMethods::test_put_not_allowed PASSED
 tests/test_app.py::TestHTTPMethods::test_delete_not_allowed PASSED
 
-========================= 20 passed in 0.45s ==========================
+========================= 20 passed in 1.33s ==========================
 
----------- coverage: platform darwin, python 3.13.1 -----------
+---------- coverage: platform linux, python 3.13.12 -----------
 Name      Stmts   Miss  Cover   Missing
 ---------------------------------------
-app.py      143      5    97%   139-143
+app.py      55       6    89%   139-141, 153-155
 ---------------------------------------
-TOTAL       143      5    97%
+TOTAL       55       6    89%
+
+Required test coverage of 70% reached. Total coverage: 89.09%
 ```
 
 ### Docker Image on Docker Hub
@@ -121,12 +125,16 @@ TOTAL       143      5    97%
 - `2026.02.12` - Date version
 - `2026.02.12.42` - Full version with build number
 
+![Docker Hub Tags](screenshots/lab3/05-docker-hub-tags.png)
+
 ### Status Badge
 
 The status badge is visible in the README and shows:
 - ✅ Green when workflow passes
 - ❌ Red when workflow fails
 - ⏳ Yellow when workflow is running
+
+![Status Badge](screenshots/lab3/06-status-badge.png)
 
 ---
 
@@ -144,7 +152,7 @@ The status badge is visible in the README and shows:
 
 6. **Security Scanning with Snyk**: Automated vulnerability scanning of dependencies - Catch security issues before deployment (configured to fail on high severity, no high-severity vulnerabilities found)
 
-7. **Code Coverage Tracking**: Upload coverage reports to Codecov - Track test coverage trends and identify gaps (current coverage: 97%, exceeds 70% threshold)
+7. **Code Coverage Tracking**: Upload coverage reports to Codecov - Track test coverage trends and identify gaps (current coverage: 89%, exceeds 70% threshold)
 
 8. **Status Badge**: Visual indicator of CI status in README - Quick visibility into project health
 
@@ -175,7 +183,7 @@ Push triggers automate deployment on merge, PR triggers validate before merge, a
 
 ### Test Coverage
 
-**Current Coverage:** 97% (exceeds 70% threshold configured in `pytest.ini`)
+**Current Coverage:** 89% (exceeds 70% threshold configured in `pytest.ini`)
 
 All endpoints tested, error handling tested, helper functions tested. What's not covered: `if __name__ == '__main__'` block (not executed in tests) and some edge cases in error handlers.
 
@@ -186,7 +194,7 @@ All endpoints tested, error handling tested, helper functions tested. What's not
 - **Path Filters Not Triggering**: Added workflow file itself to path filters to ensure workflow runs when workflow configuration changes
 - **Docker Hub Authentication**: Created Docker Hub access token and added as GitHub Secret (`DOCKER_HUB_TOKEN`), used `docker/login-action@v3` for secure authentication
 - **Coverage Upload Failing**: Set `fail_ci_if_error: false` for Codecov step so coverage upload is optional and doesn't break CI
-- **Test Coverage Below Threshold**: Initial coverage was 65% (below 70% threshold), added tests for helper functions and error handling edge cases, increased coverage to 97%
+- **Test Coverage Below Threshold**: Initial coverage was 65% (below 70% threshold), added tests for helper functions and error handling edge cases, increased coverage to 89%
 - **Snyk Token Required**: Set `continue-on-error: true` so workflow doesn't fail if Snyk token is not configured
 
 ---
@@ -238,12 +246,14 @@ paths:
 - Change both → Both workflows run in parallel
 - Change only `README.md` → No CI runs (saves minutes)
 
+![Path Filters Proof](screenshots/lab3/07-path-filters-proof.png)
+
 ### Part 2: Test Coverage Badge (1 pt)
 
 **Coverage Integration**
 
 **Python:** Using `pytest-cov` with Codecov integration
-- Coverage: 97%
+- Coverage: 89% (exceeds 70% threshold)
 - Threshold: 70% (configured in `pytest.ini`)
 - Badge: Added to `app_python/README.md`
 
@@ -254,7 +264,7 @@ paths:
 
 **Coverage Analysis**
 
-**Python Coverage (97%):**
+**Python Coverage (89%):**
 - ✅ All endpoints tested
 - ✅ Error handling tested
 - ✅ Helper functions tested
@@ -268,9 +278,14 @@ paths:
 - ❌ Some edge cases in request handling not covered
 
 **Coverage Goals:**
-- Python: 97% (exceeds 70% threshold)
+- Python: 89% (exceeds 70% threshold)
 - Go: 67.3% (covers critical paths)
 - Threshold set in CI: 70% minimum for Python
 - Coverage reports uploaded to Codecov for both languages
 
 ![Coverage Report](screenshots/lab3/03-coverage-report.png)
+
+**Coverage from CI:**
+The following screenshot shows coverage calculation from GitHub Actions CI pipeline, confirming that the required 70% threshold is met (89.09% coverage achieved):
+
+![Coverage from CI](screenshots/lab3/08-coverage-from-ci.png)
