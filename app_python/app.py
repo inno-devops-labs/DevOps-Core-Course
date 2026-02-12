@@ -114,11 +114,9 @@ async def validation_exception_handler(
         request: fastapi.Request,
         exc: RequestValidationError):
     logger.warning(
-        f"Validation error: {
-            exc.errors()} for request {
-            request.method} {
-                request.url.path}")
-
+        f"Validation error: {exc.errors()} "
+        f"for request {request.method} {request.url.path}"
+    )
     return JSONResponse(
         status_code=422,
         content={
