@@ -60,7 +60,6 @@ jobs:
   build-and-push:
     needs: test-and-lint
     runs-on: ubuntu-latest
-    # Запускаем только на пуш в main/lab03, не на каждый PR
     if: github.event_name == 'push'
     
     steps:
