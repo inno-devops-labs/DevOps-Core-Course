@@ -1,5 +1,7 @@
 ## DevOps Info Service (Python)
 
+[![Python CI](https://github.com/abdughafforzoda/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/abdughafforzoda/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 ### Overview
 
 This is a simple **DevOps Info Service** implemented in Python using **Flask**.  
@@ -87,4 +89,14 @@ Override `PORT` or `HOST` with environment variables if needed.
 ```bash
 docker pull jambulancia/devops-info-service
 docker run -p 5000:5000 jambulancia/devops-info-service
+```
+
+### Testing
+
+```bash
+cd app_python
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements-dev.txt
+pytest tests/ -v
 ```

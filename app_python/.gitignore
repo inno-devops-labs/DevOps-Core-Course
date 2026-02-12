@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.log
 venv/
+.venv/
 
 # IDE
 .vscode/

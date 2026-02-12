@@ -1,5 +1,7 @@
 # DevOps Info Service (Go)
 
+[![Go CI](https://github.com/abdughafforzoda/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)](https://github.com/abdughafforzoda/DevOps-Core-Course/actions/workflows/go-ci.yml)
+
 Go implementation of the DevOps Info Service — same endpoints and JSON structure as the Python version. Used for Lab 1 bonus and as a basis for multi-stage Docker builds in Lab 2.
 
 ## Prerequisites
@@ -53,6 +55,13 @@ HOST=127.0.0.1 PORT=3000 ./devops-info-service
 | `go build -ldflags="-s -w"` | ~5.5 MB |
 
 Python runs via interpreter + virtualenv; there is no single executable. The Go binary is self-contained and suitable for minimal Docker images (e.g. `scratch` or `alpine`).
+
+## Test
+
+```bash
+cd app_go
+go test -v ./...
+```
 
 ## Docker
 
