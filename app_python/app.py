@@ -33,10 +33,11 @@ def get_uptime():
     seconds = int(delta.total_seconds())
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
-    return {
-        'seconds': seconds,
-        'human': f"{hours} hour{'s' if hours != 1 else ''}, {minutes} minute{'s' if minutes != 1 else ''}"
-    }
+    human = (
+        f"{hours} hour{'s' if hours != 1 else ''}, "
+        f"{minutes} minute{'s' if minutes != 1 else ''}"
+    )
+    return {'seconds': seconds, 'human': human}
 
 
 def get_system_info():
@@ -64,40 +65,62 @@ def get_service_info():
 def get_runtime_info():
     """Get runtime information."""
     uptime = get_uptime()
+    current_time = (
+        datetime.now(timezone.utc)
+        .isoformat()
+        .replace('+00:00', '.000Z')
+    )
     return {
         'uptime_seconds': uptime['seconds'],
         'uptime_human': uptime['human'],
-        'current_time': datetime.now(timezone.utc).isoformat().replace('+00:00', '.000Z'),
-        'timezone': 'UTC'
+        'current_time': current_time,
+        'timezone': 'UTC',
     }
 
 
 def get_request_info():
     """Get current request information."""
+    client_ip = request.remote_addr or request.environ.get(
+        'HTTP_X_FORWARDED_FOR',
+        'unknown',
+    )
     return {
-        'client_ip': request.remote_addr or request.environ.get('HTTP_X_FORWARDED_FOR', 'unknown'),
+        'client_ip': client_ip,
         'user_agent': request.headers.get('User-Agent', 'unknown'),
         'method': request.method,
-        'path': request.path
+        'path': request.path,
     }
 
 
 @app.route('/')
 def index():
     """Main endpoint - service and system information."""
-    logger.info(f'Request: {request.method} {request.path} from {request.remote_addr}')
-    
+    logger.info(
+        'Request: %s %s from %s',
+        request.method,
+        request.path,
+        request.remote_addr,
+    )
+
     response = {
         'service': get_service_info(),
         'system': get_system_info(),
         'runtime': get_runtime_info(),
         'request': get_request_info(),
         'endpoints': [
-            {'path': '/', 'method': 'GET', 'description': 'Service information'},
-            {'path': '/health', 'method': 'GET', 'description': 'Health check'}
-        ]
+            {
+                'path': '/',
+                'method': 'GET',
+                'description': 'Service information',
+            },
+            {
+                'path': '/health',
+                'method': 'GET',
+                'description': 'Health check',
+            },
+        ],
     }
-    
+
     return jsonify(response)
 
 
@@ -105,34 +128,41 @@ def index():
 def health():
     """Health check endpoint for monitoring."""
     uptime = get_uptime()
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now(timezone.utc).isoformat().replace('+00:00', '.000Z'),
-        'uptime_seconds': uptime['seconds']
-    })
+    timestamp = (
+        datetime.now(timezone.utc)
+        .isoformat()
+        .replace('+00:00', '.000Z')
+    )
+    return jsonify(
+        {
+            'status': 'healthy',
+            'timestamp': timestamp,
+            'uptime_seconds': uptime['seconds'],
+        },
+    )
 
 
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
-    return jsonify({
-        'error': 'Not Found',
-        'message': 'Endpoint does not exist'
-    }), 404
+    return jsonify(
+        {'error': 'Not Found', 'message': 'Endpoint does not exist'},
+    ), 404
 
 
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
-    logger.error(f'Internal server error: {error}')
-    return jsonify({
-        'error': 'Internal Server Error',
-        'message': 'An unexpected error occurred'
-    }), 500
+    logger.error('Internal server error: %s', error)
+    return jsonify(
+        {
+            'error': 'Internal Server Error',
+            'message': 'An unexpected error occurred',
+        },
+    ), 500
 
 
 if __name__ == '__main__':
     logger.info('Application starting...')
     logger.info(f'Starting server on {HOST}:{PORT}')
     app.run(host=HOST, port=PORT, debug=DEBUG)
-
