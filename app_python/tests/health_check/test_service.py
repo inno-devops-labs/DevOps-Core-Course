@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
 from pytest_mock import MockerFixture
 from routes.health_check.service import HealthCheckService
