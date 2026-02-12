@@ -22,11 +22,41 @@
 
 ## 2. Workflow Evidence
 
-- **Successful workflow run:**
-  - https://github.com/mpasgat/DevOps-Core-Course/actions/workflows/python-ci.yml
+- **Python CI run (tests):**
+  - https://github.com/mpasgat/DevOps-Core-Course/actions/runs/21957867584/job/63426927143
+- **Python CI run (docker):**
+  - https://github.com/mpasgat/DevOps-Core-Course/actions/runs/21957867584/job/63426980301
+- **Java CI run (tests):**
+  - https://github.com/mpasgat/DevOps-Core-Course/actions/runs/21957867555/job/63426926927
+- **Java CI run (docker):**
+  - https://github.com/mpasgat/DevOps-Core-Course/actions/runs/21957867555/job/63426991945
 - **Tests passing locally:**
-  - Command: `pytest --cov=. --cov-report=term --cov-report=xml`
-  - Paste terminal output here
+  - Command: `ruff check .` + `pytest --cov=. --cov-report=term --cov-report=xml --cov-fail-under=70`
+  - Output:
+    ```
+    All checks passed!
+    =================================== test session starts ===================================
+    platform win32 -- Python 3.12.4, pytest-9.0.2, pluggy-1.6.0
+    rootdir: C:\Users\пк\OneDrive\Документы\GitHub\DevOps-Core-Course\app_python
+    plugins: cov-7.0.0
+    collected 4 items
+
+    tests\test_app.py ....                                                               [100%]
+
+    ===================================== tests coverage ======================================
+    _____________________ coverage: platform win32, python 3.12.4-final-0 _____________________
+
+    Name                Stmts   Miss  Cover
+    ---------------------------------------
+    app.py                 46      4    91%
+    tests\__init__.py       0      0   100%
+    tests\test_app.py      52      0   100%
+    ---------------------------------------
+    TOTAL                  98      4    96%
+    Coverage XML written to file coverage.xml
+    Required test coverage of 70% reached. Total coverage: 95.92%
+    ==================================== 4 passed in 1.55s ====================================
+    ```
 - **Docker image on Docker Hub (Python):**
   - https://hub.docker.com/r/112005/devops-lab3-python
 - **Docker image on Docker Hub (Java):**
@@ -46,11 +76,18 @@
 - **Conditional publishing:** Docker push only on tag releases.
 
 **Caching impact:**
-- Cache hit/miss timing noted in Actions logs (add before/after numbers).
+- Cache enabled via `actions/setup-python` pip caching; cache hits visible in Actions logs on subsequent runs.
 
 **Snyk:**
-- `snyk test --severity-threshold=high` runs when `SNYK_TOKEN` is present.
-- Document any findings and remediation steps here.
+- `snyk test --severity-threshold=high --file=requirements.txt --package-manager=pip --skip-unresolved` runs when `SNYK_TOKEN` is present.
+- Result (local):
+  ```
+  ✔ Tested 10 dependencies for known issues, no vulnerable paths found.
+  ```
+- Result (CI):
+  ```
+  ✔ Tested 9 dependencies for known issues, no vulnerable paths found.
+  ```
 
 ---
 
