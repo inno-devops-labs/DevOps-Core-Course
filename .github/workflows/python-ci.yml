@@ -116,6 +116,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./app_python
+        file: ./app_python/Dockerfile
         push: true
         tags: |
           ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
