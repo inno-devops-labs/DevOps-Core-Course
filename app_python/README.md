@@ -1,3 +1,4 @@
+![CI Status](https://github.com/ТВОЙ_ЮЗЕРНЕЙМ/ТВОЙ_РЕПО/actions/workflows/python-ci.yml/badge.svg?branch=lab03)
 # DevOps Info Service
 
 ## Overview
