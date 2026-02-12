@@ -119,16 +119,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/python-3.12@master
+      - name: Set up Snyk CLI
+        uses: snyk/actions/setup@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: >-
-            --file=app_python/requirements.txt
-            --severity-threshold=medium
-            --sarif-file-output=snyk.sarif
+
+      - name: Run Snyk to check for vulnerabilities
+        run: >
+          snyk test
+          --file=app_python/requirements.txt
+          --package-manager=pip
+          --severity-threshold=medium
+          --sarif-file-output=snyk.sarif
 
       - name: Upload Snyk results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
