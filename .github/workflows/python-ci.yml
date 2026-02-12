@@ -65,7 +65,7 @@ jobs:
   docker:
     name: Docker build & push
     needs: test
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/lab3'
     runs-on: ubuntu-latest
 
     steps:
