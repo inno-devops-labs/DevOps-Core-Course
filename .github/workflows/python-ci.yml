@@ -60,7 +60,7 @@ jobs:
 
       - name: Snyk scan
         if: github.event_name != 'pull_request' && env.SNYK_TOKEN
-        uses: snyk/actions/python-3.0@v1
+        uses: snyk/actions/python@v1
         env:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
         with:
