@@ -1,5 +1,8 @@
 # DevOps Info Service
 
+[![CI/CD Pipeline](https://github.com/pav0rkmert/DevOps-Core-Course/workflows/Python%20CI%2FCD%20Pipeline/badge.svg)](https://github.com/pav0rkmert/DevOps-Core-Course/actions)
+[![Coverage](https://codecov.io/gh/pav0rkmert/DevOps-Core-Course/branch/main/graph/badge.svg)](https://codecov.io/gh/pav0rkmert/DevOps-Core-Course)
+
 A Python web service that provides detailed information about itself and its runtime environment. This service is part of the DevOps course and will evolve throughout the labs to include containerization, CI/CD, monitoring, and persistence.
 
 ## Overview
@@ -197,19 +200,44 @@ curl http://localhost:5000/health
 app_python/
 ├── app.py                    # Main application
 ├── requirements.txt          # Dependencies
+├── pytest.ini               # Pytest configuration
 ├── Dockerfile               # Container definition
 ├── .dockerignore            # Docker build exclusions
 ├── .gitignore               # Git ignore rules
 ├── README.md                # This file
-├── tests/                   # Unit tests (Lab 3)
-│   └── __init__.py
+├── tests/                   # Unit tests
+│   ├── __init__.py
+│   └── test_app.py         # Test suite
 └── docs/                    # Lab documentation
     ├── LAB01.md            # Lab 1 submission
     ├── LAB02.md            # Lab 2 submission
+    ├── LAB03.md            # Lab 3 submission
     └── screenshots/        # Proof of work
 ```
 
 ## Testing
+
+### Running Unit Tests
+
+```bash
+# Install test dependencies (if not already installed)
+pip install -r requirements.txt
+
+# Run all tests
+pytest tests/
+
+# Run tests with coverage report
+pytest tests/ --cov=app --cov-report=term-missing
+
+# Run tests with verbose output
+pytest tests/ -v
+```
+
+### Test Coverage
+
+The project uses `pytest-cov` for test coverage tracking. Coverage reports are automatically uploaded to Codecov on each CI run.
+
+Current coverage target: **70%** (configured in `pytest.ini`)
 
 ### Manual Testing
 
@@ -224,13 +252,13 @@ curl http://localhost:5000/health | jq
 curl -A "TestAgent/1.0" http://localhost:5000/
 ```
 
-### Unit Tests
+### Test Structure
 
-Unit tests will be added in Lab 3.
-
-```bash
-pytest tests/
-```
+Tests are located in `tests/test_app.py` and cover:
+- Main endpoint (`GET /`) - JSON structure, required fields, data types
+- Health endpoint (`GET /health`) - Status, timestamp, uptime
+- Error handling - 404 errors, invalid paths
+- Helper functions - Service info, system info, endpoints list
 
 ## Development
 

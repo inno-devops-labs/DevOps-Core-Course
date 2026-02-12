@@ -1,5 +1,8 @@
 # DevOps Info Service (Go)
 
+[![CI/CD Pipeline](https://github.com/pav0rkmert/DevOps-Core-Course/workflows/Go%20CI%2FCD%20Pipeline/badge.svg)](https://github.com/pav0rkmert/DevOps-Core-Course/actions)
+[![Coverage](https://codecov.io/gh/pav0rkmert/DevOps-Core-Course/branch/main/graph/badge.svg?flag=go)](https://codecov.io/gh/pav0rkmert/DevOps-Core-Course)
+
 A Go implementation of the DevOps Info Service that provides system information and health status endpoints. This implementation demonstrates the benefits of compiled languages for containerized microservices.
 
 ## Overview
@@ -140,11 +143,13 @@ Go produces a single static binary with no external dependencies, making it idea
 ```
 app_go/
 ├── main.go         # Main application
+├── main_test.go    # Unit tests
 ├── go.mod          # Go module definition
 ├── .gitignore      # Git ignore rules
 ├── README.md       # This file
 └── docs/
-    ├── LAB01.md   # Lab submission details
+    ├── LAB01.md   # Lab 1 submission
+    ├── LAB02.md   # Lab 2 submission
     └── GO.md      # Language justification
 ```
 
@@ -188,8 +193,26 @@ golint ./...
 ### Testing
 
 ```bash
+# Run all tests
 go test ./...
+
+# Run tests with coverage
+go test -v -coverprofile=coverage.out ./...
+
+# View coverage report
+go tool cover -html=coverage.out
+
+# Run tests with coverage percentage
+go test -cover ./...
 ```
+
+### Test Coverage
+
+The project uses Go's built-in coverage tools. Coverage reports are automatically uploaded to Codecov on each CI run.
+
+**Current Coverage:** Tests cover main endpoints (`GET /`, `GET /health`), error handling, and helper functions.
+
+**Coverage Target:** Aim for 70%+ coverage of critical paths (endpoints, error handling).
 
 ## License
 

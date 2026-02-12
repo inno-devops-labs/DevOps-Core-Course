@@ -223,7 +223,7 @@ The Dockerfile follows a specific pattern to optimize for:
 
 1. **Build Speed**: By copying `requirements.txt` before `app.py`, Docker can cache the dependency installation layer. This means code changes don't trigger a full reinstall.
 
-2. **Security**: The non-root user (`appuser`) runs the application with minimal privileges. Even if the app is compromised, the attacker can't modify system files.
+2. **Security**: The non-root s (`appuser`) runs the application with minimal privileges. Even if the app is compromised, the attacker can't modify system files.
 
 3. **Size**: The slim base image and `.dockerignore` keep the image small. Smaller images mean:
    - Faster pulls in CI/CD
