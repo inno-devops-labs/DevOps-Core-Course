@@ -42,6 +42,7 @@ jobs:
             cd app_python
             pip install --upgrade pip
             pip install -r requirements.txt
+            pip install flask
   
         - name: Run Snyk to check for vulnerabilities
           uses: snyk/actions/python@master
