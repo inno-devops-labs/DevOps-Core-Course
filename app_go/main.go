@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	serviceName = "devops-info-service"
-	serviceVersion = "1.0.0"
+	serviceName        = "devops-info-service"
+	serviceVersion     = "1.0.0"
 	serviceDescription = "DevOps course info service"
-	serviceFramework = "net/http"
+	serviceFramework   = "net/http"
 )
 
 var startTime = time.Now().UTC()
