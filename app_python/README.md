@@ -1,5 +1,7 @@
 # devops info service
 
+[![.github/workflows/python-ci.yml](https://github.com/agonychaser/devops-s26/actions/workflows/python-ci.yml/badge.svg)](https://github.com/agonychaser/devops-s26/actions/workflows/python-ci.yml)
+
 a web application providing detailed information about itself and its runtime environment. built with FastAPI as part of the devops course labs.
 
 ## overview
