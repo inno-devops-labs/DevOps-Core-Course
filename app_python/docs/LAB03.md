@@ -83,3 +83,13 @@ Fail Fast: Stop workflow on first failure. Gives quick feedback
 Job Dependencies: Docker won't be pushed if tests fail
 
 Workflow Concurrency: Cancel outdated workflow runs
+
+
+### Found vulnerabilities
+```bash
+Upgrade starlette@0.38.6 to starlette@0.49.1 to fix
+  ✗ Regular Expression Denial of Service (ReDoS) [High Severity][https://security.snyk.io/vuln/SNYK-PYTHON-STARLETTE-13733964] in starlette@0.38.6
+    introduced by starlette@0.38.6 and 1 other path(s)
+  ✗ Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-PYTHON-STARLETTE-8186175] in starlette@0.38.6
+    introduced by starlette@0.38.6 and 1 other path(s)
+```
