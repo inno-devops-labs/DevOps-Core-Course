@@ -59,13 +59,11 @@ jobs:
       uses: docker/metadata-action@v5
       with:
         images: ${{ secrets.DOCKER_USERNAME }}/testiks
-        flavor: |
-          latest
         tags: |
-          type=ref,event=branch
-          type=ref,event=pr
           type=raw,value=latest,enable={{is_default_branch}}
           type=raw,value={{date 'YYYY.MM'}},enable={{is_default_branch}}
+          type=ref,event=branch
+
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
