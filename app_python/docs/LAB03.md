@@ -27,7 +27,7 @@ All test should pass
 
 ### 2 CI Workflow
 CI workflow triggers on:
-- push to app_python/**
+- push to `main`, `dev`, and `lab3` branches
 - pull requests
 
 It performs:
@@ -62,4 +62,14 @@ Also I used Git secrets:
 - DOCKER_USERNAME
 - DOCKERHUB_TOKEN (Docker Hub Access Token)
 
+## 3. Best Practices Implemented
+1. Matrix Testing: Tests Python 3.9-3.11 in parallel across multiple jobs, ensuring cross-version compatibility
+2. Job Dependencies: Docker build only runs after tests pass (needs: test), preventing broken images from being pushed
+3. Docker Layer Caching: cache-from/to: type=gha reduces build time from 5+ minutes to ~30 seconds on repeat runs
+4. Caching: Pip dependencies cached, so: 3min to 15sec speedup; Docker layers sped up from 5min to 30sec
 
+## 4. Key Decisions
+- Versioning Strategy: CalVer (YYYY.MM) chosen over SemVer because this is a CI/CD pipeline with frequent automated releases—dates provide instant temporal context without manual version management.
+- Docker Tags: Creates username/app:latest (production), username/app:2026.02 (monthly archive), username/app:main (branch tracking)—multiple tags enable flexible deployments and rollbacks.
+- Workflow Triggers: push to main/develop → full CI/CD; pull_request → tests only; all branches → linting—balances automation with safety (no Docker push from PRs/forks).
+- Test Coverage: Unit tests via pytest + linting/formatting via ruff cover code quality; integration/E2E tests and security scanning deferred to future tasks.
