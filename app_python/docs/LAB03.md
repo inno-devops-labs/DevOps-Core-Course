@@ -49,3 +49,23 @@ docker/build-push-action@v5 – integrates caching, tag list, and push in one st
 latest – always updated on every new pull request; represents the most recent stable build.
 
 X.Y.Z (SemVer) – added only when the commit associated with the pull request has a Git tag vX.Y.Z; ensures exact versioning for releases.
+
+### Workflow run link
+https://github.com/AidarSarvartdinov/DevOps-Core-Course/actions/runs/21944641464/job/63378950422
+
+
+### Output
+docker-build-push job runs only on pull request, so it was skipped here
+
+![alt text](./screenshots/workflowoutput.png)
+
+## CI Best Practices & Security
+
+### Status Badge
+
+[![Python app - Test & Docker Push](https://github.com/AidarSarvartdinov/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?event=pull_request)](https://github.com/AidarSarvartdinov/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
+### Dependencies caching
+
+Dependencies installation took 5 seconds, total 19 seconds
+
