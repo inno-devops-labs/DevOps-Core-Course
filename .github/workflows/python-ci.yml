@@ -44,10 +44,11 @@ jobs:
       - name: Run tests
         run: pytest
 
+      - name: Setup Snyk
+        uses: snyk/actions/setup@master
+
       - name: Run Snyk
-        uses: snyk/actions/python@master
-        with:
-          args: --file=app_python/requirements.txt
+        run: snyk test --file=app_python/requirements.txt
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
