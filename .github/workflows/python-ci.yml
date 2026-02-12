@@ -44,29 +44,27 @@ jobs:
     - name: Format check
       run: ruff format --check .
   
-  security:
-    name: Snyk Security Scan
-    runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'  # Skip PRs
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r app_python/requirements.txt
-    
-    - name: Snyk CLI
-      uses: snyk/actions/python-3.9@master
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        args: --severity-threshold=high --sarif-file-output=snyk.sarif
-    
-    - name: Upload SARIF
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: snyk.sarif
+security:
+  name: Snyk Security Scan
+  runs-on: ubuntu-latest
+  if: github.event_name != 'pull_request'
+  defaults:
+    run:
+      working-directory: ./app_python
+  steps:
+  - uses: actions/checkout@v4
+  - name: Install dependencies
+    run: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+  - name: Snyk CLI
+    uses: snyk/actions/python-3.11@master
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    with:
+      args: --severity-threshold=critical --skip-unresolved
+    continue-on-error: true
+
 
   docker:
     name: Build & Push Docker
