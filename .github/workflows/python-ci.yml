@@ -10,7 +10,7 @@ on:
       - 'app_python/**'
 
 env:
-  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/fastapi-app
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/devops-info-service-ci-generated
   PYTHON_VERSION: '3.13'
 
 jobs:
