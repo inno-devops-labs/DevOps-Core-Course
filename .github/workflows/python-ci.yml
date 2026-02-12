@@ -7,20 +7,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Python 3.13
       uses: actions/setup-python@v4
       with:
         python-version: "3.13"
+        cache: 'pip'
+        cache-dependency-path: |
+          app_python/requirements.txt
+          app_python/requirements-dev.txt
+
     - name: Install dependencies
+      working-directory: app_python
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest flask
+        pip install -r requirements-dev.txt
+
     - name: Lint with flake8
+      working-directory: app_python
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --statistics
+
     - name: Test with pytest
-      run: pytest app_python/tests/pytest.py -v
+      working-directory: app_python
+      run: pytest tests/pytest.py -v
+
 
   security:
       name: Security Scan
