@@ -69,5 +69,5 @@ docker-build-push job runs only on pull request, so it was skipped here
 
 ### Dependencies caching
 
-Dependencies installation took 5 seconds, total 19 seconds
+venv createion and dependencies installation took 11 seconds, total 26 seconds
 
