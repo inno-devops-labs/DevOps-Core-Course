@@ -58,13 +58,16 @@ jobs:
       - name: Test with coverage
         run: pytest --cov=. --cov-report=term --cov-report=xml --cov-fail-under=70
 
+      - name: Set up Snyk CLI
+        if: github.event_name != 'pull_request' && env.SNYK_TOKEN
+        uses: snyk/actions/setup@v1
+
       - name: Snyk scan
         if: github.event_name != 'pull_request' && env.SNYK_TOKEN
-        uses: snyk/actions/python@v1
+        timeout-minutes: 5
         env:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
-        with:
-          args: test --severity-threshold=high --file=app_python/requirements.txt --package-manager=pip
+        run: snyk test --severity-threshold=high --file=app_python/requirements.txt --package-manager=pip
 
       - name: Upload coverage to Codecov
         if: env.CODECOV_TOKEN
