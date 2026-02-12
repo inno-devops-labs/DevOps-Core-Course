@@ -2,7 +2,7 @@ name: Python CI & Docker Build
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main, dev, lab3 ]
     tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
