@@ -49,11 +49,12 @@ jobs:
           pytest -q
 
       - name: Snyk scan (dependencies)
-        uses: snyk/actions/python-3@master
+        uses: snyk/actions@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high
+          command: test
+          args: --file=app_python/requirements.txt --severity-threshold=high
 
   docker-build-and-push:
     runs-on: ubuntu-latest
