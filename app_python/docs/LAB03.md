@@ -72,3 +72,14 @@ docker-build-push job runs only on pull request, so it was skipped here
 venv createion and dependencies installation took 11 seconds, total 27 seconds
 
 After caching the installation took 0 seconds, total 15 seconds
+
+
+### Best Practices
+
+Matrix Builds: Test multiple Python versions (3.11, 3.12, 3.13). Ensures compatibility of the code with different versions of the interpreter
+
+Fail Fast: Stop workflow on first failure. Gives quick feedback
+
+Job Dependencies: Docker won't be pushed if tests fail
+
+Workflow Concurrency: Cancel outdated workflow runs

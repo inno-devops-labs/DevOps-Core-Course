@@ -55,13 +55,17 @@ jobs:
       - name: Run tests
         run: venv/bin/pytest
 
+      - name: Install Snyk
+        uses: snyk/actions/setup@master
+
       - name: Run Snyk
-        uses: snyk/actions/python@master
+        run: |
+          . venv/bin/activate
+          snyk test --severity-threshold=high --file=requirements.txt
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --file=./app_python/requirements.txt
         continue-on-error: false
+        timeout-minutes: 2
 
   docker-build-push:
     runs-on: ubuntu-latest
