@@ -90,8 +90,8 @@ jobs:
         file: ./app_python/Dockerfile
         push: true
         tags: |
-          ${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest
-          ${{ secrets.DOCKER_USERNAME }}/fastapi-app:${{ steps.version.outputs.VERSION }}
-          ${{ secrets.DOCKER_USERNAME }}/fastapi-app:${{ steps.version.outputs.DATE_TAG }}
+          ${{ secrets.DOCKER_USERNAME }}/devops-info-service-ci-generated:latest
+          ${{ secrets.DOCKER_USERNAME }}/devops-info-service-ci-generated:${{ steps.version.outputs.VERSION }}
+          ${{ secrets.DOCKER_USERNAME }}/devops-info-service-ci-generated:${{ steps.version.outputs.DATE_TAG }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
