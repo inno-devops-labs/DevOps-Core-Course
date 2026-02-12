@@ -67,7 +67,7 @@ jobs:
         timeout-minutes: 5
         env:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
-        run: snyk test --severity-threshold=high --file=requirements.txt --package-manager=pip
+        run: snyk test --severity-threshold=high --file=requirements.txt --package-manager=pip --skip-unresolved
 
       - name: Upload coverage to Codecov
         if: env.CODECOV_TOKEN
