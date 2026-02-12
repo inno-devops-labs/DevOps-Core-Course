@@ -52,7 +52,9 @@ Coverage XML written to file coverage.xml
 
 # Docker image
 
-Will be added after push.
+https://hub.docker.com/r/iucapstonead/devops-info-service
+
+The image that was built and pushed by the CI/CD is `v0.3.1`.
 
 # Status badge
 
