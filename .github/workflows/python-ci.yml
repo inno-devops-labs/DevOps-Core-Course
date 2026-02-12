@@ -60,8 +60,8 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high
-        continue-on-error: false 
+          args: --severity-threshold=high --file=./app_python/requirements.txt
+        continue-on-error: false
 
   docker-build-push:
     runs-on: ubuntu-latest
