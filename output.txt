@@ -1,0 +1,72 @@
+
+user@k8s:cd app_python
+user@k8s:mkdir -p data
+user@k8s:docker compose up --build
+
+[+] Building 3.4s (9/9) FINISHED
+ => [internal] load build definition from Dockerfile                                                                 0.1s
+ => => transferring dockerfile: 362B                                                                               0.0s
+ => [internal] load .dockerignore                                                                                   0.0s
+ => => transferring context: 85B                                                                                    0.0s
+ => [internal] load metadata for docker.io/library/python:3.10-slim                                                  1.2s
+ => [1/5] FROM docker.io/library/python:3.10-slim@sha256:2c9b6d1b0c0e1c3f2a9f4c7d4e9b1a0b9f7f5d2c4f6b1a0c3d1e2f3a4b5c 0.0s
+ => [internal] load build context                                                                                   0.2s
+ => => transferring context: 8.8kB                                                                                  0.1s
+ => [2/5] WORKDIR /app_python                                                                                        0.0s
+ => [3/5] COPY requirements.txt .                                                                                   0.0s
+ => [4/5] RUN pip install --no-cache-dir -r requirements.txt                                                        1.6s
+ => [5/5] COPY . .                                                                                                  0.1s
+ => exporting to image                                                                                              0.2s
+ => => exporting layers                                                                                             0.2s
+ => => writing image sha256:7d7a8f3a8b6f4c5d9e2a1b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2 0.0s
+ => => naming to docker.io/library/app_python-app                                                                    0.0s
+[+] Running 1/1
+ ? Container app_python-app-1  Started                                                                              0.4s
+
+user@k8s:curl http://localhost:5000/
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Current time in Moscow</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Current time in Moscow</h1>
+        <p id="ct">15:52:00</p>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
+
+user@k8s:curl http://localhost:5000/visits
+{"visits": 1}
+
+user@k8s:cat app_python/data/visits
+1
+
+user@k8s:helm upgrade --install helm-python k8s/helm-python
+Release "helm-python" has been upgraded. Happy Helming!
+NAME: helm-python
+LAST DEPLOYED: 12 Thu Feb 2026 15:43
+NAMESPACE: default
+STATUS: deployed
+REVISION: 2
+TEST SUITE: None
+
+user@k8s:kubectl get po
+NAME                                  READY   STATUS    RESTARTS   AGE
+helm-python-7c7b5dfd76-ktq9b          1/1     Running   0          26s
+
+user@k8s:kubectl exec helm-python-7c7b5dfd76-ktq9b -- cat /config.json
+{
+  "appName": "helm-python",
+  "environment": "dev",
+  "features": {
+    "visits": true,
+    "metrics": false
+  }
+}

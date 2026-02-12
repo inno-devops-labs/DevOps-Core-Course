@@ -1,0 +1,8 @@
+{
+  "appName": "helm-python",
+  "environment": "dev",
+  "features": {
+    "visits": true,
+    "metrics": false
+  }
+}
