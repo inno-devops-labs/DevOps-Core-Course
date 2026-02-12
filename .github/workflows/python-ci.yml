@@ -19,16 +19,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with: 
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
           python-version: '3.11.5'
           cache: 'pip'
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+
+      - name: Cache virtual environment
+        id: cache-venv
+        uses: actions/cache@v4
+        with:
+          path: ./venv
+          key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+
+      - name: Create virtual environment and install dependencies
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m venv venv
+          . venv/bin/activate
+          pip install -r requirements.txt
+
       - name: Run flake8
-        run: flake8 ./app.py ./tests/test_app.py
+        run: venv/bin/flake8 ./app.py ./tests/test_app.py
+
       - name: Run tests
-        run: pytest
+        run: venv/bin/pytest
 
   docker-build-push:
     runs-on: ubuntu-latest
