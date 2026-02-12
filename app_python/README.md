@@ -108,6 +108,26 @@ Example response:
 }
 ```
 
+## Testing
+
+Install dev dependencies:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Run tests:
+
+```bash
+pytest
+```
+
+Run with coverage:
+
+```bash
+pytest --cov=. --cov-report=term
+```
+
 ## Configuration
 
 | Variable | Default   | Description          |
