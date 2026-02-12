@@ -62,6 +62,7 @@ CI Stages:
 Also I used Git secrets:
 - DOCKER_USERNAME
 - DOCKERHUB_TOKEN (Docker Hub Access Token)
+- SNYK_TOKEN
 
 ### 2.3 Evidence
 

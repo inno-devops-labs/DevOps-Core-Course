@@ -57,7 +57,7 @@ jobs:
         pip install -r requirements.txt
     
     - name: Snyk CLI
-      uses: snyk/actions/python-3-pip@master
+      uses: snyk/actions/python-3.9@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
