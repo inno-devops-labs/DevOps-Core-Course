@@ -39,7 +39,7 @@ jobs:
       run: ruff check .
     
     - name: Run tests
-      run: pytest app_ tests/ --verbose -v
+      run: pytest app_python/tests/ --verbose -v
     
     - name: Format check
       run: ruff format --check .
