@@ -1,5 +1,8 @@
 # DevOps Info Service
 
+![Python CI](https://github.com/ElinaNotElina/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab3)
+[![codecov](https://codecov.io/gh/ElinaNotElina/DevOps-Core-Course/branch/lab3/graph/badge.svg)](https://codecov.io/gh/ElinaNotElina/DevOps-Core-Course)
+
 A production-ready web service providing detailed information about itself and its runtime environment. Built with FastAPI for high performance and automatic API documentation.
 
 ## Overview
