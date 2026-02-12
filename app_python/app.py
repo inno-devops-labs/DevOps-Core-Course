@@ -142,5 +142,5 @@ def internal_error(error):
 
 
 if __name__ == "__main__":
-    logger.info(f"Starting...")
+    logger.info("Starting...")
     app.run(host=HOST, port=PORT, debug=DEBUG)
