@@ -43,10 +43,34 @@ jobs:
     
     - name: Format check
       run: ruff format --check .
+  
+  security:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'  # Skip PRs
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Snyk CLI
+      uses: snyk/actions/python-3-pip@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high --sarif-file-output=snyk.sarif
+    
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: snyk.sarif
 
   docker:
     name: Build & Push Docker
-    needs: test  # Runs only if test passed
+    needs: [ test, security ] # Runs only if test & security passed
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'  # Dont push pr to docker hub
     
