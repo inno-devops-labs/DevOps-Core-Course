@@ -17,13 +17,14 @@
 
 ## 2. Workflow Evidence
 
-Replace the placeholders with your real links/output after pushing to GitHub.
 
-```text
+
+
 - ✅ Successful workflow run (GitHub Actions link):
   https://github.com/Rash1d1/DevOps-Core-Course/actions/runs/21961633075
 
 - ✅ Tests passing locally (terminal output):
+```bash
   $ cd app_python
   $ pytest  
 ================================== test session starts ==================================
@@ -35,14 +36,14 @@ collected 5 items
 tests/test_app.py .....                                                           [100%]
 
 =================================== 5 passed in 0.20s ===================================
-
+```
 - ✅ Docker image on Docker Hub:
   https://hub.docker.com/repository/docker/j0cos/devops-info-service/tags/2026.02.12/sha256-3a83b9cf2b7463c71e5b44fb103d9777704b9c4fb70e0bf8a7b47cb1c4a62149
 
 - ✅ Status badge working in README:
   See screenshots folder
   
-```
+
 
 ---
 
