@@ -64,7 +64,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
         with:
-          args: test --severity-threshold=high
+          args: test --severity-threshold=high --file=app_python/requirements.txt --package-manager=pip
 
       - name: Upload coverage to Codecov
         if: env.CODECOV_TOKEN
