@@ -165,7 +165,7 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
-    logger.info(f'Starting DevOps Info Service...')
+    logger.info('Starting DevOps Info Service...')
     logger.info(f'Host: {HOST}, Port: {PORT}, Debug: {DEBUG}')
     logger.info(f'Application started at {START_TIME.isoformat()}')
     

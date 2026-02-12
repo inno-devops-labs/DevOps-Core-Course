@@ -1,5 +1,8 @@
 # DevOps Info Service
 
+[![Python CI](https://github.com/mpasgat/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=master)](https://github.com/mpasgat/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![Coverage](https://codecov.io/gh/mpasgat/DevOps-Core-Course/branch/master/graph/badge.svg)](https://codecov.io/gh/mpasgat/DevOps-Core-Course)
+
 A comprehensive web service that provides detailed information about itself and its runtime environment. Built as part of the DevOps Core Course Lab 1.
 
 ## Overview
@@ -37,6 +40,11 @@ This service exposes RESTful API endpoints that report system information, runti
    ```bash
    pip install -r requirements.txt
    ```
+
+4. **Install development dependencies (tests + lint):**
+  ```bash
+  pip install -r requirements-dev.txt
+  ```
 
 ## Running the Application
 
@@ -198,6 +206,7 @@ The application supports the following environment variables:
 app_python/
 ├── app.py                    # Main application
 ├── requirements.txt          # Python dependencies
+├── requirements-dev.txt      # Test and lint dependencies
 ├── .gitignore               # Git ignore rules
 ├── README.md                # This file
 ├── tests/                   # Unit tests (Lab 3)
@@ -208,6 +217,20 @@ app_python/
 ```
 
 ## Testing
+
+### Automated Testing
+
+```bash
+# From app_python/
+pytest --cov=. --cov-report=term --cov-report=xml
+```
+
+### Linting
+
+```bash
+# From app_python/
+ruff check .
+```
 
 ### Manual Testing
 
