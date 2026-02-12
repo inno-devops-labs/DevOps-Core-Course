@@ -164,7 +164,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(info)
+	_ = json.NewEncoder(w).Encode(info)
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -177,7 +177,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func main() {
