@@ -1,5 +1,5 @@
 # LAB03 — Continuous Integration (CI/CD)
-![Pipeline passing](https://github.com/github/docs/actions/workflows/main.yml/badge.svg?event=push)
+[![Python CI & Docker Build](https://github.com/CacucoH/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/CacucoH/DevOps-Core-Course/actions/workflows/python-ci.yml)
 
 ## 1. Unit testing
 ### 1.1 Testing framework choise
