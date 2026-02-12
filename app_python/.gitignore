@@ -10,3 +10,7 @@ venv/
 
 # OS
 .DS_Store
+
+# Coverage
+.coverage
+coverage.xml

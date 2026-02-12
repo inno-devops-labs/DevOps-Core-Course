@@ -54,7 +54,7 @@ jobs:
 
       - name: Run tests with coverage
         working-directory: app_python
-        run: pytest --cov=app --cov-report=xml --cov-fail-under=70
+        run: pytest --cov=. --cov-report=xml --cov-fail-under=70
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
