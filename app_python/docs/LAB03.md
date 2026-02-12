@@ -93,3 +93,8 @@ Upgrade starlette@0.38.6 to starlette@0.49.1 to fix
   ✗ Allocation of Resources Without Limits or Throttling [High Severity][https://security.snyk.io/vuln/SNYK-PYTHON-STARLETTE-8186175] in starlette@0.38.6
     introduced by starlette@0.38.6 and 1 other path(s)
 ```
+
+## Challenges
+At first, snyk ran outside the virtual environment. I changed python/@master to setup/@master
+
+When I updated starlette, fastapi started requiring some older version, so I had to update fastapi.
