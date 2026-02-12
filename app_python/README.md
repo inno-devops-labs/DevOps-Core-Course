@@ -86,3 +86,32 @@ Supported enviroment values:
 - `HOST` - address of the application
 - `PORT` - port of the application
 - `DEBUG` - `[true/false]` do/don't enable debug features
+
+
+## Testing
+
+### Running Tests
+
+Install  dependencies
+```bash
+pip install -r requirements.txt
+```
+
+Run tests
+```bash
+pytest
+```
+
+Run with coverage (pytest-cov should be installed)
+```bash
+pytest --cov=app --cov-report=term
+```
+
+### Test Structure
+
+Tests are located in `app_python/tests/` directory.
+
+
+- `app_python/tests/test_error_endpoint.py` - tests related to errors
+- `app_python/tests/test_health_endpoint.py` tests related to health endpoint
+- `app_python/tests/test_mainpage_endpoint.py` tests related to the root endpoint 

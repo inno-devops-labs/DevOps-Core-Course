@@ -23,6 +23,9 @@ start_time = None
 
 
 def get_uptime():
+    global start_time
+    if start_time is None:
+        start_time = datetime.now()
     delta = datetime.now() - start_time
     seconds = int(delta.total_seconds())
     hours = seconds // 3600
