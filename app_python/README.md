@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI](https://github.com/egorTorshin/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/egorTorshin/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 A FastAPI-based web service that provides system information, runtime metrics, and health monitoring. Built as part of the DevOps course.
 
 ## Overview
@@ -123,6 +125,33 @@ docker run -p 5000:5000 <your-username>/devops-info-service:latest
 ```
 
 ## Testing
+
+### Unit Tests
+
+The project uses **pytest** with FastAPI's `TestClient` (httpx-based) for unit testing.
+
+**Install dev dependencies:**
+```bash
+pip install -r requirements-dev.txt
+```
+
+**Run all tests:**
+```bash
+python -m pytest tests/ -v
+```
+
+**Run with linting:**
+```bash
+python -m ruff check .
+python -m pytest tests/ -v
+```
+
+**Test coverage includes:**
+- `GET /` — JSON structure, all fields, data types, service metadata
+- `GET /health` — status, timestamp format, uptime
+- Error handling — 404 custom response, 405 method not allowed
+
+### Manual Testing
 
 ```bash
 # Test endpoints
