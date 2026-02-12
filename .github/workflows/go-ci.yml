@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - master
-      - lab03
+      - lab3
     paths:
       - 'app_go/**'
       - '.github/workflows/go-ci.yml'
