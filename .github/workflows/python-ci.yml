@@ -14,16 +14,25 @@ env:
   DOCKER_HUB_USERNAME: ${{ vars.DOCKER_HUB_USERNAME }}
   IMAGE_NAME: ${{ vars.IMAGE_NAME }}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   code-quality-and-testing:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.11', '3.12', '3.13' ]
+      fail-fast: true
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Setup Python ${{matrix.python-version}}
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11.5'
+          python-version: ${{matrix.python-version}}
           cache: 'pip'
 
       - name: Cache virtual environment
@@ -31,7 +40,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ./app_python/venv
-          key: venv-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          key: venv-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('./app_python/requirements.txt') }}
 
       - name: Create virtual environment and install dependencies
         if: steps.cache-venv.outputs.cache-hit != 'true'
@@ -45,6 +54,14 @@ jobs:
 
       - name: Run tests
         run: venv/bin/pytest
+
+      - name: Run Snyk
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+        continue-on-error: false 
 
   docker-build-push:
     runs-on: ubuntu-latest
