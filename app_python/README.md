@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DevOps Info Service is a RESTful web application built with Flask that exposes system information, runtime metrics, and health status. It's designed to be lightweight, configurable, and production-ready, with proper error handling, logging, and documentation.
+The DevOps Info Service is a RESTful web application built with Flask that exposes system information, runtime metrics, and health status. It's designed to be lightweight, configurable, and production-ready, with proper error handling, logging and documentation.
 
 ## CI/CD Status
 
