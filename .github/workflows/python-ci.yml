@@ -1,6 +1,12 @@
 name: Python CI
 
-on: [push]
+on:
+  push:
+    branches: [master, main, lab03]
+    paths: ['app_python/**', '.github/workflows/python-ci.yml']
+  pull_request:
+    branches: [master, main]
+    paths: ['app_python/**', '.github/workflows/python-ci.yml']
 
 jobs:
   test:
