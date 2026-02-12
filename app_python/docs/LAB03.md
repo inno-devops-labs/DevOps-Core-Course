@@ -39,35 +39,27 @@ It performs:
 
 
 ## 2. Versioning Strategy
-I chose **CalVer** using GitHub run number:
+I have chosen Calendar Versioning (CalVer YYYY.MM):
+- Format: 2026.02 (current month) + latest
+- Implementation: docker/metadata-action@v5 with type=raw,value={{date 'YYYY.MM'}}
+- Why CalVer: Perfect for CI/CD pipelines with frequent releases, date-based tracking
 
-Tags:
-- `latest`
-- `${{ github.run_number }}`
+### 2.1 Key Implementation Highlights
+CI Stages:
+1. Test job (matrix: Python 3.9-3.11)
+   - Ruff linting + formatting
+   - Pytest unit tests
+2. Docker job (depends on tests)
+   - Multi-tag strategy (latest + CalVer + branch)
+   - Docker layer caching for speed
 
-Reason:
-- simple
-- automatic
-- ideal for continuous deployment
+### 2.2 Triggers Logic:
+- main/dev push: full CI/CD (tests + Docker push)
+- PR: tests only (no Docker push)
+- Any branch: basic linting
+
+Also I used Git secrets:
+- DOCKER_USERNAME
+- DOCKERHUB_TOKEN (Docker Hub Access Token)
 
 
-## 3. Best Practices Implemented
-- **Fail-fast:** workflow stops on first error  
-- **Caching:** pip cache via setup-python  
-- **Concurrency:** cancels outdated runs  
-- **Security scanning:** Snyk  
-- **Path filters:** workflow runs only for app_python  
-
-
-## 4. Evidence
-- All tests pass locally  
-- Workflow runs successfully  
-- Docker Hub shows versioned images  
-- README badge works  
-
----
-
-## 6. Challenges
-- Understanding path filters  
-- Fixing Docker Hub authentication  
-- Adding Snyk token  
