@@ -25,7 +25,10 @@ jobs:
   security:
       name: Security Scan
       runs-on: ubuntu-latest
-  
+      defaults:
+        run:
+          working-directory: app_python
+      
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
@@ -35,22 +38,20 @@ jobs:
           with:
             python-version: '3.13'
             cache: 'pip'
-            cache-dependency-path: 'app_python/requirements.txt'
+            cache-dependency-path: 'requirements.txt'
   
         - name: Install dependencies
           run: |
-            cd app_python
             pip install --upgrade pip
             pip install -r requirements.txt
-  
+
+        - name: Set up Snyk
+          uses: snyk/actions/setup@master
+
         - name: Run Snyk to check for vulnerabilities
-          timeout-minutes: 2
-          uses: snyk/actions/python@master
-          continue-on-error: true
           env:
             SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          with:
-            args: test --severity-threshold=high --file=requirements.txt --package-manager=pip
+          run: snyk test --package-manager=pip --file=requirements.txt --severity-threshold=high
           
   docker:
     needs: [test, security]
