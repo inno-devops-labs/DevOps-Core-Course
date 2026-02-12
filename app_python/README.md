@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+![Python CI](https://github.com/iu-capstone-ad/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
 ## Overview
 
 Python Flask service with endpoints for checking system information and health.
@@ -22,6 +24,17 @@ python3 -m venv venv
 source venv/bin/activate
 # install dependencies from requirements.txt
 pip install -r requirements.txt
+```
+
+## Running tests
+
+Install dev requirements and run pytest:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
+pytest -q
 ```
 
 ## Running the Application

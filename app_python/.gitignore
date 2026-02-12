@@ -10,3 +10,8 @@ venv/
 
 # OS
 .DS_Store
+
+# pytest
+.pytest_cache/
+.coverage
+coverage.xml
