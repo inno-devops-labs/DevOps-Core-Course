@@ -88,8 +88,10 @@ async def http_exception_handler(
             status_code=404,
             content={
                 "error": "Not Found",
-                "message": f"The requested URL {
-                    request.url.path} was not found on this server.",
+                "message": (
+                    f"The requested URL {request.url.path} "
+                    f"was not found on this server."
+                ),
                 "status_code": 404,
                 "timestamp": datetime.now(
                     timezone.utc).isoformat(),
