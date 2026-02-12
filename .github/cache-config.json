@@ -1,0 +1,13 @@
+{
+    "cache": {
+      "pip": true,
+      "docker": true,
+      "node": false,
+      "actions": true
+    },
+    "optimizations": {
+      "parallel_jobs": true,
+      "skip_duplicate_actions": true,
+      "cancel_in_progress_on_new_commit": true
+    }
+  }
