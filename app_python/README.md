@@ -1,5 +1,5 @@
 # DevOps Info Service
-
+[![Python CI](https://github.com/saddogsec/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](...)
 ## Overview
 This service reports:
 - Service metadata (name, version, framework)
