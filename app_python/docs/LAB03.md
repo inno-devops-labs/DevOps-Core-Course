@@ -36,6 +36,8 @@ actions/checkout@v4 – supports fetch-depth: 0 to retrieve Git tags for version
 
 actions/setup-python@v4 – provides Python setup with built‑in pip caching.
 
+actions/cache@v4 - used for Python venv caching.
+
 docker/login-action@v3 – securely handles Docker Hub credentials via GitHub Secrets.
 
 docker/metadata-action@v5 – generating Docker tags and labels; automatically extracts SemVer from Git tags and adds latest.
