@@ -121,19 +121,16 @@ jobs:
 
       - name: Set up Snyk CLI
         uses: snyk/actions/setup@master
+      
+      - name: Run Snyk to check for vulnerabilities
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Run Snyk to check for vulnerabilities
         run: >
           snyk test
           --file=app_python/requirements.txt
           --package-manager=pip
           --severity-threshold=medium
           --sarif-file-output=snyk.sarif
-
-      - name: Upload Snyk results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: snyk.sarif
+      
+    
 
