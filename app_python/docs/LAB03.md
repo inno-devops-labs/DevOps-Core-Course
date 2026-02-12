@@ -21,17 +21,27 @@ Replace the placeholders with your real links/output after pushing to GitHub.
 
 ```text
 - ✅ Successful workflow run (GitHub Actions link):
-  https://github.com/<your-github-username>/DevOps-Core-Course/actions/runs/<run-id>
+  https://github.com/Rash1d1/DevOps-Core-Course/actions/runs/21961633075
 
 - ✅ Tests passing locally (terminal output):
   $ cd app_python
-  $ pytest
+  $ pytest  
+================================== test session starts ==================================
+platform linux -- Python 3.12.3, pytest-8.3.4, pluggy-1.6.0
+rootdir: /home/j0cos/innopolis/Devops/DevOps-Core-Course/app_python
+plugins: cov-6.0.0
+collected 5 items                                                                       
+
+tests/test_app.py .....                                                           [100%]
+
+=================================== 5 passed in 0.20s ===================================
 
 - ✅ Docker image on Docker Hub:
-  https://hub.docker.com/r/j0cos/devops-info-service/tags
+  https://hub.docker.com/repository/docker/j0cos/devops-info-service/tags/2026.02.12/sha256-3a83b9cf2b7463c71e5b44fb103d9777704b9c4fb70e0bf8a7b47cb1c4a62149
 
 - ✅ Status badge working in README:
-  Confirm the Python CI badge renders in app_python/README.md on GitHub.
+  See screenshots folder
+  
 ```
 
 ---
@@ -45,7 +55,8 @@ Replace the placeholders with your real links/output after pushing to GitHub.
 - **Caching:** `actions/setup-python`'s pip cache is enabled with `cache: pip` and `cache-dependency-path: app_python/requirements.txt`. The first run installs dependencies from scratch; subsequent runs reuse the cache and should be noticeably faster (often cutting dependency installation time from tens of seconds to just a few seconds).
 - **Snyk:** The `security-scan` job uses `snyk/actions/python-3.12@master` against `app_python/requirements.txt` with a `medium` severity threshold, uploading SARIF results to GitHub’s Security tab. After you configure `SNYK_TOKEN`, the job will report any known vulnerable dependencies.
 
-You can update this list with concrete timing numbers after observing a few CI runs.
+Pipeline first run: 1m7s
+Second and othes runs: less than 30s
 
 ---
 

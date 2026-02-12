@@ -6,7 +6,7 @@ The DevOps Info Service is a RESTful web application built with Flask that expos
 
 ## CI/CD Status
 
-> These badges are populated after you push to GitHub and enable the services.
+
 
 [![Python CI](https://github.com/Rash1d1/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=master)](https://github.com/Rash1d1/DevOps-Core-Course/actions/workflows/python-ci.yml)
 [![Coverage](https://codecov.io/gh/Rash1d1/DevOps-Core-Course/branch/master/graph/badge.svg)](https://codecov.io/gh/Rash1d1/DevOps-Core-Course)
