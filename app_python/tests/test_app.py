@@ -113,6 +113,13 @@ def test_internal_error_handler_returns_json(client, monkeypatch):
 
     monkeypatch.setattr("app.get_service_info", lambda: boom())
 
+    # For this test we want the Flask error handler to run,
+    # not to propagate the exception to pytest.
+    from app import app as flask_app  # local import to avoid circular issues
+
+    flask_app.testing = False
+    flask_app.config["PROPAGATE_EXCEPTIONS"] = False
+
     response = client.get("/")
     assert response.status_code == 500
 
