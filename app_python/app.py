@@ -85,7 +85,9 @@ def get_endpoints():
 def index():
     """Main endpoint - service and system information."""
     client_ip = request.remote_addr
-    logger.info(f"Request: {request.method} {request.path} from {client_ip}")
+    logger.info(
+        f"Request: {request.method} {request.path} from {client_ip}"
+    )
 
     uptime = get_uptime()
 
@@ -126,7 +128,10 @@ def health():
 def not_found(error):
     """Handle 404 errors."""
     logger.warning(f"404 Not Found: {request.path}")
-    return jsonify({"error": "Not Found", "message": "Endpoint does not exist"}), 404
+    return (
+        jsonify({"error": "Not Found", "message": "Endpoint does not exist"}),
+        404,
+    )
 
 
 @app.errorhandler(500)
@@ -136,7 +141,10 @@ def internal_error(error):
     logger.error(f"500 Internal Server Error: {error_msg}")
     return (
         jsonify(
-            {"error": "Internal Server Error", "message": "An unexpected error occurred"}
+            {
+                "error": "Internal Server Error",
+                "message": "An unexpected error occurred",
+            }
         ),
         500,
     )

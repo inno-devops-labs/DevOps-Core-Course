@@ -260,7 +260,9 @@ class TestHelperFunctions:
         assert isinstance(uptime["seconds"], int)
         assert uptime["seconds"] >= 0
         assert isinstance(uptime["human"], str)
-        assert "hour" in uptime["human"] or "minute" in uptime["human"]
+        assert (
+            "hour" in uptime["human"] or "minute" in uptime["human"]
+        )
 
 
 class TestHTTPMethods:
