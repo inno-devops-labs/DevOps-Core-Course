@@ -1,4 +1,5 @@
 # LAB03 — Continuous Integration (CI/CD)
+![Pipeline passing](https://github.com/github/docs/actions/workflows/main.yml/badge.svg?event=push)
 
 ## 1. Unit testing
 ### 1.1 Testing framework choise
@@ -61,6 +62,14 @@ CI Stages:
 Also I used Git secrets:
 - DOCKER_USERNAME
 - DOCKERHUB_TOKEN (Docker Hub Access Token)
+
+### 2.3 Evidence
+
+#### - [👉 Link to successful CI](https://github.com/CacucoH/DevOps-Core-Course/actions/runs/21945226684/job/63380994126)
+#### - Tests passing locally:
+![all tests passing](./screenshots/lab3/tests.png)
+#### - [Docker image on Docker Hub](https://hub.docker.com/r/cacucoh/testiks) 
+
 
 ## 3. Best Practices Implemented
 1. Matrix Testing: Tests Python 3.9-3.11 in parallel across multiple jobs, ensuring cross-version compatibility
