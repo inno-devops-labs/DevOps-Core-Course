@@ -42,6 +42,14 @@ jobs:
       - name: Run tests
         run: pytest -v
 
+      - name: Snyk security scan
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --file=requirements.txt --severity-threshold=high
+
   docker:
     name: Build & Push Docker
     needs: test

@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI](https://github.com/4hellboy4/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/4hellboy4/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 A web service that reports system information and health status, built with FastAPI.
 
 ## Overview
