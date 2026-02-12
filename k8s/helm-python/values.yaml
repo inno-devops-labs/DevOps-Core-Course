@@ -29,11 +29,20 @@ serviceAccount:
   annotations: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  name: "internal-app"
 
 # This is for setting Kubernetes Annotations to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-podAnnotations: {}
+podAnnotations: {
+  "vault.hashicorp.com/agent-inject": "true",
+  "vault.hashicorp.com/role": "internal-app",
+  "vault.hashicorp.com/agent-inject-secret-database-config.txt": "internal/data/database/config",
+  "vault.hashicorp.com/agent-inject-template-database-config.txt": "username={{`{{- with secret \\\"internal/data/database/config\\\" -}}`}}{{`{{ .Data.data.username }}`}}{{`{{- end -}}`}}\npassword={{`{{- with secret \\\"internal/data/database/config\\\" -}}`}}{{`{{ .Data.data.password }}`}}{{`{{- end -}}`}}",
+  "vault.hashicorp.com/agent-inject-command": "sh -c 'test -s /vault/secrets/database-config.txt'"
+}
+
+#podAnnotations: {}
+
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
@@ -73,7 +82,7 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-resources: {}
+#resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following
@@ -84,6 +93,14 @@ resources: {}
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
@@ -121,3 +138,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+secrets:
+  name: "some-secret"
+  data:
+    SOME_SECRET: "P@ssw0rd"
+    username: "appuser"
+    password: "P@ssw0rd"

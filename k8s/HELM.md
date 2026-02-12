@@ -34,7 +34,7 @@ helm install helm-python ./helm-python
 ```
 ```text
 NAME: helm-python
-LAST DEPLOYED: Wed Mar 12 04:58:22 2025
+LAST DEPLOYED: 11 Februrary Thursday 2026 11:55
 NAMESPACE: default
 STATUS: deployed
 REVISION: 1
@@ -142,7 +142,7 @@ helm install --dry-run helm-hooks helm-python
 ```
 ```text
 NAME: helm-hooks
-LAST DEPLOYED: Wed Mar 12 05:48:18 2025
+LAST DEPLOYED: 11 Februrary Thursday 2026 11:55
 NAMESPACE: default
 STATUS: pending-install
 REVISION: 1
@@ -326,7 +326,7 @@ Namespace:        default
 Priority:         0
 Service Account:  default
 Node:             minikube/192.168.49.2
-Start Time:       Wed, 12 Mar 2025 05:48:39 +0000
+Start Time:       11 Februrary Thursday 2026 11:55
 Labels:           <none>
 Annotations:      helm.sh/hook: pre-install
                   helm.sh/hook-delete-policy: before-hook-creation
@@ -348,8 +348,8 @@ Containers:
     State:          Terminated
       Reason:       Completed
       Exit Code:    0
-      Started:      Wed, 12 Mar 2025 05:48:40 +0000
-      Finished:     Wed, 12 Mar 2025 05:49:00 +0000
+      Started:      11 Februrary Thursday 2026 11:55
+      Finished:     11 Februrary Thursday 2026 11:55
     Ready:          False
     Restart Count:  0
     Environment:    <none>
@@ -392,7 +392,7 @@ Namespace:        default
 Priority:         0
 Service Account:  default
 Node:             minikube/192.168.49.2
-Start Time:       Wed, 12 Mar 2025 05:49:02 +0000
+Start Time:       11 Februrary Thursday 2026 11:55
 Labels:           <none>
 Annotations:      helm.sh/hook: post-install
                   helm.sh/hook-delete-policy: before-hook-creation
@@ -414,8 +414,8 @@ Containers:
     State:          Terminated
       Reason:       Completed
       Exit Code:    0
-      Started:      Wed, 12 Mar 2025 05:49:05 +0000
-      Finished:     Wed, 12 Mar 2025 05:49:20 +0000
+      Started:      11 Februrary Thursday 2026 11:55
+      Finished:     11 Februrary Thursday 2026 11:55
     Ready:          False
     Restart Count:  0
     Environment:    <none>

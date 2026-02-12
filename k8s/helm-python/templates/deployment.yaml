@@ -40,6 +40,8 @@ spec:
           {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- include "helm-python.secretEnv" . | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

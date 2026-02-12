@@ -60,3 +60,25 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Secret-based environment variables.
+*/}}
+{{- define "helm-python.secretEnv" -}}
+{{- $secretName := .Values.secrets.name | default "some-secret" -}}
+- name: SOME_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: SOME_SECRET
+- name: APP_USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: username
+- name: APP_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: password
+{{- end }}
