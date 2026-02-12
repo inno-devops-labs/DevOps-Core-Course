@@ -57,3 +57,7 @@ Run container:
 ```bash
 docker run --rm -p 8080:8080 devops-info-go:lab02
 ```
+
+## Github status badge
+
+[![go-ci](https://github.com/olesia8novoselova/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)](https://github.com/olesia8novoselova/DevOps-Core-Course/actions/workflows/go-ci.yml)

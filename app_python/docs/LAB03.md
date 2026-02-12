@@ -2,7 +2,7 @@
 
 ## Overview
 **Testing framework:** pytest
-**Coverage:** pytest-cov generates `coverage.xml`, and CI can fail if coverage drops below a threshold.
+**Coverage:** pytest-cov generates `coverage.xml`, and CI fails if coverage drops below 70%..
 
 **CI triggers:** workflows run on `push` and `pull_request` only when app files change (path filters).  
 **Versioning:** CalVer (YYYY.MM.DD) + `latest` (and an extra tag with short commit SHA).
@@ -32,10 +32,10 @@ pytest --cov=. --cov-report=term --cov-report=xml
 
 ## Workflow Evidence
 
-* Python workflow run:
-* Go workflow run:
-* Docker Hub Python image:
-* Docker Hub Go image:
+* Python workflow run: https://github.com/olesia8novoselova/DevOps-Core-Course/actions/runs/21953499463
+* Go workflow run: https://github.com/olesia8novoselova/DevOps-Core-Course/actions/runs/21953824897
+* Docker Hub Python image: https://hub.docker.com/repository/docker/olesianov/devops-info-python/tags
+* Docker Hub Go image: https://hub.docker.com/repository/docker/olesianov/devops-info-go/general
 
 ## Best Practices Implemented
 
@@ -48,11 +48,21 @@ pytest --cov=. --cov-report=term --cov-report=xml
 
 **Caching speed:**
 
-* First run (cache miss): seconds
-* Next run (cache hit): seconds
+* First run (cache miss): 5 seconds
+* Next run (cache hit): 1 second
 
-**Snyk:** runs with severity threshold `high` and reports vulnerabilities (enabled when `SNYK_TOKEN` is configured).
-If issues are found, I update dependencies and re-run CI.
+## Snyk Security Scanning
+
+**Threshold:** `high` severity. This focuses on important vulnerabilities and avoids noisy low-risk findings.
+**Behavior:** the scan is configured to warn (does not fail the build) using `continue-on-error: true`.
+
+Results:
+
+* Vulnerabilities found: none
+* Action taken: no action needed
+
+![Snyk](screenshots/lab03/snyk.png)
+
 
 ## Key Decisions
 

@@ -48,3 +48,7 @@ docker run --rm -p <host_port>:5000 <dockerhub-username>/devops-info-python:lab0
 docker pull <dockerhub-username>/devops-info-python:lab02
 docker run --rm -p <host_port>:5000 <dockerhub-username>/devops-info-python:lab02
 ```
+
+### Github status badge
+
+[![python-ci](https://github.com/olesia8novoselova/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/olesia8novoselova/DevOps-Core-Course/actions/workflows/python-ci.yml)
