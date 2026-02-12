@@ -6,10 +6,12 @@ on:
     paths:
       - "app_python/**"
       - ".github/workflows/python-ci.yml"
+
   pull_request:
     branches: [ "master" ]
     paths:
       - "app_python/**"
+      - ".github/workflows/python-ci.yml"
 
 concurrency:
   group: python-ci-${{ github.ref }}
@@ -20,32 +22,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: "pip"
+          cache: pip
+          cache-dependency-path: |
+            app_python/requirements.txt
+            app_python/requirements-dev.txt
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r app_python/requirements.txt -r app_python/requirements-dev.txt
-
-      - name: Lint (ruff)
-        run: ruff app_python
-
-      - name: Run tests with coverage
-        run: pytest --cov=app --cov-report=xml
-        working-directory: app_python
 
       - name: Snyk security scan
         uses: snyk/actions/python@master
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
+
+      - name: Lint (ruff)
+        run: ruff check app_python
+
+      - name: Formatter check (ruff)
+        run: ruff format --check app_python
+
+      - name: Run tests with coverage
+        working-directory: app_python
+        run: pytest --cov=app --cov-report=xml --cov-fail-under=70
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -54,9 +63,10 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
   docker:
+    name: Docker build & push
     needs: test
-    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
