@@ -74,3 +74,10 @@ Pulling from Docker Hub
 ```bash
 docker pull aidarsarvartdinov/pythonapp:<tag>
 ```
+
+## Testing
+To run tests locally after installing requirements:
+
+```bash
+pytest
+```

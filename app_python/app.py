@@ -67,7 +67,7 @@ def get_system_info() -> Dict[str, Any]:
 
 def get_runtime_info() -> Dict[str, Any]:
     """Collect runtime information."""
-    
+
     return {
         'uptime_seconds': get_uptime()['seconds'],
         'uptime_human': get_uptime()['human'],
@@ -90,7 +90,7 @@ def get_request_info(request: Request) -> Dict[str, Any]:
     """Collect information about the current request."""
     client_ip = request.client.host if request.client else "unknown"
     user_agent = request.headers.get('user-agent', 'unknown')
-    
+
     return {
         'client_ip': client_ip,
         'user_agent': user_agent,
@@ -111,13 +111,14 @@ def get_endpoints_list() -> list:
 async def get_service_information(request: Request) -> Dict[str, Any]:
     """
     Main endpoint - returns service and system information.
-    
+
     Returns:
         JSON object containing service metadata, system info, runtime info,
         request details, and available endpoints.
     """
-    logger.info(f"GET / requested from {request.client.host if request.client else 'unknown'}")
-    
+    logger.info(f"GET / requested from \
+            {request.client.host if request.client else 'unknown'}")
+
     return {
         "service": get_service_info(),
         "system": get_system_info(),
@@ -131,13 +132,13 @@ async def get_service_information(request: Request) -> Dict[str, Any]:
 async def health_check() -> Dict[str, Any]:
     """
     Health check endpoint for monitoring and service discovery.
-    
+
     Returns:
         JSON object with health status, timestamp, and uptime.
         Always returns HTTP 200 when service is running.
     """
     logger.debug("Health check requested")
-    
+
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
@@ -162,7 +163,7 @@ async def not_found_handler(request: Request, exc):
 async def internal_error_handler(request: Request, exc):
     """Handle 500 Internal Server errors."""
     logger.error(f"Internal server error: {exc}")
-    
+
     return JSONResponse(
         status_code=500,
         content={
@@ -177,7 +178,7 @@ if __name__ == "__main__":
     import uvicorn
 
     logger.info(f"Starting Service on {HOST}:{PORT}")
-    
+
     uvicorn.run(
         "app:app",
         host=HOST,
@@ -185,5 +186,3 @@ if __name__ == "__main__":
         reload=DEBUG,
         log_level="info" if DEBUG else "warning"
     )
-
-    
