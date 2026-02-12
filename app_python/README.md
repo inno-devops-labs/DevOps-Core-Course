@@ -119,7 +119,7 @@ pip install -r requirements-dev.txt
 Run tests:
 
 ```bash
-pytest
+pytest -v
 ```
 
 Run with coverage:
