@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arhocd-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ez4gotit/S25-core-course-labs.git
+    targetRevision: lab13-solution
+    path: k8s/helm-python
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated: {}
+
