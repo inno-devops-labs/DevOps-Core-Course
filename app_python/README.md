@@ -4,6 +4,13 @@
 
 The DevOps Info Service is a RESTful web application built with Flask that exposes system information, runtime metrics, and health status. It's designed to be lightweight, configurable, and production-ready, with proper error handling, logging, and documentation.
 
+## CI/CD Status
+
+> These badges are populated after you push to GitHub and enable the services.
+
+[![Python CI](https://github.com/Rash1d1/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=master)](https://github.com/Rash1d1/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![Coverage](https://codecov.io/gh/Rash1d1/DevOps-Core-Course/branch/master/graph/badge.svg)](https://codecov.io/gh/Rash1d1/DevOps-Core-Course)
+
 ## Prerequisites
 
 - **Python 3.11+**
@@ -25,6 +32,14 @@ The DevOps Info Service is a RESTful web application built with Flask that expos
    ```
 
 3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Install development tools (optional)**:
+
+   If you are working on the code locally, you can install testing and linting tools:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -68,6 +83,24 @@ curl http://localhost:5000/health
 # Pretty-printed JSON (requires jq)
 curl http://localhost:5000/ | jq
 ```
+
+## Running Tests
+
+This project uses **pytest** for unit tests and **pytest-cov** for coverage.
+
+From the `app_python/` directory:
+
+```bash
+pytest
+```
+
+Run tests with coverage (the same way CI does):
+
+```bash
+pytest --cov=. --cov-report=term --cov-report=xml
+```
+
+The XML report `coverage.xml` is consumed by Codecov in the CI pipeline.
 
 ## API Endpoints
 
