@@ -1,6 +1,7 @@
 """
 DevOps Info Service
-Flask application that exposes system/runtime information and a health endpoint.
+Flask application that exposes system/runtime information
+and a health endpoint.
 """
 
 from __future__ import annotations
@@ -73,11 +74,13 @@ def get_client_ip() -> str:
 
 @app.before_request
 def log_request() -> None:
-    logger.debug("Request: %s %s UA=%s IP=%s",
-                 request.method,
-                 request.path,
-                 request.headers.get("User-Agent", ""),
-                 get_client_ip())
+    logger.debug(
+        "Request: %s %s UA=%s IP=%s",
+        request.method,
+        request.path,
+        request.headers.get("User-Agent", ""),
+        get_client_ip(),
+    )
 
 
 @app.route("/", methods=["GET"])
@@ -106,8 +109,16 @@ def index():
             "path": request.path,
         },
         "endpoints": [
-            {"path": "/", "method": "GET", "description": "Service information"},
-            {"path": "/health", "method": "GET", "description": "Health check"},
+            {
+                "path": "/",
+                "method": "GET",
+                "description": "Service information",
+            },
+            {
+                "path": "/health",
+                "method": "GET",
+                "description": "Health check",
+            },
         ],
     }
 
@@ -118,13 +129,16 @@ def index():
 def health():
     """Health check endpoint - used for probes and monitoring."""
     uptime = get_uptime()
-    return jsonify(
-        {
-            "status": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "uptime_seconds": uptime["seconds"],
-        }
-    ), 200
+    return (
+        jsonify(
+            {
+                "status": "healthy",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "uptime_seconds": uptime["seconds"],
+            }
+        ),
+        200,
+    )
 
 
 @app.errorhandler(404)
@@ -139,13 +153,25 @@ def not_found(_error):
 def internal_error(_error):
     logger.exception("Unhandled exception")
     return (
-        jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}),
+        jsonify(
+            {
+                "error": "Internal Server Error",
+                "message": "An unexpected error occurred",
+            }
+        ),
         500,
     )
 
 
 def main() -> None:
-    logger.info("Starting %s v%s on %s:%s (DEBUG=%s)", APP_NAME, APP_VERSION, HOST, PORT, DEBUG)
+    logger.info(
+        "Starting %s v%s on %s:%s (DEBUG=%s)",
+        APP_NAME,
+        APP_VERSION,
+        HOST,
+        PORT,
+        DEBUG,
+    )
     app.run(host=HOST, port=PORT, debug=DEBUG)
 
 
