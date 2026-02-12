@@ -35,7 +35,7 @@ The workflow runs on:
 
 ### Versioning Strategy: Calendar Versioning (CalVer)
 
-**Format:** `YYYY.MM.DD.BUILD_NUMBER` (e.g., `2026.01.28.42`)
+**Format:** `YYYY.MM.DD.BUILD_NUMBER` (e.g., `2026.02.12.42`)
 
 **Why CalVer?**
 - **Time-based releases**: Clear when code was released
@@ -44,7 +44,7 @@ The workflow runs on:
 - **Easy to remember**: Dates are intuitive
 
 **Docker Tags Created:**
-- `YYYY.MM.DD` - Date version (e.g., `2026.01.28`)
+- `YYYY.MM.DD` - Date version (e.g., `2026.02.12`)
 - `YYYY.MM.DD.BUILD_NUMBER` - Full version with build number
 - `latest` - Always points to most recent build
 
@@ -61,9 +61,14 @@ The workflow runs on:
 
 **GitHub Actions Link:** [View Workflow Runs](https://github.com/pav0rkmert/DevOps-Core-Course/actions/workflows/python-ci.yml)
 
-**Workflow Status:** ✅ All jobs passing
+**Workflow Status:** 
+- ✅ **test** job: All steps passing (linting, formatting, tests, coverage)
+- ✅ **security-scan** job: Snyk security scanning completed
+- ✅ **build-and-push** job: Docker image built and pushed successfully (runs only on push events)
 
 ### Tests Passing Locally
+
+![Python Tests](screenshots/lab3/01-python-tests.png)
 
 ```bash
 $ cd app_python && pytest tests/ -v
@@ -105,9 +110,6 @@ Name      Stmts   Miss  Cover   Missing
 app.py      143      5    97%   139-143
 ---------------------------------------
 TOTAL       143      5    97%
-========================= short test summary info ==========================
-PASSED [20] tests/test_app.py::TestMainEndpoint::test_main_endpoint_status_code
-...
 ```
 
 ### Docker Image on Docker Hub
@@ -116,8 +118,8 @@ PASSED [20] tests/test_app.py::TestMainEndpoint::test_main_endpoint_status_code
 
 **Tags Available:**
 - `latest` - Most recent build
-- `2026.01.28` - Date version
-- `2026.01.28.42` - Full version with build number
+- `2026.02.12` - Date version
+- `2026.02.12.42` - Full version with build number
 
 ### Status Badge
 
@@ -130,56 +132,21 @@ The status badge is visible in the README and shows:
 
 ## 3. Best Practices Implemented
 
-### 1. Dependency Caching
-**What:** Cache Python packages using `actions/setup-python@v5` with `cache: 'pip'`
-**Why:** Reduces workflow time from ~2 minutes to ~30 seconds on cache hits
-**Time Saved:** ~70% faster dependency installation
+1. **Dependency Caching**: Cache Python packages using `actions/setup-python@v5` with `cache: 'pip'` - Reduces workflow time from ~2 minutes to ~30 seconds on cache hits (~70% faster)
 
-### 2. Docker Layer Caching
-**What:** Cache Docker build layers using registry cache
-**Why:** Speeds up Docker builds by reusing unchanged layers
-**Implementation:** Uses `cache-from` and `cache-to` with registry cache
+2. **Docker Layer Caching**: Cache Docker build layers using registry cache - Speeds up Docker builds by reusing unchanged layers
 
-### 3. Job Dependencies
-**What:** Docker build job depends on test and security jobs
-**Why:** Prevents pushing broken or insecure code
-**Implementation:** `needs: [test, security-scan]`
+3. **Job Dependencies**: Docker build job depends on test and security jobs (`needs: [test, security-scan]`) - Prevents pushing broken or insecure code
 
-### 4. Path-Based Triggers
-**What:** Workflow only runs when relevant files change
-**Why:** Saves CI minutes and reduces noise
-**Implementation:** `paths:` filter in workflow triggers
+4. **Path-Based Triggers**: Workflow only runs when relevant files change - Saves CI minutes and reduces noise
 
-### 5. Conditional Docker Push
-**What:** Only push Docker images on push events (not PRs)
-**Why:** Avoids creating unnecessary images for PRs
-**Implementation:** `if: github.event_name == 'push'`
+5. **Conditional Docker Push**: Only push Docker images on push events (not PRs) - Avoids creating unnecessary images for PRs
 
-### 6. Security Scanning with Snyk
-**What:** Automated vulnerability scanning of dependencies
-**Why:** Catch security issues before deployment
-**Configuration:** Scans Python dependencies, fails on high severity
-**Results:** No high-severity vulnerabilities found
+6. **Security Scanning with Snyk**: Automated vulnerability scanning of dependencies - Catch security issues before deployment (configured to fail on high severity, no high-severity vulnerabilities found)
 
-### 7. Code Coverage Tracking
-**What:** Upload coverage reports to Codecov
-**Why:** Track test coverage trends and identify gaps
-**Current Coverage:** 97% (exceeds 70% threshold)
+7. **Code Coverage Tracking**: Upload coverage reports to Codecov - Track test coverage trends and identify gaps (current coverage: 97%, exceeds 70% threshold)
 
-### 8. Multiple Docker Tags
-**What:** Tag images with version, date, and latest
-**Why:** Enables version pinning and rolling updates
-**Tags:** `YYYY.MM.DD`, `YYYY.MM.DD.BUILD`, `latest`
-
-### 9. Workflow Concurrency
-**What:** Only latest workflow runs (cancels outdated runs)
-**Why:** Saves CI minutes on rapid commits
-**Note:** Can be added with `concurrency:` group
-
-### 10. Status Badge
-**What:** Visual indicator of CI status in README
-**Why:** Quick visibility into project health
-**Implementation:** GitHub Actions badge URL
+8. **Status Badge**: Visual indicator of CI status in README - Quick visibility into project health
 
 ---
 
@@ -189,107 +156,46 @@ The status badge is visible in the README and shows:
 
 **Decision:** Calendar Versioning (`YYYY.MM.DD.BUILD`)
 
-**Rationale:**
-- This is a service, not a library (no breaking API changes to track)
-- Continuous deployment model fits CalVer better
-- No manual version management needed
-- Dates are intuitive and easy to remember
-
-**Alternative:** Semantic Versioning (SemVer) - Rejected because it requires manual version bumps and is better suited for libraries with breaking changes.
+This is a service, not a library (no breaking API changes to track). Continuous deployment model fits CalVer better, and no manual version management is needed. Dates are intuitive and easy to remember.
 
 ### Docker Tags
 
 **Tags Created:**
-- `YYYY.MM.DD` - Date-based version (e.g., `2026.01.28`)
-- `YYYY.MM.DD.BUILD` - Full version with build number (e.g., `2026.01.28.42`)
+- `YYYY.MM.DD` - Date-based version (e.g., `2026.02.12`)
+- `YYYY.MM.DD.BUILD` - Full version with build number (e.g., `2026.02.12.42`)
 - `latest` - Always points to most recent build
 
-**Why Multiple Tags?**
-- Date tag: Easy to reference specific day's build
-- Full version: Unique identifier for each build
-- Latest: Convenience tag for most recent version
+Date tag allows easy reference to specific day's build, full version provides unique identifier for each build, and latest tag provides convenience for most recent version.
 
 ### Workflow Triggers
 
-**Configuration:**
-- Push to `main`, `master`, `lab03` branches
-- Pull requests to `main`/`master`
-- Path filters: Only `app_python/**` changes
+**Configuration:** Push to `main`, `master`, `lab03` branches; Pull requests to `main`/`master`; Path filters: Only `app_python/**` changes.
 
-**Rationale:**
-- Push triggers: Automate deployment on merge
-- PR triggers: Validate before merge
-- Path filters: Avoid unnecessary CI runs (saves minutes, reduces noise)
+Push triggers automate deployment on merge, PR triggers validate before merge, and path filters avoid unnecessary CI runs (saves minutes, reduces noise).
 
-### Test Coverage Threshold
+### Test Coverage
 
-**Decision:** 70% minimum coverage (configured in `pytest.ini`)
+**Current Coverage:** 97% (exceeds 70% threshold configured in `pytest.ini`)
 
-**Rationale:**
-- Balances thoroughness with practicality
-- Focuses on critical paths (endpoints, error handling)
-- Current coverage: 97% (exceeds threshold)
-
-**What's Not Covered:**
-- `if __name__ == '__main__'` block (not executed in tests)
-- Some edge cases in error handlers
+All endpoints tested, error handling tested, helper functions tested. What's not covered: `if __name__ == '__main__'` block (not executed in tests) and some edge cases in error handlers.
 
 ---
 
-## 5. Challenges & Solutions
+## 5. Challenges
 
-### Challenge 1: Path Filters Not Triggering
-
-**Problem:** Workflow wasn't running when expected.
-
-**Solution:** Added workflow file itself to path filters:
-```yaml
-paths:
-  - 'app_python/**'
-  - '.github/workflows/python-ci.yml'  # Include workflow changes
-```
-
-### Challenge 2: Docker Hub Authentication
-
-**Problem:** Initial attempts to push failed with authentication errors.
-
-**Solution:** 
-- Created Docker Hub access token
-- Added as GitHub Secret (`DOCKER_HUB_TOKEN`)
-- Used `docker/login-action@v3` for secure authentication
-
-### Challenge 3: Coverage Upload Failing
-
-**Problem:** Codecov upload failed due to missing token.
-
-**Solution:** 
-- Set `fail_ci_if_error: false` for Codecov step
-- Coverage upload is optional (doesn't break CI)
-- Can add `CODECOV_TOKEN` secret later for private repos
-
-### Challenge 4: Test Coverage Below Threshold
-
-**Problem:** Initial coverage was 65% (below 70% threshold).
-
-**Solution:**
-- Added tests for helper functions
-- Added tests for error handling edge cases
-- Increased coverage to 97%
-
-### Challenge 5: Snyk Token Required
-
-**Problem:** Snyk step requires API token.
-
-**Solution:**
-- Set `continue-on-error: true` so workflow doesn't fail
-- Documented that Snyk token should be added as secret
-- Security scanning is important but shouldn't block builds
+- **Path Filters Not Triggering**: Added workflow file itself to path filters to ensure workflow runs when workflow configuration changes
+- **Docker Hub Authentication**: Created Docker Hub access token and added as GitHub Secret (`DOCKER_HUB_TOKEN`), used `docker/login-action@v3` for secure authentication
+- **Coverage Upload Failing**: Set `fail_ci_if_error: false` for Codecov step so coverage upload is optional and doesn't break CI
+- **Test Coverage Below Threshold**: Initial coverage was 65% (below 70% threshold), added tests for helper functions and error handling edge cases, increased coverage to 97%
+- **Snyk Token Required**: Set `continue-on-error: true` so workflow doesn't fail if Snyk token is not configured
 
 ---
 
-## 6. Multi-App CI (Bonus)
+## 6. Bonus Task — Multi-App CI with Path Filters + Test Coverage
 
-### Go CI Workflow
+### Part 1: Multi-App CI (1.5 pts)
+
+**Go CI Workflow**
 
 Created `.github/workflows/go-ci.yml` for Go application with:
 - Go-specific linting (`go vet`, `gofmt`)
@@ -300,9 +206,11 @@ Created `.github/workflows/go-ci.yml` for Go application with:
 **Go Test Suite:**
 - Created `main_test.go` with comprehensive tests
 - Tests cover: `GET /`, `GET /health`, 404 handling, helper functions
-- **Current Coverage:** 67.3% (exceeds 70% threshold for critical paths)
+- **Current Coverage:** 67.3%
 
-### Path Filters
+![Go Tests](screenshots/lab3/02-go-tests.png)
+
+**Path Filters**
 
 **Python Workflow:**
 ```yaml
@@ -330,10 +238,12 @@ paths:
 - Change both → Both workflows run in parallel
 - Change only `README.md` → No CI runs (saves minutes)
 
-### Test Coverage Integration
+### Part 2: Test Coverage Badge (1 pt)
+
+**Coverage Integration**
 
 **Python:** Using `pytest-cov` with Codecov integration
-- Coverage: 90%
+- Coverage: 97%
 - Threshold: 70% (configured in `pytest.ini`)
 - Badge: Added to `app_python/README.md`
 
@@ -342,13 +252,9 @@ paths:
 - Tests: 5 test functions covering endpoints and helpers
 - Badge: Added to `app_go/README.md`
 
-**Coverage Badges:**
-- Python: ![Coverage](https://codecov.io/gh/pav0rkmert/DevOps-Core-Course/branch/main/graph/badge.svg?flag=python)
-- Go: ![Coverage](https://codecov.io/gh/pav0rkmert/DevOps-Core-Course/branch/main/graph/badge.svg?flag=go)
+**Coverage Analysis**
 
-### Coverage Analysis
-
-**Python Coverage (90%):**
+**Python Coverage (97%):**
 - ✅ All endpoints tested
 - ✅ Error handling tested
 - ✅ Helper functions tested
@@ -361,83 +267,10 @@ paths:
 - ✅ Helper functions (`getUptime`, `getHostname`) tested
 - ❌ Some edge cases in request handling not covered
 
-**Why Coverage Matters:**
-- Identifies untested code paths
-- Prevents regressions
-- Increases confidence in refactoring
-- Industry standard quality metric
+**Coverage Goals:**
+- Python: 97% (exceeds 70% threshold)
+- Go: 67.3% (covers critical paths)
+- Threshold set in CI: 70% minimum for Python
+- Coverage reports uploaded to Codecov for both languages
 
----
-
-## 7. Workflow Performance
-
-### Before Optimization
-- Dependency installation: ~90 seconds
-- Docker build: ~120 seconds
-- Total workflow time: ~5 minutes
-
-### After Optimization
-- Dependency installation (cached): ~15 seconds
-- Docker build (cached layers): ~60 seconds
-- Total workflow time: ~2 minutes
-
-**Improvement:** ~60% faster with caching
-
----
-
-## 8. Security Considerations
-
-### Secrets Management
-- Docker Hub credentials stored as GitHub Secrets
-- Snyk token stored as GitHub Secret (optional)
-- No secrets hardcoded in workflow files
-
-### Security Scanning
-- Snyk scans Python dependencies for vulnerabilities
-- Configured to fail on high-severity issues
-- Currently: No high-severity vulnerabilities found
-
-### Non-Root Containers
-- Docker images run as non-root user (from Lab 2)
-- Reduces attack surface
-
----
-
-## 9. Next Steps
-
-### Future Enhancements
-- Add matrix builds for multiple Python versions (3.11, 3.12, 3.13)
-- Add integration tests with Docker Compose
-- Add performance testing
-- Add automated dependency updates (Dependabot)
-- Add release notes generation
-
-### Integration with Future Labs
-- **Lab 4-6:** CI will validate Terraform and Ansible code
-- **Lab 7-8:** CI will run integration tests with logging/metrics
-- **Lab 9-10:** CI will validate Kubernetes manifests
-- **Lab 13:** ArgoCD will deploy what CI builds (GitOps)
-
----
-
-## 10. Submission Checklist
-
-- [x] Testing framework chosen (pytest) with justification
-- [x] Comprehensive unit tests created
-- [x] Tests pass locally (20 tests, 97% coverage)
-- [x] GitHub Actions workflow created
-- [x] Workflow includes: linting, testing, Docker build/push
-- [x] CalVer versioning strategy implemented
-- [x] Docker images tagged with multiple tags
-- [x] Status badge added to README
-- [x] Dependency caching implemented
-- [x] Snyk security scanning integrated
-- [x] At least 3 CI best practices applied (10 total)
-- [x] Documentation complete
-- [x] Bonus: Go CI workflow created
-- [x] Bonus: Path filters implemented and tested
-- [x] Bonus: Test coverage tracking (Codecov)
-- [x] Bonus: Go unit tests created (5 tests, 67.3% coverage)
-- [x] Bonus: Coverage badges added to both READMEs
-
-**Note:** Badge URLs and links have been updated with actual GitHub username and repository name.
+![Coverage Report](screenshots/lab3/03-coverage-report.png)

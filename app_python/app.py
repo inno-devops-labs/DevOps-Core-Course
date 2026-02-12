@@ -33,9 +33,11 @@ def get_uptime():
     seconds = int(delta.total_seconds())
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
+    hour_str = 'hour' if hours == 1 else 'hours'
+    minute_str = 'minute' if minutes == 1 else 'minutes'
     return {
         'seconds': seconds,
-        'human': f"{hours} hour{'s' if hours != 1 else ''}, {minutes} minute{'s' if minutes != 1 else ''}"
+        'human': f"{hours} {hour_str}, {minutes} {minute_str}"
     }
 
 
@@ -82,10 +84,13 @@ def get_endpoints():
 @app.route('/')
 def index():
     """Main endpoint - service and system information."""
-    logger.info(f'Request: {request.method} {request.path} from {request.remote_addr}')
-    
+    client_ip = request.remote_addr
+    logger.info(
+        f'Request: {request.method} {request.path} from {client_ip}'
+    )
+
     uptime = get_uptime()
-    
+
     response = {
         'service': get_service_info(),
         'system': get_system_info(),
@@ -98,17 +103,18 @@ def index():
         'request': get_request_info(),
         'endpoints': get_endpoints()
     }
-    
+
     return jsonify(response)
 
 
 @app.route('/health')
 def health():
     """Health check endpoint for monitoring and Kubernetes probes."""
-    logger.debug(f'Health check from {request.remote_addr}')
-    
+    client_ip = request.remote_addr
+    logger.debug(f'Health check from {client_ip}')
+
     uptime = get_uptime()
-    
+
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now(timezone.utc).isoformat(),
@@ -129,7 +135,8 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
-    logger.error(f'500 Internal Server Error: {str(error)}')
+    error_msg = str(error)
+    logger.error(f'500 Internal Server Error: {error_msg}')
     return jsonify({
         'error': 'Internal Server Error',
         'message': 'An unexpected error occurred'
