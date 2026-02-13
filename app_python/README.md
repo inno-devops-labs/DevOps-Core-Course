@@ -58,6 +58,33 @@ curl http://localhost:5000/health
 | `PORT`   | `5000`    | Port number  |
 | `DEBUG`  | `False`   | Debug mode   |
 
+## Docker
+
+### Build the image
+
+```bash
+docker build -t roma3213/info_service:1.0 .
+```
+
+### Run a container
+
+```bash
+docker run -p 5000:5000 roma3213/info_service:1.0
+```
+
+With custom port:
+
+```bash
+docker run -p 5000:5000 roma3213/info_service:1.0
+```
+
+### Pull from Docker Hub
+
+```bash
+docker pull roma3213/info_service:1.0
+docker run -p 5000:5000 roma3213/info_service:1.0
+```
+
 ## Project Structure
 
 ```
@@ -69,6 +96,8 @@ app_python/
 ├── tests/
 ├── docs/               # Lab docs, screenshots
 ├── requirements.txt
+├── Dockerfile          # Container image
+├── .dockerignore
 ├── .gitignore
 └── README.md
 ```

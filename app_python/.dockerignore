@@ -1,0 +1,22 @@
+# 🐙 Version control
+.git
+.gitignore
+
+# 🐍 Python
+__pycache__
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# 🔐 Secrets (NEVER include!)
+.env
+*.pem
+secrets/
+
+# 📝 Documentation
+*.md
+docs/
+
+# 🧪 Tests (if not needed in container)
+tests/
