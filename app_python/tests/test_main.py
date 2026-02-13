@@ -23,7 +23,6 @@ def test_root_json_structure():
     response = client.get("/")
     data = response.json()
     
-    # Проверяем наличие обязательных полей (ровно то, что в API)
     assert "service" in data
     assert "system" in data
     assert "runtime" in data
@@ -35,12 +34,10 @@ def test_root_required_fields():
     response = client.get("/")
     service = response.json()["service"]
     
-    # Проверяем конкретные поля, которые есть в твоём API
     assert "name" in service
     assert "version" in service
     assert "description" in service
     
-    # Проверяем, что они не пустые
     assert service["name"] != ""
     assert service["version"] != ""
 
