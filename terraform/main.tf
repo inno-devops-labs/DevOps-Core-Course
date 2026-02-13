@@ -14,7 +14,7 @@ terraform {
 
 provider "yandex" {
   service_account_key_file = var.service_account_key_file
-  folder_id = var.folder_id
+  folder_id                = var.folder_id
 }
 
 data "yandex_compute_image" "ubuntu" {
@@ -47,8 +47,8 @@ resource "yandex_compute_instance" "vm" {
   }
 
   network_interface {
-    subnet_id          = data.yandex_vpc_subnet.lab_subnet.id
-    nat                = true
+    subnet_id = data.yandex_vpc_subnet.lab_subnet.id
+    nat       = true
   }
 
   metadata = {
