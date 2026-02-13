@@ -1,1 +1,21 @@
+# Root gitignore for lab
+
+# Terraform
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform/
+terraform/terraform.tfvars
+
+# Pulumi
+pulumi/venv/
+pulumi/Pulumi.*.yaml
+
+# Keys and credentials
+*.pem
+*.key
+*.json
+
+# Python
+__pycache__/
+*.pyc
 test
