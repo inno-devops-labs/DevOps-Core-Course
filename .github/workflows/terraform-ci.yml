@@ -1,0 +1,81 @@
+name: Terraform CI/CD Pipeline
+
+on: 
+  push:
+    branches: ["master", "lab4"]
+    paths:
+      - 'terraform/**'
+  pull_request:
+    branches: ["master", "lab4"]
+    paths:
+      - 'terraform/**'
+
+jobs:
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+          terraform_wrapper: false
+
+      - name: Prepare Terraform plugin cache
+        run: |
+          mkdir -p "${TF_PLUGIN_CACHE_DIR}"
+
+      - name: Cache Terraform plugins
+        uses: actions/cache@v4
+        with:
+          path: .terraform.d/plugin-cache
+          key: ${{ runner.os }}-terraform-plugins-${{ hashFiles('terraform/.terraform.lock.hcl') }}
+          restore-keys: |
+            ${{ runner.os }}-terraform-plugins-
+
+      - name: Terraform fmt (check)
+        working-directory: terraform
+        run: |
+          echo "::group::terraform fmt"
+          terraform fmt -check -recursive -diff
+          echo "::endgroup::"
+
+      - name: Terraform init (no backend)
+        working-directory: terraform
+        run: |
+          echo "::group::terraform init"
+          terraform init -backend=false -no-color
+          echo "::endgroup::"
+
+      - name: Terraform validate
+        working-directory: terraform
+        run: |
+          echo "::group::terraform validate"
+          terraform validate -no-color
+          echo "::endgroup::"
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.53.0
+
+      - name: TFLint (lint)
+        working-directory: terraform
+        run: |
+          echo "::group::tflint"
+          tflint --version
+          # If you keep placeholder/unused variables for later labs, disable this rule.
+          tflint --disable-rule=terraform_unused_declarations
+          echo "::endgroup::"

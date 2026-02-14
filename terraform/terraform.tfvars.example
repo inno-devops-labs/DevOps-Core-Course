@@ -1,0 +1,5 @@
+# RENAME TO terraform.tfvars AND FILL VALUES
+yc_folder_id = "b1gvmob95yysaplct532"  # Get from: yc config list
+yc_cloud_id  = "b1g8ad32v091og5d7e5l"  # Get from: yc config list
+my_ip_cidr   = "95.123.45.67/32"       # YOUR CURRENT IP (get via: curl ifconfig.me)
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2E... your_email@example.com"
