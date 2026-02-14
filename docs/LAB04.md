@@ -755,3 +755,4 @@ In this task will be created ci/cd pipeline for terraform files. Created linters
 
 ## Screenshot of the completed CI/CD pipeline
 
+![scren-ci](screenshots/ci-cd.png)
