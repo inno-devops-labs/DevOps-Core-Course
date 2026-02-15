@@ -34,14 +34,18 @@ This document outlines the configuration and deployment process for the custom D
      |   |   `-- web_app
      |   |       |-- defaults
      |   |       |   `-- main.yml
-     |   |       |-- handlers
+     |   |       |-- meta
      |   |       |   `-- main.yml
      |   |       |-- meta
      |   |       |   `-- main.yml
      |   |       |-- tasks
+     |   |       |   |-- 0-wipe.yml
      |   |       |   `-- main.yml
-     |   |       `-- templates
-     |   |           `-- docker-compose.yml.j2
+     |   |       |-- templates
+     |   |       |    `-- docker-compose.yml.j2
+     |   |       |-- vars
+     |   |            `-- main.yml
+     |   |       
      |   `-- ansible.cfg
      |-- app_python
      |-- app_typescript
@@ -220,13 +224,34 @@ yandex_vm                  : ok=14   changed=1    unreachable=0    failed=0    s
 
 ## Web app deployment
 
+### Overview
+
+The `web_app` role deploys a Dockerized Python web application (FastAPI) using Docker Compose.  
+It automates the process of preparing the host, pulling the Docker image, creating the Docker Compose configuration, and starting the container.
+
+The role also provides an optional **full wipe functionality**, which removes the container, images, volumes, and deployment directory for a clean redeployment.
+
+This role depends on the `docker` role to ensure Docker is installed and running.
+
+---
+### Structure Explanation
+
+| Directory | Purpose |
+|---------|---------|
+| defaults/ | Default variables with lowest priority |
+| meta/ | Role dependencies |
+| tasks/ | Main automation logic |
+| templates/ | Jinja2 templates for configuration files |
+| vars/ | Role variables with higher priority |
+---
+
 ### Dry Run (Check Mode)
 
 Before applying changes, perform a dry run to preview potential modifications:
 
 
 ```bash
-ansible-playbook playbooks/dev/main.yaml --check --diff
+ansible-playbook playbooks/dev/web_app/main.yaml --check --diff
 ```
 
 #### Commands output:
@@ -292,7 +317,7 @@ yandex_vm                  : ok=14   changed=2    unreachable=0    failed=0    s
 ### Commands output:
 
 ```bash
-ansible-playbook playbooks/dev/main.yaml 
+ansible-playbook playbooks/dev/web_ap/main.yml 
 ```
 
 ```
