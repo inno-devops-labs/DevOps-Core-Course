@@ -32,6 +32,16 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.initContainer.enabled }}
+      initContainers:
+        - name: init-download
+          image: {{ .Values.initContainer.image }}
+          command:
+            {{- toYaml .Values.initContainer.command | nindent 12 }}
+          volumeMounts:
+            - name: init-data
+              mountPath: /work
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
@@ -64,6 +74,8 @@ spec:
               subPath: config.json
             - name: data
               mountPath: /data
+            - name: init-data
+              mountPath: /init
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -71,6 +83,8 @@ spec:
         - name: app-config
           configMap:
             name: {{ include "helm-python.fullname" . }}-config
+        - name: init-data
+          emptyDir: {}
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

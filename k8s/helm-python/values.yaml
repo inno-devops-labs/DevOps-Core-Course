@@ -153,3 +153,11 @@ persistence:
   accessMode: ReadWriteOnce
   size: 100Mi
   storageClass: ""
+
+initContainer:
+  enabled: true
+  image: busybox:1.36
+  command:
+    - sh
+    - -c
+    - wget -q -O /work/test.html https://example.com
