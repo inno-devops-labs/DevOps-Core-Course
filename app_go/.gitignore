@@ -5,3 +5,7 @@ devops-info-service
 .idea/
 
 .DS_Store
+
+# Test coverage
+coverage.out
+coverage.html
