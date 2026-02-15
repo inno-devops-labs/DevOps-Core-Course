@@ -1,0 +1,11 @@
+- name: Deploy python application
+  hosts: all
+  vars:
+    - docker_image_name: karamkhaddourpro/my-fastapi-app
+    - docker_container_name: app_python
+    - docker_container_port: 8000 
+    - docker_host_port: 8000
+    - application_directory: web_app
+  roles:
+    - role: web_app
+      become: true

@@ -1,0 +1,7 @@
+version: '1'
+
+services:
+  web_app:
+    image: "{{ docker_image_name }}"
+    ports:
+      - "{{ docker_container_port }}:{{ docker_host_port }}"

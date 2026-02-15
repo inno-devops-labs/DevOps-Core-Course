@@ -1,0 +1,46 @@
+- name: create web directory
+  block:
+    - name: create new directory
+      ansible.builtin.file:
+        name: "{{ application_directory }}/"
+        state: directory
+  tags:
+    - prepare_directory
+    - deploy
+
+- name: deploy application job
+  block:
+    - name: Enable docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Pull docker image
+      docker_image:
+        name: "{{ docker_image_name }}"
+        source: pull
+        state: present
+      tags:
+        - docker-pull
+    
+    - name: Copy docker compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ application_directory }}/docker-compose.yml"
+
+    - name: Run docker container
+      community.docker.docker_compose_v2:
+        files:
+          - "docker-compose.yml"
+        project_src: "{{ application_directory }}/"
+
+  tags:
+    - deploy
+
+- name: Wipe docker
+  block:
+    - include_tasks: 0-wipe.yml
+      when: web_app_full_wipe
+  tags:
+    - wipe

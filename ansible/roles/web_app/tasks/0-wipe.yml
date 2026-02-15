@@ -1,0 +1,17 @@
+- name: Wipe web app
+  block:
+    - name: Remove the docker container
+      community.docker.docker_compose_v2:
+        project_src: "{{ application_directory }}/"
+        state: absent
+        remove_images: all
+        remove_volumes: true
+        remove_orphans: true
+
+    - name: Clean directories
+      ansible.builtin.file:
+        path: "{{ application_directory }}/"
+        state: absent
+  when: web_app_full_wipe | bool
+  tags:
+    - wipe
