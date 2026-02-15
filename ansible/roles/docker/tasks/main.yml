@@ -1,0 +1,11 @@
+- name: Apt update
+  apt:
+    update_cache: yes
+
+- name: Install docker
+  import_tasks: install_docker.yml
+  tags: docker
+
+- name: Install docker compose
+  import_tasks: install_compose.yml
+  tags: docker

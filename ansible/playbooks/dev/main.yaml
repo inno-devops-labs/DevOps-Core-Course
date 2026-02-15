@@ -1,0 +1,5 @@
+- name: Setup Docker
+  hosts: yandex_vm
+  become: true
+  roles:
+   - docker
