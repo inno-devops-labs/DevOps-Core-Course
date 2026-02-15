@@ -8,6 +8,7 @@ terraform.tfvars
 crash.log
 
 # Pulumi
+venv/
 pulumi/venv/
 pulumi/Pulumi.*.yaml
 __pycache__/
