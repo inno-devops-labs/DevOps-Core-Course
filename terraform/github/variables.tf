@@ -1,5 +1,5 @@
 variable "token" {
   type        = string
-  description = "GITHUB_TOKEN"
+  description = "GITHUB TOKEN"
   sensitive   = true
 }

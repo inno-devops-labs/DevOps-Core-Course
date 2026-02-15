@@ -1,7 +1,7 @@
 variable "python_container_name" {
   description = "Name of the container"
   type        = string
-  default     = "moscow-time-app"
+  default     = "moscow-time-app-renamed"
 }
 
 variable "app_image_name" {
@@ -19,5 +19,5 @@ variable "internal_port" {
 variable "external_port" {
   description = "External port exposed on the host"
   type        = number
-  default     = 8080
+  default     = 9080
 }

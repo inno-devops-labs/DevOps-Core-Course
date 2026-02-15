@@ -339,24 +339,161 @@ container_ports = tolist([
 
 ---
 
+### Renaming my Docker container using input variables.
 ---
+simply I changed the container name inside of varaibles.tf to moscow-time-app-renamed
+I applied the following command 
 
+### `terraoform apply` 
+
+After it I applied terrform state show docker_container.moscow_tim_app 
+
+
+#### ` terraform state show docker_container.moscow_time_app`
+
+<details>
+
+<summary>command-output</summary>
+
+```bash
+
+ kokai@kokai:~/Desktop/S25-core-course-labs/terraform/docker$ terraform state show docker_container.moscow_time_app
+# docker_container.moscow_time_app:
+resource "docker_container" "moscow_time_app" {
+    attach                                      = false
+    bridge                                      = null
+    command                                     = [
+        "uvicorn",
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+    ]
+    container_read_refresh_timeout_milliseconds = 15000
+    cpu_set                                     = null
+    cpu_shares                                  = 0
+    domainname                                  = null
+    entrypoint                                  = []
+    env                                         = []
+    hostname                                    = "5a55a604922c"
+    id                                          = "5a55a604922c04c49b70fb4a7f7250e0d18f7f49719f321b4f9733e1e4289fb9"
+    image                                       = "sha256:dba8a2f516085b7b99baeca76fb1a48ee4294900dbef82f8dba5fd7f15c9a80d"
+    init                                        = false
+    ipc_mode                                    = "private"
+    log_driver                                  = "json-file"
+    logs                                        = false
+    max_retry_count                             = 0
+    memory                                      = 0
+    memory_swap                                 = 0
+    must_run                                    = true
+    name                                        = "moscow-time-app-renamed"
+    network_data                                = [
+        {
+            gateway                   = "172.17.0.1"
+            global_ipv6_address       = null
+            global_ipv6_prefix_length = 0
+            ip_address                = "172.17.0.3"
+            ip_prefix_length          = 16
+            ipv6_gateway              = null
+            mac_address               = "22:11:54:76:79:65"
+            network_name              = "bridge"
+        },
+    ]
+    network_mode                                = "bridge"
+    pid_mode                                    = null
+    privileged                                  = false
+    publish_all_ports                           = false
+    read_only                                   = false
+    remove_volumes                              = true
+    restart                                     = "no"
+    rm                                          = false
+    runtime                                     = "runc"
+    security_opts                               = []
+    shm_size                                    = 64
+    start                                       = true
+    stdin_open                                  = false
+    stop_signal                                 = null
+    stop_timeout                                = 0
+    tty                                         = false
+    user                                        = "appuser"
+    userns_mode                                 = null
+    wait                                        = false
+    wait_timeout                                = 60
+    working_dir                                 = "/app"
+
+    ports {
+        external = 9080
+        internal = 8000
+        ip       = "0.0.0.0"
+        protocol = "tcp"
+    }
+}
+
+```
+</details>
+and we can see that the name is chaned to the name we had in our varaibls moscow-time-app-renamed
 
 ## Yandex Cloud
-I created a service account in Yandex Cloud with admin permissions.
-Generated a secure key (key.json) for authentication, avoiding hardcoding credentials.
-Used this key in Terraform and CLI to manage resources programmatically and securely. The hardest part for me was the UI—it wasn’t very intuitive, and I struggled to assign myself an admin role.
 
+### Step 1: Create Yandex Cloud Account
+
+I created an account on Yandex Cloud and logged into the console.
+
+I needed to purchase a small virtual machine in yandex cloud :
+
+- Small VM instances
+- Limited disk storage
+- Limited network usage
+
+### Step 2: Configure Authentication
+
+I created a service account in Yandex Cloud and assigned the "admin" role.
+
+Then I generated an OAuth token using the Yandex CLI:
+
+```bash
+yc iam create-token
+```
+
+and got the folder_id and cloud_id from the UI
+These values were stored securely in Terraform variables.
+
+### Step 3: Terraform Configuration
+
+I created the following Terraform resources:
+
+- VPC Network
+- Subnet
+- Boot disk
+- Virtual Machine instance
+
+The VM uses:
+
+- 2 CPU cores
+- 2 GB RAM
+- 20 GB disk
+- Ubuntu image
+- Public NAT IP for SSH access
+
+Terraform automatically handles dependencies between resources.
+
+### Step 4: SSH Access Configuration
+
+I configured SSH access by providing my public SSH key:
+
+```
+~/.ssh/id_rsa.pub
+```
+
+This allows secure remote login:
 
 
 #### `terraform init`
 
 <details>
 <summary>command-output</summary>
-
-
-```
-Initializing the backend...
+``` Initializing the backend...
 Initializing provider plugins...
 - Finding yandex-cloud/yandex versions matching "~> 0.75"...
 - Installing yandex-cloud/yandex v0.142.0...
