@@ -411,10 +411,7 @@ Created `.github/workflows/terraform-ci.yml` that automatically validates Terraf
 4. `tflint` — lints for best practices and common errors
 
 **Workflow run proof:**
-```
-<PASTE SCREENSHOT OR LINK TO WORKFLOW RUN HERE>
-```
-
+![alt text](image-2.png)
 ---
 
 ## Bonus: GitHub Repository Import
