@@ -1,0 +1,91 @@
+name: Python CI
+
+on:
+  push:
+    paths:
+    - 'app_python/**'
+  pull_request:
+    paths:
+    - 'app_python/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        id: python-cache
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          cd app_python
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Ensure visits.txt exists
+        run: |
+          mkdir -p /app_python
+          touch /app_python/visits.txt
+          chmod 666 /app_python/visits.txt
+      
+      - name: Ensure visits file exists
+        run: echo "0" > app_python/visits.txt
+
+      - name: Run tests
+        run: pytest ./app_python/unit_test.py -v
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/python-3.10@master
+        with:
+          args: --skip-unresolved app_python/
+        env:
+          SNYK_TOKEN: ${{ secrets.API_SNYK }}
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_LOGIN }}
+          password: ${{ secrets.DOCKERHUB_PASS }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./app_python
+          file: ./app_python/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_LOGIN }}/flask_app:latest
