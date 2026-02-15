@@ -1,0 +1,53 @@
+Previewing update (dev):
+
+@ previewing update....
+ +  pulumi:pulumi:Stack lab04-pulumi-dev create 
+ +  yandex:index:VpcNetwork lab-network create 
+ +  yandex:index:VpcSubnet lab-subnet create 
+ +  yandex:index:VpcSecurityGroup lab-security-group create 
+ +  yandex:index:ComputeInstance lab-vm create 
+ +  pulumi:pulumi:Stack lab04-pulumi-dev create DEBUG: Using Python: /home/blxxdclxud/assignments/DevOps-Core-Course/pulumi/venv/bin/python3
+ +  pulumi:pulumi:Stack lab04-pulumi-dev create 1 message
+Diagnostics:
+  pulumi:pulumi:Stack (lab04-pulumi-dev):
+    DEBUG: Using Python: /home/blxxdclxud/assignments/DevOps-Core-Course/pulumi/venv/bin/python3
+
+Outputs:
+    ssh_connection: [unknown]
+    vm_id         : [unknown]
+    vm_public_ip  : [unknown]
+
+Resources:
+    + 5 to create
+
+Updating (dev):
+
+@ updating....
+ +  pulumi:pulumi:Stack lab04-pulumi-dev creating (0s) 
+ +  yandex:index:VpcNetwork lab-network creating (0s) 
+@ updating........
+ +  yandex:index:VpcNetwork lab-network created (5s) 
+ +  yandex:index:VpcSubnet lab-subnet creating (0s) 
+ +  yandex:index:VpcSecurityGroup lab-security-group creating (0s) 
+@ updating....
+ +  yandex:index:VpcSubnet lab-subnet created (0.69s) 
+@ updating.....
+ +  yandex:index:VpcSecurityGroup lab-security-group created (2s) 
+ +  yandex:index:ComputeInstance lab-vm creating (0s) 
+^C received; cancelling. If you would like to terminate immediately, press ^C again.
+Note that terminating immediately may lead to orphaned resources and other inconsistencies.
+
+@ updating...........................................
+ +  yandex:index:ComputeInstance lab-vm created (40s) 
+ +  pulumi:pulumi:Stack lab04-pulumi-dev creating (48s) error: update canceled
+ +  pulumi:pulumi:Stack lab04-pulumi-dev **creating failed** 1 error
+Diagnostics:
+  pulumi:pulumi:Stack (lab04-pulumi-dev):
+    error: update canceled
+
+Resources:
+    + 5 created
+    1 errored
+
+Duration: 50s
+

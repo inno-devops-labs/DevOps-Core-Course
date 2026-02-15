@@ -1,0 +1,4 @@
+name: lab04-pulumi
+runtime:
+  name: python
+description: Lab 04 - Yandex Cloud VM with Pulumi
