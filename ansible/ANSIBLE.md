@@ -23,13 +23,9 @@ This document outlines the configuration and deployment process for the custom D
      |   |   |   |-- handlers
      |   |   |   |   `-- main.yml
      |   |   |   |-- tasks
-     |   |   |   |   |-- docker_users.yml
      |   |   |   |   |-- install_compose.yml
      |   |   |   |   |-- install_docker.yml
-     |   |   |   |   |-- main.yml
-     |   |   |   |   |-- manager.yml
-     |   |   |   |   |-- secure_docker.yml
-     |   |   |   |   `-- setup_debian.yml  
+     |   |   |   |   |-- main.yml 
      |   |   |   `-- README.md
      |   |   `-- web_app
      |   |       |-- defaults
