@@ -145,3 +145,11 @@ secrets:
     SOME_SECRET: "P@ssw0rd"
     username: "appuser"
     password: "P@ssw0rd"
+
+statefulset:
+  podManagementPolicy: Parallel
+
+persistence:
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
