@@ -1,3 +1,6 @@
+![Go CI](https://github.com/mashfeii/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)
+![Coverage](https://codecov.io/gh/mashfeii/DevOps-Core-Course/branch/master/graph/badge.svg?flag=go)
+
 # devops info service (go)
 
 a go web service that provides detailed information about itself and its runtime environment
@@ -98,6 +101,29 @@ returns service health status for monitoring
 | PORT | 8080 | server port |
 
 ## testing
+
+### unit tests
+
+```bash
+# run tests
+go test -v
+
+# run tests with coverage
+go test -coverprofile=coverage.out
+go tool cover -func=coverage.out
+
+# generate html coverage report
+go tool cover -html=coverage.out -o coverage.html
+```
+
+### what's tested
+
+- `GET /` endpoint: response structure, service info, system info, runtime info
+- `GET /health` endpoint: status code, health status, uptime
+- 404 handler: error response format
+- helper functions: uptime calculation
+
+### manual testing
 
 ```bash
 # test main endpoint
