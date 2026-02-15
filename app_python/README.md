@@ -1,3 +1,6 @@
+![Python CI](https://github.com/mashfeii/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+![Coverage](https://codecov.io/gh/mashfeii/DevOps-Core-Course/branch/master/graph/badge.svg)
+
 # devops info service
 
 a python web service that provides detailed information about itself and its runtime environment
@@ -108,6 +111,39 @@ returns service health status for monitoring
 | DEBUG    | false   | enable debug mode   |
 
 ## testing
+
+### unit tests
+
+```bash
+# install dev dependencies
+pip install -r requirements-dev.txt
+
+# run tests
+pytest
+
+# run tests with verbose output
+pytest -v
+
+# run tests with coverage
+pytest --cov=. --cov-report=term
+```
+
+### test structure
+
+```
+tests/
+├── __init__.py       # test package marker
+├── conftest.py       # pytest fixtures (test client)
+└── test_app.py       # unit tests for all endpoints
+```
+
+### what's tested
+
+- `GET /` endpoint: response structure, data types, required fields
+- `GET /health` endpoint: status code, response format, health status
+- error handlers: 404 responses with correct format
+
+### manual testing
 
 ```bash
 # test main endpoint
