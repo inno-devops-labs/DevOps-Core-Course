@@ -11,3 +11,13 @@ __MACOSX/
 
 .DS_Store
 .env
+
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.*
+**/.terraform/*
+**/*.tfstate
+**/*.tfstate.*
+
+pulumi/venv/
