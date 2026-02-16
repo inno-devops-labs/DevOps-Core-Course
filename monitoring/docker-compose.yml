@@ -1,33 +1,48 @@
 version: "3.9"
 
 networks:
-  monitoring:
+  default:
+    name: monitoring
+    
+x-logging:
+  &default-logging
+  driver: "json-file"
+  options:
+    tag: "{{.ImageName}}|{{.Name}}"
+    max-size: '50m'
+    max-file: '5'
+
+x-deploy:
+  &default-deploy
+  resources:
+    limits:
+      memory: 200M
 
 services:
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:2.9.2
+    mem_limit: 200m
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - monitoring
+    logging: *default-logging
+    deploy: *default-deploy
 
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:2.9.2
     volumes:
       - /var/log:/var/log
       - ./promtail.yml:/etc/promtail/config.yml
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
     command: -config.file=/etc/promtail/config.yml
-    networks:
-      - monitoring
+    logging: *default-logging
+    deploy: *default-deploy
 
   grafana:
     environment:
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_FEATURE_TOGGLES_ENABLE=alertingSimplifiedRouting,alertingQueryAndExpressionsStepMode
     entrypoint:
       - sh
       - -euc
@@ -36,7 +51,7 @@ services:
         cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
         apiVersion: 1
         datasources:
-        - name: loki
+        - name: Loki
           type: loki
           access: proxy 
           orgId: 1
@@ -45,17 +60,45 @@ services:
           isDefault: true
           version: 1
           editable: false
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          orgId: 1
+          url: http://prometheus:9090
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: true
         EOF
         /run.sh
     image: grafana/grafana:latest
     ports:
       - "3000:3000"
-    networks:
-      - monitoring
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+    logging: *default-logging
+    deploy: *default-deploy
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9095:9090"
+    logging: *default-logging
+    deploy: *default-deploy
 
   app_python:
     image: karamkhaddourpro/my-fastapi-app:latest
     ports:
       - "8878:8000"
-    networks:
-      - monitoring
+    healthcheck:
+      test: ["CMD", "curl", "-f", "app_python:8878"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+    logging: *default-logging
+    deploy: *default-deploy

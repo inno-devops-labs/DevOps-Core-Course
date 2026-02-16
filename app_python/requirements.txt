@@ -5,3 +5,4 @@ uvicorn==0.30.3
 jinja2==3.1.4
 pytest==8.3.4
 flake8==7.1.1
+prometheus_client==0.20.0
