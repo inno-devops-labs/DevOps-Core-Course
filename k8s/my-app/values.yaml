@@ -9,7 +9,7 @@ replicaCount: 3
 image:
   repository: karamkhaddourpro/my-fastapi-app
   # This sets the pull policy for images.
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
@@ -38,8 +38,10 @@ podAnnotations: {}
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  fsGroup: 1000
+  runAsUser: 1000
+  runAsGroup: 1000
 
 securityContext: {}
   # capabilities:
@@ -129,11 +131,12 @@ livenessProbe:
   httpGet:
     path: /
     port: http
+  initialDelaySeconds: 90
 readinessProbe:
   httpGet:
     path: /
     port: http
-
+  initialDelaySeconds: 90
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
   enabled: false
@@ -141,6 +144,15 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
+
+volumeClaimTemplates:
+- metadata:
+    name: data
+  spec:
+    accessModes: [ "ReadWriteOnce" ]
+    resources:
+      requests:
+        storage: 1Gi
 
 volumes:
  - name: config-volume
@@ -151,9 +163,17 @@ volumeMounts:
   - name: config-volume
     mountPath: /config.json
     subPath: config.json
+  - name: data
+    mountPath: /app/data
 
 nodeSelector: {}
 
 tolerations: []
 
 affinity: {}
+
+env:
+  - name: VISITS_DIR
+    value: /app/data
+
+podManagementPolicy: Parallel

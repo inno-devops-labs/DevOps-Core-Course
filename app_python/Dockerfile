@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=appuser:appgroup main.py .
 COPY --chown=appuser:appgroup templates/ templates/
 
-RUN mkdir -p /data && echo "0" > /data/visits.txt && chown -R appuser:appgroup /data
+RUN mkdir -p /app/data && echo "0" > /app/data/visits.txt && chown -R appuser:appgroup /app/data
 
 USER appuser
 

@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "my-app.fullname" . }}
   labels:
@@ -8,6 +8,8 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  volumeClaimTemplates:
+  {{- toYaml .Values.volumeClaimTemplates | nindent 4 }}
   selector:
     matchLabels:
       {{- include "my-app.selectorLabels" . | nindent 6 }}
@@ -27,6 +29,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      podManagementPolicy: {{ .Values.podManagementPolicy }}
       serviceAccountName: {{ include "my-app.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
       securityContext:
@@ -43,6 +46,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: my-app-config
+          env:
+            {{- toYaml .Values.env | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}

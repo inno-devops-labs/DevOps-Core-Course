@@ -1,5 +1,6 @@
 import datetime as dt
 import pytz
+import os
 import time
 from fastapi import FastAPI, Response
 from fastapi.responses import HTMLResponse, PlainTextResponse
@@ -13,8 +14,14 @@ app = FastAPI()
 # Set up Jinja2 for rendering templates
 templates = Jinja2Templates(directory="templates")
 
-# Path to the visits file
-VISITS_FILE = "/data/visits.txt"
+VISITS_DIR = os.getenv("VISITS_DIR", "./data")
+VISITS_FILE = os.path.join(VISITS_DIR, "visits.txt")
+
+os.makedirs(VISITS_DIR, exist_ok=True)
+
+if not os.path.exists(VISITS_FILE):
+    with open(VISITS_FILE, "w") as f:
+        f.write("0")
 
 def get_moscow_time():
     """Returns the current time in Moscow as a dictionary."""
