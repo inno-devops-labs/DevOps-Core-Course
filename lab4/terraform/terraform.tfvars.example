@@ -1,0 +1,17 @@
+# Optional if folder_id is enough in your setup.
+cloud_id  = null
+folder_id = "your-folder-id"
+zone      = "ru-central1-a"
+
+# Restrict SSH to your current external IP (/32).
+ssh_allowed_cidr    = "203.0.113.10/32"
+ssh_user            = "ubuntu"
+ssh_public_key_path = "/Users/your-user/.ssh/id_ed25519.pub"
+
+# Optional: set if your folder cannot create additional VPC networks.
+# Terraform will reuse subnet/network from this existing instance.
+existing_instance_id_for_network = null
+
+# Leave null if you authenticate via environment variables or YC CLI profile.
+yc_token                 = null
+service_account_key_file = null
