@@ -82,3 +82,54 @@ docker run -d -p 8000:8000 karamkhaddourpro/my-fastapi-app
 ```bash
 pytest 
 ```
+
+## Lab 12 Additions – Visit Counter & Persistence
+
+These additions were implemented as part of Lab 12:
+
+1. **Persistent Visit Counter**
+   - Each visit to the main page (`/`) increments a counter stored in `./data/visits.txt`.
+   - The counter persists across container restarts because of the Docker volume.
+
+2. **New Endpoint `/visits`**
+   - Returns the total number of visits as plain text.
+   - Example:
+
+     ```bash
+     curl http://127.0.0.1:8000/visits
+     # Output: 5
+     ```
+
+3. **Updated `/` Endpoint**
+   - Now increments the visit counter automatically on each page load.
+   - Optionally, the visit count can be displayed on the main page (requires updating `index.html`).
+
+4. **Docker Compose Volume**
+   - Ensures `visits.txt` persists on the host machine:  
+
+     ```yaml
+     volumes:
+       - ./data:/data
+     ```
+
+
+## Docker Compose
+
+The `docker-compose.yml` provides persistent storage for the visit counter:
+
+```yaml
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data  # Mount host data folder for persistent visit count
+```
+Run the app with:
+```
+docker compose up --build
+```
+
+This ensures that visits.txt persists across container restarts.
+
