@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/KaramKhaddour/S25-core-course-labs.git
     targetRevision: lab13
-    path: <k8s/my-app>
+    path: k8s/my-app
     helm:
       valueFiles:
         - values.yaml
