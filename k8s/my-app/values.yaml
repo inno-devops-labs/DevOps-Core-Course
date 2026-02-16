@@ -5,6 +5,17 @@
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 
+# Secret for Kubernetes for lab11
+mySecret: SuperSecret123
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "64Mi"
+  limits:
+    cpu: "500m"
+    memory: "128Mi"
+
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   repository: karamkhaddourpro/my-fastapi-app
@@ -31,11 +42,18 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+
 # This is for setting Kubernetes Annotations to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-podAnnotations: {}
-# This is for setting Kubernetes Labels to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podAnnotations:
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/role: "internal-app"
+  vault.hashicorp.com/agent-inject-secret-MY_PASS: "secret/data/myapp"
+  vault.hashicorp.com/agent-inject-template-MY_PASS: |
+    {{- with secret "secret/data/myapp" -}}
+    {{ .Data.data.MY_PASS }}
+    {{- end -}}
+
 podLabels: {}
 
 podSecurityContext: {}
@@ -160,3 +178,5 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+
