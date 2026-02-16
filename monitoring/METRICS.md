@@ -4,14 +4,14 @@
 
 - screenshot that confirm the successful setup
 
-![prometheus](./screenshots/prmetheusTargets.png)
+![targets](./screenshots/prmetheusTargets.png)
 
 - Dashboards for Loki
 
 ![loki 1](./screenshots/lokiDashboard.png)
 
 
-![loki 1](./screenshots/lokidashboard2.png)
+![loki 2](./screenshots/lokidashboard2.png)
 
 
 - Dashboards for Prometheus 
@@ -20,7 +20,7 @@
 
 ![prometheus 2](./screenshots/prometheusDashBoard2.png)
 
-![prometheus 2](./screenshots/prometheusDashBoard3.png)
+![prometheus 3](./screenshots/prometheusDashBoard3.png)
 
 - Metrics for python web app
 
