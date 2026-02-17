@@ -13,10 +13,14 @@ zone = config.get("zone") or "ru-central1-a"
 vm_name = config.get("vm_name") or "lab04-pulumi-vm"
 ssh_user = config.get("ssh_user") or "ubuntu"
 ssh_public_key_path = config.get("ssh_public_key_path") or "~/.ssh/id_rsa.pub"
-ssh_allowed_cidr = config.require("ssh_allowed_cidr")  # CIDR allowed to SSH, e.g. 203.0.113.10/32
+# CIDR allowed to SSH, e.g. 203.0.113.10/32
+ssh_allowed_cidr = config.require("ssh_allowed_cidr")
 
 # Read SSH public key
-with open(ssh_public_key_path.replace("~", pulumi.runtime.get_config("HOME") or "~"), "r") as f:
+ssh_key_expanded = ssh_public_key_path.replace(
+    "~", pulumi.runtime.get_config("HOME") or "~"
+)
+with open(ssh_key_expanded, "r") as f:
     ssh_public_key = f.read().strip()
 
 # Get latest Ubuntu 24.04 image
