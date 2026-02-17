@@ -35,6 +35,25 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+        - name: install
+          image: busybox:1.36.1
+          command: ["wget", "-O", "/static-directory/index.html", "http://info.cern.ch"]
+          volumeMounts:
+            - name: static-directory
+              mountPath: "/static-directory"
+        - name: ping
+          image: busybox:1.36.1
+          command: ["sh", "-c", "echo ping > /static-directory/ping-pong.txt"]
+          volumeMounts:
+            - name: static-directory
+              mountPath: "/static-directory"
+        - name: pong
+          image: busybox:1.36.1
+          command: ["sh", "-c", "echo pong >> /static-directory/ping-pong.txt"]
+          volumeMounts:
+            - name: static-directory
+              mountPath: "/static-directory"
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}

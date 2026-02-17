@@ -153,6 +153,13 @@ volumeClaimTemplates:
     resources:
       requests:
         storage: 1Gi
+- metadata:
+    name: static-directory  
+  spec:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 1Gi
 
 volumes:
  - name: config-volume
@@ -165,7 +172,8 @@ volumeMounts:
     subPath: config.json
   - name: data
     mountPath: /app/data
-
+  - name: static-directory  
+    mountPath: "/static-directory"
 nodeSelector: {}
 
 tolerations: []
@@ -177,3 +185,5 @@ env:
     value: /app/data
 
 podManagementPolicy: Parallel
+
+
