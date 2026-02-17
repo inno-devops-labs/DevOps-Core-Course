@@ -16,3 +16,4 @@ provider "registry.terraform.io/yandex-cloud/yandex" {
     "h1:+uf4EBRLDwNYIvZsGK/ZUzN3sGzJaXcUngyYSIJoyyQ=",
   ]
 }
+
