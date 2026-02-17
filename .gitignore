@@ -1,1 +1,66 @@
-test
+# Credentials / local secrets
+aws-creds
+.env
+.env.*
+credentials
+*.pem
+*.key
+*.p12
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.*
+**/terraform.tfvars
+**/*.tfvars
+**/crash.log
+**/crash.*.log
+terraform/keys/*
+!terraform/keys/*.pub
+
+# Pulumi
+**/.pulumi/
+Pulumi.*.yaml
+**/venv/
+**/.venv/
+**/__pycache__/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Terraform (root and nested)
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/terraform.tfvars
+**/*.tfvars
+**/.terraform.lock.hcl
+
+# Pulumi
+pulumi/venv/
+pulumi/.venv/
+pulumi/__pycache__/
+pulumi/Pulumi.*.yaml
+
+# Cloud credentials / keys
+*.pem
+*.key
+*.p12
+*.json
+credentials
+
+# Lab-specific local artifacts
+awscliv2.zip
