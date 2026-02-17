@@ -4,6 +4,7 @@ test
 *.log
 
 # Terraform
+.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 .terraform/
