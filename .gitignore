@@ -1,1 +1,15 @@
 test
+
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+terraform.tfvars
+
+# Sensitive files
+secrets.auto.tfvars
+
+Pulumi.*.yaml
+venv/
+__pycache__/
