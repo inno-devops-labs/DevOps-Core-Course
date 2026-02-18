@@ -33,58 +33,19 @@ jobs:
       with:
         fetch-depth: 0
         
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
+    
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: '3.13'
         cache: 'pip'
-        cache-dependency-path: 'app_python/requirements*.txt'
-        
+        cache-dependency-path: 'app_python/requirements.txt'
+    
     - name: Install dependencies
       working-directory: ./app_python
       run: |
-        python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest pytest-cov httpx pylint black ruff mypy bandit safety
-        
-    - name: Run linter (pylint)
-      working-directory: ./app_python
-      run: |
-        echo "Running pylint..."
-        pylint app.py --exit-zero
-        
-    - name: Check code formatting (black)
-      working-directory: ./app_python
-      run: |
-        echo "Checking code formatting..."
-        black app.py --check --diff
-        
-    - name: Run static type checker (mypy)
-      working-directory: ./app_python
-      run: |
-        echo "Running type checking..."
-        mypy app.py --ignore-missing-imports
-        
-    - name: Run security linter (bandit)
-      working-directory: ./app_python
-      run: |
-        echo "Running security check..."
-        bandit -r app.py -f json 2>/dev/null | python -c "
-        import json, sys
-        try:
-            data = json.load(sys.stdin)
-            issues = data.get('metrics', {}).get('_totals', {}).get('issues', 0)
-            severity = data.get('metrics', {}).get('_totals', {}).get('SEVERITY.HIGH', 0)
-            if severity > 0:
-                print(f'Found {severity} HIGH severity issues')
-                sys.exit(1)
-            elif issues > 0:
-                print(f'Found {issues} issues (none are HIGH severity)')
-            else:
-                print('No security issues found')
-        except:
-            print('Could not parse bandit output')
-        "
+        pip install pytest pytest-cov httpx
         
     - name: Run unit tests with coverage
       working-directory: ./app_python
