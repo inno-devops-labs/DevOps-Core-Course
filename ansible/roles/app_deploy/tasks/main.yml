@@ -1,0 +1,61 @@
+- name: Log in to Docker Hub
+  community.docker.docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+  no_log: false
+  become: yes
+
+- name: Pull Docker image
+  community.docker.docker_image:
+    name: "{{ docker_image }}"
+    tag: "{{ docker_image_tag }}"
+    source: pull
+    force_source: yes
+  become: yes
+  notify: restart app container
+
+- name: Check if container is running
+  community.docker.docker_container_info:
+    name: "{{ app_container_name }}"
+  register: container_info
+  become: yes
+
+- name: Stop and remove existing container if it exists
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    state: absent
+  when: container_info.exists
+  become: yes
+
+- name: Run Docker container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: started
+    restart_policy: "{{ app_restart_policy }}"
+    ports:
+      - "{{ app_port }}:{{ app_port }}"
+    env: "{{ app_env_vars }}"
+  become: yes
+  register: container_run
+
+- name: Wait for application to be ready
+  wait_for:
+    port: "{{ app_port }}"
+    delay: 5
+    timeout: 30
+
+- name: Verify health endpoint
+  uri:
+    url: "http://localhost:{{ app_port }}/health"
+    method: GET
+    status_code: 200
+  register: health_result
+  until: health_result.status == 200
+  retries: 5
+  delay: 2
+
+- name: Display health check result
+  debug:
+    msg: "Health check passed! Response: {{ health_result.json }}"
+  when: health_result.status == 200

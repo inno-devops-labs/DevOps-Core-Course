@@ -1,0 +1,7 @@
+- name: Provision web servers with common tools and Docker
+  hosts: webservers
+  become: yes
+
+  roles:
+    - common
+    - docker
