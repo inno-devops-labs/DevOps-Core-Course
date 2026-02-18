@@ -1,0 +1,11 @@
+name: lab04-pulumi
+description: Lab04 Pulumi VPS setup
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python

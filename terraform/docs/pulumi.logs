@@ -1,0 +1,61 @@
+mac@MacNexonm pulumi % source venv/bin/activate
+(venv) mac@MacNexonm pulumi % pulumi preview
+Enter your passphrase to unlock config/secrets
+    (set PULUMI_CONFIG_PASSPHRASE or PULUMI_CONFIG_PASSPHRASE_FILE to remember):  
+Enter your passphrase to unlock config/secrets
+Previewing update (dev):
+     Type                               Name              Plan       
+ +   pulumi:pulumi:Stack                lab04-pulumi-dev  create     
+ +   └─ pulumi-python:dynamic:Resource  vps-setup         create     
+
+Outputs:
+    ssh_connection: "ssh root@31.56.176.110"
+    vm_public_ip  : "31.56.176.110"
+
+Resources:
+    + 2 to create
+
+(venv) mac@MacNexonm pulumi % pulumi up
+
+Enter your passphrase to unlock config/secrets
+    (set PULUMI_CONFIG_PASSPHRASE or PULUMI_CONFIG_PASSPHRASE_FILE to remember):  
+Enter your passphrase to unlock config/secrets
+Previewing update (dev):
+     Type                               Name              Plan       
+ +   pulumi:pulumi:Stack                lab04-pulumi-dev  create     
+ +   └─ pulumi-python:dynamic:Resource  vps-setup         create     
+
+Outputs:
+    ssh_connection: "ssh root@31.56.176.110"
+    vm_public_ip  : "31.56.176.110"
+
+Resources:
+    + 2 to create
+
+Do you want to perform this update? yes
+Updating (dev):
+     Type                               Name              Status           Info
+ +   pulumi:pulumi:Stack                lab04-pulumi-dev  created (2s)     3 messages
+ +   └─ pulumi-python:dynamic:Resource  vps-setup         created (2s)     
+
+Diagnostics:
+  pulumi:pulumi:Stack (lab04-pulumi-dev):
+    WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+    I0000 00:00:1771402962.479311 8311745 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+    I0000 00:00:1771402964.050362 8311745 fork_posix.cc:71] Other threads are currently calling into gRPC, skipping fork() handlers
+
+Outputs:
+    ssh_connection: "ssh root@31.56.176.110"
+    vm_public_ip  : "31.56.176.110"
+
+Resources:
+    + 2 created
+
+Duration: 3s
+
+(venv) mac@MacNexonm pulumi % curl http://31.56.176.110
+Lab04 VPS configured by Pulumi
+(venv) mac@MacNexonm pulumi % ssh -i /Users/mac/.ssh/id_ed25519 root@31.56.176.110 "nginx -v && cat /var/www/html/index.html"
+Lab04 VPS configured by Pulumi
+nginx version: nginx/1.24.0 (Ubuntu)
+(venv) mac@MacNexonm pulumi % 

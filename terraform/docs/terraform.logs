@@ -1,0 +1,206 @@
+mac@MacNexonm terraform % terraform apply
+null_resource.vps_setup: Refreshing state... [id=6493610504376391030]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+-/+ destroy and then create replacement
+
+Terraform will perform the following actions:
+
+  # null_resource.vps_setup is tainted, so must be replaced
+-/+ resource "null_resource" "vps_setup" {
+      ~ id = "6493610504376391030" -> (known after apply)
+    }
+
+Plan: 1 to add, 0 to change, 1 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+  Enter a value: yes
+
+null_resource.vps_setup: Destroying... [id=6493610504376391030]
+null_resource.vps_setup: Destruction complete after 0s
+null_resource.vps_setup: Creating...
+null_resource.vps_setup: Provisioning with 'remote-exec'...
+null_resource.vps_setup (remote-exec): Connecting to remote host via SSH...
+null_resource.vps_setup (remote-exec):   Host: 31.56.176.110
+null_resource.vps_setup (remote-exec):   User: root
+null_resource.vps_setup (remote-exec):   Password: false
+null_resource.vps_setup (remote-exec):   Private key: true
+null_resource.vps_setup (remote-exec):   Certificate: false
+null_resource.vps_setup (remote-exec):   SSH Agent: false
+null_resource.vps_setup (remote-exec):   Checking Host Key: false
+null_resource.vps_setup (remote-exec):   Target Platform: unix
+null_resource.vps_setup (remote-exec): Connected!
+null_resource.vps_setup (remote-exec): 0% [Working]
+null_resource.vps_setup (remote-exec): Get:1 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+null_resource.vps_setup (remote-exec): 0% [Connecting to nova.clouds.archive.u
+null_resource.vps_setup (remote-exec): 0% [Waiting for headers]
+null_resource.vps_setup (remote-exec): Hit:2 http://nova.clouds.archive.ubuntu.com/ubuntu noble InRelease
+null_resource.vps_setup (remote-exec): 0% [Waiting for headers]
+null_resource.vps_setup (remote-exec): Get:3 http://nova.clouds.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+null_resource.vps_setup (remote-exec): 0% [3 InRelease 0 B/126 kB 0%]
+null_resource.vps_setup (remote-exec): 0% [3 InRelease 35.9 kB/126 kB 28%]
+null_resource.vps_setup (remote-exec): Get:4 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1463 kB]
+null_resource.vps_setup (remote-exec): 0% [3 InRelease 42.6 kB/126 kB 34%] [4
+null_resource.vps_setup (remote-exec): 0% [Waiting for headers]
+null_resource.vps_setup (remote-exec): 0% [4 Packages store 0 B] [Waiting for
+null_resource.vps_setup (remote-exec): Get:5 http://nova.clouds.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+null_resource.vps_setup (remote-exec): 0% [4 Packages store 0 B] [5 InRelease
+null_resource.vps_setup (remote-exec): Get:6 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [933 kB]
+null_resource.vps_setup (remote-exec): 0% [4 Packages store 0 B] [5 InRelease
+null_resource.vps_setup (remote-exec): 0% [4 Packages store 0 B] [6 Packages 7
+null_resource.vps_setup (remote-exec): 0% [4 Packages store 0 B]
+null_resource.vps_setup (remote-exec): 0% [4 Packages store 0 B]
+null_resource.vps_setup (remote-exec): 0% [4 Packages store 0 B]
+null_resource.vps_setup (remote-exec): Get:7 http://nova.clouds.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [2646 kB]
+null_resource.vps_setup (remote-exec): 0% [4 Packages store 0 B] [7 Packages 2
+null_resource.vps_setup (remote-exec): 48% [4 Packages store 8217 kB] [7 Packa
+null_resource.vps_setup (remote-exec): 49% [7 Packages 621 kB/2646 kB 23%]
+null_resource.vps_setup (remote-exec): 49% [6 Packages store 0 B] [7 Packages
+null_resource.vps_setup (remote-exec): 67% [6 Packages store 0 B]
+null_resource.vps_setup (remote-exec): Get:8 http://nova.clouds.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1555 kB]
+null_resource.vps_setup (remote-exec): 67% [6 Packages store 0 B] [8 Packages
+null_resource.vps_setup (remote-exec): 70% [8 Packages 225 kB/1555 kB 14%]
+null_resource.vps_setup (remote-exec): 70% [7 Packages store 0 B] [8 Packages
+null_resource.vps_setup (remote-exec): Get:9 http://nova.clouds.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1766 kB]
+null_resource.vps_setup (remote-exec): 83% [7 Packages store 0 B] [9 Packages
+null_resource.vps_setup (remote-exec): 98% [7 Packages store 0 B]
+null_resource.vps_setup (remote-exec): 99% [Working]
+null_resource.vps_setup (remote-exec): 99% [8 Packages store 0 B]
+null_resource.vps_setup (remote-exec): 99% [Working]
+null_resource.vps_setup (remote-exec): 99% [9 Packages store 0 B]
+null_resource.vps_setup (remote-exec): 100% [Working]
+null_resource.vps_setup (remote-exec): Fetched 8742 kB in 3s (2533 kB/s)
+null_resource.vps_setup (remote-exec): Reading package lists... 0%
+null_resource.vps_setup (remote-exec): Reading package lists... 0%
+null_resource.vps_setup (remote-exec): Reading package lists... 0%
+null_resource.vps_setup (remote-exec): Reading package lists... 4%
+null_resource.vps_setup (remote-exec): Reading package lists... 4%
+null_resource.vps_setup (remote-exec): Reading package lists... 24%
+null_resource.vps_setup (remote-exec): Reading package lists... 41%
+null_resource.vps_setup (remote-exec): Reading package lists... 54%
+null_resource.vps_setup (remote-exec): Reading package lists... 54%
+null_resource.vps_setup (remote-exec): Reading package lists... 54%
+null_resource.vps_setup (remote-exec): Reading package lists... 54%
+null_resource.vps_setup (remote-exec): Reading package lists... 55%
+null_resource.vps_setup (remote-exec): Reading package lists... 55%
+null_resource.vps_setup (remote-exec): Reading package lists... 62%
+null_resource.vps_setup (remote-exec): Reading package lists... 62%
+null_resource.vps_setup (remote-exec): Reading package lists... 62%
+null_resource.vps_setup (remote-exec): Reading package lists... 68%
+null_resource.vps_setup (remote-exec): Reading package lists... 68%
+null_resource.vps_setup (remote-exec): Reading package lists... 79%
+null_resource.vps_setup (remote-exec): Reading package lists... 79%
+null_resource.vps_setup (remote-exec): Reading package lists... 79%
+null_resource.vps_setup (remote-exec): Reading package lists... 79%
+null_resource.vps_setup (remote-exec): Reading package lists... 79%
+null_resource.vps_setup (remote-exec): Reading package lists... 79%
+null_resource.vps_setup (remote-exec): Reading package lists... 80%
+null_resource.vps_setup (remote-exec): Reading package lists... 80%
+null_resource.vps_setup (remote-exec): Reading package lists... 85%
+null_resource.vps_setup (remote-exec): Reading package lists... 85%
+null_resource.vps_setup (remote-exec): Reading package lists... 89%
+null_resource.vps_setup (remote-exec): Reading package lists... 89%
+null_resource.vps_setup (remote-exec): Reading package lists... 99%
+null_resource.vps_setup (remote-exec): Reading package lists... 99%
+null_resource.vps_setup (remote-exec): Reading package lists... 99%
+null_resource.vps_setup (remote-exec): Reading package lists... 99%
+null_resource.vps_setup (remote-exec): Reading package lists... Done
+null_resource.vps_setup (remote-exec): Reading package lists... 0%
+null_resource.vps_setup (remote-exec): Reading package lists... 100%
+null_resource.vps_setup (remote-exec): Reading package lists... Done
+null_resource.vps_setup (remote-exec): Building dependency tree... 0%
+null_resource.vps_setup (remote-exec): Building dependency tree... 0%
+null_resource.vps_setup (remote-exec): Building dependency tree... 50%
+null_resource.vps_setup (remote-exec): Building dependency tree... 50%
+null_resource.vps_setup (remote-exec): Building dependency tree... Done
+null_resource.vps_setup (remote-exec): Reading state information... 0%
+null_resource.vps_setup (remote-exec): Reading state information... 0%
+null_resource.vps_setup (remote-exec): Reading state information... Done
+null_resource.vps_setup: Still creating... [00m10s elapsed]
+null_resource.vps_setup (remote-exec): The following additional packages will be installed:
+null_resource.vps_setup (remote-exec):   nginx-common
+null_resource.vps_setup (remote-exec): Suggested packages:
+null_resource.vps_setup (remote-exec):   fcgiwrap nginx-doc ssl-cert
+null_resource.vps_setup (remote-exec): The following NEW packages will be installed:
+null_resource.vps_setup (remote-exec):   nginx nginx-common
+null_resource.vps_setup (remote-exec): 0 upgraded, 2 newly installed, 0 to remove and 193 not upgraded.
+null_resource.vps_setup (remote-exec): Need to get 565 kB of archives.
+null_resource.vps_setup (remote-exec): After this operation, 1596 kB of additional disk space will be used.
+null_resource.vps_setup (remote-exec): 0% [Working]
+null_resource.vps_setup (remote-exec): Get:1 http://nova.clouds.archive.ubuntu.com/ubuntu noble-updates/main amd64 nginx-common all 1.24.0-2ubuntu7.6 [43.5 kB]
+null_resource.vps_setup (remote-exec): 0% [1 nginx-common 0 B/43.5 kB 0%]
+null_resource.vps_setup (remote-exec): 16% [Working]
+null_resource.vps_setup (remote-exec): Get:2 http://nova.clouds.archive.ubuntu.com/ubuntu noble-updates/main amd64 nginx amd64 1.24.0-2ubuntu7.6 [521 kB]
+null_resource.vps_setup (remote-exec): 16% [2 nginx 2201 B/521 kB 0%]
+null_resource.vps_setup (remote-exec): 100% [Working]
+null_resource.vps_setup (remote-exec): Fetched 565 kB in 1s (773 kB/s)
+null_resource.vps_setup (remote-exec): debconf: delaying package configuration, since apt-utils is not installed
+null_resource.vps_setup (remote-exec): Selecting previously unselected package nginx-common.
+null_resource.vps_setup (remote-exec): (Reading database ...
+null_resource.vps_setup (remote-exec): (Reading database ... 5%
+null_resource.vps_setup (remote-exec): (Reading database ... 10%
+null_resource.vps_setup (remote-exec): (Reading database ... 15%
+null_resource.vps_setup (remote-exec): (Reading database ... 20%
+null_resource.vps_setup (remote-exec): (Reading database ... 25%
+null_resource.vps_setup (remote-exec): (Reading database ... 30%
+null_resource.vps_setup (remote-exec): (Reading database ... 35%
+null_resource.vps_setup (remote-exec): (Reading database ... 40%
+null_resource.vps_setup (remote-exec): (Reading database ... 45%
+null_resource.vps_setup (remote-exec): (Reading database ... 50%
+null_resource.vps_setup (remote-exec): (Reading database ... 55%
+null_resource.vps_setup (remote-exec): (Reading database ... 60%
+null_resource.vps_setup (remote-exec): (Reading database ... 65%
+null_resource.vps_setup (remote-exec): (Reading database ... 70%
+null_resource.vps_setup (remote-exec): (Reading database ... 75%
+null_resource.vps_setup (remote-exec): (Reading database ... 80%
+null_resource.vps_setup (remote-exec): (Reading database ... 85%
+null_resource.vps_setup (remote-exec): (Reading database ... 90%
+null_resource.vps_setup (remote-exec): (Reading database ... 95%
+null_resource.vps_setup (remote-exec): (Reading database ... 100%
+null_resource.vps_setup (remote-exec): (Reading database ... 29806 files and directories currently installed.)
+null_resource.vps_setup (remote-exec): Preparing to unpack .../nginx-common_1.24.0-2ubuntu7.6_all.deb ...
+null_resource.vps_setup (remote-exec): Unpacking nginx-common (1.24.0-2ubuntu7.6) ...
+null_resource.vps_setup (remote-exec): Selecting previously unselected package nginx.
+null_resource.vps_setup (remote-exec): Preparing to unpack .../nginx_1.24.0-2ubuntu7.6_amd64.deb ...
+null_resource.vps_setup (remote-exec): Unpacking nginx (1.24.0-2ubuntu7.6) ...
+null_resource.vps_setup (remote-exec): Setting up nginx-common (1.24.0-2ubuntu7.6) ...
+null_resource.vps_setup (remote-exec): debconf: unable to initialize frontend: Dialog
+null_resource.vps_setup (remote-exec): debconf: (No usable dialog-like program is installed, so the dialog based frontend cannot be used. at /usr/share/perl5/Debconf/FrontEnd/Dialog.pm line 79.)
+null_resource.vps_setup (remote-exec): debconf: falling back to frontend: Readline
+null_resource.vps_setup (remote-exec): debconf: unable to initialize frontend: Readline
+null_resource.vps_setup (remote-exec): debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/x86_64-linux-gnu/perl/5.38.2 /usr/local/share/perl/5.38.2 /usr/lib/x86_64-linux-gnu/perl5/5.38 /usr/share/perl5 /usr/lib/x86_64-linux-gnu/perl-base /usr/lib/x86_64-linux-gnu/perl/5.38 /usr/share/perl/5.38 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8.)
+null_resource.vps_setup (remote-exec): debconf: falling back to frontend: Teletype
+null_resource.vps_setup (remote-exec): Created symlink /etc/systemd/system/multi-user.target.wants/nginx.service → /usr/lib/systemd/system/nginx.service.
+null_resource.vps_setup (remote-exec): Setting up nginx (1.24.0-2ubuntu7.6) ...
+null_resource.vps_setup (remote-exec):  * Upgrading binary nginx       
+null_resource.vps_setup (remote-e[ OK ]
+null_resource.vps_setup (remote-exec): Synchronizing state of nginx.service with SysV service script with /usr/lib/systemd/systemd-sysv-install.
+null_resource.vps_setup (remote-exec): Executing: /usr/lib/systemd/systemd-sysv-install enable nginx
+null_resource.vps_setup: Still creating... [00m20s elapsed]
+null_resource.vps_setup: Creation complete after 21s [id=4464433007309882184]
+
+Apply complete! Resources: 1 added, 0 changed, 1 destroyed.
+
+Outputs:
+
+ssh_connection = "ssh root@31.56.176.110"
+vm_public_ip = "31.56.176.110"
+mac@MacNexonm terraform % curl http://31.56.176.110
+Lab04 VPS configured by Terraform
+mac@MacNexonm terraform % terraform plan
+null_resource.vps_setup: Refreshing state... [id=4464433007309882184]
+
+No changes. Your infrastructure matches the configuration.
+
+Terraform has compared your real infrastructure against your configuration and found no differences, so no changes are needed.
+mac@MacNexonm terraform % ssh -i /Users/mac/.ssh/id_ed25519 root@31.56.176.110 "nginx -v && systemctl status nginx --no-pager | head -5"
+nginx version: nginx/1.24.0 (Ubuntu)
+● nginx.service - A high performance web server and a reverse proxy server
+     Loaded: loaded (/usr/lib/systemd/system/nginx.service; enabled; preset: enabled)
+     Active: active (running) since Wed 2026-02-18 08:05:15 UTC; 8min ago
+       Docs: man:nginx(8)
+   Main PID: 16276 (nginx)
+mac@MacNexonm terraform % 
