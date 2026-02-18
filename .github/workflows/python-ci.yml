@@ -133,10 +133,10 @@ jobs:
       run: |
         if [ -f trivy-results.sarif ]; then
           echo "exists=true" >> $GITHUB_OUTPUT
-          echo "✅ Trivy results found"
+          echo "Trivy results found"
         else
           echo "exists=false" >> $GITHUB_OUTPUT
-          echo "⚠️ No Trivy results file found"
+          echo "No Trivy results file found"
         fi
         
     - name: Upload Trivy scan results to GitHub Security tab
