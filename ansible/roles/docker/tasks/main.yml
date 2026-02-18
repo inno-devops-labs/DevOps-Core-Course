@@ -1,0 +1,75 @@
+---
+- name: Install prerequisites for Docker
+  apt:
+    name:
+      - gnupg-agent
+      - software-properties-common
+    state: present
+  tags:
+    - docker
+    - prerequisites
+
+- name: Add Docker GPG key
+  apt_key:
+    url: "{{ docker_repository_key_url }}"
+    state: present
+  tags:
+    - docker
+    - gpg
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "{{ docker_repository }}"
+    state: present
+  tags:
+    - docker
+    - repository
+
+- name: Update apt cache after adding Docker repo
+  apt:
+    update_cache: yes
+  tags:
+    - docker
+    - cache
+
+- name: Install Docker packages
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+  notify:
+    - Restart docker
+  tags:
+    - docker
+    - install
+
+- name: Ensure Docker service is running
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  tags:
+    - docker
+    - service
+
+- name: Add users to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users }}"
+  tags:
+    - docker
+    - users
+
+- name: Install Docker SDK for Python
+  pip:
+    name: docker
+    state: latest
+  tags:
+    - docker
+    - python

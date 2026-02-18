@@ -1,0 +1,9 @@
+---
+docker_users:
+  - ubuntu
+  - "{{ ansible_user }}"
+
+docker_version: ""
+
+docker_repository: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
+docker_repository_key_url: "https://download.docker.com/linux/ubuntu/gpg"

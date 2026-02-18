@@ -1,0 +1,41 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  tags:
+    - common
+    - system
+
+- name: Install common packages
+  apt:
+    name: "{{ common_packages }}"
+    state: present
+  tags:
+    - common
+    - packages
+
+- name: Set timezone
+  timezone:
+    name: "{{ timezone }}"
+  when: timezone is defined
+  tags:
+    - common
+    - timezone
+
+- name: Ensure pip is installed
+  pip:
+    name: pip
+    state: latest
+  tags:
+    - common
+    - pip
+
+- name: Create .ssh directory for root
+  file:
+    path: /root/.ssh
+    state: directory
+    mode: '0700'
+  tags:
+    - common
+    - ssh

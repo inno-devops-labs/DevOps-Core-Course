@@ -1,0 +1,15 @@
+---
+- name: Restart app container
+  docker_container:
+    name: "{{ app_container_name }}"
+    state: started
+    restart: yes
+  listen: "restart app"
+
+- name: Show running containers
+  command: docker ps --format 'table {{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Image{{"}}"}}\t{{"{{"}}.Status{{"}}"}}\t{{"{{"}}.Ports{{"}}"}}'
+  register: containers
+
+- name: Display container status
+  debug:
+    msg: "{{ containers.stdout_lines }}"

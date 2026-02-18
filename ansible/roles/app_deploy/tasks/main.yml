@@ -1,0 +1,113 @@
+---
+- name: Login to Docker Hub
+  docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+    registry: "https://index.docker.io/v1/"
+  no_log: true
+  tags:
+    - app
+    - auth
+    - docker
+
+- name: Pull Docker image
+  docker_image:
+    name: "{{ docker_image }}:{{ docker_image_tag }}"
+    source: pull
+    force_source: true
+  tags:
+    - app
+    - pull
+    - docker
+
+- name: Check if container exists
+  docker_container_info:
+    name: "{{ app_container_name }}"
+  register: container_info
+  ignore_errors: true
+  changed_when: false
+  tags:
+    - app
+    - check
+    - docker
+
+- name: Stop existing container if running
+  docker_container:
+    name: "{{ app_container_name }}"
+    state: stopped
+  when:
+    - container_info is not failed
+    - container_info.container.State.Running | default(false)
+  tags:
+    - app
+    - stop
+    - docker
+
+- name: Remove old container if exists
+  docker_container:
+    name: "{{ app_container_name }}"
+    state: absent
+    force_kill: true
+  when: container_info is not failed
+  tags:
+    - app
+    - remove
+    - docker
+
+- name: Create application directory
+  file:
+    path: /opt/{{ app_name }}
+    state: directory
+    mode: '0755'
+  tags:
+    - app
+    - directories
+
+- name: Deploy application container
+  docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: started
+    restart_policy: "{{ docker_restart_policy }}"
+    ports:
+      - "{{ app_host_port }}:{{ app_port }}"
+    env: "{{ app_environment | default({}) }}"
+    pull: false
+  tags:
+    - app
+    - deploy
+    - docker
+
+- name: Wait for application to start
+  wait_for:
+    port: "{{ app_port }}"
+    host: "127.0.0.1"
+    delay: 5
+    timeout: "{{ app_health_check_timeout }}"
+  tags:
+    - app
+    - wait
+    - health
+
+- name: Check application health endpoint
+  uri:
+    url: "http://localhost:{{ app_port }}{{ app_health_check_path }}"
+    method: GET
+    status_code: 200
+    timeout: 10
+  register: health_check
+  until: health_check.status == 200
+  retries: 12
+  delay: 5
+  tags:
+    - app
+    - health
+    - verification
+
+- name: Display health check result
+  debug:
+    msg: "Application is healthy! Response: {{ health_check.json | default('No JSON response') }}"
+  when: health_check.status == 200
+  tags:
+    - app
+    - debug

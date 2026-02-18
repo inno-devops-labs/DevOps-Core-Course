@@ -1,0 +1,21 @@
+---
+- name: Deploy application
+  hosts: webservers
+  become: true
+  vars_files:
+    - "../group_vars/all.yml"
+
+  roles:
+    - role: app_deploy
+      tags:
+        - app
+        - deploy
+
+  post_tasks:
+  - name: Show running containers
+    command: docker ps --format 'table {{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Image{{"}}"}}\t{{"{{"}}.Status{{"}}"}}\t{{"{{"}}.Ports{{"}}"}}'
+    register: containers
+
+  - name: Display container status
+    debug:
+      msg: "{{ containers.stdout_lines }}"

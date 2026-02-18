@@ -1,0 +1,8 @@
+---
+app_container_name: "devops-app"
+app_port: 5000
+app_host_port: 5000
+docker_restart_policy: "unless-stopped"
+app_health_check_path: "/health"
+app_health_check_timeout: 60
+app_health_check_interval: 5
