@@ -1,0 +1,6 @@
+name: devops-lab04
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: DevOps Lab 04 — Infrastructure as Code with Pulumi (Yandex Cloud)

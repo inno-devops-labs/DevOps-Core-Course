@@ -1,19 +1,14 @@
-test
-
-# Terraform
 *.tfstate
 *.tfstate.*
 .terraform/
 .terraform.lock.hcl
 terraform.tfvars
 *.tfvars
-crash.log
-
-# Pulumi
-pulumi/venv/
-Pulumi.*.yaml
-
-# Credentials
 *.pem
 *.key
-sa-key.json
+*.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
