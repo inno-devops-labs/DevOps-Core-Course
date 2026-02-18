@@ -82,6 +82,11 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
         
+    - name: Generate version tag
+      id: version
+      run: |
+        echo "version=$(date +'%Y.%m.%d')-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
     - name: Extract metadata for Docker
       id: meta
       uses: docker/metadata-action@v5
@@ -92,7 +97,7 @@ jobs:
           type=ref,event=branch
           type=ref,event=pr
           type=semver,pattern={{version}}
-          type=calver,pattern={{date 'YYYY.MM.DD'}}-{{sha}},scheme=calendar
+          type=raw,value=${{ steps.version.outputs.version }}
         labels: |
           maintainer=${{ github.actor }}
           org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
