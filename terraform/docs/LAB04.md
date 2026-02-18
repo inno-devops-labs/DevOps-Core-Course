@@ -147,6 +147,10 @@ Triggers on `pull_request` when files in `terraform/**` change.
 
 **tflint config** (`terraform/tflint.hcl`): enables the Terraform recommended preset.
 
+### Workflow evidence
+
+[![terraform-ci](https://github.com/olesia8novoselova/DevOps-Core-Course/actions/workflows/terraform-ci.yml/badge.svg)](https://github.com/olesia8novoselova/DevOps-Core-Course/actions/workflows/terraform-ci.yml)
+
 
 ## Bonus — GitHub Repository Import
 
