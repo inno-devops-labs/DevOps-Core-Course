@@ -34,13 +34,13 @@ variable "subnet_cidr" {
 variable "instance_cores" {
   description = "Number of CPU cores for the VM"
   type        = number
-  default     = 2 # b1.nano has 2 cores (fractional)
+  default     = 2 
 }
 
 variable "instance_memory" {
   description = "Amount of RAM in GB"
   type        = number
-  default     = 2 # b1.nano has 2 GB
+  default     = 2 
 }
 
 variable "boot_disk_size" {
@@ -58,7 +58,7 @@ variable "ssh_public_key" {
 variable "allowed_ssh_ips" {
   description = "List of CIDR blocks allowed to SSH (set to your public IP for security)"
   type        = list(string)
-  default     = ["188.130.155.186/32"] # Change this to your IP, e.g., ["1.2.3.4/32"]
+  default     = ["188.130.155.186/32"]
 }
 
 variable "folder_id" {
