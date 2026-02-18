@@ -17,6 +17,14 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Testing
+
+```bash
+pytest tests/ -v
+```
+
+Run from `app_python/`. Dependencies in `requirements.txt`.
+
 ## Running
 
 ```bash
