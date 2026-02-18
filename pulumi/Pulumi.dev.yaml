@@ -1,0 +1,5 @@
+config:
+  lab04-pulumi:project_name: lab04-devops
+  lab04-pulumi:environment: dev
+  lab04-pulumi:zone: ru-central1-a
+  lab04-pulumi:ssh_public_key_path: ~/.ssh/id_rsa.pub

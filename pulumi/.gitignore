@@ -1,0 +1,12 @@
+*.pyc
+__pycache__/
+venv/
+.venv/
+env/
+ENV/
+
+.pulumi/
+
+*.egg-info/
+dist/
+build/

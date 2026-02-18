@@ -1,0 +1,3 @@
+name: lab04-pulumi
+runtime: python
+description: Pulumi Infrastructure as Code - Lab 04 Mock Infrastructure
