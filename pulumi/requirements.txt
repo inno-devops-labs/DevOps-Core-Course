@@ -1,0 +1,2 @@
+pulumi==3.222.0
+pulumi_yandex==0.13.0

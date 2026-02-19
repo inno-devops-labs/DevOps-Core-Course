@@ -1,0 +1,7 @@
+config:
+  lab4-pulumi:zone: ru-central1-a
+  lab4-pulumi:subnetCidr: 10.10.0.0/24
+  lab4-pulumi:myIpCidr: 77.79.157.131/32
+  lab4-pulumi:sshUser: ubuntu
+  lab4-pulumi:sshPublicKeyPath: /Users/antipovd/.ssh/yc_lab.pub
+  lab4-pulumi:imageId: fd84mnbiarffhtfrhnog
