@@ -1,0 +1,5 @@
+config:
+  lab04:sshAllowCidr: 193.32.178.182/32
+  lab04:sshUser: ubuntu
+  lab04:sshPublicKeyPath: /home/serggaidd/.ssh/yc-lab04.pub
+  lab04:sshPrivateKeyPath: /home/serggaidd/.ssh/yc-lab04

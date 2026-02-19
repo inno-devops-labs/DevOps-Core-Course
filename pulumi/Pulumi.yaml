@@ -1,0 +1,11 @@
+name: lab04
+description: IaC with Pulumi for YC
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python
