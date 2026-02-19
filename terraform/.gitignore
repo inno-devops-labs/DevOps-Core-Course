@@ -1,7 +1,3 @@
-test
-.pytest_cache/
-
-# Terraform
 *.tfstate
 *.tfstate.*
 .terraform/
@@ -9,14 +5,8 @@ test
 terraform.tfvars
 *.tfvars
 crash.log
+crash.*.log
 
-# Pulumi
-pulumi/venv/
-pulumi/__pycache__/
-pulumi/*.pyc
-Pulumi.*.yaml
-
-# Cloud credentials
 *.pem
 *.key
 service-account-key.json
