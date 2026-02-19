@@ -1,0 +1,5 @@
+config:
+  lab4-pulumi:folderId: b1gm6brei5ugn9vm9n8f
+  lab4-pulumi:zone: ru-central1-a
+  lab4-pulumi:sshKeyPath: /Users/aliiabashirova/.ssh/id_rsa.pub
+  lab4-pulumi:myIp: 185.252.144.192/32
