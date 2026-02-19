@@ -38,13 +38,13 @@ jobs:
         run: pytest tests/ -v
         working-directory: app_python
 
-      - name: Run Snyk security scan
-        uses: snyk/actions/setup@master
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Run Snyk test
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Snyk test
-        run: snyk test --severity-threshold=high --file=requirements.txt
+        run: snyk test --file=requirements.txt --severity-threshold=high
         working-directory: app_python
         continue-on-error: true
 
