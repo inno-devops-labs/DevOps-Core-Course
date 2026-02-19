@@ -136,14 +136,8 @@ resource "aws_security_group" "web" {
   }
 }
 
-# Use existing AWS Academy key pair
-# The key pair is already created in AWS Academy
-data "aws_key_pair" "existing" {
-  key_name           = var.key_name
-  include_public_key = true
-}
-
 # EC2 Instance
+# Using existing AWS Academy key pair (vockey) configured in terraform.tfvars
 resource "aws_instance" "web" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
