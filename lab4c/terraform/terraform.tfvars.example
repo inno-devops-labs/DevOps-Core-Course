@@ -1,0 +1,5 @@
+yandex_folder_id = 
+yandex_zone = 
+yandex_service_account_key_file = 
+ssh_public_key_path = 
+ssh_cidr = "1.2.3.4/32"

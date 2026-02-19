@@ -1,0 +1,51 @@
+name: Terraform Validate (Lab04)
+
+on:
+  push:
+    branches: [lab04, main, master]
+    paths:
+      - "lab4c/terraform/**"
+      - ".github/workflows/terraform-ci.yml"
+  pull_request:
+    branches: [lab04, main, master]
+    paths:
+      - "lab4c/terraform/**"
+      - ".github/workflows/terraform-ci.yml"
+
+jobs:
+  validate:
+    name: Format, Validate, Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab4c/terraform
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9"
+          terraform_wrapper: false
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: TFLint Init
+        run: tflint --init
+
+      - name: TFLint
+        run: tflint --format compact
+        continue-on-error: true

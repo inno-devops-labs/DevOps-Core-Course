@@ -1,0 +1,3 @@
+pulumi>=3.0.0
+pulumi-yandex>=0.13.0
+setuptools>=65.0.0,<82
