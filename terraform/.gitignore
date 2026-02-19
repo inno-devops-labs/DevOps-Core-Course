@@ -1,29 +1,15 @@
-*.exe
-
-.vscode/
-.idea/
-
-.DS_Store
-
-# Terraform
 *.tfstate
 *.tfstate.*
 .terraform/
 .terraform.lock.hcl
 terraform.tfvars
 *.tfvars
+*.pem
+*.key
+*.json
 crash.log
 crash.*.log
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
-
-# Pulumi
-pulumi/venv/
-pulumi/.venv/
-Pulumi.*.yaml
-
-# Cloud credentials
-*.pem
-*.key

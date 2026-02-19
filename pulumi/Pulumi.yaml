@@ -1,0 +1,6 @@
+name: devops-iac
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: DevOps course Lab 04 - Infrastructure as Code with Pulumi
