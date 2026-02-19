@@ -361,7 +361,6 @@ Use `aws_ami` data source to find latest Ubuntu image dynamically
 <summary>☁️ GCP Terraform Guide</summary>
 
 **GCP Setup:**
-
 **Authentication:**
 - Create service account in Google Cloud Console
 - Download JSON key file
