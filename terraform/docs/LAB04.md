@@ -8,15 +8,15 @@
 
 ### 1.1 Provider choice
 - **Provider:** Yandex Cloud
-- **Rationale:** доступен в регионе, подходит для free-tier сценария этой лабы.
+- **Rationale:** available in the region and suitable for this lab's free-tier scenario.
 
 ### 1.2 VM size and region
 - **Zone:** `ru-central1-a`
 - **Planned VM size:** 2 vCPU (`core_fraction=20`), 1 GB RAM, 10 GB disk
-- **Why:** минимальный/бюджетный размер под требования Lab 4.
+- **Why:** minimal/budget size that matches Lab 4 requirements.
 
 ### 1.3 Estimated cost
-- Planned cost: `$0` (free-tier / минимальные ресурсы).
+- Planned cost: `$0` (free-tier / minimal resources).
 
 ### 1.4 Resources in scope
 Terraform and Pulumi configurations include:
@@ -31,7 +31,7 @@ Terraform and Pulumi configurations include:
 - **Blocked at folder IAM level in Yandex Cloud:**
   - SG ingress rule creation: `Permission denied to add ingress rule to security group`
   - VM creation: `Permission denied to resource-manager.folder <folder-id>`
-- Итог: проблема не в формате токена, а в правах на папку (folder IAM policy).
+- Summary: the issue is not token format, but insufficient folder-level IAM permissions.
 
 ### 1.6 Compliance note for checker
 - Main cloud criterion ("successful cloud VM + SSH proof") is blocked by external Yandex folder IAM denial.
@@ -60,12 +60,12 @@ terraform/
 ```
 
 ### 2.3 Key configuration decisions
-- Все изменяемые параметры вынесены в `variables.tf`.
-- Для подключения к VM и трассировки добавлены outputs (`vm_public_ip`, `ssh_connection_command`, IDs).
-- Добавлен флаг `enable_security_group` для диагностики IAM-проблемы отдельно от VM.
-- Бонусный GitHub import изолирован флагом `enable_github_bonus` (default `false`), чтобы не вмешиваться в основной YC VM сценарий.
-- Для бонусного `github_repository` сохранён `prevent_destroy`, чтобы избежать случайного удаления репозитория.
-- Для bonus CI добавлены проверки `fmt/init/validate/tflint` только для изменений в `terraform/**`.
+- All configurable parameters were moved to `variables.tf`.
+- Outputs were added for VM connection and troubleshooting (`vm_public_ip`, `ssh_connection_command`, IDs).
+- The `enable_security_group` flag was added to diagnose IAM issues separately from VM creation.
+- Bonus GitHub import is isolated behind `enable_github_bonus` (default `false`) so it does not affect the main YC VM workflow.
+- `prevent_destroy` is kept for bonus `github_repository` to avoid accidental repository deletion.
+- Bonus CI includes `fmt/init/validate/tflint` checks only for changes in `terraform/**`.
 
 ### 2.4 Command outputs (sanitized)
 
@@ -119,18 +119,18 @@ This fallback proof is used because Yandex folder IAM denies VM creation.
 
 ### 2.5 Challenges and fixes
 - Initial local/sandbox provider execution issues were solved by rerunning checks outside sandbox.
-- Многократно обновлялся IAM token (`yc iam create-token`) и переинициализировался профиль.
-- Пробовались роли (`editor`, `compute.editor`, `vpc.admin`) и повторные apply.
-- SG отключался (`enable_security_group=false`) для проверки, что VM всё равно блокируется.
-- Финальный вывод: folder-level IAM permissions не позволяют завершить provisioning VM.
+- IAM token (`yc iam create-token`) was refreshed multiple times and profile initialization was repeated.
+- Different roles (`editor`, `compute.editor`, `vpc.admin`) were tested with repeated apply attempts.
+- SG was disabled (`enable_security_group=false`) to verify VM creation is still blocked.
+- Final conclusion: folder-level IAM permissions do not allow successful VM provisioning.
 
 ### 2.6 Terraform cleanup evidence
 ```text
 $ terraform state list
 # (no resources in main scenario state)
 ```
-В state отсутствуют `yandex_*` ресурсы, поэтому активная облачная инфраструктура Terraform в YC сейчас не хранится.
-GitHub bonus ресурс удалён из main state после проверки бонуса, чтобы он не влиял на обычный `plan/apply` для YC (`terraform state rm 'github_repository.course_repo[0]'`).
+There are no `yandex_*` resources in state, so no active Terraform cloud infrastructure is currently tracked in YC.
+The GitHub bonus resource was removed from main state after bonus verification so it does not affect regular YC `plan/apply` (`terraform state rm 'github_repository.course_repo[0]'`).
 
 ## 3. Pulumi Implementation
 
@@ -139,10 +139,10 @@ GitHub bonus ресурс удалён из main state после проверк
 - Language: `Python`
 
 ### 3.2 How Pulumi code differs from Terraform
-- Terraform описывает ресурсы декларативно (HCL blocks).
-- Pulumi описывает эквивалентные ресурсы через Python объекты и аргументы SDK.
-- В Pulumi добавлен такой же диагностический флаг `enable_security_group` для изоляции SG/IAM проблемы.
-- В Pulumi добавлена валидация обязательного `ssh_public_key` и параметризация CIDR списков (`allowed_ssh_cidr`, `allowed_ingress_cidr`).
+- Terraform defines resources declaratively (HCL blocks).
+- Pulumi defines equivalent resources through Python objects and SDK arguments.
+- Pulumi includes the same diagnostic flag `enable_security_group` to isolate SG/IAM issues.
+- Pulumi adds validation for mandatory `ssh_public_key` and parametrized CIDR lists (`allowed_ssh_cidr`, `allowed_ingress_cidr`).
 
 ### 3.3 Command outputs (sanitized)
 
@@ -194,7 +194,7 @@ This fallback proof is used because Yandex folder IAM denies VM creation.
 $ pulumi stack output --json
 {}
 ```
-Пустой output подтверждает отсутствие активных созданных ресурсов в текущем Pulumi stack.
+Empty output confirms there are no active created resources in the current Pulumi stack.
 
 ### 3.6 Pulumi advantages discovered
 - Python conditionals and reusable logic are convenient for non-trivial infrastructure flows.
@@ -203,34 +203,34 @@ $ pulumi stack output --json
 ## 4. Terraform vs Pulumi Comparison
 
 ### 4.1 Ease of learning
-Terraform оказался проще для быстрого старта в этой лабе: HCL компактный и предсказуемый.
-Pulumi требует больше подготовительного окружения (venv/deps/stack secret).
+Terraform was easier for a quick start in this lab: HCL is compact and predictable.
+Pulumi requires more environment preparation (venv/deps/stack secret).
 
 ### 4.2 Code readability
-Для набора "VM + network + SG" Terraform читается быстрее.
-Pulumi более многословен, но даёт гибкость программной логики.
+For the "VM + network + SG" scope, Terraform is faster to read.
+Pulumi is more verbose, but provides more flexible programming logic.
 
 ### 4.3 Debugging
-Terraform давал более прямые сообщения об ошибках провайдера/IAM.
-В Pulumi дополнительно нужно учитывать Python/runtime слой.
+Terraform gave more direct provider/IAM error messages.
+With Pulumi, the Python/runtime layer must also be considered during debugging.
 
 ### 4.4 Documentation
-Для этой задачи Terraform-примеры из документации применялись быстрее.
-Pulumi-документация тоже рабочая, но потребовала доп. проверки совместимости зависимостей.
+For this task, Terraform documentation examples were faster to apply.
+Pulumi documentation is also usable, but required extra dependency compatibility checks.
 
 ### 4.5 Use case
-- **Terraform:** стандартный IaC без сложной прикладной логики.
-- **Pulumi:** когда нужен кодовый контроль, условия, циклы и переиспользование логики.
+- **Terraform:** standard IaC without complex application logic.
+- **Pulumi:** when code-level control, conditions, loops, and reusable logic are needed.
 
 ### 4.6 Personal preference
-Для этой лабы предпочитаю Terraform (быстрее старт и меньше вспомогательного runtime).
+For this lab, I prefer Terraform (faster start and less supporting runtime overhead).
 
 ## 5. Lab 5 Preparation & Cleanup
 
 ### 5.1 VM plan for Lab 5
 - **Keeping VM for Lab 5:** `No`
-- **Reason:** cloud VM не удалось поднять из-за folder IAM блокировки в Yandex.
-- **Lab 5 fallback plan:** использовать локальную VM (или пересоздать cloud VM после исправления IAM).
+- **Reason:** cloud VM could not be created due to Yandex folder IAM restrictions.
+- **Lab 5 fallback plan:** use a local VM (or recreate cloud VM after IAM is fixed).
 
 ### 5.2 Cleanup status
 - Terraform-created temporary Yandex resources were cleaned up after failed attempts.
@@ -269,8 +269,8 @@ Executed locally:
 ## 7. Bonus — Import Existing GitHub Repository
 
 ### 7.1 Why import matters
-Import позволяет взять уже существующий ресурс под IaC-контроль без его пересоздания.
-Изменения репозитория после import становятся версионируемыми и reviewable.
+Import allows bringing an already existing resource under IaC control without recreating it.
+Repository changes after import become versioned and reviewable.
 
 ### 7.2 Import command
 ```bash
@@ -329,9 +329,9 @@ terraform state rm 'github_repository.course_repo[0]'
 - [x] Pulumi local SSH fallback proof provided (`labs/lab04.md` local alternative)
 
 ## 10. Final Conclusion about Yandex Token Issue
-Я использовал корректные и многократно обновлённые IAM токены Yandex Cloud, но это **не решило проблему**.
-Блокировка происходила на уровне прав доступа к папке (`resource-manager.folder`) и созданию SG ingress rules.
+I used valid and repeatedly refreshed Yandex Cloud IAM tokens, but this **did not solve the problem**.
+The block happens at folder permission level (`resource-manager.folder`) and SG ingress rule creation.
 
-Итог по факту:
-- проблема **не в токене**;
-- проблема в **недостаточных folder IAM permissions** в Yandex Cloud.
+Actual result:
+- the issue is **not the token**;
+- the issue is **insufficient folder IAM permissions** in Yandex Cloud.
