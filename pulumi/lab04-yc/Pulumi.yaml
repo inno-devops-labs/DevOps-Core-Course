@@ -1,0 +1,7 @@
+name: lab04-yc
+description: A minimal Python Pulumi program
+runtime: python
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python
