@@ -20,8 +20,6 @@ mkdir -p ~/.ssh
 echo "public-key" >> ~/.ssh/authorized_keys
 chmod 700 ~/.ssh
 chmod 600 ~/.ssh/authorized_keys
-
-ssh almaz@vm-ip-address
 ```
 After running the above commands, I can successfully connect to the VM using ssh from my local machine.
 ```bash
