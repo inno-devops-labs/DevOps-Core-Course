@@ -1,1 +1,7 @@
-test
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+*.pem
+*.json
+.terraform.lock.hcl
