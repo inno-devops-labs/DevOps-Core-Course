@@ -1,4 +1,4 @@
-name: Python CI
+name: Python CI Lab 3
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Cache pip packages
         id: pip-cache
