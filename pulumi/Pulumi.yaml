@@ -1,0 +1,6 @@
+name: devops-lab04
+description: Lab 04 — Infrastructure as Code with Pulumi (AWS)
+runtime: python
+config:
+  aws:region:
+    default: us-east-1
