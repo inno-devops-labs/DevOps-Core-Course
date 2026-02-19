@@ -338,8 +338,7 @@ func main() {
 	rt := newRouter()
 	rt.Handle(http.MethodGet, "/", "Root endpoint: returns service metadata and diagnostic information.", rootHandler(rt))
 	rt.Handle(http.MethodGet, "/health", "Health check endpoint for monitoring and Kubernetes probes.", healthHandler)
-	// rt.Handle(http.MethodGet, "/crash", "Intentional error to test 500 handler.", crashHandler) 
-
+	// rt.Handle(http.MethodGet, "/crash", "Intentional error to test 500 handler.", crashHandler)
 
 	handler := recoverMiddleware(loggingMiddleware(rt))
 

@@ -214,9 +214,9 @@ func TestRouterEndpoints_SortedByPathThenMethod(t *testing.T) {
 	dummy := func(w http.ResponseWriter, r *http.Request) {}
 
 	rt.Handle(http.MethodPost, "/same", "p", dummy)
-	rt.Handle(http.MethodGet,  "/same", "g", dummy)
-	rt.Handle(http.MethodGet,  "/zzz",  "z", dummy)
-	rt.Handle(http.MethodGet,  "/aaa",  "a", dummy)
+	rt.Handle(http.MethodGet, "/same", "g", dummy)
+	rt.Handle(http.MethodGet, "/zzz", "z", dummy)
+	rt.Handle(http.MethodGet, "/aaa", "a", dummy)
 
 	eps := rt.Endpoints()
 

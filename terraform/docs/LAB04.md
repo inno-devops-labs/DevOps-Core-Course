@@ -77,7 +77,7 @@ The trial period provides free use of the system for 60 days, plus 4,000 rubles 
 data.yandex_compute_image.ubuntu: Reading...
 data.yandex_compute_image.ubuntu: Read complete after 1s [id=********************]
 
-Terraform used the selected providers to generate the following `execution plan. Resource actions are indicated with the following symbols:
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
   + create
 
 Terraform will perform the following actions:
@@ -344,22 +344,29 @@ Pipeline `.github/workflows/terraform-ci.yml` executes the following commands:
 ### Path filter configuration
 The workflow is triggered only on changes in `terraform/**`, excluding `docs`.
 
-### tflint results and any issues found
-![tflint results](./screenshots/xx_tflint_results.png)
-### Example of workflow running on PR
-![Workflow running on PR](./screenshots/xx_workflow_on_PR.png)
+### tflint results and workflow running
+In the first CI run, tflint found two issues:
+- Missing terraform.required_version — the minimum Terraform version wasn't specified in the config.
+- Missing version constraint for provider Yandex — the provider version wasn't specified in required_providers.
+
+These errors led to the fall of ci:
+![Failed CI](./screenshots/11_failed_ci.png)
+
+After correcting the file `/terraform/main.tf`, the execution was successful:
+![Sucess CI](./screenshots/12_success_ci.png)
 
 ## Part 2: Import GitHub Repository to Terraform
 
 ### GitHub repository import process
-1. Create a Terraform configuration for the GitHub provider (`integrations/github`)
+1. Created a Terraform configuration for the GitHub provider (`terraform/github`)
 2. Define the `github_repository` resource for the existing course repository
 3. Run `terraform import`, after which the repository is added to the state
 4. `terraform plan` shows drift, adjusting the configuration to reality
 5. After alignment, `plan` should show "No changes"
 
-### Terminal output of import command
-![Terminal output of import command](./screenshots/xx_import_command.png)
+### Terminal output 
+
+##
 
 ### Why importing matters (brief explanation)
 Importing allows you to bring an existing resource (created manually) under IaC control without recreating it. This reduces manual changes, minimizes drift, and makes the configuration "living documentation".

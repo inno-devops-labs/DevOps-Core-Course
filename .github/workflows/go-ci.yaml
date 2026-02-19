@@ -30,9 +30,17 @@ jobs:
           cache: true
           cache-dependency-path: app_go/go.sum
 
-      - name: fmt check
+      - name: fmt check (print files)
         run: |
-          test -z "$(gofmt -l .)"
+          echo "Go version:"
+          go version
+
+          files="$(gofmt -l .)"
+          if [ -n "$files" ]; then
+            echo "::error::gofmt wants to reformat these files:"
+            echo "$files"
+            exit 1
+          fi
 
       - name: vet
         run: go vet ./...
