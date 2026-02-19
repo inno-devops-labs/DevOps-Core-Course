@@ -1,0 +1,6 @@
+name: ubuntu-vm
+runtime:
+  name: nodejs
+  options:
+    nodeVersion: 20
+description: Ubuntu VM
