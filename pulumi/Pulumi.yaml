@@ -1,0 +1,11 @@
+name: devops-vm
+description: VM for DevOps lab
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python
