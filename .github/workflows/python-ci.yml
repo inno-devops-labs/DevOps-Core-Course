@@ -1,4 +1,4 @@
-name: Python CI Lab 3
+name: Python CI
 
 on:
   push:
@@ -37,6 +37,14 @@ jobs:
       - name: Test
         run: pytest tests/ -v
         working-directory: app_python
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=app_python/requirements.txt
+        continue-on-error: true
 
   docker:
     needs: test
