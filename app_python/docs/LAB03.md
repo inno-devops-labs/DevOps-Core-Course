@@ -112,13 +112,14 @@ tests/test_get_root.py::TestGetRootEndpoint::test_root_endpoint_consistent_hostn
 
 ### Docker Images on Docker Hub
 Docker images are built and pushed automatically with CalVer tags:
-- `username/app-python:2024.02.11` (date version)
-- `username/app-python:2024.02.11-a1b2c3d` (date + commit SHA)
-- `username/app-python:latest` (latest stable)
+- `tailrot/app-python:2024.02.11` (date version)
+- `tailrot/app-python:2024.02.11-a1b2c3d` (date + commit SHA)
+- `tailrot/app-python:latest` (latest stable)
 
 ### Status Badges
 Status badges are now displayed in the README:
 - **Python CI/CD Badge:** Shows current workflow status (passing/failing)
+- **Go CI/CD Badge:** Shows current workflow status (passing/failing)
 - **Coverage Badge:** Shows test coverage percentage from Codecov
 - Badges link directly to GitHub Actions and Codecov dashboards
 

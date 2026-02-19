@@ -1,6 +1,7 @@
 ## Overview
 
 [![Python CI/CD](https://github.com/InnoNodo/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![Go CI/CD](https://github.com/InnoNodo/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/go-ci.yml)
 [![Coverage Status](https://codecov.io/gh/InnoNodo/DevOps-Core-Course/branch/lab03/graph/badge.svg)](https://app.codecov.io/github/InnoNodo/DevOps-Core-Course/tree/lab03)
 
 This Python application provides a RESTful service that delivers system and service information through health check endpoints.

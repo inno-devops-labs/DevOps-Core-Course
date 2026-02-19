@@ -12,3 +12,11 @@ venv/
 
 # OS
 .DS_Store
+
+# Terraform and Pulumi
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+pulumi/venv/
+Pulumi.*.yaml
