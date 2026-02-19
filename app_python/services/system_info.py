@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 start_time = datetime.now(timezone.utc)
 
+
 def get_system_info():
     hostname = socket.gethostname()
     platform_name = platform.system()
@@ -23,6 +24,7 @@ def get_system_info():
         "python_version": python_version
     }
 
+
 def get_uptime():
     delta = datetime.now(timezone.utc) - start_time
     seconds = int(delta.total_seconds())
@@ -34,6 +36,7 @@ def get_uptime():
         'human': f"{hours} hours, {minutes} minutes"
     }
 
+
 def get_runtime_info():
     uptime_info = get_uptime()
 
@@ -44,6 +47,7 @@ def get_runtime_info():
         'timezone': datetime.now(timezone.utc).tzname()
     }
 
+
 def get_service_info():
     return {
         "name": "devops-info-service",
@@ -51,6 +55,7 @@ def get_service_info():
         "description": "DevOps course info service",
         "framework": "FastAPI"
     }
+
 
 def get_request_info(request: Request):
     return {
@@ -60,9 +65,9 @@ def get_request_info(request: Request):
         "path": request.url.path
     }
 
+
 def get_endpoints_info():
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"}
     ]
-

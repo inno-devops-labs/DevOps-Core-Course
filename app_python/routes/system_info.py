@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request
-import logging
 from datetime import datetime, timezone
 import services.system_info as system_info_service
 
 router = APIRouter()
+
 
 @router.get("/")
 async def get_system_info(request: Request):
@@ -14,6 +14,7 @@ async def get_system_info(request: Request):
         "request": system_info_service.get_request_info(request),
         "endpoints": system_info_service.get_endpoints_info()
     }
+
 
 @router.get("/health")
 async def health():

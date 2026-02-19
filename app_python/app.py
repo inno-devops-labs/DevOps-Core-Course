@@ -1,9 +1,8 @@
-import os
 import logging
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from routes.system_info import router as system_info_router
-from config import HOST, PORT, DEBUG
+from config import HOST, PORT
 import uvicorn
 
 logging.basicConfig(
@@ -16,6 +15,7 @@ app = FastAPI()
 
 app.include_router(system_info_router)
 
+
 @app.exception_handler(404)
 async def not_found(request: Request, exc: HTTPException):
     return JSONResponse(
@@ -25,6 +25,7 @@ async def not_found(request: Request, exc: HTTPException):
             "message": "Endpoint does not exist"
         }
     )
+
 
 @app.exception_handler(Exception)
 async def internal_error(request: Request, exc: Exception):
@@ -39,4 +40,3 @@ async def internal_error(request: Request, exc: Exception):
 if __name__ == "__main__":
     logger.info(f"Application started on {HOST}:{PORT}")
     uvicorn.run(app, host=HOST, port=PORT)
-
