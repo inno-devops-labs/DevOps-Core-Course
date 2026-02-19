@@ -1,1 +1,69 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Pulumi
+Pulumi.*.yaml
+!Pulumi.yaml
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Cloud credentials
+*.pem
+*.key
+*.json
+!terraform/github-import/*.json.example
+authorized_key.json
+.yandex_key_temp.json
+credentials
+.credentials
+.yandex/
+key.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+*.pyc
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Test
 test
+
+# Lab 4 saved outputs (may contain IPs)
+lab4_outputs/
+docs/lab04-evidence/

@@ -1,0 +1,8 @@
+# Pulumi ignore patterns
+venv/
+__pycache__/
+*.pyc
+.Python
+.pytest_cache/
+.coverage
+htmlcov/

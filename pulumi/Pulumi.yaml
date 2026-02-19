@@ -1,0 +1,6 @@
+name: devops-lab4
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Pulumi infrastructure for Lab 4 - VM provisioning

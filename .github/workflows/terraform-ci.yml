@@ -1,0 +1,67 @@
+name: Terraform CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+      - lab04
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+  push:
+    branches:
+      - main
+      - master
+      - lab04
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+
+env:
+  TF_VERSION: '1.9.0'
+
+jobs:
+  validate:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        run: |
+          cd terraform
+          terraform fmt -check -recursive
+        continue-on-error: false
+
+      - name: Terraform Init
+        run: |
+          cd terraform
+          terraform init -backend=false
+
+      - name: Terraform Validate
+        run: |
+          cd terraform
+          terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v3
+        with:
+          tflint_version: latest
+
+      - name: TFLint Init
+        run: |
+          cd terraform
+          tflint --init
+
+      - name: Run TFLint
+        run: |
+          cd terraform
+          tflint --format compact

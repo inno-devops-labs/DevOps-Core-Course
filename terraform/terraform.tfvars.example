@@ -1,0 +1,15 @@
+# Example terraform.tfvars file
+# Copy this to terraform.tfvars and fill in your values
+# terraform.tfvars is gitignored - never commit it!
+
+project_name = "devops-lab4"
+environment = "dev"
+zone = "ru-central1-a"
+subnet_cidr = "10.0.1.0/24"
+ssh_user = "ubuntu"
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+
+# IMPORTANT: Replace with your actual IP address!
+# Find your IP: curl ifconfig.me
+# Format: "1.2.3.4/32" for single IP
+ssh_allowed_cidr = "0.0.0.0/0"  # CHANGE THIS to your IP!
