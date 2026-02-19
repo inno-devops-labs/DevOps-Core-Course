@@ -1,0 +1,14 @@
+# GitHub Provider Configuration
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to Git!
+
+# Your GitHub username
+github_owner = "your-username"
+
+# Repository name (exact name as it appears on GitHub)
+repo_name = "DevOps"
+
+# GitHub Personal Access Token
+# Create at: https://github.com/settings/tokens
+# Required scopes: repo (full control of private repositories)
+github_token = "ghp_your_token_here"

@@ -1,0 +1,12 @@
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to Git!
+
+region = "us-east-1"
+prefix = "lab04"
+instance_type = "t2.micro"
+
+# Your IP address for SSH access
+my_ip_address = "212.118.40.76/32"
+
+# Name of the existing AWS Academy key pair
+key_name = "labsuser"

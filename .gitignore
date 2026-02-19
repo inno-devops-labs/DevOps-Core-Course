@@ -1,1 +1,53 @@
+# Test files
 test
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+terraform.tfplan
+crash.log
+override.tf
+*_override.tf
+!terraform/**/*.tf
+!terraform/**/*.md
+!terraform/**/.gitignore
+
+# Pulumi
+pulumi/venv/
+pulumi/ENV/
+pulumi/Pulumi.*.yaml
+!pulumi/Pulumi.yaml
+!pulumi/requirements.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# Credentials
+*.pem
+*.key
+id_rsa*
+credentials.json
+*.tfvars
+!.terraform.tfvars.example
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -1,0 +1,9 @@
+name: lab04-pulumi
+description: Lab 4 Pulumi infrastructure
+runtime:
+  name: python
+  options:
+    toolchain: pip
+config:
+  pulumi:tags:
+    value: ""

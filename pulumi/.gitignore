@@ -1,0 +1,17 @@
+# Pulumi
+Pulumi.*.yaml
+!Pulumi.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# macOS
+.DS_Store

@@ -1,0 +1,91 @@
+name: Terraform CI/CD
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+  push:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+    branches:
+      - master
+      - lab04
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Terraform Format Check
+        working-directory: ./terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        working-directory: ./terraform
+        run: terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Init TFLint
+        working-directory: ./terraform
+        run: |
+          cat > .tflint.hcl << 'EOF'
+          plugin "terraform" {
+            enabled = true
+          }
+          plugin "aws" {
+            enabled = true
+            version = "0.30.0"
+            source  = "github.com/terraform-linters/tflint-ruleset-aws"
+          }
+          EOF
+          tflint --init
+
+      - name: Run TFLint
+        working-directory: ./terraform
+        run: tflint --format compact
+
+      - name: Comment PR with Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `#### Terraform Validation Results ✅
+            - Terraform Format: Passed
+            - Terraform Validate: Passed
+            - TFLint: Passed
+
+            <details><summary>Details</summary>
+
+            Terraform configuration has been validated successfully!
+
+            </details>
+
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
