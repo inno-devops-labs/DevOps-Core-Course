@@ -46,7 +46,6 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: snyk test --file=requirements.txt --severity-threshold=high
         working-directory: app_python
-        continue-on-error: true
 
   docker:
     needs: test
