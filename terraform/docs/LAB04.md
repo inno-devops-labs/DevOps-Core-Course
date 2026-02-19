@@ -33,7 +33,7 @@ The trial period provides free use of the system for 60 days, plus 4,000 rubles 
 ## 2. Terraform Implementation
 
 ### Terraform version used: 
-![Terraform version](./screenshots/01_terraform_version.png)
+![Terraform version](./screenshots/LAB04/01_terraform_version.png)
 
 ### Project structure explanation
 Структура каталога `terraform/`:
@@ -69,7 +69,7 @@ The trial period provides free use of the system for 60 days, plus 4,000 rubles 
 ### Terminal output from key commands (sanitized)
 
 #### Command `terraform init`: 
-![`terraform init` command](./screenshots/02_terraform_init_command.png)
+![`terraform init` command](./screenshots/LAB04/02_terraform_init_command.png)
 
 
 #### Command `terraform plan` (sanitized):
@@ -255,10 +255,10 @@ Changes to Outputs:
   + ssh_cmd   = (known after apply)
 ```
 #### Command `terraform apply`:
-![`terraform apply` command](./screenshots/03_terraform_apply_command.png)
+![`terraform apply` command](./screenshots/LAB04/03_terraform_apply_command.png)
 
 #### SSH connection to VM:
-![SSH connection to VM](./screenshots/04_terraform_ssh.png)
+![SSH connection to VM](./screenshots/LAB04/04_terraform_ssh.png)
 
 ---
 
@@ -267,7 +267,7 @@ Changes to Outputs:
 ### Pulumi version and language used
 - **Language used**: Python
 - **Pulumi version**:   `3.215.0`
-![Pulumi version](./screenshots/05_pulumi_version.png)
+![Pulumi version](./screenshots/LAB04/05_pulumi_version.png)
 
 ### How code differs from Terraform
 While Terraform uses HCL, which declaratively describes resources, Pulumi uses full-fledged Python code, which allows you to use variables, functions, conditional logic, etc.
@@ -285,13 +285,13 @@ In Pulumi, it is more convenient to “programmatically” collect configuration
 ### Terminal output
 
 #### Command `pulumi preview`:
-![`pulumi preview` command](./screenshots/06_pulumi_preview_command.png)
+![`pulumi preview` command](./screenshots/LAB04/06_pulumi_preview_command.png)
 
 #### Command `pulumi up`:
-![`pulumi up` command](./screenshots/07_pulumi_up_command.png)
+![`pulumi up` command](./screenshots/LAB04/07_pulumi_up_command.png)
 
 #### SSH connection to VM:
-![SSH connection to VM](./screenshots/08_pulumi_ssh.png)
+![SSH connection to VM](./screenshots/LAB04/08_pulumi_ssh.png)
 
 ---
 
@@ -323,9 +323,9 @@ While Terraform provides a large number of ready-made examples and standards for
 
 ### Cleanup Status
 - Terraform:
-![Terraform destroy](./screenshots/09_terraform_destroy_command.png)
+![Terraform destroy](./screenshots/LAB04/09_terraform_destroy_command.png)
 - Pulumi:
-![Pulumi destroy](./screenshots/10_pulumi_destroy_command.png)
+![Pulumi destroy](./screenshots/LAB04/10_pulumi_destroy_command.png)
 
 ---
 
@@ -350,10 +350,10 @@ In the first CI run, tflint found two issues:
 - Missing version constraint for provider Yandex — the provider version wasn't specified in required_providers.
 
 These errors led to the fall of ci:
-![Failed CI](./screenshots/11_failed_ci.png)
+![Failed CI](./screenshots/LAB04/11_failed_ci.png)
 
 After correcting the file `/terraform/main.tf`, the execution was successful:
-![Sucess CI](./screenshots/12_success_ci.png)
+![Sucess CI](./screenshots/LAB04/12_success_ci.png)
 
 ## Part 2: Import GitHub Repository to Terraform
 
@@ -366,7 +366,12 @@ After correcting the file `/terraform/main.tf`, the execution was successful:
 
 ### Terminal output 
 
-##
+#### Command `terraform import`:
+![Terminal output of import command](./screenshots/LAB04/13_terraform_import_command.png)
+
+#### Command `terraform plan`:
+![Terminal output of plan command](./screenshots/LAB04/14_terraform_plan_command.png)
+
 
 ### Why importing matters (brief explanation)
 Importing allows you to bring an existing resource (created manually) under IaC control without recreating it. This reduces manual changes, minimizes drift, and makes the configuration "living documentation".
