@@ -27,3 +27,6 @@
 - **Documentation:** Both have excellent docs, but Pulumi's examples are more varied due to multiple languages.
 - **Use Case:** Terraform is great for pure infrastructure, Pulumi when you need to integrate with application code or reuse logic.
 
+### 5. Lab 5 Preparation & Cleanup
+- **VM for Lab 5:** I am keeping the VM created with Terraform because Lab 5 requires a running VM for Ansible.
+- **Cleanup Status:** Terraform resources destroyed; Pulumi VM is running (will keep until Lab 5 completed).
