@@ -1,17 +1,9 @@
-test
-
-# Terraform
 *.tfstate
 *.tfstate.*
 .terraform/
 .terraform.lock.hcl
 terraform.tfvars
+*.tfvars
+!*.tfvars.example
 crash.log
-
-# Pulumi
-pulumi/venv/
-Pulumi.*.yaml
-
-# Credentials
-*.pem
-*.key
+crash.*.log

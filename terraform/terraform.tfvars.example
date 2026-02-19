@@ -1,0 +1,13 @@
+# Yandex Cloud credentials
+yc_service_account_key_file = "/path/to/sa-key.json"
+yc_cloud_id                = "YOUR_CLOUD_ID"
+yc_folder_id               = "YOUR_FOLDER_ID"
+
+# Region
+yc_zone = "ru-central1-a"
+
+# VM settings
+vm_user = "ubuntu"
+
+# Paste your public SSH key content here (cat ~/.ssh/id_rsa.pub)
+ssh_public_key = "ssh-rsa AAAA..."

@@ -1,0 +1,10 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Stack configs (may contain secrets)
+Pulumi.*.yaml
