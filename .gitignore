@@ -1,1 +1,44 @@
 .DS_Store
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+!*.tfvars.example
+
+# Pulumi
+.pulumi/
+pulumi/venv/
+Pulumi.*.yaml
+!Pulumi.yaml
+!Pulumi.*.yaml.example
+
+# Cloud credentials
+*.pem
+*.key
+*.json
+!**/package.json
+!**/package-lock.json
+credentials
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

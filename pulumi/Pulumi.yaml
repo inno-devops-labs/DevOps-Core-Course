@@ -1,0 +1,3 @@
+name: devops-lab04
+runtime: python
+description: Pulumi infrastructure for Lab 04 - VM creation in Yandex Cloud

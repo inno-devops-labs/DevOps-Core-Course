@@ -1,0 +1,25 @@
+variable "github_token" {
+  description = "GitHub Personal Access Token"
+  type        = string
+  sensitive   = true
+  # Set via environment variable: export TF_VAR_github_token=your-token
+  # Or in terraform.tfvars (gitignored!)
+}
+
+variable "github_repo_name" {
+  description = "GitHub repository name"
+  type        = string
+  default     = "DevOps-Core-Course"
+}
+
+variable "github_repo_description" {
+  description = "GitHub repository description"
+  type        = string
+  default     = "DevOps Core Course - Lab assignments and projects"
+}
+
+variable "github_repo_visibility" {
+  description = "Repository visibility (public, private, internal)"
+  type        = string
+  default     = "public"
+}

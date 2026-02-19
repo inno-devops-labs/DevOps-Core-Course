@@ -1,0 +1,32 @@
+# Copy this file to terraform.tfvars and fill in your values
+# terraform.tfvars is gitignored and should never be committed!
+
+project_name = "devops-lab04"
+environment  = "dev"
+zone         = "ru-central1-a"
+
+# Yandex Cloud Folder ID (optional)
+# If not set, Terraform will use YC_FOLDER_ID environment variable
+# Find folder ID in Yandex Cloud Console: https://console.cloud.yandex.ru/
+# folder_id = "b1g..."  # Optional, uncomment if needed
+
+# Subnet CIDR
+subnet_cidr = "10.0.1.0/24"
+
+# SSH Configuration
+# IMPORTANT: Change this to your IP address for security!
+# Find your IP: curl ifconfig.me
+# Format: "1.2.3.4/32" for single IP
+allowed_ssh_cidr = "0.0.0.0/0"  # CHANGE THIS!
+
+ssh_username        = "ubuntu"
+ssh_public_key_path = "~/.ssh/id_rsa.pub"  # Path to your SSH public key
+
+# Yandex Cloud Authentication
+# REQUIRED: Set via environment variable:
+# export YC_SERVICE_ACCOUNT_KEY_FILE=/path/to/key.json
+# 
+# OR use OAuth token:
+# export YC_TOKEN=your-token
+#
+# See: https://cloud.yandex.com/en/docs/cli/operations/authentication/service-account

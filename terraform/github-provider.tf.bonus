@@ -1,0 +1,66 @@
+# GitHub Provider Configuration
+# Used for importing and managing GitHub repository (BONUS TASK)
+# To use this, uncomment the github provider in required_providers block below
+# and comment it out in main.tf
+
+# terraform {
+#   required_providers {
+#     github = {
+#       source  = "integrations/github"
+#       version = "~> 5.0"
+#     }
+#   }
+# }
+
+# Uncomment below when doing bonus task
+# provider "github" {
+  # Authentication via GITHUB_TOKEN environment variable
+  # Set in GitHub Actions secrets or locally:
+  # export GITHUB_TOKEN=your-personal-access-token
+  token = var.github_token
+}
+
+# GitHub Repository Resource
+# This will be imported from existing repository
+resource "github_repository" "course_repo" {
+  name        = var.github_repo_name
+  description = var.github_repo_description
+  visibility  = var.github_repo_visibility
+
+  has_issues   = true
+  has_wiki     = false
+  has_projects = false
+  has_downloads = true
+
+  # Branch protection (optional)
+  # Uncomment if you want to manage branch protection
+  # default_branch = "master"
+  
+  # Topics/labels
+  topics = ["devops", "terraform", "pulumi", "iac"]
+
+  # Allow merge commits, squash merging, and rebase merging
+  allow_merge_commit = true
+  allow_squash_merge = true
+  allow_rebase_merge = true
+  allow_auto_merge   = false
+
+  # Archive on destroy (set to false to delete repo)
+  archive_on_destroy = false
+}
+
+# Output repository information
+output "github_repo_url" {
+  description = "GitHub repository URL"
+  value       = github_repository.course_repo.html_url
+}
+
+output "github_repo_clone_url" {
+  description = "GitHub repository clone URL"
+  value       = github_repository.course_repo.clone_url
+}
+
+output "github_repo_id" {
+  description = "GitHub repository ID"
+  value       = github_repository.course_repo.repo_id
+}

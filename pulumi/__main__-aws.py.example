@@ -1,0 +1,180 @@
+"""
+Pulumi infrastructure for Lab 04 - AWS Alternative
+Creates a VM in AWS (equivalent to Terraform configuration)
+"""
+import pulumi
+import pulumi_aws as aws
+
+# Get configuration
+config = pulumi.Config()
+project_name = config.get("project_name", "devops-lab04")
+environment = config.get("environment", "dev")
+region = config.get("region", "us-east-1")
+availability_zone = config.get("availability_zone", "us-east-1a")
+vpc_cidr = config.get("vpc_cidr", "10.0.0.0/16")
+subnet_cidr = config.get("subnet_cidr", "10.0.1.0/24")
+allowed_ssh_cidr = config.get("allowed_ssh_cidr", "0.0.0.0/0")
+ssh_username = config.get("ssh_username", "ubuntu")
+
+# Read SSH public key
+try:
+    ssh_public_key_path = config.require("ssh_public_key_path")
+    with open(ssh_public_key_path, "r") as f:
+        ssh_public_key = f.read().strip()
+except Exception as e:
+    raise pulumi.RunError(f"Failed to read SSH public key: {e}")
+
+# Get latest Ubuntu AMI
+ubuntu_ami = aws.ec2.get_ami(
+    most_recent=True,
+    owners=["099720109477"],  # Canonical
+    filters=[
+        aws.ec2.GetAmiFilterArgs(
+            name="name",
+            values=["ubuntu/images/hosted/ubuntu-22.04-amd64-server-*"]
+        ),
+        aws.ec2.GetAmiFilterArgs(
+            name="virtualization-type",
+            values=["hvm"]
+        )
+    ]
+)
+
+# Create VPC
+vpc = aws.ec2.Vpc(
+    f"{project_name}-vpc",
+    cidr_block=vpc_cidr,
+    enable_dns_hostnames=True,
+    enable_dns_support=True,
+    tags={
+        "Name": f"{project_name}-vpc",
+        "Project": project_name,
+        "Env": environment
+    }
+)
+
+# Create Internet Gateway
+igw = aws.ec2.InternetGateway(
+    f"{project_name}-igw",
+    vpc_id=vpc.id,
+    tags={
+        "Name": f"{project_name}-igw"
+    }
+)
+
+# Create Subnet
+subnet = aws.ec2.Subnet(
+    f"{project_name}-subnet",
+    vpc_id=vpc.id,
+    cidr_block=subnet_cidr,
+    availability_zone=availability_zone,
+    map_public_ip_on_launch=True,
+    tags={
+        "Name": f"{project_name}-subnet"
+    }
+)
+
+# Create Route Table
+route_table = aws.ec2.RouteTable(
+    f"{project_name}-rt",
+    vpc_id=vpc.id,
+    routes=[
+        aws.ec2.RouteTableRouteArgs(
+            cidr_block="0.0.0.0/0",
+            gateway_id=igw.id
+        )
+    ],
+    tags={
+        "Name": f"{project_name}-rt"
+    }
+)
+
+# Associate Route Table with Subnet
+route_table_association = aws.ec2.RouteTableAssociation(
+    f"{project_name}-rta",
+    subnet_id=subnet.id,
+    route_table_id=route_table.id
+)
+
+# Create Security Group
+security_group = aws.ec2.SecurityGroup(
+    f"{project_name}-sg",
+    name=f"{project_name}-sg",
+    description="Security group for Lab 04 VM",
+    vpc_id=vpc.id,
+    ingress=[
+        aws.ec2.SecurityGroupIngressArgs(
+            description="SSH",
+            from_port=22,
+            to_port=22,
+            protocol="tcp",
+            cidr_blocks=[allowed_ssh_cidr]
+        ),
+        aws.ec2.SecurityGroupIngressArgs(
+            description="HTTP",
+            from_port=80,
+            to_port=80,
+            protocol="tcp",
+            cidr_blocks=["0.0.0.0/0"]
+        ),
+        aws.ec2.SecurityGroupIngressArgs(
+            description="Custom port 5000",
+            from_port=5000,
+            to_port=5000,
+            protocol="tcp",
+            cidr_blocks=["0.0.0.0/0"]
+        )
+    ],
+    egress=[
+        aws.ec2.SecurityGroupEgressArgs(
+            description="Allow all outbound",
+            from_port=0,
+            to_port=0,
+            protocol="-1",
+            cidr_blocks=["0.0.0.0/0"]
+        )
+    ],
+    tags={
+        "Name": f"{project_name}-sg"
+    }
+)
+
+# Create Key Pair
+key_pair = aws.ec2.KeyPair(
+    f"{project_name}-key",
+    key_name=f"{project_name}-key",
+    public_key=ssh_public_key,
+    tags={
+        "Name": f"{project_name}-key"
+    }
+)
+
+# Create EC2 Instance
+instance = aws.ec2.Instance(
+    f"{project_name}-vm",
+    ami=ubuntu_ami.id,
+    instance_type="t2.micro",  # Free tier
+    key_name=key_pair.key_name,
+    vpc_security_group_ids=[security_group.id],
+    subnet_id=subnet.id,
+    root_block_device=aws.ec2.InstanceRootBlockDeviceArgs(
+        volume_size=8,  # GB
+        volume_type="gp3"
+    ),
+    tags={
+        "Name": f"{project_name}-vm",
+        "Project": project_name,
+        "Env": environment,
+        "Managed": "pulumi"
+    }
+)
+
+# Export outputs
+pulumi.export("vm_public_ip", instance.public_ip)
+pulumi.export("vm_private_ip", instance.private_ip)
+pulumi.export("vm_id", instance.id)
+pulumi.export("ssh_command", pulumi.Output.concat(
+    "ssh ", ssh_username, "@", instance.public_ip
+))
+pulumi.export("vpc_id", vpc.id)
+pulumi.export("subnet_id", subnet.id)

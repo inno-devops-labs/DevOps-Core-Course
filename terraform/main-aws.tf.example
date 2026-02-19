@@ -1,0 +1,167 @@
+# Alternative AWS Configuration
+# To use AWS instead of Yandex Cloud:
+# 1. Rename this file to main.tf (backup existing main.tf)
+# 2. Update variables.tf for AWS-specific variables
+# 3. Configure AWS credentials
+
+terraform {
+  required_version = ">= 1.9"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.region
+  # Authentication via:
+  # - AWS CLI: aws configure
+  # - Environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+  # - IAM roles (if running on EC2)
+}
+
+# Get latest Ubuntu AMI
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hosted/ubuntu-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# Create VPC
+resource "aws_vpc" "vpc" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name    = "${var.project_name}-vpc"
+    Project = var.project_name
+    Env     = var.environment
+  }
+}
+
+# Create Internet Gateway
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.vpc.id
+
+  tags = {
+    Name = "${var.project_name}-igw"
+  }
+}
+
+# Create Subnet
+resource "aws_subnet" "subnet" {
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = var.subnet_cidr
+  availability_zone       = var.availability_zone
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "${var.project_name}-subnet"
+  }
+}
+
+# Create Route Table
+resource "aws_route_table" "rt" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
+  tags = {
+    Name = "${var.project_name}-rt"
+  }
+}
+
+# Associate Route Table with Subnet
+resource "aws_route_table_association" "rta" {
+  subnet_id      = aws_subnet.subnet.id
+  route_table_id = aws_route_table.rt.id
+}
+
+# Create Security Group
+resource "aws_security_group" "sg" {
+  name        = "${var.project_name}-sg"
+  description = "Security group for Lab 04 VM"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.allowed_ssh_cidr]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Custom port 5000"
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.project_name}-sg"
+  }
+}
+
+# Create Key Pair (if not exists)
+resource "aws_key_pair" "keypair" {
+  key_name   = "${var.project_name}-key"
+  public_key = file(var.ssh_public_key_path)
+
+  tags = {
+    Name = "${var.project_name}-key"
+  }
+}
+
+# Create EC2 Instance
+resource "aws_instance" "vm" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t2.micro"  # Free tier
+  key_name               = aws_key_pair.keypair.key_name
+  vpc_security_group_ids = [aws_security_group.sg.id]
+  subnet_id              = aws_subnet.subnet.id
+
+  root_block_device {
+    volume_size = 8  # GB (free tier: 30 GB total)
+    volume_type = "gp3"
+  }
+
+  tags = {
+    Name    = "${var.project_name}-vm"
+    Project = var.project_name
+    Env     = var.environment
+    Managed = "terraform"
+  }
+}

@@ -1,0 +1,13 @@
+# Terraform configuration for using mirror registry (if registry.terraform.io is blocked)
+# Copy this file to ~/.terraformrc if you have issues accessing Terraform Registry
+
+# For Russia: Use mirror registry
+provider_installation {
+  network_mirror {
+    url = "https://terraform-mirror.yandexcloud.net/"
+    include = ["registry.terraform.io/*/*"]
+  }
+  direct {
+    exclude = ["registry.terraform.io/*/*"]
+  }
+}

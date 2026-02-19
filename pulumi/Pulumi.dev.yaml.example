@@ -1,0 +1,11 @@
+config:
+  devops-lab04:project_name: devops-lab04
+  devops-lab04:environment: dev
+  devops-lab04:zone: ru-central1-a
+  devops-lab04:subnet_cidr: 10.0.1.0/24
+  # IMPORTANT: Change this to your IP address for security!
+  # Find your IP: curl ifconfig.me
+  # Format: "1.2.3.4/32" for single IP
+  devops-lab04:allowed_ssh_cidr: 0.0.0.0/0
+  devops-lab04:ssh_username: ubuntu
+  devops-lab04:ssh_public_key_path: ~/.ssh/id_rsa.pub
