@@ -1,0 +1,23 @@
+# Terraform state files
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Terraform working directory
+.terraform/
+.terraform.lock.hcl
+
+# Variable values (may contain secrets)
+terraform.tfvars
+*.tfvars
+
+# Crash log
+crash.log
+
+# SSH private keys
+*.pem
+*.key
+
+# Downloaded VM images cache
+*.box
+*.ova

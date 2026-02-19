@@ -1,0 +1,8 @@
+config:
+  devops-virtualbox:vm_name: ubuntu-pulumi
+  devops-virtualbox:vm_cpus: "2"
+  devops-virtualbox:vm_memory: "1024"
+  devops-virtualbox:host_only_adapter: VirtualBox Host-Only Ethernet Adapter
+  devops-virtualbox:vboxmanage: C:\Program Files\Oracle\VirtualBox\VBoxManage.exe
+  devops-virtualbox:box_url: "https://app.vagrantup.com/bento/boxes/ubuntu-22.04/versions/202407.23.0/providers/virtualbox/amd64/vagrant.box"
+encryptionsalt: v1:55bH6i5lUZY=:v1:Up8FaR0q5sSjMy1W:pEOJWisxPYNqVb3w5KSXx95itqeX1Q==

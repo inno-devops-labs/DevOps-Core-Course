@@ -2,3 +2,22 @@ test
 /.venv
 .coverage*
 coverage.xml
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+crash.log
+*.pem
+*.key
+*.box
+*.ova
+
+# Pulumi
+.pulumi/
+__pycache__/
+venv/
+.pulumi-cache/

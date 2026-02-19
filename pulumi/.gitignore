@@ -1,0 +1,9 @@
+# Pulumi state & config (use Pulumi Cloud or local backend)
+.pulumi/
+
+# Python virtualenv
+venv/
+__pycache__/
+
+# Downloaded VM image cache
+.pulumi-cache/

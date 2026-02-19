@@ -1,0 +1,6 @@
+name: devops-virtualbox
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Provision a local VirtualBox Ubuntu VM using Pulumi
