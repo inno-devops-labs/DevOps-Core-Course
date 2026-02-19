@@ -53,6 +53,7 @@ jobs:
         with:
           tflint_version: latest
           cache: true
+          tflint_config_path: "terraform/.tflint.hcl"
 
       - name: TFLint init
         run: tflint --init
