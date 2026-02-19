@@ -1,4 +1,5 @@
 # DevOps Info Service (Flask)
+[![Python CI/CD](https://github.com/Linktur/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=master)](https://github.com/Linktur/DevOps-Core-Course/actions/workflows/python-ci.yml)
 
 ## Overview
 A small Flask web service that reports service metadata, system information, runtime details, and request context. It also exposes a health check endpoint and Swagger UI.
@@ -64,6 +65,27 @@ docker pull linktur/devops-lab2:v1
 - `GET /health` - Health check
 - `GET /swagger.json` - OpenAPI spec
 - `GET /docs` - Swagger UI
+
+## Local Quality Checks
+Install development dependencies:
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+Run linter:
+```bash
+ruff check .
+```
+
+Run unit tests:
+```bash
+pytest
+```
+
+Run tests with coverage threshold (same as CI):
+```bash
+pytest --cov=. --cov-report=term-missing --cov-fail-under=70
+```
 
 ## Configuration
 | Variable | Default | Description |
