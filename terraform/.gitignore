@@ -12,3 +12,5 @@ terraform.tfvars
 *.key
 *.json  # Service account keys
 credentials
+
+terraform.tfvars
