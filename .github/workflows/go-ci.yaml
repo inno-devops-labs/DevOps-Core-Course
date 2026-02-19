@@ -83,6 +83,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/app_go:${{ env.CALVER }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/app_go:sha-${{ env.SHA_SHORT }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/app_go:latest
+            ${{ secrets.DOCKER_USERNAME }}/app-go:${{ env.CALVER }}
+            ${{ secrets.DOCKER_USERNAME }}/app-go:sha-${{ env.SHA_SHORT }}
+            ${{ secrets.DOCKER_USERNAME }}/app-go:latest
