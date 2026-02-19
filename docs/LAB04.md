@@ -336,3 +336,107 @@ Duration: 43s
 The resources in the stack have been deleted, but the history and configuration associated with the stack are still maintained. 
 If you want to remove the stack completely, run `pulumi stack rm dev`.
 ```
+
+---
+
+## 1. Cloud Provider & Infrastructure
+
+- Cloud provider: `Yandex Cloud`
+- Why this provider: available and convenient for this lab setup, with a small-instance workflow suitable for learning IaC.
+- Region/zone: `ru-central1-a`
+- Instance size used: `2 vCPU`, `2 GB RAM`, `20 GB` boot disk.
+- Cost note: lab performed with small resources and cleaned up after verification.
+
+Resources created:
+- Terraform part: VM instance, subnet, NAT/public IP (and default network usage).
+- Pulumi part: VPC network, subnet, security group, ingress rules (`22`, `80`), egress rule, VM instance, NAT/public IP.
+
+Observed public IPs from run logs:
+- Terraform VM: `93.77.191.77`
+- Pulumi VM: `89.169.149.12`
+
+## 2. Terraform Implementation
+
+- Terraform version used: `v1.14.5`
+- Main files: `terraform/main.tf`, `terraform/variables.tf`, `terraform/outputs.tf`
+- Sensitive values handled via variables (`yc_token`, `ssh_public_key` marked sensitive).
+- Outputs used for internal/external IP exposure.
+
+Key decisions:
+- Reused existing default VPC via data source.
+- Parameterized values (zone, VM name, credentials, SSH key).
+- Injected SSH key through instance metadata.
+
+Challenges encountered:
+- Correct cloud/provider credentials setup and variable wiring.
+- Keeping sensitive values out of Git and using `.gitignore` properly.
+
+Required command evidence:
+- `terraform plan` output: included above.
+- `terraform apply` output: included above.
+- `terraform init`: initialization was completed before plan/apply in workflow.
+- SSH connection method used: `ssh limbo16@93.77.191.77`
+
+## 3. Pulumi Implementation
+
+- Pulumi version: `v3.221.0`
+- Language: `Python`
+- Main files: `pulumi/__main__.py`, `pulumi/Pulumi.yaml`, `pulumi/requirements.txt`
+- Provider package: `pulumi-yandex`
+
+How code differs from Terraform:
+- Terraform uses declarative HCL.
+- Pulumi uses Python resource objects and references.
+- Security group and each security rule are explicit resources in Pulumi code.
+
+Advantages discovered:
+- Native language constructs for logic and reuse.
+- Easy file handling for SSH key loading.
+- Clear export of outputs (`public_ip`, `instance_id`).
+
+Challenges encountered:
+- Managing Python environment/dependencies (`venv`, package versions).
+- Additional Pulumi stack/project metadata and state workflow.
+
+Required command evidence:
+- `pulumi preview` output: included above.
+- `pulumi up` output: included above.
+- `pulumi down` output: included above.
+- SSH connection method used: `ssh ubuntu@89.169.149.12`
+
+## 4. Terraform vs Pulumi Comparison
+
+Ease of learning:
+- Terraform was faster to start for basic VM provisioning.
+- Pulumi setup required more initial tooling steps.
+- After setup, Pulumi flow felt natural because it is Python code.
+
+Code readability:
+- Terraform is compact and clear for straightforward infra.
+- Pulumi is more expressive when logic/reuse is needed.
+- For larger projects, Pulumi structure can be easier to scale.
+
+Debugging:
+- Terraform debugging is very direct through `plan` diff output.
+- Pulumi debugging includes provider plus runtime context.
+- For small labs, Terraform troubleshooting felt more linear.
+
+Documentation:
+- Terraform has broader ecosystem examples and references.
+- Pulumi docs are good, but examples are more language-specific.
+- For quick issue lookup, Terraform material was easier to find.
+
+Use case preference:
+- Terraform: preferred for standard declarative infrastructure.
+- Pulumi: preferred when infrastructure needs programming abstractions.
+- Practical choice depends on team skills and expected complexity.
+
+## 5. Lab 5 Preparation & Cleanup
+
+VM plan for Lab 5:
+- Keeping VM running: `No`
+- Plan: recreate required VM from IaC code for Lab 5 when needed.
+
+Cleanup status:
+- Pulumi cleanup proof is included above (`pulumi down` shows `8 deleted`).
+- Final state for this lab: resources were not intentionally left running.
