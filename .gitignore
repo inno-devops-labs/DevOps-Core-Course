@@ -8,3 +8,11 @@ terraform/*.tfvars
 
 # Yandex Cloud SA key
 .yc/
+
+venv/
+*/venv/
+__pycache__/
+.terraform/
+.pulumi/
+*.tfstate
+*.tfstate.backup
