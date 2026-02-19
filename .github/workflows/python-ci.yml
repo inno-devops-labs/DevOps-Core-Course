@@ -39,11 +39,13 @@ jobs:
         working-directory: app_python
 
       - name: Run Snyk security scan
-        uses: snyk/actions/python@master
+        uses: snyk/actions/setup@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --file=app_python/requirements.txt
+
+      - name: Snyk test
+        run: snyk test --severity-threshold=high --file=requirements.txt
+        working-directory: app_python
         continue-on-error: true
 
   docker:
