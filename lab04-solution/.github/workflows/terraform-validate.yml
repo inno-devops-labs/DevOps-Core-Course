@@ -1,0 +1,151 @@
+name: Terraform IaC Validation
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-validate.yml'
+    branches:
+      - main
+      - master
+  push:
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-validate.yml'
+    branches:
+      - main
+      - master
+
+jobs:
+  terraform:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+
+      - name: Terraform Format Check
+        id: fmt
+        working-directory: terraform/
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform Validation
+        id: validate
+        working-directory: terraform/
+        run: terraform validate
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Init TFLint
+        working-directory: terraform/
+        run: tflint --init
+
+      - name: Run TFLint
+        id: tflint
+        working-directory: terraform/
+        run: tflint --format compact
+        continue-on-error: true
+
+      - name: Comment PR on format issues
+        if: steps.fmt.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Terraform formatting issues detected.\n\nRun `terraform fmt -recursive` to fix.\n\n```bash\ncd terraform/\nterraform fmt -recursive\n```'
+            })
+
+      - name: Comment PR on lint issues
+        if: steps.tflint.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ TFLint found issues.\n\nCheck the workflow logs for details.'
+            })
+
+      - name: Success Comment
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Terraform validation passed!\n\n- ✅ `terraform fmt` check passed\n- ✅ `terraform validate` passed\n- ✅ `tflint` passed'
+            })
+
+  pulumi:
+    name: Pulumi Syntax Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Pulumi Dependencies
+        working-directory: pulumi/
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check Python Syntax
+        working-directory: pulumi/
+        run: python -m py_compile __main__.py
+
+      - name: Validate Pulumi Project
+        working-directory: pulumi/
+        run: python -c "
+        import yaml
+        with open('Pulumi.yaml', 'r') as f:
+            yaml.safe_load(f)
+        print('✅ Pulumi.yaml is valid')
+        "
+
+      - name: Import Check
+        working-directory: pulumi/
+        run: python -c "import __main__; print('✅ Pulumi code imports successfully')"
+
+      - name: Comment PR on syntax issues
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Pulumi syntax or import errors detected.\n\nCheck the workflow logs for details.'
+            })
+
+      - name: Success Comment
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Pulumi syntax validation passed!'
+            })

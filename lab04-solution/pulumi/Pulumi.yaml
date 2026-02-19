@@ -1,0 +1,30 @@
+name: lab04-pulumi
+runtime: python
+description: Lab 04 - Infrastructure as Code with Pulumi (AWS)
+
+config:
+  aws:region:
+    description: AWS region to deploy to
+    default: us-east-1
+  aws_region:
+    description: Custom AWS region variable
+    default: us-east-1
+  environment:
+    description: Environment name
+    default: lab04
+  instance_type:
+    description: EC2 instance type
+    default: t2.micro
+  vpc_cidr:
+    description: VPC CIDR block
+    default: 10.0.0.0/16
+  subnet_cidr:
+    description: Subnet CIDR block
+    default: 10.0.1.0/24
+  ssh_public_key_path:
+    description: Path to SSH public key
+    default: ~/.ssh/id_rsa.pub
+  ssh_allowed_cidr:
+    description: CIDR block allowed for SSH access
+    default: 0.0.0.0/0
+    secret: false  # Set to true if value is sensitive

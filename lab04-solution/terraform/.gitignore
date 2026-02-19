@@ -1,0 +1,44 @@
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!example.tfvars
+
+# Terraform directory
+.terraform/
+.terraform.lock.hcl
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# SSH keys
+*.pem
+*.key
+
+# Cloud credentials
+*.json
+credentials
+.aws/
+~.aws/
+
+# Logs
+*.log
+
+# Crash files
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files (except example)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Exclude CLI configuration as it may contain sensitive data
+cli.log
