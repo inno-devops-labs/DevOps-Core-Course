@@ -60,6 +60,10 @@ jobs:
         working-directory: app_python/terraform
         run: terraform init
 
+      - name: Terraform Plan
+        working-directory: app_python/terraform
+        run: terraform plan -out=tfplan
+
       - name: Terraform Apply
         working-directory: app_python/terraform
         env:
