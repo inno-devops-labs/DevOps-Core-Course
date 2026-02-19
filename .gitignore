@@ -1,1 +1,38 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+crash.log
+
+# Pulumi
+pulumi/venv/
+Pulumi.*.yaml
+pulumi/.pulumi/
+
+# Cloud credentials
+*.pem
+*.key
+credentials
+service-account-key.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Test
 test

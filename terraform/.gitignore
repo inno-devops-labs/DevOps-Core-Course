@@ -1,0 +1,10 @@
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+crash.log
+*.pem
+*.key
+service-account-key.json
