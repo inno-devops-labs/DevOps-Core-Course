@@ -1,1 +1,93 @@
-test
+# Repo-level .gitignore for DevOps-Core-Course
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+terraform.tfvars.json
+*.tfvars
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+plan.out
+
+# Pulumi
+Pulumi.*.yaml
+Pulumi.*.yml
+.pulumi/
+pulumi/venv/
+pulumi/.venv/
+pulumi/__pycache__/
+Pulumi.*
+
+# Yandex / cloud credentials and other secrets
+# NOTE: this is broad for safety. Adjust if you intentionally track non-secret JSON files.
+*.key
+*.pem
+*.p12
+*.crt
+*.csr
+credentials
+*.secret
+*.env
+.env.*
+secrets.*
+*.vault
+
+# Keys and service account files
+# common names: yc_key.json, service-account.json etc.
+*service-account*.json
+*key*.json
+*credentials*.json
+yc_key.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+env.bak/
+venv.bak/
+*.egg-info/
+*.eggs/
+.pytest_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and runtime files
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Docker
+docker-compose.override.yml
+**/docker-compose.override.yml
+
+# Misc
+*.bak
+*.swp
+*~
+
+# Keep README, docs, source files tracked
+# (No patterns below to avoid accidentally ignoring docs or source code)
