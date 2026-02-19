@@ -1,0 +1,3 @@
+name: lab4-pulumi
+runtime: python
+description: Pulumi implementation of Lab 4 VM on Yandex Cloud
