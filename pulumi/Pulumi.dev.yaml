@@ -1,0 +1,4 @@
+config:
+  yandex:serviceAccountKeyFile: /Users/arinazimina/Downloads/authorized_key(1).json
+  yandex:folderId: b1gff0j67atu07bsqe14
+  python_pulumi:sshPublicKey: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJrdGukPSOFXySoBrNeDTwqafjO8lx2IrM0GyzSycpDN arinazimina@arino4ka
