@@ -1,0 +1,16 @@
+### Пример terraform.tfvars (не коммитить в Git)
+
+yandex_cloud_id  = "your-cloud-id-here"
+yandex_folder_id = "your-folder-id-here"
+yandex_zone      = "ru-central1-a"
+
+vm_name = "lab04-vm"
+
+network_name = "lab04-network"
+subnet_name  = "lab04-subnet"
+subnet_cidr  = "10.0.1.0/24"
+
+my_ip = "YOUR.IP.ADDRESS.HERE/32"
+
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+ssh_user            = "ubuntu"

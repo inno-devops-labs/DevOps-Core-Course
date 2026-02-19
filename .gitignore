@@ -1,1 +1,20 @@
-test
+# Terraform (root-level convenience; also see terraform/.gitignore)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+*.tfvars.json
+
+# Credentials / keys (keep patterns narrow to avoid hiding legit JSON)
+*.pem
+*.key
+credentials
+terraform/*.json
+terraform/**/*.json
+
+# Pulumi
+pulumi/venv/
+Pulumi.*.yaml
+.pulumi/
