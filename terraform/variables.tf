@@ -8,7 +8,7 @@ variable "vm_image_url" {
   description = "URL to the VM image (Vagrant box)"
   type        = string
   # bento/ubuntu-22.04 — actively maintained box with up-to-date VirtualBox Guest Additions
-  default     = "https://app.vagrantup.com/bento/boxes/ubuntu-22.04/versions/202407.23.0/providers/virtualbox/amd64/vagrant.box"
+  default = "https://app.vagrantup.com/bento/boxes/ubuntu-22.04/versions/202407.23.0/providers/virtualbox/amd64/vagrant.box"
 }
 
 variable "vm_cpus" {

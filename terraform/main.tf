@@ -13,9 +13,9 @@ locals {
 
 resource "null_resource" "ubuntu_vm" {
   triggers = {
-    vm_name  = var.vm_name
-    vm_cpus  = var.vm_cpus
-    vm_mem   = var.vm_memory
+    vm_name = var.vm_name
+    vm_cpus = var.vm_cpus
+    vm_mem  = var.vm_memory
   }
 
   provisioner "local-exec" {
