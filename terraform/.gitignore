@@ -1,0 +1,36 @@
+# Terraform state files
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Variable files containing secrets
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+# Cloud credentials
+*.pem
+*.key
+credentials
+*.json
+
+# Backup files
+*.backup
+
+# Local SSH keys used only for lab provisioning
+.keys/

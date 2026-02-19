@@ -1,0 +1,64 @@
+# Example terraform.tfvars - COPY AND RENAME TO terraform.tfvars
+# NEVER commit terraform.tfvars to Git!
+
+# =============================================================================
+# Yandex Cloud Configuration (Required)
+# =============================================================================
+
+# Get token: yc iam create-token
+yc_token = "YOUR_YC_TOKEN_HERE"
+
+# Get cloud ID: yc resource-manager cloud list
+yc_cloud_id = "YOUR_CLOUD_ID"
+
+# Get folder ID: yc resource-manager folder list
+yc_folder_id = "YOUR_FOLDER_ID"
+
+# Availability zone
+yc_zone = "ru-central1-a"
+
+# =============================================================================
+# VM Configuration (Optional - defaults work for free tier)
+# =============================================================================
+
+vm_name         = "devops-vm"
+vm_platform_id  = "standard-v2"
+vm_cores        = 2
+vm_core_fraction = 20   # 20% core fraction for free tier
+vm_memory       = 1     # 1 GB RAM
+vm_disk_size    = 10    # 10 GB disk
+vm_disk_type    = "network-hdd"
+vm_user         = "ubuntu"
+
+# Path to your SSH public key
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+
+# =============================================================================
+# Network Configuration (Optional)
+# =============================================================================
+
+network_name = "devops-network"
+subnet_name  = "devops-subnet"
+subnet_cidr  = "10.0.1.0/24"
+
+# Required: your real public IP in /32 format for SSH
+allowed_ssh_cidr = ["203.0.113.10/32"]
+allowed_ingress_cidr = ["0.0.0.0/0"]
+enable_security_group = true
+
+# =============================================================================
+# GitHub Configuration (Optional - for bonus task)
+# =============================================================================
+
+# Generate at: GitHub -> Settings -> Developer settings -> Personal access tokens
+enable_github_bonus = false
+github_token = ""
+github_owner = ""
+github_repo_name = "DevOps-Core-Course"
+
+# =============================================================================
+# Tags
+# =============================================================================
+
+environment = "lab04"
+project     = "devops-course"

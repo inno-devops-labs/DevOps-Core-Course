@@ -1,0 +1,34 @@
+# Python virtual environment
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pulumi state (if using local backend)
+.pulumi/
+
+# Stack configuration with secrets
+Pulumi.*.yaml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Credentials
+*.pem
+*.key
+credentials
+*.json
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
