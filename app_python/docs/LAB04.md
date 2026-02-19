@@ -135,6 +135,7 @@ pulumi/
 Objective: Automatically validate and apply infrastructure changes using GitHub Actions.
 
 Workflow Overview
+
 - Trigger: Runs on pull requests for preview (terraform plan) and on main branch for applying (terraform apply).
 
 - Steps for Terraform Validation:

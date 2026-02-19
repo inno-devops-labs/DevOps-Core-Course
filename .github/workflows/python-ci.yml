@@ -45,7 +45,6 @@ jobs:
 
 
   terraform-apply:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: test
     steps:
