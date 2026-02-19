@@ -1,0 +1,32 @@
+2026-02-19T23:00:15.485+0300 [INFO]  Terraform version: 1.14.5
+2026-02-19T23:00:15.486+0300 [DEBUG] using github.com/hashicorp/go-tfe v1.94.0
+2026-02-19T23:00:15.486+0300 [DEBUG] using github.com/hashicorp/hcl/v2 v2.24.0
+2026-02-19T23:00:15.486+0300 [DEBUG] using github.com/hashicorp/terraform-svchost v0.1.1
+2026-02-19T23:00:15.486+0300 [DEBUG] using github.com/zclconf/go-cty v1.16.3
+2026-02-19T23:00:15.486+0300 [INFO]  Go runtime version: go1.25.6
+2026-02-19T23:00:15.486+0300 [INFO]  CLI args: []string{"terraform", "init"}
+2026-02-19T23:00:15.486+0300 [DEBUG] Attempting to open CLI config file: /home/alex/.terraformrc
+2026-02-19T23:00:15.486+0300 [DEBUG] File doesn't exist, but doesn't need to. Ignoring.
+2026-02-19T23:00:15.486+0300 [DEBUG] ignoring non-existing provider search directory terraform.d/plugins
+2026-02-19T23:00:15.486+0300 [DEBUG] ignoring non-existing provider search directory /home/alex/.terraform.d/plugins
+2026-02-19T23:00:15.486+0300 [DEBUG] ignoring non-existing provider search directory /home/alex/.local/share/terraform/plugins
+2026-02-19T23:00:15.486+0300 [DEBUG] ignoring non-existing provider search directory /home/alex/.local/share/flatpak/exports/share/terraform/plugins
+2026-02-19T23:00:15.486+0300 [DEBUG] ignoring non-existing provider search directory /var/lib/flatpak/exports/share/terraform/plugins
+2026-02-19T23:00:15.486+0300 [DEBUG] ignoring non-existing provider search directory /usr/local/share/terraform/plugins
+2026-02-19T23:00:15.486+0300 [DEBUG] ignoring non-existing provider search directory /usr/share/terraform/plugins
+2026-02-19T23:00:15.486+0300 [DEBUG] ignoring non-existing provider search directory /var/lib/snapd/desktop/terraform/plugins
+2026-02-19T23:00:15.486+0300 [INFO]  CLI command args: []string{"init"}
+[0m[1mInitializing the backend...[0m
+2026-02-19T23:00:15.487+0300 [DEBUG] checking for provisioner in "."
+2026-02-19T23:00:15.496+0300 [DEBUG] checking for provisioner in "/usr/bin"
+[0m[1mInitializing provider plugins...[0m
+- Finding latest version of yandex-cloud/yandex...
+2026-02-19T23:00:15.496+0300 [DEBUG] Service discovery for registry.terraform.io at https://registry.terraform.io/.well-known/terraform.json
+2026-02-19T23:00:16.675+0300 [ERROR] Checkpoint error: Unknown status: 404
+[31m╷[0m[0m
+[31m│[0m [0m[1m[31mError: [0m[0m[1mInvalid provider registry host[0m
+[31m│[0m [0m
+[31m│[0m [0m[0mThe host "registry.terraform.io" given in provider source address
+[31m│[0m [0m"registry.terraform.io/yandex-cloud/yandex" does not offer a Terraform
+[31m│[0m [0mprovider registry.
+[31m╵[0m[0m
