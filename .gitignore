@@ -1,1 +1,23 @@
-test
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+*.tfvars
+.terraform.lock.hcl
+
+# Pulumi
+pulumi/venv/
+pulumi/__pycache__/
+*.pyc
+Pulumi.*.yaml
+!Pulumi.yaml
+pulumi/node_modules/
+
+# Cloud credentials
+*.pem
+*.key
+*.json
+credentials
+*.openrc
+openrc.sh
