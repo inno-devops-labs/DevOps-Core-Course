@@ -1,1 +1,26 @@
 test
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+*.tfvars
+.terraform.lock.hcl
+
+# Pulumi
+*.pyc
+pulumi/venv/
+Pulumi.*.yaml
+Pulumi.*.yaml.backup
+
+# SSH keys
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# IDE and sys files
+.vscode/
+*.swp
+.DS_Store
+

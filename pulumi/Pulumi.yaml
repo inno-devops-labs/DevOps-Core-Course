@@ -1,0 +1,11 @@
+name: lab-pulumi
+description: pulumi program
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python
