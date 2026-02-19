@@ -42,7 +42,7 @@ locals {
 # ------------------------------------------------------------
 resource "yandex_vpc_network" "lab_network" {
   count = var.existing_network_id == "" ? 1 : 0
-  name = "lab04-network"
+  name  = "lab04-network"
 }
 
 resource "yandex_vpc_subnet" "lab_subnet" {
