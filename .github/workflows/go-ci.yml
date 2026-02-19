@@ -17,26 +17,9 @@ env:
   GO_VERSION: '1.21'
 
 jobs:
-  changes:
-    name: Detect Changes
-    runs-on: ubuntu-latest
-    outputs:
-      app: ${{ steps.filter.outputs.app }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            app:
-              - 'app_go/**'
-              - '.github/workflows/go-ci.yml'
-
   test:
     name: Lint and Test
     runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.app == 'true'
     defaults:
       run:
         working-directory: app_go
