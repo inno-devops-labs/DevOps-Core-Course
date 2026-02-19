@@ -1,0 +1,8 @@
+cloud_id  = "xxxx"
+folder_id = "yyyy"
+zone      = "ru-central1-a"
+
+service_account_key_file = "./key.json"
+
+ssh_public_key_path = "~/.ssh/id_ed25519.pub"
+my_ssh_cidr          = "1.2.3.4/32"

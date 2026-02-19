@@ -1,0 +1,11 @@
+encryptionsalt: v1:WNo4vXpzSBs=:v1:nDAI49mvq+hIqXfY:PJvNLVUTZ2WY/952GHIBhSkWHFcidA==
+config:
+  lab04-yc:zone: ru-central1-a
+  lab04-yc:sshUser: ubuntu
+  lab04-yc:mySshCidr: 5.228.112.78/32
+  lab04-yc:sshPublicKeyPath: /home/egrapa/.ssh/lab04.pub
+  lab04-yc:imageId: fd8lt661chfo5i13a40d
+  lab04-yc:service_account_key_file: /home/egrapa/prog/DevOps-Core-Course/terraform/authorized_key.json
+  yandex:serviceAccountKeyFile: /home/egrapa/prog/DevOps-Core-Course/terraform/authorized_key.json
+  yandex:folderId: b1g8k1f0jfvboii8ftl3
+  yandex:cloudId: b1g4g7ucasok23ajm606

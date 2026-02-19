@@ -1,0 +1,3 @@
+name: lab04-yc
+runtime: python
+description: Lab04 VM on Yandex Cloud (Pulumi)
