@@ -1,0 +1,6 @@
+encryptionsalt: v1:e25uvu8WuZU=:v1:Z1vNvYkVpcv8+4kj:voDTdnD16uSOfigNNnpOiwBLD1sC9w==
+config:
+  yacloud:cloud_id: b1gu280chocur11a7mfs
+  yacloud:folder_id: b1gvr40airke6dcfan9m
+  yacloud:my_ip: 80.71.232.39
+  yandex:serviceAccountKeyFile: /home/bulatgazizov/terraform-sa-key.json
