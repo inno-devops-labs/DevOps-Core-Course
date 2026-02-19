@@ -1,0 +1,5 @@
+config:
+  yc-infra:cloudId: b1glhaar472redp2m3to
+  yc-infra:folderId: b1g1uj21m7e1md6p212p
+  yc-infra:zone: ru-central1-a
+  yc-infra:myIp: 188.130.155.177/32

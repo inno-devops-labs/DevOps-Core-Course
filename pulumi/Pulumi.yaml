@@ -1,0 +1,4 @@
+name: yc-infra
+runtime:
+  name: python
+description: Yandex Cloud infrastructure via Pulumi
