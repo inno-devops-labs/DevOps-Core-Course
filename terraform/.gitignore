@@ -1,0 +1,23 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+!terraform.tfvars.example
+
+# Credentials
+*.pem
+*.key
+*.json
+credentials
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Crash and debug
+crash.log
+crash.*.log
+*.log

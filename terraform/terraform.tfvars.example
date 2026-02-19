@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and fill in (terraform.tfvars is gitignored)
+# aws_region       = "us-east-1"
+# project_name     = "devops-lab04"
+# instance_type   = "t2.micro"
+# ssh_public_key_path = "~/.ssh/id_rsa.pub"
+# allowed_ssh_cidr    = "YOUR_IP/32"  # e.g. "203.0.113.42/32"

@@ -1,0 +1,3 @@
+name: devops-lab04
+runtime: python
+description: Lab 4 - VM on AWS (same as Terraform)

@@ -1,0 +1,17 @@
+# Pulumi
+Pulumi.*.yaml
+!Pulumi.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
