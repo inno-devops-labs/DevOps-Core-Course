@@ -23,16 +23,16 @@ resource "github_repository" "course_repo" {
   description = "DevOps course lab assignments - Core infrastructure practices"
   visibility  = "public"
 
-  has_issues   = true
-  has_wiki     = false
-  has_projects = false
+  has_issues    = true
+  has_wiki      = false
+  has_projects  = false
   has_downloads = true
 
   # Security settings
   security_and_analysis {
-    secret_scanning     = true
+    secret_scanning                 = true
     secret_scanning_push_protection = true
-    advanced_security  = false
+    advanced_security               = false
   }
 
   topics = [
@@ -65,8 +65,8 @@ resource "github_repository" "course_repo" {
   # }
 
   tags = {
-    Course     = "DevOps-Core-Course"
-    ManagedBy  = "Terraform"
+    Course    = "DevOps-Core-Course"
+    ManagedBy = "Terraform"
   }
 }
 
