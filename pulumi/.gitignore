@@ -1,0 +1,6 @@
+# Pulumi
+venv/
+__pycache__/
+
+# Stack configs may contain secrets
+Pulumi.*.yaml

@@ -1,0 +1,12 @@
+# ============================================================
+# Example variable values — copy to terraform.tfvars
+# NEVER commit terraform.tfvars to Git!
+# ============================================================
+
+yc_token     = "YOUR_YC_OAUTH_TOKEN"
+yc_cloud_id  = "YOUR_CLOUD_ID"
+yc_folder_id = "YOUR_FOLDER_ID"
+yc_zone      = "ru-central1-a"
+
+vm_user             = "ubuntu"
+ssh_public_key_path = "~/.ssh/id_rsa.pub"

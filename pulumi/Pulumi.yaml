@@ -1,0 +1,6 @@
+name: lab04-yandex-vm
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Yandex Cloud VM for Lab 4 — Infrastructure as Code (Pulumi)
