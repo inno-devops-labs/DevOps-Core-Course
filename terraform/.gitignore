@@ -1,0 +1,15 @@
+# Terraform state and local data
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Variable files (may contain secrets)
+*.tfvars
+*.tfvars.json
+terraform.tfvars
+
+# Credentials and keys
+*.pem
+*.key
+*.json

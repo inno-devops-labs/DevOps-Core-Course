@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars and fill in your values. Do not commit terraform.tfvars.
+
+yandex_service_account_key_file     = "path/to/authorized-key.json"
+yandex_cloud_id                     = "your_cloud_id"
+yandex_folder_id                    = "your_folder_id"
+zone                                = "ru-central1-a"
+project_name                        = "lab4"
+# Path to your SSH public key (default works if you use ~/.ssh/id_ed25519.pub)
+ssh_public_key_path                 = "~/.ssh/id_ed25519.pub"
