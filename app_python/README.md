@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+[![Python CI](https://github.com/TurikRoma/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/TurikRoma/DevOps-Core-Course/actions)
+
 ## Overview
 
 Web service that reports system information and health status. Provides API endpoints for service info, hostname, platform, uptime, and request details.
