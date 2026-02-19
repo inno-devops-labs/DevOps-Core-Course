@@ -1,0 +1,6 @@
+name: devops-lab04
+description: DevOps Lab 04 - Infrastructure as Code with Pulumi
+runtime:
+  name: python
+  options:
+    virtualenv: venv

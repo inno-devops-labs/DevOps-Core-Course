@@ -1,0 +1,12 @@
+# Pulumi
+Pulumi.*.yaml
+!Pulumi.yaml
+.pulumi/
+venv/
+__pycache__/
+*.pyc
+
+# Secrets
+*.json
+*.pem
+*.key
