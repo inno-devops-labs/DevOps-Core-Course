@@ -82,10 +82,10 @@ resource "aws_security_group" "vm" {
 
 # EC2 instance (free tier: t2.micro)
 resource "aws_instance" "vm" {
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type           = var.instance_type
-  key_name                = aws_key_pair.vm.key_name
-  vpc_security_group_ids  = [aws_security_group.vm.id]
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.instance_type
+  key_name                    = aws_key_pair.vm.key_name
+  vpc_security_group_ids      = [aws_security_group.vm.id]
   associate_public_ip_address = true
 
   root_block_device {
