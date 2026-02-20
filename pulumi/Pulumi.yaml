@@ -1,0 +1,3 @@
+name: lab04-vm
+runtime: python
+description: Lab 4 - GCP VM (same as Terraform)

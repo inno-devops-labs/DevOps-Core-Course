@@ -1,0 +1,28 @@
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course/pulumi (lab04)
+$ pulumi preview
+Previewing update (dev)
+
+View in Browser (Ctrl+O): https://app.pulumi.com/TurikRoma-org/lab04-vm/dev/previews/fda84f3b-5e11-4d8a-bd63-cf6b3ef6b708
+     Type                     Name               Plan       Info
+ +   pulumi:pulumi:Stack      lab04-vm-dev       create
+     ├─ pulumi:providers:gcp  default_9_12_0                1 warning
+Downloads                                                                                                                            
+Installing plugin gcp-9.12.0 [------------------------------------------------------------------------------>___] 46.98 MiB/48.98 MiB
+ +   ├─ gcp:compute:Firewall  lab04-vm-firewall  create                                                                              
+ +   └─ gcp:compute:Instance  lab04-vm           create                                                                              
+Diagnostics:
+  pulumi:providers:gcp (default_9_12_0):
+    warning: unable to detect a global setting for GCP Project.
+    Pulumi will rely on per-resource settings for this operation.
+    Set the GCP Project by using:
+        `pulumi config set gcp:project <project>`
+    If you would like to disable this warning use:
+        `pulumi config set gcp:disableGlobalProjectWarning true`
+
+Outputs:
+    instance_public_ip: [unknown]
+    ssh_command       : [unknown]
+
+Resources:
+    + 3 to create

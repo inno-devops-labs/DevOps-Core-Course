@@ -1,0 +1,37 @@
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course/pulumi (lab04)
+$ pulumi destroy
+Previewing destroy (dev)
+
+View in Browser (Ctrl+O): https://app.pulumi.com/TurikRoma-org/lab04-vm/dev/previews/a56e72c3-6e32-4f22-a3f2-f478db656c88
+
+     Type                     Name               Plan
+ -   pulumi:pulumi:Stack      lab04-vm-dev       delete
+ -   ├─ gcp:compute:Firewall  lab04-vm-firewall  delete                                                                              
+ -   └─ gcp:compute:Instance  lab04-vm           delete                                                                              
+Outputs:
+  - instance_public_ip: "136.119.173.134"
+  - ssh_command       : "ssh ubuntu@136.119.173.134"
+
+Resources:
+    - 3 to delete
+
+Do you want to perform this destroy? yes
+Destroying (dev)
+
+View in Browser (Ctrl+O): https://app.pulumi.com/TurikRoma-org/lab04-vm/dev/updates/2
+
+     Type                     Name               Status
+ -   pulumi:pulumi:Stack      lab04-vm-dev       deleted (0.23s)
+ -   ├─ gcp:compute:Firewall  lab04-vm-firewall  deleted (13s)
+ -   └─ gcp:compute:Instance  lab04-vm           deleted (66s)
+Outputs:
+  - instance_public_ip: "136.119.173.134"
+  - ssh_command       : "ssh ubuntu@136.119.173.134"
+
+Resources:
+    - 3 deleted
+
+Duration: 1m9s
+
+The resources in the stack have been deleted, but the history and configuration associated with the stack are still maintained. 
+If you want to remove the stack completely, run `pulumi stack rm dev`.

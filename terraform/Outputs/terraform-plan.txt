@@ -1,0 +1,130 @@
+dmin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course/terraform (lab04)
+$ terraform plan
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following    
+symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # google_compute_firewall.allow_ssh_http will be created
+  + resource "google_compute_firewall" "allow_ssh_http" {
+      + creation_timestamp = (known after apply)
+      + destination_ranges = (known after apply)
+      + direction          = (known after apply)
+      + enable_logging     = (known after apply)
+      + id                 = (known after apply)
+      + name               = "lab04-vm-firewall"
+      + network            = "default"
+      + priority           = 1000
+      + project            = "idyllic-adviser-475019-t8"
+      + self_link          = (known after apply)
+      + source_ranges      = [
+          + "0.0.0.0/0",
+        ]
+      + target_tags        = [
+          + "lab04-vm",
+        ]
+
+      + allow {
+          + ports    = [
+              + "22",
+              + "80",
+              + "5000",
+            ]
+          + protocol = "tcp"
+        }
+    }
+
+  # google_compute_instance.vm will be created
+  + resource "google_compute_instance" "vm" {
+      + can_ip_forward       = false
+      + cpu_platform         = (known after apply)
+      + current_status       = (known after apply)
+      + deletion_protection  = false
+      + effective_labels     = {
+          + "goog-terraform-provisioned" = "true"
+          + "lab"                        = "lab04"
+        }
+      + id                   = (known after apply)
+      + instance_id          = (known after apply)
+      + label_fingerprint    = (known after apply)
+      + labels               = {
+          + "lab" = "lab04"
+        }
+      + machine_type         = "e2-micro"
+      + metadata             = {
+          + "ssh-keys" = <<-EOT
+                ubuntu:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICH1MG1Gf2NeFNZi5UVIZu+0vOJfcolnb0fC3/0MRMaN turikroma15@gmail.com        
+            EOT
+        }
+      + metadata_fingerprint = (known after apply)
+      + min_cpu_platform     = (known after apply)
+      + name                 = "lab04-vm"
+      + project              = "idyllic-adviser-475019-t8"
+      + self_link            = (known after apply)
+      + tags                 = [
+          + "lab04-vm",
+        ]
+      + tags_fingerprint     = (known after apply)
+      + terraform_labels     = {
+          + "goog-terraform-provisioned" = "true"
+          + "lab"                        = "lab04"
+        }
+      + zone                 = "us-central1-a"
+
+      + boot_disk {
+          + auto_delete                = true
+          + device_name                = (known after apply)
+          + disk_encryption_key_sha256 = (known after apply)
+          + kms_key_self_link          = (known after apply)
+          + mode                       = "READ_WRITE"
+          + source                     = (known after apply)
+
+          + initialize_params {
+              + image                  = "ubuntu-os-cloud/ubuntu-2204-lts"
+              + labels                 = (known after apply)
+              + provisioned_iops       = (known after apply)
+              + provisioned_throughput = (known after apply)
+              + resource_policies      = (known after apply)
+              + size                   = 10
+              + type                   = (known after apply)
+            }
+        }
+
+      + confidential_instance_config (known after apply)
+
+      + guest_accelerator (known after apply)
+
+      + network_interface {
+          + internal_ipv6_prefix_length = (known after apply)
+          + ipv6_access_type            = (known after apply)
+          + ipv6_address                = (known after apply)
+          + name                        = (known after apply)
+          + network                     = "default"
+          + network_ip                  = (known after apply)
+          + stack_type                  = (known after apply)
+          + subnetwork                  = (known after apply)
+          + subnetwork_project          = (known after apply)
+
+          + access_config {
+              + nat_ip       = (known after apply)
+              + network_tier = (known after apply)
+            }
+        }
+
+      + reservation_affinity (known after apply)
+
+      + scheduling (known after apply)
+    }
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + instance_public_ip = (known after apply)
+  + ssh_command        = (known after apply)
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 
+
+Note: You didn't use the -out option to save this plan, so Terraform can't guarantee to take exactly these actions if you run        
+"terraform apply" now.

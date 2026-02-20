@@ -1,0 +1,163 @@
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course/terraform (lab04)
+$ terraform destroy
+google_compute_firewall.allow_ssh_http: Refreshing state... [id=projects/idyllic-adviser-475019-t8/global/firewalls/lab04-vm-firewall]
+google_compute_instance.vm: Refreshing state... [id=projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm]
+
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following
+symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # google_compute_firewall.allow_ssh_http will be destroyed
+  - resource "google_compute_firewall" "allow_ssh_http" {
+      - creation_timestamp      = "2026-02-19T06:36:43.382-08:00" -> null
+      - destination_ranges      = [] -> null
+      - direction               = "INGRESS" -> null
+      - disabled                = false -> null
+      - id                      = "projects/idyllic-adviser-475019-t8/global/firewalls/lab04-vm-firewall" -> null
+      - name                    = "lab04-vm-firewall" -> null
+      - network                 = "https://www.googleapis.com/compute/v1/projects/idyllic-adviser-475019-t8/global/networks/default" -> null
+      - priority                = 1000 -> null
+      - project                 = "idyllic-adviser-475019-t8" -> null
+      - self_link               = "https://www.googleapis.com/compute/v1/projects/idyllic-adviser-475019-t8/global/firewalls/lab04-vm-firewall" -> null
+      - source_ranges           = [
+          - "0.0.0.0/0",
+        ] -> null
+      - source_service_accounts = [] -> null
+      - source_tags             = [] -> null
+      - target_service_accounts = [] -> null
+      - target_tags             = [
+          - "lab04-vm",
+        ] -> null
+        # (1 unchanged attribute hidden)
+
+      - allow {
+          - ports    = [
+              - "22",
+              - "80",
+              - "5000",
+            ] -> null
+          - protocol = "tcp" -> null
+        }
+    }
+
+  # google_compute_instance.vm will be destroyed
+  - resource "google_compute_instance" "vm" {
+      - can_ip_forward       = false -> null
+      - cpu_platform         = "AMD Rome" -> null
+      - current_status       = "RUNNING" -> null
+      - deletion_protection  = false -> null
+      - effective_labels     = {
+          - "goog-terraform-provisioned" = "true"
+          - "lab"                        = "lab04"
+        } -> null
+      - enable_display       = false -> null
+      - id                   = "projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm" -> null
+      - instance_id          = "2914385374995980563" -> null
+      - label_fingerprint    = "AOJZ1qn684A=" -> null
+      - labels               = {
+          - "lab" = "lab04"
+        } -> null
+      - machine_type         = "e2-micro" -> null
+      - metadata             = {
+          - "ssh-keys" = <<-EOT
+                ubuntu:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICH1MG1Gf2NeFNZi5UVIZu+0vOJfcolnb0fC3/0MRMaN turikroma15@gmail.com        
+            EOT
+        } -> null
+      - metadata_fingerprint = "jS4nPNqOIDI=" -> null
+      - name                 = "lab04-vm" -> null
+      - project              = "idyllic-adviser-475019-t8" -> null
+      - resource_policies    = [] -> null
+      - self_link            = "https://www.googleapis.com/compute/v1/projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm" -> null
+      - tags                 = [
+          - "lab04-vm",
+        ] -> null
+      - tags_fingerprint     = "5G2YeVT3u9Y=" -> null
+      - terraform_labels     = {
+          - "goog-terraform-provisioned" = "true"
+          - "lab"                        = "lab04"
+        } -> null
+      - zone                 = "us-central1-a" -> null
+        # (3 unchanged attributes hidden)
+
+      - boot_disk {
+          - auto_delete                = true -> null
+          - device_name                = "persistent-disk-0" -> null
+          - mode                       = "READ_WRITE" -> null
+          - source                     = "https://www.googleapis.com/compute/v1/projects/idyllic-adviser-475019-t8/zones/us-central1-a/disks/lab04-vm" -> null
+            # (4 unchanged attributes hidden)
+
+          - initialize_params {
+              - enable_confidential_compute = false -> null
+              - image                       = "https://www.googleapis.com/compute/v1/projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-v20260218" -> null
+              - labels                      = {} -> null
+              - provisioned_iops            = 0 -> null
+              - provisioned_throughput      = 0 -> null
+              - resource_manager_tags       = {} -> null
+              - resource_policies           = [] -> null
+              - size                        = 10 -> null
+              - type                        = "pd-standard" -> null
+                # (1 unchanged attribute hidden)
+            }
+        }
+
+      - network_interface {
+          - internal_ipv6_prefix_length = 0 -> null
+          - name                        = "nic0" -> null
+          - network                     = "https://www.googleapis.com/compute/v1/projects/idyllic-adviser-475019-t8/global/networks/default" -> null
+          - network_ip                  = "10.128.0.3" -> null
+          - queue_count                 = 0 -> null
+          - stack_type                  = "IPV4_ONLY" -> null
+          - subnetwork                  = "https://www.googleapis.com/compute/v1/projects/idyllic-adviser-475019-t8/regions/us-central1/subnetworks/default" -> null
+          - subnetwork_project          = "idyllic-adviser-475019-t8" -> null
+            # (3 unchanged attributes hidden)
+
+          - access_config {
+              - nat_ip                 = "35.193.180.39" -> null
+              - network_tier           = "PREMIUM" -> null
+                # (1 unchanged attribute hidden)
+            }
+        }
+
+      - scheduling {
+          - automatic_restart           = true -> null
+          - min_node_cpus               = 0 -> null
+          - on_host_maintenance         = "MIGRATE" -> null
+          - preemptible                 = false -> null
+          - provisioning_model          = "STANDARD" -> null
+            # (1 unchanged attribute hidden)
+        }
+
+      - shielded_instance_config {
+          - enable_integrity_monitoring = true -> null
+          - enable_secure_boot          = false -> null
+          - enable_vtpm                 = true -> null
+        }
+    }
+
+Plan: 0 to add, 0 to change, 2 to destroy.
+
+Changes to Outputs:
+  - instance_public_ip = "35.193.180.39" -> null
+  - ssh_command        = "ssh ubuntu@35.193.180.39" -> null
+
+Do you really want to destroy all resources?
+  Terraform will destroy all your managed infrastructure, as shown above.
+  There is no undo. Only 'yes' will be accepted to confirm.
+
+  Enter a value: yes
+
+google_compute_firewall.allow_ssh_http: Destroying... [id=projects/idyllic-adviser-475019-t8/global/firewalls/lab04-vm-firewall]
+google_compute_instance.vm: Destroying... [id=projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm]
+google_compute_instance.vm: Still destroying... [id=projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm, 00m10s elapsed]
+google_compute_firewall.allow_ssh_http: Still destroying... [id=projects/idyllic-adviser-475019-t8/global/firewalls/lab04-vm-firewall, 00m10s elapsed]
+google_compute_firewall.allow_ssh_http: Destruction complete after 12s
+google_compute_instance.vm: Still destroying... [id=projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm, 00m20s elapsed]
+google_compute_instance.vm: Still destroying... [id=projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm, 00m30s elapsed]
+google_compute_instance.vm: Still destroying... [id=projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm, 00m40s elapsed]
+google_compute_instance.vm: Still destroying... [id=projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm, 00m50s elapsed]
+google_compute_instance.vm: Still destroying... [id=projects/idyllic-adviser-475019-t8/zones/us-central1-a/instances/lab04-vm, 01m00s elapsed]
+google_compute_instance.vm: Destruction complete after 1m6s
+
+Destroy complete! Resources: 2 destroyed.

@@ -1,1 +1,19 @@
 test
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+*.tfvars
+.terraform.lock.hcl
+
+# Pulumi
+pulumi/venv/
+Pulumi.*.yaml
+
+# Credentials
+*.pem
+*.key
+*-credentials.json
+credentials

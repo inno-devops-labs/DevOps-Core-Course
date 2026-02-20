@@ -1,0 +1,60 @@
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course/pulumi (lab04)
+$ pulumi up
+Previewing update (dev)
+
+View in Browser (Ctrl+O): https://app.pulumi.com/TurikRoma-org/lab04-vm/dev/previews/e80a63d3-85f3-45ae-903e-cbd90313e326
+
+     Type                     Name               Plan       Info                                                                     
+ +   pulumi:pulumi:Stack      lab04-vm-dev       create
+     ├─ pulumi:providers:gcp  default_9_12_0                1 warning
+ +   ├─ gcp:compute:Instance  lab04-vm           create                                                                              
+ +   └─ gcp:compute:Firewall  lab04-vm-firewall  create                                                                              
+Diagnostics:
+  pulumi:providers:gcp (default_9_12_0):
+    warning: unable to detect a global setting for GCP Project.
+    Pulumi will rely on per-resource settings for this operation.
+    Set the GCP Project by using:
+        `pulumi config set gcp:project <project>`
+    If you would like to disable this warning use:
+        `pulumi config set gcp:disableGlobalProjectWarning true`
+
+    [Pulumi Neo] Would you like help with these diagnostics?
+    https://app.pulumi.com/TurikRoma-org/lab04-vm/dev/previews/e80a63d3-85f3-45ae-903e-cbd90313e326?explainFailure
+
+Outputs:
+    instance_public_ip: [unknown]
+    ssh_command       : [unknown]
+
+Resources:
+    + 3 to create
+
+Do you want to perform this update? yes
+Updating (dev)
+
+View in Browser (Ctrl+O): https://app.pulumi.com/TurikRoma-org/lab04-vm/dev/updates/1
+
+     Type                     Name               Status            Info
+ +   pulumi:pulumi:Stack      lab04-vm-dev       created (35s)
+     ├─ pulumi:providers:gcp  default_9_12_0                       1 warning
+ +   ├─ gcp:compute:Instance  lab04-vm           created (31s)
+ +   └─ gcp:compute:Firewall  lab04-vm-firewall  created (12s)
+Diagnostics:
+  pulumi:providers:gcp (default_9_12_0):
+    warning: unable to detect a global setting for GCP Project.
+    Pulumi will rely on per-resource settings for this operation.
+    Set the GCP Project by using:
+        `pulumi config set gcp:project <project>`
+    If you would like to disable this warning use:
+        `pulumi config set gcp:disableGlobalProjectWarning true`
+
+    [Pulumi Neo] Would you like help with these diagnostics?
+    https://app.pulumi.com/TurikRoma-org/lab04-vm/dev/updates/1?explainFailure
+
+Outputs:
+    instance_public_ip: "136.119.173.134"
+    ssh_command       : "ssh ubuntu@136.119.173.134"
+
+Resources:
+    + 3 created
+
+Duration: 37s
