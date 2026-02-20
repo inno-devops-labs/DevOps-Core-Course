@@ -1,0 +1,42 @@
+---
+- name: Log in to Docker Hub
+  ansible.builtin.shell: echo "$DHPASS" | docker login --username "$DHUSER" --password-stdin
+  environment:
+    DHUSER: "{{ dockerhub_username }}"
+    DHPASS: "{{ dockerhub_password }}"
+  no_log: true
+
+- name: Pull Docker image
+  community.docker.docker_image:
+    name: "{{ docker_image }}:{{ docker_image_tag }}"
+    source: pull
+
+- name: Remove old container (if exists)
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    state: absent
+
+- name: Run application container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: started
+    restart_policy: "{{ app_restart_policy }}"
+    ports:
+      - "{{ app_port }}:5000"
+
+- name: Wait for application to be ready
+  ansible.builtin.wait_for:
+    port: "{{ app_port }}"
+    delay: 3
+    timeout: 30
+
+- name: Verify health endpoint
+  ansible.builtin.uri:
+    url: "http://localhost:{{ app_port }}/health"
+    status_code: 200
+  register: health_result
+
+- name: Show health check result
+  ansible.builtin.debug:
+    var: health_result.json

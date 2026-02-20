@@ -21,3 +21,8 @@ crash.log
 __pycache__/
 venv/
 .pulumi-cache/
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
