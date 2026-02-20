@@ -1,0 +1,15 @@
+---
+# Application Configuration
+app_name: devops-info-service
+app_port: 5000
+app_internal_port: 5000
+app_restart_policy: unless-stopped
+
+# Docker Compose
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Wipe Logic Control
+# Set to true to remove application completely
+# Wipe only:     ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

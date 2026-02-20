@@ -1,0 +1,5 @@
+---
+- name: restart app compose
+  ansible.builtin.shell: docker compose up -d --force-recreate
+  args:
+    chdir: "{{ compose_project_dir }}"
