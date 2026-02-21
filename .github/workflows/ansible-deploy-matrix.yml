@@ -3,9 +3,9 @@ name: Ansible Deployment Matrix
 on:
   push:
     branches: [ main, master, lab06 ]
-    # paths:
-    #   - 'ansible/roles/web_app/**'
-    #   - '.github/workflows/ansible-deploy-matrix.yml'
+    paths:
+      - 'ansible/roles/web_app/**'
+      - '.github/workflows/ansible-deploy-matrix.yml'
 
 env:
   ANSIBLE_CONFIG: ansible/ansible.cfg

@@ -3,12 +3,12 @@ name: Ansible Deployment Go App
 on:
   push:
     branches: [ main, master, lab06 ]
-    # paths:
-    #   - 'ansible/vars/app_bonus.yml'
-    #   - 'ansible/playbooks/deploy-bonus.yml'
-    #   - 'ansible/roles/web_app/tasks/**'
-    #   - 'ansible/roles/web_app/templates/docker-compose.yml.j2'
-    #   - '.github/workflows/ansible-deploy-bonus.yml'
+    paths:
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/playbooks/deploy-bonus.yml'
+      - 'ansible/roles/web_app/tasks/**'
+      - 'ansible/roles/web_app/templates/docker-compose.yml.j2'
+      - '.github/workflows/ansible-deploy-bonus.yml'
   pull_request:
     branches: [ main, master, lab06 ]
     paths:

@@ -3,13 +3,13 @@ name: Ansible Deployment Python App
 on:
   push:
     branches: [ main, master, lab06 ]
-    # paths:
-    #   - 'ansible/vars/app_python.yml'
-    #   - 'ansible/playbooks/deploy-python.yml'
-    #   - 'ansible/roles/web_app/tasks/**'
-    #   - 'ansible/roles/web_app/templates/**'
-    #   - 'ansible/roles/web_app/defaults/**'
-    #   - '.github/workflows/ansible-deploy-python.yml'
+    paths:
+      - 'ansible/vars/app_python.yml'
+      - 'ansible/playbooks/deploy-python.yml'
+      - 'ansible/roles/web_app/tasks/**'
+      - 'ansible/roles/web_app/templates/**'
+      - 'ansible/roles/web_app/defaults/**'
+      - '.github/workflows/ansible-deploy-python.yml'
   pull_request:
     branches: [ main, master, lab06 ]
     paths:
