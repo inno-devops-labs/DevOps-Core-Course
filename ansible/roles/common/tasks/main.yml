@@ -1,0 +1,26 @@
+---
+# Common role - System provisioning tasks
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  tags:
+    - common
+    - packages
+
+- name: Install common packages
+  apt:
+    name: "{{ common_packages }}"
+    state: present
+    update_cache: yes
+  tags:
+    - common
+    - packages
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+  tags:
+    - common
+    - timezone

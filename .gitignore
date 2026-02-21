@@ -67,4 +67,9 @@ wheels/
 # Node
 node_modules/
 npm-debug.log
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
 yarn-error.log

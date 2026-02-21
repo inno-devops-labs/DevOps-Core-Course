@@ -1,0 +1,111 @@
+---
+# Docker role - Docker installation tasks
+
+- name: Install prerequisites for Docker
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: yes
+  tags:
+    - docker
+    - packages
+
+- name: Create directory for Docker GPG key
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  tags:
+    - docker
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    keyring: /etc/apt/keyrings/docker.gpg
+    state: present
+  tags:
+    - docker
+
+- name: Get Ubuntu release codename
+  command: lsb_release -cs
+  register: ubuntu_release
+  changed_when: false
+  tags:
+    - docker
+
+- name: Get system architecture
+  command: dpkg --print-architecture
+  register: system_arch
+  changed_when: false
+  tags:
+    - docker
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch={{ system_arch.stdout }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ubuntu_release.stdout }} stable"
+    state: present
+    filename: docker
+  tags:
+    - docker
+  notify: restart docker
+
+- name: Install Docker packages
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: yes
+  tags:
+    - docker
+    - packages
+  notify: restart docker
+
+- name: Ensure Docker service is running and enabled
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  tags:
+    - docker
+    - service
+
+- name: Add user to docker group
+  user:
+    name: "{{ docker_user }}"
+    groups: docker
+    append: yes
+  tags:
+    - docker
+    - user
+
+- name: Install python3-docker for Ansible docker modules
+  apt:
+    name: python3-docker
+    state: present
+  tags:
+    - docker
+    - packages
+
+- name: Verify Docker installation
+  command: docker --version
+  register: docker_version
+  changed_when: false
+  tags:
+    - docker
+    - verify
+
+- name: Display Docker version
+  debug:
+    msg: "Docker version installed: {{ docker_version.stdout }}"
+  tags:
+    - docker
+    - verify

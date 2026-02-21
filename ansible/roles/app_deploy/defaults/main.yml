@@ -1,0 +1,7 @@
+---
+# Application deployment role - Default variables
+
+app_port: 8000
+app_restart_policy: "unless-stopped"
+app_environment_vars: {}
+
