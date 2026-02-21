@@ -1,0 +1,116 @@
+name: Python CI
+
+on:
+  push:
+    branches: [ "master", "lab01", "lab02", "lab03" ]
+    paths:
+      - "app_python/**"
+  pull_request:
+    paths:
+      - "app_python/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "^3.13"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('app_python/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          pip install -r app_python/requirements.txt
+          pip install -r app_python/requirements-dev.txt
+
+      - name: Run tests with coverage
+        run: |
+          cd app_python
+          coverage run -m pytest
+          coverage report --fail-under=70
+          coverage xml
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          format: cobertura
+          file: app_python/coverage.xml
+          flag-name: python
+          parallel: true
+
+
+  security:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "^3.13"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-security-${{ hashFiles('app_python/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-security-
+    
+      - name: Install dependencies
+        run: |
+          pip install -r app_python/requirements.txt
+          pip install -r app_python/requirements-dev.txt
+
+      - name: Run Snyk scan for main dependencies
+        uses: snyk/actions/setup@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --file=app_python/requirements.txt
+
+      - name: Run Snyk scan for dev dependencies
+        uses: snyk/actions/setup@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --file=app_python/requirements-dev.txt
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app_python
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/info-service-python:latest

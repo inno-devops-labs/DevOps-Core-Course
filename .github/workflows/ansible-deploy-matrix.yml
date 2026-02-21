@@ -1,0 +1,74 @@
+name: Ansible Deployment Matrix
+
+on:
+  push:
+    branches: [ main, master, lab06 ]
+    paths:
+      - 'ansible/roles/web_app/**'
+      - '.github/workflows/ansible-deploy-matrix.yml'
+
+env:
+  ANSIBLE_CONFIG: ansible/ansible.cfg
+  ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+
+jobs:
+  matrix-deploy:
+    name: Deploy ${{ matrix.app.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - name: Python
+            var_file: app_python.yml
+            playbook: deploy-python.yml
+            port: 8000
+            image: info-service-python
+            container_port: 8000
+          
+          - name: Go
+            var_file: app_bonus.yml
+            playbook: deploy_bonus.yml
+            port: 8001
+            image: info-service-go
+            container_port: 8080
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Setup Ansible Vault
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Setup roles
+        run: |
+          mkdir -p ansible/playbooks/roles
+          cp -r ansible/roles/* ansible/playbooks/roles/ 2>/dev/null || true
+          cp -r roles/* ansible/playbooks/roles/ 2>/dev/null || true
+
+      - name: Deploy ${{ matrix.app.name }}
+        run: |
+          cd ansible
+          export ANSIBLE_ROLES_PATH="$GITHUB_WORKSPACE/ansible/roles"
+
+          ansible-playbook playbooks/deploy-python.yml --syntax-check\
+            --vault-password-file /tmp/vault_pass
+
+          ansible-playbook playbooks/deploy-bonus.yml --syntax-check\
+            --vault-password-file /tmp/vault_pass
+
+      - name: Cleanup
+        run: rm -f /tmp/vault_pass
+        if: always()

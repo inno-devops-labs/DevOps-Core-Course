@@ -1,0 +1,99 @@
+name: Ansible Deployment Go App
+
+on:
+  push:
+    branches: [ main, master, lab06 ]
+    paths:
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/playbooks/deploy-bonus.yml'
+      - 'ansible/roles/web_app/tasks/**'
+      - 'ansible/roles/web_app/templates/docker-compose.yml.j2'
+      - '.github/workflows/ansible-deploy-bonus.yml'
+  pull_request:
+    branches: [ main, master, lab06 ]
+    paths:
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/playbooks/deploy-bonus.yml'
+
+env:
+  ANSIBLE_CONFIG: ansible/ansible.cfg
+  ANSIBLE_ROLES_PATH: ${{ github.workspace }}/ansible/roles
+  ANSIBLE_HOST_KEY_CHECKING: False
+  ANSIBLE_SSH_ARGS: '-o ControlMaster=auto -o ControlPersist=60s -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+  VM_HOST: ${{ secrets.VM_HOST }}
+  VM_USER: ${{ secrets.VM_USER }}
+  APP_NAME: 'devops-go'
+
+jobs:
+  lint:
+    name: Lint Go App Ansible
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint yamllint
+          ansible-galaxy collection install community.docker
+
+      - name: Syntax check Go playbook
+        run: |
+          cd ansible
+          export ANSIBLE_ROLES_PATH="$GITHUB_WORKSPACE/ansible/roles"
+          ansible-playbook playbooks/deploy-bonus.yml --syntax-check
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/deploy-bonus.yml
+
+  deploy:
+    name: Deploy Go App
+    needs: lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Setup Ansible Vault
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Setup roles
+        run: |
+          mkdir -p ansible/playbooks/roles
+          cp -r ansible/roles/* ansible/playbooks/roles/ 2>/dev/null || true
+          cp -r roles/* ansible/playbooks/roles/ 2>/dev/null || true
+
+      - name: Deploy Go
+        run: |
+          cd ansible
+          export ANSIBLE_ROLES_PATH=$(pwd)/roles
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook playbooks/deploy-bonus.yml --syntax-check\
+            --vault-password-file /tmp/vault_pass
+
+      - name: Cleanup
+        run: rm -f /tmp/vault_pass
+        if: always()
