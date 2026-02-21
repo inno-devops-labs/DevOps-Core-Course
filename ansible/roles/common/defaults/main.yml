@@ -14,4 +14,4 @@ common_packages:
   - gnupg
   - lsb-release
 
-timezone: "Europe/Moscow"
+common_timezone: "Europe/Moscow"

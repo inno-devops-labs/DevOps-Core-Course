@@ -1,0 +1,8 @@
+---
+- name: Placeholder playbook
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Placeholder task
+      debug:
+        msg: "This is a placeholder playbook"

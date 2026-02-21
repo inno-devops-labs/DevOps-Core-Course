@@ -1,0 +1,47 @@
+---
+app_name: devops-go
+app_display_name: "DevOps Go Info Service"
+app_description: "Go web application with system information"
+
+docker_image: "{{ dockerhub_username }}/devops-info-service-go"
+docker_tag: latest
+
+app_port: 8001
+app_internal_port: 8080
+
+compose_project_dir: "/opt/{{ app_name }}"
+compose_project_name: "{{ app_name }}"
+network_name: "{{ app_name }}_network"
+data_volume: "{{ app_name }}_data"
+log_volume: "{{ app_name }}_logs"
+
+health_check_path: "/health"
+health_check_interval: "30s"
+health_check_timeout: "10s"
+health_check_retries: 3
+health_check_start_period: "40s"
+
+cpu_limit: "0.25"
+memory_limit: "256M"
+cpu_reservation: "0.1"
+memory_reservation: "128M"
+
+app_environment:
+  APP_ENV: "production"
+  APP_DEBUG: "false"
+  APP_PORT: "{{ app_internal_port }}"
+  APP_NAME: "{{ app_name }}"
+  APP_VERSION: "1.0.0"
+  GOMAXPROCS: "2"
+  LOG_LEVEL: "INFO"
+
+log_driver: "json-file"
+log_max_size: "10m"
+log_max_file: "3"
+
+container_labels:
+  maintainer: "DevOps Team"
+  version: "1.0.0"
+  app_type: "golang"
+  environment: "production"
+  language: "go"

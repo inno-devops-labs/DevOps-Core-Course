@@ -1,0 +1,68 @@
+version: '{{ compose_version }}'
+
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag }}
+    container_name: {{ app_name }}_{{ app_name }}
+    hostname: {{ app_name }}
+    
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    
+    environment:
+      {% for key, value in app_environment.items() %}
+      - {{ key }}={{ value }}
+      {% endfor %}
+      
+      - APP_SECRET_KEY={{ app_secret_key | default('change_me_in_production') }}
+    
+    env_file:
+      - .env
+    
+    volumes:
+      - {{ data_volume }}:/app/data
+      - {{ log_volume }}:/app/logs
+      - ./config:/app/config:ro
+    
+    networks:
+      - {{ network_name }}
+    
+    restart: {{ service_restart_policy }}
+    
+    healthcheck:
+      test: {{ service_healthcheck.test | to_json }}
+      interval: {{ service_healthcheck.interval }}
+      timeout: {{ service_healthcheck.timeout }}
+      retries: {{ service_healthcheck.retries }}
+      start_period: {{ service_healthcheck.start_period }}
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    labels:
+      - "maintainer=DevOps Team"
+      - "version={{ app_version }}"
+      - "description={{ app_description }}"
+
+networks:
+  {{ network_name }}:
+    driver: {{ network_driver }}
+    name: {{ network_name }}
+
+volumes:
+  {{ data_volume }}:
+    name: {{ data_volume }}
+  {{ log_volume }}:
+    name: {{ log_volume }}

@@ -1,0 +1,34 @@
+---
+galaxy_info:
+  author: "scruffyscarf"
+  description: "Deploy web application using Docker Compose"
+  license: "MIT"
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+  galaxy_tags:
+    - docker
+    - compose
+    - web
+    - deployment
+
+dependencies:
+  - role: docker
+    vars:
+      docker_users:
+        - "{{ ansible_user }}"
+        - "{{ app_user | default('appuser') }}"
+      docker_compose_install: true
+
+  - role: common
+    vars:
+      app_user: "appuser"
+      common_packages:
+        - python3-pip
+        - curl
+        - git
+        - htop

@@ -1,0 +1,44 @@
+---
+app_container_name: "devops-app"
+app_description: "DevOps Python Application"
+app_name: "devops-app"
+app_version: "1.0.0"
+
+app_health_check_path: "/health"
+app_health_check_timeout: 60
+app_health_check_interval: 5
+
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_tag: "latest"
+app_port: "5000"
+docker_restart_policy: "unless-stopped"
+
+compose_version: "3.8"
+compose_project_name: "{{ app_name }}"
+compose_project_dir: "/opt/{{ app_name }}"
+
+service_restart_policy: "unless-stopped"
+service_healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:{{ app_port }}/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+network_name: "{{ app_name }}_network"
+network_driver: "bridge"
+
+data_volume: "{{ app_name }}_data"
+log_volume: "{{ app_name }}_logs"
+
+app_environment:
+  APP_ENV: "production"
+  APP_DEBUG: "false"
+  APP_PORT: "{{ app_host_port }}"
+  APP_NAME: "{{ app_name }}"
+
+web_app_wipe: false
+wipe_remove_volumes: true
+wipe_remove_images: "none"
+wipe_force_remove_images: false
+wipe_timeout: 300

@@ -3,5 +3,12 @@
   service:
     name: docker
     state: restarted
-    enabled: yes
+    enabled: true
   listen: "restart docker"
+
+- name: Restart sshd
+  systemd:
+    name: sshd
+    state: restarted
+    daemon_reload: yes
+  become: true

@@ -1,41 +1,170 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-  tags:
-    - common
-    - system
+- name: System packages installation block
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      register: apt_update
+      tags:
+        - packages
+        - apt
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+        update_cache: no
+      register: package_install
+      tags:
+        - packages
+        - apt
+
+    - name: Upgrade system packages
+      apt:
+        upgrade: dist
+        update_cache: no
+      when: auto_upgrade | default(false)
+      tags:
+        - packages
+        - upgrade
+
+  rescue:
+    - name: Handle package installation failure
+      debug:
+        msg: "Package installation failed, attempting to fix..."
+      tags:
+        - rescue
+        - debug
+
+    - name: Fix broken packages
+      apt:
+        name: "{{ common_packages }}"
+        state: fixed
+      when: apt_update is failed or package_install is failed
+      tags:
+        - rescue
+        - apt
+
+    - name: Retry apt update with fix
+      apt:
+        update_cache: true
+        force_apt_get: yes
+      when: apt_update is failed
+      tags:
+        - rescue
+        - apt
+
+  always:
+    - name: Log package installation completion
+      debug:
+        msg: "Package installation block completed"
+      tags:
+        - always
+        - debug
+
+    - name: Create completion timestamp
+      copy:
+        mode: "0644"
+        content: "Common role completed at {{ ansible_facts['date_time']['iso8601'] }}"
+        dest: /tmp/ansible_common_completion.log
+      tags:
+        - always
+        - logging
+
   tags:
-    - common
     - packages
+    - block_packages
 
-- name: Set timezone
-  timezone:
-    name: "{{ timezone }}"
-  when: timezone is defined
-  tags:
-    - common
-    - timezone
+- name: User management block
+  block:
+    - name: Create application user
+      user:
+        name: "{{ app_user }}"
+        state: present
+        system: no
+        create_home: true
+        shell: /bin/bash
+      when: app_user is defined
+      tags:
+        - users
+        - app_user
 
-- name: Ensure pip is installed
-  pip:
-    name: pip
-    state: latest
-  tags:
-    - common
-    - pip
+    - name: Ensure SSH directory exists for app user
+      file:
+        path: "/home/{{ app_user }}/.ssh"
+        state: directory
+        mode: '0700'
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+      when: app_user is defined
+      tags:
+        - users
+        - ssh
 
-- name: Create .ssh directory for root
-  file:
-    path: /root/.ssh
-    state: directory
-    mode: '0700'
+    - name: Add users to sudo group
+      user:
+        name: "{{ item }}"
+        groups: sudo
+        append: yes
+      loop: "{{ admin_users | default([]) }}"
+      tags:
+        - users
+        - sudo
+
+  rescue:
+    - name: Handle user management failure
+      debug:
+        msg: "User management failed, check permissions"
+      tags:
+        - rescue
+        - debug
+
+  always:
+    - name: User management completed
+      debug:
+        msg: "User management block finished"
+      tags:
+        - always
+        - debug
+
   tags:
-    - common
-    - ssh
+    - users
+    - block_users
+
+- name: System configuration block
+  block:
+    - name: Set timezone
+      timezone:
+        name: "{{ timezone | default('UTC') }}"
+      tags:
+        - config
+        - timezone
+
+    - name: Configure hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+      tags:
+        - config
+        - hostname
+
+    - name: Configure SSH hardening
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^{{ item.key }}(\\s+|$)"
+        line: "{{ item.key }} {{ item.value }}"
+        state: present
+        backup: yes
+      loop:
+        - { key: 'PasswordAuthentication', value: 'no' }
+        - { key: 'PermitRootLogin', value: 'no' }
+        - { key: 'ClientAliveInterval', value: '300' }
+      notify: restart sshd
+      tags:
+        - config
+        - ssh
+        - security
+
+  tags:
+    - config
+    - block_config

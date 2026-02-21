@@ -1,0 +1,47 @@
+---
+app_name: devops-python
+app_display_name: "DevOps Python Info Service"
+app_description: "Python Flask web application with system information"
+
+docker_image: "{{ dockerhub_username }}/devops-info-service"
+docker_tag: latest
+
+app_port: 8000
+app_internal_port: 8000
+
+compose_project_dir: "/opt/{{ app_name }}"
+compose_project_name: "{{ app_name }}"
+network_name: "{{ app_name }}_network"
+data_volume: "{{ app_name }}_data"
+log_volume: "{{ app_name }}_logs"
+
+# Health Check Configuration
+health_check_path: "/health"
+health_check_interval: "30s"
+health_check_timeout: "10s"
+health_check_retries: 3
+health_check_start_period: "40s"
+
+cpu_limit: "0.5"
+memory_limit: "512M"
+cpu_reservation: "0.25"
+memory_reservation: "256M"
+
+app_environment:
+  APP_ENV: "production"
+  APP_DEBUG: "false"
+  APP_PORT: "{{ app_internal_port }}"
+  APP_NAME: "{{ app_name }}"
+  APP_VERSION: "1.0.0"
+  PYTHONUNBUFFERED: "1"
+  LOG_LEVEL: "INFO"
+
+log_driver: "json-file"
+log_max_size: "10m"
+log_max_file: "3"
+
+container_labels:
+  maintainer: "DevOps Team"
+  version: "1.0.0"
+  app_type: "python"
+  environment: "production"

@@ -7,8 +7,9 @@
   listen: "restart app"
 
 - name: Show running containers
-  command: docker ps --format 'table {{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Image{{"}}"}}\t{{"{{"}}.Status{{"}}"}}\t{{"{{"}}.Ports{{"}}"}}'
+  command: docker ps --format "table {{ "{{" }}.Names{{ "}}" }}\t{{ "{{" }}.Image{{ "}}" }}\t{{ "{{" }}.Status{{ "}}" }}\t{{ "{{" }}.Ports{{ "}}" }}"
   register: containers
+  changed_when: false
 
 - name: Display container status
   debug:

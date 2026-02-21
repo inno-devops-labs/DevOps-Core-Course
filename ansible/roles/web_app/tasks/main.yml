@@ -1,4 +1,10 @@
 ---
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+
 - name: Login to Docker Hub
   docker_login:
     username: "{{ dockerhub_username }}"
@@ -80,7 +86,7 @@
 
 - name: Wait for application to start
   wait_for:
-    port: "{{ app_port }}"
+    port: "{{ app_host_port }}"
     host: "127.0.0.1"
     delay: 5
     timeout: "{{ app_health_check_timeout }}"
@@ -91,7 +97,7 @@
 
 - name: Check application health endpoint
   uri:
-    url: "http://localhost:{{ app_port }}{{ app_health_check_path }}"
+    url: "http://localhost:{{ app_host_port }}{{ app_health_check_path }}"
     method: GET
     status_code: 200
     timeout: 10

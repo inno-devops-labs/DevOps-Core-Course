@@ -1,0 +1,134 @@
+---
+- name: Check if application exists
+  stat:
+    path: "{{ compose_project_dir }}/docker-compose.yml"
+  register: app_exists
+  tags:
+    - web_app_wipe
+    - check
+
+- name: Wipe application - Main cleanup block
+  block:
+    - name: Stop and remove Docker Compose project
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        project_name: "{{ app_name }}"
+        state: absent
+        remove_orphans: yes
+        remove_volumes: "{{ wipe_remove_volumes | default(true) }}"
+        remove_images: "{{ wipe_remove_images | default('none') }}"
+        timeout: "{{ wipe_timeout | default(300) }}"
+      register: compose_removed
+      when: app_exists.stat.exists
+      tags:
+        - web_app_wipe
+        - docker_compose
+        - cleanup
+
+    - name: Remove Docker containers by name
+      docker_container:
+        name: "{{ item }}"
+        state: absent
+        force_kill: yes
+      loop:
+        - "{{ app_name }}_{{ app_name }}"
+        - "{{ app_name }}_web_1"
+        - "{{ app_name }}_app_1"
+      ignore_errors: true
+      when: not app_exists.stat.exists or compose_removed.failed | default(false)
+      tags:
+        - web_app_wipe
+        - docker
+        - fallback
+
+    - name: Remove Docker volumes by name
+      docker_volume:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ data_volume }}"
+        - "{{ log_volume }}"
+      ignore_errors: true
+      when: wipe_remove_volumes | default(true)
+      tags:
+        - web_app_wipe
+        - volumes
+
+    - name: Remove Docker network
+      docker_network:
+        name: "{{ network_name }}"
+        state: absent
+      ignore_errors: true
+      tags:
+        - web_app_wipe
+        - network
+
+    - name: Remove application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: absent
+        force: yes
+      register: dir_removed
+      tags:
+        - web_app_wipe
+        - filesystem
+
+    - name: Remove Docker images
+      docker_image:
+        name: "{{ docker_image }}"
+        tag: "{{ docker_tag }}"
+        state: absent
+        force_absent: "{{ wipe_force_remove_images | default(false) }}"
+      when: wipe_remove_images | default('none') in ['local', 'all']
+      tags:
+        - web_app_wipe
+        - images
+
+    - name: Clean up orphaned containers for this app
+      shell: |
+        docker ps -a --filter "name={{ app_name }}" --format "{{ '{{.Names}}' }}" | xargs -r docker rm -f
+      register: orphan_cleanup
+      changed_when: orphan_cleanup.stdout_lines | length > 0
+      ignore_errors: true
+      tags:
+        - web_app_wipe
+        - cleanup
+
+  rescue:
+    - name: Handle wipe failure
+      debug:
+        msg: |
+          Wipe operation partially failed for {{ app_name }}
+          
+          Manual cleanup may be required:
+          docker stop $(docker ps -a -q --filter "name={{ app_name }}")
+          docker rm $(docker ps -a -q --filter "name={{ app_name }}")
+          docker volume rm $(docker volume ls -q --filter "name={{ app_name }}")
+          rm -rf {{ compose_project_dir }}
+      tags:
+        - web_app_wipe
+        - rescue
+
+  always:
+    - name: Verify wipe completion
+      block:
+        - name: Check for remaining containers
+          shell: |
+            docker ps -a --filter "name={{ app_name }}" --format "table {{ '{{.Names}}' }}\t{{ '{{.Status}}' }}"
+          register: remaining_containers
+          changed_when: false
+          failed_when: false
+
+        - name: Check for remaining directories
+          stat:
+            path: "{{ compose_project_dir }}"
+          register: remaining_dir
+
+      tags:
+        - web_app_wipe
+        - verification
+
+  tags:
+    - web_app_wipe
+    - block_wipe
+    - "app_name_{{ app_name }}"

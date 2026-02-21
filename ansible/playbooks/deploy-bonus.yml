@@ -1,0 +1,43 @@
+---
+- name: Deploy Go Web Application
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../vars/app_bonus.yml
+  vars:
+    web_app_wipe: false
+
+  pre_tasks:
+    - name: Display deployment target
+      debug:
+        msg: |
+          ========================================
+          Deploying Go Application
+          App: {{ app_name }}
+          Image: {{ docker_image }}:{{ docker_tag }}
+          Port: {{ app_port }}:{{ app_internal_port }}
+          Environment: {{ app_environment.APP_ENV }}
+          ========================================
+      tags: always
+
+  roles:
+    - role: web_app
+      role_path: ../roles
+      tags: [bonus, golang, web_app]
+
+  post_tasks:
+    - name: Verify Go application
+      uri:
+        url: "http://localhost:{{ app_port }}{{ health_check_path }}"
+        method: GET
+        status_code: 200
+      register: health_check
+      retries: 5
+      delay: 5
+      until: health_check.status == 200
+      tags: [bonus, verify]
+
+    - name: Display Go app health
+      debug:
+        msg: "Go App Health: {{ health_check.json | default('OK') }}"
+      tags: [bonus, verify]

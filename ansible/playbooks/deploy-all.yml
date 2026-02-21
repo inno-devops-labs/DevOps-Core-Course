@@ -1,0 +1,65 @@
+---
+- name: Deploy All Applications
+  hosts: webservers
+  become: true
+  vars:
+    skip_failed: false
+    deploy_python: true
+    deploy_go: true
+
+  tasks:
+    - name: Include Python app variables
+      ansible.builtin.include_vars: ../python_app.yml
+      when: deploy_python | bool
+      tags: [python, vars]
+
+    - name: Deploy Python Application
+      ansible.builtin.include_role:
+        name: web_app
+        apply:
+          tags: [python, deploy]
+      vars:
+        app_name: devops-python
+        docker_image: "{{ dockerhub_username }}/devops-info-service"
+        app_port: 8000
+        app_internal_port: 8000
+        compose_project_dir: "/opt/devops-python"
+      when: deploy_python | bool
+      tags: [python, deploy]
+
+    - name: Include Go app variables
+      include_vars: ../vars/app_bonus.yml
+      when: deploy_go | bool
+      tags: [go, vars]
+
+    - name: Deploy Go Application
+      include_role:
+        name: web_app
+        apply:
+          tags: [go, deploy]
+      vars:
+        app_name: devops-go
+        docker_image: "{{ dockerhub_username }}/devops-info-service-go"
+        app_port: 8001
+        app_internal_port: 8080
+        compose_project_dir: "/opt/devops-go"
+      when: deploy_go | bool
+      tags: [go, deploy]
+
+  post_tasks:
+    - name: Verify all applications
+      block:
+        - name: Check Python app
+          ansible.builtin.uri:
+            url: "http://localhost:8000/health"
+            method: GET
+          register: python_check
+          ignore_errors: true
+
+        - name: Check Go app
+          ansible.builtin.uri:
+            url: "http://localhost:8001/health"
+            method: GET
+          register: go_check
+          ignore_errors: true
+

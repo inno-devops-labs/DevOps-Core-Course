@@ -1,0 +1,21 @@
+---
+skip_list:
+  - key-order
+  - var-naming
+  - yaml[truthy]
+  - yaml[octal-values]
+  - yaml[trailing-spaces]
+  - risky-file-permissions
+  - ignore-errors
+  - fqcn[action]
+  - playbooks/site.yml
+  - internal-error
+  - var-naming[no-role-prefix]
+  - fqcn[action-core]
+  - key-order[task]
+
+exclude_paths:
+  - roles/web_app/tasks/main.yml
+
+warn_list:
+  - experimental

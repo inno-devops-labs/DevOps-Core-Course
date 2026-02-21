@@ -6,16 +6,17 @@
     - "../group_vars/all.yml"
 
   roles:
-    - role: app_deploy
+    - role: web_app
       tags:
         - app
         - deploy
 
   post_tasks:
-  - name: Show running containers
-    command: docker ps --format 'table {{"{{"}}.Names{{"}}"}}\t{{"{{"}}.Image{{"}}"}}\t{{"{{"}}.Status{{"}}"}}\t{{"{{"}}.Ports{{"}}"}}'
-    register: containers
+      - name: Show running containers
+        command: docker ps --format "table {{ "{{" }}.Names{{ "}}" }}\t{{ "{{" }}.Image{{ "}}" }}\t{{ "{{" }}.Status{{ "}}" }}\t{{ "{{" }}.Ports{{ "}}" }}"
+        register: containers
+        changed_when: false
 
-  - name: Display container status
-    debug:
-      msg: "{{ containers.stdout_lines }}"
+      - name: Display container status
+        debug:
+          msg: "{{ containers.stdout_lines }}"
