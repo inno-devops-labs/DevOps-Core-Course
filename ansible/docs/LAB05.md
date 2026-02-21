@@ -6,7 +6,7 @@
 
 **VM OS and version:** `Ubuntu 22.04`
 
-**Role structure diagram**
+**Role structure diagram** 
 ```bash
 ansible/
 ├── inventory/
