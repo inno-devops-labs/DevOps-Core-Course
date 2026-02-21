@@ -1,0 +1,3 @@
+---
+docker_user: ubuntu
+docker_apt_repository: "deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"

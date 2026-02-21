@@ -1,0 +1,55 @@
+---
+- name: Log in to Docker Hub
+  community.docker.docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+  no_log: true
+
+- name: Pull Docker image
+  community.docker.docker_image:
+    name: "{{ docker_image }}:{{ docker_image_tag }}"
+    source: pull
+
+- name: Stop existing container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    state: stopped
+  ignore_errors: true
+
+- name: Remove old container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    state: absent
+  ignore_errors: true
+
+- name: Run application container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: started
+    ports:
+      - "{{ app_port }}:{{ app_port }}"
+    env: "{{ app_env }}"
+    restart_policy: "{{ app_restart_policy }}"
+  notify: restart app container
+
+- name: Wait for application port
+  ansible.builtin.wait_for:
+    port: "{{ app_port }}"
+    host: 127.0.0.1
+    delay: 2
+    timeout: 30
+
+- name: Verify health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ app_port }}{{ app_health_path }}"
+    return_content: yes
+    status_code: 200
+  register: health_check
+  failed_when: false
+  changed_when: false
+
+- name: Assert health check passed
+  ansible.builtin.assert:
+    that: health_check.status == 200
+    fail_msg: "Health check failed with status {{ health_check.status }}"

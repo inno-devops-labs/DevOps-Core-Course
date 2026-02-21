@@ -1,0 +1,9 @@
+---
+dockerhub_username: lab05-user
+dockerhub_password: dummy-access-token-for-lab05
+
+app_name: devops-app
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+app_port: 5000
+app_container_name: "{{ app_name }}"
