@@ -1,0 +1,14 @@
+---
+app_name: devops-app
+docker_image: python
+docker_image_tag: "3.12-slim"
+app_port: 5000
+app_internal_port: 5000
+app_container_name: "{{ app_name }}"
+app_restart_policy: unless-stopped
+app_workdir: /opt/devops-app
+app_healthcheck_path: /health
+app_healthcheck_retries: 20
+app_healthcheck_delay: 3
+app_environment:
+  APP_NAME: "{{ app_name }}"
