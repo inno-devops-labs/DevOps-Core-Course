@@ -6,6 +6,7 @@ Production-minded FastAPI application that exposes runtime and system details.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import platform
@@ -21,12 +22,35 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
+class JSONFormatter(logging.Formatter):
+    """Output log records as single-line JSON objects."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        log_entry: Dict[str, Any] = {
+            "timestamp": datetime.now(timezone.utc)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info and record.exc_info[0] is not None:
+            log_entry["exception"] = self.formatException(record.exc_info)
+        # Propagate extra fields attached by application code
+        for key in ("method", "path", "status_code", "client_ip", "duration_ms"):
+            value = getattr(record, key, None)
+            if value is not None:
+                log_entry[key] = value
+        return json.dumps(log_entry, ensure_ascii=False)
+
+
 def _configure_logging() -> logging.Logger:
-    """Configure application-wide logging and return a module logger."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
+    """Configure application-wide logging with JSON output."""
+    handler = logging.StreamHandler()
+    handler.setFormatter(JSONFormatter())
+    logging.root.handlers.clear()
+    logging.root.addHandler(handler)
+    logging.root.setLevel(logging.INFO)
     return logging.getLogger(__name__)
 
 
@@ -146,10 +170,34 @@ def get_request_info(request: Request) -> Dict[str, Any]:
 
 @app.middleware("http")
 async def log_request(request: Request, call_next):
-    """Log incoming requests with basic metadata."""
+    """Log incoming requests with structured metadata."""
+    start = time.monotonic()
     client_ip = request.client.host if request.client else "unknown"
-    logger.info("Request received: %s %s from %s", request.method, request.url.path, client_ip)
+
+    logger.info(
+        "Request received: %s %s",
+        request.method,
+        request.url.path,
+        extra={"method": request.method, "path": request.url.path, "client_ip": client_ip},
+    )
+
     response = await call_next(request)
+
+    duration_ms = round((time.monotonic() - start) * 1000, 2)
+    logger.info(
+        "Request completed: %s %s -> %s (%.2fms)",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "client_ip": client_ip,
+            "duration_ms": duration_ms,
+        },
+    )
     return response
 
 
@@ -208,5 +256,10 @@ async def handle_unexpected_error(request: Request, exc: Exception):
 
 if __name__ == "__main__":
     log_level = "debug" if DEBUG else "info"
-    logger.info("Starting DevOps Info Service on %s:%s (debug=%s)", HOST, PORT, DEBUG)
-    uvicorn.run(app, host=HOST, port=PORT, log_level=log_level)
+    logger.info(
+        "Starting DevOps Info Service on %s:%s (debug=%s)",
+        HOST,
+        PORT,
+        DEBUG,
+    )
+    uvicorn.run(app, host=HOST, port=PORT, log_level=log_level, access_log=False)

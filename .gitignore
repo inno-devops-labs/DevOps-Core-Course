@@ -26,3 +26,5 @@ venv/
 *.retry
 .vault_pass
 ansible/inventory/*.pyc
+# Monitoring
+monitoring/.env
