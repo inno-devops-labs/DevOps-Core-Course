@@ -21,3 +21,9 @@ pulumi/node_modules/
 credentials
 *.openrc
 openrc.sh
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/

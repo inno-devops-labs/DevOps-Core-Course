@@ -1,0 +1,21 @@
+---
+app_name: devops-app
+app_container_name: "{{ app_name }}"
+
+# Image defaults to the repository created in earlier labs.
+docker_image: "alsstarikova/devops-info-service"
+docker_image_tag: latest
+
+app_port: 5000
+host_port: 5000
+app_restart_policy: unless-stopped
+app_start_timeout: 120
+app_health_retries: 10
+app_health_delay: 3
+
+app_env:
+  PORT: "{{ app_port | string }}"
+
+# Credentials are loaded from encrypted group_vars/all.yml.
+dockerhub_username: ""
+dockerhub_password: ""

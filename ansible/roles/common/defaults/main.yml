@@ -1,0 +1,14 @@
+---
+common_packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - git
+  - gnupg
+  - htop
+  - lsb-release
+  - python3-pip
+  - vim
+
+common_timezone: "UTC"
+common_manage_timezone: false

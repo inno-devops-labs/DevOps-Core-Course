@@ -1,0 +1,11 @@
+---
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+docker_service_name: docker
+docker_user: "{{ ansible_user | default('ubuntu') }}"
+docker_install_python_sdk: true
