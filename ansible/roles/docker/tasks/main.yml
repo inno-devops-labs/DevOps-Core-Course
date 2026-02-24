@@ -25,6 +25,12 @@
     state: started
     enabled: yes
 
+- name: Ensure user is in docker group
+  user:
+    name: "{{ docker_user }}"
+    groups: docker
+    append: yes
+
 - name: Install Python Docker module for Ansible
   apt:
     name: python3-docker

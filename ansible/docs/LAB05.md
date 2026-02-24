@@ -255,11 +255,14 @@ ok: [wsl-local]
 TASK [docker : Ensure Docker is running and enabled] ***************************
 changed: [wsl-local]
 
+TASK [docker : Ensure user is in docker group] ***************************
+changed: [wsl-local]
+
 TASK [docker : Install Python Docker module for Ansible] ***********************
 ok: [wsl-local]
 
 PLAY RECAP *********************************************************************
-wsl-local                  : ok=9    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+wsl-local                  : ok=9    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
 ### Third Run: `ansible-playbook playbooks/provision.yml`
@@ -286,6 +289,9 @@ TASK [docker : Install Docker packages] ****************************************
 ok: [wsl-local]
 
 TASK [docker : Ensure Docker is running and enabled] ***************************
+ok: [wsl-local]
+
+TASK [docker : Ensure user is in docker group] ***************************
 ok: [wsl-local]
 
 TASK [docker : Install Python Docker module for Ansible] ***********************
