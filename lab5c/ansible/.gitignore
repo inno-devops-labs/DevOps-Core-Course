@@ -1,0 +1,4 @@
+.vault_pass
+*.retry
+inventory/*.pyc
+__pycache__/

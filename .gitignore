@@ -1,1 +1,11 @@
 test
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
+
+# Local lab 5 runtime artifacts
+lab5c/ansible/.vault_pass
+lab5c/ansible/*.retry

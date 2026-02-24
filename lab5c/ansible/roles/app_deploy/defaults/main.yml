@@ -1,0 +1,11 @@
+---
+app_name: "devops-info-python"
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: "latest"
+
+app_port: 5000
+app_container_name: "{{ app_name }}"
+app_restart_policy: "unless-stopped"
+app_env: {}
+app_health_path: "/health"
+app_wait_timeout: 120
