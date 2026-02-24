@@ -100,3 +100,39 @@ ansible-galaxy collection install -r collections/requirements.yml
 - `ansible/docs/docker-ps.txt` - running container verification.
 - `ansible/docs/health.txt` - `/health` endpoint response.
 - `ansible/docs/root.txt` - root endpoint response.
+
+## 10. Bonus - Dynamic Inventory (AWS)
+Implemented dynamic inventory plugin config for AWS EC2:
+- `ansible/inventory/aws_ec2.yml`
+- `ansible.cfg` updated with `amazon.aws.aws_ec2` plugin in `enable_plugins`
+- `collections/requirements.yml` includes `amazon.aws`
+
+Executed validation with AWS Academy temporary credentials exported in shell.
+
+Observed results:
+- `ansible-inventory -i inventory/aws_ec2.yml --graph` discovered EC2 hosts and grouped them automatically.
+- Group `webservers` resolved to the target host `44.223.0.91` by tag filter.
+- `ansible -i inventory/aws_ec2.yml webservers -m ping --ask-vault-pass` returned `pong`.
+- `ansible-playbook -i inventory/aws_ec2.yml playbooks/provision.yml --ask-vault-pass` completed (`failed=0`).
+- `ansible-playbook -i inventory/aws_ec2.yml playbooks/deploy.yml --ask-vault-pass` completed (`failed=0`).
+
+What this proves:
+- No manual `hosts.ini` IP updates are needed for dynamic mode.
+- When public IP changes, inventory is refreshed from AWS API and Ansible continues to work via discovered `ansible_host`.
+
+Bonus evidence files:
+- `ansible/docs/bonus-inventory-graph.txt`
+- `ansible/docs/bonus-ping.txt`
+- `ansible/docs/bonus-provision.txt`
+- `ansible/docs/bonus-deploy.txt`
+## 11. `.vault_pass` Note
+- `.vault_pass` is an optional local file containing your vault password in plain text (single line).
+- Example content: `MyStrongVaultPassphrase`
+- It must never be committed.
+- In this repo, `.vault_pass` is listed in `.gitignore`.
+- If you use it, run playbooks with:
+
+```bash
+ansible-playbook playbooks/deploy.yml --vault-password-file .vault_pass
+```
+

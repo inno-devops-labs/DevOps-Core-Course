@@ -1,0 +1,31 @@
+[WARNING]: Collection community.docker does not support Ansible version 2.16.17
+
+PLAY [Deploy application] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [44.223.0.91]
+
+TASK [app_deploy : Log in to Docker Hub] ***************************************
+ok: [44.223.0.91]
+
+TASK [app_deploy : Pull application image] *************************************
+ok: [44.223.0.91]
+
+TASK [app_deploy : Stop and remove old container if it exists] *****************
+changed: [44.223.0.91]
+
+TASK [app_deploy : Run application container] **********************************
+changed: [44.223.0.91]
+
+TASK [app_deploy : Wait for application port] **********************************
+ok: [44.223.0.91]
+
+TASK [app_deploy : Verify health endpoint] *************************************
+ok: [44.223.0.91]
+
+RUNNING HANDLER [app_deploy : restart app container] ***************************
+changed: [44.223.0.91]
+
+PLAY RECAP *********************************************************************
+44.223.0.91                : ok=8    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

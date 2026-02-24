@@ -1,0 +1,41 @@
+[WARNING]: Collection community.general does not support Ansible version
+2.16.17
+
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [44.223.0.91]
+
+TASK [common : Update apt cache] ***********************************************
+changed: [44.223.0.91]
+
+TASK [common : Install common packages] ****************************************
+ok: [44.223.0.91]
+
+TASK [common : Set system timezone] ********************************************
+ok: [44.223.0.91]
+
+TASK [docker : Ensure apt keyring directory exists] ****************************
+ok: [44.223.0.91]
+
+TASK [docker : Download Docker GPG key] ****************************************
+ok: [44.223.0.91]
+
+TASK [docker : Configure Docker apt repository] ********************************
+ok: [44.223.0.91]
+
+TASK [docker : Install Docker engine and plugins] ******************************
+ok: [44.223.0.91]
+
+TASK [docker : Ensure Docker service is enabled and running] *******************
+ok: [44.223.0.91]
+
+TASK [docker : Add deployment user to docker group] ****************************
+ok: [44.223.0.91]
+
+TASK [docker : Install Python Docker SDK for Ansible Docker modules] ***********
+ok: [44.223.0.91]
+
+PLAY RECAP *********************************************************************
+44.223.0.91                : ok=11   changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

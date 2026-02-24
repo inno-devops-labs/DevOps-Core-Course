@@ -1,0 +1,26 @@
+﻿---
+plugin: amazon.aws.aws_ec2
+regions:
+  - us-east-1
+
+# AWS Academy short-lived credentials should be exported in shell:
+# AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, AWS_DEFAULT_REGION
+
+filters:
+  instance-state-name: running
+
+hostnames:
+  - ip-address
+
+compose:
+  ansible_host: public_ip_address
+  ansible_user: "'ubuntu'"
+
+keyed_groups:
+  - key: tags.Name
+    prefix: tag
+  - key: instance_type
+    prefix: type
+
+groups:
+  webservers: "'DevOps-Lab4-VM-Pulumi' in (tags.Name | default(''))"
