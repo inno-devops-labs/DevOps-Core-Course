@@ -1,0 +1,4 @@
+---
+docker_apt_release_channel: "stable"
+docker_users: []
+# Set in group_vars or vault, e.g. [ubuntu]

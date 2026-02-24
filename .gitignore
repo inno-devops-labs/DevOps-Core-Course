@@ -1,5 +1,6 @@
 # Credentials / local secrets
 aws-creds
+docker-creds
 .env
 .env.*
 credentials
@@ -64,3 +65,9 @@ credentials
 
 # Lab-specific local artifacts
 awscliv2.zip
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
