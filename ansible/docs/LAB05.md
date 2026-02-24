@@ -24,7 +24,7 @@ Project structure:
     ├── roles/
     │   ├── common/
     │   ├── docker/
-    │   └── app_deploy/
+    │   └── web_app/
     ├── group_vars/
     │   └── all.yml (encrypted with Ansible Vault)
     └── docs/
@@ -63,7 +63,7 @@ Tasks performed:
 
 ------------------------------------------------------------------------
 
-### Role: app_deploy
+### Role: web_app
 
 **Purpose:** Deploy containerized application.
 

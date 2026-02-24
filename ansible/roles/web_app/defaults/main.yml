@@ -1,0 +1,10 @@
+---
+app_name: devops-app
+
+compose_project_dir: "/opt/{{ app_name }}"
+
+docker_compose_version: "3.8"
+
+app_port: 8000
+
+web_app_wipe: false
