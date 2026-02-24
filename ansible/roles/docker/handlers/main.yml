@@ -1,0 +1,9 @@
+---
+- name: restart docker
+  systemd:
+    name: docker
+    state: restarted
+    daemon_reload: yes
+
+- name: reset ssh connection
+  meta: reset_connection

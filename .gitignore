@@ -36,6 +36,7 @@ credentials
 .env.*
 secrets.*
 *.vault
+.vault_pass
 
 # Keys and service account files
 # common names: yc_key.json, service-account.json etc.

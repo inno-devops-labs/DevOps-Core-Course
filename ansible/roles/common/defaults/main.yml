@@ -1,0 +1,20 @@
+---
+# Common role default variables
+common_packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - vim
+  - nano
+  - python3-pip
+  - python3-dev
+  - build-essential
+  - net-tools
+  - software-properties-common
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+
+system_timezone: UTC

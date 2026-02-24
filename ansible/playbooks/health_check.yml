@@ -1,0 +1,31 @@
+---
+- name: Health check for deployed application
+  hosts: webservers
+  gather_facts: no
+
+  tasks:
+    - name: Check application health endpoint
+      uri:
+        url: "http://{{ ansible_host }}:{{ app_port_host }}/health"
+        method: GET
+        status_code: 200
+      register: health_result
+      tags: health
+
+    - name: Check Docker service status
+      systemd:
+        name: docker
+        enabled: yes
+      check_mode: yes
+      register: docker_status
+      tags: health
+
+    - name: Display health status
+      debug:
+        msg: |
+          ========== HEALTH CHECK RESULTS ==========
+          Application Health: {{ health_result.status }}
+          Docker Service: {{ docker_status.changed | ternary('needs restart', 'healthy') }}
+          Timestamp: {{ ansible_date_time.iso8601 }}
+          ==========================================
+      tags: health

@@ -1,0 +1,24 @@
+---
+- name: Configure and deploy application
+  hosts: webservers
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - common
+    - docker
+    - app_deploy
+
+  post_tasks:
+    - name: Display deployment summary
+      debug:
+        msg: |
+          ==============================================
+          Deployment Summary
+          ==============================================
+          Application: {{ app_name }}
+          Image: {{ app_image }}
+          Port: {{ app_port_host }}
+          Health Check: http://\{\{ ansible_host }}:{{ app_port_host }}/health
+          ==============================================
+      tags: always

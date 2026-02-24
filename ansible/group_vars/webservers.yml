@@ -1,0 +1,14 @@
+---
+# Docker Hub Credentials (loaded from environment variables)
+docker_hub_username: "{{ lookup('env', 'DOCKER_HUB_USERNAME') }}"
+docker_hub_password: "{{ lookup('env', 'DOCKER_HUB_PASSWORD') }}"
+
+# Application Configuration (with env var overrides)
+app_image: "{{ lookup('env', 'APP_IMAGE') | default('j0cos/devops-info-service:latest') }}"
+app_name: "{{ lookup('env', 'APP_NAME') | default('devops-info-service') }}"
+app_port: "{{ lookup('env', 'APP_PORT') | default('5000') }}"
+
+# System variables
+system_timezone: UTC
+docker_service_state: started
+docker_service_enabled: yes

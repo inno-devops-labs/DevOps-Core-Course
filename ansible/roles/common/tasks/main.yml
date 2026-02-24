@@ -1,0 +1,31 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  tags: always
+
+- name: Upgrade all packages
+  apt:
+    upgrade: dist
+    autoremove: yes
+    autoclean: yes
+  tags: upgrade
+
+- name: Install common packages
+  apt:
+    name: "{{ common_packages }}"
+    state: present
+  tags: packages
+
+- name: Set system timezone
+  timezone:
+    name: "{{ system_timezone }}"
+  tags: timezone
+
+- name: Configure system limits
+  lineinfile:
+    path: /etc/security/limits.conf
+    line: "* soft nofile 65536"
+    state: present
+  tags: limits

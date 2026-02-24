@@ -1,0 +1,11 @@
+---
+# Docker role default variables
+docker_packages:
+  - docker.io
+  - docker-compose
+  - docker-compose-v2
+
+docker_service_state: started
+docker_service_enabled: yes
+docker_users:
+  - ubuntu

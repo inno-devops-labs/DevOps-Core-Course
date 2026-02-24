@@ -1,0 +1,33 @@
+---
+- name: Install Docker packages
+  apt:
+    name: "{{ docker_packages }}"
+    state: present
+  notify: restart docker
+  tags: docker
+
+- name: Ensure Docker service is started and enabled
+  systemd:
+    name: docker
+    state: "{{ docker_service_state }}"
+    enabled: "{{ docker_service_enabled }}"
+    daemon_reload: yes
+  tags: docker
+
+- name: Add users to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users }}"
+  notify: reset ssh connection
+  tags: docker
+
+- name: Log into Docker Hub
+  docker_login:
+    username: "{{ lookup('env', 'DOCKER_HUB_USERNAME') }}"
+    password: "{{ lookup('env', 'DOCKER_HUB_PASSWORD') }}"
+    state: present
+  become_user: "{{ docker_users[0] }}"
+  tags: docker_login
+  no_log: yes
