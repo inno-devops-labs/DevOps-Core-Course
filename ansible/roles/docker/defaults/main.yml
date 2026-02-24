@@ -1,0 +1,8 @@
+---
+# User to add to docker group
+docker_user: "{{ ansible_user | default('root') }}"
+
+# Docker version constraints (empty = latest)
+docker_version: ""
+docker_cli_version: ""
+containerd_version: ""

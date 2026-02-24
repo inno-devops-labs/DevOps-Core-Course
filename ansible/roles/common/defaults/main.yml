@@ -1,0 +1,6 @@
+---
+common_packages:
+  - curl
+  - htop
+  - vim
+  - python3-pip
