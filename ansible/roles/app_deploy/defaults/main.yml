@@ -1,0 +1,10 @@
+---
+app_name: devops-app
+app_port: 8080
+app_container_name: "{{ app_name }}"
+app_restart_policy: unless-stopped
+
+app_env_vars:
+  HOST: "0.0.0.0"
+  PORT: "8080"
+  DEBUG: "False"

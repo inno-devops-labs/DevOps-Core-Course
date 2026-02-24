@@ -1,0 +1,9 @@
+---
+- name: Full infrastructure setup and deployment
+  hosts: webservers
+  become: yes
+
+  roles:
+    - common
+    - docker
+    - app_deploy

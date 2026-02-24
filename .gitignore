@@ -15,3 +15,15 @@ Pulumi.*.yaml
 # Credentials
 *.pem
 *.key
+
+# Ansible
+*.retry
+.vault_pass
+ansible/.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
+
+# Python
+*.pyc
+*.pyo
+venv/
