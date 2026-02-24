@@ -1,0 +1,12 @@
+---
+# roles/docker/handlers/main.yml
+
+- name: Restart Docker
+  ansible.builtin.service:
+    name: docker
+    state: restarted
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 0

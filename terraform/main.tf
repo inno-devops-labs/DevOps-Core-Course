@@ -30,7 +30,7 @@ resource "yandex_compute_disk" "boot-disk-1" {
   type     = "network-hdd"
   zone     = var.zone
   size     = 20
-  image_id = "fd800c7s2p483i648ifv"
+  image_id = "fd84kd8dcu6tmnhbeebv"
 }
 
 resource "yandex_compute_instance" "vm-1" {

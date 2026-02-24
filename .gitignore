@@ -2,7 +2,9 @@ test
 app_python/.venv
 app_python/.pytest_cache
 app_python/__pycache__
-
+.idea
+.vscode
+.pytest_cache
 
 # Terraform files
 *.tfstate
@@ -16,4 +18,10 @@ secrets.auto.tfvars
 
 Pulumi.*.yaml
 venv/
+__pycache__/
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
 __pycache__/

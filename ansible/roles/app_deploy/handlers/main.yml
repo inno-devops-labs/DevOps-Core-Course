@@ -1,0 +1,10 @@
+---
+- name: Verify deployment
+  debug:
+    msg: "Deployment of {{ app_container_name }} completed successfully. Port {{ app_host_port }} is open."
+
+- name: Restart application container
+  docker_container:
+    name: "{{ app_container_name }}"
+    state: started
+    restart: true
