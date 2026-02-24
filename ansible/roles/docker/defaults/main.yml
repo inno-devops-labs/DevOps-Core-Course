@@ -1,0 +1,10 @@
+---
+# User to add to docker group (will run docker without sudo)
+docker_group_user: "{{ ansible_facts['user_id'] | default(ansible_user_id) }}"
+
+# Docker package state
+docker_install_state: present
+
+# If your Ubuntu release is not supported by Docker's apt repo yet,
+# set this explicitly (e.g. "noble" for Ubuntu 24.04).
+docker_apt_release: "{{ ansible_facts['distribution_release'] | default(ansible_distribution_release) }}"

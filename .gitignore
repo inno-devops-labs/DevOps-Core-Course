@@ -18,3 +18,9 @@ terraform/**/*.json
 pulumi/venv/
 Pulumi.*.yaml
 .pulumi/
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
