@@ -1,0 +1,10 @@
+﻿---
+app_name: devops-lab3-python
+app_container_name: "{{ app_name }}"
+app_host_port: 5000
+app_container_port: 8080
+app_restart_policy: unless-stopped
+app_env: {}
+docker_registry_url: https://index.docker.io/v1/
+docker_image_tag: latest
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"

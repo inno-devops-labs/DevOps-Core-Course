@@ -1,0 +1,3 @@
+pulumi-vm | CHANGED | rc=0 >>
+CONTAINER ID   IMAGE                              COMMAND                  CREATED              STATUS              PORTS                    NAMES
+ab73df0327e5   112005/devops-lab3-python:latest   "gunicorn --bind 0.0…"   About a minute ago   Up About a minute   0.0.0.0:5000->8080/tcp   devops-lab3-python

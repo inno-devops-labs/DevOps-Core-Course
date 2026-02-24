@@ -1,0 +1,41 @@
+[WARNING]: Collection community.general does not support Ansible version
+2.16.17
+
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [pulumi-vm]
+
+TASK [common : Update apt cache] ***********************************************
+ok: [pulumi-vm]
+
+TASK [common : Install common packages] ****************************************
+ok: [pulumi-vm]
+
+TASK [common : Set system timezone] ********************************************
+ok: [pulumi-vm]
+
+TASK [docker : Ensure apt keyring directory exists] ****************************
+ok: [pulumi-vm]
+
+TASK [docker : Download Docker GPG key] ****************************************
+ok: [pulumi-vm]
+
+TASK [docker : Configure Docker apt repository] ********************************
+ok: [pulumi-vm]
+
+TASK [docker : Install Docker engine and plugins] ******************************
+ok: [pulumi-vm]
+
+TASK [docker : Ensure Docker service is enabled and running] *******************
+ok: [pulumi-vm]
+
+TASK [docker : Add deployment user to docker group] ****************************
+ok: [pulumi-vm]
+
+TASK [docker : Install Python Docker SDK for Ansible Docker modules] ***********
+ok: [pulumi-vm]
+
+PLAY RECAP *********************************************************************
+pulumi-vm                  : ok=11   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

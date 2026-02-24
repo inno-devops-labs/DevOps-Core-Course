@@ -1,1 +1,11 @@
-test
+﻿test
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
+.venv/
+pulumi/.venv/
+pulumi/venv/
+aws/
+awscliv2.zip

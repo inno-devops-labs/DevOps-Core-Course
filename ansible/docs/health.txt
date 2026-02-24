@@ -1,0 +1,11 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100    89  100    89    0     0    297      0 --:--:-- --:--:-- --:--:--   298
+HTTP/1.1 200 OK
+Server: gunicorn
+Date: Tue, 24 Feb 2026 09:57:58 GMT
+Connection: close
+Content-Type: application/json
+Content-Length: 89
+
+{"status":"healthy","timestamp":"2026-02-24T09:57:58.028116+00:00","uptime_seconds":127}

@@ -1,0 +1,11 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   651  100   651    0     0   2214      0 --:--:-- --:--:-- --:--:--  2221
+HTTP/1.1 200 OK
+Server: gunicorn
+Date: Tue, 24 Feb 2026 09:58:18 GMT
+Connection: close
+Content-Type: application/json
+Content-Length: 651
+
+{"endpoints":[{"description":"Service information","method":"GET","path":"/"},{"description":"Health check","method":"GET","path":"/health"}],"request":{"client_ip":"89.23.105.215","method":"GET","path":"/","user_agent":"curl/8.5.0"},"runtime":{"current_time":"2026-02-24T09:58:18.738119+00:00","timezone":"UTC","uptime_human":"0 hours, 2 minutes","uptime_seconds":148},"service":{"description":"DevOps course info service","framework":"Flask","name":"devops-info-service","version":"1.0.0"},"system":{"architecture":"x86_64","cpu_count":1,"hostname":"ab73df0327e5","platform":"Linux","platform_version":"5.15.0-1084-aws","python_version":"3.12.12"}}

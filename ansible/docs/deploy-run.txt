@@ -1,0 +1,31 @@
+[WARNING]: Collection community.docker does not support Ansible version 2.16.17
+
+PLAY [Deploy application] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [pulumi-vm]
+
+TASK [app_deploy : Log in to Docker Hub] ***************************************
+ok: [pulumi-vm]
+
+TASK [app_deploy : Pull application image] *************************************
+changed: [pulumi-vm]
+
+TASK [app_deploy : Stop and remove old container if it exists] *****************
+ok: [pulumi-vm]
+
+TASK [app_deploy : Run application container] **********************************
+changed: [pulumi-vm]
+
+TASK [app_deploy : Wait for application port] **********************************
+ok: [pulumi-vm]
+
+TASK [app_deploy : Verify health endpoint] *************************************
+ok: [pulumi-vm]
+
+RUNNING HANDLER [app_deploy : restart app container] ***************************
+changed: [pulumi-vm]
+
+PLAY RECAP *********************************************************************
+pulumi-vm                  : ok=8    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
