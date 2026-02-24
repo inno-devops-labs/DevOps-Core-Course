@@ -34,5 +34,11 @@ __pycache__/
 *.pyo
 .pytest_cache/
 
+# Ansible
+*.retry
+.vault_pass
+ansible/.vault_pass
+ansible/inventory/*.pyc
+
 # Test
 test
