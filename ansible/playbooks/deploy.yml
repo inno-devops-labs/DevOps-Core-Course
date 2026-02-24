@@ -1,0 +1,12 @@
+---
+- name: Deploy application
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+  tasks:
+    - name: Show dockerhub_username
+      debug:
+        var: dockerhub_username
+  roles:
+    - app_deploy
