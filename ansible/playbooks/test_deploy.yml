@@ -1,0 +1,30 @@
+---
+- name: Test Deploy
+  hosts: all
+  become: yes
+  vars_files:
+    - ../group_vars/all.yml
+  tasks:
+    - name: Log into Docker Hub
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+
+    - name: Run application container
+      community.docker.docker_container:
+        name: "test-app"
+        image: "{{ dockerhub_username }}/devops-info-python:lab03"
+        state: started
+        pull: true
+        restart_policy: always
+        published_ports:
+          - "8080:8080"
+
+    - name: Wait for application to respond
+      ansible.builtin.uri:
+        url: "http://localhost:8080/health"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 5
+      delay: 5

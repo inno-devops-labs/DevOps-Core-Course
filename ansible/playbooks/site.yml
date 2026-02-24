@@ -1,0 +1,6 @@
+---
+- name: Full Infrastructure Deployment
+  hosts: all
+  become: yes
+  roles:
+    - app_deploy

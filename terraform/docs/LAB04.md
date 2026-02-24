@@ -4,21 +4,21 @@
 
 **Cloud Provider**: Yandex Cloud (chosen due to regional availability and educational grant support).
 
-**Instance Type**: standard-v2 (2 vCPU, 2GB RAM, 20% Core Fraction).
+**Instance Type**: `standard-v2` (2 vCPU, 2GB RAM, 20% Core Fraction).
 
-**Region/Zone**: ru-central1-a.
+**Region/Zone**: `ru-central1-a`.
 
 **Total Cost**: $0 (covered by the free tier/trial grant).
 
 **Resources Created**:
 
-* yandex_vpc_network: Isolated network for the project.
+* `yandex_vpc_network`: Isolated network for the project.
 
-* yandex_vpc_subnet: Subnet for the compute resources.
+* `yandex_vpc_subnet`: Subnet for the compute resources.
 
-* yandex_vpc_security_group: Firewall rules (SSH, HTTP, App Port).
+* `yandex_vpc_security_group`: Firewall rules (SSH, HTTP, App Port).
 
-* yandex_compute_instance: Ubuntu 22.04 LTS virtual machine.
+* `yandex_compute_instance`: Ubuntu 22.04 LTS virtual machine.
 
 ## 2. Terraform Implementation
 
@@ -26,21 +26,21 @@
 
 **Project Structure**:
 
-* **main.tf**: Core resource definitions.
+* `*main.tf`: Core resource definitions.
 
-* **providers.tf**: Provider and backend configuration.
+* `providers.tf`: Provider and backend configuration.
 
-* **variables.tf / outputs.tf**: Input/output definitions for modularity.
+* `variables.tf` / `outputs.tf`: Input/output definitions for modularity.
 
 **Key Decisions**: Used a Service Account with a JSON key for authentication to avoid using personal OAuth tokens in the CLI.
 
-**Challenges Encountered**: The main issue was a Permission Denied error during resource creation. It was discovered that the Billing Account must be explicitly linked to the Cloud ID, even if the account has a positive balance.
+**Challenges Encountered**: The main issue was a `Permission Denied` error during resource creation. It was discovered that the Billing Account must be explicitly linked to the Cloud ID, even if the account has a positive balance.
 
 **Execution Evidence**:
 
-* terraform init: Successfully initialized providers.
+* `terraform init`: Successfully initialized providers.
 
-* terraform apply: Infrastructure created successfully.
+* `terraform apply`: Infrastructure created successfully.
 
 * Public IP: `93.77.177.119`.
 
@@ -50,15 +50,15 @@
 
 **Language**: Python 3.12+
 
-**Code Differences**: Unlike Terraform's HCL, Pulumi uses standard Python syntax. It required handling asynchronous outputs (Output objects) and utilized pip for dependency management.
+**Code Differences**: Unlike Terraform's HCL, Pulumi uses standard Python syntax. It required handling asynchronous outputs (Output objects) and utilized `pip` for dependency management.
 
 **Advantages**:
 
 * IDE support (autocompletion, type checking).
 
-* Ability to use standard Python libraries (e.g., os, json) and logic (loops, conditionals) directly in the infrastructure code.
+* Ability to use standard Python libraries (e.g., `os`, `json`) and logic (loops, conditionals) directly in the infrastructure code.
 
-**Challenges**: The transition to Python 3.12 caused a ModuleNotFoundError: No module named 'pkg_resources' because setuptools is no longer bundled by default. This was solved by manually installing setuptools in the virtual environment.
+**Challenges**: The transition to Python 3.12 caused a `ModuleNotFoundError: No module named 'pkg_resources'` because `setuptools` is no longer bundled by default. This was solved by manually installing `setuptools` in the virtual environment.
 
 ## 4. Terraform vs Pulumi Comparison
 
