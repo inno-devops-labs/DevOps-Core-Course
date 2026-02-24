@@ -1,0 +1,7 @@
+app_image: "thevex/simple-app:latest"
+app_container_name: "simple-app"
+app_port: 5000
+app_restart_policy: "unless-stopped"
+app_env:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "info"

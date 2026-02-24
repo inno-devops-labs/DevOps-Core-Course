@@ -1,0 +1,7 @@
+docker_version: "5:20.10.*"
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+
+docker_user: "{{ ansible_user }}"
