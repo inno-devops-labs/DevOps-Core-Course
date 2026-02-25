@@ -1,0 +1,8 @@
+---
+app_name: devops-app
+app_port: 5000
+app_container_name: "{{ app_name }}"
+docker_image: "elinanotelina/devops-info-service"
+docker_image_tag: latest
+app_restart_policy: unless-stopped
+app_env: {}
