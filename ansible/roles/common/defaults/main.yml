@@ -1,0 +1,11 @@
+---
+common_packages:
+  - ca-certificates
+  - curl
+  - git
+  - vim
+  - htop
+  - python3-pip
+  - gnupg
+  - lsb-release
+  - apt-transport-https

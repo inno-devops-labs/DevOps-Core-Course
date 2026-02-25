@@ -7,3 +7,9 @@ test
 crash.log
 terraform.tfvars
 .terraform.lock.hcl
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/

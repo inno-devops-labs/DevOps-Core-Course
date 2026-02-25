@@ -1,0 +1,17 @@
+---
+docker_user: devops
+
+docker_apt_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+  armv7l: armhf
+
+docker_apt_arch: "{{ docker_apt_arch_map.get(ansible_architecture, 'amd64') }}"
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  - python3-docker

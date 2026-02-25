@@ -1,0 +1,60 @@
+---
+- name: Create application working directory
+  ansible.builtin.file:
+    path: "{{ app_workdir }}"
+    state: directory
+    mode: "0755"
+
+- name: Create app environment file
+  ansible.builtin.copy:
+    dest: "{{ app_env_file_path }}"
+    mode: "0600"
+    content: |
+      HOST={{ app_host }}
+      PORT={{ app_port }}
+  notify: restart app container
+
+- name: Login to Docker Hub (credentials from Ansible Vault)
+  community.docker.docker_login:
+    username: "{{ vault_dockerhub_username }}"
+    password: "{{ vault_dockerhub_token }}"
+  no_log: true
+
+- name: Pull application image
+  community.docker.docker_image:
+    name: "{{ app_image }}"
+    source: pull
+
+- name: Run application container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ app_image }}"
+    state: started
+    restart_policy: "{{ app_restart_policy }}"
+    env_file: "{{ app_env_file_path }}"
+    published_ports:
+      - "{{ app_published_port }}:{{ app_port }}"
+
+- name: Flush handlers (if env file changed)
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for app port to become available
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ app_published_port }}"
+    timeout: 60
+
+- name: Verify health endpoint
+  ansible.builtin.uri:
+    url: "{{ app_healthcheck_url }}"
+    method: GET
+    return_content: true
+    status_code: 200
+  register: app_health_response
+  retries: "{{ app_healthcheck_retries }}"
+  delay: "{{ app_healthcheck_delay }}"
+  until: app_health_response.status == 200
+
+- name: Show health check result
+  ansible.builtin.debug:
+    var: app_health_response.json
