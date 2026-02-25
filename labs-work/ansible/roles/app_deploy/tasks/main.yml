@@ -1,0 +1,39 @@
+---
+- name: Log in to Docker Hub
+  community.docker.docker_login:
+    username: '{{ dockerhub_username }}'
+    password: '{{ dockerhub_password }}'
+  no_log: true
+
+- name: Pull application image
+  community.docker.docker_image:
+    name: '{{ app_image }}'
+    tag: '{{ app_image_tag }}'
+    source: pull
+    force_source: true
+
+- name: Run application container
+  community.docker.docker_container:
+    name: '{{ app_container_name }}'
+    image: '{{ app_image }}:{{ app_image_tag }}'
+    state: started
+    restart_policy: '{{ app_restart_policy }}'
+    ports:
+      - '{{ app_host_port }}:{{ app_container_port }}'
+    recreate: true
+
+- name: Wait for application port to be available
+  ansible.builtin.wait_for:
+    port: '{{ app_host_port }}'
+    delay: 5
+    timeout: 30
+
+- name: Health check
+  ansible.builtin.uri:
+    url: 'http://localhost:{{ app_host_port }}/health'
+    return_content: true
+    status_code: 200
+  register: health_result
+  retries: 3
+  delay: 5
+  until: health_result.status == 200
