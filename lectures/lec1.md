@@ -350,10 +350,10 @@ flowchart TD
   S3 --> Drift
 ```
 
-> 🐶🐄 **"Pets vs Cattle"** — Which do you have?
+> 🧩 **Disposable vs unique infrastructure ("Pets vs Cattle")** — Which do you have?
 
-**🐶 Pets:** Unique, irreplaceable, nursed back to health
-**🐄 Cattle:** Identical, replaceable, automated
+**🐶 Unique servers ("pets")**: Irreplaceable, manually nursed back to health
+**🔁 Disposable servers ("cattle")**: Identical, replaceable, automated
 
 ---
 
@@ -374,7 +374,7 @@ resource "aws_instance" "web" {
 }
 ```
 
-**🎯 Result:** Cattle, not pets. Replace, don't repair.
+**🎯 Result:** Disposable, not unique. Replace, don't repair.
 
 **🛠️ IaC Tools:**
 * 🌍 **Terraform** — Multi-cloud
