@@ -1,0 +1,15 @@
+---
+# Default list of common system packages to install on all hosts.
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - vim
+  - htop
+  - ca-certificates
+  - gnupg
+  - lsb-release
+
+# Default system timezone. Override per-environment if needed.
+common_timezone: "Etc/UTC"
+

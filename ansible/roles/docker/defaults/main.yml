@@ -1,0 +1,25 @@
+---
+# Architecture used for Docker APT repository.
+docker_apt_arch: "amd64"
+
+# Docker APT repository definition. Uses the current Ubuntu codename.
+docker_apt_repo: "deb [arch={{ docker_apt_arch }}] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+
+# Core Docker packages to install.
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# Name of the Docker service to manage.
+docker_service_name: "docker"
+
+# Default user to add to the docker group. Override if needed.
+docker_user: "{{ ansible_user | default('ubuntu') }}"
+
+# Python packages required for Ansible's Docker modules.
+docker_python_packages:
+  - python3-docker
+

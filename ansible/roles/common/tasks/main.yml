@@ -1,0 +1,16 @@
+---
+- name: Ensure apt cache is up to date
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Set system timezone
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+  when: common_timezone is defined
+
