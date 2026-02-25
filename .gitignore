@@ -1,3 +1,9 @@
 test
-.idea
+.idea/
 .venv
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/

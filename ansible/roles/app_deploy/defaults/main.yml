@@ -1,0 +1,5 @@
+---
+app_port: 5000
+app_container_port: 80
+app_restart_policy: unless-stopped
+app_env_vars: {}
