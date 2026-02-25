@@ -1,0 +1,8 @@
+---
+app_name: devops-app
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+app_port: 5000
+app_container_name: "{{ app_name }}"
+dockerhub_username: your-username
+dockerhub_password: your-access-token
