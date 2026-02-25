@@ -1,0 +1,7 @@
+---
+app_host_port: 5000
+app_container_port: 5173
+app_image: "{{ dockerhub_username }}/devops-info-service"
+app_image_tag: "latest"
+app_container_name: "devops-info-service"
+app_restart_policy: "unless-stopped"
