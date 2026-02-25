@@ -147,7 +147,7 @@ Plan: 3 to add, 0 to change, 0 to destroy.
 
 **pulumi preview**
 
-![alt text](./screenshots/04-pulumi-up.png)
+![alt text](./screenshots/04-pulumi-preview.png)
 
 **pulumi up**
 
@@ -170,13 +170,15 @@ Plan: 3 to add, 0 to change, 0 to destroy.
 
 **Comparison of Experience:**
 
-1. **Ease of Setup:** Terraform was slightly easier initially as it handles provider plugins automatically. Pulumi required managing a Python virtual environment (`venv`) and resolving dependency versions (`setuptools`).
-2. **Code Readability:** Pulumi code feels more natural for a developer. For example, reading the SSH key:
-* *Terraform:* `"ubuntu:${file("~/.ssh/yandex_cloud.pub")}"`
-* *Pulumi:* `f"ubuntu:{public_key}"` (using standard Python file reading).
-
-
-3. **Debugging:** Pulumi errors (like the Python traceback) were easier to Google and understand because they are standard programming errors, whereas Terraform errors can sometimes be obscure provider-specific messages.
+1.  **Ease of Setup:** Terraform was slightly easier initially as it handles provider plugins automatically. Pulumi required managing a Python virtual environment (`venv`) and resolving dependency versions (`setuptools`).
+2.  **Code Readability:** Pulumi code feels more natural for a developer. For example, reading the SSH key:
+    * *Terraform:* `"ubuntu:${file("~/.ssh/yandex_cloud.pub")}"`
+    * *Pulumi:* `f"ubuntu:{public_key}"` (using standard Python file reading).
+3.  **Debugging:** Pulumi errors (like the Python traceback) were easier to Google and understand because they are standard programming errors, whereas Terraform errors can sometimes be obscure provider-specific messages.
+4.  **Documentation:** Terraform documentation is generally more comprehensive with more community examples and "copy-paste" solutions. Pulumi docs are good, but sometimes you have to translate examples from TypeScript to Python manually.
+5.  **Use Case:**
+    * *Terraform:* Best for standard, static infrastructure where state stability is key and the team knows HCL.
+    * *Pulumi:* Best for dynamic infrastructure, complex logic, or when developers (not pure Ops) are managing the infra.
 
 **Conclusion:**
 For simple, static infrastructure, **Terraform** is excellent due to its simplicity and industry adoption. However, for complex environments involving logic, loops, or integration with application code, **Pulumi** is superior. As a developer, I prefer **Pulumi** because it bridges the gap between application development and infrastructure management.
@@ -185,16 +187,17 @@ For simple, static infrastructure, **Terraform** is excellent due to its simplic
 
 ## 5. Lab 5 Preparation & Cleanup
 
-### Cleanup Strategy
+### Cleanup Strategy & Lab 5 Plan
 
 Since Lab 5 usually requires a fresh start or specific configuration, I performed a cleanup of the Pulumi resources to avoid billing and state conflicts.
+
+**Plan for Lab 5:**
+I have destroyed the cloud resources to save costs. **I will recreate the VM using my Terraform code immediately before starting Lab 5.**
 
 **Pulumi destroy output**
 
 ![alt text](./screenshots/04-pulumi-clean.png)
+
 **Terraform destroy output**
 
-
 ![alt text](./screenshots/04-terr-cean.png)
-
-
