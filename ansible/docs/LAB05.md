@@ -46,7 +46,7 @@ Roles allow modular, reusable, and maintainable code. Each role encapsulates tas
 
 # Command to run:
 ```bash
-docker run -it --rm -v ${PWD}\app_python\ansible:/ansible -v C:\Users\maior\.ssh\vm_machine_ubuntu:/root/.ssh/vm_machine_ubuntu  -w /ansible willhallonline/ansible:2.16-debian-bookworm-slim ` bash
+docker run -it --rm -v ${PWD}\app_python\ansible:/ansible -v my_path_to_ssh_folder\.ssh\vm_machine_ubuntu:/root/.ssh/vm_machine_ubuntu  -w /ansible willhallonline/ansible:2.16-debian-bookworm-slim ` bash
 ```
 ---
 
