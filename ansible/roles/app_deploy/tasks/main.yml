@@ -1,0 +1,33 @@
+---
+- name: Log in to Docker Hub
+  docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+  no_log: true
+
+- name: Pull application image
+  docker_image:
+    name: "{{ docker_image }}"
+    tag: "{{ docker_image_tag }}"
+    source: pull
+
+- name: Stop existing container
+  docker_container:
+    name: "{{ app_container_name }}"
+    state: stopped
+  ignore_errors: yes
+
+- name: Remove old container
+  docker_container:
+    name: "{{ app_container_name }}"
+    state: absent
+  ignore_errors: yes
+
+- name: Run container
+  docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: started
+    restart_policy: "{{ app_restart_policy }}"
+    published_ports:
+      - "{{ app_port }}:5000"
