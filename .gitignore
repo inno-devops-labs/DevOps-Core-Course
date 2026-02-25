@@ -1,1 +1,23 @@
 test
+
+# Terraform state and local cache
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Terraform variable files (often contain secrets)
+terraform.tfvars
+*.tfvars
+*.tfvars.json
+
+# Pulumi secrets/state
+pulumi/venv/
+pulumi/.venv/
+Pulumi.*.yaml
+
+# Cloud credentials and keys
+*.pem
+*.key
+*.json
+credentials
