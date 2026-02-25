@@ -2,8 +2,7 @@
 - name: Test Deploy
   hosts: all
   become: yes
-  vars_files:
-    - ../group_vars/all.yml
+
   tasks:
     - name: Log into Docker Hub
       community.docker.docker_login:
