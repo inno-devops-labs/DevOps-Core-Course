@@ -1,2 +1,33 @@
 test
 pyrightconfig.json
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+*.tfvars
+.terraform.lock.hcl
+
+# Pulumi
+pulumi/venv/
+Pulumi.*.yaml
+__pycache__/
+*.pyc
+
+# Cloud credentials
+*.pem
+*.key
+credentials
+
+# Yandex Cloud key files
+key.json
+
+# Allow package.json and other project files
+!package.json
+!package-lock.json
+!tsconfig.json
+
+# IDE
+.vscode/
+.idea/

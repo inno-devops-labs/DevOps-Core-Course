@@ -1,0 +1,18 @@
+name: lab04-pulumi
+runtime: python
+description: Lab 04 - Infrastructure as Code with Pulumi
+
+config:
+  folder_id:
+    description: Yandex Cloud folder ID
+  zone:
+    description: Yandex Cloud zone
+    default: ru-central1-a
+  ssh_user:
+    description: SSH username for VM access
+    default: vglon
+  ssh_public_key_path:
+    description: Path to SSH public key file
+    default: ~/.ssh/test_vm.pub
+  my_ip_cidr:
+    description: Your IP address in CIDR format for SSH access

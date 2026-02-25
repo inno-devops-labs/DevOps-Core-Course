@@ -1,0 +1,14 @@
+# Example configuration file for GitHub provider
+# Copy this to terraform.tfvars and fill in your values
+# IMPORTANT: terraform.tfvars is in .gitignore - never commit it!
+
+# GitHub Personal Access Token
+# Create at: https://github.com/settings/tokens
+# Required scopes: repo (all)
+github_token = "ghp_your_token_here"
+
+# Your GitHub username
+github_owner = "your-github-username"
+
+# Repository name (optional, default is set)
+# repository_name = "DevOps-Core-Course"

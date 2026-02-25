@@ -1,0 +1,16 @@
+# Example Terraform variables file
+# Copy this to terraform.tfvars and fill in your values
+# IMPORTANT: terraform.tfvars is in .gitignore - never commit it!
+
+# Yandex Cloud folder ID (get from Yandex Cloud Console)
+folder_id = "your-folder-id-here"
+
+# Your IP address in CIDR format for SSH access
+# Get your IP: curl ifconfig.me
+# Then add /32: e.g., "203.0.113.1/32"
+my_ip_cidr = "YOUR_IP/32"
+
+# SSH configuration (optional, defaults are set)
+# ssh_user             = "vglon"
+# ssh_public_key_path  = "~/.ssh/test_vm.pub"
+# zone                 = "ru-central1-a"
