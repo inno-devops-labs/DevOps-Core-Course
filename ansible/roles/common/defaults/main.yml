@@ -1,0 +1,12 @@
+---
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - vim
+  - htop
+  - net-tools
+  - wget
+  - software-properties-common
+
+common_timezone: Etc/UTC

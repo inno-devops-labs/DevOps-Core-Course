@@ -51,3 +51,12 @@ credentials.json
 *.swp
 *.swo
 *~
+
+# Ansible
+*.retry
+.vault_pass
+!ansible/.vault_pass.example
+ansible/group_vars/*
+!ansible/group_vars/*.yml.example
+ansible/inventory/*
+!ansible/inventory/*.ini.example

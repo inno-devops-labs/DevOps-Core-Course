@@ -1,0 +1,4 @@
+---
+docker_add_user: ubuntu
+docker_compose_version: "2.24.0"
+docker_compose_arch: "aarch64"
