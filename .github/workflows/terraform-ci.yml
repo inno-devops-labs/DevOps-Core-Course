@@ -38,6 +38,12 @@ jobs:
         with:
           terraform_version: 1.9.8
 
+      - name: DEBUG_INFO
+        run: pwd
+
+      - name: DEBUG_INFO
+        run: ls
+
       - name: Terraform fmt check
         run: terraform fmt -check -recursive
 
