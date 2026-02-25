@@ -1,0 +1,6 @@
+---
+app_port: 5000
+app_container_name: "{{ app_name }}"
+docker_image_tag: latest
+restart_policy: unless-stopped
+env_vars: {}
