@@ -1,4 +1,5 @@
-# Lab 3 — Continuous Integration (CI/CD)
+# Lab 4 — Infrastructure as Code (Terraform & Pulumi)
+## Local VM Alternative + Terraform Bonus Tasks
 
 **Student:** Alexander Rozanov  
 **Email:** al.rozanov@innopolis.university  
@@ -6,168 +7,266 @@
 
 ---
 
-## Repository Layout (Lab 3)
+## 1. Lab Scope and Selected Approach
 
-This lab is implemented inside the course repository under:
+This lab allows a **Local VM Alternative** (VirtualBox/VMware) if a cloud provider is not used (as stated in `labs/lab04.md`).
 
-- `labs/lab3/app_python` — Python (Flask) application + tests
-- `labs/lab3/app_go` — Go application (bonus / multi-app CI)
-- `.github/workflows/python-ci.yml` — Python CI workflow
-- `.github/workflows/go-ci.yml` — Go CI workflow (bonus)
+For a local VM setup:
+- **Task 1 (Terraform VM Creation)** can be replaced with **documented local VM setup**
+- **Task 2 (Pulumi VM Recreation)** can be **skipped** (allowed by the course local alternative)
+- The VM must still be prepared for **Lab 5 (Ansible)**
+
+### Selected approach for this submission
+- **Local VM Alternative (Option 1): VMware VM**
+- **Network mode:** NAT with port forwarding
+- **Pulumi task:** skipped (allowed by course note for local VM alternative)
+- **Bonus tasks completed:**
+  - Terraform CI/CD validation workflow (GitHub Actions)
+  - Terraform import of existing GitHub repository (`github_repository`)
 
 ---
 
-## Task 1 — Unit Testing (Python)
+## 2. Local VM Setup (Task 1 replacement for Local VM Alternative)
 
-### Testing framework
-- **Framework:** `pytest`
-- **Why:** concise syntax, fixtures, good ecosystem, easy HTTP endpoint testing for Flask.
+### 2.1 VMware VM configuration
+A local VM was prepared in **VMware** and configured as the target environment for future labs (especially Lab 5 / Ansible).
 
-### Test structure
-- Tests are located in: `labs/lab3/app_python/tests/`
-- Main test file: `tests/test_endpoints.py`
+**Implemented configuration:**
+- Ubuntu Linux VM (course-acceptable local VM option)
+- SSH server installed and enabled
+- SSH public key authentication configured
+- NAT networking with port forwarding
+- Predictable connection method documented (`ssh -p 2222 ...`)
+- Firewall rules prepared for future app deployment (ports 22, 80, 5000)
 
-### What is covered
-The unit tests verify:
+**Evidence — VM configuration**
+![VMware VM configuration](screenshots/vm_config.png)
 
-- `GET /`
-  - returns **200**
-  - response is valid JSON
-  - required top-level keys exist (service/system/runtime/request/endpoints)
-- `GET /health`
-  - returns **200**
-  - response contains `"status": "healthy"` and timestamps/uptime
-- `GET /does-not-exist`
-  - returns **404** (error case)
+### 2.2 VM network verification (NAT)
+The VM network interface was verified successfully in NAT mode.
 
-### Local execution
-From `labs/lab3/app_python`:
+- Interface: `ens33`
+- VM IP observed in the setup: `192.168.194.166/24` (NAT network)
+
+**Evidence — Netplan/IP setup**
+![Netplan and IP configuration](screenshots/netplan_setup.png)
+
+### 2.3 SSH setup and Lab 5 readiness
+The VM was prepared for Ansible usage in Lab 5:
+
+- `openssh-server` installed
+- SSH service enabled and running
+- SSH key-based authentication configured
+- Ansible-ready user (`devops`) created
+- Remote connection from the host verified
+- Required firewall ports opened:
+  - `22/tcp`
+  - `80/tcp`
+  - `5000/tcp`
+
+**Evidence — SSH service running**
+![SSH service running](screenshots/running_ssh.png)
+
+**Evidence — Ansible user (`devops`)**
+![Ansible user devops](screenshots/ansible_user_devops.png)
+
+**Evidence — SSH key added**
+![SSH key added](screenshots/add_ssh_key.png)
+
+### 2.4 NAT port forwarding (predictable connection method)
+Because the VM uses NAT mode, port forwarding was configured in VMware NAT settings.
+
+**Configured mappings (host → guest):**
+- `2222 -> 22` (SSH)
+- `8080 -> 80` (HTTP)
+- `5000 -> 5000` (custom app port)
+
+This provides a stable and predictable access method even if the guest IP changes.
+
+**Evidence — VMware NAT Port Forwarding**
+![Port forwarding rules](screenshots/port_forwarding_rules.png)
+
+### 2.5 Firewall rules
+Firewall rules were configured to allow ports required by the course and upcoming labs.
+
+**Evidence — UFW rules**
+![Firewall rules update](screenshots/update_firewall_rules.png)
+
+### 2.6 SSH access proof (host → VM)
+The VM is accessible from the host machine using NAT port forwarding.
 
 ```bash
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-ruff check .
-pytest -q --cov=. --cov-report=term-missing --cov-report=xml
+ssh -p 2222 devops@127.0.0.1
 ```
 
-### Evidence (screenshots)
-- Ruff success: `screenshots/ruff_check_successful.png`
+This satisfies the course requirement for SSH accessibility proof and confirms readiness for Lab 5 (Ansible).
 
-  ![Ruff success](screenshots/ruff_check_successful.png)
-
-- Pytest success: `screenshots/pytest_successful.png`
-
-  ![Pytest success](screenshots/pytest_successful.png)
+**Evidence — Successful SSH connection from host**
+![Successful SSH connection](screenshots/successful_ssh_connection.png)
 
 ---
 
-## Task 2 — GitHub Actions CI Workflow (Python)
+## 3. Pulumi Task (Task 2)
 
-### Workflow file
-- `.github/workflows/python-ci.yml`
+### Status: Skipped (Allowed by Local VM Alternative)
+The course explicitly allows skipping Pulumi cloud-provider recreation when using a local VM alternative.
 
-### Triggers
-The workflow runs on:
-- `pull_request` to `main/master` (only when `labs/lab3/app_python/**` changes)
-- `push` to `main/master` (only when `labs/lab3/app_python/**` changes)
-- `workflow_dispatch` (manual run)
-
-This is implemented via **path filters** to avoid unnecessary runs.
-
-### Pipeline stages
-
-#### Job 1: Lint + Tests (with coverage)
-Runs on `ubuntu-latest` with **Python 3.12** and includes:
-- install dependencies (`pip install -r requirements.txt`)
-- lint: `ruff check .`
-- tests + coverage: `pytest ... --cov-fail-under=70`
-- security scan: `snyk test` (installed via `npm`)
-
-**Result from runner logs (example run):**
-- Ruff: `All checks passed!`
-- Tests: `3 passed`, total coverage **~96%** (threshold 70% reached)
-- Snyk: `Tested 15 dependencies ... no vulnerable paths found`
-
-#### Job 2: Docker build & push (versioned)
-Runs **only on push** to `main/master` and only if tests passed.
-
-Versioning strategy:
-- **CalVer**: `YYYY.MM.DD-<GITHUB_RUN_NUMBER>`
-- Plus additional tags:
-  - `latest`
-  - `sha-<commit>`
-
-Docker image name:
-- `${DOCKERHUB_USERNAME}/devops-info-python:<tag>`
-
-Example tags observed in logs:
-- `.../devops-info-python:2026.02.11-11`
-- `.../devops-info-python:latest`
-- `.../devops-info-python:sha-<commit>`
-
-### Evidence (screenshots)
-- Workflow triggered on PR: `screenshots/successful_trigger_actions_on_pr.png`
-
-  ![Workflow triggered on PR](screenshots/successful_trigger_actions_on_pr.png)
-
-- PR checks example: `screenshots/example_of_python_pr_action.png`
-
-  ![PR checks example](screenshots/example_of_python_pr_action.png)
-
-- Docker push in Actions: `screenshots/successful_docker_push_in_actions.png`
-
-  ![Docker push in Actions](screenshots/successful_docker_push_in_actions.png)
+**Reasoning:**
+- A local VMware VM was prepared and documented as the runtime environment for Lab 5
+- The goal of having a VM ready for configuration management is fully satisfied
+- Bonus Terraform tasks were completed to demonstrate IaC automation and validation practices
 
 ---
 
-## Task 3 — CI Best Practices & Security
+## 4. Terraform Bonus Task — Part 1: IaC CI/CD Validation (GitHub Actions)
 
-### 3.1 Dependency caching
-Implemented via `actions/setup-python@v5` with `cache: pip` and cache key based on:
-- `labs/lab3/app_python/requirements.txt`
+### 4.1 Terraform project structure
+A Terraform project was created under `terraform/` with split configuration files:
+- `main.tf`
+- `providers.tf`
+- `variables.tf`
+- `repository.tf`
+- `outputs.tf`
+- `version.tf`
+- `terraform.tfvars.example`
 
-### 3.2 Security scanning (Snyk)
-Implemented inside the CI job:
-- install CLI: `npm install -g snyk`
-- scan: `snyk test --file=requirements.txt --package-manager=pip --severity-threshold=high --skip-unresolved`
-- Result (runner logs): **no vulnerable paths found** for the dependency set.
+Sensitive/local-only files (`terraform.tfvars`, state files, `.terraform/`) were excluded from Git.
 
-### 3.3 Additional CI best practices applied
-- **Concurrency**: cancels previous runs for the same branch/ref (`cancel-in-progress: true`)
-- **Path filters**: run only when relevant paths change
-- **Separate jobs + gating**: Docker push runs only after tests succeed
-- **Conditional deployment**: Docker push only on `main/master` pushes
-- **Least privileges**: workflow uses `permissions: contents: read`
-- **Docker layer caching**: `cache-from/cache-to type=gha` to speed builds
+**Evidence — Terraform directory tree**
+![Terraform tree](screenshots/teraform_tree.png)
+
+### 4.2 Terraform validation workflow
+A GitHub Actions workflow was implemented:
+- **File:** `.github/workflows/terraform-ci.yml`
+
+It runs:
+- `terraform fmt -check -recursive`
+- `terraform init -backend=false`
+- `terraform validate`
+- `tflint --recursive`
+
+### 4.3 Path filters and specific triggering
+Path-based triggers were configured so Terraform CI runs only for relevant Terraform/workflow changes.
+
+**Evidence — specific trigger / path filters**
+![Specific trigger for Terraform CI](screenshots/specific_trigger.png)
+
+### 4.4 Validation results
+Terraform initialization and validation were executed successfully (locally and in CI after path fix).
+
+**Evidence — successful Terraform validate**
+![Terraform validate success](screenshots/successful_terraform_validate.png)
+
+**Evidence — successful Terraform CI result**
+![Successful Terraform CI result](screenshots/successful_terraform_result.png)
 
 ---
 
-## Go CI (Multi-App Pipeline)
+## 5. Terraform Bonus Task — Part 2: Import Existing GitHub Repository
 
-### Workflow file
-- `.github/workflows/go-ci.yml`
+### 5.1 Objective
+The bonus task requires importing an existing GitHub repository into Terraform state and then managing it through IaC.
 
-### What it does
-- Runs on PR/push with path filters: `labs/lab3/app_go/**`
-- Lint stage: `gofmt` check (must be clean)
-- Static analysis: `go vet ./...`
-- Tests + coverage output: `go test ./... -coverprofile=coverage.out -covermode=atomic`
-- Docker build & push on `main/master` pushes with the same CalVer + `latest` + `sha-...` tags:
-  - `${DOCKERHUB_USERNAME}/devops-info-go:<tag>`
+### 5.2 GitHub provider configuration and token handling
+The GitHub provider (`integrations/github`) was configured with:
+- `owner` from Terraform variable (`github_owner`)
+- authentication via `GITHUB_TOKEN` environment variable (not committed)
 
-### Note about Go coverage
-If no unit tests are present, Go will report coverage like `0.0% of statements`.  
-(Adding `httptest`-based handler tests will increase coverage.)
+**Evidence — exporting GitHub PAT**
+![Export GitHub PAT](screenshots/export_git_pat.png)
+
+### 5.3 Import execution
+Terraform was initialized and the existing repository was imported into state.
+
+**Important implementation note:**  
+After troubleshooting, the import command was corrected to use the repository identifier format expected by the configured provider behavior (provider already had the owner configured).
+
+**Evidence — successful Terraform import**
+![Successful Terraform import](screenshots/successful_terraform_import.png)
+
+### 5.4 Plan review after import
+After import:
+- `terraform state show github_repository.course` was used to inspect imported state
+- `terraform plan` was run to compare Terraform config with the current repository configuration
+- Any differences can be aligned in code or handled through `lifecycle.ignore_changes`
+
+**Evidence — Terraform plan after import**
+![Terraform plan after import](screenshots/terraform_plan.png)
+
+### 5.5 Apply (repository settings management)
+Terraform apply was executed to manage repository settings according to the Terraform configuration.
+
+**Evidence — Terraform apply**
+![Terraform apply](screenshots/terraform_apply.png)
 
 ---
 
-## Appendix — Required Secrets (GitHub Actions)
+## 6. Security and Repository Hygiene
 
-Configure these repository secrets:
+### 6.1 Sensitive files excluded from Git
+The repository was configured to avoid committing secrets and local state:
+- `terraform.tfvars`
+- `*.tfstate`
+- `*.tfstate.*`
+- `.terraform/`
 
-- `DOCKERHUB_USERNAME`
-- `DOCKERHUB_TOKEN`
-- `SNYK_TOKEN`
+### 6.2 Secrets handling
+Sensitive values were handled through environment variables and local-only files:
+- `GITHUB_TOKEN` exported locally
+- no tokens/secrets committed to the repository
 
----y
+---
+
+## 7. Lab 5 Preparation Status (Required by Lab 4)
+
+The VM prepared in this lab is ready to be used as an Ansible target in Lab 5.
+
+### Planned connection method for Lab 5
+```bash
+ssh -p 2222 devops@127.0.0.1
+```
+
+### Readiness summary
+- Local VMware VM prepared
+- SSH enabled and verified
+- SSH key authentication configured
+- NAT port forwarding configured (2222/8080/5000)
+- Firewall rules configured (22/80/5000)
+
+---
+
+## 8. What Was Completed (Checklist Summary)
+
+### Main lab (Local VM Alternative path)
+- [x] Local VM created in VMware (allowed alternative)
+- [x] VM network configured (NAT)
+- [x] SSH server installed and enabled
+- [x] SSH public key authentication configured
+- [x] Predictable access method configured (NAT port forwarding)
+- [x] SSH access from host verified
+- [x] Firewall ports 22/80/5000 configured
+- [x] Lab 5 VM plan documented
+- [x] Pulumi skipped per local VM alternative note (documented)
+
+### Bonus tasks
+- [x] Terraform project created (`terraform/`)
+- [x] Terraform CI workflow added (`.github/workflows/terraform-ci.yml`)
+- [x] Workflow includes `fmt`, `validate`, and `tflint`
+- [x] Path filters configured
+- [x] GitHub provider configured
+- [x] Existing GitHub repository imported into Terraform state
+- [x] `terraform plan` reviewed after import
+- [x] `terraform apply` executed
+- [x] Import purpose/benefits documented
+
+---
+
+## 9. Conclusion
+
+This lab was completed using the **Local VM Alternative** explicitly allowed by the course instructions. The local VMware VM was correctly prepared for Lab 5 (Ansible), including SSH access, key authentication, firewall rules, and a predictable NAT port-forwarded connection method.
+
+In addition, both **bonus Terraform tasks** were completed:
+- Infrastructure validation CI workflow in GitHub Actions
+- Terraform import and management of an existing GitHub repository
+
+The submission demonstrates practical IaC concepts (validation, CI automation, state import, plan/apply workflow) while using a local VM as the runtime target for upcoming configuration management tasks.
