@@ -1,0 +1,8 @@
+---
+- name: Provision web servers
+  hosts: webservers
+  become: True 
+
+  roles:
+    - common
+    - docker
