@@ -22,8 +22,15 @@ override.tf.json
 # Pulumi
 pulumi/venv/
 pulumi/.venv/
+labs-work/pulumi/venv/
+labs-work/pulumi/.venv/
 Pulumi.*.yaml
 
 # Cloud credentials
 *.pem
 *.key
+
+# Ansible
+*.retry
+.vault_pass
+__pycache__/
