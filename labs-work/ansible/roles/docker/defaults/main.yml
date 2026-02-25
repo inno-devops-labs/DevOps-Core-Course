@@ -1,0 +1,19 @@
+---
+docker_user: "{{ ansible_user | default('ubuntu') }}"
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+docker_gpg_url: "https://download.docker.com/linux/ubuntu/gpg"
+docker_gpg_key_path: "/etc/apt/keyrings/docker.asc"
+
+docker_repo: >-
+  deb [arch={{ docker_arch }} signed-by={{ docker_gpg_key_path }}]
+  https://download.docker.com/linux/ubuntu
+  {{ ansible_distribution_release }} stable
+
+docker_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"

@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'app_python/**'
+      - 'labs-work/app_python/**'
       - '.github/workflows/python-ci.yml'
   pull_request:
     branches: [main, master]
     paths:
-      - 'app_python/**'
+      - 'labs-work/app_python/**'
       - '.github/workflows/python-ci.yml'
 
 env:
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: app_python
+        working-directory: labs-work/app_python
 
     steps:
       - name: Checkout repository
@@ -34,8 +34,8 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
           cache-dependency-path: |
-            app_python/requirements.txt
-            app_python/requirements-dev.txt
+            labs-work/app_python/requirements.txt
+            labs-work/app_python/requirements-dev.txt
 
       - name: Install dependencies
         run: |
@@ -52,7 +52,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: app_python/coverage.xml
+          files: labs-work/app_python/coverage.xml
           flags: python
           token: ${{ secrets.CODECOV_TOKEN }}
         if: always()
@@ -74,14 +74,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r app_python/requirements.txt
+          pip install -r labs-work/app_python/requirements.txt
 
       - name: Run Snyk to check for vulnerabilities
         uses: snyk/actions/python@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --file=app_python/requirements.txt --severity-threshold=high
+          args: --file=labs-work/app_python/requirements.txt --severity-threshold=high
         continue-on-error: true
 
   build:
@@ -122,7 +122,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: app_python
+          context: labs-work/app_python
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
