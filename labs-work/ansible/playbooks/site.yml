@@ -1,0 +1,6 @@
+---
+- name: Full provisioning and deployment
+  ansible.builtin.import_playbook: provision.yml
+
+- name: Deploy application
+  ansible.builtin.import_playbook: deploy.yml

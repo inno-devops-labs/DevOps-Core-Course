@@ -4,17 +4,17 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'terraform/**'
+      - 'labs-work/terraform/**'
       - '.github/workflows/terraform-ci.yml'
   pull_request:
     branches: [main, master]
     paths:
-      - 'terraform/**'
+      - 'labs-work/terraform/**'
       - '.github/workflows/terraform-ci.yml'
 
 env:
   TERRAFORM_VERSION: '1.9'
-  TF_WORKING_DIR: terraform
+  TF_WORKING_DIR: labs-work/terraform
 
 jobs:
   validate:
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: terraform
+        working-directory: labs-work/terraform
 
     steps:
       - name: Checkout repository

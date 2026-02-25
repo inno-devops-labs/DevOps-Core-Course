@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'app_go/**'
+      - 'labs-work/app_go/**'
       - '.github/workflows/go-ci.yml'
   pull_request:
     branches: [main, master]
     paths:
-      - 'app_go/**'
+      - 'labs-work/app_go/**'
       - '.github/workflows/go-ci.yml'
 
 env:
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: app_go
+        working-directory: labs-work/app_go
 
     steps:
       - name: Checkout repository
@@ -32,12 +32,12 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          cache-dependency-path: app_go/go.mod
+          cache-dependency-path: labs-work/app_go/go.mod
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
-          working-directory: app_go
+          working-directory: labs-work/app_go
           version: latest
 
       - name: Run tests with coverage
@@ -48,7 +48,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: app_go/coverage.out
+          files: labs-work/app_go/coverage.out
           flags: go
           token: ${{ secrets.CODECOV_TOKEN }}
         if: always()
@@ -91,7 +91,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: app_go
+          context: labs-work/app_go
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -31,7 +31,7 @@
 ### Project Structure
 
 ```
-terraform/
+labs-work/terraform/
   .gitignore
   .tflint.hcl
   main.tf
@@ -74,7 +74,7 @@ terraform/
 ### Project Structure
 
 ```
-pulumi/
+labs-work/pulumi/
   .gitignore
   Pulumi.yaml
   requirements.txt
@@ -139,7 +139,7 @@ Terraform is the better choice for teams that need broad provider support, estab
 
 ### Workflow Implementation
 
-The workflow (`.github/workflows/terraform-ci.yml`) follows the same patterns established by the Python and Go CI pipelines, triggering on changes to `terraform/**` files on push and pull request events.
+The workflow (`.github/workflows/terraform-ci.yml`) follows the same patterns established by the Python and Go CI pipelines, triggering on changes to `labs-work/terraform/**` files on push and pull request events.
 
 ### Validation Steps
 
@@ -169,7 +169,7 @@ No cloud credentials are required for validation - `terraform init -backend=fals
 ### Import Process
 
 ```bash
-cd terraform/github
+cd labs-work/terraform/github
 export GITHUB_TOKEN="ghp_..."
 terraform init
 terraform import github_repository.devops_course DevOps-Core-Course
