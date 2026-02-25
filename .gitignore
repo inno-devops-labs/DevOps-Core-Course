@@ -1,2 +1,9 @@
 test
 venv/
+
+# Ansible
+*.retry
+.vault_pass
+.vault_password
+vault_pass*
+ansible/inventory/*.pyc

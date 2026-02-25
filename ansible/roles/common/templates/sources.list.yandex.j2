@@ -1,0 +1,4 @@
+# Ubuntu {{ ansible_facts['distribution_release'] }} — Yandex mirror (often works better from Yandex Cloud)
+deb http://mirror.yandex.ru/ubuntu/ {{ ansible_facts['distribution_release'] }} main restricted universe multiverse
+deb http://mirror.yandex.ru/ubuntu/ {{ ansible_facts['distribution_release'] }}-updates main restricted universe multiverse
+deb http://mirror.yandex.ru/ubuntu/ {{ ansible_facts['distribution_release'] }}-security main restricted universe multiverse

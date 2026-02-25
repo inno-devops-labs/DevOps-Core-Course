@@ -1,0 +1,14 @@
+# Copy this file to all.yml and encrypt with Ansible Vault:
+#   ansible-vault create group_vars/all.yml
+# Then paste the content below and save.
+
+# Docker Hub credentials (required for deploy)
+dockerhub_username: your-dockerhub-username
+dockerhub_password: your-dockerhub-password-or-access-token
+
+# Application use dockerhub_username
+app_name: devops-info-service
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+app_port: 5001
+app_container_name: devops-app

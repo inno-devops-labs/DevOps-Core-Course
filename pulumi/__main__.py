@@ -71,6 +71,25 @@ yandex.VpcSecurityGroupRule(
     v4_cidr_blocks=["0.0.0.0/0"]
 )
 
+# App port 5001 (devops-info-service from Ansible deploy)
+yandex.VpcSecurityGroupRule(
+    "app-5001-rule",
+    security_group_binding=sg.id,
+    direction="ingress",
+    protocol="TCP",
+    port=5001,
+    v4_cidr_blocks=["0.0.0.0/0"],
+)
+
+# Egress: allow VM to reach internet (apt, Docker Hub, etc.)
+yandex.VpcSecurityGroupRule(
+    "egress-all",
+    security_group_binding=sg.id,
+    direction="egress",
+    protocol="ANY",
+    v4_cidr_blocks=["0.0.0.0/0"],
+)
+
 # ---------------------------
 # VM
 # ---------------------------

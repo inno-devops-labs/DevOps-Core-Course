@@ -1,0 +1,48 @@
+---
+- name: Force apt to use IPv4 only (avoids IPv6 "Network is unreachable" on some clouds)
+  ansible.builtin.copy:
+    content: 'Acquire::ForceIPv4 "true";'
+    dest: /etc/apt/apt.conf.d/99force-ipv4
+    owner: root
+    group: root
+    mode: "0644"
+  when: use_yandex_mirror | default(false) | bool
+
+- name: Configure Yandex mirror for Ubuntu (when use_yandex_mirror)
+  ansible.builtin.template:
+    src: sources.list.yandex.j2
+    dest: /etc/apt/sources.list
+    owner: root
+    group: root
+    mode: "0644"
+  when: use_yandex_mirror | default(false) | bool
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+    update_cache_retries: 10
+    update_cache_retry_max_delay: 30
+  register: apt_update
+  ignore_errors: true
+
+- name: Capture real apt-get update error when cache update failed
+  ansible.builtin.shell: apt-get update 2>&1
+  register: apt_get_update_result
+  changed_when: false
+  failed_when: false
+  when: apt_update is failed
+
+- name: Fail with real apt error so you can fix VM network/DNS
+  ansible.builtin.fail:
+    msg: "apt cache update failed. Run 'sudo apt-get update' on the VM to see details. Captured: {{ apt_get_update_result.stdout }}"
+  when: apt_update is failed
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"

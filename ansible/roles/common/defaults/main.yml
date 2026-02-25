@@ -1,0 +1,15 @@
+---
+# Use Yandex mirror for apt (often fixes "Failed to update cache" on Yandex Cloud VMs). Set to false if not in Yandex Cloud.
+use_yandex_mirror: true
+
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - vim
+  - htop
+  - unzip
+  - ca-certificates
+  - gnupg
+  - lsb-release
+timezone: "Europe/Moscow"
