@@ -1,0 +1,15 @@
+---
+# Default variables for docker role
+
+docker_user: "{{ ansible_user }}"
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-compose-plugin
+
+docker_prerequisites:
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release

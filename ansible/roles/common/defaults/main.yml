@@ -1,0 +1,14 @@
+---
+# Default variables for common role
+
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - vim
+  - htop
+  - net-tools
+  - wget
+  - unzip
+
+common_timezone: UTC

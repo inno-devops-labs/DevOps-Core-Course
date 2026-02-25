@@ -1,0 +1,6 @@
+---
+# Default variables for app_deploy role
+
+app_port: 8000
+app_restart_policy: unless-stopped
+app_health_check_timeout: 60

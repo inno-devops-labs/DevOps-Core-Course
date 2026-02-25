@@ -27,3 +27,10 @@ out/
 .pytest_cache/
 .coverage
 app_python/test_venv/*
+
+# Ansible
+*.retry
+.vault_pass
+ansible/.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
