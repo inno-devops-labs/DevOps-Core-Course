@@ -2,3 +2,7 @@ test
 .DS_Store
 __pycache__
 .pytest_cache
+
+*.retry
+ansible/.vault_pass
+ansible/inventory/*.pyc

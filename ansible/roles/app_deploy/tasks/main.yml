@@ -1,0 +1,78 @@
+---
+- name: Create app source directory on server
+  ansible.builtin.file:
+    path: /opt/fastapi-devops-app
+    state: directory
+    mode: "0755"
+
+- name: Copy Dockerfile to server
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app_python/Dockerfile"
+    dest: /opt/fastapi-devops-app/Dockerfile
+    mode: "0644"
+
+- name: Copy application source to server
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app_python/main.py"
+    dest: /opt/fastapi-devops-app/main.py
+    mode: "0644"
+
+- name: Copy requirements.txt to server
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app_python/requirements.txt"
+    dest: /opt/fastapi-devops-app/requirements.txt
+    mode: "0644"
+
+- name: Build Docker image from source
+  community.docker.docker_image:
+    name: "{{ docker_image }}"
+    tag: "{{ docker_image_tag }}"
+    build:
+      path: /opt/fastapi-devops-app
+      pull: false
+    source: build
+    force_source: yes
+
+- name: Stop existing container if running
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    state: stopped
+  failed_when: false
+
+- name: Remove existing container if present
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    state: absent
+
+- name: Run application container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: started
+    restart_policy: "{{ app_restart_policy }}"
+    ports:
+      - "{{ app_port }}:8000"
+    env: "{{ app_env_vars }}"
+  notify: restart app container
+
+- name: Wait for application port to be ready
+  ansible.builtin.wait_for:
+    host: localhost
+    port: "{{ app_port }}"
+    timeout: 30
+    state: started
+
+- name: Verify application health endpoint
+  ansible.builtin.uri:
+    url: "http://localhost:{{ app_port }}/health"
+    method: GET
+    status_code: 200
+    timeout: 10
+  register: health_result
+  retries: 3
+  delay: 5
+  until: health_result.status == 200
+
+- name: Show health check response
+  ansible.builtin.debug:
+    msg: "App is healthy: {{ health_result.json }}"

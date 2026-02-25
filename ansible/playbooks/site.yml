@@ -1,0 +1,6 @@
+---
+- name: Full site provisioning and deployment
+  import_playbook: provision.yml
+
+- name: Application deployment
+  import_playbook: deploy.yml
