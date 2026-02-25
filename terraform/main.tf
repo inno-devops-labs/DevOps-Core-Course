@@ -33,7 +33,7 @@ resource "yandex_vpc_security_group" "lab_sg" {
   ingress {
     protocol       = "TCP"
     port           = 22
-    v4_cidr_blocks = ["93.77.186.188/0"]   # Replace with your IP for security
+    v4_cidr_blocks = ["0.0.0.0/0"]   # Replace with your IP for security
   }
   ingress {
     protocol       = "TCP"
