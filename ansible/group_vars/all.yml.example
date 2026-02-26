@@ -1,10 +1,4 @@
  ---
- # Example vault variables for Lab 5.
- # Create an encrypted version of this file with:
- #   ansible-vault create group_vars/all.yml
- # and copy the structure below.
- #
- # Docker Hub credentials
  dockerhub_username: your-username
  dockerhub_password: your-access-token
 

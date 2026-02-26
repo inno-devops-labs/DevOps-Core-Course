@@ -65,16 +65,5 @@
  - `curl http://<VM-IP>:5000/health` and `/` outputs.
  - Any handler executions (e.g., app restart).
 
- ## 6. Key Decisions
 
- Answer briefly (2–3 sentences each):
- - Why use roles instead of plain playbooks?
- - How do roles improve reuse between projects/environments?
- - What makes a task idempotent in Ansible?
- - How do handlers improve efficiency?
- - Why is Ansible Vault necessary for this lab?
-
- ## 7. Challenges (Optional)
-
- Bullet any issues you hit (connectivity, Docker GPG key, vault, etc.) and how you fixed them.
 
