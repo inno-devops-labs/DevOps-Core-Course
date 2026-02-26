@@ -29,6 +29,7 @@ ansible [core 2.20.2]
 * Python: `/usr/bin/python3.13`
 * Access: SSH (key-based authentication)
 
+![alt text](image.png)
 ---
 
 ## Infrastructure Overview
@@ -231,6 +232,8 @@ Observed:
 
 Tasks show `changed`.
 
+![alt text](image-1.png)
+
 ---
 
 ## Second Run
@@ -245,7 +248,7 @@ Observed:
 * No `changed`
 
 This confirms idempotency.
-
+![alt text](image-2.png)
 ---
 
 ## Why It Is Idempotent
@@ -295,6 +298,7 @@ ansible-playbook playbooks/deploy.yml --ask-vault-pass
 ```
 
 Application deployed successfully.
+![alt text](image-3.png)
 
 ---
 
@@ -309,6 +313,7 @@ Output shows:
 ```
 egrapa/devops-app:latest   Up   0.0.0.0:5000->5000/tcp
 ```
+![alt text](image-4.png)
 
 ---
 
@@ -320,9 +325,7 @@ curl http://192.168.122.221:5000/health
 
 Response:
 
-```
-{"status":"ok"}
-```
+![alt text](image-5.png)
 
 Application is accessible and running.
 
