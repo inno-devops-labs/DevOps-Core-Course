@@ -1,0 +1,10 @@
+ ---
+ - name: Full provisioning and deployment
+   hosts: webservers
+   become: true
+
+   roles:
+     - common
+     - docker
+     - app_deploy
+

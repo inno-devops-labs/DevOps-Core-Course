@@ -17,3 +17,9 @@ pulumi/.venv/
 *.pem
 *.key
 credentials
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/

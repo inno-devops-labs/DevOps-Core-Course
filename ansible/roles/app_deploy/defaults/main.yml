@@ -1,0 +1,7 @@
+ ---
+ app_name: devops-info-service
+ app_port: 5000
+ app_container_name: "{{ app_name }}"
+ app_restart_policy: unless-stopped
+ app_environment: {}
+
