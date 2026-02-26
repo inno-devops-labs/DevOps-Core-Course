@@ -1,0 +1,21 @@
+---
+# Common variables for all hosts
+ansible_python_interpreter: /usr/bin/python3
+
+# Docker configuration
+docker_edition: ce
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# Application configuration
+app_name: devops-info-service
+app_port: 5000
+app_image: 4hellboy4/devops-info-service:latest
+app_container_name: devops-app
+
+# User configuration
+deploy_user: ubuntu

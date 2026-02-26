@@ -1,0 +1,22 @@
+# Ansible temporary files
+*.retry
+.ansible/
+__pycache__/
+*.pyc
+
+# Fact cache
+/tmp/ansible_facts/
+
+# Vault password files
+.vault_pass
+.ansible_vault_pass
+vault_password.txt
+
+# Secrets (if using vault)
+# Note: secrets.yml is encrypted with ansible-vault, safe to commit
+# But you can uncomment the line below if you prefer not to commit it
+# **/secrets.yml
+!**/secrets.yml.example
+
+# OS files
+.DS_Store

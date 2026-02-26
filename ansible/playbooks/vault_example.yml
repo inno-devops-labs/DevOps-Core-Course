@@ -1,0 +1,26 @@
+---
+- name: Example playbook using vaulted secrets
+  hosts: all
+  become: yes
+  
+  vars_files:
+    - ../inventory/group_vars/secrets.yml
+  
+  tasks:
+    - name: Display that we have access to secrets (without showing them)
+      ansible.builtin.debug:
+        msg: "Database user is configured (password hidden)"
+    
+    - name: Example - deploy app with database credentials
+      ansible.builtin.debug:
+        msg: "Would deploy app with DB_USER={{ db_user }} and DB_HOST={{ db_host }}"
+      # In real scenario, you'd pass these as environment variables:
+      # env:
+      #   DB_USER: "{{ db_user }}"
+      #   DB_PASSWORD: "{{ db_password }}"
+      #   DB_HOST: "{{ db_host }}"
+    
+    - name: Show API key is available (first 10 chars only)
+      ansible.builtin.debug:
+        msg: "API key starts with: {{ api_key[:10] }}..."
+      when: api_key is defined

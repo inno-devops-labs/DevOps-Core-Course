@@ -1,0 +1,28 @@
+---
+# Common system packages and configuration
+- name: Update and upgrade apt packages
+  ansible.builtin.apt:
+    update_cache: yes
+    upgrade: safe
+    cache_valid_time: 3600
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - htop
+      - net-tools
+      - software-properties-common
+    state: present
+
+- name: Configure timezone
+  community.general.timezone:
+    name: UTC
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+  when: inventory_hostname is defined
