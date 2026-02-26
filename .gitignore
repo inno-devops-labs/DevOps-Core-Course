@@ -27,3 +27,6 @@ Pulumi.*.yaml
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+
+.venv
+auto/
