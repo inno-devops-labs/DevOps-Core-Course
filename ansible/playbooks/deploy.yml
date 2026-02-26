@@ -1,0 +1,20 @@
+---
+- name: Deploy application
+  hosts: webservers
+  become: yes
+
+  vars_files:
+    - ../group_vars/all.yml
+
+  pre_tasks:
+    - name: Assert vault vars are loaded
+      ansible.builtin.assert:
+        that:
+          - dockerhub_username is defined
+          - dockerhub_password is defined
+          - docker_image is defined
+          - app_container_name is defined
+        fail_msg: "Vault vars were not loaded. Check vault_password_file / path to group_vars/all.yml."
+
+  roles:
+    - app_deploy
