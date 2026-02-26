@@ -13,3 +13,8 @@ secrets.auto.tfvars
 Pulumi.*.yaml
 venv/
 __pycache__/
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc

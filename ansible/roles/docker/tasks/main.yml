@@ -1,0 +1,56 @@
+---
+- name: Install Docker apt prerequisites
+  ansible.builtin.apt:
+    name: "{{ docker_apt_prerequisites }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create Docker apt keyring directory
+  ansible.builtin.file:
+    path: "{{ docker_keyring_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Add Docker GPG key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: "{{ docker_keyring_path }}"
+    mode: "0644"
+
+- name: Add Docker apt repository
+  ansible.builtin.apt_repository:
+    repo: "{{ docker_apt_repo }}"
+    state: present
+    filename: docker
+  register: docker_repository
+
+- name: Refresh apt cache after repository change
+  ansible.builtin.apt:
+    update_cache: true
+  when: docker_repository.changed
+
+- name: Install Docker engine packages
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+  notify: restart docker
+
+- name: Ensure Docker service is enabled and running
+  ansible.builtin.service:
+    name: "{{ docker_service_name }}"
+    state: started
+    enabled: true
+
+- name: Add users to docker group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  loop: "{{ docker_users }}"
+  when: docker_users | length > 0
+
+- name: Install python Docker bindings
+  ansible.builtin.apt:
+    name: "{{ docker_python_packages }}"
+    state: present

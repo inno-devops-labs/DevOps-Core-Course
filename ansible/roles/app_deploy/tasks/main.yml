@@ -1,0 +1,89 @@
+---
+- name: Validate Docker Hub credentials
+  ansible.builtin.assert:
+    that:
+      - dockerhub_username | length > 0
+      - dockerhub_password | length > 0
+    fail_msg: "dockerhub_username and dockerhub_password must be provided via Ansible Vault."
+
+- name: Log in to Docker Hub
+  community.docker.docker_login:
+    registry_url: "{{ docker_registry_url }}"
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+  no_log: true
+
+- name: Pull application image
+  community.docker.docker_image:
+    name: "{{ app_image }}"
+    source: pull
+  register: app_image_pull
+
+- name: Read current container info
+  community.docker.docker_container_info:
+    name: "{{ app_container_name }}"
+  register: app_container_info
+
+- name: Decide whether container recreation is required
+  ansible.builtin.set_fact:
+    app_recreate_container: "{{ app_force_redeploy or app_image_pull.changed }}"
+
+- name: Stop existing container before recreation
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    state: stopped
+  when:
+    - app_container_info.exists
+    - app_recreate_container
+    - app_container_info.container.State.Running | default(false)
+
+- name: Remove existing container before recreation
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    state: absent
+  when:
+    - app_container_info.exists
+    - app_recreate_container
+
+- name: Ensure application container is running
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ app_image }}"
+    state: started
+    restart_policy: "{{ app_restart_policy }}"
+    published_ports:
+      - "{{ app_port }}:{{ app_container_port }}"
+    env: "{{ app_environment }}"
+
+- name: Wait for application port
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: "{{ app_port }}"
+    delay: "{{ app_wait_delay }}"
+    timeout: "{{ app_wait_timeout }}"
+
+- name: Verify health endpoint
+  ansible.builtin.uri:
+    url: "{{ app_healthcheck_url }}"
+    method: GET
+    status_code: 200
+    return_content: true
+  register: app_healthcheck_response
+  retries: 10
+  delay: 3
+  until: app_healthcheck_response.status == 200
+  changed_when: false
+
+- name: Verify main endpoint
+  ansible.builtin.uri:
+    url: "{{ app_main_url }}"
+    method: GET
+    status_code: 200
+  changed_when: false
+
+- name: Trigger app restart handler when explicitly requested
+  ansible.builtin.debug:
+    msg: "Manual restart requested via app_force_restart=true"
+  changed_when: true
+  notify: restart app container
+  when: app_force_restart

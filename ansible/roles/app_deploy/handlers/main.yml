@@ -1,0 +1,12 @@
+---
+- name: Restart app container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ app_image }}"
+    state: started
+    restart: true
+    restart_policy: "{{ app_restart_policy }}"
+    published_ports:
+      - "{{ app_port }}:{{ app_container_port }}"
+    env: "{{ app_environment }}"
+  listen: restart app container

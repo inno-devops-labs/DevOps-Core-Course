@@ -1,0 +1,22 @@
+---
+dockerhub_username: ""
+dockerhub_password: ""
+docker_registry_url: "https://index.docker.io/v1/"
+
+app_name: devops-info
+docker_image_repository: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+app_image: "{{ docker_image_repository }}:{{ docker_image_tag }}"
+app_container_name: "{{ app_name }}"
+app_port: 5000
+app_container_port: 5000
+app_restart_policy: unless-stopped
+app_environment:
+  HOST: "0.0.0.0"
+  PORT: "{{ app_container_port | string }}"
+app_wait_timeout: 60
+app_wait_delay: 2
+app_healthcheck_url: "http://127.0.0.1:{{ app_port }}/health"
+app_main_url: "http://127.0.0.1:{{ app_port }}/"
+app_force_redeploy: false
+app_force_restart: false
