@@ -36,6 +36,12 @@ venv/
 env/
 ENV/
 
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
+
 # IDE
 .vscode/
 .idea/
