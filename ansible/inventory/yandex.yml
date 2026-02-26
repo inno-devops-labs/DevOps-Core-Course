@@ -1,0 +1,21 @@
+plugin: yandex.cloud.yandex_compute
+
+auth_kind: serviceaccountfile
+service_account_file: /home/blxxdclxud/yc-key.json
+
+folder_id: b1ga4ttr9f92otmhh4cc
+
+filters:
+  - status = "RUNNING"
+
+compose:
+  ansible_host: network_interfaces[0].primary_v4_address.one_to_one_nat.address
+  ansible_user: "'ubuntu'"
+
+keyed_groups:
+  - key: labels.get("project", "ungrouped")
+    prefix: ""
+    separator: ""
+
+groups:
+  webservers: "'devops-lab04' in labels.get('project', '')"

@@ -18,3 +18,8 @@ __pycache__/
 *.pem
 *.key
 yc-key.json
+
+# Ansible
+*.retry
+ansible/.vault_pass
+ansible/inventory/*.pyc
