@@ -1,3 +1,4 @@
+---
 - name: Provision web servers
   hosts: webservers
   become: yes

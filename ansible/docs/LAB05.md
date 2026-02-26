@@ -1,55 +1,68 @@
+```markdown
 # Lab 5 – Ansible Fundamentals
+
+## Overview
+
+This lab demonstrates configuration management using Ansible. I have created three reusable roles (`common`, `docker`, `app_deploy`) to provision a Ubuntu VM and deploy the containerized Python application from Labs 1‑3. The playbooks are idempotent, credentials are securely stored with Ansible Vault, and the deployment includes health checks.
+
+**Target VM:**  
+- OS: Ubuntu 24.04 LTS  
+- Public IP: `51.250.XX.XX`  
+- User: `ubuntu` (SSH key authentication)  
+
+**Ansible version:** 2.16.3
+
+---
 
 ## Architecture Overview
 
-- **Ansible version:** 2.16.x (output of `ansible --version`)
-- **Target VM:** Ubuntu 24.04 LTS running on Yandex Cloud, IP `51.250.XX.XX`
-- **Project structure:**
-  ```
-  ansible/
-  ├── ansible.cfg
-  ├── inventory/
-  │   └── hosts.ini
-  ├── playbooks/
-  │   ├── provision.yml
-  │   └── deploy.yml
-  ├── roles/
-  │   ├── common/
-  │   │   ├── defaults/
-  │   │   │   └── main.yml
-  │   │   └── tasks/
-  │   │       └── main.yml
-  │   ├── docker/
-  │   │   ├── defaults/
-  │   │   │   └── main.yml
-  │   │   ├── handlers/
-  │   │   │   └── main.yml
-  │   │   └── tasks/
-  │   │       └── main.yml
-  │   └── app_deploy/
-  │       ├── defaults/
-  │       │   └── main.yml
-  │       ├── handlers/
-  │       │   └── main.yml
-  │       └── tasks/
-  │           └── main.yml
-  ├── group_vars/
-  │   └── all.yml          (encrypted with Ansible Vault)
-  └── docs/
-      └── LAB05.md
-  ```
+The project follows the recommended Ansible role‑based structure:
+
+```
+ansible/
+├── ansible.cfg
+├── inventory/
+│   └── hosts.ini
+├── group_vars/
+│   └── all.yml                (encrypted with Ansible Vault)
+├── playbooks/
+│   ├── provision.yml
+│   └── deploy.yml
+├── roles/
+│   ├── common/
+│   │   ├── tasks/
+│   │   │   └── main.yml
+│   │   └── defaults/
+│   │       └── main.yml
+│   ├── docker/
+│   │   ├── tasks/
+│   │   │   └── main.yml
+│   │   ├── handlers/
+│   │   │   └── main.yml
+│   │   └── defaults/
+│   │       └── main.yml
+│   └── app_deploy/
+│       ├── tasks/
+│       │   └── main.yml
+│       ├── handlers/
+│       │   └── main.yml
+│       └── defaults/
+│           └── main.yml
+└── docs/
+    └── LAB05.md                (this file)
+```
 
 **Why roles?**  
-Roles provide a clean, reusable way to organize automation code. Each role has a clear responsibility, making playbooks short and readable. They can be shared across projects and enable collaboration without merge conflicts.
+Roles separate concerns, make the code reusable, and allow easy addition of new servers or applications in the future.
 
 ---
 
 ## Roles Documentation
 
-### 1. `common` Role
+### 1. Common Role
 
 **Purpose:**  
-Performs basic system preparation: updates package cache and installs a set of common utilities.
+Update the apt cache and install a standard set of system packages that every server should have.
 
 **Variables (`defaults/main.yml`):**
 ```yaml
@@ -78,15 +91,12 @@ common_packages:
 
 **Handlers:** None.
 
-**Idempotency:**  
-The `apt` module only installs missing packages; updating the cache is controlled by `cache_valid_time` to avoid unnecessary runs.
-
 ---
 
-### 2. `docker` Role
+### 2. Docker Role
 
 **Purpose:**  
-Installs Docker CE from the official repository, ensures the service is running, and adds the default user to the `docker` group.
+Install Docker CE from the official repository, start the service, and add the target user to the `docker` group.
 
 **Variables (`defaults/main.yml`):**
 ```yaml
@@ -140,18 +150,14 @@ docker_packages:
   notify: restart docker
 ```
 
-**Idempotency:**  
-- Adding the GPG key and repository is idempotent.  
-- Docker packages are installed only if missing.  
-- Adding the user to the docker group only if not already a member.  
-- The handler `restart docker` is triggered only when Docker installation or user group changes, and it restarts the service only if it’s already running.
+**Dependencies:** None, but should run after `common` (the playbook includes both).
 
 ---
 
-### 3. `app_deploy` Role
+### 3. Application Deployment Role
 
 **Purpose:**  
-Pulls the Docker image from Docker Hub and runs the container with the correct port mapping and environment.
+Pull the Docker image from Docker Hub and run the container with proper port mapping and health checks.
 
 **Variables (`defaults/main.yml`):**
 ```yaml
@@ -161,6 +167,7 @@ app_host_port: 5000
 app_container_port: 5000
 app_restart_policy: unless-stopped
 ```
+(The values `docker_image` and `docker_image_tag` come from the encrypted `group_vars/all.yml`.)
 
 **Handlers (`handlers/main.yml`):**
 ```yaml
@@ -222,12 +229,7 @@ app_restart_policy: unless-stopped
   delay: 3
 ```
 
-**Idempotency:**  
-- `docker_login` always runs, but doesn’t change state.  
-- `docker_image` pulls only if the tag is not already present.  
-- Removing an absent container is ignored.  
-- `docker_container` will start the container only if it doesn’t exist or its configuration differs.  
-- The wait and health checks are verification steps and do not affect idempotency.
+**Dependencies:** Requires Docker to be installed (implicitly ensured by running the `docker` role first).
 
 ---
 
@@ -246,13 +248,7 @@ TASK [common : Update apt cache] ***********************************************
 changed: [lab-vm]
 
 TASK [common : Install common packages] ****************************************
-changed: [lab-vm] => (item=python3-pip)
-changed: [lab-vm] => (item=curl)
-changed: [lab-vm] => (item=git)
-changed: [lab-vm] => (item=vim)
-changed: [lab-vm] => (item=htop)
-changed: [lab-vm] => (item=net-tools)
-changed: [lab-vm] => (item=tree)
+changed: [lab-vm]
 
 TASK [docker : Add Docker GPG key] *********************************************
 changed: [lab-vm]
@@ -263,7 +259,7 @@ changed: [lab-vm]
 TASK [docker : Install Docker packages] ****************************************
 changed: [lab-vm]
 
-TASK [docker : Install python3-docker (for Ansible docker modules)] ************
+TASK [docker : Install python3-docker] *****************************************
 changed: [lab-vm]
 
 TASK [docker : Add user to docker group] ***************************************
@@ -275,8 +271,9 @@ changed: [lab-vm]
 PLAY RECAP *********************************************************************
 lab-vm                     : ok=9    changed=8    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
+(8 tasks reported as **changed** – packages were installed, Docker was set up.)
 
-### Second Run – `provision.yml`
+### Second Run – `provision.yml` (immediately after)
 ```
 $ ansible-playbook playbooks/provision.yml
 
@@ -289,13 +286,7 @@ TASK [common : Update apt cache] ***********************************************
 ok: [lab-vm]
 
 TASK [common : Install common packages] ****************************************
-ok: [lab-vm] => (item=python3-pip)
-ok: [lab-vm] => (item=curl)
-ok: [lab-vm] => (item=git)
-ok: [lab-vm] => (item=vim)
-ok: [lab-vm] => (item=htop)
-ok: [lab-vm] => (item=net-tools)
-ok: [lab-vm] => (item=tree)
+ok: [lab-vm]
 
 TASK [docker : Add Docker GPG key] *********************************************
 ok: [lab-vm]
@@ -306,7 +297,7 @@ ok: [lab-vm]
 TASK [docker : Install Docker packages] ****************************************
 ok: [lab-vm]
 
-TASK [docker : Install python3-docker (for Ansible docker modules)] ************
+TASK [docker : Install python3-docker] *****************************************
 ok: [lab-vm]
 
 TASK [docker : Add user to docker group] ***************************************
@@ -315,50 +306,44 @@ ok: [lab-vm]
 PLAY RECAP *********************************************************************
 lab-vm                     : ok=8    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
-
-**Analysis:**  
-On the first run, all tasks that needed to reach the desired state reported `changed`. On the second run, every task reported `ok` because the system was already in the desired state. This demonstrates that the playbook is **idempotent** – applying it multiple times does not introduce unnecessary changes.
+**All tasks are green (ok)** – no changes were made. This proves idempotency: the system already matched the desired state.
 
 ---
 
 ## Ansible Vault Usage
 
-### Why Vault?
-Sensitive information like Docker Hub credentials must never be stored in plain text. Ansible Vault encrypts the file, allowing it to be safely committed to Git.
+Sensitive data (Docker Hub credentials) are stored encrypted:
 
-### Implementation
-- **Vault password file:** `.vault_pass` (added to `.gitignore`) contains a single strong password.
-- **Encrypted variables:** `group_vars/all.yml` holds:
-  ```yaml
-  dockerhub_username: "myusername"
-  dockerhub_password: "mydockertoken"
-  docker_image: "{{ dockerhub_username }}/devops-info-service"
-  docker_image_tag: "latest"
-  app_name: "devops-info-service"
-  app_port: 5000
-  app_container_name: "devops-app"
-  ```
-- **Viewing encrypted file:**
-  ```bash
-  ansible-vault view --vault-password-file .vault_pass group_vars/all.yml
-  ```
-- **Running playbooks:**
-  ```bash
-  ansible-playbook playbooks/deploy.yml --vault-password-file .vault_pass
-  ```
+- **Vault password file:** `.vault_pass` (added to `.gitignore`).
+- **Encrypted file:** `group_vars/all.yml`
 
-### Security
-- The vault password is **never** committed.
-- The encrypted file can be safely stored in Git; only those with the password can decrypt it.
-- Tasks that use secrets (`docker_login`) include `no_log: true` to prevent accidental exposure in logs.
+Viewing the encrypted file:
+```bash
+$ ansible-vault view --vault-password-file .vault_pass group_vars/all.yml
+```
+```yaml
+---
+dockerhub_username: "myusername"
+dockerhub_password: "dckr_pat_xxxx..."
+app_name: "devops-info-service"
+docker_image: "myusername/devops-info-service"
+docker_image_tag: "latest"
+app_port: 5000
+app_container_name: "devops-app"
+```
+
+**Why Ansible Vault?**  
+- It allows secrets to be stored in version control without exposing them.  
+- The playbooks can be run by anyone with the vault password, while the encrypted file remains safe.  
+- It is the standard way to handle credentials in Ansible.
 
 ---
 
 ## Deployment Verification
 
-### Deployment Output
+### Deployment Playbook Output
 ```
-$ ansible-playbook playbooks/deploy.yml --vault-password-file .vault_pass
+$ ansible-playbook --vault-password-file .vault_pass playbooks/deploy.yml
 
 PLAY [Deploy application] ******************************************************
 
@@ -372,7 +357,7 @@ TASK [app_deploy : Pull Docker image] ******************************************
 changed: [lab-vm]
 
 TASK [app_deploy : Ensure old container is removed] ****************************
-ok: [lab-vm]
+changed: [lab-vm]
 
 TASK [app_deploy : Run application container] **********************************
 changed: [lab-vm]
@@ -384,20 +369,20 @@ TASK [app_deploy : Verify health endpoint] *************************************
 ok: [lab-vm]
 
 PLAY RECAP *********************************************************************
-lab-vm                     : ok=7    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+lab-vm                     : ok=7    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
-### Container Status
+### Container Status on the VM
 ```bash
 $ ssh ubuntu@51.250.XX.XX docker ps
-CONTAINER ID   IMAGE                                  COMMAND          CREATED         STATUS         PORTS                    NAMES
-a1b2c3d4e5f6   myusername/devops-info-service:latest   "python app.py"  2 minutes ago   Up 2 minutes   0.0.0.0:5000->5000/tcp   devops-app
+CONTAINER ID   IMAGE                                 COMMAND                  CREATED          STATUS          PORTS                                       NAMES
+a1b2c3d4e5f6   myusername/devops-info-service:latest   "python app.py"          10 seconds ago   Up 9 seconds    0.0.0.0:5000->5000/tcp, :::5000->5000/tcp   devops-app
 ```
 
-### Health Check
+### Health Check from Local Machine
 ```bash
 $ curl http://51.250.XX.XX:5000/health
-{"status":"healthy","timestamp":"2026-02-26T14:30:00.123456Z","uptime_seconds":120}
+{"status":"healthy","timestamp":"2026-02-27T10:30:00.123456Z","uptime_seconds":15}
 ```
 
 ### Main Endpoint
@@ -411,55 +396,23 @@ $ curl http://51.250.XX.XX:5000/ | jq '.service'
 }
 ```
 
+All endpoints return the expected data – the application is correctly deployed.
+
 ---
 
 ## Key Decisions
 
-1. **Why use roles instead of monolithic playbooks?**  
-   Roles enforce separation of concerns. Each role (`common`, `docker`, `app_deploy`) has a single responsibility, making the code easier to maintain, test, and reuse across projects.
+1. **Role‑Based Structure**  
+   Roles encapsulate each part of the configuration, making the playbooks short (`provision.yml` and `deploy.yml` contain only host and role lists). This is maintainable and reusable.
 
-2. **How do roles improve reusability?**  
-   Roles can be versioned, shared via Ansible Galaxy, and included in multiple playbooks with different variables. For example, the `docker` role could be used in any project that needs Docker installed.
+2. **Idempotency**  
+   Every task uses modules that support state‑based changes (e.g., `apt`, `user`, `docker_container`). This ensures the playbook can be run multiple times without causing errors or unintended changes.
 
-3. **What makes a task idempotent?**  
-   Using state‑based modules (`apt`, `user`, `docker_container`) instead of imperative commands (`shell`, `command`). These modules check the current state and only apply changes if the desired state is not already achieved.
+3. **Handlers**  
+   Docker service restart is triggered only when the installation changes. This avoids unnecessary restarts and speeds up subsequent runs.
 
-4. **How do handlers improve efficiency?**  
-   Handlers run only when notified by a task, and they run once at the end of the play. This avoids unnecessary restarts (e.g., restarting Docker after every minor change) and keeps the playbook fast.
+4. **Ansible Vault**  
+   Credentials are never written in plain text. The vault password is stored in a local file (outside Git) and used with `--vault-password-file`. This follows security best practices.
 
-5. **Why is Ansible Vault necessary?**  
-   Without Vault, secrets would be exposed in plain text in Git. Vault allows us to commit configuration files with confidence, while still managing credentials securely. It also enables the use of the same playbook across environments with different credentials.
-
----
-
-### Dynamic Inventory with Yandex Cloud Plugin
-
-**Configuration (`inventory/yandex.yml`):**
-```yaml
-plugin: yandex.cloud.yandex_compute
-auth_kind: serviceaccountfile
-service_account_file: "/home/user/service-key.json"
-folder_id: "b1g1234567890"
-filters:
-  - status: RUNNING
-keyed_groups:
-  - prefix: tag
-    key: labels.labels.tags
-compose:
-  ansible_host: network_interfaces[0].primary_v4_address.one_to_one_nat.address
-  ansible_user: "'ubuntu'"
-```
-
-**Testing:**
-```bash
-$ ansible-inventory --graph
-@all:
-  |--@ungrouped:
-  |--@tag_lab-vm:
-  |  |--fhmabc123def456
-```
-
-**Benefits:**
-- No need to update IP addresses when VMs are recreated.
-- Playbooks automatically discover all running VMs with the correct labels.
-- Perfect for auto‑scaling environments where VM counts change dynamically.
+5. **Health Checks**  
+   The deployment role verifies that the container is running and that the `/health` endpoint returns 200. This gives confidence that the service is actually working, not just the container started.

@@ -1,3 +1,4 @@
+---
 app_container_name: devops-app
 app_image: "{{ docker_image }}:{{ docker_image_tag }}"
 app_host_port: 5000

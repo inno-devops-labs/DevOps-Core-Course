@@ -1,3 +1,4 @@
+---
 - name: Log into Docker Hub
   docker_login:
     username: "{{ dockerhub_username }}"
