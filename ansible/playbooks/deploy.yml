@@ -1,5 +1,4 @@
 ---
-# Load vaulted vars explicitly (path relative to playbooks/)
 - name: Deploy application
   hosts: webservers
   become: yes

@@ -6,8 +6,7 @@ Run the commands below from the **`ansible/`** directory (or adjust paths if run
 
 1. **Set your VM IP**  
    Edit `inventory/hosts.ini`: replace `YOUR_VM_IP` with your VM's public IP.  
-   - Pulumi: `cd pulumi && pulumi stack output public_ip`  
-   - Terraform: `cd ydb_terraform && terraform output vm_public_ip`  
+   Get IP from Pulumi: `cd pulumi && pulumi stack output public_ip`  
    Change `ansible_user` if not `ubuntu`.
 
 2. **Install Ansible collections** (if not already installed):
@@ -64,11 +63,7 @@ Documentation: `docs/LAB05.md` (fill in terminal outputs and analysis for submis
 **Yandex Cloud (Pulumi from Lab 4):**
 - In `pulumi/__main__.py` the VM has `nat=True`; the security group must also have an **egress** rule so the VM can reach the internet. Add (if missing) an egress rule, e.g. `direction="egress"`, `protocol="ANY"`, `v4_cidr_blocks=["0.0.0.0/0"]`. Then run `pulumi up` so the rule is applied.
 - If the VM was created earlier without egress, run `pulumi up` again after adding the egress rule; no need to recreate the VM.
-
-**Yandex Cloud (Terraform from Lab 4):**
-- In `ydb_terraform/main.tf` the VM must have `nat = true` and the security group an **egress** rule. Run `terraform apply` if needed.
-- If the VM was created by hand (console): attach a public IP or NAT; add a security group rule that allows **egress** (0.0.0.0/0).
-- Try from the VM: `curl -4 -v http://mirror.yandex.ru/` — if this fails, fix the cloud network first (NAT, egress, or use another subnet).
+- From the VM: `curl -4 -v http://mirror.yandex.ru/` — if this fails, fix the cloud network first (NAT, egress, or use another subnet).
 
 **Other checks:**
 1. **On the VM** (SSH in): `sudo apt-get update` and `curl -4 http://mirror.yandex.ru/` — same errors mean no outbound.

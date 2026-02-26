@@ -10,14 +10,12 @@ import pulumi
 import pulumi_yandex as yandex
 
 config = pulumi.Config("yandex")
-folder_id = config.require("folderId")  # обязателен: pulumi config set yandex:folderId YOUR_FOLDER_ID
+folder_id = config.require("folderId") 
 
-# SSH-ключ — в конфиге проекта (не yandex:), иначе провайдер выдаст "Invalid or unknown key"
-# pulumi config set sshPublicKey "$(cat ~/.ssh/id_ed25519.pub)"
 ssh_public_key = pulumi.Config().get("sshPublicKey") or ""
 
 # ---------------------------
-# Сеть
+# Network
 # ---------------------------
 network = yandex.VpcNetwork(
     "lab-network",
@@ -33,7 +31,7 @@ subnet = yandex.VpcSubnet(
 )
 
 # ---------------------------
-# Security Group (пустая)
+# Security Group 
 # ---------------------------
 sg = yandex.VpcSecurityGroup(
     "lab-sg",
