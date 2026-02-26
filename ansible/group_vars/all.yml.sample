@@ -1,0 +1,12 @@
+---
+# Copy to all.yml and encrypt: ansible-vault create group_vars/all.yml
+# Then paste this content (replace values) and save.
+
+dockerhub_username: your-dockerhub-username
+dockerhub_password: your-dockerhub-access-token
+
+app_name: devops-info-python
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+app_port: 5000
+app_container_name: "{{ app_name }}"

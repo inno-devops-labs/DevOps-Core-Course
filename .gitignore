@@ -17,3 +17,11 @@ Pulumi.*.yaml
 *.pem
 *.key
 sa-key.json
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
+
+ansible/.venv/

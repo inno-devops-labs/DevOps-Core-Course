@@ -1,0 +1,13 @@
+plugin: community.general.yc_compute
+auth_kind: oauth
+oauth_token: "{{ lookup('env', 'YC_TOKEN') }}"
+folders:
+  - "{{ lookup('env', 'YC_FOLDER_ID', default='') or 'REPLACE_WITH_YOUR_FOLDER_ID' }}"
+filters:
+  - status == 'RUNNING'
+compose:
+  ansible_host: network_interfaces[0].primary_v4_address.one_to_one_nat.address
+  ansible_user: ubuntu
+keyed_groups:
+  - key: folder_id
+    prefix: folder
