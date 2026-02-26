@@ -2,103 +2,156 @@
 
 ## 1. Architecture Overview
 
-Ansible version: 2.16+
+- **Ansible Version:** 2.16+
+- **Target OS:** Ubuntu 24.04 LTS
+- **Cloud Provider:** Yandex Cloud
+- **Application:** DevOps Info Service (FastAPI)
+- **Container Runtime:** Docker
 
-Target VM: Ubuntu 24.04 LTS (Yandex Cloud)
+This lab implements a fully automated, role-based infrastructure provisioning and container deployment system using Ansible.
 
-Cloud Provider: Yandex Cloud
+### Why Roles?
 
-Application: DevOps Info Service (FastAPI)
+Roles were used instead of monolithic playbooks to achieve:
 
-Container Runtime: Docker
+- Modularity
+- Reusability
+- Separation of concerns
+- Clean project structure
+- Easier scalability and maintenance
 
-Role Structure
+---
 
-The project follows a role-based architecture:
+## 2. Role Structure
 
-common — installs base packages and configures system settings
+### common role
+Purpose: Basic system preparation
 
-docker — installs and configures Docker engine
+Tasks:
+- Update APT cache
+- Install essential packages (curl, git, vim, htop, python3-pip)
+- Configure timezone
 
-app_deploy — deploys the containerized application
+Idempotency ensured using:
+- `apt` module with `state: present`
+- `timezone` module
 
-Roles were chosen instead of monolithic playbooks to ensure modularity, reusability, and maintainability.
+---
 
-## 2. Role Descriptions
-Role: common
+### docker role
+Purpose: Install and configure Docker
 
-Updates apt cache
+Tasks:
+- Install Docker from Ubuntu repository
+- Enable and start docker service
+- Add user to docker group
+- Install python3-docker for Ansible Docker modules
 
-Installs essential system packages
+Handlers:
+- Restart Docker service (if needed)
 
-Configures timezone
+All tasks are state-based and idempotent.
 
-Fully idempotent
+---
 
-Role: docker
+### app_deploy role
+Purpose: Deploy containerized application securely
 
-Installs Docker from Ubuntu repository
+Tasks:
+- Pull Docker image
+- Remove old container if exists
+- Run container with restart policy
+- Wait for application port
+- Perform health check via HTTP
 
-Enables and starts docker service
+Security:
+- Docker Hub credentials stored in encrypted Vault file
+- `no_log: true` used for sensitive tasks
 
-Adds user to docker group
-
-Installs python3-docker for Ansible modules
-
-Role: app_deploy
-
-Pulls Docker image from Docker Hub
-
-Removes previous container if exists
-
-Starts container with restart policy
-
-Performs health check
-
-Uses Ansible Vault for credentials
+---
 
 ## 3. Idempotency Demonstration
-First Run
 
-Several tasks were marked as changed because packages and services were installed.
+### First Run
 
-Second Run
+Initial execution resulted in multiple `changed` tasks because packages and services were installed.
 
-All tasks returned ok with changed=0, proving idempotency.
+### Second Run
 
-Idempotency is achieved by using declarative modules (apt, service, docker_container) with defined states.
+Second execution showed:
 
-## 4. Deployment
-Successful Deployment
 
-Running Container
+changed=0
 
-Health Check
 
-The application is publicly available at:
+This confirms idempotency.
+
+Idempotency is achieved by:
+- Using declarative modules
+- Avoiding raw shell commands
+- Defining desired system state explicitly
+
+---
+
+## 4. Application Deployment Verification
+
+After deployment:
+
+- Container is running (`docker ps`)
+- Port 5000 is exposed publicly
+- Health endpoint returns HTTP 200
+- Root endpoint returns system metadata
+
+Public URL:
 
 http://93.77.190.119:5000
+
+Health endpoint:
+
+http://93.77.190.119:5000/health
+
+---
+
 ## 5. Ansible Vault
 
-Sensitive credentials are stored in:
+Sensitive variables are stored in:
+
 
 group_vars/all.yml
 
-The file is encrypted using Ansible Vault:
 
-Vault ensures secrets are not stored in plaintext while allowing version control.
+File is encrypted using:
 
-## 6. Key Concepts
 
-Idempotency ensures repeated execution does not change system state unnecessarily.
+$ANSIBLE_VAULT;1.1;AES256
 
-Roles improve reusability and separation of concerns.
 
-Handlers optimize service restarts.
+Vault ensures:
+- Secrets are not stored in plaintext
+- Safe version control
+- Secure automation
 
-Vault secures sensitive data.
+---
+
+## 6. Key DevOps Principles Applied
+
+- Infrastructure as Code
+- Idempotent configuration management
+- Secure secret management
+- Containerized deployment
+- Automated verification
+- Role-based modular architecture
+
+---
 
 ## 7. Conclusion
 
-The infrastructure provisioning and application deployment were successfully automated using Ansible roles.
-The solution is idempotent, secure, modular, and production-ready.
+The system successfully provisions infrastructure, installs Docker, and deploys a containerized application using Ansible roles.
+
+The solution is:
+
+- Idempotent
+- Secure
+- Modular
+- Reproducible
+- Production-ready
