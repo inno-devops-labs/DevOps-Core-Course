@@ -1,0 +1,7 @@
+---
+- name: Deploy application
+  hosts: webservers
+  become: yes
+
+  roles:
+    - app_deploy

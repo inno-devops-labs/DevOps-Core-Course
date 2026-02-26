@@ -44,6 +44,12 @@ venv/
 ENV/
 env/
 
+# Ansible
+*.retry
+ansible/.vault_pass
+ansible/inventory/*.pyc
+ansible/__pycache__/
+
 # macOS
 .DS_Store
 
