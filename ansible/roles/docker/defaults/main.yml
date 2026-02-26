@@ -1,0 +1,4 @@
+---
+docker_group_user: "{{ ansible_user_id }}"
+
+docker_version: ""

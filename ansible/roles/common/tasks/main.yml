@@ -1,0 +1,24 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Get current timezone
+  ansible.builtin.command: timedatectl show -p Timezone --value
+  register: current_timezone
+  changed_when: false
+  when: common_timezone is defined and common_timezone | length > 0
+
+- name: Set timezone
+  ansible.builtin.command: timedatectl set-timezone "{{ common_timezone }}"
+  when:
+    - common_timezone is defined
+    - common_timezone | length > 0
+    - current_timezone is defined
+    - current_timezone.stdout != common_timezone

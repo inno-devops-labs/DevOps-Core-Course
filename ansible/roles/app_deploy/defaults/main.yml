@@ -1,0 +1,10 @@
+---
+app_port: 5000
+
+app_restart_policy: unless-stopped
+
+app_env: {}
+
+app_health_path: /health
+
+app_wait_timeout: 30
