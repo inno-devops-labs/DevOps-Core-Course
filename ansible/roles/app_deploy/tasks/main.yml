@@ -1,0 +1,49 @@
+---
+- name: Docker Login
+  docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+
+- name: Pull Docker image
+  docker_image:
+    name: "{{ docker_image }}"
+    tag: "{{ docker_image_tag }}"
+    source: pull
+
+- name: Stop container
+  docker_container:
+    name: "{{ app_container_name }}"
+    state: stopped
+  ignore_errors: yes
+
+- name: Remove container
+  docker_container:
+    name: "{{ app_container_name }}"
+    state: absent
+  ignore_errors: yes
+
+- name: Run container
+  docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: started
+    ports:
+      - "{{ app_port }}:5000"
+    restart_policy: "{{ container_restart_policy }}"
+
+- name: Wait for container
+  wait_for:
+    host: localhost
+    port: "{{ app_port }}"
+    delay: 2
+    timeout: 30
+
+- name: Check health
+  uri:
+    url: "http://localhost:{{ app_port }}/health"
+    method: GET
+    status_code: 200
+  register: health_check
+  until: health_check.status == 200
+  retries: 5
+  delay: 2

@@ -1,0 +1,5 @@
+---
+app_name: devops-info-service
+app_port: 5000
+app_container_name: devops-app
+container_restart_policy: unless-stopped

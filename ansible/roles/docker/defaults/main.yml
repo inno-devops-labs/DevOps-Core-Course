@@ -1,0 +1,4 @@
+---
+docker_user: cirno
+docker_group: docker
+python3_docker_package: python3-docker
