@@ -1,0 +1,35 @@
+---
+docker_apt_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+
+docker_apt_arch: "{{ docker_apt_arch_map.get(ansible_facts['architecture'], 'amd64') }}"
+docker_gpg_key_url: https://download.docker.com/linux/ubuntu/gpg
+docker_repo_url: https://download.docker.com/linux/ubuntu
+docker_service_name: docker
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+docker_prerequisite_packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+
+docker_python_packages:
+  - python3-docker
+
+docker_users:
+  - "{{ ansible_user | default('ubuntu') }}"
+
+docker_manage_daemon_config: true
+docker_daemon_config:
+  log-driver: json-file
+  log-opts:
+    max-size: "10m"
+    max-file: "3"

@@ -1,0 +1,19 @@
+---
+# Fully local dynamic inventory (plugin-based) for validating Lab 5 bonus
+# mechanics in this repository without requiring cloud credentials.
+# It discovers Docker containers from the local Docker daemon and exposes the
+# Ubuntu test target as group `webservers`.
+plugin: community.docker.docker_containers
+connection_type: docker-cli
+strict: false
+
+filters:
+  - include: inventory_hostname == "lab05-ubuntu2404"
+  - exclude: true
+
+groups:
+  webservers: inventory_hostname == "lab05-ubuntu2404"
+
+compose:
+  ansible_user: "'root'"
+  ansible_python_interpreter: "'/usr/bin/python3'"

@@ -1,0 +1,9 @@
+---
+- name: Provision web servers
+  hosts: webservers
+  become: true
+  gather_facts: true
+
+  roles:
+    - common
+    - docker

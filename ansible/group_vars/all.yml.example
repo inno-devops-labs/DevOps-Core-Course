@@ -1,0 +1,25 @@
+---
+# Copy values into `group_vars/all.yml` and encrypt that file with Ansible Vault:
+#   ansible-vault encrypt group_vars/all.yml
+
+# Docker Hub credentials (use access token, not account password)
+dockerhub_username: your-dockerhub-username
+dockerhub_password: your-dockerhub-access-token
+
+# Application configuration
+app_name: devops-info-service
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+
+# Host port on VM (Lab 4 SG already allows 5000)
+app_port: 5000
+
+# Container port: app_python defaults to 3000, but the app can listen on 5000
+# if we pass PORT=5000. This keeps mapping aligned with Lab 5 (5000:5000).
+app_container_port: 5000
+app_container_name: "{{ app_name }}"
+
+app_env:
+  HOST: "0.0.0.0"
+  PORT: "{{ app_container_port | string }}"
+  DEBUG: "false"

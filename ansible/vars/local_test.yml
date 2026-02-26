@@ -1,0 +1,22 @@
+---
+# Local integration-test overrides for running Lab 5 end-to-end against
+# the Docker-based Ubuntu test target (`hosts.local-docker.ini`).
+# These are not the "lab submission" values for a real VM.
+
+# Docker role overrides
+docker_users:
+  - root
+
+docker_daemon_config:
+  storage-driver: vfs
+  log-driver: json-file
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  insecure-registries:
+    - host.docker.internal:5001
+
+# App deploy overrides
+app_registry_login_enabled: false
+docker_image: host.docker.internal:5001/devops-info-service
+docker_image_tag: latest

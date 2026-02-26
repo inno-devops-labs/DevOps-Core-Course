@@ -1,0 +1,82 @@
+---
+- name: Login to Docker Hub
+  community.docker.docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+    registry_url: "{{ app_registry_url }}"
+    reauthorize: "{{ app_registry_reauthorize | bool }}"
+  no_log: true
+  when: app_registry_login_enabled | bool
+
+- name: Pull application image
+  community.docker.docker_image:
+    name: "{{ docker_image }}"
+    tag: "{{ docker_image_tag }}"
+    source: pull
+
+- name: Inspect desired image metadata
+  community.docker.docker_image_info:
+    name: "{{ docker_image }}:{{ docker_image_tag }}"
+  register: app_image_info
+  changed_when: false
+
+- name: Inspect current application container
+  community.docker.docker_container_info:
+    name: "{{ app_container_name }}"
+  register: app_container_info
+  failed_when: false
+  changed_when: false
+
+- name: Calculate deployment state
+  ansible.builtin.set_fact:
+    app_desired_image_id: "{{ ((app_image_info.images | default([])) | first | default({})).Id | default('') }}"
+    app_current_image_id: "{{ (app_container_info.container.Image | default('')) if (app_container_info.exists | default(false)) else '' }}"
+    app_should_recreate: >-
+      {{
+        (app_container_recreate | bool) or
+        (
+          (app_container_info.exists | default(false)) and
+          (
+            (((app_image_info.images | default([])) | first | default({})).Id | default('')) != '' and
+            (app_container_info.container.Image | default('')) != '' and
+            ((((app_image_info.images | default([])) | first | default({})).Id | default('')) != (app_container_info.container.Image | default('')))
+          )
+        )
+      }}
+  changed_when: false
+
+- name: Run application container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: started
+    restart_policy: "{{ app_restart_policy }}"
+    recreate: "{{ app_should_recreate | bool }}"
+    published_ports: "{{ app_published_ports }}"
+    env: "{{ app_env }}"
+    labels: "{{ app_labels }}"
+
+- name: Wait for application port to become available
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ app_port }}"
+    delay: "{{ app_wait_delay }}"
+    timeout: "{{ app_wait_timeout }}"
+
+- name: Verify application health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ app_port }}{{ app_healthcheck_path }}"
+    method: GET
+    status_code: "{{ app_healthcheck_status }}"
+    return_content: true
+  register: app_health_result
+  retries: 5
+  delay: 2
+  until: app_health_result.status == (app_healthcheck_status | int)
+
+- name: Assert healthy status in response body
+  ansible.builtin.assert:
+    that:
+      - app_health_result.json.status == "healthy"
+    fail_msg: "Health endpoint did not return status=healthy"
+    success_msg: "Health endpoint returned status=healthy"

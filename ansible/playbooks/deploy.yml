@@ -1,0 +1,8 @@
+---
+- name: Deploy application
+  hosts: webservers
+  become: true
+  gather_facts: true
+
+  roles:
+    - app_deploy

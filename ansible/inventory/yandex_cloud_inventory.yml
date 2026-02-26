@@ -1,0 +1,10 @@
+---
+# Alternative Yandex Cloud dynamic inventory plugin (GitHub source fallback)
+# used because `yandex.cloud.yandex_compute` collection/plugin is not available
+# on Galaxy in this environment.
+plugin: yandex_cloud_inventory
+folder_id: fake-folder-id-for-local-validation
+group: webservers
+# Real run:
+# export YC_IAM_TOKEN="$(yc iam create-token)"
+# and replace folder_id with your actual folder ID.

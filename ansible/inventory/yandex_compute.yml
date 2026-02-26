@@ -1,0 +1,26 @@
+---
+# Bonus task: dynamic inventory for Yandex Cloud.
+# Requires `yandex.cloud` collection and valid YC credentials.
+# Validate exact plugin parameters against your installed collection docs/version.
+plugin: yandex.cloud.yandex_compute
+auth_kind: iam_token
+iam_token: "{{ lookup('ansible.builtin.env', 'YC_IAM_TOKEN') }}"
+folder_id: "{{ lookup('ansible.builtin.env', 'YC_FOLDER_ID') }}"
+cloud_id: "{{ lookup('ansible.builtin.env', 'YC_CLOUD_ID') }}"
+strict: false
+
+compose:
+  ansible_host: network_interfaces[0].primary_v4_address.one_to_one_nat.address
+  ansible_user: "'ubuntu'"
+  ansible_python_interpreter: "'/usr/bin/python3'"
+
+groups:
+  webservers: status == 'RUNNING'
+
+keyed_groups:
+  - key: labels.environment
+    prefix: env
+    separator: "_"
+  - key: labels.project
+    prefix: project
+    separator: "_"

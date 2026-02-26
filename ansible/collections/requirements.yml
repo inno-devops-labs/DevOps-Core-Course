@@ -1,0 +1,8 @@
+---
+# Main lab requirements (installable from Galaxy in this environment).
+# Yandex Cloud dynamic inventory is handled separately via a plugin fallback
+# (see docs and `inventory/yandex_cloud_inventory.yml`) because `yandex.cloud`
+# is not currently published on Galaxy here.
+collections:
+  - name: community.general
+  - name: community.docker

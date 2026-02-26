@@ -1,0 +1,15 @@
+---
+common_packages:
+  - ca-certificates
+  - curl
+  - git
+  - htop
+  - jq
+  - python3
+  - python3-pip
+  - python3-venv
+  - unzip
+  - vim
+
+common_manage_timezone: true
+common_timezone: UTC
