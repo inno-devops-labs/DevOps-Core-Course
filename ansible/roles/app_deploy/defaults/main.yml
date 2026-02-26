@@ -1,0 +1,21 @@
+---
+# Defaults for app_deploy role
+
+# Docker Hub username (can be overridden via Vault)
+dockerhub_username: "fayzullin"  # Поставь свой логин, если другой
+
+# App / image name
+app_name: "devops-info-service"
+
+# Full image name and tag
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: "latest"
+
+# Container and port
+app_port: 5000
+app_container_name: "{{ app_name }}"
+app_restart_policy: "unless-stopped"
+
+docker_restart_policy: "{{ app_restart_policy }}"
+# Environment variables for the container (if needed)
+app_env: {}

@@ -1,0 +1,10 @@
+---
+- name: Deploy application container
+  hosts: webservers
+  become: yes
+
+  collections:
+    - community.docker
+
+  roles:
+    - app_deploy
