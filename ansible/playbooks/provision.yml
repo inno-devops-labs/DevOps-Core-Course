@@ -1,0 +1,27 @@
+---
+- name: Provision web servers
+  hosts: webservers
+  become: true
+  pre_tasks:
+    - name: Find conflicting Docker apt source files (docker.gpg)
+      ansible.builtin.find:
+        paths: /etc/apt/sources.list.d
+        patterns: "*.list"
+        contains: "download\\.docker\\.com/linux/ubuntu.*signed-by=/etc/apt/keyrings/docker\\.gpg"
+      register: docker_conflicting_source_files
+
+    - name: Remove conflicting Docker apt source files (docker.gpg)
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ docker_conflicting_source_files.files }}"
+      when: docker_conflicting_source_files.matched | int > 0
+
+    - name: Remove conflicting Docker apt source lines from sources.list (docker.gpg)
+      ansible.builtin.lineinfile:
+        path: /etc/apt/sources.list
+        regexp: ".*download\\.docker\\.com/linux/ubuntu.*signed-by=/etc/apt/keyrings/docker\\.gpg.*"
+        state: absent
+  roles:
+    - common
+    - docker

@@ -1,0 +1,39 @@
+---
+# Common baseline tasks for all servers.
+- name: Check for interrupted dpkg transactions
+  ansible.builtin.find:
+    paths: /var/lib/dpkg/updates
+    file_type: file
+  register: dpkg_updates
+
+- name: Recover interrupted dpkg state
+  ansible.builtin.command: dpkg --configure -a
+  register: dpkg_recover_result
+  changed_when: dpkg_recover_result.rc == 0
+  when: dpkg_updates.matched | int > 0
+  ignore_unreachable: true
+
+- name: Clear host errors after dpkg recovery
+  ansible.builtin.meta: clear_host_errors
+  when: dpkg_updates.matched | int > 0
+
+- name: Wait for SSH to come back after package reconfiguration
+  ansible.builtin.wait_for_connection:
+    timeout: 180
+    delay: 3
+  when: dpkg_updates.matched | int > 0
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+  when: common_timezone | length > 0

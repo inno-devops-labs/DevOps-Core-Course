@@ -1,0 +1,20 @@
+---
+# Docker Hub and image settings (credentials should come from Vaulted group_vars).
+docker_registry_url: https://index.docker.io/v1/
+dockerhub_username: ""
+dockerhub_password: ""
+app_name: devops-app
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+
+# Container runtime settings.
+app_container_name: "{{ app_name }}"
+app_port: 5000
+app_container_port: 5000
+app_restart_policy: unless-stopped
+app_environment: {}
+
+# Readiness/health verification.
+app_healthcheck_path: /health
+app_healthcheck_retries: 10
+app_healthcheck_delay: 3

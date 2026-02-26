@@ -1,0 +1,23 @@
+---
+docker_gpg_key_url: https://download.docker.com/linux/ubuntu/gpg
+docker_gpg_key_path: /etc/apt/keyrings/docker.asc
+docker_repo_filename: docker
+docker_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+  armv7l: armhf
+docker_prerequisite_packages:
+  - ca-certificates
+  - curl
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+docker_version_pin: ""
+docker_package_state: present
+docker_python_package: python3-docker
+docker_service_name: docker
+docker_users:
+  - "{{ ansible_user }}"

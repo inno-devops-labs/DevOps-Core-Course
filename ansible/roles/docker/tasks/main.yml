@@ -1,0 +1,76 @@
+---
+# Docker installation tasks based on official Ubuntu instructions.
+- name: Install Docker prerequisite packages
+  ansible.builtin.apt:
+    name: "{{ docker_prerequisite_packages }}"
+    state: present
+    update_cache: true
+
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add Docker official GPG key
+  ansible.builtin.get_url:
+    url: "{{ docker_gpg_key_url }}"
+    dest: "{{ docker_gpg_key_path }}"
+    mode: "0644"
+
+- name: Find conflicting Docker repo files in sources.list.d (docker.gpg)
+  ansible.builtin.find:
+    paths: /etc/apt/sources.list.d
+    patterns: "*.list"
+    contains: "download\\.docker\\.com/linux/ubuntu.*signed-by=/etc/apt/keyrings/docker\\.gpg"
+  register: docker_conflicting_repo_files
+
+- name: Remove conflicting Docker repo files in sources.list.d (docker.gpg)
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ docker_conflicting_repo_files.files }}"
+  when: docker_conflicting_repo_files.matched | int > 0
+
+- name: Remove conflicting Docker repo lines from main sources.list (docker.gpg)
+  ansible.builtin.lineinfile:
+    path: /etc/apt/sources.list
+    regexp: ".*download\\.docker\\.com/linux/ubuntu.*signed-by=/etc/apt/keyrings/docker\\.gpg.*"
+    state: absent
+
+- name: Add Docker apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ docker_arch_map.get(ansible_facts['architecture'], 'amd64') }} signed-by={{ docker_gpg_key_path }}] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
+    filename: "{{ docker_repo_filename }}"
+    state: present
+
+- name: Install Docker packages
+  ansible.builtin.apt:
+    name: >-
+      {{
+        docker_packages
+        if docker_version_pin | length == 0
+        else (docker_packages | map('regex_replace', '$', '=' ~ docker_version_pin) | list)
+      }}
+    state: "{{ docker_package_state }}"
+    update_cache: true
+  notify: Restart docker
+
+- name: Install Docker SDK for Python
+  ansible.builtin.apt:
+    name: "{{ docker_python_package }}"
+    state: present
+
+- name: Ensure Docker service is enabled and running
+  ansible.builtin.service:
+    name: "{{ docker_service_name }}"
+    enabled: true
+    state: started
+
+- name: Add users to docker group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  loop: "{{ docker_users }}"
+  when: docker_users | length > 0
