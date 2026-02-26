@@ -1,0 +1,7 @@
+---
+# Install with: ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: community.docker
+    version: ">=3.0.0"
+  - name: community.general
+    version: ">=8.0.0"

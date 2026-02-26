@@ -1,0 +1,18 @@
+---
+# Copy this file to all.yml and encrypt with Ansible Vault:
+#   cp group_vars/all.yml.example group_vars/all.yml
+#   ansible-vault encrypt group_vars/all.yml
+# Then edit: ansible-vault edit group_vars/all.yml
+#
+# Run playbooks with: ansible-playbook playbooks/deploy.yml --ask-vault-pass
+
+# Docker Hub credentials (use access token, not password)
+dockerhub_username: your-username
+dockerhub_password: your-access-token
+
+# Application configuration
+app_name: devops-app
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+app_port: 5000
+app_container_name: "{{ app_name }}"

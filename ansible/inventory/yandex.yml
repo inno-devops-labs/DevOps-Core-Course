@@ -1,0 +1,38 @@
+# Dynamic inventory for Yandex Cloud (Lab 5 bonus).
+# Requires: community.general collection and PyYAML + yandexcloud SDK.
+# Auth: set env YC_ANSIBLE_SERVICE_ACCOUNT_FILE to your service account JSON path
+#       (same path as YANDEX_SERVICE_ACCOUNT_KEY_FILE for Terraform).
+# Replace YOUR_FOLDER_ID with your Yandex folder ID (from Lab 4 / terraform).
+#
+# Usage:
+#   export YC_ANSIBLE_SERVICE_ACCOUNT_FILE="$HOME/.yandex/key.json"   # or your path
+#   ansible-inventory -i inventory/yandex.yml --graph
+#   ansible-playbook -i inventory/yandex.yml playbooks/provision.yml
+
+plugin: community.general.yc_compute
+
+# Folder ID from Lab 4 (same as in terraform/run_terraform.sh)
+folders:
+  - b1g1fo9hga197p8d8ork
+
+# Auth via service account file (path from env or set below)
+auth_kind: serviceaccountfile
+# service_account_file: /path/to/key.json   # uncomment or set YC_ANSIBLE_SERVICE_ACCOUNT_FILE
+
+# Only running instances
+filters:
+  - status == 'RUNNING'
+
+# Map Yandex instance data to Ansible connection vars
+compose:
+  ansible_host: network_interfaces[0].primary_v4_address.one_to_one_nat.address
+  ansible_user: ubuntu
+
+# Put all discovered instances into webservers group (same as static inventory)
+keyed_groups:
+  - key: folder_id
+    prefix: folder
+  - key: labels.get('role', 'app')
+    prefix: role
+groups:
+  webservers: true
