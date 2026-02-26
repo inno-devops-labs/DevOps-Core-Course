@@ -109,7 +109,7 @@ a1b2c3d4e5f6   plaffyyy9/devops-info-service:latest   ...      10 seconds ago  U
 
 ```
 $ curl http://89.169.150.5:5000/health
-{"status": "ok"}
+{"status":"healthy","timestamp":"2026-02-26T20:14:01.812949+00:00","uptime_seconds":89}
 ```
 
 ## 6. Key Decisions
