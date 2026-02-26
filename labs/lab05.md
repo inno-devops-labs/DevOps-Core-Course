@@ -466,7 +466,6 @@ Save and exit.
 **What is Ansible Vault?**
 
 Ansible Vault encrypts sensitive data so it can be safely stored in version control.
-
 **Vault Commands:**
 
 ```bash
