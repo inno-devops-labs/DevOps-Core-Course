@@ -1,0 +1,16 @@
+---
+# Docker Hub credentials
+# COPY this file to group_vars/all.yml and encrypt with:
+#   ansible-vault encrypt group_vars/all.yml
+#
+# DO NOT commit this file unencrypted!
+
+dockerhub_username: ravwvil
+dockerhub_password: your-dockerhub-access-token
+
+# Application configuration
+app_name: devops-info-service
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+app_port: 5000
+app_container_name: "{{ app_name }}"

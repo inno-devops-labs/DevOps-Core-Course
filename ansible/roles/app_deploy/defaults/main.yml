@@ -1,0 +1,13 @@
+---
+# App deploy role defaults
+
+app_name: devops-info-service
+app_port: 5000
+app_container_port: 8000
+app_container_name: "{{ app_name }}"
+app_restart_policy: unless-stopped
+app_deploy_no_log: true
+
+app_env_vars:
+  HOST: "0.0.0.0"
+  PORT: "{{ app_container_port | string }}"

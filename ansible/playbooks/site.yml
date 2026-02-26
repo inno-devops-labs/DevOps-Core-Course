@@ -1,0 +1,13 @@
+---
+# Site playbook — full provisioning + deployment
+- name: Full site setup
+  hosts: webservers
+  become: yes
+
+  vars_files:
+    - ../group_vars/all.yml
+
+  roles:
+    - common
+    - docker
+    - app_deploy

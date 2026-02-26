@@ -11,6 +11,10 @@ terraform {
       source  = "yandex-cloud/yandex"
       version = "~> 0.133.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 }
 
@@ -56,8 +60,12 @@ resource "yandex_vpc_subnet" "lab_subnet" {
 # ------------------------------------------------------------
 # Security Group — allow SSH (22), HTTP (80), App (5000)
 # ------------------------------------------------------------
+resource "random_id" "sg_suffix" {
+  byte_length = 2
+}
+
 resource "yandex_vpc_security_group" "lab_sg" {
-  name       = "lab04-sg"
+  name       = "lab04-sg-${random_id.sg_suffix.hex}"
   network_id = local.effective_network_id
 
   ingress {
@@ -92,7 +100,7 @@ resource "yandex_vpc_security_group" "lab_sg" {
 # Compute Instance (free-tier: 2 cores @ 20%, 1 GB RAM)
 # ------------------------------------------------------------
 resource "yandex_compute_instance" "lab_vm" {
-  name        = "lab04-vm"
+  name        = "lab04-vm-${random_id.sg_suffix.hex}"
   platform_id = "standard-v2"
   zone        = var.yc_zone
 

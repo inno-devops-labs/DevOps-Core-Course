@@ -16,6 +16,12 @@ pulumi/venv/
 pulumi/__pycache__/
 Pulumi.*.yaml
 
+# ===== Ansible =====
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
+
 # ===== Credentials =====
 *.pem
 *.key
