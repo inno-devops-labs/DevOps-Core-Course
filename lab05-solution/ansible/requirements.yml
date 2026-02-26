@@ -1,0 +1,5 @@
+---
+- name: community.docker
+  version: "*"
+- name: community.general
+  version: "*"

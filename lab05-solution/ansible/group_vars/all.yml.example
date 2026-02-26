@@ -1,0 +1,11 @@
+---
+# Example vaulted variables file. DO NOT commit real credentials unencrypted.
+# Create the real file with: ansible-vault create group_vars/all.yml
+
+dockerhub_username: your-username
+dockerhub_password: your-password-or-token
+
+# Optional overrides
+app_name: devops-app
+docker_image_tag: latest
+app_port: 5000

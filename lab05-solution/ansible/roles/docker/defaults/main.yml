@@ -1,0 +1,5 @@
+---
+docker_user: ubuntu
+docker_packages:
+  - docker.io
+  - python3-docker
