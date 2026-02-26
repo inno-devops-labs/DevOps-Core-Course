@@ -1,0 +1,15 @@
+---
+# Copy to group_vars/all.yml, adjust, then encrypt with:
+#   ansible-vault encrypt group_vars/all.yml
+
+# Registry (placeholders)
+dockerhub_username: tailrot
+dockerhub_password: CHANGE_ME_TOKEN
+
+# App selection (pick one)
+app_name: app-python      # or app-go
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+app_container_name: "{{ app_name }}"
+app_port: 5000
+app_env: {}
