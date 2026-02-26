@@ -1,1 +1,5 @@
 test
+terraform/.terraform/providers/registry.terraform.io/hashicorp/aws/6.33.0/darwin_arm64/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl

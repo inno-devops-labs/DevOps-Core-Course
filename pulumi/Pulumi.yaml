@@ -1,0 +1,10 @@
+name: lab04
+description: lab04
+runtime:
+  name: python
+  options:
+    toolchain: poetry
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
