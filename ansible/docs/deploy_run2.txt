@@ -1,0 +1,35 @@
+
+PLAY [Deploy application] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab-vm]
+
+TASK [app_deploy : Login to Docker Hub (optional, no logs)] ********************
+skipping: [lab-vm]
+
+TASK [app_deploy : Pull application image] *************************************
+ok: [lab-vm]
+
+TASK [app_deploy : Run application container (idempotent)] *********************
+ok: [lab-vm]
+
+TASK [app_deploy : Recreate container if image updated] ************************
+skipping: [lab-vm]
+
+TASK [app_deploy : Wait for app port to become available] **********************
+ok: [lab-vm]
+
+TASK [app_deploy : Health check] ***********************************************
+ok: [lab-vm]
+
+TASK [app_deploy : Show health response (for logs)] ****************************
+ok: [lab-vm] => {
+    "msg": [
+        "Health status: 200",
+        "Health body: {\"status\":\"healthy\",\"timestamp\":\"2026-02-26T11:30:54.632362+00:00\",\"uptime_seconds\":262}"
+    ]
+}
+
+PLAY RECAP *********************************************************************
+lab-vm                     : ok=6    changed=0    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+

@@ -1,0 +1,13 @@
+---
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - vim
+  - htop
+  - ca-certificates
+  - gnupg
+  - lsb-release
+
+common_timezone: "Europe/Amsterdam"
+common_set_timezone: true

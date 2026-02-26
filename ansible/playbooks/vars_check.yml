@@ -1,0 +1,18 @@
+---
+- name: Vars check
+  hosts: webservers
+  gather_facts: false
+
+  vars_files:
+    - ../group_vars/all.yml
+
+  tasks:
+    - name: Show dockerhub username
+      ansible.builtin.debug:
+        var: dockerhub_username
+
+    - name: Check dockerhub_password is defined (do not print)
+      ansible.builtin.assert:
+        that:
+          - dockerhub_password is defined
+        fail_msg: "dockerhub_password is NOT defined"

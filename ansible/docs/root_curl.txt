@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+date: Thu, 26 Feb 2026 11:24:57 GMT
+server: uvicorn
+content-length: 681
+content-type: application/json
+
+{"service":{"name":"devops-info-service","version":"1.0.0","description":"DevOps course info service","framework":"FastAPI"},"system":{"hostname":"1fcf7529fefc","platform":"Linux","platform_version":"#181-Ubuntu SMP Sat Feb 7 00:27:41 UTC 2026","architecture":"aarch64","cpu_count":1,"python_version":"3.13.11"},"runtime":{"uptime_seconds":3071,"uptime_human":"0 hours, 51 minutes","current_time":"2026-02-26T11:24:57.569705+00:00","timezone":"UTC"},"request":{"client_ip":"192.168.2.1","user_agent":"curl/8.7.1","method":"GET","path":"/"},"endpoints":[{"path":"/","method":"GET","description":"Service information"},{"path":"/health","method":"GET","description":"Health check"}]}

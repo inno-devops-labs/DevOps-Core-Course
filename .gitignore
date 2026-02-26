@@ -24,3 +24,8 @@ id_rsa.pub
 *.swp
 .DS_Store
 
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/

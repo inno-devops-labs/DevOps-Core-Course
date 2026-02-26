@@ -1,0 +1,6 @@
+---
+app_restart_policy: "unless-stopped"
+app_env: {}
+app_health_path: "/health"
+app_health_expected_status: 200
+app_startup_wait_seconds: 30
