@@ -1,0 +1,13 @@
+---
+common_apt_cache_valid_time: 3600
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - vim
+  - htop
+  - ca-certificates
+  - gnupg
+  - lsb-release
+common_configure_timezone: true
+common_timezone: UTC
