@@ -1,0 +1,9 @@
+---
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - ca-certificates
+  - gnupg
+  - unzip
+  - jq

@@ -1,0 +1,11 @@
+---
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+docker_user: "{{ ansible_user | default('ubuntu') }}"
+docker_apt_repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+docker_gpg_url: "https://download.docker.com/linux/ubuntu/gpg"
