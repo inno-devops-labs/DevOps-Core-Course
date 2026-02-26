@@ -1,0 +1,7 @@
+---
+app_port: 5000
+app_container_name: "devops-app"
+app_restart_policy: unless-stopped
+app_env: {}
+app_health_path: "/health"
+app_wait_timeout: 60
