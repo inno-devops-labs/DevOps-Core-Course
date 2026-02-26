@@ -1,0 +1,10 @@
+---
+docker_prerequisites:
+    - ca-certificates
+    - curl
+    - gnupg
+
+docker_packages:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
