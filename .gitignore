@@ -67,3 +67,9 @@ test
 # Lab 4 saved outputs (may contain IPs)
 lab4_outputs/
 docs/lab04-evidence/
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
