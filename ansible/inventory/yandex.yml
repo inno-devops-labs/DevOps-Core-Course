@@ -1,21 +1,19 @@
-plugin: yandex.cloud.yandex_compute
-
-auth_kind: serviceaccountfile
-service_account_file: /home/blxxdclxud/yc-key.json
-
-folder_id: b1ga4ttr9f92otmhh4cc
-
-filters:
-  - status = "RUNNING"
-
-compose:
-  ansible_host: network_interfaces[0].primary_v4_address.one_to_one_nat.address
-  ansible_user: "'ubuntu'"
-
-keyed_groups:
-  - key: labels.get("project", "ungrouped")
-    prefix: ""
-    separator: ""
-
-groups:
-  webservers: "'devops-lab04' in labels.get('project', '')"
+# Yandex Cloud Dynamic Inventory Configuration
+# This file documents the dynamic inventory approach.
+# The actual inventory script is: inventory/yandex_inventory.py
+#
+# Usage:
+#   ansible-inventory -i inventory/yandex_inventory.py --graph
+#   ansible all -i inventory/yandex_inventory.py -m ping
+#   ansible-playbook -i inventory/yandex_inventory.py playbooks/provision.yml
+#
+# Authentication:
+#   Uses service account key file: /home/blxxdclxud/yc-key.json
+#   Same key used by Terraform in Lab 4.
+#
+# How VMs are discovered:
+#   - Queries Yandex Cloud Compute API for folder_id: b1ga4ttr9f92otmhh4cc
+#   - Filters only RUNNING instances
+#   - Sets ansible_host to public NAT IP
+#   - Sets ansible_user to "ubuntu"
+#   - Groups VMs with label project=devops-lab04 into "webservers" group
