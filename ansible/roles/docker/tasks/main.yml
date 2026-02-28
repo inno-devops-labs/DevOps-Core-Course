@@ -36,8 +36,8 @@
           - docker-buildx-plugin
           - docker-compose-plugin
         state: present
-        update_cache: yes
-      notify: restart docker
+        update_cache: true
+      notify: Restart docker
 
   rescue:
     - name: Wait before retrying Docker installation
@@ -46,7 +46,7 @@
 
     - name: Retry apt update after failure
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
 
     - name: Retry Docker packages installation
       ansible.builtin.apt:
@@ -57,7 +57,7 @@
           - docker-buildx-plugin
           - docker-compose-plugin
         state: present
-      notify: restart docker
+      notify: Restart docker
 
   become: true
   tags:
@@ -70,13 +70,13 @@
       ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
+        enabled: true
 
     - name: Add user to docker group
       ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
-        append: yes
+        append: true
 
     - name: Install python3-docker for Ansible docker modules
       ansible.builtin.apt:
@@ -87,7 +87,7 @@
     - name: Ensure Docker service is enabled
       ansible.builtin.service:
         name: docker
-        enabled: yes
+        enabled: true
 
   become: true
   tags:

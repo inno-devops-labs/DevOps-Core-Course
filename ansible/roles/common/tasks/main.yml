@@ -4,7 +4,7 @@
   block:
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
@@ -14,7 +14,8 @@
 
   rescue:
     - name: Fix apt cache on failure
-      ansible.builtin.shell: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
       changed_when: true
 
     - name: Retry package installation
