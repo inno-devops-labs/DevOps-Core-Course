@@ -33,6 +33,7 @@ jobs:
       - name: Run ansible-lint
         run: |
           cd ansible
+          echo "dummy" > .vault_pass
           ansible-lint playbooks/*.yml
 
   deploy:
