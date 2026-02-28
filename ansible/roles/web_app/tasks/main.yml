@@ -7,6 +7,9 @@
 
 # Deploy application with Docker Compose
 - name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
   block:
     - name: Log in to Docker Hub
       ansible.builtin.shell:
@@ -69,7 +72,3 @@
     - name: Fail the play
       ansible.builtin.fail:
         msg: "Application deployment failed"
-
-  tags:
-    - app_deploy
-    - compose

@@ -1,6 +1,9 @@
 ---
 # Docker installation block with error handling
 - name: Install Docker Engine
+  become: true
+  tags:
+    - docker_install
   block:
     - name: Install prerequisites for Docker repository
       ansible.builtin.apt:
@@ -59,12 +62,11 @@
         state: present
       notify: Restart docker
 
-  become: true
-  tags:
-    - docker_install
-
 # Docker configuration block
 - name: Configure Docker
+  become: true
+  tags:
+    - docker_config
   block:
     - name: Ensure Docker service is started and enabled
       ansible.builtin.service:
@@ -88,7 +90,3 @@
       ansible.builtin.service:
         name: docker
         enabled: true
-
-  become: true
-  tags:
-    - docker_config

@@ -1,6 +1,9 @@
 ---
 # Package installation block with error handling
 - name: Install system packages
+  become: true
+  tags:
+    - packages
   block:
     - name: Update apt cache
       ansible.builtin.apt:
@@ -29,7 +32,3 @@
         content: "Common packages provisioned at {{ ansible_date_time.iso8601 }}\n"
         dest: /tmp/ansible_common_done.log
         mode: '0644'
-
-  become: true
-  tags:
-    - packages
