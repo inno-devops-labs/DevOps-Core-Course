@@ -1,0 +1,26 @@
+---
+# Default variables for web_app role
+
+# Application Configuration
+web_app_name: devops-app
+web_app_docker_image: "{{ dockerhub_username }}/devops-info-service"
+web_app_docker_tag: latest
+web_app_port: 8000
+web_app_internal_port: 8000
+
+# Docker Compose Configuration
+web_app_compose_project_dir: "/opt/{{ web_app_name }}"
+web_app_docker_compose_version: "3.8"
+
+# Wipe Logic Control
+web_app_wipe: false  # Default: do not wipe
+
+# Set to true to remove application completely
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+
+# Application restart policy
+web_app_restart_policy: unless-stopped
+
+# Environment variables (can be overridden in group_vars or host_vars)
+web_app_environment_vars: {}

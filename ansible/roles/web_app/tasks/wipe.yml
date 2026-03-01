@@ -1,0 +1,44 @@
+---
+# Wipe logic for web application
+# This file contains tasks to completely remove the deployed application
+
+- name: Wipe web application
+  when: web_app_wipe | bool
+  become: true
+  tags:
+    - web_app_wipe
+  block:
+    - name: Check if docker-compose file exists
+      ansible.builtin.stat:
+        path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+      register: web_app_compose_file
+
+    - name: Stop and remove containers with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ web_app_compose_project_dir }}"
+        state: absent
+      when: web_app_compose_file.stat.exists
+      failed_when: false
+
+    - name: Stop container manually if compose file doesn't exist
+      community.docker.docker_container:
+        name: "{{ web_app_name }}"
+        state: absent
+      when: not web_app_compose_file.stat.exists
+      failed_when: false
+
+    - name: Remove docker-compose file
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+        state: absent
+      failed_when: false
+
+    - name: Remove application directory
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
+        state: absent
+      failed_when: false
+
+    - name: Log wipe completion
+      ansible.builtin.debug:
+        msg: "Application {{ web_app_name }} wiped successfully from {{ web_app_compose_project_dir }}"

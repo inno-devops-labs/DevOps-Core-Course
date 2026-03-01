@@ -1,0 +1,124 @@
+name: Ansible Deployment - Python App
+
+on:
+  push:
+    branches: [ main, master, lab06 ]
+    paths:
+      - 'ansible/vars/app_python.yml'
+      - 'ansible/playbooks/deploy_python.yml'
+      - 'ansible/playbooks/deploy.yml'
+      - 'ansible/roles/web_app/**'
+      - 'ansible/roles/common/**'
+      - 'ansible/roles/docker/**'
+      - '.github/workflows/ansible-deploy.yml'
+  pull_request:
+    branches: [ main, master, lab06 ]
+    paths:
+      - 'ansible/vars/app_python.yml'
+      - 'ansible/playbooks/deploy_python.yml'
+      - 'ansible/roles/web_app/**'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Ansible Lint - Python App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/deploy_python.yml playbooks/deploy.yml
+
+  deploy:
+    name: Deploy Python Application
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible and dependencies
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Setup SSH
+        run: |
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
+            echo "Error: SSH_PRIVATE_KEY secret is not set"
+            echo "Please configure the SSH_PRIVATE_KEY secret in repository settings"
+            exit 1
+          fi
+          if [ -z "${{ secrets.VM_HOST }}" ]; then
+            echo "Error: VM_HOST secret is not set"
+            echo "Please configure the VM_HOST secret in repository settings"
+            exit 1
+          fi
+          
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/yandex_cloud_key
+          chmod 600 ~/.ssh/yandex_cloud_key
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create Vault password file
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          if [ -z "$ANSIBLE_VAULT_PASSWORD" ]; then
+            echo "Error: ANSIBLE_VAULT_PASSWORD secret is not set"
+            echo "Please configure the ANSIBLE_VAULT_PASSWORD secret in repository settings"
+            exit 1
+          fi
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Deploy Python App with Ansible
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy_python.yml \
+            --vault-password-file /tmp/vault_pass \
+            --tags "app_deploy" \
+            -e @group_vars/all.yml
+
+      - name: Cleanup sensitive files
+        if: always()
+        run: |
+          rm -f /tmp/vault_pass
+          rm -f ~/.ssh/yandex_cloud_key
+
+      - name: Verify Python App Deployment
+        run: |
+          echo "Waiting for application to start..."
+          sleep 10
+          
+          echo "Testing main endpoint..."
+          if ! curl -f http://${{ secrets.VM_HOST }}:8000; then
+            echo "Error: Python app is not accessible at http://${{ secrets.VM_HOST }}:8000"
+            exit 1
+          fi
+          
+          echo "Testing health endpoint..."
+          if ! curl -f http://${{ secrets.VM_HOST }}:8000/health; then
+            echo "Error: Python app health check failed at http://${{ secrets.VM_HOST }}:8000/health"
+            exit 1
+          fi
+          
+          echo "Deployment verification successful!"

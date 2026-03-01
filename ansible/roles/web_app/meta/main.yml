@@ -1,0 +1,11 @@
+---
+# Role dependencies for web_app
+# This ensures Docker is installed before deploying the web application
+
+dependencies:
+  - role: docker
+    # Docker role must be executed first to ensure:
+    # - Docker engine is installed
+    # - Docker Compose plugin is available
+    # - Docker service is running
+    # - User has proper permissions

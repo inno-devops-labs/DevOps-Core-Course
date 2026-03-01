@@ -16,3 +16,10 @@ common_packages:
   - lsb-release
 
 timezone: "UTC"
+
+# User management
+deploy_user: "deploy"
+deploy_user_groups:
+  - sudo
+deploy_user_shell: "/bin/bash"
+create_deploy_user: false  # Set to true to create deployment user

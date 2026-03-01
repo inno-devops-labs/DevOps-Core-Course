@@ -1,11 +1,11 @@
 ---
 # Application deployment role - Handlers
 
-- name: restart application
+- name: Restart application
   community.docker.docker_container:
     name: "{{ app_container_name }}"
     state: started
-    restart: yes
+    restart: true
   tags:
     - app
     - service

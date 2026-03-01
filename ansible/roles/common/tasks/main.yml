@@ -1,26 +1,95 @@
 ---
 # Common role - System provisioning tasks
 
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+# Package installation block with error handling
+- name: Package installation tasks
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+        update_cache: yes
+
+  rescue:
+    - name: Handle apt cache update failure
+      debug:
+        msg: "Apt cache update failed, attempting fix..."
+
+    - name: Fix missing packages
+      command: apt-get update --fix-missing
+      changed_when: true
+
+    - name: Retry package installation
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+        update_cache: yes
+
+  always:
+    - name: Log package installation completion
+      copy:
+        content: "Common packages installation completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible_common_packages.log
+        mode: '0644'
+
+  become: true
   tags:
     - common
     - packages
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
-    update_cache: yes
-  tags:
-    - common
-    - packages
+# User management block
+- name: User management tasks
+  block:
+    - name: Create deployment user
+      user:
+        name: "{{ deploy_user }}"
+        groups: "{{ deploy_user_groups }}"
+        shell: "{{ deploy_user_shell }}"
+        create_home: yes
+        append: yes
+      when: create_deploy_user | bool
 
-- name: Set timezone
-  community.general.timezone:
-    name: "{{ timezone }}"
+    - name: Set up SSH directory for deployment user
+      file:
+        path: "/home/{{ deploy_user }}/.ssh"
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: '0700'
+      when: create_deploy_user | bool
+
+  always:
+    - name: Log user management completion
+      copy:
+        content: "User management completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible_common_users.log
+        mode: '0644'
+
+  become: true
   tags:
     - common
-    - timezone
+    - users
+
+# System configuration block
+- name: System configuration tasks
+  block:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+
+  always:
+    - name: Log system configuration completion
+      copy:
+        content: "System configuration completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible_common_config.log
+        mode: '0644'
+
+  become: true
+  tags:
+    - common
+    - config

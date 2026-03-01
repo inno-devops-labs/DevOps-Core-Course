@@ -1,111 +1,136 @@
 ---
 # Docker role - Docker installation tasks
 
-- name: Install prerequisites for Docker
-  apt:
-    name:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - gnupg
-      - lsb-release
-    state: present
-    update_cache: yes
-  tags:
-    - docker
-    - packages
+# Docker installation block with error handling
+- name: Docker installation tasks
+  block:
+    - name: Install prerequisites for Docker
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: yes
 
-- name: Create directory for Docker GPG key
-  file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
-  tags:
-    - docker
+    - name: Create directory for Docker GPG key
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
 
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    keyring: /etc/apt/keyrings/docker.gpg
-    state: present
-  tags:
-    - docker
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        keyring: /etc/apt/keyrings/docker.gpg
+        state: present
 
-- name: Get Ubuntu release codename
-  command: lsb_release -cs
-  register: ubuntu_release
-  changed_when: false
-  tags:
-    - docker
+    - name: Get Ubuntu release codename
+      command: lsb_release -cs
+      register: ubuntu_release
+      changed_when: false
 
-- name: Get system architecture
-  command: dpkg --print-architecture
-  register: system_arch
-  changed_when: false
-  tags:
-    - docker
+    - name: Get system architecture
+      command: dpkg --print-architecture
+      register: system_arch
+      changed_when: false
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb [arch={{ system_arch.stdout }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ubuntu_release.stdout }} stable"
-    state: present
-    filename: docker
-  tags:
-    - docker
-  notify: restart docker
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch={{ system_arch.stdout }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ubuntu_release.stdout }} stable"
+        state: present
+        filename: docker
+      notify: restart docker
 
-- name: Install Docker packages
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
-      - docker-compose-plugin
-    state: present
-    update_cache: yes
-  tags:
-    - docker
-    - packages
-  notify: restart docker
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+      notify: restart docker
 
-- name: Ensure Docker service is running and enabled
-  service:
-    name: docker
-    state: started
-    enabled: yes
-  tags:
-    - docker
-    - service
+    - name: Install python3-docker for Ansible docker modules
+      apt:
+        name: python3-docker
+        state: present
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
-  tags:
-    - docker
-    - user
+  rescue:
+    - name: Handle Docker installation failure
+      debug:
+        msg: "Docker installation failed, retrying GPG key addition..."
 
-- name: Install python3-docker for Ansible docker modules
-  apt:
-    name: python3-docker
-    state: present
-  tags:
-    - docker
-    - packages
+    - name: Wait before retry
+      wait_for:
+        timeout: 10
 
-- name: Verify Docker installation
-  command: docker --version
-  register: docker_version
-  changed_when: false
-  tags:
-    - docker
-    - verify
+    - name: Retry Docker GPG key addition
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        keyring: /etc/apt/keyrings/docker.gpg
+        state: present
 
-- name: Display Docker version
-  debug:
-    msg: "Docker version installed: {{ docker_version.stdout }}"
+    - name: Retry Docker package installation
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+
+  always:
+    - name: Ensure Docker service is enabled and started
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Log Docker installation completion
+      copy:
+        content: "Docker installation completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible_docker_install.log
+        mode: '0644'
+
+  become: true
   tags:
     - docker
-    - verify
+    - docker_install
+
+# Docker configuration block
+- name: Docker configuration tasks
+  block:
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Display Docker version
+      debug:
+        msg: "Docker version installed: {{ docker_version.stdout }}"
+
+  always:
+    - name: Log Docker configuration completion
+      copy:
+        content: "Docker configuration completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible_docker_config.log
+        mode: '0644'
+
+  become: true
+  tags:
+    - docker
+    - docker_config

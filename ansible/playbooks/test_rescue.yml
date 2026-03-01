@@ -1,0 +1,53 @@
+---
+- name: Test rescue block in common role
+  hosts: webservers
+  become: true
+  
+  tasks:
+    - name: Temporarily break apt sources
+      block:
+        - name: Backup original sources.list
+          copy:
+            src: /etc/apt/sources.list
+            dest: /etc/apt/sources.list.backup
+            remote_src: yes
+
+        - name: Add invalid repository to trigger error
+          lineinfile:
+            path: /etc/apt/sources.list
+            line: "deb http://invalid-repo.example.com/ubuntu focal main"
+            state: present
+
+        - name: Try to update apt cache (will fail)
+          apt:
+            update_cache: yes
+          register: apt_result
+
+      rescue:
+        - name: Rescue block activated!
+          debug:
+            msg: "RESCUE BLOCK TRIGGERED! Fixing apt sources..."
+
+        - name: Restore original sources.list
+          copy:
+            src: /etc/apt/sources.list.backup
+            dest: /etc/apt/sources.list
+            remote_src: yes
+
+        - name: Run apt-get update --fix-missing
+          command: apt-get update --fix-missing
+          changed_when: true
+
+        - name: Retry apt update
+          apt:
+            update_cache: yes
+
+      always:
+        - name: Cleanup backup file
+          file:
+            path: /etc/apt/sources.list.backup
+            state: absent
+
+        - name: Always block executed
+          debug:
+            msg: "Always block runs regardless of success/failure"
