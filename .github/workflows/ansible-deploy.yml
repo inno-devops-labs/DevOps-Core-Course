@@ -60,11 +60,6 @@ jobs:
           ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml \
             --vault-password-file .vault_pass
 
-      - name: Verify
-        run: |
-          curl -fsS http://127.0.0.1:5000/health
-          curl -fsS http://172.21.112.1:5000/health
-
       - name: Verify on VM via Ansible
         run: |
           . .venv/bin/activate
