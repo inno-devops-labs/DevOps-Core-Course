@@ -1,0 +1,6 @@
+---
+app_port: 5000
+restart_policy: unless-stopped
+# App listens on 5002 by default; set PORT=5000 to match our port mapping
+app_env:
+  PORT: "5000"
