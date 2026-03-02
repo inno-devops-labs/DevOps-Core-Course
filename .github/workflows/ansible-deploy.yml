@@ -8,7 +8,7 @@ on:
       - '.github/workflows/ansible-deploy.yml'
       - '!ansible/docs/**'
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, lab06 ]
     paths:
       - 'ansible/**'
       - '.github/workflows/ansible-deploy.yml'
@@ -29,17 +29,11 @@ jobs:
           pip install ansible ansible-lint
           ansible-galaxy collection install community.docker
 
-      - name: Create vault password file (for syntax-check)
+      # IMPORTANT: create the file where ansible.cfg expects it
+      - name: Create vault password file for CI
         run: |
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
-          chmod 600 /tmp/vault_pass
-
-      - name: Run ansible-lint
-        env:
-          ANSIBLE_VAULT_PASSWORD_FILE: /tmp/vault_pass
-        run: |
-          cd ansible
-          ansible-lint playbooks/*.yml roles/
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
 
       - name: Run ansible-lint
         run: |
