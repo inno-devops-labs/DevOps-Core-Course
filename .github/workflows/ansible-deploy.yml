@@ -16,7 +16,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +42,7 @@ jobs:
 
   deploy:
     needs: lint
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
@@ -56,11 +56,39 @@ jobs:
           ansible-galaxy collection install community.docker
 
       - name: Setup SSH
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 700 ~/.ssh
+
+          # Write private key safely (preserves newlines)
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+          # Basic sanity checks
+          test -s ~/.ssh/id_rsa
+          ssh-keygen -y -f ~/.ssh/id_rsa >/dev/null
+
+          # Host must be just hostname/IP (NO :22 suffix)
+          HOST="${{ secrets.VM_HOST }}"
+          HOST="$(echo "$HOST" | tr -d '[:space:]')"
+          echo "Using host: [$HOST]"
+          test -n "$HOST"
+
+          # Add host key (with retries)
+          for i in 1 2 3; do
+            ssh-keyscan -T 10 -H "$HOST" >> ~/.ssh/known_hosts && break
+            echo "ssh-keyscan failed (attempt $i), retrying..."
+            sleep 2
+          done
+
+          chmod 644 ~/.ssh/known_hosts
+      
+      - name: Check SSH connectivity
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
+            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" "echo ok && uname -a"
 
       - name: Create vault password file
         run: |
@@ -68,6 +96,8 @@ jobs:
           chmod 600 /tmp/vault_pass
 
       - name: Deploy with Ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD_FILE: /tmp/vault_pass
         run: |
           cd ansible
           ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml \
