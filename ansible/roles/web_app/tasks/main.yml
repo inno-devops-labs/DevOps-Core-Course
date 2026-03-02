@@ -1,87 +1,78 @@
 ---
-# 1) wipe logic (double-gated: tag + variable)
 - name: Include wipe tasks
+  tags: [web_app_wipe]
   ansible.builtin.include_tasks: wipe.yml
-  tags:
-    - web_app_wipe
 
-# 2) deploy with docker compose
 - name: Deploy web application with Docker Compose
+  tags: [web_app, compose, app_deploy]
   block:
     - name: Login to Docker Hub
+      tags: [app_deploy]
       community.docker.docker_login:
         username: "{{ dockerhub_username }}"
         password: "{{ dockerhub_password }}"
         registry_url: "https://index.docker.io/v1/"
         reauthorize: true
       no_log: "{{ not (debug_docker_login | default(false)) }}"
-      tags: [app_deploy]
 
     - name: Ensure compose project directory exists
+      tags: [compose, app_deploy]
       ansible.builtin.file:
-        path: "{{ compose_project_dir }}"
+        path: "{{ web_app_compose_project_dir }}"
         state: directory
         mode: "0755"
-      tags: [compose, app_deploy]
 
     - name: Template docker-compose.yml
+      tags: [compose, app_deploy]
       ansible.builtin.template:
         src: docker-compose.yml.j2
-        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         mode: "0644"
-      tags: [compose, app_deploy]
 
     - name: Deploy via Docker Compose v2
+      tags: [compose, app_deploy]
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         pull: always
         state: present
         recreate: auto
-      register: compose_up
-      tags: [compose, app_deploy]
-
-    - name: Give app time to start
-      ansible.builtin.pause:
-        seconds: 5
-      when: compose_up.changed
-      tags: [app_deploy]
+      register: web_app_compose_up
+      notify:
+        - Wait for app to start
 
     - name: Health check
+      tags: [app_deploy]
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ app_port }}/health"
+        url: "http://127.0.0.1:{{ web_app_app_port }}/health"
         status_code: 200
-      register: health
+      register: web_app_health
       retries: 10
       delay: 3
-      until: health.status == 200
-      tags: [app_deploy]
+      until: web_app_health.status == 200
 
   rescue:
     - name: Show compose services on failure
-      ansible.builtin.command: docker compose -f "{{ compose_project_dir }}/docker-compose.yml" ps
-      register: compose_ps
+      tags: [compose, app_deploy]
+      ansible.builtin.command: docker compose -f "{{ web_app_compose_project_dir }}/docker-compose.yml" ps
+      register: web_app_compose_ps
       changed_when: false
       failed_when: false
-      tags: [compose, app_deploy]
 
     - name: Debug compose output
-      ansible.builtin.debug:
-        var: compose_ps.stdout_lines
       tags: [compose, app_deploy]
+      ansible.builtin.debug:
+        var: web_app_compose_ps.stdout_lines
 
     - name: Fail deployment explicitly
+      tags: [app_deploy]
       ansible.builtin.fail:
         msg: "Deployment failed. See docker compose ps output above."
-      tags: [app_deploy]
 
   always:
     - name: Log deploy completion marker
+      tags: [app_deploy]
       ansible.builtin.copy:
         dest: "/tmp/web_app_deploy_done"
         content: "web_app deploy completed on {{ ansible_date_time.iso8601 }}\n"
         mode: "0644"
       changed_when: false
-      tags: [app_deploy]
-
-  tags:
-    - web_app

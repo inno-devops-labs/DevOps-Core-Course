@@ -1,5 +1,7 @@
 ---
-- name: Common | Packages block
+- name: Common | Packages
+  become: true
+  tags: [common, packages]
   block:
     - name: Common | Update apt cache
       ansible.builtin.apt:
@@ -12,9 +14,14 @@
         state: present
 
   rescue:
-    - name: Common | apt update failed -> try fix-missing and retry
-      ansible.builtin.command: apt-get update --fix-missing
-      changed_when: false
+    - name: Common | Retry apt cache update
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Common | Retry install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
   always:
     - name: Mark common packages done
@@ -23,10 +30,10 @@
         content: "common packages finished at {{ ansible_date_time.iso8601 }}\n"
         mode: "0644"
       changed_when: false
-  become: true
-  tags: [common, packages]
 
 - name: Common | Users
+  become: true
+  tags: [common, users]
   block:
     - name: Ensure users exist
       ansible.builtin.user:
@@ -42,5 +49,3 @@
         content: "common users finished at {{ ansible_date_time.iso8601 }}\n"
         mode: "0644"
       changed_when: false
-  become: true
-  tags: [common, users]

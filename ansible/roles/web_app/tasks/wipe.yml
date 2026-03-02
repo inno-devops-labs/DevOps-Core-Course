@@ -1,68 +1,78 @@
 ---
 - name: Wipe web application (Compose + leftovers)
+  when: web_app_wipe | bool
+  tags: [web_app_wipe]
   block:
 
+    # 0) remove standalone container (if created not by compose)
     - name: Remove old container by name if exists
       community.docker.docker_container:
-        name: "{{ app_container_name }}"
+        name: "{{ web_app_container_name }}"
         state: absent
         force_kill: true
-      ignore_errors: true
+      failed_when: false
 
-    - name: Find containers publishing app_port
-      ansible.builtin.shell: |
-        docker ps -q --filter "publish={{ app_port }}"
-      register: port_containers
+    # 1) find containers exposing the same host port (just in case)
+    - name: Gather running containers info
+      community.docker.docker_host_info:
+        containers: true
+      register: web_app_docker_info
       changed_when: false
       failed_when: false
 
-    - name: Remove containers publishing app_port (wipe)
+    - name: Compute containers publishing the app port
+      ansible.builtin.set_fact:
+        web_app_port_containers: >-
+          {{
+            (web_app_docker_info.containers | default([]))
+            | selectattr('Ports', 'defined')
+            | selectattr('Ports', 'ne', none)
+            | selectattr('Ports', 'length', '>', 0)
+            | selectattr(
+                'Ports',
+                'select',
+                'match',
+                ('^' ~ (web_app_app_port | string) ~ '/')
+              )
+            | map(attribute='Id')
+            | list
+          }}
+      changed_when: false
+
+    - name: Remove containers publishing the app port
       community.docker.docker_container:
-        container_default_behavior: compatibility
         name: "{{ item }}"
         state: absent
         force_kill: true
-      loop: "{{ port_containers.stdout_lines }}"
-      when: port_containers.stdout_lines | length > 0
-      ignore_errors: true
-
-    # 1) remove conflicting standalone container (created earlier not by compose)
-    - name: Remove old container by name if exists
-      community.docker.docker_container:
-        name: "{{ app_container_name }}"
-        state: absent
-        force_kill: true
-      ignore_errors: true
+      loop: "{{ web_app_port_containers }}"
+      when: web_app_port_containers | length > 0
+      failed_when: false
 
     # 2) remove compose stack if it exists
     - name: Stop and remove compose stack
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         state: absent
         remove_orphans: true
-      ignore_errors: true
+      failed_when: false
 
-    # 3) remove leftover network with the default compose name (optional but helps)
+    # 3) remove leftover default network (optional)
     - name: Remove compose default network if exists
       community.docker.docker_network:
         name: "{{ app_name }}_default"
         state: absent
-      ignore_errors: true
+      failed_when: false
 
     - name: Remove docker-compose.yml
       ansible.builtin.file:
-        path: "{{ compose_project_dir }}/docker-compose.yml"
+        path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         state: absent
 
     - name: Remove application directory
       ansible.builtin.file:
-        path: "{{ compose_project_dir }}"
+        path: "{{ web_app_compose_project_dir }}"
         state: absent
 
     - name: Log wipe completion
       ansible.builtin.debug:
         msg: "Application {{ app_name }} wiped successfully"
-
-  when: web_app_wipe | bool
-  tags:
-    - web_app_wipe

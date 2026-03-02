@@ -29,6 +29,18 @@ jobs:
           pip install ansible ansible-lint
           ansible-galaxy collection install community.docker
 
+      - name: Create vault password file (for syntax-check)
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Run ansible-lint
+        env:
+          ANSIBLE_VAULT_PASSWORD_FILE: /tmp/vault_pass
+        run: |
+          cd ansible
+          ansible-lint playbooks/*.yml roles/
+
       - name: Run ansible-lint
         run: |
           cd ansible

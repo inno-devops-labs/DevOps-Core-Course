@@ -1,6 +1,4 @@
 ---
-- name: restart app container
-  community.docker.docker_container:
-    name: "{{ app_container_name }}"
-    state: started
-    restart: true
+- name: Wait for app to start
+  ansible.builtin.pause:
+    seconds: 5

@@ -1,7 +1,0 @@
----
-app_port: 5000
-container_port: 5000
-docker_image_tag: latest
-app_container_name: "{{ app_name }}"
-restart_policy: unless-stopped
-app_env: {}

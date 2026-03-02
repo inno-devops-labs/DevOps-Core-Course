@@ -1,7 +1,7 @@
 services:
   {{ app_name }}:
-    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    image: "{{ docker_image }}:{{ web_app_docker_image_tag }}"
     ports:
-      - "{{ app_port }}:{{ container_port }}"
-    environment: {{ app_env | to_nice_yaml(indent=6) | trim }}
-    restart: "{{ restart_policy }}"
+      - "{{ web_app_app_port }}:{{ web_app_container_port }}"
+    environment: {{ web_app_env | to_nice_yaml(indent=6) | trim }}
+    restart: "{{ web_app_restart_policy }}"

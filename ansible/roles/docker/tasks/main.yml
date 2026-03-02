@@ -1,5 +1,7 @@
 ---
 - name: Docker | Install
+  become: true
+  tags: [docker, docker_install]
   block:
     - name: Install prerequisites
       ansible.builtin.apt:
@@ -8,7 +10,7 @@
           - curl
           - gnupg
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Ensure /etc/apt/keyrings exists
       ansible.builtin.file:
@@ -36,37 +38,35 @@
           - docker-buildx-plugin
           - docker-compose-plugin
         state: present
-        update_cache: yes
+        update_cache: true
 
   rescue:
     - name: Wait and retry apt update (network/gpg flake)
       ansible.builtin.pause:
         seconds: 10
+
     - name: Retry apt update
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
 
   always:
     - name: Ensure Docker service enabled and running
       ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
-
-  become: true
-  tags: [docker, docker_install]
+        enabled: true
 
 - name: Docker | Config
+  become: true
+  tags: [docker, docker_config]
   block:
     - name: Add user to docker group
       ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
-        append: yes
+        append: true
 
     - name: Install python docker SDK for Ansible docker modules
       ansible.builtin.apt:
         name: python3-docker
         state: present
-  become: true
-  tags: [docker, docker_config]
