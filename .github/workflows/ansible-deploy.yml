@@ -16,57 +16,45 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
+  ci:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create venv + install ansible-lint
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('ansible/requirements-ci.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Create venv + install tools
         run: |
           python3 -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
-          pip install ansible ansible-lint
+          pip install -r ansible/requirements-ci.txt
           ansible-galaxy collection install community.docker
 
-      # create the file where ansible.cfg expects it
       - name: Create vault password file for CI
         run: |
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
           chmod 600 ansible/.vault_pass
 
-      - name: Run ansible-lint
+      - name: Lint
         run: |
           . .venv/bin/activate
           cd ansible
           ansible-lint playbooks/*.yml roles/
 
-  deploy:
-    needs: lint
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create venv + install ansible
-        run: |
-          python3 -m venv .venv
-          . .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install ansible
-          ansible-galaxy collection install community.docker
-
-      - name: Create vault password file
-        run: |
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
-          chmod 600 ansible/.vault_pass
-
-      - name: Deploy with Ansible
+      - name: Deploy
         run: |
           . .venv/bin/activate
           cd ansible
           ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml \
             --vault-password-file .vault_pass
 
-      - name: Verify locally
+      - name: Verify
         run: |
           curl -fsS http://127.0.0.1:5000/health
