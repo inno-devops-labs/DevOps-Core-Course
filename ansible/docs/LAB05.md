@@ -133,7 +133,7 @@
     - Most tasks show **changed** – apt cache refresh, installation of `common` packages, Docker installation, adding the Docker repository, adding the user to the `docker` group, installing `python3-docker`.
 
 - **SECOND `provision.yml` run**:
-  - Screenshot: `![Second provision run](./second_provision.png)`.
+  - Screenshot: ![Second provision run](./second_provision.png).
   - Observations:
     - The same tasks mostly show **ok** – packages are already installed, the repository exists, Docker is running, and the user is already in the `docker` group.
 
@@ -201,7 +201,7 @@ $ANSIBLE_VAULT;1.1;AES256
     - The `restart app container` handler ran when needed.
 
 - **Container status**:
-  - Screenshot: `![Docker ps](./docker_ps.png)`.
+  - Screenshot: ![Docker ps](./docker_ps.png).
   - `docker ps` output on the VM shows:
     - A container named `devops-app` (value of `app_container_name`).
     - Image `sofiakulagina/devops-app:latest`.
@@ -209,8 +209,8 @@ $ANSIBLE_VAULT;1.1;AES256
 
 - **Health check verification**:
   - Screenshots:
-    - `![Health check 1](./health1.png)` – first `curl http://<VM-IP>:5000/health` (or Ansible `uri`) call, returning HTTP 200 and a JSON body with `status: "healthy"`.
-    - `![Health check 2](./health2.png)` – repeated health check showing stable responses.
+    - ![Health check 1](./health1.png) – first `curl http://<VM-IP>:5000/health` (or Ansible `uri`) call, returning HTTP 200 and a JSON body with `status: "healthy"`.
+    - ![Health check 2](./health2.png) – repeated health check showing stable responses.
   - This confirms that:
     - The container started successfully.
     - The application inside the container listens on the expected port (via `PORT=5000` in `app_env`).
