@@ -47,15 +47,20 @@ jobs:
         run: |
           . .venv/bin/activate
           cd ansible
+          ANSIBLE_CONFIG="$PWD/ansible.cfg" \
+          ANSIBLE_ROLES_PATH="$PWD/roles" \
           ansible-lint playbooks/*.yml roles/
 
       - name: Deploy
         run: |
           . .venv/bin/activate
           cd ansible
+          ANSIBLE_CONFIG="$PWD/ansible.cfg" \
+          ANSIBLE_ROLES_PATH="$PWD/roles" \
           ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml \
             --vault-password-file .vault_pass
 
       - name: Verify
         run: |
           curl -fsS http://127.0.0.1:5000/health
+          curl -fsS http://172.21.112.1:5000/health
