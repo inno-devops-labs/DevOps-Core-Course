@@ -128,7 +128,7 @@
 ## 3. Idempotency Demonstration
 
 - **FIRST `provision.yml` run**:
-  - Screenshot: `![First provision run](./first_provision.png)`.
+  - Screenshot: ![First provision run](./first_provision.png).
   - Observations:
     - Most tasks show **changed** – apt cache refresh, installation of `common` packages, Docker installation, adding the Docker repository, adding the user to the `docker` group, installing `python3-docker`.
 
