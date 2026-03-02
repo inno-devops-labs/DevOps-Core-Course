@@ -20,9 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Ensure Python is available
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-venv python3-pip
+          python3 --version
 
       - name: Install ansible + ansible-lint
         run: |
@@ -45,30 +47,30 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-      
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      
+
+      - name: Ensure Python is available
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-venv python3-pip
+          python3 --version
+
       - name: Install Ansible + collections
         run: |
-          pip install ansible
+          python3 -m pip install --upgrade pip
+          python3 -m pip install ansible
           ansible-galaxy collection install community.docker
-      
+
       - name: Create vault password file
         run: |
-          mkdir -p ansible
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
           chmod 600 ansible/.vault_pass
-      
+
       - name: Deploy with Ansible
         run: |
           cd ansible
           ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml \
             --vault-password-file .vault_pass
 
-      - name: Verify (run on VM via SSH)
+      - name: Verify locally
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes \
-            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" \
-            "curl -fsS http://127.0.0.1:5000/health"
+          curl -fsS http://127.0.0.1:5000/health
