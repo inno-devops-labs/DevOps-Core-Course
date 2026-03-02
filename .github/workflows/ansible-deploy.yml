@@ -13,6 +13,7 @@ on:
       - 'ansible/**'
       - '.github/workflows/ansible-deploy.yml'
       - '!ansible/docs/**'
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -20,18 +21,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ensure Python is available
+      - name: Create venv + install ansible-lint
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-venv python3-pip
-          python3 --version
-
-      - name: Install ansible + ansible-lint
-        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
           pip install ansible ansible-lint
           ansible-galaxy collection install community.docker
 
-      # IMPORTANT: create the file where ansible.cfg expects it
+      # create the file where ansible.cfg expects it
       - name: Create vault password file for CI
         run: |
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
@@ -39,6 +37,7 @@ jobs:
 
       - name: Run ansible-lint
         run: |
+          . .venv/bin/activate
           cd ansible
           ansible-lint playbooks/*.yml roles/
 
@@ -48,16 +47,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ensure Python is available
+      - name: Create venv + install ansible
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3 python3-venv python3-pip
-          python3 --version
-
-      - name: Install Ansible + collections
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install ansible
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install ansible
           ansible-galaxy collection install community.docker
 
       - name: Create vault password file
@@ -67,6 +62,7 @@ jobs:
 
       - name: Deploy with Ansible
         run: |
+          . .venv/bin/activate
           cd ansible
           ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml \
             --vault-password-file .vault_pass
@@ -74,5 +70,3 @@ jobs:
       - name: Verify locally
         run: |
           curl -fsS http://127.0.0.1:5000/health
-
-          
