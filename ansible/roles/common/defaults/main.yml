@@ -1,9 +1,10 @@
 ---
 common_packages:
-  - python3-pip
   - curl
   - git
   - vim
   - htop
+  - python3-pip
 
+common_user: liza
 common_timezone: "Europe/Moscow"

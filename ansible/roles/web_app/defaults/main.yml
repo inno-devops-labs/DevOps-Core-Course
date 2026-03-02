@@ -1,0 +1,14 @@
+---
+app_port: 5000
+container_port: 5000
+docker_image_tag: latest
+app_container_name: "{{ app_name }}"
+restart_policy: unless-stopped
+app_env: {}
+
+# docker compose project directory
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# wipe gate
+web_app_wipe: false
