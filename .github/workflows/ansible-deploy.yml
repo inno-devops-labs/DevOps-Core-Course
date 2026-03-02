@@ -45,63 +45,27 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-
+      
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
+      
       - name: Install Ansible + collections
         run: |
           pip install ansible
           ansible-galaxy collection install community.docker
-
-      - name: Setup SSH
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-
-          # Write private key safely (preserves newlines)
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-          # Basic sanity checks
-          test -s ~/.ssh/id_rsa
-          ssh-keygen -y -f ~/.ssh/id_rsa >/dev/null
-
-          # Host must be just hostname/IP (NO :22 suffix)
-          HOST="${{ secrets.VM_HOST }}"
-          HOST="$(echo "$HOST" | tr -d '[:space:]')"
-          echo "Using host: [$HOST]"
-          test -n "$HOST"
-
-          # Add host key (with retries)
-          for i in 1 2 3; do
-            ssh-keyscan -T 10 -H "$HOST" >> ~/.ssh/known_hosts && break
-            echo "ssh-keyscan failed (attempt $i), retrying..."
-            sleep 2
-          done
-
-          chmod 644 ~/.ssh/known_hosts
       
-      - name: Check SSH connectivity
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
-            "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" "echo ok && uname -a"
-
       - name: Create vault password file
         run: |
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
-          chmod 600 /tmp/vault_pass
-
+          mkdir -p ansible
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+      
       - name: Deploy with Ansible
-        env:
-          ANSIBLE_VAULT_PASSWORD_FILE: /tmp/vault_pass
         run: |
           cd ansible
           ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml \
-            --vault-password-file /tmp/vault_pass
+            --vault-password-file .vault_pass
 
       - name: Verify (run on VM via SSH)
         run: |
