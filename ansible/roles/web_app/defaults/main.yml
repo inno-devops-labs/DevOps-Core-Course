@@ -6,10 +6,9 @@ dockerhub_password: ""
 
 # application configuration
 app_name: devops-app
-# Docker image repository name.
-# - If dockerhub_username is set, uses "<username>/<app_name>".
-# - If dockerhub_username is empty, uses "<app_name>" (avoids invalid "/<name>" references).
-docker_image: "{{ (dockerhub_username | length > 0) | ternary(dockerhub_username ~ '/' ~ app_name, app_name) }}"
+# Docker image repository name. Default aligns with .github/workflows/python-ci.yml IMAGE_NAME.
+# Override this in group_vars/all.yml (vault) or inventory if you deploy a different image.
+docker_image: "zsalavat/devops-info-service-python"
 docker_tag: latest
 app_port: 8000            # host port
 # internal port used inside the container; default matches the sample Python
