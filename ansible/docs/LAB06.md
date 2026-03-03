@@ -194,7 +194,7 @@ This file (`ansible/docs/LAB06.md`) serves as the Lab 6 documentation. Code comm
 - **Selective run:** `--tags "docker"` / `--skip-tags "common"` run only the intended tasks.  
 - **Docker Compose:** First deploy shows “changed” for directory, template, and compose up; second run is idempotent (ok, no unnecessary changes).  
 - **Wipe:** Scenarios 1–4 above behave as described.  
-- **Application:** After deploy, `curl http://<VM>:8000` and `curl http://<VM>:8000/health` return expected responses when the app and port are correct.
+- **Application:** After deploy, `curl http://<VM>:5000` and `curl http://<VM>:5000/health` return expected responses when the app and port are correct.
 
 ---
 
