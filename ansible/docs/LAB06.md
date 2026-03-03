@@ -152,7 +152,7 @@ ansible-playbook playbooks/provision.yml --list-tags
 
 **File:** `.github/workflows/ansible-deploy.yml`
 
-- **Trigger:** push/PR to `main` or `master` with changes under `ansible/**` or the workflow file.
+- **Trigger:** push/PR to `main` or `master` or `lab06` with changes under `ansible/**` or the workflow file.
 - **Jobs:**  
   - **lint:** Ubuntu, Python 3.12, install Ansible and ansible-lint, run `ansible-lint playbooks/*.yml` in `ansible/`.  
   - **deploy:** runs only on push and when `ANSIBLE_VAULT_PASSWORD` is set; checks out repo, installs Ansible, sets up SSH from `SSH_PRIVATE_KEY`, runs `ansible-playbook playbooks/deploy.yml` with vault password file, then verification step (curl to `VM_HOST:8000` and `:8000/health`).
@@ -162,6 +162,8 @@ ansible-playbook playbooks/provision.yml --list-tags
 - `ANSIBLE_VAULT_PASSWORD` — Vault password.  
 - `SSH_PRIVATE_KEY` — SSH key for the target VM.  
 - `VM_HOST` — Target VM hostname or IP (for SSH and curl).
+
+I used only `ANSIBLE_VAULT_PASSWORD` for sefl-hosted Runner.
 
 ### Evidence
 
