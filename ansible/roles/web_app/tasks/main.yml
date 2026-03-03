@@ -26,8 +26,8 @@
         mode: "0644"
 
     - name: Deploy with Docker Compose (pull and up)
-      ansible.builtin.command:
-        cmd: docker compose pull && docker compose up -d
+      ansible.builtin.shell: docker compose pull && docker compose up -d
+      args:
         chdir: "{{ compose_project_dir }}"
       register: compose_up
       changed_when: >

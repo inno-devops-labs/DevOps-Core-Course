@@ -67,5 +67,5 @@ jobs:
       - name: Verify Deployment
         run: |
           sleep 10
-          curl -f http://localhost:8000 || true
-          curl -f http://localhost:8000/health || true
+          curl -f http://localhost:5000 || true
+          curl -f http://localhost:5000/health || true

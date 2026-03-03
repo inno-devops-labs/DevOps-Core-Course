@@ -4,9 +4,9 @@ app_name: devops-app
 docker_image: your_dockerhub_username/devops-info-service
 docker_tag: latest
 
-# Port mapping: host:container
-app_port: 8000
-app_internal_port: 8000
+# Port mapping: host:container (Python app listens on 5000)
+app_port: 5000
+app_internal_port: 5000
 
 # Docker Compose
 compose_project_dir: "/opt/{{ app_name }}"

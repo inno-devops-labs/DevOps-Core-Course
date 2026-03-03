@@ -7,7 +7,7 @@ docker_tag: latest
 
 # App (override if needed). Python app listens on 5000 by default.
 app_name: devops-app
-app_port: 8000
+app_port: 5000
 app_internal_port: 5000
 
 # Optional: env vars for the container
