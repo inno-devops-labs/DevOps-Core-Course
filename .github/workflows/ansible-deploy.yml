@@ -20,6 +20,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Determine VM host from inventory
+        id: target
+        run: |
+          host=$(awk 'match($0, /ansible_host=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
+          if [ -z "$host" ]; then
+            echo "Failed to determine ansible_host from ansible/inventory/hosts.ini" >&2
+            exit 1
+          fi
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -54,6 +64,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Determine VM host from inventory
+        id: target
+        run: |
+          host=$(awk 'match($0, /ansible_host=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
+          if [ -z "$host" ]; then
+            echo "Failed to determine ansible_host from ansible/inventory/hosts.ini" >&2
+            exit 1
+          fi
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -69,9 +89,19 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+          {
+            echo "Host *"
+            echo "  IdentityFile ~/.ssh/id_rsa"
+            echo "  IdentitiesOnly yes"
+          } > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+          ssh-keyscan -H "${{ steps.target.outputs.host }}" >> ~/.ssh/known_hosts
+
+      - name: SSH smoke test
+        run: |
+          ssh -o BatchMode=yes -o ConnectTimeout=10 ubuntu@"${{ steps.target.outputs.host }}" "echo ok"
 
       - name: Deploy with Ansible
         env:
@@ -90,5 +120,5 @@ jobs:
       - name: Verify Deployment
         run: |
           sleep 10
-          curl -f http://${{ secrets.VM_HOST }}:8000 || exit 1
-          curl -f http://${{ secrets.VM_HOST }}:8000/health || exit 1
+          curl -f "http://${{ steps.target.outputs.host }}:8000" || exit 1
+          curl -f "http://${{ steps.target.outputs.host }}:8000/health" || exit 1
