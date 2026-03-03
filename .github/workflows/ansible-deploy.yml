@@ -1,13 +1,14 @@
 name: Ansible Deployment
+
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, lab6 ]
     paths:
       - 'ansible/**'
       - '!ansible/docs/**'            # don’t run when only docs change
       - '.github/workflows/ansible-deploy.yml'
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, lab6 ]
     paths:
       - 'ansible/**'
 
