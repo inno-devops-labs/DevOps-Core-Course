@@ -1,5 +1,4 @@
 name: Ansible Deployment
-
 on:
   push:
     branches: [ main, master ]
