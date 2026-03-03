@@ -4,10 +4,14 @@
 
 # Block 1: Package installation with error handling
 - name: Install system packages
+  become: true
+  tags:
+    - common
+    - packages
   block:
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
@@ -17,14 +21,14 @@
 
   rescue:
     - name: Fix apt cache on failure
-      ansible.builtin.command: apt-get update --fix-missing
+      ansible.builtin.command: apt-get update --fix-missing # noqa: command-instead-of-module
       changed_when: true
 
     - name: Retry package installation after fix
       ansible.builtin.apt:
         name: "{{ common_packages }}"
         state: present
-        update_cache: yes
+        update_cache: true
 
   always:
     - name: Log package installation completion
@@ -33,27 +37,26 @@
         dest: /tmp/common_packages_done.log
         mode: "0644"
 
+# Block 2: User management
+- name: Manage users
   become: true
   tags:
     - common
-    - packages
-
-# Block 2: User management
-- name: Manage users
+    - users
   block:
     - name: Ensure application user exists
       ansible.builtin.user:
         name: "{{ app_user | default('appuser') }}"
         shell: /bin/bash
-        create_home: yes
+        create_home: true
         state: present
 
     - name: Add user to docker group (if docker installed)
       ansible.builtin.user:
         name: "{{ app_user | default('appuser') }}"
         groups: docker
-        append: yes
-      ignore_errors: true
+        append: true
+      failed_when: false
 
   always:
     - name: Log user setup completion
@@ -62,19 +65,13 @@
         dest: /tmp/common_users_done.log
         mode: "0644"
 
-  become: true
-  tags:
-    - common
-    - users
-
 # Block 3: System configuration
 - name: Configure system settings
-  block:
-    - name: Set timezone
-      community.general.timezone:
-        name: "{{ common_timezone }}"
-
   become: true
   tags:
     - common
     - timezone
+  block:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"

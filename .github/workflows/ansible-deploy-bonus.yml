@@ -46,12 +46,13 @@ jobs:
         run: printf '%s' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
 
       - name: Run ansible-lint
-        run: ansible-lint ansible/
+        working-directory: ansible
+        run: ansible-lint .
         continue-on-error: true
 
       - name: Validate playbook syntax
+        working-directory: ansible
         run: |
-          cd ansible
           ansible-playbook playbooks/deploy_bonus.yml --syntax-check
 
       - name: Cleanup vault file
