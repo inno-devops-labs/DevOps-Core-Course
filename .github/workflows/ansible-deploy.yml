@@ -24,11 +24,13 @@ jobs:
         id: target
         run: |
           host=$(awk 'match($0, /ansible_host=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
+          user=$(awk 'match($0, /ansible_user=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
           if [ -z "$host" ]; then
             echo "Failed to determine ansible_host from ansible/inventory/hosts.ini" >&2
             exit 1
           fi
           echo "host=$host" >> "$GITHUB_OUTPUT"
+          echo "user=${user:-ubuntu}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -68,11 +70,13 @@ jobs:
         id: target
         run: |
           host=$(awk 'match($0, /ansible_host=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
+          user=$(awk 'match($0, /ansible_user=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
           if [ -z "$host" ]; then
             echo "Failed to determine ansible_host from ansible/inventory/hosts.ini" >&2
             exit 1
           fi
           echo "host=$host" >> "$GITHUB_OUTPUT"
+          echo "user=${user:-ubuntu}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -96,6 +100,9 @@ jobs:
           # Fail fast if the key is invalid or encrypted (would require a passphrase).
           ssh-keygen -y -f ~/.ssh/id_rsa >/dev/null
 
+          # Helpful debug: prints key fingerprint without leaking the key.
+          ssh-keygen -lf ~/.ssh/id_rsa
+
           {
             echo "Host *"
             echo "  IdentityFile ~/.ssh/id_rsa"
@@ -106,7 +113,7 @@ jobs:
 
       - name: SSH smoke test
         run: |
-          ssh -o BatchMode=yes -o ConnectTimeout=10 ubuntu@"${{ steps.target.outputs.host }}" "echo ok"
+          ssh -o BatchMode=yes -o ConnectTimeout=10 "${{ steps.target.outputs.user }}"@"${{ steps.target.outputs.host }}" "echo ok"
 
       - name: Deploy with Ansible
         env:
