@@ -39,7 +39,7 @@ jobs:
     name: Deploy Application
     needs: lint
     runs-on: self-hosted
-    if: github.event_name == 'push' && secrets.ANSIBLE_VAULT_PASSWORD != ''
+    if: github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
