@@ -1,11 +1,16 @@
 ---
-#roles/common/tasks/main.yml
+# roles/common/tasks/main.yml
 
 - name: Install essential packages with error handling
+  when: ansible_facts['os_family'] == "Debian"
+  become: true
+  tags:
+    - packages
+    - common
   block:
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600  # don't update cache if it is younger than 1 hour
 
     - name: Install essential package
@@ -24,19 +29,13 @@
         path: /var/cache/apt/archives/partial
         state: absent
 
-  when: ansible_facts['os_family'] == "Debian"
-  become: true
-  tags:
-    - packages
-    - common
-
-
 - name: Set time zone
-  ansible.builtin.timezone:
-    name: "{{ common_timezone }}"
   when:
     - common_configure_timezone | bool
     - ansible_facts['os_family'] == "Debian"
   tags:
-    - config 
-    - common 
+    - config
+    - common
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+

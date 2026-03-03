@@ -29,10 +29,22 @@ jobs:
         run: |
           pip install ansible ansible-lint
 
+      - name: Install required Ansible collections
+        run: |
+          ansible-galaxy collection install community.general
+
       - name: Run ansible-lint
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
           cd ansible
+          if [ -n "${ANSIBLE_VAULT_PASSWORD:-}" ]; then
+            echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+            chmod 600 /tmp/vault_pass
+            export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
+          fi
           ansible-lint playbooks/*.yml
+          rm -f /tmp/vault_pass
 
   deploy:
     name: Deploy Application
@@ -50,6 +62,10 @@ jobs:
       - name: Install Ansible
         run: pip install ansible
 
+      - name: Install required Ansible collections
+        run: |
+          ansible-galaxy collection install community.general
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -63,6 +79,8 @@ jobs:
         run: |
           cd ansible
           echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+          export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
           ansible-playbook playbooks/deploy.yml \
             -i inventory/hosts.ini \
             --vault-password-file /tmp/vault_pass \
