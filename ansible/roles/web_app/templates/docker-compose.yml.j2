@@ -15,13 +15,10 @@
     environment is rendered as YAML mapping for readability and idempotency.
 ------------------------------------------------------------------------- #}
 
-version: "{{ web_app_docker_compose_version }}"
 services:
   {{ app_name }}:
     image: "{{ docker_image }}:{{ web_app_docker_image_tag }}"
-    container_name: "{{ app_name }}"
     ports:
       - "{{ web_app_app_port }}:{{ web_app_container_port }}"
-    environment:
-{{ web_app_env | to_nice_yaml(indent=6) | indent(6) }}
+    environment: {{ web_app_env | to_nice_yaml(indent=6) | trim }}
     restart: "{{ web_app_restart_policy }}"
