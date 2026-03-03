@@ -46,7 +46,7 @@
     - name: Deploy with docker-compose v2
       community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"
-        pull: always   # options: always, missing, never, policy
+        pull: missing   # options: always, missing, never, policy
         state: present
   rescue:
     - name: Handle deployment failure

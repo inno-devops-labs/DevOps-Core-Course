@@ -38,4 +38,3 @@
     - common
   community.general.timezone:
     name: "{{ common_timezone }}"
-

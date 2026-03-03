@@ -6,8 +6,10 @@ dockerhub_password: ""
 
 # application configuration
 app_name: devops-app
-# specify your Docker Hub repository, e.g. username/repo
-docker_image: "{{ dockerhub_username | default('your_dockerhub_username') }}/{{ app_name }}"
+# Docker image repository name.
+# - If dockerhub_username is set, uses "<username>/<app_name>".
+# - If dockerhub_username is empty, uses "<app_name>" (avoids invalid "/<name>" references).
+docker_image: "{{ (dockerhub_username | length > 0) | ternary(dockerhub_username ~ '/' ~ app_name, app_name) }}"
 docker_tag: latest
 app_port: 8000            # host port
 # internal port used inside the container; default matches the sample Python
