@@ -1,12 +1,6 @@
 # Lab 6: Advanced Ansible & CI/CD — Submission
 
-**Name:** Ravwvil
-**Date:** 2026-02-28
-**Lab Points:** 10 + 2.5 bonus
-
----
-
-## Task 1: Blocks & Tags (2 pts)
+## Task 1: Blocks & Tags
 
 ### 1.1 Block Refactoring Overview
 
@@ -97,7 +91,7 @@ A: Tags applied at the block level are inherited by all tasks within that block 
 
 ---
 
-## Task 2: Docker Compose (3 pts)
+## Task 2: Docker Compose
 
 ### 2.1 Role Rename
 
@@ -248,8 +242,7 @@ Add `docker rmi` command (already included) and `docker volume prune -f` for vol
 
 ---
 
-## Task 4: CI/CD (3 pts)
-
+## Task 4: CI/CD
 ### 4.1 Workflow Architecture
 
 **File:** `.github/workflows/ansible-deploy.yml`
@@ -321,7 +314,7 @@ This file (`ansible/docs/LAB06.md`) serves as the documentation. All code files 
 
 ---
 
-## Bonus Part 1: Multi-App Deployment (1.5 pts)
+## Bonus Part 1: Multi-App Deployment
 
 ### Architecture
 
