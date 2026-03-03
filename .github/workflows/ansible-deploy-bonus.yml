@@ -42,6 +42,9 @@ jobs:
       - name: Install ansible-lint
         run: pip install ansible-lint ansible
 
+      - name: Create Vault password file
+        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+
       - name: Run ansible-lint
         run: ansible-lint ansible/
         continue-on-error: true
@@ -50,6 +53,10 @@ jobs:
         run: |
           cd ansible
           ansible-playbook playbooks/deploy_bonus.yml --syntax-check
+
+      - name: Cleanup vault file
+        if: always()
+        run: rm -f ansible/.vault_pass
 
   # ---------------------------------------------------------------
   # Job 2: Deploy bonus application
