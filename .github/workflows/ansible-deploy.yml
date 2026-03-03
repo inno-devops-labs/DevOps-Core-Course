@@ -57,7 +57,8 @@ jobs:
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
           cd ansible
-          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          printf '%s' "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
           ansible-playbook playbooks/deploy.yml \
             -i inventory/hosts.local.ini \
             --vault-password-file /tmp/vault_pass
