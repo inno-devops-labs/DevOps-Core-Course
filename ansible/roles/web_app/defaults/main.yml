@@ -1,0 +1,23 @@
+---
+# Application identity and image
+app_name: devops-app
+docker_image: your_dockerhub_username/devops-info-service
+docker_tag: latest
+
+# Port mapping: host:container
+app_port: 8000
+app_internal_port: 8000
+
+# Docker Compose
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Container runtime
+app_restart_policy: unless-stopped
+app_container_name: "{{ app_name }}"
+app_env: {}
+
+# Wipe logic: set to true to remove application completely when running with --tags web_app_wipe
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

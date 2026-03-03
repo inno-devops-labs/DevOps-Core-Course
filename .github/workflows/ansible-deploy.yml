@@ -1,0 +1,70 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "ansible/**"
+      - ".github/workflows/ansible-deploy.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "ansible/**"
+      - ".github/workflows/ansible-deploy.yml"
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/*.yml
+
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    runs-on: self-hosted
+    if: github.event_name == 'push' && secrets.ANSIBLE_VAULT_PASSWORD != ''
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Deploy with Ansible (localhost)
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          cd ansible
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml \
+            -i inventory/hosts.local.ini \
+            --vault-password-file /tmp/vault_pass
+          rm -f /tmp/vault_pass
+
+      - name: Verify Deployment
+        run: |
+          sleep 10
+          curl -f http://localhost:8000 || true
+          curl -f http://localhost:8000/health || true

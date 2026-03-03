@@ -69,5 +69,6 @@ awscliv2.zip
 # Ansible
 *.retry
 .vault_pass
+ansible/.vault_pass
 ansible/inventory/*.pyc
 __pycache__/

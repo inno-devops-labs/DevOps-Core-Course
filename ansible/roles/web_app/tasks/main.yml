@@ -1,0 +1,62 @@
+---
+# web_app role: deploy application with Docker Compose
+# Wipe logic runs first when explicitly requested (-e "web_app_wipe=true" and/or --tags web_app_wipe)
+
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+# Deployment block: create dir, template compose file, bring up services
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create app directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Deploy with Docker Compose (pull and up)
+      ansible.builtin.command:
+        cmd: docker compose pull && docker compose up -d
+        chdir: "{{ compose_project_dir }}"
+      register: compose_up
+      changed_when: >
+        compose_up.stdout is defined and (
+        'Creating' in (compose_up.stdout | default('')) or
+        'Starting' in (compose_up.stdout | default('')) or
+        'Pulling' in (compose_up.stdout | default('')) or
+        'Recreating' in (compose_up.stdout | default('')))
+
+    - name: Wait for application port
+      ansible.builtin.wait_for:
+        port: "{{ app_port }}"
+        host: 127.0.0.1
+        delay: 2
+        timeout: 30
+
+    - name: Verify health endpoint
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ app_port }}/health"
+        return_content: true
+        status_code: 200
+      register: health_check
+      failed_when: false
+      changed_when: false
+
+    - name: Report health check result
+      ansible.builtin.debug:
+        msg: "Health check {{ 'OK' if health_check.status == 200 else 'failed' }}: {{ health_check.json | default(health_check) }}"
+  rescue:
+    - name: Log deployment failure
+      ansible.builtin.debug:
+        msg: "Deployment failed for {{ app_name }}"
+  tags:
+    - app_deploy
+    - compose

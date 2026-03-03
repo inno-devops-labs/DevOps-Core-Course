@@ -1,0 +1,19 @@
+# Copy to all.yml and encrypt: cp all.yml.example all.yml && ansible-vault encrypt all.yml
+# Replace placeholders with your values. Do not commit the vault password.
+---
+# Docker image (override role defaults if needed)
+docker_image: "YOUR_DOCKERHUB_USERNAME/devops-info-service"
+docker_tag: latest
+
+# App (override if needed). Python app listens on 5000 by default.
+app_name: devops-app
+app_port: 8000
+app_internal_port: 5000
+
+# Optional: env vars for the container
+# app_env:
+#   LOG_LEVEL: info
+
+# Optional: Docker Hub login for private images (uncomment and set)
+# dockerhub_username: "YOUR_DOCKERHUB_USERNAME"
+# dockerhub_password: "YOUR_DOCKERHUB_TOKEN"

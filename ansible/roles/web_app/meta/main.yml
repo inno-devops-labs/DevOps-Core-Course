@@ -1,0 +1,5 @@
+---
+# web_app role depends on docker role: Docker and Docker Compose must be
+# installed before we can deploy the application with docker compose.
+dependencies:
+  - role: docker

@@ -10,3 +10,5 @@ common_packages:
   - gnupg
   - lsb-release
 common_timezone: "UTC"
+# Optional: list of users to create, e.g. [{ name: deploy, groups: [docker] }]
+common_users: []
