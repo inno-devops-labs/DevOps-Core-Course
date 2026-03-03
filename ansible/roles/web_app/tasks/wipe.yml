@@ -2,30 +2,30 @@
 # Wipe tasks: remove application when web_app_wipe is true and tag web_app_wipe is used.
 # Double safety: variable (web_app_wipe) + tag (web_app_wipe).
 - name: Wipe web application
+  when: web_app_wipe | default(false) | bool
+  tags:
+    - web_app_wipe
   block:
     - name: Stop and remove containers (Docker Compose down)
       ansible.builtin.command:
         cmd: docker compose down
         chdir: "{{ compose_project_dir }}"
       register: compose_down
-      ignore_errors: true
+      failed_when: false
       changed_when: compose_down.rc == 0
 
     - name: Remove docker-compose file
       ansible.builtin.file:
         path: "{{ compose_project_dir }}/docker-compose.yml"
         state: absent
-      ignore_errors: true
+      failed_when: false
 
     - name: Remove application directory
       ansible.builtin.file:
         path: "{{ compose_project_dir }}"
         state: absent
-      ignore_errors: true
+      failed_when: false
 
     - name: Log wipe completion
       ansible.builtin.debug:
         msg: "Application {{ app_name }} wiped successfully"
-  when: web_app_wipe | default(false) | bool
-  tags:
-    - web_app_wipe

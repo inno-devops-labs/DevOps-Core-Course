@@ -9,6 +9,9 @@
 
 # Deployment block: create dir, template compose file, bring up services
 - name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
   block:
     - name: Create app directory
       ansible.builtin.file:
@@ -57,6 +60,3 @@
     - name: Log deployment failure
       ansible.builtin.debug:
         msg: "Deployment failed for {{ app_name }}"
-  tags:
-    - app_deploy
-    - compose

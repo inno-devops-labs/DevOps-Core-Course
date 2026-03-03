@@ -3,6 +3,10 @@
 # Tags: docker, docker_install, docker_config
 
 - name: Install Docker CE and dependencies
+  become: true
+  tags:
+    - docker
+    - docker_install
   block:
     - name: Install Docker dependencies
       ansible.builtin.apt:
@@ -28,7 +32,12 @@
 
     - name: Add Docker repository
       ansible.builtin.apt_repository:
-        repo: "deb [arch={{ ansible_facts['architecture'] | replace('x86_64', 'amd64') }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} {{ docker_apt_release_channel }}"
+        repo: >-
+          deb [arch={{ ansible_facts['architecture'] | replace('x86_64', 'amd64') }}
+          signed-by=/etc/apt/keyrings/docker.asc
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_facts['distribution_release'] }}
+          {{ docker_apt_release_channel }}
         state: present
         filename: docker
       notify: restart docker
@@ -67,12 +76,12 @@
         name: docker
         state: started
         enabled: true
+
+- name: Configure Docker (users and Ansible docker module)
   become: true
   tags:
     - docker
-    - docker_install
-
-- name: Configure Docker (users and Ansible docker module)
+    - docker_config
   block:
     - name: Add users to docker group
       ansible.builtin.user:
@@ -98,7 +107,3 @@
         name: docker
         state: started
         enabled: true
-  become: true
-  tags:
-    - docker
-    - docker_config

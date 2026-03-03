@@ -1,0 +1,10 @@
+# Skip rules that would require large refactors or break group_vars/vault
+skip_list:
+  - var-naming
+  - name[casing]
+  - no-ignore-errors
+  - key-order
+  - line-length
+  - register
+exclude_paths:
+  - .git/

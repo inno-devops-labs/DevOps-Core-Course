@@ -3,10 +3,14 @@
 # Tags: packages, users, common (role-level)
 
 - name: Install packages and set timezone
+  become: true
+  tags:
+    - packages
+    - common
   block:
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
@@ -19,7 +23,9 @@
         name: "{{ common_timezone }}"
   rescue:
     - name: Retry apt cache update with fix-missing on failure
-      ansible.builtin.command: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
       changed_when: true
   always:
     - name: Log common role completion (packages)
@@ -27,12 +33,13 @@
         content: "common role packages block completed at {{ ansible_date_time.iso8601 }}\n"
         dest: /tmp/ansible-common-packages.log
         mode: "0644"
-  become: true
-  tags:
-    - packages
-    - common
 
 - name: Create and manage users
+  when: common_users | default([]) | length > 0
+  become: true
+  tags:
+    - users
+    - common
   block:
     - name: Ensure users exist
       ansible.builtin.user:
@@ -48,8 +55,3 @@
         content: "common role users block completed at {{ ansible_date_time.iso8601 }}\n"
         dest: /tmp/ansible-common-users.log
         mode: "0644"
-  when: common_users | default([]) | length > 0
-  become: true
-  tags:
-    - users
-    - common
