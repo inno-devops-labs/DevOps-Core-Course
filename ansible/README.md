@@ -44,6 +44,27 @@ ansible-playbook playbooks/provision.yml --list-tags
 
 ## CI/CD (self-hosted runner)
 
-The [Ansible Deployment](https://github.com/ilyalinhnguyen/DevOps-Core-Course/actions/workflows/ansible-deploy.yml) workflow runs the **deploy** job on a **self-hosted runner** (your VM). On push (when lint passes), it deploys to localhost using `inventory/hosts.local.ini`.
+The [Ansible Deployment](https://github.com/ilyalinhnguyen/DevOps-Core-Course/actions/workflows/ansible-deploy.yml) workflow runs the **deploy** job on a **self-hosted runner** (your machine). On push (when lint passes), it deploys to localhost using `inventory/hosts.local.ini`.
 
-**Secret** (Settings → Secrets and variables → Actions): **`ANSIBLE_VAULT_PASSWORD`** — your Vault password for `group_vars/all.yml`. No VM_HOST, SSH_PRIVATE_KEY, or VM_USER needed.
+**Secret** (Settings → Secrets and variables → Actions): **`ANSIBLE_VAULT_PASSWORD`** — your Vault password for `group_vars/all.yml`.
+
+### Passwordless sudo (required)
+
+The playbook runs with `become: true` (sudo). The **runner user** on the Linux machine must be able to run `sudo` without a password, or the deploy step fails with "sudo: a password is required".
+
+On the machine where the runner is installed (e.g. your laptop), run **once**:
+
+```bash
+# Replace RUNNER_USER with the actual user that runs the runner (e.g. linh)
+echo 'RUNNER_USER ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/runner-nopasswd
+sudo chmod 440 /etc/sudoers.d/runner-nopasswd
+```
+
+Example for user `linh`:
+
+```bash
+echo 'linh ALL=(ALL) NOPASSWD: ALL' | sudo tee /etc/sudoers.d/runner-nopasswd
+sudo chmod 440 /etc/sudoers.d/runner-nopasswd
+```
+
+Then re-run the workflow.
