@@ -42,17 +42,8 @@ ansible-playbook playbooks/provision.yml --skip-tags "common"
 ansible-playbook playbooks/provision.yml --list-tags
 ```
 
-## CI/CD (GitHub-hosted runner)
+## CI/CD (self-hosted runner)
 
-The [Ansible Deployment](https://github.com/ilyalinhnguyen/DevOps-Core-Course/actions/workflows/ansible-deploy.yml) workflow uses a **GitHub-hosted runner** (`ubuntu-latest`). On push (when lint passes and secrets are set), it deploys to your VM over SSH.
+The [Ansible Deployment](https://github.com/ilyalinhnguyen/DevOps-Core-Course/actions/workflows/ansible-deploy.yml) workflow runs the **deploy** job on a **self-hosted runner** (your VM). On push (when lint passes), it deploys to localhost using `inventory/hosts.local.ini`.
 
-**Secrets** (Settings → Secrets and variables → Actions):
-
-| Secret | Required | Description |
-|--------|----------|-------------|
-| `ANSIBLE_VAULT_PASSWORD` | Yes | Password for `group_vars/all.yml` (Vault). |
-| `SSH_PRIVATE_KEY` | Yes | Private key used to SSH from the runner to the VM (e.g. same key as Terraform). |
-| `VM_HOST` | Yes | Target VM hostname or IP. |
-| `VM_USER` | No | SSH user on the VM (default: `ubuntu`). |
-
-The workflow writes the key to `~/.ssh/id_rsa` on the runner and generates `inventory/hosts.ci.ini` from `VM_HOST` and `VM_USER`, so no local key path or hardcoded host is needed in the repo.
+**Secret** (Settings → Secrets and variables → Actions): **`ANSIBLE_VAULT_PASSWORD`** — your Vault password for `group_vars/all.yml`. No VM_HOST, SSH_PRIVATE_KEY, or VM_USER needed.
