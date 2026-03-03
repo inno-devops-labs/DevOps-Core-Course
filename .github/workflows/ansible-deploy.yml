@@ -38,7 +38,7 @@ jobs:
         run: pip install ansible-lint ansible
 
       - name: Create Vault password file
-        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+        run: printf '%s' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
 
       - name: Run ansible-lint
         run: ansible-lint ansible/
@@ -74,7 +74,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install Ansible
-        run: pip install ansible docker docker-compose
+        run: pip install ansible
 
       - name: Configure SSH key
         run: |
@@ -84,7 +84,7 @@ jobs:
           ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Create Vault password file
-        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+        run: printf '%s' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
 
       - name: Create inventory
         run: |
