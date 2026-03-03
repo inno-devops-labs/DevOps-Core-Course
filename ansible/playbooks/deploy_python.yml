@@ -1,5 +1,5 @@
 ---
-- name: Deploy application
+- name: Deploy Python Application
   hosts: webservers
   become: yes
 

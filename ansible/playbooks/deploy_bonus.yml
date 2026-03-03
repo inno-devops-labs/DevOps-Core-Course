@@ -1,11 +1,11 @@
 ---
-- name: Deploy application
+- name: Deploy Bonus Application (Go)
   hosts: webservers
   become: yes
 
   vars_files:
     - ../group_vars/all.yml
-    - ../vars/app_python.yml
+    - ../vars/app_bonus.yml
 
   roles:
     - role: web_app

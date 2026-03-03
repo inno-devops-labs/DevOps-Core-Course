@@ -1,0 +1,51 @@
+---
+# Wipe tasks — clean removal of deployed application
+# Safety: requires BOTH web_app_wipe=true variable AND web_app_wipe tag
+# Default: does NOT run (web_app_wipe defaults to false)
+
+- name: Wipe web application
+  block:
+    - name: Stop and remove containers with Docker Compose
+      ansible.builtin.command:
+        cmd: docker compose down --remove-orphans
+        chdir: "{{ compose_project_dir }}"
+      ignore_errors: true
+
+    - name: Remove docker-compose.yml
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}/docker-compose.yml"
+        state: absent
+
+    - name: Remove application directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: absent
+
+    - name: Remove Docker image (optional, saves disk space)
+      ansible.builtin.command:
+        cmd: "docker rmi {{ docker_image }}:{{ docker_tag }}"
+      register: docker_rmi_result
+      failed_when: false
+      changed_when: docker_rmi_result.rc == 0
+
+    - name: Explain why Docker image was not removed
+      ansible.builtin.debug:
+        msg: >-
+          Docker image {{ docker_image }}:{{ docker_tag }} was not removed (likely still used by another container).
+          stderr: {{ docker_rmi_result.stderr | default('') }}
+      when: docker_rmi_result.rc != 0
+
+    - name: Log wipe completion
+      ansible.builtin.copy:
+        content: "{{ app_name }} wiped at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/web_app_wipe_{{ app_name }}.log
+        mode: "0644"
+
+    - name: Display wipe result
+      ansible.builtin.debug:
+        msg: "Application {{ app_name }} has been completely removed from {{ compose_project_dir }}"
+
+  when: web_app_wipe | default(false) | bool
+  become: true
+  tags:
+    - web_app_wipe

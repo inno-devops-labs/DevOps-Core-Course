@@ -233,7 +233,7 @@ lab04-vm-6d1e   : ok=9   changed=1   unreachable=0   failed=0   skipped=1   resc
 <!-- Paste docker ps output here -->
 ```
 CONTAINER ID   IMAGE                                STATUS         PORTS                    NAMES
-abc123def456   ravwvil/devops-info-service:latest   Up 2 minutes   0.0.0.0:5000->8000/tcp   devops-info-service
+97f64688f227   ravwvil/devops-info-service:latest   Up 4 minutes (healthy)   0.0.0.0:5000->8000/tcp   devops-info-service
 ```
 
 ### Health Check Verification

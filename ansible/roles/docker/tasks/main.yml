@@ -1,87 +1,102 @@
 ---
-# Docker role — install Docker CE on Ubuntu
-# Follows official Docker installation guide for Ubuntu
+# Docker role — install and configure Docker CE on Ubuntu
+# Refactored with blocks for error handling and tags for selective execution
 
-- name: Remove old Docker packages
-  ansible.builtin.apt:
-    name:
-      - docker
-      - docker-engine
-      - docker.io
-      - containerd
-      - runc
-    state: absent
+# Block 1: Docker installation
+- name: Install Docker CE
+  block:
+    - name: Remove old Docker packages
+      ansible.builtin.apt:
+        name:
+          - docker
+          - docker-engine
+          - docker.io
+          - containerd
+          - runc
+        state: absent
+
+    - name: Install prerequisites for Docker repository
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: yes
+
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Docker official GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: false
+
+    - name: Add Docker APT repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_distribution_release }} stable
+        state: present
+        filename: docker
+
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: yes
+      notify: restart docker
+
+  rescue:
+    - name: Wait before retrying Docker installation
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Retry apt update after GPG key failure
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Retry Docker package installation
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+      notify: restart docker
+
+  always:
+    - name: Ensure Docker service is enabled and started
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+      ignore_errors: true
+
+  become: true
   tags:
     - docker
+    - docker_install
 
-- name: Install prerequisites for Docker repository
-  ansible.builtin.apt:
-    name:
-      - ca-certificates
-      - curl
-      - gnupg
-    state: present
-    update_cache: yes
+# Block 2: Docker configuration
+- name: Configure Docker
+  block:
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install python3-docker for Ansible Docker modules
+      ansible.builtin.apt:
+        name: "{{ docker_python_packages }}"
+        state: present
+
+  become: true
   tags:
     - docker
-
-- name: Create keyrings directory
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: "0755"
-  tags:
-    - docker
-
-- name: Add Docker official GPG key
-  ansible.builtin.get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker.asc
-    mode: "0644"
-    force: false
-  tags:
-    - docker
-
-- name: Add Docker APT repository
-  ansible.builtin.apt_repository:
-    repo: >-
-      deb [arch={{ ansible_architecture | replace('x86_64', 'amd64') }}
-      signed-by=/etc/apt/keyrings/docker.asc]
-      https://download.docker.com/linux/ubuntu
-      {{ ansible_distribution_release }} stable
-    state: present
-    filename: docker
-  tags:
-    - docker
-
-- name: Install Docker packages
-  ansible.builtin.apt:
-    name: "{{ docker_packages }}"
-    state: present
-    update_cache: yes
-  notify: restart docker
-  tags:
-    - docker
-
-- name: Ensure Docker service is running and enabled
-  ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: yes
-  tags:
-    - docker
-
-- name: Add user to docker group
-  ansible.builtin.user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
-  tags:
-    - docker
-
-- name: Install python3-docker for Ansible Docker modules
-  ansible.builtin.apt:
-    name: "{{ docker_python_packages }}"
-    state: present
-  tags:
-    - docker
+    - docker_config

@@ -1,0 +1,6 @@
+---
+# web_app role metadata
+# Docker must be installed before deploying the application
+
+dependencies:
+  - role: docker

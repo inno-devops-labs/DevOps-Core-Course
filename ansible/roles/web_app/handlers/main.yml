@@ -1,0 +1,8 @@
+---
+# web_app role handlers
+
+- name: restart app
+  ansible.builtin.command:
+    cmd: docker compose restart
+    chdir: "{{ compose_project_dir }}"
+  become: true

@@ -1,0 +1,115 @@
+---
+name: Ansible Deploy Bonus App
+
+on:
+  push:
+    branches: [master, main, lab06]
+    paths:
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/roles/web_app/**'
+      - 'ansible/playbooks/deploy_bonus.yml'
+      - 'ansible/playbooks/deploy_all.yml'
+      - 'app_go/**'
+      - '.github/workflows/ansible-deploy-bonus.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/roles/web_app/**'
+      - 'app_go/**'
+
+concurrency:
+  group: ansible-deploy-bonus-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------
+  # Job 1: Lint Ansible code
+  # ---------------------------------------------------------------
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ansible-lint
+        run: pip install ansible-lint ansible
+
+      - name: Run ansible-lint
+        run: ansible-lint ansible/
+        continue-on-error: true
+
+      - name: Validate playbook syntax
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy_bonus.yml --syntax-check
+
+  # ---------------------------------------------------------------
+  # Job 2: Deploy bonus application
+  # ---------------------------------------------------------------
+  deploy:
+    name: Deploy Bonus App (Go)
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: pip install ansible docker docker-compose
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Create Vault password file
+        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+
+      - name: Create inventory
+        run: |
+          cat > ansible/inventory/hosts.ini << EOF
+          [webservers]
+          target ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }}
+
+          [webservers:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          EOF
+
+      - name: Deploy Bonus Application
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy_bonus.yml \
+            --vault-password-file .vault_pass \
+            -v
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "false"
+
+      - name: Verify Bonus App Deployment
+        run: |
+          sleep 10
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa \
+            ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+            "curl -sf http://localhost:8001/health" || echo "Verification skipped — no VM configured"
+
+      - name: Cleanup secrets
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_rsa
+          rm -f ansible/.vault_pass

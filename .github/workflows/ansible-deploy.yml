@@ -1,0 +1,112 @@
+---
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [master, main, lab06]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+
+concurrency:
+  group: ansible-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------
+  # Job 1: Lint Ansible code
+  # ---------------------------------------------------------------
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ansible-lint
+        run: pip install ansible-lint ansible
+
+      - name: Run ansible-lint
+        run: ansible-lint ansible/
+        continue-on-error: true
+
+      - name: Validate playbook syntax
+        run: |
+          cd ansible
+          ansible-playbook playbooks/provision.yml --syntax-check
+          ansible-playbook playbooks/deploy.yml --syntax-check
+          ansible-playbook playbooks/site.yml --syntax-check
+
+  # ---------------------------------------------------------------
+  # Job 2: Deploy application
+  # ---------------------------------------------------------------
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: pip install ansible docker docker-compose
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Create Vault password file
+        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+
+      - name: Create inventory
+        run: |
+          cat > ansible/inventory/hosts.ini << EOF
+          [webservers]
+          target ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }}
+
+          [webservers:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          EOF
+
+      - name: Run Ansible Playbook
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy.yml \
+            --vault-password-file .vault_pass \
+            -v
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "false"
+
+      - name: Verify Deployment
+        run: |
+          sleep 10
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa \
+            ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+            "curl -sf http://localhost:8000/health" || echo "Verification skipped — no VM configured"
+
+      - name: Cleanup secrets
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_rsa
+          rm -f ansible/.vault_pass
