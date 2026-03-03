@@ -1,7 +1,27 @@
+{# roles/web_app/templates/docker-compose.yml.j2 #}
+{# -------------------------------------------------------------------------
+  Template: docker-compose.yml
+  Purpose:
+    Compose definition for {{ app_name }} service.
+  Variables (expected):
+    app_name (str)                         - service/container base name
+    docker_image (str)                     - image repo, e.g. "user/devops-info-service"
+    web_app_docker_image_tag (str)         - image tag, e.g. "latest"
+    web_app_app_port (int/str)             - host port, e.g. 5000
+    web_app_container_port (int/str)       - container port, e.g. 5000
+    web_app_restart_policy (str)           - e.g. "unless-stopped"
+    web_app_env (dict)                     - env vars map, e.g. {KEY: "value"}
+  Notes:
+    environment is rendered as YAML mapping for readability and idempotency.
+------------------------------------------------------------------------- #}
+
+version: "{{ web_app_docker_compose_version }}"
 services:
   {{ app_name }}:
     image: "{{ docker_image }}:{{ web_app_docker_image_tag }}"
+    container_name: "{{ app_name }}"
     ports:
       - "{{ web_app_app_port }}:{{ web_app_container_port }}"
-    environment: {{ web_app_env | to_nice_yaml(indent=6) | trim }}
+    environment:
+{{ web_app_env | to_nice_yaml(indent=6) | indent(6) }}
     restart: "{{ web_app_restart_policy }}"

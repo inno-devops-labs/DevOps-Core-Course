@@ -1,12 +1,25 @@
 ---
-- name: Include wipe tasks
+# roles/web_app/tasks/main.yml
+# Purpose:
+#   Deploy application using Docker Compose v2 (docker-compose-plugin).
+# Safety:
+#   Destructive wipe is isolated in wipe.yml and is double-gated:
+#     - must run with --tags web_app_wipe
+#     - AND web_app_wipe=true
+# Tags:
+#   web_app, compose, app_deploy, web_app_wipe
+
+- name: Include wipe tasks (double-gated inside wipe.yml)
+  # NOTE: Tag here allows "wipe-only" runs: --tags web_app_wipe
   tags: [web_app_wipe]
   ansible.builtin.include_tasks: wipe.yml
 
 - name: Deploy web application with Docker Compose
+  # This block does "happy path" deploy; failures go into rescue for debug.
   tags: [web_app, compose, app_deploy]
   block:
     - name: Login to Docker Hub
+      # no_log hides credentials by default; enable debug by setting debug_docker_login=true.
       tags: [app_deploy]
       community.docker.docker_login:
         username: "{{ dockerhub_username }}"
@@ -16,6 +29,7 @@
       no_log: "{{ not (debug_docker_login | default(false)) }}"
 
     - name: Ensure compose project directory exists
+      # Stores docker-compose.yml on the target host (idempotent directory creation).
       tags: [compose, app_deploy]
       ansible.builtin.file:
         path: "{{ web_app_compose_project_dir }}"
@@ -23,6 +37,7 @@
         mode: "0755"
 
     - name: Template docker-compose.yml
+      # Render compose file from Jinja template using documented vars in the template header.
       tags: [compose, app_deploy]
       ansible.builtin.template:
         src: docker-compose.yml.j2
@@ -30,6 +45,7 @@
         mode: "0644"
 
     - name: Deploy via Docker Compose v2
+      # pull=always makes deploy pick up new images even if tag is unchanged (e.g., latest).
       tags: [compose, app_deploy]
       community.docker.docker_compose_v2:
         project_src: "{{ web_app_compose_project_dir }}"
@@ -41,6 +57,7 @@
         - Wait for app to start
 
     - name: Health check
+      # Localhost check avoids networking issues (NAT / firewall); retries allow container warm-up.
       tags: [app_deploy]
       ansible.builtin.uri:
         url: "http://127.0.0.1:{{ web_app_app_port }}/health"
@@ -52,6 +69,7 @@
 
   rescue:
     - name: Show compose services on failure
+      # Debug help: show container state even if compose-up failed mid-way.
       tags: [compose, app_deploy]
       ansible.builtin.command: docker compose -f "{{ web_app_compose_project_dir }}/docker-compose.yml" ps
       register: web_app_compose_ps
@@ -70,6 +88,7 @@
 
   always:
     - name: Log deploy completion marker
+      # Non-functional marker file for lab evidence; should not create 'changed' noise.
       tags: [app_deploy]
       ansible.builtin.copy:
         dest: "/tmp/web_app_deploy_done"

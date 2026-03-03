@@ -1,9 +1,23 @@
 ---
+# roles/common/tasks/main.yml
+# Purpose:
+#   Baseline OS setup: packages + users.
+#
+# Tags:
+#   common    - all common role tasks
+#   packages  - apt packages tasks
+#   users     - user management tasks
+#
+# Notes:
+#   - Blocks include rescue/always to satisfy LAB06 requirements.
+#   - Marker files in /tmp are used as lab evidence and reduce ambiguity.
+
 - name: Common | Packages
   become: true
   tags: [common, packages]
   block:
     - name: Common | Update apt cache
+      # cache_valid_time avoids updating too often (idempotency-friendly)
       ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
@@ -15,6 +29,7 @@
 
   rescue:
     - name: Common | Retry apt cache update
+      # Simple retry in case of transient networking/repo issues
       ansible.builtin.apt:
         update_cache: true
 
@@ -25,6 +40,7 @@
 
   always:
     - name: Mark common packages done
+      # LAB evidence marker; keep changed_when=false to reduce noise
       ansible.builtin.copy:
         dest: /tmp/common_packages_done
         content: "common packages finished at {{ ansible_date_time.iso8601 }}\n"
@@ -36,12 +52,15 @@
   tags: [common, users]
   block:
     - name: Ensure users exist
+      # common_users is expected to be a list of dicts:
+      #   - { name: "user1", groups: "sudo", shell: "/bin/bash" }
       ansible.builtin.user:
         name: "{{ item.name }}"
         groups: "{{ item.groups | default(omit) }}"
         shell: "{{ item.shell | default('/bin/bash') }}"
         state: present
       loop: "{{ common_users | default([]) }}"
+
   always:
     - name: Mark common users done
       ansible.builtin.copy:

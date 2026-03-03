@@ -1,9 +1,23 @@
 ---
+# roles/docker/tasks/main.yml
+# Purpose:
+#   Install and configure Docker Engine + Docker Compose plugin on Ubuntu.
+#
+# Tags:
+#   docker         - all docker tasks
+#   docker_install - repository + packages + service ensure
+#   docker_config  - user group + python docker SDK
+#
+# Notes:
+#   - Uses docker-compose-plugin (Compose v2) required by community.docker.docker_compose_v2
+
 - name: Docker | Install
   become: true
   tags: [docker, docker_install]
   block:
+
     - name: Install prerequisites
+      # Packages needed to add Docker apt repo + GPG key
       ansible.builtin.apt:
         name:
           - ca-certificates
@@ -13,6 +27,7 @@
         update_cache: true
 
     - name: Ensure /etc/apt/keyrings exists
+      # Modern Ubuntu practice: store third-party keys in /etc/apt/keyrings
       ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
@@ -30,6 +45,7 @@
         state: present
 
     - name: Install Docker packages
+      # docker-compose-plugin provides "docker compose" (Compose v2)
       ansible.builtin.apt:
         name:
           - docker-ce
@@ -41,32 +57,45 @@
         update_cache: true
 
   rescue:
+    - name: RESCUE | Triggered after failure inside Docker install block
+      # For lab: show that rescue exists and executes when a task fails
+      ansible.builtin.debug:
+        msg: "Rescue block executed (rescue_demo={{ rescue_demo | default(false) }})"
+      tags: [docker, docker_install]
+
     - name: Wait and retry apt update (network/gpg flake)
+      # Typical transient failures: temporary network issues, repo propagation, etc.
       ansible.builtin.pause:
         seconds: 10
+      tags: [docker, docker_install]
 
     - name: Retry apt update
       ansible.builtin.apt:
         update_cache: true
+      tags: [docker, docker_install]
 
   always:
     - name: Ensure Docker service enabled and running
+      # ALWAYS block: we want docker started if install succeeded partially.
       ansible.builtin.service:
         name: docker
         state: started
         enabled: true
+      tags: [docker, docker_install]
 
 - name: Docker | Config
   become: true
   tags: [docker, docker_config]
   block:
     - name: Add user to docker group
+      # Allows running docker without sudo for this user
       ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
         append: true
 
     - name: Install python docker SDK for Ansible docker modules
+      # Needed for community.docker modules on the target in some setups
       ansible.builtin.apt:
         name: python3-docker
         state: present

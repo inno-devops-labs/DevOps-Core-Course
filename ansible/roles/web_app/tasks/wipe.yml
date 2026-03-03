@@ -1,18 +1,46 @@
 ---
+# roles/web_app/tasks/wipe.yml
+# Purpose:
+#   Destructive cleanup of the application deployment:
+#     - stop/remove old containers
+#     - remove compose stack
+#     - delete compose file and project directory
+#
+# SAFETY MECHANISM (LAB06):
+#   Wipe is "double-gated" to prevent accidents:
+#     1) Variable gate:     web_app_wipe=true  (explicit user intent)
+#     2) Tag gate:          --tags web_app_wipe (explicit wipe selection)
+#
+# This prevents accidental wipe during normal "deploy" or CI/CD runs.
+
+- name: SAFETY GUARD | Refuse wipe unless --tags web_app_wipe is provided
+  # If someone sets web_app_wipe=true but runs playbook without tags,
+  # ansible_run_tags is empty (means "run all"), and we refuse to wipe.
+  ansible.builtin.assert:
+    that:
+      - "'web_app_wipe' in (ansible_run_tags | default([]))"
+    fail_msg: >
+      Refusing to wipe because --tags web_app_wipe was not provided.
+      Run: ansible-playbook ... -e "web_app_wipe=true" --tags web_app_wipe
+  when: web_app_wipe | bool
+  tags: [web_app_wipe]
+
 - name: Wipe web application (Compose + leftovers)
+  # Variable gate: destructive actions only when explicitly enabled
   when: web_app_wipe | bool
   tags: [web_app_wipe]
   block:
 
-    # 0) remove standalone container (if created not by compose)
+    # 0) Remove standalone container (if created not by compose)
     - name: Remove old container by name if exists
       community.docker.docker_container:
         name: "{{ web_app_container_name }}"
         state: absent
         force_kill: true
+      # We don't want wipe to fail if container doesn't exist.
       failed_when: false
 
-    # 1) find containers exposing the same host port (just in case)
+    # 1) Find containers exposing the same host port (defensive cleanup)
     - name: Gather running containers info
       community.docker.docker_host_info:
         containers: true
@@ -21,6 +49,8 @@
       failed_when: false
 
     - name: Compute containers publishing the app port
+      # Defensive step: if something else binds the same port, remove it.
+      # NOTE: Structure of "Ports" varies by Docker version; we handle missing fields safely.
       ansible.builtin.set_fact:
         web_app_port_containers: >-
           {{
@@ -48,30 +78,35 @@
       when: web_app_port_containers | length > 0
       failed_when: false
 
-    # 2) remove compose stack if it exists
+    # 2) Remove compose stack if it exists
     - name: Stop and remove compose stack
       community.docker.docker_compose_v2:
         project_src: "{{ web_app_compose_project_dir }}"
         state: absent
         remove_orphans: true
+      # If compose file is already gone, we still want wipe to continue.
       failed_when: false
 
-    # 3) remove leftover default network (optional)
+    # 3) Remove leftover default network (optional, defensive)
     - name: Remove compose default network if exists
+      # Network name is typically "<project>_default"
       community.docker.docker_network:
         name: "{{ app_name }}_default"
         state: absent
       failed_when: false
 
+    # 4) Remove files on disk
     - name: Remove docker-compose.yml
       ansible.builtin.file:
         path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         state: absent
+      failed_when: false
 
     - name: Remove application directory
       ansible.builtin.file:
         path: "{{ web_app_compose_project_dir }}"
         state: absent
+      failed_when: false
 
     - name: Log wipe completion
       ansible.builtin.debug:
