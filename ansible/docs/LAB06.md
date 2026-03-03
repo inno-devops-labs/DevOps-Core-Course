@@ -640,3 +640,7 @@ with GitHub; they never expose credentials or SSH keys to the public runner pool
 You have full control over their OS, installed software, and network access,
 reducing the attack surface.  They also avoid the need to inject sensitive data
 into a shared runner, lowering the risk of secrets leakage.
+
+## CI/CD screenshots
+
+![CI/CD screenshots](screnshots/ci/cd.png)
