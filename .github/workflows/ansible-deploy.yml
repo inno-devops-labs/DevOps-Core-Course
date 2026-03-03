@@ -89,8 +89,13 @@ jobs:
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+          # Handle both multiline secrets and single-line secrets containing literal "\n".
+          printf '%b\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+
+          # Fail fast if the key is invalid or encrypted (would require a passphrase).
+          ssh-keygen -y -f ~/.ssh/id_rsa >/dev/null
+
           {
             echo "Host *"
             echo "  IdentityFile ~/.ssh/id_rsa"
