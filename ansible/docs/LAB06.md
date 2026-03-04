@@ -837,13 +837,116 @@ This gives granular control over what gets wiped.
 
 ## Task 4: CI/CD (3 pts)
 
-[Workflow setup]
-[Secrets configuration]
-[Evidence: successful runs, badges]
----
+### Workflow setup
+
+- Path triggers - Only runs when Ansible files change
+
+- Lint job - Validates syntax before deployment
+
+- Self-hosted runner - Deploys to local machine without SSH
+
+- Environment protection - Uses GitHub Environments for approval gates
+
+- Verification step - Health checks after deployment
+
+### Research Questions Answered
+
+#### What are the security implications of storing SSH keys in GitHub Secrets?
+
+Storing SSH keys in GitHub Secrets is **generally safe** but has risks:
+
+- **Good**: Secrets are encrypted, not shown in logs, and only accessible to authorized users/workflows
+- **Risks**: Anyone with write access to the repo can potentially steal secrets; compromised GitHub token = exposed keys
+- **Best practice**: Use short-lived keys, restrict to specific IPs, and rotate them regularly
+
+#### How would you implement a staging → production deployment pipeline?
+
+**Simple pipeline approach:**
+
+1. **Staging deploy** (automatic on push to `develop` branch)
+2. **Manual approval** gate
+3. **Production deploy** (triggered after approval)
+
+#### What would you add to make rollbacks possible?
+
+**Rollback mechanisms:**
+
+1. **Version tagging** - Keep previous Docker images with version tags
+2. **Backup compose files** - Save previous `docker-compose.yml` versions
+3. **Rollback playbook tag** - Add `--tags rollback` that deploys previous version
+4. **Health check validation** - Auto-rollback if health checks fail after deploy
+
+#### How does self-hosted runner improve security compared to GitHub-hosted?
+
+**Self-hosted advantages:**
+- **Data privacy** - Code and secrets never leave your infrastructure
+- **Network control** - Can access internal services without exposing them to internet
+- **Compliance** - Meet regulatory requirements (data residency, etc.)
+- **No third-party** - GitHub doesn't have access to your environment
+
+**Trade-off**: You're responsible for securing the runner machine itself
+
+### Evidence workflow
+
+#### Successful workflow
+
+![alt text](image.png)
+
+![alt text2](image-1.png)
+
+```bash
+
+WARNING  Rule ComplexityRule has an invalid version_changed field '', is should be a 'X.Y.Z' format value.
+WARNING  Listing 1 violation(s) that are fatal
+args[module]: Unsupported parameters for (basic.py) module: fix_broken. Supported parameters include: allow_change_held_packages, allow_downgrade, allow_unauthenticated, auto_install_module_deps, autoclean, autoremove, cache_valid_time, clean, deb, default_release, dpkg_options, fail_on_autoremove, force, force_apt_get, install_recommends, lock_timeout, only_upgrade, package, policy_rc_d, purge, state, update_cache, update_cache_retries, update_cache_retry_max_delay, upgrade (allow-downgrade, allow-downgrades, allow-unauthenticated, allow_downgrades, default-release, install-recommends, name, pkg, update-cache). (warning)
+roles/common/tasks/main.yml:19 Task/Handler: Fix missing package sources on failure
+
+Read documentation for instructions on how to ignore specific rule violations.
+
+# Rule Violation Summary
+
+  1 args profile:production tags:syntax,experimental
+
+Passed: 0 failure(s), 1 warning(s) in 12 files processed of 12 encountered. Last profile that met the validation criteria was 'production'. Rating: 5/5 star
+```
+
+```bash
+PLAY [Deploy application] ******************************************************
+TASK [Gathering Facts] *********************************************************
+ok: [your-vm-name]
+TASK [web_app : Create application directory] **********************************
+ok: [your-vm-name]
+TASK [web_app : Template docker-compose.yml] ***********************************
+ok: [your-vm-name]
+TASK [web_app : Deploy with Docker Compose] ************************************
+Warning: : Cannot parse event from line: 'time="2026-03-04T22:15:03Z"
+level=warning msg="/opt/app/docker-compose.yml: the attribute `version` is
+obsolete, it will be ignored, please remove it to avoid potential confusion"'.
+Please report this at https://github.com/ansible-collections/community.docker/i
+ssues/new?assignees=&labels=&projects=&template=bug_report.md
+changed: [your-vm-name]
+TASK [web_app : Wait for application to be ready] ******************************
+ok: [your-vm-name]
+TASK [web_app : Verify health endpoint] ****************************************
+ok: [your-vm-name]
+TASK [web_app : Display health check result] ***********************************
+ok: [your-vm-name] => {
+    "msg": "Health check succeeded with status 200"
+}
+PLAY RECAP *********************************************************************
+your-vm-name               : ok=7    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+```
 
 ## Summary
 
-[Overall reflection]
-[Total time spent]
-[Key learnings]
+### Overall reflection
+
+Honestly, I'm exhausted. He's been working on it since morning. The lab is honestly poorly designed, with a lot of inconsistencies. Linter and workflow forced me to redo a lot.
+
+### Total time spent
+
+From morning to evening (didn't count)
+
+### Key learnings
+
+What an inconvenient thing this is...
