@@ -1,0 +1,51 @@
+---
+# ──────────────────────────────────────────────────────────────
+# web_app role — default variables (Task 2 & 3, Lab 6)
+#
+# Defaults have the LOWEST precedence in Ansible's variable
+# hierarchy, so they are safely overridden from:
+#   group_vars/all.yml, host_vars/, or -e on the command line.
+# ──────────────────────────────────────────────────────────────
+
+# ── Application identity ──────────────────────────────────────
+app_name: app
+# Used as the Docker Compose service name, container name, and
+# the directory name under /opt/.
+
+# ── Docker image ──────────────────────────────────────────────
+dockerhub_username: reiterwurger
+dockerhub_password: ""
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+# Full Docker Hub image path: <username>/<repo>
+docker_tag: v1
+# Pinning a specific tag (e.g. "1.2.0") in production prevents
+# surprise upgrades; "latest" is fine for development.
+
+# ── Port mapping ──────────────────────────────────────────────
+app_port: 8080
+# Port exposed on the HOST machine (access from outside: vm_ip:8000)
+app_internal_port: 8080
+# Port the application actually listens on INSIDE the container.
+# They can differ — e.g. a Go app on 8080 inside, but exposed on 8001.
+app_container_name: "{{ app_name }}"
+# Explicit container name in Compose; defaults to app_name.
+
+# ── Docker Compose project directory ──────────────────────────
+compose_project_dir: "/opt/{{ app_name }}"
+# All Compose files live here. Using /opt is conventional for
+# third-party software on Debian/Ubuntu systems.
+
+docker_compose_version: "3.8"
+# Compose file format version. 3.8 works with Docker 19.03+.
+
+# ── Wipe logic (Task 3) ──────────────────────────────────────
+# Default is FALSE — wipe tasks never run during a normal deploy.
+# Double-safety mechanism:
+#   1. This variable must be "true"   (-e "web_app_wipe=true")
+#   2. The tag must be active         (--tags web_app_wipe  OR no --tags flag)
+# Both conditions must be true before any destructive task runs.
+#
+# Usage examples:
+#   Wipe only:      ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+#   Clean install:  ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

@@ -1,0 +1,10 @@
+---
+# web_app role handlers
+# Handlers run only when notified by a task (and only once per play,
+# at the very end), which prevents unnecessary restarts.
+
+- name: restart web_app
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    state: restarted
+  become: true
