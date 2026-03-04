@@ -104,8 +104,8 @@ jobs:
         # Secrets are encrypted at rest and masked in logs.
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/yandex_cloud
+          chmod 600 ~/.ssh/yandex_cloud
           # Add the VM to known_hosts to prevent "host key verification failed".
           # ssh-keyscan fetches the public key without needing user confirmation.
           ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
@@ -130,7 +130,7 @@ jobs:
         run: |
           ansible-playbook playbooks/provision.yaml \
             --vault-password-file /tmp/vault_pass \
-            --private-key ~/.ssh/id_rsa
+            --private-key ~/.ssh/yandex_cloud
           # provision.yaml is idempotent: running it again on an already-
           # provisioned VM shows only "ok" tasks, no "changed".
 
@@ -139,7 +139,7 @@ jobs:
         run: |
           ansible-playbook playbooks/deploy.yaml \
             --vault-password-file /tmp/vault_pass \
-            --private-key ~/.ssh/id_rsa \
+            --private-key ~/.ssh/yandex_cloud \
             --tags app_deploy
           # --tags app_deploy skips the wipe block (web_app_wipe defaults to false).
 
