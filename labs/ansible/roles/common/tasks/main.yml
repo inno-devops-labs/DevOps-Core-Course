@@ -1,41 +1,41 @@
 - name: System preparation
+  become: true
+  tags:
+    - common
+    - packages
   block:
     - name: Update apt cache
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
         cache_valid_time: 3600
-      register: apt_update
+      register: common_apt_update
 
     - name: Install common packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ common_packages }}"
         state: present
-      register: pkg_install
+      register: common_pkg_install
 
     - name: Set timezone
-      timezone:
+      community.general.timezone:
         name: "{{ timezone }}"
       when: timezone is defined
 
   rescue:
     - name: Fix apt cache on failure
-      apt:
-        update_cache: yes
-        force_apt_get: yes
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
         update_cache_retries: 3
         update_cache_retry_max_delay: 10
-      when: apt_update.failed or pkg_install.failed
-      register: apt_fix
-      failed_when: apt_fix.failed
+      when: common_apt_update.failed or common_pkg_install.failed
+      register: common_apt_fix
+      failed_when: common_apt_fix.failed
 
   always:
     - name: Log completion
-      file:
+      ansible.builtin.file:
         path: /tmp/ansible-common-complete
         state: touch
+        mode: '0644'
       changed_when: false
-
-  become: true
-  tags:
-    - common
-    - packages

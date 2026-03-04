@@ -7,4 +7,4 @@ common_packages:
   - tree
   - wget
 
-timezone: Etc/UTC
+common_timezone: Etc/UTC

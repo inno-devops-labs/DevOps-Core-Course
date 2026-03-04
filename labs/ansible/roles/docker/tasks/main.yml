@@ -1,7 +1,11 @@
 - name: Docker installation
+  become: true
+  tags:
+    - docker
+    - docker_install
   block:
     - name: Remove conflicting packages
-      apt:
+      ansible.builtin.apt:
         name:
           - docker.io
           - docker-doc
@@ -10,72 +14,67 @@
           - containerd
           - runc
         state: absent
-      register: remove_result
+      register: docker_remove_result
 
     - name: Add Docker GPG key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
-      register: gpg_result
+      register: docker_gpg_result
 
     - name: Add Docker repository
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
-        update_cache: yes
-      register: repo_result
+        update_cache: true
+      register: docker_repo_result
 
     - name: Install Docker packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ docker_packages }}"
         state: present
-      register: install_result
+      register: docker_install_result
       notify: restart docker
 
   rescue:
     - name: Wait and retry apt update (GPG key may need time)
-      wait_for:
+      ansible.builtin.wait_for:
         timeout: 10
       delegate_to: localhost
 
     - name: Retry apt update
-      apt:
-        update_cache: yes
-      when: gpg_result.failed or repo_result.failed
+      ansible.builtin.apt:
+        update_cache: true
+      when: docker_gpg_result.failed or docker_repo_result.failed
 
     - name: Fail if installation still fails
-      fail:
+      ansible.builtin.fail:
         msg: "Docker installation failed after retry"
-      when: install_result is failed
+      when: docker_install_result is failed
 
   always:
     - name: Ensure Docker service is enabled
-      service:
+      ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
-      when: install_result is success
+        enabled: true
+      when: docker_install_result is success
       changed_when: false
 
-  become: true
-  tags:
-    - docker
-    - docker_install
 
 - name: Docker configuration
-  block:
-    - name: Add user to docker group
-      user:
-        name: "{{ docker_user }}"
-        groups: docker
-        append: yes
-
-    - name: Install Python Docker module
-      apt:
-        name: python3-docker
-        state: present
-
   become: true
   tags:
     - docker
     - docker_config
+  block:
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true
+
+    - name: Install Python Docker module
+      ansible.builtin.apt:
+        name: python3-docker
+        state: present
