@@ -51,7 +51,7 @@ jobs:
   deploy:
     name: Deploy Java Application
     needs: lint
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,8 +66,19 @@ jobs:
       - name: Install required collections
         run: |
           ansible-galaxy collection install -r ansible/requirements.yml
+      
+      - name: Setup SSH key
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy with Ansible
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
         run: |
           cd ansible
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
