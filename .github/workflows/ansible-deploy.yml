@@ -149,9 +149,9 @@ jobs:
         run: |
           sleep 10
           curl -f --retry 5 --retry-delay 5 \
-            "http://${{ secrets.VM_HOST }}:8000" || exit 1
+            "http://${{ secrets.VM_HOST }}:8080" || exit 1
           curl -f --retry 5 --retry-delay 5 \
-            "http://${{ secrets.VM_HOST }}:8000/health" || exit 1
+            "http://${{ secrets.VM_HOST }}:8080/health" || exit 1
           echo "✓ Application is up and healthy"
 
       - name: Clean up vault password file
