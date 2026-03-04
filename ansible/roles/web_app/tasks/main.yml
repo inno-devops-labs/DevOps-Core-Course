@@ -1,0 +1,38 @@
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  block:
+    - name: Ensure project directory exists
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Template docker-compose.yml
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_file }}"
+        mode: '0644'
+
+    - name: Deploy with docker-compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        files:
+          - docker-compose.yml
+        state: present
+        pull: always
+        recreate: auto
+
+  rescue:
+    - name: Deployment failed
+      debug:
+        msg: "Deployment failed: {{ ansible_failed_result.msg }}"
+
+  become: yes
+  tags:
+    - app_deploy
+    - compose

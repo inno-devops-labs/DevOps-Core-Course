@@ -3,4 +3,4 @@
   become: yes
 
   roles:
-    - app_deploy
+    - web_app

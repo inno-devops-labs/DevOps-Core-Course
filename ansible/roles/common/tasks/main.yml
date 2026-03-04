@@ -1,11 +1,36 @@
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-  become: yes
+- name: Common system setup
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      register: apt_update
+      until: apt_update is success
+      retries: 3
+      delay: 5
+      tags:
+        - packages
 
-- name: Install common essential packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+      tags:
+        - packages
+
+  rescue:
+    - name: Failed to update cache or install packages
+      debug:
+        msg: "An error occurred: {{ ansible_failed_result.msg }}"
+
+  always:
+    - name: Log completion
+      copy:
+        content: "Common role completed at {{ ansible_date_time.iso8601 }}"
+        dest: /tmp/ansible_common.log
+      tags:
+        - never
+
   become: yes
+  tags:
+    - common

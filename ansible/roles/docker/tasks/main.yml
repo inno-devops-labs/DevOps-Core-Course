@@ -1,71 +1,96 @@
-- name: Remove conflicting packages
-  apt:
-    name:
-      - docker.io
-      - docker-doc
-      - docker-compose
-      - podman-docker
-      - containerd
-      - runc
-    state: absent
-  become: yes
-  ignore_errors: yes
+- name: Docker installation block
+  block:
+    - name: Remove conflicting packages
+      apt:
+        name:
+          - docker.io
+          - docker-doc
+          - docker-compose
+          - podman-docker
+          - containerd
+          - runc
+        state: absent
+      ignore_errors: yes
 
-- name: Install required system packages
-  apt:
-    name:
-      - ca-certificates
-      - curl
-    state: present
-  become: yes
+    - name: Install required system packages
+      apt:
+        name:
+          - ca-certificates
+          - curl
+        state: present
 
-- name: Create keyrings directory
-  file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
-  become: yes
+    - name: Create keyrings directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
 
-- name: Add Docker's official GPG key
-  get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker.asc
-    mode: '0644'
-    force: true
-  become: yes
+    - name: Add Docker GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+        force: true
+      register: gpg_result
+      until: gpg_result is success
+      retries: 3
+      delay: 5
 
-- name: Add Docker APT repository
-  apt_repository:
-    repo: "deb [arch={{ ansible_architecture | replace('x86_64','amd64') }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
-    update_cache: yes
-  become: yes
+    - name: Add Docker APT repository
+      apt_repository:
+        repo: "deb [arch={{ ansible_architecture | replace('x86_64','amd64') }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        update_cache: yes
 
-- name: Install Docker packages
-  apt:
-    name: "{{ docker_packages }}"
-    state: present
-    update_cache: yes
-  become: yes
-  notify: restart docker
+    - name: Install Docker packages
+      apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: yes
+      notify: restart docker
 
-- name: Ensure Docker service is running and enabled
-  service:
-    name: docker
-    state: started
-    enabled: yes
-  become: yes
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
-  become: yes
-  notify: restart docker
+  rescue:
+    - name: Docker installation failed
+      debug:
+        msg: "Docker installation failed: {{ ansible_failed_result.msg }}"
 
-- name: Install python3-docker for Ansible docker modules
-  apt:
-    name: python3-docker
-    state: present
+  always:
+    - name: Ensure Docker enabled after block
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      when: ansible_failed_result is not defined
+
   become: yes
+  tags:
+    - docker_install
+
+- name: Docker configuration block
+  block:
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install python3-docker
+      apt:
+        name: python3-docker
+        state: present
+
+  become: yes
+  tags:
+    - docker_config
+
+- name: Docker role complete (always)
+  debug:
+    msg: "Docker role finished"
+  tags:
+    - docker

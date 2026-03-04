@@ -1,2 +1,0 @@
-app_restart_policy: unless-stopped
-app_env_vars: {}

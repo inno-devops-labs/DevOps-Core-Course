@@ -1,0 +1,11 @@
+app_name: devops-app
+docker_tag: latest
+app_port: 8000
+app_internal_port: 8000
+app_restart_policy: unless-stopped
+app_env_vars: {}
+
+compose_project_dir: "/opt/{{ app_name }}"
+compose_file: "{{ compose_project_dir }}/docker-compose.yml"
+
+web_app_wipe: false

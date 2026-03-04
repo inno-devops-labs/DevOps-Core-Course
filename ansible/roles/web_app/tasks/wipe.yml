@@ -1,0 +1,27 @@
+- name: Wipe application
+  block:
+    - name: Stop and remove containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: absent
+        remove_volumes: yes
+      ignore_errors: yes
+
+    - name: Remove docker-compose file
+      file:
+        path: "{{ compose_file }}"
+        state: absent
+
+    - name: Remove project directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: absent
+
+    - name: Log wipe completion
+      debug:
+        msg: "Application {{ app_name }} wiped successfully"
+
+  become: yes
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
