@@ -11,6 +11,7 @@ on:
     paths:
       - 'ansible/**'
 
+
 jobs:
   lint:
     name: Ansible Lint
