@@ -80,6 +80,5 @@ jobs:
 
       - name: Verify Deployment
         run: |
-          sleep 10
-          curl -f http://${{ secrets.VM_HOST }}:8001 || exit 1
-          curl -f http://${{ secrets.VM_HOST }}:8001/health || exit 1
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+            "curl -sf http://localhost:8001/health"
