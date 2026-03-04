@@ -7,7 +7,7 @@ services:
     ports:
       - "{{ app_port }}:{{ app_internal_port }}"
     environment:
-{% for key, value in app_env.items() %}
-      {{ key }}: "{{ value }}"
-{% endfor %}
-    restart: unless-stopped
+      {% for key, value in app_env.items() %}
+      {{ key }}: {{ value }}
+      {% endfor %}
+    restart: {{ web_app_docker_restart_policy }}

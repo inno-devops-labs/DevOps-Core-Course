@@ -5,4 +5,4 @@ docker_user: "{{ ansible_user | default('root') }}"
 # Docker version constraints (empty = latest)
 docker_version: ""
 docker_cli_version: ""
-containerd_version: ""
+docker_containerd_version: ""
