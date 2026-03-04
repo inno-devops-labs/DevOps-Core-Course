@@ -32,7 +32,7 @@ jobs:
       - name: Run ansible-lint
         run: |
           cd labs/ansible
-          ansible-lint playbooks/*.yml
+          ansible-lint playbooks/*.yml --ask-vault-pass
 
   deploy:
     name: Deploy Application
