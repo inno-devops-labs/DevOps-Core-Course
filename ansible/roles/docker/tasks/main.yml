@@ -1,6 +1,9 @@
 ---
-# Docker installation block
 - name: Install Docker engine
+  become: true
+  tags:
+    - docker_install
+    - docker
   block:
     - name: Install dependencies for Docker
       ansible.builtin.apt:
@@ -27,9 +30,9 @@
         filename: docker
       notify: restart docker
 
-    - name: Update apt cache after adding Docker repo
+    - name: Update Apt cache after adding Docker repo
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 0
 
     - name: Install Docker packages
@@ -46,9 +49,9 @@
       ansible.builtin.pause:
         seconds: 10
 
-    - name: Retry apt update after failure
+    - name: Retry Apt update after failure
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
       changed_when: false
 
     - name: Retry Docker packages installation
@@ -64,29 +67,22 @@
       ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
-      ignore_errors: true
+        enabled: true
+      failed_when: false
 
+- name: Configure Docker environment
   become: true
   tags:
-    - docker_install
+    - docker_config
     - docker
-
-# Docker configuration block
-- name: Configure Docker environment
   block:
     - name: Add remote user to docker group
       ansible.builtin.user:
         name: "{{ ansible_user }}"
         groups: docker
-        append: yes
+        append: true
 
     - name: Install python3-docker for Ansible Docker modules
       ansible.builtin.apt:
         name: python3-docker
         state: present
-
-  become: true
-  tags:
-    - docker_config
-    - docker

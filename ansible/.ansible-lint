@@ -1,0 +1,3 @@
+# Skip syntax-check when vars_files use vault (fails without password)
+skip_list:
+  - internal-error

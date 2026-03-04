@@ -1,6 +1,5 @@
 ---
-use_yandex_mirror: true
-
+common_use_yandex_mirror: true
 common_packages:
   - python3-pip
   - curl
@@ -11,4 +10,4 @@ common_packages:
   - ca-certificates
   - gnupg
   - lsb-release
-timezone: "Europe/Moscow"
+common_timezone: "Europe/Moscow"

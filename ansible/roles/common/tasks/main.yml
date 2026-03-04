@@ -1,15 +1,18 @@
 ---
-# Package installation block with error handling
 - name: Install packages and configure system
+  become: true
+  tags:
+    - packages
+    - common
   block:
-    - name: Force apt to use IPv4 only
+    - name: Force Apt to use IPv4 only
       ansible.builtin.copy:
         content: 'Acquire::ForceIPv4 "true";'
         dest: /etc/apt/apt.conf.d/99force-ipv4
         owner: root
         group: root
         mode: "0644"
-      when: use_yandex_mirror | default(false) | bool
+      when: common_use_yandex_mirror | default(false) | bool
 
     - name: Configure Yandex mirror for Ubuntu
       ansible.builtin.template:
@@ -18,11 +21,11 @@
         owner: root
         group: root
         mode: "0644"
-      when: use_yandex_mirror | default(false) | bool
+      when: common_use_yandex_mirror | default(false) | bool
 
-    - name: Update apt cache
+    - name: Update Apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
         update_cache_retries: 10
         update_cache_retry_max_delay: 30
@@ -33,9 +36,10 @@
         state: present
 
   rescue:
-    - name: Attempt apt-get update --fix-missing on failure
-      ansible.builtin.shell: apt-get update --fix-missing 2>&1
-      register: apt_fix_result
+    - name: Retry Apt cache update on failure
+      ansible.builtin.apt:
+        update_cache: true
+      register: common_apt_fix_result
       changed_when: false
       failed_when: false
 
@@ -51,17 +55,15 @@
         dest: /tmp/ansible_common_packages.log
         mode: "0644"
 
+- name: Configure users and system settings
   become: true
   tags:
-    - packages
+    - users
     - common
-
-# User and system configuration block
-- name: Configure users and system settings
   block:
     - name: Set timezone
       community.general.timezone:
-        name: "{{ timezone }}"
+        name: "{{ common_timezone }}"
 
   always:
     - name: Log user configuration completion
@@ -69,8 +71,3 @@
         content: "common role users block completed at {{ ansible_date_time.iso8601 }}\n"
         dest: /tmp/ansible_common_users.log
         mode: "0644"
-
-  become: true
-  tags:
-    - users
-    - common

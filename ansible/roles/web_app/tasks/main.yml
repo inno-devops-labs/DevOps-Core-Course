@@ -1,12 +1,14 @@
 ---
-# Wipe logic runs first (when explicitly requested)
 - name: Include wipe tasks
   ansible.builtin.include_tasks: wipe.yml
   tags:
     - web_app_wipe
 
-# Deployment with Docker Compose
 - name: Deploy application with Docker Compose
+  become: true
+  tags:
+    - app_deploy
+    - compose
   block:
     - name: Ensure Docker Hub credentials are set
       ansible.builtin.assert:
@@ -35,11 +37,11 @@
         dest: "{{ compose_project_dir }}/docker-compose.yml"
         mode: "0644"
 
-    - name: Remove existing container with same name (from previous docker run or orphan compose)
+    - name: Remove existing container with same name
       community.docker.docker_container:
         name: "{{ app_name }}"
         state: absent
-      ignore_errors: true
+      failed_when: false
 
     - name: Pull Docker image
       ansible.builtin.command:
@@ -66,7 +68,7 @@
     - name: Check health endpoint
       ansible.builtin.uri:
         url: "http://127.0.0.1:{{ app_port }}/health"
-        return_content: yes
+        return_content: true
         timeout: 15
       register: health_result
       changed_when: false
@@ -79,8 +81,3 @@
     - name: Fail after logging
       ansible.builtin.fail:
         msg: "Deployment failed for {{ app_name }}"
-
-  become: true
-  tags:
-    - app_deploy
-    - compose

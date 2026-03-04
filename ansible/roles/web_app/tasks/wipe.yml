@@ -1,11 +1,15 @@
 ---
 - name: Wipe web application
+  become: true
+  tags:
+    - web_app_wipe
+  when: web_app_wipe | default(false) | bool
   block:
     - name: Stop and remove containers via docker compose
       ansible.builtin.command:
         cmd: docker compose down --remove-orphans
         chdir: "{{ compose_project_dir }}"
-      ignore_errors: true
+      failed_when: false
 
     - name: Remove docker-compose file
       ansible.builtin.file:
@@ -20,13 +24,8 @@
     - name: Remove Docker image (optional cleanup)
       ansible.builtin.command:
         cmd: "docker rmi {{ docker_image }}:{{ docker_tag }}"
-      ignore_errors: true
+      failed_when: false
 
     - name: Log wipe completion
       ansible.builtin.debug:
         msg: "Application {{ app_name }} wiped successfully"
-
-  when: web_app_wipe | default(false) | bool
-  become: true
-  tags:
-    - web_app_wipe
