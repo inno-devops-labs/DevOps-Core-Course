@@ -15,8 +15,39 @@ ansible [core 2.20.2]
   pyyaml version = 6.0.3 (with libyaml v0.2.5)
 ```
 - **Target VM OS:** ubuntu
-- **Role structure:** common → docker → app_deploy
+- **Role structure:** common → docker → web_app
 - **Why roles:** smaller, reusable, easier to test and maintain than monolithic playbooks.
+
+### Role directory structure
+```
+ansible/
+├── ansible.cfg
+├── requirements.yml
+├── group_vars/
+│   └── all.yml            # Ansible Vault encrypted
+├── inventory/
+│   └── hosts.ini
+├── playbooks/
+│   ├── provision.yaml
+│   └── deploy.yaml
+└── roles/
+    ├── common/
+    │   ├── defaults/main.yaml
+    │   └── tasks/main.yaml
+    ├── docker/
+    │   ├── defaults/main.yaml
+    │   ├── handlers/main.yaml
+    │   └── tasks/main.yaml
+    └── web_app/
+        ├── defaults/main.yaml
+        ├── handlers/main.yaml
+        ├── meta/main.yaml
+        ├── tasks/
+        │   ├── main.yaml
+        │   └── wipe.yaml
+        └── templates/
+            └── docker-compose.yml.j2
+```
 
 ## 2. Roles Documentation
 
@@ -32,11 +63,25 @@ ansible [core 2.20.2]
 - **Handlers:** `restart docker`.
 - **Dependencies:** none.
 
-### Role: app_deploy
-- **Purpose:** deploy containerized app from Docker Hub and verify health.
-- **Variables (defaults / vault):** `app_port`, `app_restart_policy`, `app_env_vars`, `dockerhub_username`, `dockerhub_password`, `docker_image`, `docker_image_tag`, `app_container_name`.
-- **Handlers:** `restart application container`.
-- **Dependencies:** requires Docker installed and running.
+### Role: web_app
+- **Purpose:** deploy containerized app via Docker Compose, verify health endpoint, and support wipe logic.
+- **Variables (defaults / vault):** `app_name`, `docker_image`, `docker_tag`, `app_port`, `app_internal_port`, `compose_project_dir`, `docker_compose_version`, `web_app_wipe`, `dockerhub_username`, `dockerhub_password`.
+- **Handlers:** `restart web_app` (runs `docker_compose_v2` with `state: restarted`).
+- **Dependencies:** `docker` role (declared in `meta/main.yaml`).
+
+## 2.5 Connectivity Test
+
+```bash
+ansible all -m ping
+ansible webservers -a "uname -a"
+```
+
+<!-- TODO: screenshot of ansible all -m ping output -->
+> **TODO:** add screenshot `screenshots/check-ansible-conection.png`
+
+![](./screenshots/check-ansible-conection.png)
+
+---
 
 ## 3. Idempotency Demonstration
 
@@ -84,4 +129,7 @@ Roles break down complex configurations into smaller, manageable units. This pre
 - **Why is Ansible Vault necessary?** It allows for the secure inclusion of secrets within a version-controlled repository. Without Vault, credentials would be stored in plaintext, violating basic security principles and risking exposure on platforms like GitHub.
 
 ## 7. Challenges (Optional)
-- _TODO_
+- **GPG key timeouts:** Docker's APT GPG key occasionally times out on first request; solved by adding a `rescue` block that waits 10 s and retries.
+- **python3-docker vs community.docker:** The `docker_container` module requires `python3-docker` on the managed host; added it to the `docker` role's install list.
+- **`app_deploy` → `web_app` rename:** After renaming the role directory, the `deploy.yaml` playbook still referenced the old name; fixed the reference and removed the stale `app_deploy` subdirectory that had ended up inside `web_app`.
+- **Vault password workflow:** Used `--ask-vault-pass` during development; the vault password is never stored in the repo.

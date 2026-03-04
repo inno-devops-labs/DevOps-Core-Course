@@ -7,3 +7,5 @@ common_packages:
   - htop
 
 system_timezone: "Etc/UTC"
+
+deploy_user: "{{ ansible_user }}"

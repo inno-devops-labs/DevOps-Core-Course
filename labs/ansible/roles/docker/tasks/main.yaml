@@ -1,33 +1,72 @@
 ---
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+- name: Docker installation block
+  tags: [docker, docker_install]
+  become: true
+  block:
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
-    update_cache: yes
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
+        state: present
+        update_cache: yes
 
-- name: Install Docker packages and python3-docker
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - python3-docker
-    state: present
-  notify: restart docker
+    - name: Install Docker packages and python3-docker
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - python3-docker
+        state: present
+      notify: restart docker
 
-- name: Ensure Docker service is running and enabled
-  service:
-    name: docker
-    state: started
-    enabled: yes
+  rescue:
+    - name: Wait and retry apt update on GPG key failure
+      ansible.builtin.pause:
+        seconds: 10
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+    - name: Retry apt cache update
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Retry adding Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Retry adding Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
+        state: present
+        update_cache: yes
+
+    - name: Retry installing Docker packages and python3-docker
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - python3-docker
+        state: present
+      notify: restart docker
+
+  always:
+    - name: Ensure Docker service is running and enabled
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+- name: Docker configuration block
+  tags: [docker, docker_config]
+  become: true
+  block:
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
