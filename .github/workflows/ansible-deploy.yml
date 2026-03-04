@@ -68,7 +68,7 @@ jobs:
       - name: Run ansible-lint on all playbooks
         working-directory: labs/ansible
         run: |
-          ansible-lint playbooks/provision.yaml playbooks/deploy.yaml
+          ansible-lint playbooks/*.yml
           # Exit code 0 = no violations → job passes
           # Exit code non-zero = violations found → job fails, deploy blocked
 

@@ -78,4 +78,3 @@
         msg: >
           ✓ Application "{{ web_app_app_name }}" wiped from {{ web_app_compose_project_dir }}.
           Re-run without --tags web_app_wipe to deploy fresh.
-          
