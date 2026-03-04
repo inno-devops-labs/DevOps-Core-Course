@@ -51,15 +51,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "VM_HOST=${{ secrets.VM_HOST }}"
           sudo apt-get update >/dev/null
           sudo apt-get install -y netcat-openbsd >/dev/null
-
-          echo "[1] TCP 22 check"
           nc -vz -w 5 "${{ secrets.VM_HOST }}" 22 || true
 
-          echo "[2] TCP 5000 check"
-          nc -vz -w 5 "${{ secrets.VM_HOST }}" 5000 || true
+      - name: SSH debug
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -vvv -o ConnectTimeout=10 ubuntu@${{ secrets.VM_HOST }} "echo OK"
 
       - name: Run Ansible deploy
         shell: bash
@@ -71,7 +71,7 @@ jobs:
           ansible-playbook playbooks/deploy.yml \
             --vault-password-file /tmp/vault_pass \
             -i inventory/hosts.ini
-
+            
       - name: Health check
         shell: bash
         run: |
