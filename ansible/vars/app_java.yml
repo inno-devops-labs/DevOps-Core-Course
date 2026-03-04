@@ -2,7 +2,7 @@
 # Java application variables:
 app_name: devops-java
 docker_image: nexonm22/devops-info-service-java
-docker_tag: latest
+docker_tag: lab02
 app_port: 8001
 app_internal_port: 8080
 compose_project_dir: "/opt/{{ app_name }}"
