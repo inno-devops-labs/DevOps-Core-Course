@@ -1,0 +1,3 @@
+# Use minimal profile so CI passes without renaming all role vars to role_ prefix
+# and without rewriting every task key order / FQCN (see https://ansible.readthedocs.io/projects/lint/configuring/)
+profile: min
