@@ -1,10 +1,6 @@
 ---
 # Ansible-lint configuration for CI/CD
 
-# Skip checks that require runtime connectivity or files
-skip_list:
-  - syntax-check  # Skip syntax-check that needs vault and inventory
-
 # Use minimal profile for CI
 profile: min
 
