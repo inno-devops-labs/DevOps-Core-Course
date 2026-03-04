@@ -14,32 +14,56 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup SSH
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+          # Write private key from GitHub Secrets (remove CRLF if present)
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # SSH config: use this key, disable host key prompts (CI-friendly)
+          cat > ~/.ssh/config <<'EOF'
+          Host *
+            IdentityFile ~/.ssh/id_ed25519
+            IdentitiesOnly yes
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          EOF
+
+          # Optional: attempt to prefetch host key, but do not fail if blocked
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Install Ansible
+        shell: bash
         run: |
+          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y ansible
+          ansible --version
           ansible-galaxy collection install community.docker
 
       - name: Prepare vault password file
+        shell: bash
         run: |
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          set -euo pipefail
+          printf '%s\n' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
           chmod 600 /tmp/vault_pass
 
       - name: Run Ansible deploy
+        shell: bash
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
         run: |
+          set -euo pipefail
           cd ansible
           ansible-playbook playbooks/deploy.yml \
             --vault-password-file /tmp/vault_pass \
             -i inventory/hosts.ini
 
       - name: Health check
+        shell: bash
         run: |
+          set -euo pipefail
           curl -fsS "http://${{ secrets.VM_HOST }}:5000/health"
