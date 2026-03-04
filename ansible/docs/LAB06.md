@@ -848,6 +848,51 @@ Code Push → Path Filter → Ansible Lint → Deploy via Ansible → Verify (cu
 
 Added to `ansible/docs/LAB06.md` (this report).
 
+### Evidence: successful workflow runs
+
+Both workflows triggered by push to `lab06` branch, commit `edba9c6` (`fix(lab06): verify deployment via SSH instead of external curl`):
+
+**Ansible Deployment (Python)** — [Run #3](https://github.com/AEZuraa/DevOps-Core-Course/actions/runs/22681670266)
+
+| Job | Duration | Status |
+|-----|----------|--------|
+| Ansible Lint | 44s | Passed |
+| Deploy Python Application | 1m 59s | Passed |
+
+**Ansible Deployment (Go Bonus)** — [Run #3](https://github.com/AEZuraa/DevOps-Core-Course/actions/runs/22681670287)
+
+| Job | Duration | Status |
+|-----|----------|--------|
+| Ansible Lint | 39s | Passed |
+| Deploy Go Bonus Application | 2m 3s | Passed |
+
+### Evidence: ansible-lint and deploy logs
+
+**Lint step** (both workflows):
+
+```
+Passed: 0 failure(s), 0 warning(s) on production profile.
+```
+
+**Deploy step** (Python, key output):
+
+```
+TASK [web_app : Display health check result] ***********************************
+ok: [lab04-vm] => {
+    "web_app_health_check.json": {
+        "status": "healthy",
+        "uptime_seconds": 1658
+    }
+}
+
+PLAY RECAP *********************************************************************
+lab04-vm                   : ok=18   changed=0    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0
+```
+
+**Verify step** (Python): `curl -sf http://localhost:8000/health` via SSH — success.
+
+**Verify step** (Go): `curl -sf http://localhost:8001/health` via SSH — success.
+
 ### Research Answers
 
 **1. Security implications of storing SSH keys in GitHub Secrets?**
@@ -1172,6 +1217,17 @@ Changes to shared files (`roles/web_app/**`) trigger both workflows. Changes to 
 | `vars/app_bonus.yml` | - | Runs |
 | `roles/web_app/**` | Runs | Runs |
 | `ansible/docs/**` | - | - |
+
+### Evidence: both workflows triggered by shared role change
+
+Commit `edba9c6` modified `ansible/roles/web_app/**` (shared code) — both workflows triggered simultaneously:
+
+| Workflow | Run | Status | Duration |
+|----------|-----|--------|----------|
+| [Ansible Deployment (Python)](https://github.com/AEZuraa/DevOps-Core-Course/actions/runs/22681670266) | #3 | Passed | 2m 55s |
+| [Ansible Deployment (Go Bonus)](https://github.com/AEZuraa/DevOps-Core-Course/actions/runs/22681670287) | #3 | Passed | 2m 55s |
+
+This confirms that path filters work correctly: changing a shared role triggers both independent workflows.
 
 ---
 
