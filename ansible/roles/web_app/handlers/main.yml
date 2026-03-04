@@ -1,5 +1,5 @@
 ---
-- name: restart application container
+- name: Restart application container
   community.docker.docker_container:
     name: "{{ app_container_name }}"
     image: "{{ docker_image }}:{{ docker_image_tag }}"
@@ -7,6 +7,5 @@
     restart_policy: "{{ restart_policy }}"
     published_ports:
       - "{{ app_port }}:{{ app_port }}"
-    env:
-      "{{ env_vars }}"
-    recreate: yes
+    env: "{{ env_vars }}"
+    recreate: true

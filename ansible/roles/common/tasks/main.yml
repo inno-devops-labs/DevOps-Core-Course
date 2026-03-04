@@ -3,7 +3,7 @@
   block:
     - name: Update apt cache
       apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
@@ -12,8 +12,8 @@
         state: present
   rescue:
     - name: "Rescue: Fix apt cache issues"
-      ansible.builtin.apt: 
-          update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
       become: true
       tags:
         - packages
