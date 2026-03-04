@@ -1,0 +1,7 @@
+---
+web_app_name: "devops-info-service-go"
+web_app_image: "{{ dockerhub_username }}/devops-info-service-go"
+web_app_tag: "latest"
+web_app_port: 8001
+web_app_internal_port: 8080
+web_app_compose_dir: "/opt/devops-info-service-go"

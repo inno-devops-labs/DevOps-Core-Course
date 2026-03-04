@@ -1,0 +1,7 @@
+---
+web_app_name: "devops-info-service"
+web_app_image: "{{ dockerhub_username }}/devops-info-service"
+web_app_tag: "latest"
+web_app_port: 5000
+web_app_internal_port: 5173
+web_app_compose_dir: "/opt/devops-info-service"

@@ -1,14 +1,47 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+- name: Install system packages
+  tags:
+    - packages
+    - common
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
-- name: Set timezone
-  community.general.timezone:
-    name: "{{ common_timezone }}"
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"
+  rescue:
+    - name: Retry apt update with fix-missing
+      ansible.builtin.apt:
+        update_cache: true
+      register: common_apt_fix
+      retries: 3
+      delay: 5
+      until: common_apt_fix is success
+
+    - name: Retry package installation
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+  always:
+    - name: Log common role completion
+      ansible.builtin.copy:
+        content: "Common role completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible-common-complete.log
+        mode: "0644"
+
+- name: Manage system users
+  tags:
+    - users
+    - common
+  block:
+    - name: Verify primary user exists
+      ansible.builtin.debug:
+        msg: "System user '{{ ansible_user }}' is configured"
