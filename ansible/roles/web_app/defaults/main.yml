@@ -1,0 +1,23 @@
+---
+# App identity
+app_name: devops-info
+app_env: production
+app_host: "0.0.0.0"
+
+# Container image
+docker_image: "ebortsov/devops-info"
+docker_tag: latest
+
+# Port mapping
+app_port: 5000
+app_internal_port: 5000
+
+# Compose project
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Wipe logic safety switch (Task 3)
+web_app_wipe: false
+
+# Secret must come from Vault/group_vars
+app_secret_key: "lab06-secret"

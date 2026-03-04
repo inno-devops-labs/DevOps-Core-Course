@@ -1,56 +1,86 @@
 ---
-- name: Install Docker apt prerequisites
-  ansible.builtin.apt:
-    name: "{{ docker_apt_prerequisites }}"
-    state: present
-    update_cache: true
-    cache_valid_time: 3600
+- name: Docker role | Install Docker packages with retry logic
+  block:
+    - name: Install Docker apt prerequisites
+      ansible.builtin.apt:
+        name: "{{ docker_apt_prerequisites }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Create Docker apt keyring directory
-  ansible.builtin.file:
-    path: "{{ docker_keyring_dir }}"
-    state: directory
-    mode: "0755"
+    - name: Create Docker apt keyring directory
+      ansible.builtin.file:
+        path: "{{ docker_keyring_dir }}"
+        state: directory
+        mode: "0755"
 
-- name: Add Docker GPG key
-  ansible.builtin.get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: "{{ docker_keyring_path }}"
-    mode: "0644"
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: "{{ docker_keyring_path }}"
+        mode: "0644"
 
-- name: Add Docker apt repository
-  ansible.builtin.apt_repository:
-    repo: "{{ docker_apt_repo }}"
-    state: present
-    filename: docker
-  register: docker_repository
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "{{ docker_apt_repo }}"
+        state: present
+        filename: docker
+      register: docker_repository
 
-- name: Refresh apt cache after repository change
-  ansible.builtin.apt:
-    update_cache: true
-  when: docker_repository.changed
+    - name: Refresh apt cache after repository change
+      ansible.builtin.apt:
+        update_cache: true
+      when: docker_repository.changed
 
-- name: Install Docker engine packages
-  ansible.builtin.apt:
-    name: "{{ docker_packages }}"
-    state: present
-  notify: restart docker
+    - name: Install Docker engine packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+      notify: restart docker
 
-- name: Ensure Docker service is enabled and running
-  ansible.builtin.service:
-    name: "{{ docker_service_name }}"
-    state: started
-    enabled: true
+  rescue:
+    - name: Wait before retry when docker repo setup fails
+      ansible.builtin.pause:
+        seconds: 10
 
-- name: Add users to docker group
-  ansible.builtin.user:
-    name: "{{ item }}"
-    groups: docker
-    append: true
-  loop: "{{ docker_users }}"
-  when: docker_users | length > 0
+    - name: Retry apt cache update after Docker key/repo issue
+      ansible.builtin.apt:
+        update_cache: true
 
-- name: Install python Docker bindings
-  ansible.builtin.apt:
-    name: "{{ docker_python_packages }}"
-    state: present
+    - name: Retry Docker engine package installation
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+      notify: restart docker
+
+  always:
+    - name: Ensure Docker service is enabled and running
+      ansible.builtin.service:
+        name: "{{ docker_service_name }}"
+        state: started
+        enabled: true
+
+  become: true
+  tags:
+    - docker
+    - docker_install
+
+- name: Docker role | Docker user + Python SDK config
+  block:
+    - name: Add users to docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users }}"
+      when: docker_users | length > 0
+
+    - name: Install python Docker bindings
+      ansible.builtin.apt:
+        name: "{{ docker_python_packages }}"
+        state: present
+
+  become: true
+  tags:
+    - docker
+    - docker_config
