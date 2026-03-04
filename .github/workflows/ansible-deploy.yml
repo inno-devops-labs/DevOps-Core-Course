@@ -11,7 +11,6 @@ on:
     paths:
       - 'labs/ansible/**'
 
-
 jobs:
   lint:
     name: Ansible Lint
@@ -29,15 +28,27 @@ jobs:
         run: |
           pip install ansible ansible-lint
 
+      - name: Prepare vault password for linting
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          echo "ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass" >> $GITHUB_ENV
+
       - name: Run ansible-lint
         run: |
           cd labs/ansible
-          ansible-lint playbooks/*.yml --ask-vault-pass
+          ansible-lint playbooks/*.yml
+
+      - name: Clean up
+        if: always()
+        run: rm -f /tmp/vault_pass
 
   deploy:
     name: Deploy Application
     needs: lint
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,16 +68,18 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Prepare Ansible inventory
+      - name: Prepare inventory
         run: |
           cd labs/ansible
           echo "[webservers]" > inventory/hosts.ini
           echo "${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }}" >> inventory/hosts.ini
 
       - name: Deploy with Ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
           cd labs/ansible
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
           ansible-playbook playbooks/deploy.yml \
             -i inventory/hosts.ini \
             --vault-password-file /tmp/vault_pass
@@ -76,4 +89,3 @@ jobs:
         run: |
           sleep 5
           curl -f http://${{ secrets.VM_HOST }}:8000/ || exit 1
-          echo "Application is running"
