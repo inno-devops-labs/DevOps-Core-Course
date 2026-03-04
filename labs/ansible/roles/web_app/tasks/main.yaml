@@ -133,4 +133,3 @@
           Deployment of "{{ web_app_app_name }}" failed.
           Compose logs shown above.
           Check: docker ps -a  and  docker logs {{ web_app_app_name }}
-          
