@@ -1,4 +1,4 @@
-# LAB06 --- Advanced Ansible Features & CI/CD
+# LAB06 - Advanced Ansible Features & CI/CD
 
 ## 1. Overview
 
