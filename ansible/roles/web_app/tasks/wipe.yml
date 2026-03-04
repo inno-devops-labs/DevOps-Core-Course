@@ -1,25 +1,29 @@
 ---
 - name: Wipe web application
+  when: web_app_wipe | bool
+  become: true
+  tags:
+    - web_app_wipe
   block:
     - name: Check if app directory exists
-      stat:
+      ansible.builtin.stat:
         path: "{{ compose_project_dir }}"
-      register: compose_dir_stat
+      register: web_app_compose_dir_stat
 
     - name: Stop and remove containers via compose
       community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"
         state: absent
-      when: compose_dir_stat.stat.isdir | default(false)
-      ignore_errors: yes
+      when: web_app_compose_dir_stat.stat.isdir | default(false)
+      failed_when: false
 
     - name: Remove docker-compose file
-      file:
+      ansible.builtin.file:
         path: "{{ compose_project_dir }}/docker-compose.yml"
         state: absent
 
     - name: Remove application directory
-      file:
+      ansible.builtin.file:
         path: "{{ compose_project_dir }}"
         state: absent
 
@@ -27,14 +31,9 @@
       community.docker.docker_image:
         name: "{{ docker_image }}:{{ docker_tag }}"
         state: absent
-        force_absent: yes
-      ignore_errors: yes
+        force_absent: true
+      failed_when: false
 
     - name: Log wipe completion
-      debug:
+      ansible.builtin.debug:
         msg: "Application {{ app_name }} wiped successfully"
-
-  when: web_app_wipe | bool
-  become: true
-  tags:
-    - web_app_wipe

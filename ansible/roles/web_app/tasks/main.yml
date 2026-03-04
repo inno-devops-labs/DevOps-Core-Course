@@ -7,13 +7,13 @@
 - name: Deploy application with Docker Compose
   block:
     - name: Create application directory
-      file:
+      ansible.builtin.file:
         path: "{{ compose_project_dir }}"
         state: directory
         mode: "0755"
 
     - name: Template docker-compose file
-      template:
+      ansible.builtin.template:
         src: docker-compose.yml.j2
         dest: "{{ compose_project_dir }}/docker-compose.yml"
         mode: "0644"
@@ -32,26 +32,26 @@
       register: compose_result
 
     - name: Wait for application to start
-      wait_for:
+      ansible.builtin.wait_for:
         port: "{{ app_port }}"
         host: localhost
         delay: 5
         timeout: 30
 
     - name: Verify health endpoint
-      uri:
+      ansible.builtin.uri:
         url: "http://localhost:{{ app_port }}/health"
-        return_content: yes
+        return_content: true
         status_code: 200
-      register: health_result
+      register: web_app_health_result
 
     - name: Display health check result
-      debug:
-        var: health_result.json
+      ansible.builtin.debug:
+        var: web_app_health_result.json
 
   rescue:
     - name: Log deployment failure
-      debug:
+      ansible.builtin.debug:
         msg: "Deployment of {{ app_name }} failed. Check logs with: docker compose -f {{ compose_project_dir }}/docker-compose.yml logs"
 
   become: true
