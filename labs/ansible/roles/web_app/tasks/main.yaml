@@ -14,7 +14,7 @@
 
 # ── Step 1: Wipe (conditional) ────────────────────────────────
 - name: Include wipe tasks (runs only when web_app_wipe=true + tag active)
-  include_tasks: wipe.yaml
+  ansible.builtin.include_tasks: wipe.yaml
   # include_tasks vs import_tasks:
   #   include_tasks: dynamic — the file is loaded at runtime.
   #     Tags on include_tasks pass THROUGH to the included tasks.
@@ -27,12 +27,16 @@
 
 # ── Step 2: Deployment ────────────────────────────────────────
 - name: Deploy application with Docker Compose
+  become: true
+  tags:
+    - app_deploy
+    - compose
   block:
 
     # ── 2a. Create the application directory ──────────────────
     - name: Ensure application directory exists
-      file:
-        path: "{{ compose_project_dir }}"
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
         state: directory
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
@@ -43,9 +47,9 @@
 
     # ── 2b. Render and copy docker-compose.yml ────────────────
     - name: Template docker-compose.yml to the VM
-      template:
+      ansible.builtin.template:
         src: docker-compose.yml.j2
-        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: "0644"
@@ -58,19 +62,19 @@
 
     - name: Login to Docker Hub when credentials are provided
       community.docker.docker_login:
-        username: "{{ dockerhub_username }}"
-        password: "{{ dockerhub_password }}"
+        username: "{{ web_app_dockerhub_username }}"
+        password: "{{ web_app_dockerhub_password }}"
         reauthorize: true
       when:
-        - dockerhub_username is defined
-        - dockerhub_username | length > 0
-        - dockerhub_password is defined
-        - dockerhub_password | length > 0
+        - web_app_dockerhub_username is defined
+        - web_app_dockerhub_username | length > 0
+        - web_app_dockerhub_password is defined
+        - web_app_dockerhub_password | length > 0
 
     # ── 2c. Start / update the Compose project ────────────────
     - name: Deploy or update with Docker Compose
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         state: present
         pull: always
         # state: present = `docker compose up -d`
@@ -83,53 +87,49 @@
 
     # ── 2d. Wait for the app to be ready ──────────────────────
     - name: Wait for application port to be open
-      wait_for:
+      ansible.builtin.wait_for:
         host: "127.0.0.1"
-        port: "{{ app_port }}"
+        port: "{{ web_app_app_port }}"
         delay: 5       # wait 5 s before first probe
         timeout: 60    # give up after 60 s total
 
     # ── 2e. Smoke-test the health endpoint ────────────────────
     - name: Verify application health endpoint
-      uri:
-        url: "http://127.0.0.1:{{ app_port }}/health"
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ web_app_app_port }}/health"
         method: GET
         status_code: 200
         timeout: 10
-      register: health_check_result
+      register: web_app_health_check_result
       # register saves the HTTP response so the next debug task can show it.
 
     - name: Show health check response
-      debug:
-        msg: "Health check passed: {{ health_check_result.status }} — app is up on port {{ app_port }}"
+      ansible.builtin.debug:
+        msg: "Health check passed: {{ web_app_health_check_result.status }} — app is up on port {{ web_app_app_port }}"
 
   rescue:
     # rescue runs when any task inside the block above fails.
     # We print diagnostics to help identify what went wrong
     # without failing silently.
     - name: Check if docker-compose file exists
-      stat:
-        path: "{{ compose_project_dir }}/docker-compose.yml"
-      register: compose_file_stat
+      ansible.builtin.stat:
+        path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+      register: web_app_compose_file_stat
 
     - name: Collect Docker Compose logs on failure
-      command: docker compose -f {{ compose_project_dir }}/docker-compose.yml logs --tail=50
-      register: compose_logs
+      ansible.builtin.command: docker compose -f {{ web_app_compose_project_dir }}/docker-compose.yml logs --tail=50
+      register: web_app_compose_logs
+      changed_when: false
       ignore_errors: true
-      when: compose_file_stat.stat.exists
+      when: web_app_compose_file_stat.stat.exists
 
     - name: Show Docker Compose logs
-      debug:
-        msg: "{{ compose_logs.stdout_lines | default(['docker-compose.yml not found; template step likely failed']) }}"
+      ansible.builtin.debug:
+        msg: "{{ web_app_compose_logs.stdout_lines | default(['docker-compose.yml not found; template step likely failed']) }}"
 
     - name: Fail with informative message
-      fail:
+      ansible.builtin.fail:
         msg: >
-          Deployment of "{{ app_name }}" failed.
+          Deployment of "{{ web_app_app_name }}" failed.
           Compose logs shown above.
-          Check: docker ps -a  and  docker logs {{ app_name }}
-
-  become: true
-  tags:
-    - app_deploy
-    - compose
+          Check: docker ps -a  and  docker logs {{ web_app_app_name }}

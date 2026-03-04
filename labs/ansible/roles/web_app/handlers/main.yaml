@@ -3,8 +3,8 @@
 # Handlers run only when notified by a task (and only once per play,
 # at the very end), which prevents unnecessary restarts.
 
-- name: restart web_app
+- name: Restart web_app
   community.docker.docker_compose_v2:
-    project_src: "{{ compose_project_dir }}"
+    project_src: "{{ web_app_compose_project_dir }}"
     state: restarted
   become: true
