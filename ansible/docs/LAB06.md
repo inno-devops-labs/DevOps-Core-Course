@@ -1,5 +1,11 @@
 # LAB06 — Advanced Ansible & CI/CD
 
+**Name:** Elizaveta Zagurskih
+**Date:** 2026-03-04
+**Lab Points:** 10
+
+---
+
 > **Tech stack:** Ansible, Ansible Vault, Docker, Docker Compose (v2), GitHub Actions  
 > **Goal:** Refactor roles using **blocks + tags**, migrate deployment to **Docker Compose**, add **role dependencies**, implement **wipe logic**, and automate deployment with **CI/CD**.
 
