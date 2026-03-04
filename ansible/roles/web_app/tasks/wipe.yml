@@ -1,40 +1,54 @@
 ---
 - name: Wipe web application
+  when: web_app_wipe | default(false) | bool
+  tags:
+    - web_app_wipe
   block:
     - name: Stop and remove containers with Docker Compose
       community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"
         state: absent
-        remove_orphans: yes
-        remove_volumes: yes
-      ignore_errors: yes
-      register: compose_down
+        remove_orphans: true
+        remove_volumes: true
+      register: web_app_compose_down
+      failed_when:
+        - web_app_compose_down.failed
+        - '"No such file" not in web_app_compose_down.msg'
+        - '"not found" not in web_app_compose_down.msg'
 
     - name: Remove docker-compose.yml file
-      file:
+      ansible.builtin.file:
         path: "{{ compose_project_dir }}/docker-compose.yml"
         state: absent
-      ignore_errors: yes
+      register: web_app_file_remove
+      failed_when:
+        - web_app_file_remove.failed
+        - '"No such file" not in web_app_file_remove.msg'
+        - '"does not exist" not in web_app_file_remove.msg'
 
     - name: Remove application directory
-      file:
+      ansible.builtin.file:
         path: "{{ compose_project_dir }}"
         state: absent
-      ignore_errors: yes
+      register: web_app_dir_remove
+      failed_when:
+        - web_app_dir_remove.failed
+        - '"No such file" not in web_app_dir_remove.msg'
+        - '"does not exist" not in web_app_dir_remove.msg'
 
     - name: Optionally remove Docker images
-      docker_image:
+      community.docker.docker_image:
         name: "{{ docker_image }}"
         tag: "{{ docker_tag }}"
         state: absent
       when: web_app_remove_images | default(false) | bool
-      ignore_errors: yes
+      register: web_app_image_remove
+      failed_when:
+        - web_app_image_remove.failed
+        - '"not found" not in web_app_image_remove.msg'
+        - '"No such image" not in web_app_image_remove.msg'
 
     - name: Log wipe completion
-      debug:
+      ansible.builtin.debug:
         msg:
           - "Application {{ app_name }} wiped successfully"
-
-  when: web_app_wipe | default(false) | bool
-  tags:
-    - web_app_wipe

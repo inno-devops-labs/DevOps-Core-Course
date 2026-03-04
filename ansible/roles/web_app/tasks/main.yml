@@ -33,10 +33,10 @@
         delay: 5
         timeout: 30
         state: started
-      become: no
+      become: false
 
     - name: Verify health endpoint
-      uri:
+      ansible.builtin.uri:
         url: "http://{{ ansible_default_ipv4.address | default('127.0.0.1') }}:{{ app_port }}/health"
         method: GET
         status_code: 200
@@ -45,17 +45,17 @@
       until: health_check.status == 200
       retries: 5
       delay: 3
-      ignore_errors: yes
-      become: no
+      ignore_errors: true
+      become: false
 
   rescue:
     - name: Log deployment failure
-      debug:
+      ansible.builtin.debug`:
         msg: "Deployment failed, check logs in /opt/{{ app_name }}/docker-compose.log"
 
   always:
     - name: Display health check result
-      debug:
+      ansible.builtin.debug`:
         msg: "Health check {{ 'succeeded' if health_check.status == 200 else 'failed' }} with status {{ health_check.status }}"
       when: health_check is defined
 
