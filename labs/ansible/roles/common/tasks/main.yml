@@ -1,16 +1,41 @@
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: System preparation
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      register: apt_update
 
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+      register: pkg_install
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Set timezone
+      timezone:
+        name: "{{ timezone }}"
+      when: timezone is defined
 
+  rescue:
+    - name: Fix apt cache on failure
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        update_cache_retries: 3
+        update_cache_retry_max_delay: 10
+      when: apt_update.failed or pkg_install.failed
+      register: apt_fix
+      failed_when: apt_fix.failed
 
-- name: Set timezone
-  timezone:
-    name: "{{ timezone }}"
-  when: timezone is defined
+  always:
+    - name: Log completion
+      file:
+        path: /tmp/ansible-common-complete
+        state: touch
+      changed_when: false
+
+  become: true
+  tags:
+    - common
+    - packages

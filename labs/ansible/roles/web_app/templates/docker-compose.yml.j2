@@ -1,0 +1,12 @@
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag | default("latest") }}
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port | default(app_port) }}"
+    environment:
+      {% for key, value in app_env.items() %}
+      - {{ key }}={{ value }}
+      {% endfor %}
+      - SECRET_KEY={{ app_secret_key | default("") }}
+    restart: {{ app_restart_policy | default("unless-stopped") }}

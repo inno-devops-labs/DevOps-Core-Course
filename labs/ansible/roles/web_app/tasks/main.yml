@@ -1,0 +1,55 @@
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  block:
+  
+    - name: Check if container exists and is managed by Compose
+      community.docker.docker_container_info:
+        name: "{{ app_name }}"
+      register: container_info
+      ignore_errors: yes
+
+    - name: Remove old container if it exists
+      community.docker.docker_container:
+        name: "{{ app_name }}"
+        state: absent
+      when:
+        - container_info.exists
+        - container_info.container is defined
+        - container_info.container.Config is defined
+        - container_info.container.Config.Labels is defined
+        - "'com.docker.compose.project' not in container_info.container.Config.Labels"
+
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Template docker-compose.yml
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: '0644'
+      register: compose_file
+
+    - name: Deploy with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: present
+        pull: missing
+        recreate: auto
+        remove_orphans: yes
+      register: compose_result
+
+  rescue:
+    - name: Handle deployment failure
+      debug:
+        msg: "Docker Compose deployment failed. Check logs on target."
+
+  tags:
+    - app_deploy
+    - compose

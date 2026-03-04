@@ -1,7 +1,11 @@
 app_image: "thevex/simple-app:latest"
 app_container_name: "simple-app"
-app_port: 5000
+app_port: 8000
+app_internal_port: 5000
 app_restart_policy: "unless-stopped"
+
+web_app_wipe: false
+web_app_wipe_remove_image: false
 app_env:
   ENVIRONMENT: "production"
   LOG_LEVEL: "info"
