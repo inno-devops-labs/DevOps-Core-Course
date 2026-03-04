@@ -56,15 +56,12 @@ jobs:
 
       - name: Install Ansible and dependencies
         run: |
-          if ! command -v ansible-playbook &> /dev/null; then
-            sudo apt-get update
-            sudo apt-get install -y ansible
-          fi
+          pip install ansible
 
       - name: Install required collections
         run: |
           ansible-galaxy collection install -r ansible/requirements.yml
-      
+
       - name: Setup SSH key
         env:
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -74,17 +71,23 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Create inventory
+        run: |
+          cat > ansible/inventory/hosts.ini << EOF
+          [lab04-vps]
+          ${{ secrets.VM_HOST }} ansible_user=root ansible_ssh_private_key_file=~/.ssh/id_ed25519
+          EOF
+
       - name: Deploy with Ansible
-        env:
-          VM_HOST: ${{ secrets.VM_HOST }}
         run: |
           cd ansible
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          printf '%s' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+          chmod 600 .vault_pass
           ansible-playbook playbooks/deploy_python.yml \
-            --vault-password-file /tmp/vault_pass
-          rm /tmp/vault_pass
+            --vault-password-file .vault_pass
+          rm -f .vault_pass
 
       - name: Verify deployment
         run: |
           sleep 10
-          curl -f http://localhost:8000 || exit 1
+          curl -f http://${{ secrets.VM_HOST }}:8000 || exit 1
