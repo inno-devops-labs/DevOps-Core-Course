@@ -974,11 +974,10 @@ Workflow writes vault password to temp file and deletes it in cleanup step.
 Workflow excludes docs-only changes in `labs/ansible/docs/**`, reducing unnecessary runs.
 
 ### 4.4 Verification
-Deployment job checks:
-```bash
-curl -f http://${VM_HOST}:8000
-curl -f http://${VM_HOST}:8000/health
-```
+![](./screenshots/lab6/succ-cicd.png)
+![](./screenshots/lab6/ansible-lint-pass.png)
+![](./screenshots/lab6/play-book-exec.png)
+![]
 
 ### 4.5 Research answers (Task 4)
 1. **Risks of SSH keys in GitHub Secrets:**  
@@ -1011,14 +1010,11 @@ Repeated runs of provision/deploy show transition from `changed` to mostly `ok` 
 ### Accessibility
 Verification endpoint used:
 ```bash
-curl http://<vm_host>:8000/health
+curl http://<vm_host>:8080/health
 ```
 Expected status: `200`.
 
-### Evidence attachments
-- Tagged execution logs: included in terminal output section above
-- Screenshots directory: `ansible/docs/screenshots/lab6/`
-- Existing screenshot: `ansible/docs/screenshots/lab6/image.png`
+
 
 ---
 
