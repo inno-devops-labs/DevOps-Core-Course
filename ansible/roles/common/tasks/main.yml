@@ -1,48 +1,76 @@
 ---
-- name: Force apt to use IPv4 only (avoids IPv6 "Network is unreachable" on some clouds)
-  ansible.builtin.copy:
-    content: 'Acquire::ForceIPv4 "true";'
-    dest: /etc/apt/apt.conf.d/99force-ipv4
-    owner: root
-    group: root
-    mode: "0644"
-  when: use_yandex_mirror | default(false) | bool
+# Package installation block with error handling
+- name: Install packages and configure system
+  block:
+    - name: Force apt to use IPv4 only
+      ansible.builtin.copy:
+        content: 'Acquire::ForceIPv4 "true";'
+        dest: /etc/apt/apt.conf.d/99force-ipv4
+        owner: root
+        group: root
+        mode: "0644"
+      when: use_yandex_mirror | default(false) | bool
 
-- name: Configure Yandex mirror for Ubuntu (when use_yandex_mirror)
-  ansible.builtin.template:
-    src: sources.list.yandex.j2
-    dest: /etc/apt/sources.list
-    owner: root
-    group: root
-    mode: "0644"
-  when: use_yandex_mirror | default(false) | bool
+    - name: Configure Yandex mirror for Ubuntu
+      ansible.builtin.template:
+        src: sources.list.yandex.j2
+        dest: /etc/apt/sources.list
+        owner: root
+        group: root
+        mode: "0644"
+      when: use_yandex_mirror | default(false) | bool
 
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
-    update_cache_retries: 10
-    update_cache_retry_max_delay: 30
-  register: apt_update
-  ignore_errors: true
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        update_cache_retries: 10
+        update_cache_retry_max_delay: 30
 
-- name: Capture real apt-get update error when cache update failed
-  ansible.builtin.shell: apt-get update 2>&1
-  register: apt_get_update_result
-  changed_when: false
-  failed_when: false
-  when: apt_update is failed
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
-- name: Fail with real apt error so you can fix VM network/DNS
-  ansible.builtin.fail:
-    msg: "apt cache update failed. Run 'sudo apt-get update' on the VM to see details. Captured: {{ apt_get_update_result.stdout }}"
-  when: apt_update is failed
+  rescue:
+    - name: Attempt apt-get update --fix-missing on failure
+      ansible.builtin.shell: apt-get update --fix-missing 2>&1
+      register: apt_fix_result
+      changed_when: false
+      failed_when: false
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Retry installing common packages after fix
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
-- name: Set timezone
-  community.general.timezone:
-    name: "{{ timezone }}"
+  always:
+    - name: Log package installation completion
+      ansible.builtin.copy:
+        content: "common role packages block completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible_common_packages.log
+        mode: "0644"
+
+  become: true
+  tags:
+    - packages
+    - common
+
+# User and system configuration block
+- name: Configure users and system settings
+  block:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+
+  always:
+    - name: Log user configuration completion
+      ansible.builtin.copy:
+        content: "common role users block completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible_common_users.log
+        mode: "0644"
+
+  become: true
+  tags:
+    - users
+    - common

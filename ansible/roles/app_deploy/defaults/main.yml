@@ -1,5 +1,0 @@
----
-app_port: 5001
-app_container_port: 5001
-app_restart_policy: unless-stopped
-app_env: {}

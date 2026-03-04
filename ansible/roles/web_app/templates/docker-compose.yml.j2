@@ -1,0 +1,15 @@
+---
+# version is obsolete in Compose V2, omitted to avoid warning
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag }}
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+{% if app_env and app_env | length > 0 %}
+    environment:
+{% for key, value in app_env.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+    restart: {{ app_restart_policy }}

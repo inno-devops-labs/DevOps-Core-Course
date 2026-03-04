@@ -6,9 +6,9 @@
 dockerhub_username: your-dockerhub-username
 dockerhub_password: your-dockerhub-password-or-access-token
 
-# Application use dockerhub_username
-app_name: devops-info-service
-docker_image: "{{ dockerhub_username }}/{{ app_name }}"
-docker_image_tag: latest
-app_port: 5001
-app_container_name: devops-app
+# Application configuration
+app_name: devops-app
+docker_image: "{{ dockerhub_username }}/devops-info-service"
+docker_tag: latest
+app_port: 8000
+app_internal_port: 5001
