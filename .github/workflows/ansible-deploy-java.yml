@@ -75,10 +75,11 @@ jobs:
 
       - name: Create inventory
         run: |
-          cat > ansible/inventory/hosts.ini << EOF
-          [lab04-vps]
+          cat > ansible/inventory/hosts.ini << 'EOF'
+          [webservers]
           ${{ secrets.VM_HOST }} ansible_user=root ansible_ssh_private_key_file=~/.ssh/id_ed25519
           EOF
+          sed -i 's/^[[:space:]]*//' ansible/inventory/hosts.ini
 
       - name: Deploy with Ansible
         run: |
