@@ -18,21 +18,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
-
-          # Write private key from GitHub Secrets (remove CRLF if present)
           printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          # SSH config: use this key, disable host key prompts (CI-friendly)
           cat > ~/.ssh/config <<'EOF'
           Host *
             IdentityFile ~/.ssh/id_ed25519
             IdentitiesOnly yes
             StrictHostKeyChecking no
-            UserKnownHostsFile /dev/null
+            UserKnownHostsFile=/dev/null
           EOF
 
-          # Optional: attempt to prefetch host key, but do not fail if blocked
           ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Install Ansible
@@ -50,6 +46,20 @@ jobs:
           set -euo pipefail
           printf '%s\n' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
           chmod 600 /tmp/vault_pass
+
+      - name: Network debug (runner -> VM)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "VM_HOST=${{ secrets.VM_HOST }}"
+          sudo apt-get update >/dev/null
+          sudo apt-get install -y netcat-openbsd >/dev/null
+
+          echo "[1] TCP 22 check"
+          nc -vz -w 5 "${{ secrets.VM_HOST }}" 22 || true
+
+          echo "[2] TCP 5000 check"
+          nc -vz -w 5 "${{ secrets.VM_HOST }}" 5000 || true
 
       - name: Run Ansible deploy
         shell: bash
