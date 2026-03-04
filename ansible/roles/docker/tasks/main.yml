@@ -1,52 +1,32 @@
 ---
-- name: Install prerequisites for Docker repo
-  ansible.builtin.apt:
-    name:
-      - ca-certificates
-      - curl
-      - gnupg
-    state: present
-    update_cache: yes
+- name: Docker | Install
+  block:
+    - name: Include docker install tasks
+      ansible.builtin.import_tasks: ../docker_install/main.yml
+  rescue:
+    - name: Docker | Retry apt update after failure
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+  always:
+    - name: Docker | Mark install block done
+      ansible.builtin.file:
+        path: /tmp/docker_install_done
+        state: touch
+  become: true
+  tags:
+    - docker
+    - docker_install
 
-- name: Ensure /etc/apt/keyrings exists
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: "0755"
-
-- name: Add Docker GPG key
-  ansible.builtin.get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker.asc
-    mode: "0644"
-
-- name: Map architecture for Docker repo
-  ansible.builtin.set_fact:
-    docker_repo_arch: >-
-      {{ 'amd64' if ansible_architecture in ['x86_64', 'amd64'] else
-         'arm64' if ansible_architecture in ['aarch64', 'arm64'] else ansible_architecture }}
-
-- name: Add Docker repository
-  ansible.builtin.apt_repository:
-    repo: "deb [arch={{ docker_repo_arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
-  notify: Restart Docker
-
-- name: Install Docker packages
-  ansible.builtin.apt:
-    name: "{{ docker_packages }}"
-    state: present
-    update_cache: yes
-  notify: Restart Docker
-
-- name: Ensure Docker service is enabled and running
-  ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: yes
-
-- name: Add user to docker group
-  ansible.builtin.user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+- name: Docker | Config
+  block:
+    - name: Include docker config tasks
+      ansible.builtin.import_tasks: ../docker_config/main.yml
+  always:
+    - name: Docker | Mark config block done
+      ansible.builtin.file:
+        path: /tmp/docker_config_done
+        state: touch
+  become: true
+  tags:
+    - docker
+    - docker_config

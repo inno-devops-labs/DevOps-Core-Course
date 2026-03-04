@@ -1,0 +1,12 @@
+---
+- name: Web app | Stop and remove compose project
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    state: absent
+    remove_volumes: true
+  ignore_errors: true
+
+- name: Web app | Remove project directory
+  ansible.builtin.file:
+    path: "{{ compose_project_dir }}"
+    state: absent

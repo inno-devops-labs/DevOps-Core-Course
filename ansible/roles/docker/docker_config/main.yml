@@ -1,0 +1,12 @@
+---
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: "{{ docker_user | default('ubuntu') }}"
+    groups: docker
+    append: yes
+
+- name: Install python docker SDK (required for docker_* modules)
+  ansible.builtin.apt:
+    name: python3-docker
+    state: present
+    update_cache: yes

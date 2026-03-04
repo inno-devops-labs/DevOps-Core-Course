@@ -1,0 +1,5 @@
+---
+- name: Ensure remote user exists
+  ansible.builtin.user:
+    name: "{{ ansible_user | default('ubuntu') }}"
+    state: present

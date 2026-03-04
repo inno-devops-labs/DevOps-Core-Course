@@ -14,7 +14,7 @@
           - dockerhub_password is defined
           - docker_image is defined
           - app_container_name is defined
-        fail_msg: "Vault vars were not loaded. Check vault_password_file / path to group_vars/all.yml."
+        fail_msg: "Vault vars were not loaded."
 
   roles:
-    - app_deploy
+    - web_app
