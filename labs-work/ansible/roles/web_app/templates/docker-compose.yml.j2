@@ -1,0 +1,9 @@
+services:
+  {{ web_app_name }}:
+    image: {{ web_app_image }}:{{ web_app_tag }}
+    container_name: {{ web_app_name }}
+    restart: {{ web_app_restart_policy }}
+    ports:
+      - "{{ web_app_port }}:{{ web_app_internal_port }}"
+    labels:
+      managed-by: ansible
