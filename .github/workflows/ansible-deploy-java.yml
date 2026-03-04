@@ -56,8 +56,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Ansible and dependencies
+        run: |
+          if ! command -v ansible-playbook &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y python3-pip python3-venv
+            python3 -m pip install --user ansible
+            export PATH="$HOME/.local/bin:$PATH"
+          fi
+
+      - name: Install required collections
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          ansible-galaxy collection install -r ansible/requirements.yml
+
       - name: Deploy with Ansible
         run: |
+          export PATH="$HOME/.local/bin:$PATH"
           cd ansible
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
           ansible-playbook playbooks/deploy_java.yml \
