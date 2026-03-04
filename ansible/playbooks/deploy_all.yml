@@ -1,0 +1,29 @@
+---
+- name: Deploy All Applications
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+
+  tasks:
+    - name: Deploy Python App
+      include_role:
+        name: web_app
+      vars:
+        app_name: devops-python-app
+        docker_image: karishka1222/devops-python-app
+        docker_tag: latest
+        app_port: 5000
+        app_internal_port: 5000
+        compose_project_dir: /opt/devops-python-app
+
+    - name: Deploy Go App
+      include_role:
+        name: web_app
+      vars:
+        app_name: devops-go
+        docker_image: karishka1222/devops-go-app
+        docker_tag: latest
+        app_port: 8001
+        app_internal_port: 8080
+        compose_project_dir: /opt/devops-go

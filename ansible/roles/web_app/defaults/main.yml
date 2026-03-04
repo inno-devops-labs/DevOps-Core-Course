@@ -1,0 +1,15 @@
+---
+app_name: devops-python
+docker_image: karishka1222/devops-python-app
+docker_tag: latest
+app_port: 5000
+app_internal_port: 5000
+app_restart_policy: unless-stopped
+
+compose_project_dir: "/opt/{{ app_name }}"
+
+app_env:
+  HOST: "0.0.0.0"
+  PORT: "{{ app_internal_port }}"
+
+web_app_wipe: false

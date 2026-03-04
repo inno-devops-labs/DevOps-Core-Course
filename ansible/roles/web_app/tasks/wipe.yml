@@ -1,0 +1,40 @@
+---
+- name: Wipe web application
+  block:
+    - name: Check if app directory exists
+      stat:
+        path: "{{ compose_project_dir }}"
+      register: compose_dir_stat
+
+    - name: Stop and remove containers via compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: absent
+      when: compose_dir_stat.stat.isdir | default(false)
+      ignore_errors: yes
+
+    - name: Remove docker-compose file
+      file:
+        path: "{{ compose_project_dir }}/docker-compose.yml"
+        state: absent
+
+    - name: Remove application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: absent
+
+    - name: Remove Docker image
+      community.docker.docker_image:
+        name: "{{ docker_image }}:{{ docker_tag }}"
+        state: absent
+        force_absent: yes
+      ignore_errors: yes
+
+    - name: Log wipe completion
+      debug:
+        msg: "Application {{ app_name }} wiped successfully"
+
+  when: web_app_wipe | bool
+  become: true
+  tags:
+    - web_app_wipe

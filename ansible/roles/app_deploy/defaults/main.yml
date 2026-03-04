@@ -1,7 +1,0 @@
----
-app_port: 5000
-app_restart_policy: unless-stopped
-
-app_env:
-  HOST: "0.0.0.0"
-  PORT: "5000"

@@ -35,7 +35,13 @@ security_group = yandex.VpcSecurityGroup(
             protocol="TCP",
             port=5000,
             v4_cidr_blocks=["0.0.0.0/0"],
-            description="App port",
+            description="Python app",
+        ),
+        yandex.VpcSecurityGroupIngressArgs(
+            protocol="TCP",
+            port=8001,
+            v4_cidr_blocks=["0.0.0.0/0"],
+            description="Go/bonus app",
         ),
     ],
     egresses=[

@@ -6,6 +6,12 @@
     - ../group_vars/all.yml
 
   roles:
-    - common
-    - docker
-    - app_deploy
+    - role: common
+      tags:
+        - common
+    - role: docker
+      tags:
+        - docker
+    - role: web_app
+      tags:
+        - app_deploy

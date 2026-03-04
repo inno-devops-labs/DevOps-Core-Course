@@ -1,0 +1,8 @@
+# Same app/path as deploy.yml and deploy_all (Python app) for consistent deploy and wipe
+---
+app_name: devops-python-app
+docker_image: karishka1222/devops-python-app
+docker_tag: latest
+app_port: 5000
+app_internal_port: 5000
+compose_project_dir: /opt/devops-python-app
