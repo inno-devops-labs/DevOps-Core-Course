@@ -1,0 +1,45 @@
+name: lab06-ansible-deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["lab06"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Prepare vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Run Ansible deploy
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy.yml \
+            --vault-password-file /tmp/vault_pass \
+            -i inventory/hosts.ini
+
+      - name: Health check
+        run: |
+          curl -fsS "http://${{ secrets.VM_HOST }}:5000/health"
