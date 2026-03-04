@@ -1,5 +1,5 @@
 ---
-# Python application variables
+# Python application variables:
 app_name: devops-python
 docker_image: nexonm22/devops-info-service
 docker_tag: latest
