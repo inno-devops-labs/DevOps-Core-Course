@@ -17,9 +17,7 @@ jobs:
       - name: Install Ansible and dependencies
         run: |
           sudo apt update
-          sudo apt install -y ansible python3-docker python3-pip
-          pip3 install docker-compose
-          pip3 install docker
+          sudo apt install -y ansible python3-docker python3-pip docker-compose-v2
 
       - name: Deploy with Ansible
         env:
