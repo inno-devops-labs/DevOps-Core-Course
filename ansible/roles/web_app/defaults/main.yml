@@ -1,0 +1,21 @@
+---
+# Application Configuration
+app_name: devops-app
+docker_image: aezuraa/devops-info-service
+docker_tag: python
+app_port: 8000
+app_internal_port: 8080
+app_restart_policy: unless-stopped
+
+# Docker Compose Config
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Application Environment
+app_env_vars:
+  HOST: "0.0.0.0"
+  PORT: "{{ app_internal_port }}"
+
+# Wipe Logic Control — requires BOTH variable=true AND --tags web_app_wipe
+# Wipe only:     ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install:  ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

@@ -1,0 +1,82 @@
+name: Ansible Deployment (Go Bonus)
+
+on:
+  push:
+    branches: [master, lab06]
+    paths:
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/playbooks/deploy_bonus.yml'
+      - 'ansible/roles/web_app/**'
+      - '.github/workflows/ansible-deploy-bonus.yml'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/playbooks/deploy_bonus.yml'
+      - 'ansible/roles/web_app/**'
+
+concurrency:
+  group: ansible-deploy-bonus-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/deploy_bonus.yml roles/web_app/tasks/*.yml
+
+  deploy:
+    name: Deploy Go Bonus Application
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy with Ansible
+        run: |
+          cd ansible
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          ansible-playbook playbooks/deploy_bonus.yml \
+            -i inventory/hosts.ini \
+            --vault-password-file /tmp/vault_pass
+          rm -f /tmp/vault_pass
+
+      - name: Verify Deployment
+        run: |
+          sleep 10
+          curl -f http://${{ secrets.VM_HOST }}:8001 || exit 1
+          curl -f http://${{ secrets.VM_HOST }}:8001/health || exit 1

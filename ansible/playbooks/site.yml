@@ -4,6 +4,9 @@
   become: yes
 
   roles:
-    - common
-    - docker
-    - app_deploy
+    - role: common
+      tags: [common]
+    - role: docker
+      tags: [docker]
+    - role: web_app
+      tags: [web_app]

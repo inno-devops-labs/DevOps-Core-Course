@@ -1,0 +1,7 @@
+---
+app_name: devops-go
+docker_image: aezuraa/devops-info-service
+docker_tag: go
+app_port: 8001
+app_internal_port: 8080
+compose_project_dir: "/opt/{{ app_name }}"
