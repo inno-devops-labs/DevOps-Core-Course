@@ -1,6 +1,9 @@
 ---
-# Docker installation with error handling
 - name: Install Docker
+  become: true
+  tags:
+    - docker_install
+    - docker
   block:
     - name: Install prerequisites for Docker repository
       ansible.builtin.apt:
@@ -35,7 +38,7 @@
       ansible.builtin.apt:
         name: "{{ docker_packages }}"
         state: present
-        update_cache: yes
+        update_cache: true
       notify: Restart docker
 
   rescue:
@@ -44,14 +47,16 @@
         seconds: 10
 
     - name: Retry apt update after GPG key failure
-      ansible.builtin.command:
-        cmd: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
+      changed_when: true
 
     - name: Retry Docker installation
       ansible.builtin.apt:
         name: "{{ docker_packages }}"
         state: present
-        update_cache: yes
+        update_cache: true
       notify: Restart docker
 
   always:
@@ -59,29 +64,22 @@
       ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
-      ignore_errors: yes
+        enabled: true
+      failed_when: false
 
+- name: Configure Docker
   become: true
   tags:
-    - docker_install
+    - docker_config
     - docker
-
-# Docker configuration (user access, Python SDK)
-- name: Configure Docker
   block:
     - name: Add user to docker group
       ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
-        append: yes
+        append: true
 
     - name: Install python3-docker for Ansible docker modules
       ansible.builtin.apt:
         name: python3-docker
         state: present
-
-  become: true
-  tags:
-    - docker_config
-    - docker

@@ -1,12 +1,14 @@
 ---
-# Wipe logic runs first (when explicitly requested)
 - name: Include wipe tasks
   ansible.builtin.include_tasks: wipe.yml
   tags:
     - web_app_wipe
 
-# Deploy application with Docker Compose
 - name: Deploy application with Docker Compose
+  become: true
+  tags:
+    - app_deploy
+    - compose
   block:
     - name: Create app directory
       ansible.builtin.file:
@@ -19,28 +21,31 @@
         src: docker-compose.yml.j2
         dest: "{{ compose_project_dir }}/docker-compose.yml"
         mode: "0644"
-      register: compose_template
+      register: web_app_compose_template
 
     - name: Log in to Docker Hub
       community.docker.docker_login:
         username: "{{ dockerhub_username }}"
         password: "{{ dockerhub_password }}"
       no_log: true
-      ignore_errors: yes
+      failed_when: false
 
     - name: Pull latest image
       ansible.builtin.command:
         cmd: docker compose pull
         chdir: "{{ compose_project_dir }}"
-      register: pull_result
-      changed_when: "'Pull complete' in pull_result.stdout or 'Downloaded' in pull_result.stderr"
+      register: web_app_pull_result
+      changed_when: "'Pull complete' in web_app_pull_result.stdout or 'Downloaded' in web_app_pull_result.stderr"
 
     - name: Deploy with docker compose
       ansible.builtin.command:
         cmd: docker compose up -d --remove-orphans
         chdir: "{{ compose_project_dir }}"
-      register: compose_result
-      changed_when: "'Started' in compose_result.stderr or 'Created' in compose_result.stderr or compose_template.changed"
+      register: web_app_compose_result
+      changed_when: >
+        'Started' in web_app_compose_result.stderr
+        or 'Created' in web_app_compose_result.stderr
+        or web_app_compose_template.changed
 
     - name: Wait for application to be ready
       ansible.builtin.wait_for:
@@ -52,15 +57,15 @@
     - name: Verify health endpoint
       ansible.builtin.uri:
         url: "http://127.0.0.1:{{ app_port }}/health"
-        return_content: yes
+        return_content: true
         status_code: 200
-      register: health_check
+      register: web_app_health_check
       retries: 3
       delay: 5
 
     - name: Display health check result
       ansible.builtin.debug:
-        var: health_check.json
+        var: web_app_health_check.json
 
   rescue:
     - name: Handle deployment failure
@@ -71,15 +76,11 @@
       ansible.builtin.command:
         cmd: docker compose logs --tail=50
         chdir: "{{ compose_project_dir }}"
-      register: compose_logs
-      ignore_errors: yes
+      register: web_app_compose_logs
+      changed_when: false
+      failed_when: false
 
     - name: Display compose logs
       ansible.builtin.debug:
-        var: compose_logs.stdout_lines
-      when: compose_logs is defined
-
-  become: true
-  tags:
-    - app_deploy
-    - compose
+        var: web_app_compose_logs.stdout_lines
+      when: web_app_compose_logs is defined

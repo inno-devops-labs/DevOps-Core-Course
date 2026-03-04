@@ -1,7 +1,7 @@
 ---
 - name: Deploy Python Application
   hosts: webservers
-  become: yes
+  become: true
   vars_files:
     - ../vars/app_python.yml
 

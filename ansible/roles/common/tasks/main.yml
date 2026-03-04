@@ -1,10 +1,13 @@
 ---
-# Package installation with error handling
 - name: Install system packages
+  become: true
+  tags:
+    - packages
+    - common
   block:
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
@@ -14,8 +17,10 @@
 
   rescue:
     - name: Fix apt cache and retry
-      ansible.builtin.command:
-        cmd: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
+      changed_when: true
 
     - name: Retry package installation
       ansible.builtin.apt:
@@ -29,13 +34,11 @@
         dest: /tmp/ansible_common_packages.log
         mode: "0644"
 
+- name: Configure users and system
   become: true
   tags:
-    - packages
+    - users
     - common
-
-# User and system configuration
-- name: Configure users and system
   block:
     - name: Set timezone
       community.general.timezone:
@@ -51,7 +54,7 @@
         name: "{{ deploy_user | default('deploy') }}"
         group: deploy
         shell: /bin/bash
-        create_home: yes
+        create_home: true
         state: present
 
   always:
@@ -60,8 +63,3 @@
         content: "User configuration completed at {{ ansible_date_time.iso8601 }}"
         dest: /tmp/ansible_common_users.log
         mode: "0644"
-
-  become: true
-  tags:
-    - users
-    - common
