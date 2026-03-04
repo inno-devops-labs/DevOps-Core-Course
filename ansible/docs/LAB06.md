@@ -14,7 +14,7 @@ All three roles (`common`, `docker`, `web_app`) were refactored to use Ansible b
 
 #### `common` role
 
-- **`packages` block**: groups apt mirror configuration, cache update, and package installation. `rescue` runs `apt-get update --fix-missing` if the block fails and retries. `always` logs completion to `/tmp/ansible_common_packages.log`.
+- **`packages` block**: groups apt mirror configuration, cache update, and package installation. `rescue` retries Apt cache update (apt module) if the block fails, then retries package install. `always` logs completion to `/tmp/ansible_common_packages.log`.
 - **`users` block**: groups timezone setup. `always` logs completion.
 - Tags: `packages`, `users`, `common`.
 
@@ -53,11 +53,108 @@ ansible-playbook playbooks/provision.yml --tags "docker" --ask-vault-pass
 ansible-playbook playbooks/provision.yml --skip-tags "common" --ask-vault-pass
 
 # List all tags
-ansible-playbook playbooks/deploy.yml --list-tags
+ansible-playbook playbooks/deploy.yml --list-tags --ask-vault-pass
 ```
+```bash
+Vault password: 
 
-> **TODO**: Paste terminal outputs here after running on VM.
+PLAY [Provision web servers] *****************************************************************************************************************************************
 
+TASK [Gathering Facts] ***********************************************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Install dependencies for Docker] **********************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker GPG key] ***********************************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker repository] ********************************************************************************************************************************
+[WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+[DEPRECATION WARNING]: INJECT_FACTS_AS_VARS default to `True` is deprecated, top-level facts will not be auto injected after the change. This feature will be removed from ansible-core version 2.24.
+Origin: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/docker/tasks/main.yml:23:15
+
+21     - name: Add Docker repository
+22       ansible.builtin.apt_repository:
+23         repo: >-
+                 ^ column 15
+
+Use `ansible_facts["fact_name"]` (no `ansible_` prefix) instead.
+
+ok: [web1]
+
+TASK [docker : Update Apt cache after adding Docker repo] ************************************************************************************************************
+changed: [web1]
+
+TASK [docker : Install Docker packages] ******************************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Ensure Docker service is enabled and started] *********************************************************************************************************
+ok: [web1]
+
+TASK [docker : Add remote user to docker group] **********************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Install python3-docker for Ansible Docker modules] ****************************************************************************************************
+ok: [web1]
+
+PLAY RECAP ***********************************************************************************************************************************************************
+web1                       : ok=9    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+zsh: command not found: #
+Vault password: 
+
+PLAY [Provision web servers] *****************************************************************************************************************************************
+
+TASK [Gathering Facts] ***********************************************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Install dependencies for Docker] **********************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker GPG key] ***********************************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker repository] ********************************************************************************************************************************
+[WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+[DEPRECATION WARNING]: INJECT_FACTS_AS_VARS default to `True` is deprecated, top-level facts will not be auto injected after the change. This feature will be removed from ansible-core version 2.24.
+Origin: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/docker/tasks/main.yml:23:15
+
+21     - name: Add Docker repository
+22       ansible.builtin.apt_repository:
+23         repo: >-
+                 ^ column 15
+
+Use `ansible_facts["fact_name"]` (no `ansible_` prefix) instead.
+
+ok: [web1]
+
+TASK [docker : Update Apt cache after adding Docker repo] ************************************************************************************************************
+changed: [web1]
+
+TASK [docker : Install Docker packages] ******************************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Ensure Docker service is enabled and started] *********************************************************************************************************
+ok: [web1]
+
+TASK [docker : Add remote user to docker group] **********************************************************************************************************************
+ok: [web1]
+
+TASK [docker : Install python3-docker for Ansible Docker modules] ****************************************************************************************************
+ok: [web1]
+
+PLAY RECAP ***********************************************************************************************************************************************************
+web1                       : ok=9    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+zsh: command not found: #
+Vault password: 
+
+playbook: playbooks/deploy.yml
+
+  play #1 (webservers): Deploy application      TAGS: []
+      TASK TAGS: [app_deploy, compose, docker, docker_config, docker_install, web_app_wipe]
+```
 ### Research Questions
 
 **Q: What happens if rescue block also fails?**
@@ -115,7 +212,7 @@ services:
 | `docker_image` | from vault | Docker Hub image |
 | `docker_tag` | `latest` | Image version |
 | `app_port` | `8000` | Host port |
-| `app_internal_port` | `8000` | Container port |
+| `app_internal_port` | `5001` | Container port (Python app listens on 5001) |
 | `compose_project_dir` | `/opt/{{ app_name }}` | Directory for compose file |
 | `web_app_wipe` | `false` | Wipe control flag |
 
@@ -129,12 +226,213 @@ ansible-playbook playbooks/deploy.yml --ask-vault-pass
 ansible-playbook playbooks/deploy.yml --ask-vault-pass
 
 # Verify
-ssh ubuntu@<VM_IP> "docker ps"
-curl http://<VM_IP>:8000/health
+ssh ubuntu@<VM IP> "docker ps"
+curl http://<VM IP>:8000/health
 ```
 
-> **TODO**: Paste terminal outputs and verify idempotency.
+```bash
+Vault password: 
 
+PLAY [Deploy application] **********************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************
+ok: [web1]
+
+TASK [docker : Install dependencies for Docker] ************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker GPG key] *************************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker repository] **********************************************************************
+[WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+[DEPRECATION WARNING]: INJECT_FACTS_AS_VARS default to `True` is deprecated, top-level facts will not be auto injected after the change. This feature will be removed from ansible-core version 2.24.
+Origin: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/docker/tasks/main.yml:23:15
+
+21     - name: Add Docker repository
+22       ansible.builtin.apt_repository:
+23         repo: >-
+                 ^ column 15
+
+Use `ansible_facts["fact_name"]` (no `ansible_` prefix) instead.
+
+ok: [web1]
+
+TASK [docker : Update Apt cache after adding Docker repo] **************************************************
+changed: [web1]
+
+TASK [docker : Install Docker packages] ********************************************************************
+ok: [web1]
+
+TASK [docker : Ensure Docker service is enabled and started] ***********************************************
+ok: [web1]
+
+TASK [docker : Add remote user to docker group] ************************************************************
+ok: [web1]
+
+TASK [docker : Install python3-docker for Ansible Docker modules] ******************************************
+ok: [web1]
+
+TASK [web_app : Include wipe tasks] ************************************************************************
+included: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for web1
+
+TASK [web_app : Stop and remove containers via docker compose] *********************************************
+skipping: [web1]
+
+TASK [web_app : Remove docker-compose file] ****************************************************************
+skipping: [web1]
+
+TASK [web_app : Remove application directory] **************************************************************
+skipping: [web1]
+
+TASK [web_app : Remove Docker image (optional cleanup)] ****************************************************
+skipping: [web1]
+
+TASK [web_app : Log wipe completion] ***********************************************************************
+skipping: [web1]
+
+TASK [web_app : Ensure Docker Hub credentials are set] *****************************************************
+ok: [web1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [web_app : Log in to Docker Hub] **********************************************************************
+ok: [web1]
+
+TASK [web_app : Create application directory] **************************************************************
+ok: [web1]
+
+TASK [web_app : Template docker-compose file] **************************************************************
+ok: [web1]
+
+TASK [web_app : Remove existing container with same name] **************************************************
+changed: [web1]
+
+TASK [web_app : Pull Docker image] *************************************************************************
+ok: [web1]
+
+TASK [web_app : Deploy with docker compose] ****************************************************************
+changed: [web1]
+
+TASK [web_app : Wait for application port] *****************************************************************
+ok: [web1]
+
+TASK [web_app : Pause for application to start listening] **************************************************
+Pausing for 5 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [web1]
+
+TASK [web_app : Check health endpoint] *********************************************************************
+ok: [web1]
+
+PLAY RECAP *************************************************************************************************
+web1                       : ok=20   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+
+zsh: missing end of string
+Vault password: 
+
+PLAY [Deploy application] **********************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************
+ok: [web1]
+
+TASK [docker : Install dependencies for Docker] ************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker GPG key] *************************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker repository] **********************************************************************
+[WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+[DEPRECATION WARNING]: INJECT_FACTS_AS_VARS default to `True` is deprecated, top-level facts will not be auto injected after the change. This feature will be removed from ansible-core version 2.24.
+Origin: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/docker/tasks/main.yml:23:15
+
+21     - name: Add Docker repository
+22       ansible.builtin.apt_repository:
+23         repo: >-
+                 ^ column 15
+
+Use `ansible_facts["fact_name"]` (no `ansible_` prefix) instead.
+
+ok: [web1]
+
+TASK [docker : Update Apt cache after adding Docker repo] **************************************************
+changed: [web1]
+
+TASK [docker : Install Docker packages] ********************************************************************
+ok: [web1]
+
+TASK [docker : Ensure Docker service is enabled and started] ***********************************************
+ok: [web1]
+
+TASK [docker : Add remote user to docker group] ************************************************************
+ok: [web1]
+
+TASK [docker : Install python3-docker for Ansible Docker modules] ******************************************
+ok: [web1]
+
+TASK [web_app : Include wipe tasks] ************************************************************************
+included: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for web1
+
+TASK [web_app : Stop and remove containers via docker compose] *********************************************
+skipping: [web1]
+
+TASK [web_app : Remove docker-compose file] ****************************************************************
+skipping: [web1]
+
+TASK [web_app : Remove application directory] **************************************************************
+skipping: [web1]
+
+TASK [web_app : Remove Docker image (optional cleanup)] ****************************************************
+skipping: [web1]
+
+TASK [web_app : Log wipe completion] ***********************************************************************
+skipping: [web1]
+
+TASK [web_app : Ensure Docker Hub credentials are set] *****************************************************
+ok: [web1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [web_app : Log in to Docker Hub] **********************************************************************
+ok: [web1]
+
+TASK [web_app : Create application directory] **************************************************************
+ok: [web1]
+
+TASK [web_app : Template docker-compose file] **************************************************************
+ok: [web1]
+
+TASK [web_app : Remove existing container with same name] **************************************************
+changed: [web1]
+
+TASK [web_app : Pull Docker image] *************************************************************************
+ok: [web1]
+
+TASK [web_app : Deploy with docker compose] ****************************************************************
+changed: [web1]
+
+TASK [web_app : Wait for application port] *****************************************************************
+ok: [web1]
+
+TASK [web_app : Pause for application to start listening] **************************************************
+Pausing for 5 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [web1]
+
+TASK [web_app : Check health endpoint] *********************************************************************
+ok: [web1]
+
+PLAY RECAP *************************************************************************************************
+web1                       : ok=20   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0
+
+
+CONTAINER ID   IMAGE                                 COMMAND           CREATED          STATUS                    PORTS                                         NAMES
+d3019061b43c   mirana18/devops-info-service:latest   "python app.py"   20 minutes ago   Up 20 minutes (healthy)   0.0.0.0:8000->5001/tcp, [::]:8000->5001/tcp   devops-app
+{"status":"healthy","timestamp":"2026-03-04T19:32:33.090645.000Z","uptime_seconds":1224.35}
+```
 ### Research Questions
 
 **Q: What's the difference between `restart: always` and `restart: unless-stopped`?**
@@ -173,12 +471,143 @@ ansible-playbook playbooks/deploy.yml --ask-vault-pass
 # Wipe tasks are skipped because web_app_wipe=false
 ```
 
+```bash
+Vault password: 
+
+PLAY [Deploy application] **********************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************
+ok: [web1]
+
+TASK [docker : Install dependencies for Docker] ************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker GPG key] *************************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker repository] **********************************************************************
+[WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+[DEPRECATION WARNING]: INJECT_FACTS_AS_VARS default to `True` is deprecated, top-level facts will not be auto injected after the change. This feature will be removed from ansible-core version 2.24.
+Origin: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/docker/tasks/main.yml:23:15
+
+21     - name: Add Docker repository
+22       ansible.builtin.apt_repository:
+23         repo: >-
+                 ^ column 15
+
+Use `ansible_facts["fact_name"]` (no `ansible_` prefix) instead.
+
+ok: [web1]
+
+TASK [docker : Update Apt cache after adding Docker repo] **************************************************
+changed: [web1]
+
+TASK [docker : Install Docker packages] ********************************************************************
+ok: [web1]
+
+TASK [docker : Ensure Docker service is enabled and started] ***********************************************
+ok: [web1]
+
+TASK [docker : Add remote user to docker group] ************************************************************
+ok: [web1]
+
+TASK [docker : Install python3-docker for Ansible Docker modules] ******************************************
+ok: [web1]
+
+TASK [web_app : Include wipe tasks] ************************************************************************
+included: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for web1
+
+TASK [web_app : Stop and remove containers via docker compose] *********************************************
+skipping: [web1]
+
+TASK [web_app : Remove docker-compose file] ****************************************************************
+skipping: [web1]
+
+TASK [web_app : Remove application directory] **************************************************************
+skipping: [web1]
+
+TASK [web_app : Remove Docker image (optional cleanup)] ****************************************************
+skipping: [web1]
+
+TASK [web_app : Log wipe completion] ***********************************************************************
+skipping: [web1]
+
+TASK [web_app : Ensure Docker Hub credentials are set] *****************************************************
+ok: [web1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [web_app : Log in to Docker Hub] **********************************************************************
+ok: [web1]
+
+TASK [web_app : Create application directory] **************************************************************
+ok: [web1]
+
+TASK [web_app : Template docker-compose file] **************************************************************
+ok: [web1]
+
+TASK [web_app : Remove existing container with same name] **************************************************
+changed: [web1]
+
+TASK [web_app : Pull Docker image] *************************************************************************
+ok: [web1]
+
+TASK [web_app : Deploy with docker compose] ****************************************************************
+changed: [web1]
+
+TASK [web_app : Wait for application port] *****************************************************************
+ok: [web1]
+
+TASK [web_app : Pause for application to start listening] **************************************************
+Pausing for 5 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [web1]
+
+TASK [web_app : Check health endpoint] *********************************************************************
+ok: [web1]
+
+PLAY RECAP *************************************************************************************************
+web1                       : ok=20   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0 
+```
+
 **Scenario 2: Wipe only**
 ```bash
 ansible-playbook playbooks/deploy.yml \
   -e "web_app_wipe=true" \
   --tags web_app_wipe --ask-vault-pass
 # Only wipe runs; deployment is skipped (tag not matched)
+```
+```bash
+Vault password: 
+
+PLAY [Deploy application] **********************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************
+ok: [web1]
+
+TASK [web_app : Include wipe tasks] ************************************************************************
+included: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for web1
+
+TASK [web_app : Stop and remove containers via docker compose] *********************************************
+changed: [web1]
+
+TASK [web_app : Remove docker-compose file] ****************************************************************
+changed: [web1]
+
+TASK [web_app : Remove application directory] **************************************************************
+changed: [web1]
+
+TASK [web_app : Remove Docker image (optional cleanup)] ****************************************************
+changed: [web1]
+
+TASK [web_app : Log wipe completion] ***********************************************************************
+ok: [web1] => {
+    "msg": "Application devops-app wiped successfully"
+}
+
+PLAY RECAP *************************************************************************************************
+web1                       : ok=7    changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
 
 **Scenario 3: Clean reinstall (wipe + deploy)**
@@ -188,13 +617,143 @@ ansible-playbook playbooks/deploy.yml \
 # Wipe runs first, then fresh deployment
 ```
 
+```bash
+Vault password: 
+
+PLAY [Deploy application] **********************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************
+ok: [web1]
+
+TASK [docker : Install dependencies for Docker] ************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker GPG key] *************************************************************************
+ok: [web1]
+
+TASK [docker : Add Docker repository] **********************************************************************
+[WARNING]: Deprecation warnings can be disabled by setting `deprecation_warnings=False` in ansible.cfg.
+[DEPRECATION WARNING]: INJECT_FACTS_AS_VARS default to `True` is deprecated, top-level facts will not be auto injected after the change. This feature will be removed from ansible-core version 2.24.
+Origin: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/docker/tasks/main.yml:23:15
+
+21     - name: Add Docker repository
+22       ansible.builtin.apt_repository:
+23         repo: >-
+                 ^ column 15
+
+Use `ansible_facts["fact_name"]` (no `ansible_` prefix) instead.
+
+ok: [web1]
+
+TASK [docker : Update Apt cache after adding Docker repo] **************************************************
+changed: [web1]
+
+TASK [docker : Install Docker packages] ********************************************************************
+ok: [web1]
+
+TASK [docker : Ensure Docker service is enabled and started] ***********************************************
+ok: [web1]
+
+TASK [docker : Add remote user to docker group] ************************************************************
+ok: [web1]
+
+TASK [docker : Install python3-docker for Ansible Docker modules] ******************************************
+ok: [web1]
+
+TASK [web_app : Include wipe tasks] ************************************************************************
+included: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for web1
+
+TASK [web_app : Stop and remove containers via docker compose] *********************************************
+ok: [web1]
+
+TASK [web_app : Remove docker-compose file] ****************************************************************
+ok: [web1]
+
+TASK [web_app : Remove application directory] **************************************************************
+ok: [web1]
+
+TASK [web_app : Remove Docker image (optional cleanup)] ****************************************************
+changed: [web1]
+
+TASK [web_app : Log wipe completion] ***********************************************************************
+ok: [web1] => {
+    "msg": "Application devops-app wiped successfully"
+}
+
+TASK [web_app : Ensure Docker Hub credentials are set] *****************************************************
+ok: [web1] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [web_app : Log in to Docker Hub] **********************************************************************
+ok: [web1]
+
+TASK [web_app : Create application directory] **************************************************************
+changed: [web1]
+
+TASK [web_app : Template docker-compose file] **************************************************************
+changed: [web1]
+
+TASK [web_app : Remove existing container with same name] **************************************************
+ok: [web1]
+
+TASK [web_app : Pull Docker image] *************************************************************************
+ok: [web1]
+
+TASK [web_app : Deploy with docker compose] ****************************************************************
+changed: [web1]
+
+TASK [web_app : Wait for application port] *****************************************************************
+ok: [web1]
+
+TASK [web_app : Pause for application to start listening] **************************************************
+Pausing for 5 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [web1]
+
+TASK [web_app : Check health endpoint] *********************************************************************
+ok: [web1]
+
+PLAY RECAP *************************************************************************************************
+web1                       : ok=25   changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
 **Scenario 4: Safety — tag without variable**
 ```bash
 ansible-playbook playbooks/deploy.yml --tags web_app_wipe --ask-vault-pass
 # Wipe tasks skipped by when condition (web_app_wipe=false)
 ```
 
-> **TODO**: Paste terminal outputs for all 4 scenarios.
+```bash
+Vault password: 
+
+PLAY [Deploy application] **********************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************
+ok: [web1]
+
+TASK [web_app : Include wipe tasks] ************************************************************************
+included: /Users/arinazimina/Library/Mobile Documents/com~apple~CloudDocs/Study/Third year/spring/DevOps/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for web1
+
+TASK [web_app : Stop and remove containers via docker compose] *********************************************
+skipping: [web1]
+
+TASK [web_app : Remove docker-compose file] ****************************************************************
+skipping: [web1]
+
+TASK [web_app : Remove application directory] **************************************************************
+skipping: [web1]
+
+TASK [web_app : Remove Docker image (optional cleanup)] ****************************************************
+skipping: [web1]
+
+TASK [web_app : Log wipe completion] ***********************************************************************
+skipping: [web1]
+
+PLAY RECAP *************************************************************************************************
+web1                       : ok=2    changed=0    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+```
 
 ### Research Questions
 
@@ -255,7 +814,7 @@ Added to `ansible/README.md`:
 [![Ansible Deployment](https://github.com/Arino4kaMyr/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)]
 ```
 
-> **TODO**: Configure GitHub Secrets in repo settings, push code, paste screenshot of passing workflow.
+![img](image.png)
 
 ### Research Questions
 
@@ -298,4 +857,3 @@ This file serves as the complete Lab 6 documentation.
 - Double-gating (variable + tag) prevents accidental destructive operations
 - CI/CD with path filters avoids unnecessary deployments
 
-> **TODO**: Add total time spent.

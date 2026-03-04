@@ -69,13 +69,23 @@ yandex.VpcSecurityGroupRule(
     v4_cidr_blocks=["0.0.0.0/0"]
 )
 
-# App port 5001 (devops-info-service from Ansible deploy)
+# App port 5001 (devops-info-service, legacy)
 yandex.VpcSecurityGroupRule(
     "app-5001-rule",
     security_group_binding=sg.id,
     direction="ingress",
     protocol="TCP",
     port=5001,
+    v4_cidr_blocks=["0.0.0.0/0"],
+)
+
+# App port 8000 (Lab 6: Docker Compose deploy)
+yandex.VpcSecurityGroupRule(
+    "app-8000-rule",
+    security_group_binding=sg.id,
+    direction="ingress",
+    protocol="TCP",
+    port=8000,
     v4_cidr_blocks=["0.0.0.0/0"],
 )
 
