@@ -1,10 +1,54 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+# Package installation with error handling
+- name: Install system packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix apt cache and retry
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: true
+
+    - name: Retry package installation
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log package installation completion
+      ansible.builtin.copy:
+        content: "Package installation completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/common_packages_done.log
+        mode: "0644"
+
+  become: true
+  tags:
+    - packages
+
+# User management
+- name: Manage system users
+  block:
+    - name: Ensure deploy user exists
+      ansible.builtin.user:
+        name: "{{ deploy_user }}"
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+    - name: Add deploy user to sudo group
+      ansible.builtin.user:
+        name: "{{ deploy_user }}"
+        groups: sudo
+        append: true
+
+  become: true
+  tags:
+    - users

@@ -4,6 +4,7 @@ docker_packages:
   - docker-ce
   - docker-ce-cli
   - containerd.io
+  - docker-compose-plugin
 
 docker_apt_arch_map:
   x86_64: amd64

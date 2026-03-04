@@ -1,0 +1,63 @@
+---
+# Wipe logic runs first (when explicitly requested)
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+# Deploy application with Docker Compose
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+      notify: restart app
+
+    - name: Log in to Docker Hub when credentials are provided
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+      no_log: true
+      when:
+        - dockerhub_username is defined
+        - dockerhub_password is defined
+        - dockerhub_username | length > 0
+        - dockerhub_password | length > 0
+
+    - name: Pull latest Docker image
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ compose_project_dir }}"
+      register: compose_pull
+      changed_when: "'Pull complete' in compose_pull.stderr or 'Downloaded' in compose_pull.stderr"
+
+    - name: Deploy with Docker Compose
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ compose_project_dir }}"
+      register: compose_up
+      changed_when: "'Started' in compose_up.stderr or 'Creating' in compose_up.stderr"
+
+    - name: Wait for application port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 60
+
+  rescue:
+    - name: Log deployment failure
+      ansible.builtin.debug:
+        msg: "Deployment of {{ app_name }} failed — check Docker Compose logs at {{ compose_project_dir }}"
+
+  tags:
+    - app_deploy
+    - compose

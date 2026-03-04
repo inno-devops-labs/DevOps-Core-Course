@@ -8,3 +8,5 @@ common_packages:
   - ca-certificates
   - gnupg
   - lsb-release
+
+deploy_user: deploy

@@ -1,0 +1,16 @@
+---
+version: "{{ docker_compose_version }}"
+
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag }}
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    environment:
+      APP_NAME: "{{ app_name }}"
+      APP_PORT: "{{ app_internal_port }}"
+{% if app_secret_key is defined %}
+      APP_SECRET_KEY: "{{ app_secret_key }}"
+{% endif %}
+    restart: unless-stopped
