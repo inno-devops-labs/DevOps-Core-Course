@@ -28,7 +28,7 @@
           {{ ansible_distribution_release }} stable
         state: present
         filename: docker
-      notify: restart docker
+      notify: Restart docker
 
     - name: Update Apt cache after adding Docker repo
       ansible.builtin.apt:
@@ -42,7 +42,7 @@
           - docker-ce-cli
           - containerd.io
         state: present
-      notify: restart docker
+      notify: Restart docker
 
   rescue:
     - name: Wait before retrying after GPG/network failure
