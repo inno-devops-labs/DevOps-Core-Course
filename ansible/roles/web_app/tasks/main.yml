@@ -1,0 +1,26 @@
+---
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  block:
+
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Copy docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+
+    - name: Start application
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: present
+
+  when: not (web_app_wipe | bool and 'web_app_wipe' in ansible_run_tags)
