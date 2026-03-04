@@ -6,7 +6,6 @@
 
 - name: Deploy application with Docker Compose
   block:
-
     - name: Create application directory
       file:
         path: "{{ compose_project_dir }}"
