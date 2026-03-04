@@ -1,0 +1,16 @@
+---
+# Ansible Galaxy collection requirements
+# Install with: ansible-galaxy collection install -r requirements.yml
+#
+# This file is used by the CI/CD workflow:
+#   ansible-galaxy collection install community.docker
+# and can be used locally too.
+
+collections:
+  - name: community.docker
+    version: ">=3.0.0"
+    # community.docker provides:
+    #   docker_compose_v2  — used in web_app role for deployment and wipe
+    #   docker_login       — used for Docker Hub authentication
+    #   docker_image       — used for image pull/remove operations
+    #   docker_container   — used in the legacy app_deploy role

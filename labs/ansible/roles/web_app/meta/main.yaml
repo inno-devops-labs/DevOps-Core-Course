@@ -1,0 +1,26 @@
+---
+# ──────────────────────────────────────────────────────────────
+# web_app role — meta (Task 2.4, Lab 6)
+#
+# Role dependencies declared here are automatically resolved and
+# executed BEFORE this role runs, even if the dependent role is
+# not listed in the playbook.
+#
+# Practical effect: running only `web_app` in deploy.yml is
+# sufficient — Ansible will first run the `docker` role to make
+# sure the daemon is installed and running.
+# ──────────────────────────────────────────────────────────────
+galaxy_info:
+  author: azizvundirov
+  description: Deploys a web application via Docker Compose
+  license: MIT
+  min_ansible_version: "2.16"
+
+dependencies:
+  - role: docker
+    # Why this dependency?
+    # web_app uses `community.docker.docker_compose_v2` which calls
+    # the Docker daemon.  If Docker is not installed the entire
+    # deployment would fail with "Cannot connect to the Docker daemon".
+    # Declaring it as a dependency ensures correct execution order
+    # regardless of what the caller puts in their playbook.
