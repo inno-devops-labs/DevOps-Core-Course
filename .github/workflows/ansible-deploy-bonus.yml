@@ -4,16 +4,16 @@ on:
   push:
     branches: [main, master, lab6]
     paths:
+      - 'ansible/.ansible-lint'
       - 'ansible/vars/app_bonus.yml'
       - 'ansible/playbooks/deploy_bonus.yml'
       - 'ansible/roles/web_app/**'
       - '.github/workflows/ansible-deploy-bonus.yml'
   pull_request:
-    branches: [main, master]
+    branches: [main, master, lab6]
     paths:
-      - 'ansible/vars/app_bonus.yml'
-      - 'ansible/playbooks/deploy_bonus.yml'
-      - 'ansible/roles/web_app/**'
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy-bonus.yml'
 
 jobs:
   lint:

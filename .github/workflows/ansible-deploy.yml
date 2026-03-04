@@ -4,19 +4,23 @@ on:
   push:
     branches: [main, master, lab6]
     paths:
+      - 'ansible/.ansible-lint'
+      - 'ansible/ansible.cfg'
       - 'ansible/vars/app_python.yml'
       - 'ansible/playbooks/deploy.yml'
       - 'ansible/playbooks/deploy_python.yml'
+      - 'ansible/playbooks/deploy_all.yml'
       - 'ansible/roles/web_app/**'
+      - 'ansible/roles/common/**'
+      - 'ansible/roles/docker/**'
       - 'ansible/group_vars/**'
+      - 'ansible/inventory/**'
       - '.github/workflows/ansible-deploy.yml'
   pull_request:
-    branches: [main, master]
+    branches: [main, master, lab6]
     paths:
-      - 'ansible/vars/app_python.yml'
-      - 'ansible/playbooks/deploy.yml'
-      - 'ansible/playbooks/deploy_python.yml'
-      - 'ansible/roles/web_app/**'
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
 
 jobs:
   lint:
