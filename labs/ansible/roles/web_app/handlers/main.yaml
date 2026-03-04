@@ -8,3 +8,4 @@
     project_src: "{{ web_app_compose_project_dir }}"
     state: restarted
   become: true
+  
