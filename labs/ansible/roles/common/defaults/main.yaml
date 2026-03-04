@@ -6,6 +6,6 @@ common_packages:
   - vim
   - htop
 
-system_timezone: "Etc/UTC"
+common_system_timezone: "{{ system_timezone | default('Etc/UTC') }}"
 
-deploy_user: "{{ ansible_user }}"
+common_deploy_user: "{{ deploy_user | default(ansible_user) }}"
