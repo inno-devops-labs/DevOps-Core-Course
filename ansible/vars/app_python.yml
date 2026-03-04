@@ -1,0 +1,8 @@
+---
+# Python application variables
+app_name: devops-python
+docker_image: nexonm22/devops-info-service
+docker_tag: latest
+app_port: 8000
+app_internal_port: 8000
+compose_project_dir: "/opt/{{ app_name }}"

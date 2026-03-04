@@ -1,0 +1,29 @@
+---
+- name: Deploy All Applications
+  hosts: webservers
+  become: yes
+  vars_files:
+    - ../group_vars/all.yml
+
+  tasks:
+    - name: Deploy Python App
+      include_role:
+        name: web_app
+      vars:
+        app_name: devops-python
+        docker_image: nexonm22/devops-info-service
+        docker_tag: latest
+        app_port: 8000
+        app_internal_port: 8000
+        compose_project_dir: /opt/devops-python
+
+    - name: Deploy Java App
+      include_role:
+        name: web_app
+      vars:
+        app_name: devops-java
+        docker_image: nexonm22/devops-info-service-java
+        docker_tag: latest
+        app_port: 8001
+        app_internal_port: 8080
+        compose_project_dir: /opt/devops-java

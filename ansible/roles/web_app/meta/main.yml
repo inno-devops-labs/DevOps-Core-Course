@@ -1,0 +1,4 @@
+---
+# Role dependencies
+dependencies:
+  - role: docker

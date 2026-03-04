@@ -1,0 +1,15 @@
+---
+# Default variables for web_app role
+
+# Application configuration
+app_name: devops-app
+app_port: 8000
+app_internal_port: 8000
+docker_tag: latest
+app_health_check_timeout: 60
+
+# Docker Compose configuration
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Wipe Logic Control
+web_app_wipe: false  # Default: do not wipe

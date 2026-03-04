@@ -1,16 +1,46 @@
 ---
 # Common system configuration tasks
 
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Package installation with error handling
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix apt cache on failure
+      command: apt-get update --fix-missing
+      changed_when: true
+
+    - name: Retry package installation
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log completion
+      copy:
+        content: "Common role completed at {{ ansible_date_time.iso8601 }}"
+        dest: /tmp/common_role_complete
+        mode: '0644'
+
+  become: true
+  tags:
+    - common
+    - packages
 
 - name: Set timezone
-  timezone:
-    name: "{{ common_timezone }}"
+  block:
+    - name: Configure system timezone
+      timezone:
+        name: "{{ common_timezone }}"
+
+  become: true
+  tags:
+    - common
