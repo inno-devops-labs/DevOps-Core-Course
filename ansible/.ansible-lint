@@ -8,6 +8,7 @@ profile: min
 exclude_paths:
   - .vault_pass
   - inventory/
+  - .ansible/
 
 # Enable offline mode (don't check external dependencies)
 offline: true

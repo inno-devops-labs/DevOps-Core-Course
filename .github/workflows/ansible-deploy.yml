@@ -4,14 +4,14 @@ on:
   push:
     branches: [ main, master, lab06 ]
     paths:
-      - 'ansible/vars/app_python.yml'
-      - 'ansible/playbooks/deploy_python.yml'
-      - 'ansible/roles/web_app/**'
+      - 'ansible/**'
+      - '!ansible/docs/**'
       - '.github/workflows/ansible-deploy.yml'
   pull_request:
     branches: [ main, master ]
     paths:
       - 'ansible/**'
+      - '!ansible/docs/**'
 
 jobs:
   lint:
@@ -26,14 +26,25 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install Ansible and lint
         run: |
           pip install ansible ansible-lint
+
+      - name: Install required collections
+        run: |
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Write vault password file
+        env:
+          VAULT_PASS: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          printf '%s' "$VAULT_PASS" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
 
       - name: Run ansible-lint
         run: |
           cd ansible
-          ansible-lint playbooks/*.yml
+          ansible-lint playbooks/provision.yml playbooks/deploy.yml playbooks/deploy_python.yml
 
   deploy:
     name: Deploy Python Application
