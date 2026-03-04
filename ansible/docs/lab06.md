@@ -15,15 +15,14 @@ Main goals:
 
 Target infrastructure:
 
-Component         Value
-
-Cloud Provider    Yandex Cloud
-VM OS             Ubuntu 24.04 LTS
-Public IP         93.77.185.128
-User              ubuntu
-Application       FastAPI service
-Container image   darriyan0/app_python:latest
-
+| Component | Value |
+|---|---|
+| Cloud Provider | Yandex Cloud |
+| VM OS | Ubuntu 24.04 LTS |
+| Public IP | 93.77.185.128 |
+| User | ubuntu |
+| Application | FastAPI service |
+| Container image | darriyan0/app_python:latest |
 
 # 2. Blocks and Tags
 
@@ -273,13 +272,13 @@ Benefits:
 
 # 10. Key Improvements Compared to Lab05
 
-Feature               Lab05              Lab06
-
-Deployment            docker_container   Docker Compose
-Role structure        basic              block + tags
-Environment cleanup   none               wipe mode
-CI/CD                 manual deploy      GitHub Actions
-SSH security          personal key       dedicated CI key
+| Feature | Lab05 | Lab06 |
+|--------|------|------|
+| Deployment | docker_container | Docker Compose |
+| Role structure | basic | block + tags |
+| Environment cleanup | none | wipe mode |
+| CI/CD | manual deploy | GitHub Actions |
+| SSH security | personal key | dedicated CI key |
 
 ------------------------------------------------------------------------
 
