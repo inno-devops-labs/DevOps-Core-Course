@@ -12,7 +12,7 @@
       ansible.builtin.apt_repository:
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Install Docker packages and python3-docker
       ansible.builtin.apt:
@@ -31,7 +31,7 @@
 
     - name: Retry apt cache update
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
 
     - name: Retry adding Docker GPG key
       ansible.builtin.apt_key:
@@ -42,7 +42,7 @@
       ansible.builtin.apt_repository:
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Retry installing Docker packages and python3-docker
       ansible.builtin.apt:
@@ -59,7 +59,7 @@
       ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
+        enabled: true
 
 - name: Docker configuration block
   tags: [docker, docker_config]
@@ -69,4 +69,4 @@
       ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
-        append: yes
+        append: true

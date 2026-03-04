@@ -14,3 +14,6 @@ collections:
     #   docker_login       — used for Docker Hub authentication
     #   docker_image       — used for image pull/remove operations
     #   docker_container   — used in the legacy app_deploy role
+  - name: community.general
+    version: ">=8.0.0"
+    # community.general provides timezone and many cross-platform modules.

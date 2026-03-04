@@ -2,25 +2,25 @@
 # docker-compose.yml.j2  — Jinja2 template (Task 2, Lab 6)
 #
 # Ansible renders this with the `template` module before copying
-# it to {{ compose_project_dir }}/docker-compose.yml on the VM.
+# it to {{ web_app_compose_project_dir }}/docker-compose.yml on the VM.
 # Every template variable is replaced with its value at run time.
 # ──────────────────────────────────────────────────────────────
 
 services:
-  {{ app_name }}:
+  {{ web_app_app_name }}:
     # Service name = Compose internal DNS name (other containers can
-    # reach this one by hostname "{{ app_name }}").
+    # reach this one by hostname "{{ web_app_app_name }}").
 
-    image: {{ docker_image }}:{{ docker_tag }}
+    image: {{ web_app_docker_image }}:{{ web_app_docker_tag }}
     # Full image reference.  Compose will pull from Docker Hub if the
     # image is not already cached locally.
 
-    container_name: {{ app_container_name | default(app_name) }}
+    container_name: {{ web_app_app_container_name | default(web_app_app_name) }}
     # Explicit name avoids the default "<project>_<service>_1" suffix,
     # making it easier to reference the container in scripts.
 
     ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
+      - "{{ web_app_app_port }}:{{ web_app_app_internal_port }}"
     # HOST_PORT:CONTAINER_PORT mapping.
     # Separating them (app_port vs app_internal_port) lets us expose the
     # same container image on different host ports without changing the app.
@@ -29,7 +29,7 @@ services:
       # Non-sensitive runtime configuration.
       # Sensitive values (API keys, passwords) should come from Vault
       # and be passed via extra_vars or an .env file — never hardcoded here.
-      APP_PORT: "{{ app_internal_port }}"
+      APP_PORT: "{{ web_app_app_internal_port }}"
       APP_ENV: "production"
 
     restart: unless-stopped
@@ -41,7 +41,7 @@ services:
       # Docker will call this command periodically.  If it fails `retries`
       # times in a row the container is marked "unhealthy" and visible in
       # `docker ps` — useful for monitoring and CI verification steps.
-      test: ["CMD", "curl", "-f", "http://localhost:{{ app_internal_port }}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:{{ web_app_app_internal_port }}/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -50,7 +50,7 @@ services:
 
 networks:
   default:
-    name: "{{ app_name }}_net"
+    name: "{{ web_app_app_name }}_net"
     # A dedicated bridge network for the project.
     # Bridge networks provide isolation — containers outside this network
     # cannot reach the service by name, only via the published host port.

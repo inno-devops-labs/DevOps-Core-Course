@@ -1,22 +1,27 @@
 ---
 # 1. Блок работы с пакетами и системой
 - name: System and Packages Configuration
+  become: true
+  tags:
+    - packages
+    - common
   block:
     - name: Update apt cache and install common packages
       ansible.builtin.apt:
         name: "{{ common_packages }}"
         state: present
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Set system timezone
       community.general.timezone:
-        name: "{{ system_timezone }}"
+        name: "{{ common_system_timezone }}"
 
   # Если установка/обновление упадет, выполнится эта таска
   rescue:
     - name: Fix missing packages
-      ansible.builtin.command: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
 
   # Эта таска выполнится в любом случае (успех или провал)
   always:
@@ -24,19 +29,18 @@
       ansible.builtin.copy:
         content: "Packages setup completed"
         dest: /tmp/common_packages.log
-
-  # Применяем привилегии и теги сразу ко всему блоку
-  become: true
-  tags:
-    - packages
-    - common
+        mode: "0644"
 
 # 2. Блок работы с пользователями (по заданию)
 - name: User Management
+  become: true
+  tags:
+    - users
+    - common
   block:
     - name: Create deployment user
       ansible.builtin.user:
-        name: "{{ deploy_user }}"
+        name: "{{ common_deploy_user }}"
         state: present
         shell: /bin/bash
 
@@ -45,8 +49,4 @@
       ansible.builtin.copy:
         content: "Users setup completed"
         dest: /tmp/common_users.log
-
-  become: true
-  tags:
-    - users
-    - common
+        mode: "0644"

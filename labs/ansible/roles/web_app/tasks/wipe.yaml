@@ -24,62 +24,57 @@
 # ──────────────────────────────────────────────────────────────
 
 - name: Wipe web application
+  when: web_app_wipe | bool
+  become: true
+  tags:
+    - web_app_wipe
   block:
 
     - name: Check compose project directory state
-      stat:
-        path: "{{ compose_project_dir }}"
-      register: compose_project_dir_stat
+      ansible.builtin.stat:
+        path: "{{ web_app_compose_project_dir }}"
+      register: web_app_compose_project_dir_stat
 
     - name: Take down Docker Compose project (stop + remove containers, networks)
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         state: absent
         # state: absent = `docker compose down`
         # Removes containers and the default network but NOT named volumes.
         # If you also want to remove volumes add:  remove_volumes: true
       when:
-        - compose_project_dir_stat.stat.exists
-        - compose_project_dir_stat.stat.isdir
+        - web_app_compose_project_dir_stat.stat.exists
+        - web_app_compose_project_dir_stat.stat.isdir
 
     - name: Skip compose down when project directory is absent
-      debug:
-        msg: "Skip compose down: {{ compose_project_dir }} does not exist"
-      when: not compose_project_dir_stat.stat.exists
+      ansible.builtin.debug:
+        msg: "Skip compose down: {{ web_app_compose_project_dir }} does not exist"
+      when: not web_app_compose_project_dir_stat.stat.exists
 
     - name: Skip compose down when project path is not directory
-      debug:
-        msg: "Skip compose down: {{ compose_project_dir }} exists but is not a directory"
+      ansible.builtin.debug:
+        msg: "Skip compose down: {{ web_app_compose_project_dir }} exists but is not a directory"
       when:
-        - compose_project_dir_stat.stat.exists
-        - not compose_project_dir_stat.stat.isdir
+        - web_app_compose_project_dir_stat.stat.exists
+        - not web_app_compose_project_dir_stat.stat.isdir
 
     - name: Remove docker-compose.yml file
-      file:
-        path: "{{ compose_project_dir }}/docker-compose.yml"
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         state: absent
       when:
-        - compose_project_dir_stat.stat.exists
-        - compose_project_dir_stat.stat.isdir
+        - web_app_compose_project_dir_stat.stat.exists
+        - web_app_compose_project_dir_stat.stat.isdir
 
     - name: Remove application directory
-      file:
-        path: "{{ compose_project_dir }}"
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
         state: absent
       # This removes /opt/{{ app_name }} and all its contents.
       # Idempotent: if the directory is already absent, nothing happens.
 
     - name: Log successful wipe
-      debug:
+      ansible.builtin.debug:
         msg: >
-          ✓ Application "{{ app_name }}" wiped from {{ compose_project_dir }}.
+          ✓ Application "{{ web_app_app_name }}" wiped from {{ web_app_compose_project_dir }}.
           Re-run without --tags web_app_wipe to deploy fresh.
-
-  # Gate 1: variable check — when evaluates BEFORE the block runs
-  when: web_app_wipe | bool
-
-  become: true
-
-  # Gate 2: tag check — the tag makes tasks visible to ansible-playbook
-  tags:
-    - web_app_wipe
