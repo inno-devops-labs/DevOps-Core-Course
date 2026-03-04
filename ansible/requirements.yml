@@ -1,0 +1,5 @@
+---
+# Ansible Galaxy collections required for Lab 6 (Docker Compose, timezone, etc.)
+collections:
+  - community.docker
+  - community.general

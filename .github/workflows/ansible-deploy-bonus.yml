@@ -8,6 +8,7 @@ on:
       - 'ansible/vars/app_bonus.yml'
       - 'ansible/playbooks/deploy_bonus.yml'
       - 'ansible/roles/web_app/**'
+      - 'ansible/requirements.yml'
       - '.github/workflows/ansible-deploy-bonus.yml'
   pull_request:
     branches: [main, master, lab6]
@@ -30,6 +31,9 @@ jobs:
 
       - name: Install dependencies
         run: pip install ansible ansible-lint
+
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r ansible/requirements.yml
 
       - name: Create vault password file for lint
         run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
@@ -55,6 +59,9 @@ jobs:
 
       - name: Install Ansible
         run: pip install ansible
+
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r ansible/requirements.yml
 
       - name: Setup SSH
         env:
