@@ -1,0 +1,17 @@
+services:
+  {{ web_app_name }}:
+    image: {{ web_app_docker_image }}:{{ web_app_docker_tag }}
+    ports:
+      - "{{ web_app_host_port }}:{{ web_app_internal_port }}"
+    environment:
+      APP_NAME: "{{ web_app_name }}"
+{% for key, value in (web_app_env | default({})).items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    restart: "{{ web_app_restart_policy }}"
+    # networks:
+    #   - webnet
+
+# networks:
+#   webnet:
+#     driver: bridge

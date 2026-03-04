@@ -1,59 +1,90 @@
 ---
-- name: Install Docker repository prerequisites
-  ansible.builtin.apt:
-    name:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - gnupg
-    state: present
-    update_cache: true
+- name: Install and configure Docker
+  become: true
+  tags:
+    - docker
+    - docker_install
+  block:
+    - name: Install Docker repository prerequisites
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
 
-- name: Ensure Docker keyring directory exists
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: "0755"
+    - name: Ensure Docker keyring directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
 
-- name: Download Docker GPG key
-  ansible.builtin.get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker.asc
-    mode: "0644"
-    force: true
-  notify: restart docker
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: true
+      notify: restart docker
 
-- name: Add Docker apt repository
-  ansible.builtin.apt_repository:
-    repo: >-
-      deb [arch={{ {'x86_64': 'amd64', 'aarch64': 'arm64', 'armv7l': 'armhf'}.get(ansible_architecture, 'amd64') }}
-      signed-by=/etc/apt/keyrings/docker.asc]
-      https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
-    state: present
-    filename: docker
-  notify: restart docker
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ {'x86_64': 'amd64', 'aarch64': 'arm64', 'armv7l': 'armhf'}.get(ansible_architecture, 'amd64') }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        state: present
+        filename: docker
+      notify: restart docker
 
-- name: Install Docker packages
-  ansible.builtin.apt:
-    name: "{{ docker_packages }}"
-    state: present
-    update_cache: true
-  notify: restart docker
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
+      notify: restart docker
 
-- name: Ensure Docker service is enabled and started
-  ansible.builtin.service:
-    name: "{{ docker_service_name }}"
-    state: started
-    enabled: true
+  rescue:
+    - name: Retry after apt update on GPG key failure
+      ansible.builtin.pause:
+        seconds: 10
+    - name: Update apt cache to recover
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Add user to docker group
-  ansible.builtin.user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: true
+  always:
+    - name: Ensure Docker service is enabled and started
+      ansible.builtin.service:
+        name: "{{ docker_service_name }}"
+        state: started
+        enabled: true
 
-- name: Install python3-docker package for Ansible Docker modules
-  ansible.builtin.apt:
-    name: python3-docker
-    state: present
-  when: docker_install_python_sdk | bool
+- name: Post-install configuration
+  become: true
+  tags:
+    - docker
+    - docker_config
+  block:
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true
+
+    - name: Install Python packages for Ansible Docker modules
+      ansible.builtin.apt:
+        name:
+          - python3-docker
+          - python3-pip
+        state: present
+      when: docker_install_python_sdk | bool
+
+    - name: Install docker-compose Python package for legacy docker_compose module
+      ansible.builtin.pip:
+        name: docker-compose
+        state: present
+        executable: pip3
+      when: docker_install_python_sdk | bool

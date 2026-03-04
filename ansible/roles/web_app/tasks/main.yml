@@ -1,0 +1,57 @@
+---
+# wipe logic included at the start; tag and variable control
+- name: Include wipe tasks
+  ansible.builtin.include_tasks:
+    file: wipe.yml
+    apply:
+      tags:
+        - web_app_wipe
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+
+# deployment block using Docker Compose
+- name: Deploy web application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+  block:
+    - name: Validate deployment variables
+      ansible.builtin.assert:
+        that:
+          - web_app_docker_image | length > 0
+          - web_app_docker_tag | length > 0
+          - web_app_name | length > 0
+          - web_app_port | int > 0
+          - web_app_internal_port | int > 0
+        fail_msg: "Required deployment variables are missing or invalid."
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose configuration
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Deploy application via docker compose CLI
+      ansible.builtin.command:
+        cmd: >-
+          docker compose
+          -p {{ web_app_compose_project_name }}
+          -f {{ web_app_compose_project_dir }}/docker-compose.yml
+          up -d --pull always --remove-orphans
+      register: web_app_compose_result
+      changed_when: >-
+        'Creating' in web_app_compose_result.stdout or
+        'Recreating' in web_app_compose_result.stdout or
+        'Starting' in web_app_compose_result.stdout
+
+  rescue:
+    - name: Log compose deployment failure
+      ansible.builtin.debug:
+        msg: "Docker Compose deployment for {{ web_app_name }} failed"

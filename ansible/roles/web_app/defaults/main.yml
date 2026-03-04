@@ -1,0 +1,34 @@
+---
+web_app_name: devops-app
+web_app_container_name: "{{ web_app_name }}"
+
+# Image defaults to the repository created in earlier labs.
+web_app_docker_image: "alsstarikova/devops-info-service"
+# tag applied to the Docker image
+web_app_docker_tag: latest
+
+web_app_port: 5000
+web_app_internal_port: "{{ web_app_port }}"
+web_app_host_port: 5000
+web_app_restart_policy: unless-stopped
+web_app_start_timeout: 120
+web_app_health_retries: 10
+web_app_health_delay: 3
+
+web_app_env:
+  PORT: "{{ web_app_port | string }}"
+
+# Docker Compose configuration
+web_app_compose_project_dir: "/opt/{{ web_app_name }}"
+web_app_compose_project_name: "{{ web_app_name }}"
+web_app_docker_compose_version: "3.8"
+
+# Wipe Logic Control
+# Set to true to remove application completely
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false  # default is safe; requires tag + var to run
+
+# Credentials are loaded from encrypted group_vars/all.yml.
+web_app_dockerhub_username: ""
+web_app_dockerhub_password: ""

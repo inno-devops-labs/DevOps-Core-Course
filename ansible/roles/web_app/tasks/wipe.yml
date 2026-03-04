@@ -1,0 +1,27 @@
+---
+- name: Stop and remove containers via docker compose CLI
+  ansible.builtin.command:
+    cmd: >-
+      docker compose
+      -p {{ web_app_compose_project_name }}
+      -f {{ web_app_compose_project_dir }}/docker-compose.yml
+      down --remove-orphans
+  register: web_app_wipe_down_result
+  changed_when: "'removed' in (web_app_wipe_down_result.stdout | lower)"
+  failed_when: false
+
+- name: Remove docker-compose file
+  ansible.builtin.file:
+    path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+    state: absent
+
+- name: Remove application directory
+  ansible.builtin.file:
+    path: "{{ web_app_compose_project_dir }}"
+    state: absent
+
+- name: Log wipe completion
+  ansible.builtin.debug:
+    msg: "Application {{ web_app_name }} wiped successfully"
+
+# conditional is applied by including task with when at include level if needed

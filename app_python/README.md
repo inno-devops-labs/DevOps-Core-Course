@@ -2,6 +2,7 @@
 
 [![Python CI](https://github.com/alsstarikova/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab03)](https://github.com/alsstarikova/DevOps-Core-Course/actions/workflows/python-ci.yml)
 [![codecov](https://codecov.io/gh/alsstarikova/DevOps-Core-Course/branch/lab03/graph/badge.svg?token=YOUR_CODECOV_TOKEN)](https://codecov.io/gh/alsstarikova/DevOps-Core-Course)
+[![Ansible Deployment](https://github.com/alsstarikova/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/alsstarikova/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 
 
 A production-ready web service providing comprehensive system information and health checks. Built with FastAPI for high performance and automatic API documentation.

@@ -1,10 +1,29 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+- name: Common role tasks
+  become: true
+  tags:
+    - common
+    - packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common system packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common system packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Handle apt cache update failure
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
+
+  always:
+    - name: Log common role completion
+      ansible.builtin.file:
+        path: /tmp/common_role_completed.log
+        state: touch
+        mode: "0644"

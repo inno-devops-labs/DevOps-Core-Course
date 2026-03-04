@@ -1,0 +1,6 @@
+---
+# role metadata
+
+dependencies:
+  - role: docker
+    # ensures docker is available before attempting to deploy compose
