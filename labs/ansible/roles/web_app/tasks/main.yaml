@@ -1,0 +1,135 @@
+---
+# ──────────────────────────────────────────────────────────────
+# web_app role — main tasks (Tasks 2 & 3, Lab 6)
+#
+# Execution order:
+#   1. Include wipe.yaml  (runs ONLY when web_app_wipe=true)
+#   2. Deploy block        (always runs during a normal deploy)
+#
+# The wipe-first order enables the "clean reinstall" use case:
+#   ansible-playbook deploy.yml -e "web_app_wipe=true"
+#   Step 1: old installation removed
+#   Step 2: fresh deployment starts
+# ──────────────────────────────────────────────────────────────
+
+# ── Step 1: Wipe (conditional) ────────────────────────────────
+- name: Include wipe tasks (runs only when web_app_wipe=true + tag active)
+  include_tasks: wipe.yaml
+  # include_tasks vs import_tasks:
+  #   include_tasks: dynamic — the file is loaded at runtime.
+  #     Tags on include_tasks pass THROUGH to the included tasks.
+  #   import_tasks: static — the file is loaded at parse time.
+  #     Better for static flows; required when using `when` on the import itself.
+  # We use include_tasks here so the wipe tag propagates correctly.
+  tags:
+    - web_app_wipe
+    - app_deploy    # Include during a full deploy run so the when-gate decides
+
+# ── Step 2: Deployment ────────────────────────────────────────
+- name: Deploy application with Docker Compose
+  block:
+
+    # ── 2a. Create the application directory ──────────────────
+    - name: Ensure application directory exists
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+      # /opt/{{ app_name }} will hold the docker-compose.yml.
+      # Setting owner to ansible_user (ubuntu) lets us run docker-compose
+      # without sudo in verification steps.
+
+    # ── 2b. Render and copy docker-compose.yml ────────────────
+    - name: Template docker-compose.yml to the VM
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+      # The template module:
+      #   1. Reads the .j2 file from roles/web_app/templates/
+      #   2. Evaluates all {{ variable }} and {% logic %} expressions
+      #   3. Writes the rendered result to dest on the target host
+      # If the rendered content is identical to the existing file,
+      # Ansible marks this task "ok" instead of "changed" — idempotency.
+
+    - name: Login to Docker Hub when credentials are provided
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+        reauthorize: true
+      when:
+        - dockerhub_username is defined
+        - dockerhub_username | length > 0
+        - dockerhub_password is defined
+        - dockerhub_password | length > 0
+
+    # ── 2c. Start / update the Compose project ────────────────
+    - name: Deploy or update with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: present
+        pull: always
+        # state: present = `docker compose up -d`
+        #   Creates containers if they don't exist, recreates them only
+        #   if the service definition changed → idempotent by default.
+        # pull: always  — always pull the image before starting.
+        #   Ensures `latest` tag is actually the newest build from Docker Hub.
+        #   For pinned tags (e.g. "1.2.0") you can set pull: missing to
+        #   skip the registry call when the image already exists locally.
+
+    # ── 2d. Wait for the app to be ready ──────────────────────
+    - name: Wait for application port to be open
+      wait_for:
+        host: "127.0.0.1"
+        port: "{{ app_port }}"
+        delay: 5       # wait 5 s before first probe
+        timeout: 60    # give up after 60 s total
+
+    # ── 2e. Smoke-test the health endpoint ────────────────────
+    - name: Verify application health endpoint
+      uri:
+        url: "http://127.0.0.1:{{ app_port }}/health"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: health_check_result
+      # register saves the HTTP response so the next debug task can show it.
+
+    - name: Show health check response
+      debug:
+        msg: "Health check passed: {{ health_check_result.status }} — app is up on port {{ app_port }}"
+
+  rescue:
+    # rescue runs when any task inside the block above fails.
+    # We print diagnostics to help identify what went wrong
+    # without failing silently.
+    - name: Check if docker-compose file exists
+      stat:
+        path: "{{ compose_project_dir }}/docker-compose.yml"
+      register: compose_file_stat
+
+    - name: Collect Docker Compose logs on failure
+      command: docker compose -f {{ compose_project_dir }}/docker-compose.yml logs --tail=50
+      register: compose_logs
+      ignore_errors: true
+      when: compose_file_stat.stat.exists
+
+    - name: Show Docker Compose logs
+      debug:
+        msg: "{{ compose_logs.stdout_lines | default(['docker-compose.yml not found; template step likely failed']) }}"
+
+    - name: Fail with informative message
+      fail:
+        msg: >
+          Deployment of "{{ app_name }}" failed.
+          Compose logs shown above.
+          Check: docker ps -a  and  docker logs {{ app_name }}
+
+  become: true
+  tags:
+    - app_deploy
+    - compose
