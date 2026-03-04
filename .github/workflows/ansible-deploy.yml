@@ -19,13 +19,19 @@ jobs:
           sudo apt update
           sudo apt install -y ansible python3-docker python3-pip
 
+      - name: Create inventory file for local connection
+        run: |
+          cd ansible
+          echo "[webservers]" > inventory/ci.ini
+          echo "localhost ansible_connection=local" >> inventory/ci.ini
+
       - name: Deploy with Ansible
         env:
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
           cd ansible
           echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
-          ansible-playbook playbooks/deploy.yml --vault-password-file /tmp/vault_pass
+          ansible-playbook -i inventory/ci.ini playbooks/deploy.yml --vault-password-file /tmp/vault_pass
           rm /tmp/vault_pass
       - name: Verify deployment
         run: |
