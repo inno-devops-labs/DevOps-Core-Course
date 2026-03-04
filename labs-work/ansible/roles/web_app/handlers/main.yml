@@ -1,0 +1,5 @@
+---
+- name: Restart application via Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ web_app_compose_dir }}"
+    state: restarted

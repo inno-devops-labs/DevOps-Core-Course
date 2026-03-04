@@ -1,0 +1,78 @@
+---
+- name: Include wipe tasks
+  ansible.builtin.include_tasks:
+    file: wipe.yml
+    apply:
+      tags:
+        - web_app_wipe
+  tags:
+    - web_app_wipe
+
+- name: Log in to Docker Hub
+  community.docker.docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+  no_log: true
+  tags:
+    - app_deploy
+    - compose
+
+- name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+  block:
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ web_app_compose_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose.yml
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ web_app_compose_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Deploy application via Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ web_app_compose_dir }}"
+        state: present
+        pull: always
+
+    - name: Wait for application port to be available
+      ansible.builtin.wait_for:
+        port: "{{ web_app_port }}"
+        delay: 5
+        timeout: 30
+
+    - name: Health check
+      ansible.builtin.uri:
+        url: "http://localhost:{{ web_app_port }}/health"
+        return_content: true
+        status_code: 200
+      register: web_app_health_result
+      retries: 3
+      delay: 5
+      until: web_app_health_result.status == 200
+  rescue:
+    - name: Log deployment failure
+      ansible.builtin.debug:
+        msg: "Deployment failed for {{ web_app_name }}"
+
+    - name: Show Docker Compose logs
+      ansible.builtin.command:
+        cmd: docker compose logs --tail=50
+        chdir: "{{ web_app_compose_dir }}"
+      register: web_app_compose_logs
+      changed_when: false
+      failed_when: false
+
+    - name: Display compose logs
+      ansible.builtin.debug:
+        var: web_app_compose_logs.stdout_lines
+      when: web_app_compose_logs is defined
+
+    - name: Fail with deployment error
+      ansible.builtin.fail:
+        msg: "Application deployment failed. Check compose logs above."

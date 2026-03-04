@@ -1,0 +1,90 @@
+---
+name: Ansible Deploy
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "labs-work/ansible/**"
+      - "!labs-work/ansible/docs/**"
+  pull_request:
+    branches: [master]
+    paths:
+      - "labs-work/ansible/**"
+      - "!labs-work/ansible/docs/**"
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible and ansible-lint
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        working-directory: labs-work/ansible
+        run: |
+          ansible-lint playbooks/*.yml
+
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: |
+          pip install ansible
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/devops-lab04
+          chmod 600 ~/.ssh/devops-lab04
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Write vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Update inventory with VM host
+        working-directory: labs-work/ansible
+        run: |
+          sed -i "s/ansible_host=.*/ansible_host=${{ secrets.VM_HOST }}/" inventory/hosts.ini
+
+      - name: Run deployment playbook
+        working-directory: labs-work/ansible
+        run: |
+          ansible-playbook playbooks/deploy.yml \
+            --vault-password-file /tmp/vault_pass \
+            --private-key ~/.ssh/devops-lab04 \
+            --tags app_deploy
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          curl -f http://${{ secrets.VM_HOST }}:5000/health
+
+      - name: Cleanup vault password file
+        if: always()
+        run: |
+          rm -f /tmp/vault_pass

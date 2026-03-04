@@ -3,4 +3,4 @@
   hosts: webservers
   become: true
   roles:
-    - app_deploy
+    - web_app

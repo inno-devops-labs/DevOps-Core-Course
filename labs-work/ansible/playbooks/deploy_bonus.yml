@@ -1,0 +1,8 @@
+---
+- name: Deploy Go application
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../vars/app_bonus.yml
+  roles:
+    - web_app

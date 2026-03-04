@@ -1,0 +1,16 @@
+---
+- name: Deploy Python application
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../vars/app_python.yml
+  roles:
+    - web_app
+
+- name: Deploy Go application
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../vars/app_bonus.yml
+  roles:
+    - web_app
