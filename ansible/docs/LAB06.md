@@ -897,27 +897,19 @@ Added to root `README.md`:
 
 ### Successful workflow run screenshot
 
-```
-output
-```
+![Successful workflow run](screenshots/ci-workflow-success.png)
 
-### ansible-lint passing (из логов workflow)
+### ansible-lint passing (from workflow logs)
 
-```
-output
-```
+![ansible-lint passing](screenshots/ci-lint.png)
 
-### ansible-playbook execution (из логов workflow)
+### ansible-playbook execution (from workflow logs)
 
-```
-output
-```
+![ansible-playbook execution](screenshots/ci-deploy.png)
 
-### Verification step — curl output (из логов workflow)
+### Verification step — curl output (from workflow logs)
 
-```
-output
-```
+![Verification step](screenshots/ci-verify.png)
 
 ### Research Answers
 
@@ -1113,7 +1105,7 @@ CONTAINER ID   IMAGE                                   COMMAND           CREATED
 
 ### curl — both apps accessible
 
-Python app: порт **5000**, bonus (Go) app: порт **8001**.
+Python app: port **5000**, bonus (Go) app: port **8001**.
 
 ```bash
 curl http://51.250.81.253:5000
@@ -1353,20 +1345,6 @@ Separate workflows per app with path filters:
 ```
 [![Ansible Deployment](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 [![Ansible Deploy Bonus](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/ansible-deploy-bonus.yml/badge.svg)](https://github.com/karishka1222/DevOps-Core-Course/actions/workflows/ansible-deploy-bonus.yml)
-```
-
-### Independent workflow triggers — screenshots
-
-```
-output
-```
-
-```
-output
-```
-
-```
-output
 ```
 
 ---
