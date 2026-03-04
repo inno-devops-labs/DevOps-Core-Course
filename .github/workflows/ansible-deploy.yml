@@ -39,15 +39,19 @@ jobs:
     needs: lint
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
       - name: Deploy with Ansible
         run: |
           cd ansible
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
           ansible-playbook playbooks/deploy.yml \
-            --vault-password-file /tmp/vault_pass \
-            --tags "app_deploy"
-          rm /tmp/vault_pass
+          --tags "app_deploy" \
+          --connection=local \
+          -e "ansible_host=127.0.0.1"
       - name: Verify Deployment
         run: |
           sleep 10  # Wait for app to start
