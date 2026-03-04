@@ -1,0 +1,14 @@
+---
+app_port: 5000
+app_internal_port: "{{ app_port }}"
+app_external_port: "{{ app_port }}"
+app_container_name: "{{ app_name }}"
+compose_project_dir: "/opt/devops-info-python"
+docker_image_tag: latest
+restart_policy: unless-stopped
+env_vars: {}
+
+web_app_wipe: false  # Default: do not wipe
+# Set to true to remove application completely
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
