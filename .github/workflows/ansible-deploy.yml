@@ -1,7 +1,15 @@
 name: Ansible Deployment
 
 on:
-  [push]
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'labs/ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'labs/ansible/**'
 
 
 jobs:
@@ -23,7 +31,7 @@ jobs:
 
       - name: Run ansible-lint
         run: |
-          cd ansible
+          cd labs/ansible
           ansible-lint playbooks/*.yml
 
   deploy:
@@ -51,13 +59,13 @@ jobs:
 
       - name: Prepare Ansible inventory
         run: |
-          cd ansible
+          cd labs/ansible
           echo "[webservers]" > inventory/hosts.ini
           echo "${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }}" >> inventory/hosts.ini
 
       - name: Deploy with Ansible
         run: |
-          cd ansible
+          cd labs/ansible
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
           ansible-playbook playbooks/deploy.yml \
             -i inventory/hosts.ini \
