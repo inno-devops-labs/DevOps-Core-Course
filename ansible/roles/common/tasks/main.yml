@@ -1,10 +1,42 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Install packages
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+  rescue:
+    - name: Fix missing package sources on failure
+      command: apt-get update --fix-missing
+      when: ansible_failed_task.name == "Update apt cache"   # or check register
+    - name: Retry package installation
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+  always:
+    - name: Log common role completion
+      copy:
+        content: "Common role completed at {{ ansible_date_time.iso8601 }}"
+        dest: /tmp/common_role_complete.log
+  become: true
+  tags:
+    - packages
+    - common
+
+- name: Create user
+  block:
+    - name: Create user
+      user:
+        name: "{{ user_name }}"
+        state: present
+        shell: /bin/bash
+        createhome: yes
+  become: true
+  tags:
+    - users
+    - common

@@ -1,65 +1,87 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Docker Installation
+  tags:
+    - docker_install
+    - docker
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install required system packages
-  apt:
-    name:
-      - curl
-      - ca-certificates
-    state: present
+    - name: Install required system packages
+      apt:
+        name:
+          - curl
+          - ca-certificates
+        state: present
 
-- name: Create keyrings directory
-  file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
+    - name: Create keyrings directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
 
-- name: Download Docker's official GPG key
-  get_url:
-    url: https://download.docker.com/linux/debian/gpg
-    dest: /etc/apt/keyrings/docker.asc
-    mode: '0644'
+    - name: Download Docker GPG key
+      block:
+        - name: Download Docker's official GPG key
+          get_url:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            dest: /etc/apt/keyrings/docker.asc
+            mode: '0644'
+      rescue:
+        - name: Wait 10 seconds and retry GPG key download
+          pause:
+            seconds: 10
+        - name: Retry Docker GPG key download
+          get_url:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            dest: /etc/apt/keyrings/docker.asc
+            mode: '0644'
 
-- name: Add Docker repository to apt sources
-  template:
-    src: docker.sources.j2
-    dest: /etc/apt/sources.list.d/docker.sources
-    mode: '0644'
-  vars:
-    codename: "{{ ansible_distribution_release }}"
+    - name: Add Docker repository to apt sources
+      template:
+        src: docker.sources.j2
+        dest: /etc/apt/sources.list.d/docker.sources
+        mode: '0644'
+      vars:
+        codename: "{{ ansible_distribution_release }}"
 
-- name: Update apt cache after adding Docker repo
-  apt:
-    update_cache: yes
+    - name: Update apt cache after adding Docker repo
+      apt:
+        update_cache: yes
 
-- name: Install Docker packages
-  apt:
-    name:
-      - "{{ 'docker-ce' if docker_version == '' else 'docker-ce=' + docker_version }}"
-      - "{{ 'docker-ce-cli' if docker_cli_version == '' else 'docker-ce-cli=' + docker_cli_version }}"
-      - "{{ 'containerd.io' if containerd_version == '' else 'containerd.io=' + containerd_version }}"
-      - docker-buildx-plugin
-      - docker-compose-plugin
-    state: present
-  become: yes
-  notify: restart docker
+    - name: Install Docker packages
+      apt:
+        name:
+          - "{{ 'docker-ce' if docker_version == '' else 'docker-ce=' + docker_version }}"
+          - "{{ 'docker-ce-cli' if docker_cli_version == '' else 'docker-ce-cli=' + docker_cli_version }}"
+          - "{{ 'containerd.io' if containerd_version == '' else 'containerd.io=' + containerd_version }}"
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+      notify: restart docker
+  always:
+    - name: Ensure Docker service is running and enabled
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+  become: true
 
-- name: Ensure Docker service is running and enabled
-  systemd:
-    name: docker
-    state: started
-    enabled: yes
+- name: Docker config
+  tags:
+    - docker_config
+    - docker
+  block:
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
 
-- name: Add user to docker group
-  user:
-    name: "{{ ansible_user }}"
-    groups: docker
-    append: yes
-
-- name: Install python3-docker for Ansible docker modules
-  apt:
-    name: python3-docker
-    state: present
+    - name: Install python3-docker for Ansible docker modules
+      apt:
+        name: python3-docker
+        state: present
+  become: true
