@@ -8,3 +8,5 @@ app_port: 8001
 app_internal_port: 8080
 compose_project_dir: "/opt/{{ app_name }}"
 # trigger 2026-03-05T16:11:42Z
+
+# ci trigger: workflow refresh 2026-03-05
