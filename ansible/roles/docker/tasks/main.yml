@@ -13,7 +13,7 @@
 
   block:
     - name: Install prerequisites
-      ansible.builtin.ansible.builtin.ansible.builtin.apt:
+      ansible.builtin.apt:
         name:
           - ca-certificates
           - gnupg
@@ -30,7 +30,7 @@
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
 
     - name: Install Docker packages
-      ansible.builtin.ansible.builtin.ansible.builtin.apt:
+      ansible.builtin.apt:
         name:
           - docker-ce
           - docker-ce-cli
@@ -40,16 +40,16 @@
 
   rescue:
     - name: Wait before retry
-      ansible.builtin.ansible.builtin.pause:
+      ansible.builtin.pause:
         seconds: 10
 
     - name: Retry apt update
-      ansible.builtin.ansible.builtin.ansible.builtin.apt:
+      ansible.builtin.apt:
         update_cache: true
 
   always:
     - name: Ensure Docker is enabled
-      ansible.builtin.ansible.builtin.service:
+      ansible.builtin.service:
         name: docker
         enabled: true
         state: started
@@ -61,7 +61,7 @@
     - docker_config
   block:
     - name: Add user to docker group
-      ansible.builtin.ansible.builtin.user:
+      ansible.builtin.user:
         name: "{{ ansible_user }}"
         groups: docker
         append: true

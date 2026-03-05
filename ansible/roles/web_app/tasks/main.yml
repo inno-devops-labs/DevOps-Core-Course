@@ -38,7 +38,7 @@
         project_src: "{{ web_app_compose_project_dir }}"
         state: present
         pull: always
-      register: compose_output
+      register: web_app_compose_output
 
     - name: Wait for application to be ready (Healthcheck)
       ansible.builtin.wait_for:

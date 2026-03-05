@@ -14,12 +14,12 @@
 
   block:
     - name: Update apt cache
-      ansible.builtin.ansible.builtin.ansible.builtin.apt:
+      ansible.builtin.apt:
         update_cache: true
       register: common_apt_update_result
 
     - name: Install base packages
-      ansible.builtin.ansible.builtin.ansible.builtin.apt:
+      ansible.builtin.apt:
         name:
           - curl
           - git
@@ -33,7 +33,7 @@
 
   always:
     - name: Log package block completion
-      ansible.builtin.ansible.builtin.copy:
+      ansible.builtin.copy:
         content: "Packages block executed at {{ ansible_date_time.iso8601 }}"
         dest: /tmp/common_packages.log
 
@@ -44,7 +44,7 @@
     - common
   block:
     - name: Create deploy user
-      ansible.builtin.ansible.builtin.user:
+      ansible.builtin.user:
         name: deploy
         groups: sudo
         append: true
@@ -52,6 +52,6 @@
 
   always:
     - name: Log users block completion
-      ansible.builtin.ansible.builtin.copy:
+      ansible.builtin.copy:
         content: "Users block executed at {{ ansible_date_time.iso8601 }}"
         dest: /tmp/common_users.log

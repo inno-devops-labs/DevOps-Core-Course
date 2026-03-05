@@ -8,7 +8,7 @@
       community.docker.docker_compose_v2:
         project_src: "{{ web_app_compose_project_dir }}"
         state: absent
-      ignore_errors: true
+      failed_when: false
 
     - name: Remove app directory
       ansible.builtin.ansible.builtin.file:
