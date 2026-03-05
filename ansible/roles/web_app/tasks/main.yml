@@ -9,14 +9,27 @@
     - app_deploy
     - compose
   block:
-    - name: Login to Docker Hub
+    - name: Login to Docker registry when credentials are provided
       community.docker.docker_login:
-        username: "{{ dockerhub_username }}"
-        password: "{{ dockerhub_password }}"
+        username: "{{ dockerhub_username | default('') }}"
+        password: "{{ dockerhub_password | default('') }}"
         registry_url: "{{ app_registry_url }}"
         reauthorize: "{{ app_registry_reauthorize | bool }}"
       no_log: true
-      when: app_registry_login_enabled | bool
+      when:
+        - app_registry_login_enabled | bool
+        - (dockerhub_username | default('') | length) > 0
+        - (dockerhub_password | default('') | length) > 0
+
+    - name: Skip registry login when credentials are not configured
+      ansible.builtin.debug:
+        msg: >-
+          app_registry_login_enabled=true, but dockerhub credentials are not set.
+          Continuing without registry login.
+      when:
+        - app_registry_login_enabled | bool
+        - (dockerhub_username | default('') | length) == 0
+          or (dockerhub_password | default('') | length) == 0
 
     - name: Ensure compose project directory exists
       ansible.builtin.file:
@@ -47,6 +60,15 @@
       when:
         - web_app_container_info.exists | default(false)
         - (web_app_container_info.container.Config.Labels['com.docker.compose.project'] | default('')) == ''
+
+    - name: Remove stale stopped compose container
+      community.docker.docker_container:
+        name: "{{ app_name }}"
+        state: absent
+      when:
+        - web_app_container_info.exists | default(false)
+        - (web_app_container_info.container.Config.Labels['com.docker.compose.project'] | default('')) != ''
+        - not (web_app_container_info.container.State.Running | default(false))
 
     - name: Pull and start application stack
       community.docker.docker_compose_v2:

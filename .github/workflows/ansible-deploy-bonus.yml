@@ -81,9 +81,18 @@ jobs:
 
       - name: Ensure local lab containers are running
         run: |
-          docker start lab05-registry lab05-ubuntu2404 >/dev/null || true
-          test "$(docker inspect -f '{{.State.Running}}' lab05-registry)" = "true"
+          docker rm -f lab05-registry >/dev/null 2>&1 || true
+          docker run -d --name lab05-registry -p 5001:5000 registry:2
+          docker start lab05-ubuntu2404 >/dev/null || true
           test "$(docker inspect -f '{{.State.Running}}' lab05-ubuntu2404)" = "true"
+          test "$(docker inspect -f '{{.State.Running}}' lab05-registry)" = "true"
+
+      - name: Build and publish bonus image to local registry
+        env:
+          BONUS_APP_IMAGE_TAG: ${{ vars.BONUS_APP_IMAGE_TAG || 'latest' }}
+        run: |
+          docker build -t "localhost:5001/devops-info-service-go:${BONUS_APP_IMAGE_TAG}" app_go
+          docker push "localhost:5001/devops-info-service-go:${BONUS_APP_IMAGE_TAG}"
 
       - name: Prepare vault password file
         env:

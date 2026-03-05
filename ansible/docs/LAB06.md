@@ -1,7 +1,7 @@
 # Lab 6: Advanced Ansible & CI/CD - Submission
 
 **Student:** `Danil Fishchenko`  
-**Date:** `2026-03-04`  
+**Date:** `2026-03-05`  
 **Branch:** `lab06`  
 **Repository:** `pepegx/DevOps-Core-Course`
 
@@ -281,20 +281,24 @@ Created:
 
 Pipeline stages:
 1. `lint` (per app)
-- setup python
-- install ansible + ansible-lint
+- runs on `ubuntu-latest`
+- install ansible + ansible-lint with `python3 -m pip`
 - install Galaxy collections
 - run `ansible-lint` for target playbook + shared roles (`docker`, `web_app`)
 
 2. `deploy` (per app)
 - runs after lint
-- configures SSH key from secrets
-- writes temporary inventory via `printf` (no heredoc indentation issues)
-- decrypts Vault via `ANSIBLE_VAULT_PASSWORD`
+- runs on self-hosted runner: `[self-hosted, macOS, ARM64]`
+- recreates local registry `lab05-registry` with published port `5001:5000`
+- builds and pushes app image into local registry:
+  - Python: `localhost:5001/devops-info-service:${PYTHON_APP_IMAGE_TAG}`
+  - Bonus: `localhost:5001/devops-info-service-go:${BONUS_APP_IMAGE_TAG}`
+- uses local target inventory `inventory/hosts.local-docker.ini`
+- decrypts Vault via `ANSIBLE_VAULT_PASSWORD` (or fallback file on runner host)
 - runs app-specific playbook:
   - Python workflow: `playbooks/deploy_python.yml`
   - Bonus workflow: `playbooks/deploy_bonus.yml`
-- verifies both `/` and `/health` endpoints with `curl`
+- verifies `/` and `/health` with `docker exec lab05-ubuntu2404 curl ...`
 
 Triggers:
 - `push` on `main/master/lab06` with app-specific path filters
@@ -308,10 +312,10 @@ Path filter behavior:
 
 ### 4.2 Secrets required
 
-- `ANSIBLE_VAULT_PASSWORD`
-- `SSH_PRIVATE_KEY`
-- `VM_HOST`
-- `VM_USER`
+- `ANSIBLE_VAULT_PASSWORD` (recommended)
+
+Runner-local fallback:
+- if secret is not set, deploy jobs can use `$HOME/.ansible_vault_pass_lab06` on self-hosted runner host.
 
 ### 4.3 Badge
 
@@ -326,31 +330,20 @@ Status badges added to root `README.md`:
 Validated locally on `2026-03-05`:
 - workflow YAML syntax
 - playbook syntax checks
-- real playbook execution on test target
+- real playbook execution on Docker-based target
 - split app workflows with independent path filters
 
-Mandatory remote evidence status (Lab 6 Task 4.9 requirement):
-- `NOT YET ATTACHED` as of `2026-03-05` in this local-only branch state, because:
-  - no commit/push was performed in this session;
-  - `gh` CLI is not available in the environment;
-  - GitHub Actions evidence exists only after workflow execution in GitHub UI.
-  - badge URLs can return `404` before workflows exist on default branch or for private-repo anonymous access.
-
-How to finalize required CI evidence after push:
-1. Push branch with current files.
-2. Trigger both workflows (`Ansible Deploy Python App`, `Ansible Deploy Bonus App`) by relevant changes or `workflow_dispatch`.
-3. Attach to this report:
-   - screenshot of successful workflow run;
-   - lint job logs (`ansible-lint` pass);
-   - deploy job logs (`ansible-playbook` run);
-   - verify step output (`curl` success);
-   - badge state in README.
+Reproducibility checks executed in this session:
+- `playbooks/deploy.yml` with `vars/local_test.yml`: success; second run `changed=0`.
+- `playbooks/deploy_python.yml` with `vars/local_multiapp_test.yml`: success, health passed.
+- `playbooks/deploy_bonus.yml` with `vars/local_multiapp_test.yml`: success, health passed.
+- `playbooks/deploy_all.yml` with `vars/local_multiapp_test.yml`: success and idempotent (`changed=0`).
 
 ### 4.5 Research answers
 
 1. Security implications of storing SSH keys in GitHub Secrets
-- Secrets reduce accidental disclosure, but compromise risk still exists via workflow misconfiguration, malicious PR logic, or overprivileged keys.
-- Mitigations: least-privilege deploy key, environment protection rules, branch protections, short key rotation cycle.
+- Secrets reduce accidental disclosure, but compromise risk still exists via workflow misconfiguration, malicious PR logic, or overprivileged credentials.
+- Mitigations: least-privilege tokens/keys, environment protection rules, branch protections, and periodic rotation.
 
 2. Staging -> production pipeline design
 - Separate jobs/environments:
@@ -404,22 +397,29 @@ Local validation helper:
 
 ### B1.3 Local evidence
 
-Deploy both:
-```text
-$ ansible-playbook playbooks/deploy_all.yml -e @vars/local_multiapp_test.yml
-PLAY RECAP ... ok=38 changed=6 failed=0
+Local prerequisites (for deterministic replay, run from repository root):
+```bash
+docker rm -f lab05-registry >/dev/null 2>&1 || true
+docker run -d --name lab05-registry -p 5001:5000 registry:2
+docker build -t localhost:5001/devops-info-service:latest app_python
+docker build -t localhost:5001/devops-info-service-go:latest app_go
+docker push localhost:5001/devops-info-service:latest
+docker push localhost:5001/devops-info-service-go:latest
 ```
 
-Idempotency:
+Deploy both apps:
 ```text
-$ ansible-playbook playbooks/deploy_all.yml -e @vars/local_multiapp_test.yml
-PLAY RECAP ... ok=38 changed=0 failed=0
+$ ansible-playbook -i inventory/hosts.local-docker.ini playbooks/deploy_all.yml \
+    --vault-password-file ~/.ansible_vault_pass_lab06 -e @vars/local_multiapp_test.yml
+PLAY RECAP ... failed=0
 ```
+(`changed` count depends on initial host state.)
 
-Both containers running:
+Core deploy replay (`deploy.yml`):
 ```text
-devops-python   host.docker.internal:5001/devops-info-service:latest   Up ... 8000->5000
-devops-go       host.docker.internal:5001/devops-info-service-go:latest Up ... 8001->8080
+$ ansible-playbook -i inventory/hosts.local-docker.ini playbooks/deploy.yml \
+    --vault-password-file ~/.ansible_vault_pass_lab06 -e @vars/local_test.yml
+PLAY RECAP ... failed=0
 ```
 
 Both endpoints healthy:
@@ -430,20 +430,18 @@ curl http://127.0.0.1:8001/health -> {"status":"healthy", ...}
 
 Independent wipe (Python only):
 ```text
-$ ansible-playbook playbooks/deploy_python.yml -e @vars/local_multiapp_test.yml -e web_app_wipe=true --tags web_app_wipe
-PLAY RECAP ... ok=6 changed=3 failed=0
-```
-Verification after wipe:
-```text
-python_absent
-bonus_present
-curl http://127.0.0.1:8001/health -> {"status":"healthy", ...}
+$ ansible-playbook -i inventory/hosts.local-docker.ini playbooks/deploy_python.yml \
+    --vault-password-file ~/.ansible_vault_pass_lab06 \
+    -e @vars/local_multiapp_test.yml -e web_app_wipe=true --tags web_app_wipe
+PLAY RECAP ... failed=0
 ```
 
 Wipe both:
 ```text
-$ ansible-playbook playbooks/deploy_all.yml -e @vars/local_multiapp_test.yml -e web_app_wipe=true --tags web_app_wipe
-PLAY RECAP ... ok=12 changed=6 failed=0
+$ ansible-playbook -i inventory/hosts.local-docker.ini playbooks/deploy_all.yml \
+    --vault-password-file ~/.ansible_vault_pass_lab06 \
+    -e @vars/local_multiapp_test.yml -e web_app_wipe=true --tags web_app_wipe
+PLAY RECAP ... failed=0
 ```
 
 ### B1.4 Trade-offs
@@ -479,17 +477,15 @@ Shared role updates trigger both workflows by design.
 
 Both workflows:
 - lint only required app playbook + shared roles;
-- deploy only the target app playbook;
-- force `web_app_pull_policy=always` in CI deploy step to avoid stale `latest` deploys;
+- rebuild and publish target image to local registry before deploy;
+- deploy only the target app playbook via local Docker inventory;
+- use `web_app_pull_policy=missing` for deterministic idempotent checks in this lab setup;
 - verify the target app endpoint (`8000` for Python, `8001` for Bonus by default).
 
 ### B2.4 Required CI secrets/vars
 
 Secrets:
 - `ANSIBLE_VAULT_PASSWORD`
-- `SSH_PRIVATE_KEY`
-- `VM_HOST`
-- `VM_USER`
 
 Repository Variables (optional overrides):
 - `PYTHON_APP_PORT` (default `8000`)
@@ -499,7 +495,7 @@ Repository Variables (optional overrides):
 
 ### B2.5 Remote evidence status
 
-Workflow execution screenshots/logs remain pending until branch push and GitHub Actions run.
+Workflows were executed successfully in GitHub Actions after migration to self-hosted deploy jobs.
 
 ---
 
@@ -513,20 +509,23 @@ Workflow execution screenshots/logs remain pending until branch push and GitHub 
 - Problem: legacy standalone container had same name and blocked compose create.
 - Fix: inspect existing container and remove only if it is non-compose managed.
 
-3. Stale deploy risk with mutable tags in CD
-- Problem: using `docker_tag=latest` with `pull: missing` can skip fetching new image digests.
+3. Undefined Docker Hub credentials in default deploy flow
+- Problem: `dockerhub_username/password` could be absent and `docker_login` failed before deploy.
 - Fix:
-  - CI workflows force `web_app_pull_policy=always` for deploy jobs.
-  - Optional immutable image tags are supported via workflow vars (`PYTHON_APP_IMAGE_TAG`, `BONUS_APP_IMAGE_TAG`).
-  - Local idempotency tests use override `web_app_pull_policy=missing`.
+  - login task now uses safe defaults (`default('')`);
+  - login runs only when credentials are present;
+  - deploy continues without registry login when login is disabled or creds are absent.
 
-4. `rescue` proof in deterministic way
-- Problem: hard to reproduce transient network errors on demand.
-- Fix: controlled negative test with invalid repo URL to verify rescue path is executed (`rescued=1`).
+4. Local nested-Docker instability (`overlay invalid argument` / registry errors)
+- Problem: Docker daemon config updates were not guaranteed to apply before compose tasks.
+- Fix:
+  - added `meta: flush_handlers` in `docker` role;
+  - added runtime storage-driver check (`docker info`) with conditional Docker restart;
+  - added cleanup of stale stopped compose container before `compose up`.
 
-5. Parallel `deploy_all` race during local validation
-- Problem: two simultaneous `deploy_all` runs caused a container-name conflict (`/devops-python`).
-- Fix: run deployment tests sequentially for deterministic results.
+5. CI deploy depended on pre-existing local images on self-hosted runner
+- Problem: deploy could fail if local registry/image cache state was different.
+- Fix: workflows now recreate local registry and build+push target image before deploy.
 
 ---
 
@@ -537,9 +536,9 @@ Workflow execution screenshots/logs remain pending until branch push and GitHub 
 - Task 2 compose migration: validated
 - Task 2 idempotency: validated (`changed=0` on repeated deploy)
 - Task 3 wipe scenarios: validated (1, 2, 3, 4a, 4b)
-- Task 4 workflow files: implemented and syntax-validated locally
-- Bonus Part 1 (multi-app deploy/wipe/idempotency): validated locally
-- Bonus Part 2 (split workflows + path filters): implemented and locally validated by configuration review
+- Task 4 workflows: validated locally and executed in GitHub Actions
+- Bonus Part 1 (multi-app deploy/wipe/idempotency): reproduced locally after fixes
+- Bonus Part 2 (split workflows + path filters): validated by workflow runs
 
 ---
 
@@ -547,5 +546,5 @@ Workflow execution screenshots/logs remain pending until branch push and GitHub 
 
 - Lab 6 core requirements are implemented.
 - Bonus Part 1 and Bonus Part 2 are implemented.
-- Execution and evidence collection were completed locally on Ubuntu 24.04 Docker target.
-- No commit performed in this branch per request.
+- Core and bonus deploy flows are reproducible locally on Ubuntu 24.04 Docker target.
+- CI workflows are aligned with current implementation (self-hosted local inventory flow).

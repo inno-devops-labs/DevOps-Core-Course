@@ -110,3 +110,36 @@
         name: "{{ docker_service_name }}"
         state: started
         enabled: true
+
+- name: Apply pending Docker handler changes before dependent roles
+  ansible.builtin.meta: flush_handlers
+  tags:
+    - docker
+    - docker_config
+
+- name: Read current Docker storage driver
+  become: true
+  ansible.builtin.command: docker info --format '{{ "{{.Driver}}" }}'
+  register: docker_current_storage_driver
+  changed_when: false
+  failed_when: false
+  when:
+    - docker_manage_daemon_config | bool
+    - docker_daemon_config.get('storage-driver') is defined
+  tags:
+    - docker
+    - docker_config
+
+- name: Restart Docker when runtime storage driver mismatches daemon config
+  become: true
+  ansible.builtin.service:
+    name: "{{ docker_service_name }}"
+    state: restarted
+  when:
+    - docker_manage_daemon_config | bool
+    - docker_daemon_config.get('storage-driver') is defined
+    - docker_current_storage_driver.rc == 0
+    - docker_current_storage_driver.stdout != (docker_daemon_config.get('storage-driver') | string)
+  tags:
+    - docker
+    - docker_config
