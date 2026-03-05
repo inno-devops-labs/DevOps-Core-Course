@@ -1,0 +1,6 @@
+name: lab04-pulumi-aws
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Lab 04 Pulumi project for AWS VM provisioning

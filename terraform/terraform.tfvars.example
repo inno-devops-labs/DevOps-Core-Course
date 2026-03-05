@@ -1,0 +1,6 @@
+aws_region               = "us-east-1"
+availability_zone        = "us-east-1a"
+instance_type            = "t2.micro"
+ssh_allowed_cidr_blocks  = ["203.0.113.10/32"]
+ssh_public_key_path      = "~/.ssh/id_rsa.pub"
+key_pair_name            = "devops-core-lab04-key"
