@@ -1,37 +1,89 @@
----
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
+- name: Docker installation
+  block:
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-- name: Install Docker packages
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-    state: present
-    update_cache: yes
-  notify: restart docker
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
 
-- name: Ensure Docker is running and enabled
-  service:
-    name: docker
-    state: started
-    enabled: yes
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+      notify: restart docker
 
-- name: Ensure user is in docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+    - name: Install Python Docker module for Ansible
+      apt:
+        name: python3-docker
+        state: present
 
-- name: Install Python Docker module for Ansible
-  apt:
-    name: python3-docker
-    state: present
+  rescue:
+    - name: Wait before retry on GPG key failure
+      pause:
+        seconds: 30
+
+    - name: Retry apt update
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Retry install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+      notify: restart docker
+
+    - name: Retry install Python Docker module for Ansible
+      apt:
+        name: python3-docker
+        state: present
+
+  always:
+    - name: Ensure Docker service is enabled and running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+  become: true
+  tags:
+    - docker_install
+    - docker
+
+
+- name: Docker configuration
+  block:
+    - name: Ensure user is in docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+  rescue:
+    - name: Log failure to configure Docker user
+      debug:
+        msg: "Failed to configure Docker user group membership"
+
+  always:
+    - name: Confirm Docker configuration block completed
+      copy:
+        content: "Docker configuration block completed\n"
+        dest: /tmp/devops_setup.log
+
+  become: true
+  tags:
+    - docker_config
+    - docker

@@ -1,10 +1,32 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Manage common packages
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix apt cache
+      command: apt-get update --fix-missing
+      
+    - name: Retry install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log package installation
+      copy:
+        content: "Common packages setup completed successfully\n"
+        dest: /tmp/common_setup.log
+
+  become: true
+  tags:
+    - packages
+    - common

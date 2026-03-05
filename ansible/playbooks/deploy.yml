@@ -9,4 +9,4 @@
       debug:
         var: dockerhub_username
   roles:
-    - app_deploy
+    - web_app

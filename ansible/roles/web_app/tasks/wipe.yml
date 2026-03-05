@@ -1,0 +1,31 @@
+---
+- name: Wipe web application
+  block:
+    - name: Stop and remove containers
+      command: docker compose down --remove-orphans
+      args:
+        chdir: "/opt/{{ app_name }}"
+      ignore_errors: yes
+
+    - name: Remove docker-compose file
+      file:
+        path: "/opt/{{ app_name }}/docker-compose.yml"
+        state: absent
+
+    - name: Remove application directory
+      file:
+        path: "/opt/{{ app_name }}"
+        state: absent
+
+    - name: Optionally remove Docker image
+      command: docker rmi {{ docker_image }}:{{ docker_tag }}
+      when: web_app_wipe_images | default(false) | bool
+
+    - name: Log wipe completion
+      debug:
+        msg: "Application {{ app_name }} wiped successfully"
+
+  when: web_app_wipe | bool
+  become: true
+  tags:
+    - web_app_wipe

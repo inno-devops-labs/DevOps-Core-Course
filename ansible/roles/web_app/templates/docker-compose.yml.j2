@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag }}
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    environment:
+      PORT: "{{ app_internal_port }}"
+      HOST: "0.0.0.0"
+{% for key, value in env_variables.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    restart: {{ restart_policy }}
+    # Add other configuration (volumes, networks, etc.)

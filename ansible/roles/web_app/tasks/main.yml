@@ -1,0 +1,74 @@
+---
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+
+- name: Login to Docker Hub
+  docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+  no_log: true
+  tags:
+    - app_deploy
+    - compose
+
+
+- name: Deploy web application with Docker Compose
+  block:
+    - name: Create application directory
+      file:
+        path: "/opt/{{ app_name }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "/opt/{{ app_name }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Pull latest Docker image
+      community.docker.docker_image:
+        name: "{{ docker_image }}"
+        tag: "{{ docker_tag }}"
+        source: pull
+
+    - name: Deploy application with Docker Compose
+      command: docker compose up -d
+      args:
+        chdir: "/opt/{{ app_name }}"
+      register: compose_result
+      changed_when: "'Started' in compose_result.stderr or 'Created' in compose_result.stderr"
+
+    - name: Wait for app to be ready
+      wait_for:
+        port: "{{ app_port }}"
+        host: "{{ ansible_default_ipv4.address }}"
+        delay: 5
+        timeout: 30
+
+    - name: Check health endpoint
+      uri:
+        url: "http://{{ ansible_default_ipv4.address }}:{{ app_port }}/health"
+        method: GET
+        status_code: 200
+      register: health_check
+      until: health_check.status == 200
+      retries: 5
+      delay: 2
+
+  rescue:
+      - name: Show Docker Compose logs
+        command: docker compose -f /opt/{{ app_name }}/docker-compose.yml logs --tail=50
+        register: compose_logs
+        ignore_errors: yes
+
+      - name: Fail deployment message
+        fail:
+          msg: "Application deployment failed. See logs above."
+
+  tags:
+    - app_deploy
+    - compose

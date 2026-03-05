@@ -1,0 +1,14 @@
+---
+app_name: devops-app
+app_port: 5050
+app_internal_port: 5000
+restart_policy: unless-stopped
+docker_image: chaleshka/devops-info-service
+docker_tag: latest
+
+env_variables: {}
+
+# Set to true to remove application completely
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false
