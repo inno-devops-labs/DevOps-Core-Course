@@ -1,5 +1,5 @@
 ---
-- name: restart app container
+- name: Restart app container
   shell: |
     docker stop "{{ app_container_name }}" || true
     docker rm "{{ app_container_name }}" || true
