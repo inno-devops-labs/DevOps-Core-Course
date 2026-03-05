@@ -5,4 +5,3 @@ common_packages:
   - git
   - vim
   - htop
-timezone: "Europe/Moscow"

@@ -25,7 +25,8 @@
         update_cache: true
   rescue:
     - name: "Rescue: Retry apt update after GPG key failure"
-      ansible.builtin.command: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
       become: true
   always:
     - name: "Always: Ensure Docker service is enabled and started"

@@ -1,13 +1,17 @@
 ---
 - name: Install common packages with error handling
+  become: true
+  tags:
+    - packages
+    - common
   block:
     - name: Update apt cache
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ common_packages }}"
         state: present
   rescue:
@@ -22,27 +26,6 @@
       ansible.builtin.file:
         path: /tmp/common_packages_done
         state: touch
+        mode: "0644"
       tags:
         - packages
-  become: true
-  tags:
-    - packages
-    - common
-
-# Example user management block (add your user tasks here if needed)
-#- name: User management tasks
-#  block:
-#    - name: Create app user
-#      user:
-#        name: "{{ app_user }}"
-#        state: present
-#  become: true
-#  tags:
-#    - users
-#    - common
-
-- name: Set timezone
-  timezone:
-    name: "{{ timezone }}"
-  tags:
-    - common
