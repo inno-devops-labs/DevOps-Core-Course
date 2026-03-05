@@ -23,7 +23,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install ansible + ansible-lint
         run: |
@@ -43,13 +43,13 @@ jobs:
       YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
       YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
       YC_ZONE: ${{ secrets.YC_ZONE }}
-      YC_SERVICE_ACCOUNT_KEY_FILE: ${{ env.RUNNER_TEMP }}/yc-sa-key.json
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install Ansible + collections
         run: |
@@ -66,14 +66,14 @@ jobs:
         env:
           YC_SERVICE_ACCOUNT_KEY_JSON: ${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}
         run: |
-          echo "$YC_SERVICE_ACCOUNT_KEY_JSON" > "$YC_SERVICE_ACCOUNT_KEY_FILE"
-          chmod 600 "$YC_SERVICE_ACCOUNT_KEY_FILE"
+          echo "$YC_SERVICE_ACCOUNT_KEY_JSON" > "$RUNNER_TEMP/yc-sa-key.json"
+          chmod 600 "$RUNNER_TEMP/yc-sa-key.json"
+          echo "YC_SERVICE_ACCOUNT_KEY_FILE=$RUNNER_TEMP/yc-sa-key.json" >> $GITHUB_ENV
 
       - name: Smoke check dynamic inventory (must include webservers)
         run: |
           cd ansible
           python3 inventory/yandex_cloud.py > /tmp/inv.json
-          # quick sanity
           python3 - <<'PY'
           import json
           d=json.load(open("/tmp/inv.json"))
@@ -103,6 +103,7 @@ jobs:
           for h in hosts:
             print(d["_meta"]["hostvars"][h]["ansible_host"])
           PY
+
           mkdir -p ~/.ssh
           while read -r ip; do
             echo "Scanning host key for $ip"
@@ -133,6 +134,5 @@ jobs:
           )
           echo "Using VM IP: $VM_IP"
           sleep 10
-          # У тебя сейчас сервис на 5000. Если переведёшь на 8000 — поменяй порт тут.
           curl -f "http://$VM_IP:5000/health"
           curl -f "http://$VM_IP:5000/"
