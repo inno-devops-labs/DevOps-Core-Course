@@ -3,6 +3,10 @@
 # Tags: docker (whole role), docker_install (install only), docker_config (config only)
 
 - name: Install Docker engine
+  become: true
+  tags:
+    - docker
+    - docker_install
   block:
     - name: Ensure apt keyring directory exists
       ansible.builtin.file:
@@ -60,19 +64,18 @@
         enabled: true
       ignore_errors: true
 
+- name: Configure Docker
   become: true
   tags:
     - docker
-    - docker_install
-
-- name: Configure Docker
+    - docker_config
   block:
     - name: Add deployment user to docker group
       ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
         append: true
-      notify: restart docker
+      notify: Restart Docker
 
   always:
     - name: Log docker config completion
@@ -81,7 +84,3 @@
         content: "docker config block completed at {{ ansible_date_time.iso8601 }}\n"
         mode: "0644"
 
-  become: true
-  tags:
-    - docker
-    - docker_config

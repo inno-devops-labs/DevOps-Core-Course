@@ -3,16 +3,16 @@
 # Used by playbooks/deploy_java.yml
 
 # Application identity
-app_name: devops-java
-docker_image: "112005/devops-lab3-java"
-docker_tag: latest
+web_app_name: devops-java
+web_app_docker_image: "112005/devops-lab3-java"
+web_app_docker_tag: latest
 
 # Port mapping: host:8001 -> container:8080 (Spring Boot)
-app_port: 8001
-app_internal_port: 8080
+web_app_port: 8001
+web_app_internal_port: 8080
 
 # Docker Compose project directory
-compose_project_dir: "/opt/{{ app_name }}"
+web_app_project_dir: "/opt/{{ web_app_name }}"
 
 # Restart policy
-app_restart_policy: unless-stopped
+web_app_restart_policy: unless-stopped

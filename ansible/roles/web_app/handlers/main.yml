@@ -1,7 +1,7 @@
 ---
-- name: compose up
+- name: Compose up
   community.docker.docker_compose_v2:
-    project_src: "{{ compose_project_dir }}"
+    project_src: "{{ web_app_project_dir }}"
     state: present
     pull: always
   become: true

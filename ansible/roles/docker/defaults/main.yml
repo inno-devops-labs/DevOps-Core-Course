@@ -5,7 +5,9 @@ docker_apt_arch_map:
   armv7l: armhf
 
 docker_apt_arch: "{{ docker_apt_arch_map.get(ansible_architecture, 'amd64') }}"
-docker_apt_repo: "deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+docker_apt_repo: >-
+  deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc]
+  https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
 docker_packages:
   - docker-ce
   - docker-ce-cli

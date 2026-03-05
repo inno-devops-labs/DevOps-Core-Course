@@ -21,22 +21,22 @@
       ansible.builtin.include_role:
         name: web_app
       vars:
-        app_name: devops-python
-        docker_image: "112005/devops-lab3-python"
-        docker_tag: latest
-        app_port: 5000
-        app_internal_port: 8080
-        compose_project_dir: "/opt/devops-python"
-        app_restart_policy: unless-stopped
+        web_app_name: devops-python
+        web_app_docker_image: "112005/devops-lab3-python"
+        web_app_docker_tag: latest
+        web_app_port: 5000
+        web_app_internal_port: 8080
+        web_app_project_dir: "/opt/devops-python"
+        web_app_restart_policy: unless-stopped
 
     - name: Deploy Java app (port 8001)
       ansible.builtin.include_role:
         name: web_app
       vars:
-        app_name: devops-java
-        docker_image: "112005/devops-lab3-java"
-        docker_tag: latest
-        app_port: 8001
-        app_internal_port: 8080
-        compose_project_dir: "/opt/devops-java"
-        app_restart_policy: unless-stopped
+        web_app_name: devops-java
+        web_app_docker_image: "112005/devops-lab3-java"
+        web_app_docker_tag: latest
+        web_app_port: 8001
+        web_app_internal_port: 8080
+        web_app_project_dir: "/opt/devops-java"
+        web_app_restart_policy: unless-stopped

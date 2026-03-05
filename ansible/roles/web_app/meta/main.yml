@@ -5,6 +5,7 @@
 galaxy_info:
   author: devops-student
   description: Deploy web application using Docker Compose
+  license: MIT
   min_ansible_version: "2.16"
 
 dependencies:
