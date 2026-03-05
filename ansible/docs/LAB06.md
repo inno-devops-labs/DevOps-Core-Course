@@ -652,3 +652,5 @@ Clean reinstall: Complete state reset, removes all data. Rolling update: Preserv
 
 #### Extending to images and volumes?
 Add tasks with `docker_image` and `docker_volume` modules, gated by separate variables for granular control.
+
+https://github.com/andiazdi/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg
