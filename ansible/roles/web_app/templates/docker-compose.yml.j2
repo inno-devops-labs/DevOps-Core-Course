@@ -3,10 +3,10 @@ services:
     image: {{ docker_image }}:{{ docker_image_tag }}
     container_name: {{ app_name }}
     ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
-{% if app_env_vars is defined and app_env_vars %}
+      - "{{ app_port }}:{{ web_app_internal_port }}"
+{% if web_app_env_vars is defined and web_app_env_vars %}
     environment:
-{% for key, value in app_env_vars.items() %}
+{% for key, value in web_app_env_vars.items() %}
       {{ key }}: "{{ value }}"
 {% endfor %}
 {% endif %}

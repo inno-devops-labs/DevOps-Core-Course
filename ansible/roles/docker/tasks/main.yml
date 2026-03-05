@@ -1,29 +1,33 @@
 ---
 - name: Install Docker
+  become: true
+  tags:
+    - docker
+    - docker_install
   block:
     - name: Install prerequisite packages for Docker repository
-      apt:
+      ansible.builtin.apt:
         name:
           - ca-certificates
           - curl
           - gnupg
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Create directory for Docker GPG key
-      file:
+      ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
         mode: "0755"
 
     - name: Add Docker official GPG key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         keyring: /etc/apt/keyrings/docker.gpg
         state: present
 
     - name: Add Docker repository
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: >-
           deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
           https://download.docker.com/linux/ubuntu
@@ -32,11 +36,11 @@
         state: present
 
     - name: Install Docker packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ docker_packages }}"
         state: present
-        update_cache: yes
-      notify: restart docker
+        update_cache: true
+      notify: Restart docker
 
   rescue:
     - name: Wait before retrying GPG key (network timeout handling)
@@ -44,51 +48,50 @@
         seconds: 10
 
     - name: Retry apt update on GPG key failure
-      apt:
-        update_cache: yes
-        force_apt_get: yes
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
 
     - name: Retry adding Docker GPG key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         keyring: /etc/apt/keyrings/docker.gpg
         state: present
 
     - name: Retry installing Docker packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ docker_packages }}"
         state: present
-        update_cache: yes
-      notify: restart docker
+        update_cache: true
+      notify: Restart docker
 
   always:
     - name: Ensure Docker service is enabled
-      service:
+      ansible.builtin.service:
         name: docker
-        enabled: yes
-      ignore_errors: yes
+        enabled: true
+      failed_when: false
 
+- name: Configure Docker
   become: true
   tags:
     - docker
-    - docker_install
-
-- name: Configure Docker
+    - docker_config
   block:
     - name: Ensure Docker service is started and enabled
-      service:
+      ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
+        enabled: true
 
     - name: Add user to docker group
-      user:
+      ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
-        append: yes
+        append: true
 
     - name: Install python3-docker for Ansible Docker modules
-      apt:
+      ansible.builtin.apt:
         name: python3-docker
         state: present
 
@@ -98,8 +101,3 @@
         content: "Docker configured at {{ ansible_date_time.iso8601 }}\n"
         dest: /tmp/docker_role_completion.log
         mode: '0644'
-
-  become: true
-  tags:
-    - docker
-    - docker_config

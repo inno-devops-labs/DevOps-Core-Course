@@ -2,5 +2,5 @@
 - name: Full Stack Deployment
   import_playbook: provision.yml
 
-- name: Deploy Application  
+- name: Deploy Application
   import_playbook: deploy.yml
