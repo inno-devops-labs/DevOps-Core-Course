@@ -194,7 +194,7 @@ playbook: playbooks/provision.yml
 ```
 
 #### What happens if rescue block also fails?
-Playbook execution stops with failure. The always block still executes before stopping.
+Playbook execution stops with failure. The always block still executes before stopping. 
 
 #### Can you have nested blocks?
 Yes, blocks can be nested. Each level can have its own rescue/always sections.
