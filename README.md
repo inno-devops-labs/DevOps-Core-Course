@@ -1,3 +1,4 @@
+[![Ansible Deployment](https://github.com/SerggAidd/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/SerggAidd/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 # DevOps Engineering: Core Practices
 
 [![Labs](https://img.shields.io/badge/Labs-18-blue)](#labs)

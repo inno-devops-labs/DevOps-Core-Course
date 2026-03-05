@@ -62,6 +62,11 @@ variable "ssh_public_key_path" {
   type = string
 }
 
+# for lab06
+variable "ssh_public_key_path_ci" {
+  type = string
+}
+
 variable "ssh_allowed_cidr" {
   type = string
 }

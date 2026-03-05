@@ -46,6 +46,14 @@ resource "yandex_vpc_security_group" "sg" {
     v4_cidr_blocks = [var.ssh_allowed_cidr]
   }
 
+  # for ansible CI (lab06)
+  ingress {
+    protocol       = "TCP"
+    description    = "SSH from anywhere (CI)"
+    port           = 22
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+
   # HTTP 80
   ingress {
     protocol       = "TCP"
@@ -103,7 +111,10 @@ resource "yandex_compute_instance" "vm" {
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_username}:${trimspace(file(var.ssh_public_key_path))}"
+    ssh-keys = join("\n", [
+      "${var.ssh_username}:${trimspace(file(var.ssh_public_key_path))}",
+      "${var.ssh_username}:${trimspace(file(var.ssh_public_key_path_ci))}", # for lab06
+    ])
   }
 
   labels = {
