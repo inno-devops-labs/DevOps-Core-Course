@@ -59,11 +59,11 @@ jobs:
                   mkdir -p ~/.ssh
                   echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
                   chmod 600 ~/.ssh/id_rsa
-                  ssh-keyscan -v -H ${{ secrets.VM_HOST }}
 
             - name: Deploy with Ansible
               env:
                   ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+                  ANSIBLE_HOST_KEY_CHECKING: False
               run: |
                   cd ansible
                   echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
