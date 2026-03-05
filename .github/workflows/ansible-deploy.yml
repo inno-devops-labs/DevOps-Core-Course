@@ -3,15 +3,14 @@ name: Ansible Deployment
 
 on:
   push:
-    branches: [main, master]
     paths:
       - "ansible/**"
       - ".github/workflows/ansible-deploy.yml"
   pull_request:
-    branches: [main, master]
     paths:
       - "ansible/**"
       - ".github/workflows/ansible-deploy.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -72,13 +71,16 @@ jobs:
           cd ansible
           echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
           chmod 600 /tmp/vault_pass
+          # Override inventory key path: CI writes key to ~/.ssh/id_rsa (runner home), not /home/olesia/.ssh/id_rsa
           ansible-playbook playbooks/deploy.yml \
             -i inventory/hosts.ini \
-            --vault-password-file /tmp/vault_pass
+            --vault-password-file /tmp/vault_pass \
+            -e "ansible_ssh_private_key_file=$HOME/.ssh/id_rsa"
           rm -f /tmp/vault_pass
 
       - name: Verify deployment
         run: |
           sleep 10
-          curl -f --connect-timeout 10 "http://${{ secrets.VM_HOST }}:8000" || exit 1
-          curl -f --connect-timeout 10 "http://${{ secrets.VM_HOST }}:8000/health" || exit 1
+          # App listens on port 5000 (set in vault app_port); use VM_APP_PORT secret if you use a different port
+          curl -f --connect-timeout 10 "http://${{ secrets.VM_HOST }}:5000" || exit 1
+          curl -f --connect-timeout 10 "http://${{ secrets.VM_HOST }}:5000/health" || exit 1

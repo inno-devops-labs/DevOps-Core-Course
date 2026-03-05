@@ -3,7 +3,6 @@ name: Ansible Deploy Bonus
 
 on:
   push:
-    branches: [main, master]
     paths:
       - "ansible/vars/app_bonus.yml"
       - "ansible/playbooks/deploy_bonus.yml"

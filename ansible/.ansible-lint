@@ -1,0 +1,11 @@
+# Use min profile (only syntax/load checks). Skip rules that would require
+# renaming all role vars to web_app_* (breaks vault/group_vars) or other lab structure.
+profile: min
+skip_list:
+  - var-naming
+  - key-order
+  - yaml[truthy]
+  - yaml[line-length]
+  - name[casing]
+  - ignore-errors
+  - command-instead-of-module
