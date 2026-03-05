@@ -1,16 +1,10 @@
 ---
-- name: Configure and deploy web application
+- name: Deploy web application
   hosts: webservers
   become: yes
   gather_facts: yes
 
   roles:
-    - role: common
-      tags:
-        - common
-    - role: docker
-      tags:
-        - docker
     - role: web_app
       tags:
         - app_deploy
@@ -26,6 +20,7 @@
           Application: {{ app_name }}
           Image: {{ docker_image }}:{{ docker_tag }}
           Port: {{ app_port }}
-          Health Check: http://\{\{ ansible_host }}:{{ app_port }}/health
+          Health Check: http://{{ ansible_host }}:{{ app_port }}/health
           ==============================================
-      tags: always
+      tags:
+        - always

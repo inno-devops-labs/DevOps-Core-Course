@@ -1,0 +1,29 @@
+
+PLAY [Provision infrastructure only (no app deployment)] ***********************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab4-vm]
+
+TASK [docker : Update apt cache before Docker install] *************************
+ok: [lab4-vm]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [lab4-vm]
+
+TASK [docker : Ensure Docker service is started and enabled] *******************
+ok: [lab4-vm]
+
+TASK [docker : Add users to docker group] **************************************
+ok: [lab4-vm] => (item=ubuntu)
+
+TASK [docker : Log into Docker Hub] ********************************************
+changed: [lab4-vm]
+
+TASK [Display provisioning summary] ********************************************
+ok: [lab4-vm] => {
+    "msg": "System provisioning complete!\nDocker service status: started\n"
+}
+
+PLAY RECAP *********************************************************************
+lab4-vm                    : ok=7    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

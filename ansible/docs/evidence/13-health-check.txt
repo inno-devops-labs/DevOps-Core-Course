@@ -1,0 +1,17 @@
+
+PLAY [Health check for deployed application] ***********************************
+
+TASK [Check application health endpoint] ***************************************
+ok: [lab4-vm]
+
+TASK [Check Docker service status] *********************************************
+ok: [lab4-vm]
+
+TASK [Display health status] ***************************************************
+ok: [lab4-vm] => {
+    "msg": "========== HEALTH CHECK RESULTS ==========\nApplication Health: 200\nHealth URL: http://localhost:5000/health\nDocker Service: healthy\n==========================================\n"
+}
+
+PLAY RECAP *********************************************************************
+lab4-vm                    : ok=3    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

@@ -1,0 +1,13 @@
+services:
+  "{{ app_name }}":
+    image: "{{ web_app_image_ref }}"
+    container_name: "{{ app_name }}"
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+{% if app_environment | length > 0 %}
+    environment:
+{% for key, value in app_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+    restart: unless-stopped

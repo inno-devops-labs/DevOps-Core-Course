@@ -5,8 +5,12 @@
   gather_facts: yes
 
   roles:
-    - common
-    - docker
+    - role: common
+      tags:
+        - common
+    - role: docker
+      tags:
+        - docker
 
   post_tasks:
     - name: Display provisioning summary

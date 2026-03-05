@@ -1,0 +1,26 @@
+
+PLAY [Provision infrastructure only (no app deployment)] ***********************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab4-vm]
+
+TASK [common : Update apt cache] ***********************************************
+ok: [lab4-vm]
+
+TASK [common : Upgrade all packages] *******************************************
+changed: [lab4-vm]
+
+TASK [common : Install common packages] ****************************************
+changed: [lab4-vm]
+
+TASK [common : Log packages block completion] **********************************
+ok: [lab4-vm]
+
+TASK [Display provisioning summary] ********************************************
+ok: [lab4-vm] => {
+    "msg": "System provisioning complete!\nDocker service status: started\n"
+}
+
+PLAY RECAP *********************************************************************
+lab4-vm                    : ok=6    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

@@ -1,0 +1,5 @@
+
+playbook: playbooks/provision.yml
+
+  play #1 (webservers): Provision infrastructure only (no app deployment)	TAGS: []
+      TASK TAGS: [always, common, docker, docker_config, docker_install, limits, packages, timezone, users]

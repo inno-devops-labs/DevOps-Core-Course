@@ -1,33 +1,58 @@
 ---
-- name: Install Docker packages
-  apt:
-    name: "{{ docker_packages }}"
-    state: present
-  notify: restart docker
-  tags: docker
+- name: Install Docker
+  block:
+    - name: Update apt cache before Docker install
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Ensure Docker service is started and enabled
-  systemd:
-    name: docker
-    state: "{{ docker_service_state }}"
-    enabled: "{{ docker_service_enabled }}"
-    daemon_reload: yes
-  tags: docker
+    - name: Install Docker packages
+      apt:
+        name: "{{ docker_packages }}"
+        state: present
+      notify: restart docker
+  rescue:
+    - name: Wait before retrying apt update
+      wait_for:
+        timeout: 10
 
-- name: Add users to docker group
-  user:
-    name: "{{ item }}"
-    groups: docker
-    append: yes
-  loop: "{{ docker_users }}"
-  notify: reset ssh connection
-  tags: docker
+    - name: Retry apt update after package metadata failure
+      apt:
+        update_cache: yes
 
-- name: Log into Docker Hub
-  docker_login:
-    username: "{{ lookup('env', 'DOCKER_HUB_USERNAME') }}"
-    password: "{{ lookup('env', 'DOCKER_HUB_PASSWORD') }}"
-    state: present
-  become_user: "{{ docker_users[0] }}"
-  tags: docker_login
-  no_log: yes
+    - name: Retry Docker package installation
+      apt:
+        name: "{{ docker_packages }}"
+        state: present
+      notify: restart docker
+  always:
+    - name: Ensure Docker service is started and enabled
+      systemd:
+        name: docker
+        state: "{{ docker_service_state }}"
+        enabled: "{{ docker_service_enabled }}"
+        daemon_reload: yes
+  become: true
+  tags:
+    - docker_install
+
+- name: Configure Docker
+  block:
+    - name: Add users to docker group
+      user:
+        name: "{{ item }}"
+        groups: docker
+        append: yes
+      loop: "{{ docker_users }}"
+      notify: reset ssh connection
+
+    - name: Log into Docker Hub
+      docker_login:
+        username: "{{ docker_hub_username }}"
+        password: "{{ docker_hub_password }}"
+        state: present
+      become_user: "{{ docker_users[0] }}"
+      no_log: yes
+  become: true
+  tags:
+    - docker_config

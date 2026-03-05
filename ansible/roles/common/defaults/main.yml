@@ -18,3 +18,7 @@ common_packages:
   - lsb-release
 
 system_timezone: UTC
+
+# Users managed by the common role
+common_managed_users:
+  - ubuntu

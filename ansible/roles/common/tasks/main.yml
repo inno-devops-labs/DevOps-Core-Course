@@ -1,31 +1,70 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-  tags: always
+- name: Install and update base packages
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Upgrade all packages
-  apt:
-    upgrade: dist
-    autoremove: yes
-    autoclean: yes
-  tags: upgrade
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+        autoremove: yes
+        autoclean: yes
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
-  tags: packages
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+  rescue:
+    - name: Retry apt update with fix-missing
+      command: apt-get update --fix-missing
+      changed_when: false
+
+    - name: Install common packages after apt recovery
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+  always:
+    - name: Log packages block completion
+      lineinfile:
+        path: /tmp/common_role.log
+        create: yes
+        line: "packages block finished on {{ ansible_facts['date_time']['iso8601'] }}"
+      changed_when: false
+  become: true
+  tags:
+    - packages
+
+- name: Manage base users
+  block:
+    - name: Ensure managed users exist
+      user:
+        name: "{{ item }}"
+        state: present
+        shell: /bin/bash
+      loop: "{{ common_managed_users }}"
+  always:
+    - name: Log users block completion
+      lineinfile:
+        path: /tmp/common_role.log
+        create: yes
+        line: "users block finished on {{ ansible_facts['date_time']['iso8601'] }}"
+      changed_when: false
+  become: true
+  tags:
+    - users
 
 - name: Set system timezone
   timezone:
     name: "{{ system_timezone }}"
-  tags: timezone
+  tags:
+    - timezone
 
 - name: Configure system limits
   lineinfile:
     path: /etc/security/limits.conf
     line: "* soft nofile 65536"
     state: present
-  tags: limits
+  tags:
+    - limits

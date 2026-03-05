@@ -1,0 +1,34 @@
+
+PLAY [Deploy web application] **************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab4-vm]
+
+TASK [web_app : Include wipe tasks] ********************************************
+included: /home/j0cos/innopolis/Devops/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for lab4-vm
+
+TASK [web_app : Check if compose file exists] **********************************
+ok: [lab4-vm]
+
+TASK [web_app : Stop and remove compose services] ******************************
+changed: [lab4-vm]
+
+TASK [web_app : Remove docker-compose file] ************************************
+changed: [lab4-vm]
+
+TASK [web_app : Remove application directory] **********************************
+changed: [lab4-vm]
+
+TASK [web_app : Log wipe completion] *******************************************
+ok: [lab4-vm] => {
+    "msg": "Application devops-info-service wiped successfully"
+}
+
+TASK [Display deployment summary] **********************************************
+ok: [lab4-vm] => {
+    "msg": "==============================================\nDeployment Summary\n==============================================\nApplication: devops-info-service\nImage: j0cos/devops-info-service:latest:latest\nPort: 5000\nHealth Check: http://93.77.190.199:5000/health\n==============================================\n"
+}
+
+PLAY RECAP *********************************************************************
+lab4-vm                    : ok=8    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

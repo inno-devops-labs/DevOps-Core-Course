@@ -1,0 +1,21 @@
+---
+# Web application deployment defaults
+app_name: devops-app
+docker_image: j0cos/devops-info-service
+docker_tag: latest
+app_port: 8000
+app_internal_port: 5000
+
+# Docker Compose config
+compose_project_dir: "/opt/{{ app_name }}"
+compose_project_name: "{{ app_name }}"
+compose_pull_policy: always
+
+# Environment variables passed to the app container
+app_environment:
+  FLASK_ENV: production
+
+# Set to true to remove application completely
+# Wipe only: ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

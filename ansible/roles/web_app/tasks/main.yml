@@ -1,0 +1,61 @@
+---
+# Wipe logic runs first (only with variable+tag gate)
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  block:
+    - name: Build final image reference
+      set_fact:
+        # If docker_image already contains tag in the last path segment, keep it as-is.
+        web_app_image_ref: "{{ docker_image if (docker_image.rsplit('/', 1)[-1] is search(':')) else (docker_image ~ ':' ~ docker_tag) }}"
+
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Render docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Pull and start compose services
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        project_name: "{{ compose_project_name }}"
+        state: present
+        pull: "{{ compose_pull_policy }}"
+      register: compose_up_result
+
+    - name: Wait for application health endpoint
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        method: GET
+        status_code: 200
+      register: app_health
+      retries: 8
+      delay: 5
+      until: app_health.status == 200
+
+  rescue:
+    - name: Report deployment failure details
+      debug:
+        var: compose_up_result
+
+    - name: Fail deployment explicitly
+      fail:
+        msg: "Web app deployment failed. Check compose logs on target host."
+
+  become: true
+  tags:
+    - app_deploy
+    - compose

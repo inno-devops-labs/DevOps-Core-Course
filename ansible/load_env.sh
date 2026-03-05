@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Load environment variables from .env file
-# This script loads Docker Hub credentials and VM configuration
+# This script loads VM connectivity and non-secret app settings
 
 set -a  # Export all variables
 
@@ -18,8 +18,6 @@ source .env
 
 # Validate required variables
 REQUIRED_VARS=(
-    "DOCKER_HUB_USERNAME"
-    "DOCKER_HUB_PASSWORD"
     "ANSIBLE_HOST_IP"
     "ANSIBLE_USER"
     "ANSIBLE_SSH_KEY"
@@ -39,7 +37,6 @@ set +a  # Stop exporting
 echo ""
 echo "✅ Environment variables loaded successfully!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Docker Hub Username: $DOCKER_HUB_USERNAME"
 echo "VM IP Address: $ANSIBLE_HOST_IP"
 echo "VM User: $ANSIBLE_USER"
 echo "SSH Key: $ANSIBLE_SSH_KEY"

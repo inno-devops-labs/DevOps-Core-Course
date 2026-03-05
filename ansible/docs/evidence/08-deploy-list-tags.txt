@@ -1,0 +1,5 @@
+
+playbook: playbooks/deploy.yml
+
+  play #1 (webservers): Deploy web application	TAGS: []
+      TASK TAGS: [always, app_deploy, compose, docker_config, docker_install, web_app, web_app_wipe]
