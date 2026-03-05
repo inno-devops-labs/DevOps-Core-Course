@@ -329,6 +329,37 @@ Each workflow has specific path filters:
 
 ---
 
+## Challenges & Solutions
+
+### Challenge 1: Docker Compose Module Compatibility
+**Problem:** The `community.docker.docker_compose_v2` module requires the docker-compose Python library, which has compatibility issues with Python 3.12 and Ubuntu 24.04's PEP 668 restrictions.
+
+**Solution:** Switched to using `docker compose` CLI commands directly via the `command` module. This works with the native `docker-compose-plugin` installed via apt.
+
+### Challenge 2: Wipe Logic Execution Order
+**Problem:** Initially unclear whether wipe should come before or after deployment tasks.
+
+**Solution:** Placed wipe tasks at the beginning of `main.yml` to enable clean reinstallation workflow (wipe → deploy). This allows users to run `ansible-playbook deploy.yml -e "web_app_wipe=true"` for a fresh start.
+
+### Challenge 3: Multi-App Port Conflicts
+**Problem:** Running both Python and Go apps simultaneously would cause port conflicts.
+
+**Solution:** Configured different ports for each application:
+- Python app: port 5000 (internal: 5000)
+- Go app: port 5001 (internal: 8080)
+
+### Challenge 4: GitHub Actions Self-Hosted Runner
+**Problem:** Workflows require a runner with access to the target VM.
+
+**Solution:** Installed and configured a self-hosted runner on the EC2 instance, configured as a systemd service for automatic startup.
+
+### Challenge 5: Ansible Vault in CI/CD
+**Problem:** Encrypted variables need to be decrypted during automated deployments.
+
+**Solution:** Stored the vault password in GitHub Secrets and wrote it to a temp file during the workflow run, then cleaned it up after deployment.
+
+---
+
 ## Summary
 
 ### Accomplishments
