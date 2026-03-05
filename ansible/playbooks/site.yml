@@ -1,6 +1,6 @@
 ---
 - name: Full Infrastructure Deployment
   hosts: all
-  become: yes
+  become: true
   roles:
     - web_app

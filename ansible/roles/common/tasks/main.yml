@@ -7,7 +7,6 @@
 
 - name: Install required packages
   block:
-
     - name: Update apt cache
       apt:
         update_cache: yes
@@ -22,13 +21,11 @@
         state: present
 
   rescue:
-
     - name: Retry apt update with fix-missing
       command: apt-get update --fix-missing
       changed_when: true
 
   always:
-
     - name: Log package block completion
       copy:
         content: "Packages block executed at {{ ansible_date_time.iso8601 }}"
@@ -40,10 +37,8 @@
     - packages
     - common
 
-
 - name: Manage system users
   block:
-
     - name: Create deploy user
       user:
         name: deploy
@@ -52,7 +47,6 @@
         state: present
 
   always:
-
     - name: Log users block completion
       copy:
         content: "Users block executed at {{ ansible_date_time.iso8601 }}"

@@ -1,7 +1,7 @@
 ---
 - name: Test Deploy
   hosts: all
-  become: yes
+  become: true
 
   tasks:
     - name: Log into Docker Hub

@@ -7,7 +7,6 @@
 
 - name: Install Docker
   block:
-
     - name: Install prerequisites
       apt:
         name:
@@ -35,7 +34,6 @@
         update_cache: yes
 
   rescue:
-
     - name: Wait before retry
       pause:
         seconds: 10
@@ -45,7 +43,6 @@
         update_cache: yes
 
   always:
-
     - name: Ensure Docker is enabled
       service:
         name: docker
@@ -57,10 +54,8 @@
     - docker
     - docker_install
 
-
 - name: Configure Docker
   block:
-
     - name: Add user to docker group
       user:
         name: "{{ ansible_user }}"

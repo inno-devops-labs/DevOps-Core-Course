@@ -1,7 +1,6 @@
 ---
 - name: Wipe web application
   block:
-
     - name: Stop and remove containers
       community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"

@@ -6,3 +6,5 @@ terraform.tfvars
 *.json
 .terraform.lock.hcl
 .vault_pass
+venv/
+.ansible/
