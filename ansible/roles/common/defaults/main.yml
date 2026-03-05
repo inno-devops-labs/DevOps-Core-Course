@@ -13,3 +13,5 @@ common_packages:
   - apt-transport-https
 
 common_timezone: UTC
+
+common_users: []

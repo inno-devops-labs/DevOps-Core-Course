@@ -1,0 +1,16 @@
+---
+# Application Configuration
+app_name: devops-app
+docker_image: mclavrushka/devops-info-service
+docker_tag: latest
+app_port: 5000
+app_internal_port: 5000
+app_env: {}
+
+# Docker Compose Config
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Wipe Logic Control
+web_app_wipe: false
+
