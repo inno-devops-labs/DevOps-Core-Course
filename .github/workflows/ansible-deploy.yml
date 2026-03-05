@@ -54,7 +54,11 @@ jobs:
       - name: Run ansible-lint
         run: |
           cd ansible
-          ansible-lint -c .ansible-lint playbooks/deploy_python.yml roles/docker roles/web_app
+          if [ -f .ansible-lint ]; then
+            ansible-lint -c .ansible-lint playbooks/deploy_python.yml roles/docker roles/web_app
+          else
+            ansible-lint playbooks/deploy_python.yml roles/docker roles/web_app
+          fi
 
   deploy:
     name: Deploy Python app

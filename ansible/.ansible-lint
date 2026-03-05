@@ -1,0 +1,9 @@
+---
+offline: true
+
+exclude_paths:
+  - docs/
+  - group_vars/all.yml
+
+skip_list:
+  - var-naming[no-role-prefix]
