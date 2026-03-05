@@ -32,10 +32,12 @@ jobs:
       - name: Run ansible-lint
         env:
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+          ANSIBLE_VAULT_PASSWORD_FILE: /tmp/vault_pass
         run: |
           cd ansible
           echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
-          ansible-lint playbooks/*.yml --vault-password-file /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+          ansible-lint playbooks/*.yml
           rm /tmp/vault_pass
 
   deploy:
