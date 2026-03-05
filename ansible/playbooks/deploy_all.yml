@@ -1,4 +1,5 @@
 ---
+# Deploy both Python app and bonus app. Use same image/tag as in vault for Python app.
 - name: Deploy all applications
   hosts: webservers
   become: true
@@ -9,10 +10,11 @@
         name: web_app
       vars:
         app_name: devops-python
-        docker_image: "{{ dockerhub_username | default('your_username') }}/devops-info-service"
-        docker_tag: latest
+        # Same image as main deploy; use host port 8000 so it does not conflict with app on 5000 from deploy.yml
+        docker_image: "{{ dockerhub_username | default('your_username') }}/devops-info-python"
+        docker_image_tag: lab03
         app_port: 8000
-        app_internal_port: 8000
+        app_internal_port: 5000
         compose_project_dir: "/opt/devops-python"
 
     - name: Deploy bonus app
@@ -20,8 +22,8 @@
         name: web_app
       vars:
         app_name: devops-go
-        docker_image: "{{ dockerhub_username | default('your_username') }}/devops-info-service-go"
-        docker_tag: latest
+        docker_image: "{{ dockerhub_username | default('your_username') }}/devops-info-go"
+        docker_image_tag: lab03
         app_port: 8001
         app_internal_port: 8080
         compose_project_dir: "/opt/devops-go"

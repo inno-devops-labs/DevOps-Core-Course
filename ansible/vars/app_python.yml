@@ -1,7 +1,7 @@
 ---
 # Variables for Python app deployment (single-app or multi-app).
 app_name: devops-python
-docker_image: "{{ dockerhub_username | default('your_username') }}/devops-info-service"
+docker_image: "{{ dockerhub_username | default('your_username') }}/devops-info-python"
 docker_tag: latest
 app_port: 8000
 app_internal_port: 8000

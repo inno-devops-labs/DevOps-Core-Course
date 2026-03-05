@@ -8,6 +8,7 @@ on:
       - "ansible/playbooks/deploy_bonus.yml"
       - "ansible/roles/web_app/**"
       - ".github/workflows/ansible-deploy-bonus.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -48,7 +49,10 @@ jobs:
           cd ansible
           echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
           chmod 600 /tmp/vault_pass
-          ansible-playbook playbooks/deploy_bonus.yml -i inventory/hosts.ini --vault-password-file /tmp/vault_pass
+          ansible-playbook playbooks/deploy_bonus.yml \
+            -i inventory/hosts.ini \
+            --vault-password-file /tmp/vault_pass \
+            -e "ansible_ssh_private_key_file=$HOME/.ssh/id_rsa"
           rm -f /tmp/vault_pass
       - name: Verify bonus app
         run: |
