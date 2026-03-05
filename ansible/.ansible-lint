@@ -7,4 +7,3 @@ skip_list:
   - no-changed-when
   - no-handler
   - fqcn[canonical]
-  - syntax-check[empty-playbook]
