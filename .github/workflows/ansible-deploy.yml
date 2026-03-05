@@ -2,13 +2,13 @@ name: Ansible Deployment
 
 on:
   push:
-    branches: [ master, main,lab6 ]
+    branches: [ master, lab6 ]
     paths:
       - 'ansible/**'
       - '!ansible/docs/**'
       - '.github/workflows/ansible-deploy.yml'
   pull_request:
-    branches: [ master, main, lab6 ]
+    branches: [ master, lab6 ]
     paths:
       - 'ansible/**'
 
@@ -67,14 +67,21 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Create vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+
       - name: Deploy with Ansible
         run: |
           cd ansible
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
           ansible-playbook playbooks/deploy.yml \
             -i inventory/hosts.ini \
-            --vault-password-file /tmp/vault_pass
-          rm /tmp/vault_pass
+            -e "ansible_ssh_private_key_file=~/.ssh/id_rsa"
+
+      - name: Remove vault password file
+        if: always()
+        run: rm -f ansible/.vault_pass
 
       - name: Verify Deployment
         run: |
