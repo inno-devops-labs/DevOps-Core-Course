@@ -1,0 +1,5 @@
+---
+# Role dependencies
+# docker role must run before web_app to ensure Docker and Docker Compose are installed
+dependencies:
+  - role: docker

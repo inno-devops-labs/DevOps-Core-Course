@@ -1,39 +1,85 @@
 ---
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+# Docker installation block with error handling and retry logic
+- name: Install Docker
+  block:
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
 
-- name: Update apt cache
-  apt:
-    update_cache: yes
+    - name: Update apt cache
+      apt:
+        update_cache: yes
 
-- name: Install Docker packages
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-    state: present
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose
+        state: present
 
-- name: Check Docker service running
-  service:
-    name: docker
-    state: started
-    enabled: yes
+  rescue:
+    - name: Wait and retry on GPG key failure
+      wait_for:
+        timeout: 10
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: "{{ docker_group }}"
-    append: yes
+    - name: Retry Docker repository add
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
 
-- name: Install python3-docker package
-  apt:
-    name: "{{ python3_docker_package }}"
-    state: present
+    - name: Update apt cache retry
+      apt:
+        update_cache: yes
+
+    - name: Retry Docker package installation
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose
+        state: present
+
+  become: true
+  tags:
+    - docker_install
+    - docker
+
+# Docker configuration block
+- name: Configure Docker
+  block:
+    - name: Check Docker service running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: "{{ docker_group }}"
+        append: yes
+
+    - name: Install python3-docker package
+      apt:
+        name: "{{ python3_docker_package }}"
+        state: present
+
+  always:
+    - name: Ensure Docker service is enabled
+      service:
+        name: docker
+        enabled: yes
+
+  become: true
+  tags:
+    - docker_config
+    - docker
