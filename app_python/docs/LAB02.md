@@ -14,7 +14,7 @@ The image is based on `python:3.12-slim`. Using a specific version instead of `l
 
 The `slim` variant was chosen because it provides a good balance between minimal size and compatibility with Python dependencies.
 
-### Layer caching optimization 
+### Layer caching optimization  
 
 Dependencies are installed before copying the application source code. This allows Docker to reuse cached layers when only the application code changes, which significantly speeds up rebuilds during development.
 

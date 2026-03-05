@@ -77,11 +77,16 @@ jobs:
         echo "${{ secrets.ANSIBLE_PASSWORD }}" > pass.txt
         chmod 600 pass.txt
 
+    - name: Create temporary inventory
+      run: |
+        echo "[webservers]" > inventory.ini
+        echo "$SERVER_IP ansible_user=ubuntu ansible_private_key_file=key.pem" >> inventory.ini
+
     - name: Ansible Run
       env:
         SERVER_IP: ${{ secrets.SERVER_IP }}
       run: |
-        ansible-playbook -i "$SERVER_IP," ./ansible/playbooks/deploy.yml \
+        ansible-playbook -i inventory.ini ./ansible/playbooks/deploy.yml \
           --user ubuntu \
           --private-key key.pem \
           --extra-vars "@ansible/group_vars/all.yml" \
