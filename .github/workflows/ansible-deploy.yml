@@ -2,13 +2,13 @@ name: Ansible Deployment
 
 on:
   push:
-    branches: [ master, lab6 ]
+    branches: [ master, main,lab6 ]
     paths:
       - 'ansible/**'
       - '!ansible/docs/**'
       - '.github/workflows/ansible-deploy.yml'
   pull_request:
-    branches: [ master, lab6 ]
+    branches: [ master, main, lab6 ]
     paths:
       - 'ansible/**'
 
