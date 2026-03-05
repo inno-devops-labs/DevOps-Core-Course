@@ -4,21 +4,29 @@
   tags:
     - web_app_wipe
   block:
+    - name: Check if compose project directory exists
+      stat:
+        path: "{{ compose_project_dir }}"
+      register: compose_dir
+
     - name: Stop and remove Compose stack
       community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"
         state: absent
+      when: compose_dir.stat.isdir | default(false)
       ignore_errors: true
 
     - name: Remove docker-compose file
       file:
         path: "{{ compose_project_dir }}/docker-compose.yml"
         state: absent
+      when: compose_dir.stat.exists | default(false)
 
     - name: Remove application directory
       file:
         path: "{{ compose_project_dir }}"
         state: absent
+      when: compose_dir.stat.exists | default(false)
 
     - name: Confirm application wipe
       debug:
