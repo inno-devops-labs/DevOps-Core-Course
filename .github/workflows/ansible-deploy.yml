@@ -65,7 +65,9 @@ jobs:
           ${{ secrets.SSH_PRIVATE_KEY }}
           EOF
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts 2>&1 || true
+          ls -la ~/.ssh/
+          file ~/.ssh/id_rsa
 
       - name: Deploy with Ansible
         run: |
