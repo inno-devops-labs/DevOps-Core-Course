@@ -2,29 +2,28 @@ name: Ansible Deployment
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
     paths:
       - "ansible/**"
       - ".github/workflows/ansible-deploy.yml"
+
   pull_request:
-    branches:
-      - main
-      - master
+    branches: [main, master]
     paths:
       - "ansible/**"
       - ".github/workflows/ansible-deploy.yml"
 
 jobs:
+
   lint:
     name: Ansible Lint
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -35,25 +34,30 @@ jobs:
           pip install ansible ansible-lint
           ansible-galaxy collection install community.docker
 
-      - name: Create dummy vault password for lint
+      - name: Create dummy vault password (required by ansible.cfg)
         working-directory: ansible
-        run: echo "dummy" > .vault_pass
+        run: |
+          echo "dummy" > .vault_pass
 
       - name: Run ansible-lint
         working-directory: ansible
-        run: ansible-lint playbooks/*.yml
+        run: |
+          ansible-lint playbooks/*.yml
+
 
   deploy:
     name: Deploy Application
     needs: lint
     runs-on: ubuntu-latest
+
     env:
       ANSIBLE_HOST_KEY_CHECKING: "False"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -63,6 +67,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install ansible
           ansible-galaxy collection install community.docker
+
+      - name: Create vault password file
+        working-directory: ansible
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
 
       - name: Configure SSH
         run: |
@@ -74,25 +83,20 @@ jobs:
       - name: Generate CI inventory
         working-directory: ansible/inventory
         run: |
-          cat <<'EOF' > ci_hosts.ini
+          cat <<EOF > ci_hosts.ini
           [webservers]
           ci ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }} ansible_ssh_private_key_file=~/.ssh/ansible_deploy
           EOF
 
       - name: Deploy with Ansible
-        env:
-          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         working-directory: ansible
         run: |
-          echo "$ANSIBLE_VAULT_PASSWORD" > vault_pass.txt
           ansible-playbook playbooks/deploy.yml \
             -i inventory/ci_hosts.ini \
-            --vault-password-file vault_pass.txt \
             --tags app_deploy
-          rm -f vault_pass.txt
 
       - name: Verify deployment
         run: |
           sleep 10
-          curl -f http://${{ secrets.VM_HOST }}:8000 || exit 1
-          curl -f http://${{ secrets.VM_HOST }}:8000/health || exit 1
+          curl -f http://${{ secrets.VM_HOST }}:8000
+          curl -f http://${{ secrets.VM_HOST }}:8000/health
