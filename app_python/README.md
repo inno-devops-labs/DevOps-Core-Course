@@ -126,4 +126,4 @@ docker rmi <image-name>:<tag>
 ```
 
 ## Lab 6 Status
-[![Ansible Deployment](https://github.com/AliyaSag/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/AliyaSag/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
+[![Ansible Deployment](https://github.com/AliyaSag/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)]([https://github.com/AliyaSag/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)](https://github.com/AliyaSag/DevOps-Core-Course/tree/lab6-advanced-ansible/.github/workflows)
