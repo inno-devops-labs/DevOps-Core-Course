@@ -58,7 +58,7 @@ ansible/
 ├── roles/
 │   ├── common/
 │   ├── docker/
-│   └── app_deploy/
+│   └── web_app/
 ├── playbooks/
 │   ├── provision.yml
 │   ├── deploy.yml
@@ -166,7 +166,7 @@ Second run produces zero changes.
 
 ---
 
-## 2.3 Role: `app_deploy`
+## 2.3 Role: `web_app`
 
 ### Purpose
 

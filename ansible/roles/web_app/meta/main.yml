@@ -1,0 +1,3 @@
+---
+dependencies:
+  - role: docker  # Docker engine must exist before compose deployment

@@ -1,10 +1,42 @@
----
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Ensure base packages are available
+  tags:
+    - common
+    - packages
+  block:
+    - name: Update apt cache for base packages
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+  rescue:
+    - name: Retry apt cache update with fix-missing
+      command: apt-get update --fix-missing
+  always:
+    - name: Log completion of package setup
+      copy:
+        dest: /tmp/common_packages.log
+        content: "Common role package block completed at {{ ansible_date_time.iso8601 }}\n"
+        mode: "0644"
+  become: true
+
+- name: Manage common user accounts
+  tags:
+    - common
+    - users
+  block:
+    - name: Ensure declared users exist
+      user:
+        name: "{{ item.name }}"
+        state: "{{ item.state | default('present') }}"
+        groups: "{{ item.groups | default(omit) }}"
+        shell: "{{ item.shell | default('/bin/bash') }}"
+        create_home: "{{ item.create_home | default(true) }}"
+      loop: "{{ common_users }}"
+      loop_control:
+        label: "{{ item.name }}"
+  when: common_users | length > 0
+  become: true
