@@ -142,7 +142,7 @@ Workflow Overviews
   * Checkout code.
   * Set up Terraform
   * Terraform Init
-  * Terraform Apply
+  * Terraform Apply 
 
 Applies the infrastructure automatically (terraform apply -auto-approve) using stored AWS credentials.
 
