@@ -1,24 +1,23 @@
 ---
-app_name: myapp
+web_app_name: myapp
 
 # Image settings
-docker_image: "{{ dockerhub_username | default('nonamecorn') }}/{{ app_name }}"
-docker_tag: "{{ docker_image_tag | default('latest') }}"
+web_app_docker_image: "{{ (dockerhub_username | default('nonamecorn')) ~ '/' ~ web_app_name }}"
+web_app_docker_tag: latest
 
 # Runtime ports
-app_port: 5000
-app_internal_port: 5000
+web_app_port: 5000
+web_app_internal_port: 5000
 
 # Docker Compose settings
-compose_project_dir: "/opt/{{ app_name }}"
-docker_compose_version: "3.8"
-app_restart_policy: unless-stopped
-app_env:
-  PORT: "{{ app_internal_port }}"
-app_healthcheck_url: "http://127.0.0.1:{{ app_port }}/health"
+web_app_compose_project_dir: "/opt/{{ web_app_name }}"
+web_app_restart_policy: unless-stopped
+web_app_env:
+  PORT: "{{ web_app_internal_port }}"
+web_app_healthcheck_url: "http://127.0.0.1:{{ web_app_port }}/health"
 
 # Security/logging behavior
-app_deploy_no_log: true
+web_app_deploy_no_log: true
 
 # Wipe logic (double-gated with var + tag)
 web_app_wipe: false

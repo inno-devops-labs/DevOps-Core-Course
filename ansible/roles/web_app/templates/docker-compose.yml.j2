@@ -1,13 +1,20 @@
+{% set effective_name = app_name | default(web_app_name) %}
+{% set effective_image = docker_image | default(web_app_docker_image) %}
+{% set effective_tag = docker_tag | default(docker_image_tag | default(web_app_docker_tag)) %}
+{% set effective_port = app_port | default(web_app_port) %}
+{% set effective_internal_port = app_internal_port | default(web_app_internal_port) %}
+{% set effective_restart_policy = app_restart_policy | default(web_app_restart_policy) %}
+{% set effective_env = app_env | default(web_app_env) %}
 services:
-  {{ app_name }}:
-    image: "{{ docker_image }}:{{ docker_tag }}"
-    container_name: "{{ app_name }}"
-    restart: "{{ app_restart_policy }}"
+  {{ effective_name }}:
+    image: "{{ effective_image }}:{{ effective_tag }}"
+    container_name: "{{ effective_name }}"
+    restart: "{{ effective_restart_policy }}"
     ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
-{% if app_env | length > 0 %}
+      - "{{ effective_port }}:{{ effective_internal_port }}"
+{% if effective_env | length > 0 %}
     environment:
-{% for env_key, env_value in app_env.items() %}
+{% for env_key, env_value in effective_env.items() %}
       {{ env_key }}: "{{ env_value }}"
 {% endfor %}
 {% endif %}
@@ -16,4 +23,4 @@ services:
 
 networks:
   app_net:
-    name: "{{ app_name }}_net"
+    name: "{{ effective_name }}_net"

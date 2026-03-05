@@ -1,5 +1,9 @@
 ---
 - name: Install baseline packages
+  become: true
+  tags:
+    - common
+    - packages
   block:
     - name: Update apt cache
       ansible.builtin.apt:
@@ -12,9 +16,10 @@
         state: present
 
   rescue:
-    - name: Retry apt cache refresh with fix-missing
-      ansible.builtin.command: apt-get update --fix-missing
-      changed_when: false
+    - name: Retry apt cache refresh
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
 
     - name: Retry package installation after apt recovery
       ansible.builtin.apt:
@@ -30,12 +35,11 @@
         mode: "0644"
         line: "{{ ansible_date_time.iso8601 }} common/packages completed on {{ inventory_hostname }}"
 
+- name: Manage local users
   become: true
   tags:
     - common
-    - packages
-
-- name: Manage local users
+    - users
   block:
     - name: Ensure managed users exist
       ansible.builtin.user:
@@ -56,8 +60,3 @@
         create: true
         mode: "0644"
         line: "{{ ansible_date_time.iso8601 }} common/users completed on {{ inventory_hostname }}"
-
-  become: true
-  tags:
-    - common
-    - users

@@ -1,4 +1,4 @@
 ---
-- name: restart web application stack
-  ansible.builtin.command: docker compose -f {{ compose_project_dir }}/docker-compose.yml restart
+- name: Restart web application stack
+  ansible.builtin.command: docker compose -f {{ compose_project_dir | default(web_app_compose_project_dir) }}/docker-compose.yml restart
   changed_when: true

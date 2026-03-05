@@ -2,8 +2,11 @@
 - name: Deploy application
   hosts: webservers
   become: true
-  vars_files:
-    - ../group_vars/all.yml
+  pre_tasks:
+    - name: Load deployment variables from vault file
+      ansible.builtin.include_vars:
+        file: ../group_vars/all.yml
+      no_log: true
   roles:
     - role: web_app
       tags:
