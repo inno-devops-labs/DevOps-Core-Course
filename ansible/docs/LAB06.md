@@ -72,7 +72,7 @@ changed: [devops-lab04-vm]
 - How do tags behave with blocks?  
   Tags defined on a block/task are inherited by all nested tasks; task‑specific tags are merged with the block’s tags.
 
----
+
 
 ## Task 2: Docker Compose (3 pts)
 
@@ -153,7 +153,7 @@ $ curl http://89.169.151.150:5000/health
 - Can Vault variables be used in the template?  
   Yes. Once Ansible decrypts Vault data, the variables are available like any other and can be referenced in the Jinja2 template.
 
----
+
 
 ## Task 3: Wipe Logic (1 pt)
 
@@ -268,7 +268,7 @@ CONTAINER ID   IMAGE                                    COMMAND           STATUS
 - How to extend wipe to images and volumes?  
   Add `docker_image` tasks with `state: absent` and use `docker_volume` or `docker_prune` modules to remove unused resources.
 
----
+
 
 ## Task 4: CI/CD (3 pts)
 
@@ -298,7 +298,7 @@ https://github.com/McLavrushka/DevOps-Core-Course/actions/workflows/ansible-depl
 - Self‑hosted runner and security  
   A self‑hosted runner runs inside your infrastructure, avoiding sending SSH keys to GitHub‑hosted machines and giving more control over network and environment, but you are responsible for hardening and maintaining that runner.
 
----
+
 
 ## Task 5: Documentation
 
@@ -307,7 +307,7 @@ https://github.com/McLavrushka/DevOps-Core-Course/actions/workflows/ansible-depl
   - Comments in Ansible roles (blocks, tags, wipe logic).
   - CI/CD workflow with descriptive step names.
 
----
+
 
 ## Bonus Part 1: Multi-App (1.5 pts)
 
@@ -315,7 +315,7 @@ https://github.com/McLavrushka/DevOps-Core-Course/actions/workflows/ansible-depl
 - Separate variable files and playbooks can be added for the Python app and a bonus app (Go/other), allowing independent and combined deployments.
 - The key is to use different ports and app names so containers can run in parallel without conflicts.
 
----
+
 
 ## Bonus Part 2: Multi-App CI/CD (1 pt)
 
@@ -325,7 +325,7 @@ https://github.com/McLavrushka/DevOps-Core-Course/actions/workflows/ansible-depl
   - The bonus app deploys only when its own files change.
   - Changes to the shared `web_app` role trigger deployments for both apps.
 
----
+
 
 ## Summary
 
