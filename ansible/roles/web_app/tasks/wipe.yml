@@ -8,7 +8,7 @@
     - web_app_wipe
   block:
     - name: Stop and remove Docker Compose containers
-      community.docker.docker_compose:
+      community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"
         state: absent
 

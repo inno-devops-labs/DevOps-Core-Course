@@ -24,9 +24,9 @@
         mode: '0644'
 
     - name: Deploy with docker-compose
-      community.docker.docker_compose:
+      community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"
-        pull: true
+        pull: always
         state: present
       register: compose_result
 
