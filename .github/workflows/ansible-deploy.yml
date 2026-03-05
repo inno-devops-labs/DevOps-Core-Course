@@ -49,8 +49,13 @@ jobs:
           with:
             python-version: '3.12'
 
-        - name: Install Ansible & Docker Deps
-          run: pip install ansible community.docker
+        - name: Install Ansible
+          run: |
+            pip install ansible
+
+        - name: Install Ansible collections
+          run: |
+            ansible-galaxy collection install -r ansible/requirements.yml
 
         - name: Setup SSH
           run: |
