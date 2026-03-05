@@ -21,7 +21,7 @@
   - checks User-Agent and IP in request in block
 
 **CI Workflow Trigger:**
-- **push:** 'app_python/'
+- **push:** 'app_python/' 
 - **pull_request:** 'app_python/'
 
 **Versioning Strategy:** Calendar Versioning (CalVer)

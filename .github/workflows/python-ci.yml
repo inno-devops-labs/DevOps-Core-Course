@@ -78,14 +78,15 @@ jobs:
         chmod 600 pass.txt
 
     - name: Ansible Run
+      env:
+        SERVER_IP: ${{ secrets.SERVER_IP }}
       run: |
-        ansible-playbook -i "${{ secrets.SERVER_IP }}" ./ansible/playbooks/deploy.yml \
+        ansible-playbook -i "$SERVER_IP," ./ansible/playbooks/deploy.yml \
           --user ubuntu \
           --private-key key.pem \
-          --extra-vars "@group_vars/all.yml" \
+          --extra-vars "@ansible/group_vars/all.yml" \
           --vault-password-file="pass.txt" \
-          -e ansible_python_interpreter=/usr/bin/python3 \
-          --ssh-extra-args="-o StrictHostKeyChecking=no"
+          -e ansible_python_interpreter=/usr/bin/python3
     
     - name: Remove Password
       run: |
