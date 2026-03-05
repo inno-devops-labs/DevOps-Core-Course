@@ -37,10 +37,23 @@ jobs:
           pip install ansible ansible-lint
           ansible-galaxy collection install community.docker
 
+      - name: Create vault password file for lint
+        working-directory: ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          echo "$ANSIBLE_VAULT_PASSWORD" > .vault_pass
+          chmod 600 .vault_pass
+
       - name: Run ansible-lint
         working-directory: ansible
         run: |
           ansible-lint playbooks/*.yml
+
+      - name: Remove vault password file
+        if: always()
+        working-directory: ansible
+        run: rm -f .vault_pass
 
   deploy:
     name: Deploy Application
