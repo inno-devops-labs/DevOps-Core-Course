@@ -55,7 +55,7 @@
     - web_app_wipe
 
 
-# Optional compatibility layer 
+# Optional compatibility layer
 - name: Web app | Normalize variables (compat)
   ansible.builtin.set_fact:
     app_name: "{{ app_name | default(app_container_name) }}"

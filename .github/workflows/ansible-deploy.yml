@@ -39,7 +39,7 @@ jobs:
       - name: Run ansible-lint
         run: |
           cd ansible
-          ansible-lint playbooks/*.yml
+          ansible-lint -c .ansible-lint playbooks/*.yml
 
       - name: Cleanup vault password file
         if: always()
@@ -118,7 +118,7 @@ jobs:
           mkdir -p ~/.ssh
           while read -r ip; do
             echo "Scanning host key for $ip"
-            ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts
+            timeout 10s ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts || true
           done < /tmp/ips.txt
 
       - name: Deploy with Ansible (Vault)

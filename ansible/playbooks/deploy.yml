@@ -5,6 +5,6 @@
 
   vars_files:
     - ../group_vars/all.yml
-    
+
   roles:
     - web_app # changed for lab06

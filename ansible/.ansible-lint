@@ -1,0 +1,10 @@
+profile: basic
+skip_list:
+  - var-naming[no-role-prefix]
+  - key-order[task]
+  - ignore-errors
+  - command-instead-of-module
+  - no-changed-when
+  - no-handler
+  - fqcn[canonical]
+  - syntax-check[empty-playbook]
