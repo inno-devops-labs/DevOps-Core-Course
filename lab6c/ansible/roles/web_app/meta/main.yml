@@ -1,0 +1,4 @@
+---
+# web_app depends on docker - Docker must be installed before deploying containers
+dependencies:
+  - role: docker

@@ -1,0 +1,22 @@
+---
+# Copy to group_vars/all.yml and encrypt: ansible-vault encrypt group_vars/all.yml
+
+# Docker Hub (required for deploy)
+dockerhub_username: "YOUR_DOCKERHUB_USERNAME"
+dockerhub_password: "YOUR_DOCKERHUB_ACCESS_TOKEN"
+
+# Application config (Lab 6 Docker Compose)
+app_name: "devops-info-python"
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: "latest"
+
+app_port: 5000
+app_internal_port: 5000
+app_container_name: "{{ app_name }}"
+app_restart_policy: "unless-stopped"
+app_env: {}
+app_health_path: "/health"
+app_wait_timeout: 120
+
+# Docker Compose project directory on target VM
+compose_project_dir: "/opt/{{ app_name }}"

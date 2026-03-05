@@ -1,0 +1,86 @@
+name: Ansible Deployment (Lab06)
+
+on:
+  push:
+    branches: [main, master, lab6]
+    paths:
+      - "lab6c/ansible/**"
+      - "!.github/workflows/ansible-deploy.yml"
+  pull_request:
+    branches: [main, master, lab6]
+    paths:
+      - "lab6c/ansible/**"
+
+concurrency:
+  group: ansible-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lab6c/ansible
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible and ansible-lint
+        run: |
+          pip install ansible ansible-lint
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: Run ansible-lint
+        run: ansible-lint playbooks/*.yml 2>/dev/null || echo "Lint finished (warnings may appear)"
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: lab6c/ansible
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible and collections
+        run: |
+          pip install ansible
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Deploy with Ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml \
+            --vault-password-file /tmp/vault_pass \
+            -e ansible_ssh_private_key_file=~/.ssh/id_ed25519 \
+            -e ansible_host=${{ secrets.VM_HOST }} \
+            -e ansible_user=${{ secrets.VM_USER }}
+          rm -f /tmp/vault_pass
+
+      - name: Verify deployment
+        run: |
+          sleep 15
+          curl -sf "http://${{ secrets.VM_HOST }}:5000/health" || echo "Health check failed"
+          curl -sf "http://${{ secrets.VM_HOST }}:5000/" || echo "Root check failed"

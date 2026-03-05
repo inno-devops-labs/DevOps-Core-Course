@@ -1,0 +1,58 @@
+---
+# Common role: baseline system setup
+# Tags: packages, users, common
+
+- name: Install packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      tags:
+        - packages
+        - common
+
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+      tags:
+        - packages
+        - common
+
+  rescue:
+    - name: Retry apt update on failure
+      ansible.builtin.apt:
+        update_cache: true
+      ignore_errors: true
+
+    - name: Re-run package install after cache fix
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log common role completion
+      ansible.builtin.copy:
+        content: "common role completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible_common_completed
+        mode: "0644"
+      tags:
+        - common
+
+- name: User and group setup
+  block:
+    - name: Ensure sudo group exists
+      ansible.builtin.group:
+        name: sudo
+        state: present
+  tags:
+    - users
+    - common
+
+- name: Configure timezone
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+  when: common_timezone | default("") | length > 0
+  tags:
+    - common

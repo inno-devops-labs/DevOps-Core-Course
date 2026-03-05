@@ -1,0 +1,19 @@
+---
+# Application config
+app_name: "devops-info-python"
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: "latest"
+
+app_port: 5000
+app_internal_port: 5000
+app_container_name: "{{ app_name }}"
+app_restart_policy: "unless-stopped"
+app_env: {}
+app_health_path: "/health"
+app_wait_timeout: 120
+
+# Docker Compose
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Wipe logic: set to true to remove app completely. Also requires --tags web_app_wipe for wipe-only.
+web_app_wipe: false
