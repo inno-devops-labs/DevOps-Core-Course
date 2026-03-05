@@ -35,6 +35,10 @@ jobs:
           pip install ansible ansible-lint
           ansible-galaxy collection install community.docker
 
+      - name: Create dummy vault password for lint
+        working-directory: ansible
+        run: echo "dummy" > .vault_pass
+
       - name: Run ansible-lint
         working-directory: ansible
         run: ansible-lint playbooks/*.yml
