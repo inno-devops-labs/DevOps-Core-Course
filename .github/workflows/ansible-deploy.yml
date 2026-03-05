@@ -109,21 +109,13 @@ jobs:
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
-          VM_HOST: ${{ secrets.VM_HOST }}
-          SSH_DIR: ${{ runner.temp }}/ssh
+          SSH_DIR: $HOME/.ssh
         run: |
-          : "${SSH_DIR:=${RUNNER_TEMP:-/tmp}/ssh}"
           install -m 700 -d "$SSH_DIR"
-          KEY_PATH="$SSH_DIR/ansible_deploy"
-          printf '%s\n' "$SSH_PRIVATE_KEY" > "$KEY_PATH"
-          chmod 600 "$KEY_PATH"
-          if [ -n "$KNOWN_HOSTS" ]; then
-            printf '%s\n' "$KNOWN_HOSTS" > "$SSH_DIR/known_hosts"
-          else
-            ssh-keyscan -H "$VM_HOST" >> "$SSH_DIR/known_hosts"
-          fi
-          echo "SSH_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          SSH_KEY_PATH="$SSH_DIR/ansible_deploy"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_KEY_PATH"
+          chmod 600 "$SSH_KEY_PATH"
+          echo "SSH_KEY_PATH=$SSH_KEY_PATH" >> "$GITHUB_ENV"
 
       - name: Generate CI inventory
         working-directory: ansible/inventory
