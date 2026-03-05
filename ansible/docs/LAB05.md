@@ -7,7 +7,7 @@
  - **Structure:**
    - `ansible/ansible.cfg`
    - `ansible/inventory/hosts.ini`
-   - `ansible/roles/common`, `docker`, `app_deploy`
+   - `ansible/roles/common`, `docker`, `web_app` (renamed from app_deploy in Lab 6)
    - `ansible/playbooks/provision.yml`, `deploy.yml`, `site.yml`
    - `ansible/group_vars/all.yml` (vaulted; example in `all.yml.example`)
 
@@ -27,8 +27,8 @@
  - **Handlers:** `restart docker`.
  - **Dependencies:** expects `docker_user` to exist (e.g. created outside or by another role).
 
- ### app_deploy
- - **Purpose:** Log in to Docker Hub, pull app image, run container, and verify health.
+ ### web_app (formerly app_deploy)
+ - **Purpose:** Deploy app via Docker Compose; log in to Docker Hub, template compose file, run containers, verify health.
  - **Variables:** `app_name`, `app_port`, `app_container_name`, `app_restart_policy`, `app_environment`, plus vaulted `dockerhub_username`, `dockerhub_password`, `docker_image`, `docker_image_tag`.
  - **Handlers:** `restart app container`.
  - **Dependencies:** Docker installed and running (via `docker` role).

@@ -3,8 +3,8 @@
    hosts: webservers
    become: true
 
-   roles:
-     - common
-     - docker
-     - app_deploy
+  roles:
+    - common
+    - docker
+    - web_app
 

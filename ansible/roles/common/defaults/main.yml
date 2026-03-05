@@ -10,4 +10,6 @@
    - apt-transport-https
 
  common_timezone: Etc/UTC
+ # User to ensure exists for deployments (optional)
+ common_deploy_user: null
 

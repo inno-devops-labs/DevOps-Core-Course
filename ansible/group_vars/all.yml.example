@@ -1,11 +1,15 @@
- ---
- dockerhub_username: your-username
- dockerhub_password: your-access-token
+---
+# Docker Hub credentials (use ansible-vault for real file)
+dockerhub_username: your-username
+dockerhub_password: your-access-token
 
- # Application configuration
- app_name: devops-info-service
- docker_image: "{{ dockerhub_username }}/{{ app_name }}"
- docker_image_tag: latest
- app_port: 5000
- app_container_name: "{{ app_name }}"
+# Application configuration
+app_name: devops-info-service
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_image_tag: latest
+docker_tag: "{{ docker_image_tag }}"
+app_port: 5000
+app_internal_port: 5000
+app_container_name: "{{ app_name }}"
+compose_project_dir: "/opt/{{ app_name }}"
 

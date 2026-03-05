@@ -1,17 +1,60 @@
- ---
- - name: Update apt cache
-   ansible.builtin.apt:
-     update_cache: true
-     cache_valid_time: 3600
+---
+- name: Install common packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
- - name: Set system timezone
-   community.general.timezone:
-     name: "{{ common_timezone }}"
-   when: common_timezone is defined
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+        install_recommends: false
 
- - name: Install common packages
-   ansible.builtin.apt:
-     name: "{{ common_packages }}"
-     state: present
-     install_recommends: false
+  rescue:
+    - name: Retry apt update on failure
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
 
+    - name: Retry package installation
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+        install_recommends: false
+
+  always:
+    - name: Log common role completion
+      ansible.builtin.copy:
+        content: "common role completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible_common_complete
+        mode: "0644"
+
+  tags:
+    - packages
+    - common
+
+- name: Ensure deploy user exists
+  block:
+    - name: Create deploy user
+      ansible.builtin.user:
+        name: "{{ common_deploy_user }}"
+        state: present
+        shell: /bin/bash
+        create_home: true
+
+  when: common_deploy_user is defined and common_deploy_user | length > 0
+  tags:
+    - users
+    - common
+
+- name: Set system timezone
+  block:
+    - name: Configure timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"
+
+  when: common_timezone is defined
+  tags:
+    - common

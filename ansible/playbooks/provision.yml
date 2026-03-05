@@ -1,9 +1,11 @@
- ---
- - name: Provision web servers
-   hosts: webservers
-   become: true
+---
+- name: Provision web servers
+  hosts: webservers
+  become: true
 
-   roles:
-     - common
-     - docker
+  roles:
+    - role: common
+      tags: [common, packages]
+    - role: docker
+      tags: [docker, docker_install, docker_config]
 
