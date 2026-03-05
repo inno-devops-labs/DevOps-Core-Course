@@ -28,14 +28,17 @@
 
   rescue:
     - name: Retry apt update with fix-missing
-      ansible.builtin.command: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
       changed_when: true
 
   always:
     - name: Log package block completion
       ansible.builtin.copy:
-        content: "Packages block executed at {{ ansible_date_time.iso8601 }}"
-        dest: /tmp/common_packages.log
+        content: "done"
+        dest: /tmp/packages.log
+        mode: '0644'
 
 - name: Manage system users
   become: true
@@ -53,5 +56,6 @@
   always:
     - name: Log users block completion
       ansible.builtin.copy:
-        content: "Users block executed at {{ ansible_date_time.iso8601 }}"
-        dest: /tmp/common_users.log
+        content: "done"
+        dest: /tmp/users.log
+        mode: '0644'

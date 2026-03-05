@@ -22,7 +22,7 @@
     - web_app
   block:
     - name: Ensure application directory exists
-      ansible.builtin.ansible.builtin.file:
+      ansible.builtin.file:
         path: "{{ web_app_compose_project_dir }}"
         state: directory
         mode: "0755"
