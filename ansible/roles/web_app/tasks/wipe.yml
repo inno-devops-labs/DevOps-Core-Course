@@ -25,4 +25,3 @@
   when: web_app_wipe | bool
   tags:
     - web_app_wipe
-
