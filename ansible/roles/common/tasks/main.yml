@@ -23,15 +23,48 @@
     delay: 3
   when: dpkg_updates.matched | int > 0
 
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+- name: Manage common package baseline
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+  rescue:
+    - name: Recover apt cache with fix-missing
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+
+    - name: Retry apt cache update after recovery
+      ansible.builtin.apt:
+        update_cache: true
+  always:
+    - name: Record common packages block completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible-common-packages.log
+        mode: "0644"
+        content: "common packages block completed\n"
+  become: true
+  tags:
+    - packages
+
+- name: Manage common users
+  block:
+    - name: Ensure managed users exist
+      ansible.builtin.user:
+        name: "{{ item.name | default(item) }}"
+        state: present
+        shell: "{{ item.shell | default('/bin/bash') }}"
+        groups: "{{ item.groups | default(omit) }}"
+      loop: "{{ common_managed_users }}"
+      when: common_managed_users | length > 0
+  become: true
+  tags:
+    - users
 
 - name: Set timezone
   community.general.timezone:

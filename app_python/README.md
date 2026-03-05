@@ -1,6 +1,7 @@
 # DevOps Info Service (Python)
 
 ![Python CI and Docker](https://github.com/chomosuce/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+[![Ansible Deployment](https://github.com/chomosuce/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/chomosuce/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 
 ## Overview
 Simple Flask web service that reports service metadata, system details, runtime uptime, and request info. Includes a `/health` endpoint for liveness probes.

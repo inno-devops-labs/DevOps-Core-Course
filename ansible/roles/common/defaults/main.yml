@@ -5,4 +5,7 @@ common_packages:
   - git
   - vim
   - htop
+
+# Optional local users to manage in the common role.
+common_managed_users: []
 common_timezone: UTC

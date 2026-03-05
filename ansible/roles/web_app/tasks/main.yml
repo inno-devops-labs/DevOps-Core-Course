@@ -1,0 +1,80 @@
+---
+# Deploy application with Docker Compose v2.
+- name: Include wipe tasks (runs only when web_app_wipe=true)
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+    - app_deploy
+
+- name: Deploy web application with Docker Compose
+  block:
+    - name: Validate required web app variables
+      ansible.builtin.assert:
+        that:
+          - docker_image | length > 0
+          - docker_tag | length > 0
+          - app_name | length > 0
+          - compose_project_dir | length > 0
+        fail_msg: >-
+          Missing required web app variables. Define them in role defaults,
+          inventory vars, or Vaulted group_vars/all.yml.
+
+    - name: Login to Docker registry when credentials are provided
+      community.docker.docker_login:
+        registry_url: "{{ docker_registry_url }}"
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+      no_log: true
+      when:
+        - dockerhub_username | length > 0
+        - dockerhub_password | length > 0
+
+    - name: Create compose project directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Render docker-compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/{{ web_app_compose_file }}"
+        mode: "0644"
+      notify: Restart web app via compose
+
+    - name: Deploy compose project
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        files:
+          - "{{ web_app_compose_file }}"
+        state: present
+        pull: "{{ web_app_compose_pull_policy }}"
+        recreate: auto
+        remove_orphans: true
+
+    - name: Wait for app port to be ready
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port | int }}"
+        timeout: 60
+
+    - name: Verify health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_port }}{{ app_healthcheck_path }}"
+        method: GET
+        status_code: 200
+      register: web_app_healthcheck_result
+      retries: "{{ app_healthcheck_retries }}"
+      delay: "{{ app_healthcheck_delay }}"
+      until: web_app_healthcheck_result.status == 200
+
+  rescue:
+    - name: Surface deployment failure details
+      ansible.builtin.debug:
+        msg: >-
+          Docker Compose deployment failed for {{ app_name }} in
+          {{ compose_project_dir }}.
+
+  tags:
+    - app_deploy
+    - compose

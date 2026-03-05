@@ -1,0 +1,106 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "ansible/**"
+      - "!ansible/docs/**"
+      - ".github/workflows/ansible-deploy.yml"
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - "ansible/**"
+      - "!ansible/docs/**"
+      - ".github/workflows/ansible-deploy.yml"
+
+concurrency:
+  group: ansible-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install lint dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint
+          ansible-galaxy collection install community.docker community.general
+
+      - name: Run ansible-lint
+        run: |
+          ansible-lint \
+            -x var-naming,key-order,name,yaml,command-instead-of-module \
+            playbooks/provision.yml playbooks/deploy.yml
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deploy dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+          ansible-galaxy collection install community.docker community.general
+
+      - name: Configure SSH access
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+          cat > inventory/ci_hosts.ini <<EOF
+          [webservers]
+          ci-target ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }}
+
+          [webservers:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          EOF
+
+      - name: Deploy with Ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          echo "${ANSIBLE_VAULT_PASSWORD}" > /tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml -i inventory/ci_hosts.ini --vault-password-file /tmp/vault_pass
+          rm -f /tmp/vault_pass
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          curl -f "http://${{ secrets.VM_HOST }}:8000/"
+          curl -f "http://${{ secrets.VM_HOST }}:8000/health"
