@@ -5,3 +5,7 @@ test
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+
+# IDE
+.vscode/
+.idea/
