@@ -1,0 +1,56 @@
+- name: Include wipe tasks when requested
+  include_tasks: wipe.yml
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+
+- name: Deploy web application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+  block:
+    - name: Login to Docker registry
+      docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+      no_log: true
+      when:
+        - dockerhub_username is defined
+        - dockerhub_username | length > 0
+        - dockerhub_password is defined
+        - dockerhub_password | length > 0
+
+    - name: Ensure compose project directory exists
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose definition
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Deploy stack with docker compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        project_name: "{{ app_name }}"
+        pull: "{{ docker_compose_pull }}"
+        state: present
+
+    - name: Wait for application port
+      wait_for:
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 45
+
+    - name: Perform HTTP health check
+      uri:
+        url: "http://localhost:{{ app_port }}{{ app_healthcheck_endpoint }}"
+        status_code: 200
+  rescue:
+    - name: Report deployment failure
+      debug:
+        msg: "Deployment failed for {{ app_name }}; inspect compose logs."
+  become: true

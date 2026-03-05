@@ -1,0 +1,23 @@
+---
+# Application metadata
+app_name: devops-app
+app_container_name: "{{ app_name }}"
+docker_image: "your_dockerhub_username/devops-info-service"
+docker_tag: "{{ docker_image_tag | default('latest') }}"
+app_port: 8000
+app_internal_port: 8000
+restart_policy: unless-stopped
+app_healthcheck_endpoint: /health
+
+# Compose configuration
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+docker_compose_pull: true
+web_app_environment: {}
+
+# Registry credentials (override with Vault as needed)
+dockerhub_username: ""
+dockerhub_password: ""
+
+# Wipe control
+web_app_wipe: false  # Set to true alongside --tags web_app_wipe to remove the app

@@ -1,0 +1,26 @@
+---
+- name: Remove deployed web application
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+  block:
+    - name: Stop and remove Compose stack
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Remove docker-compose file
+      file:
+        path: "{{ compose_project_dir }}/docker-compose.yml"
+        state: absent
+
+    - name: Remove application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: absent
+
+    - name: Confirm application wipe
+      debug:
+        msg: "Application {{ app_name }} removed from {{ compose_project_dir }}"
+  become: true

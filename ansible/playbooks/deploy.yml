@@ -5,4 +5,4 @@
   vars_files:
     - ../group_vars/all.yml
   roles:
-    - app_deploy
+    - web_app
