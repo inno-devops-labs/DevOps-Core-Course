@@ -9,6 +9,7 @@ terraform {
 }
 
 provider "yandex" {
+  token     = var.token
   zone      = var.zone
   folder_id = var.folder_id
 }
@@ -33,8 +34,8 @@ resource "yandex_vpc_security_group" "lab04_sg" {
 
   ingress {
     protocol       = "TCP"
-    description    = "SSH access from my IP"
-    v4_cidr_blocks = [var.my_ip_cidr]
+    description    = "SSH access"
+    v4_cidr_blocks = ["0.0.0.0/0"]
     port           = 22
   }
 
