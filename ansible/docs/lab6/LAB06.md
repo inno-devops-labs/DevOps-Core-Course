@@ -352,7 +352,7 @@ skipping: [lab04-vm]
 
 - Workflow logs show ansible-lint passing, playbook execution, and verification step.
 - Badge is visible in README.
-- [screenshot] screenshot of a successful GitHub Actions workflow run here after push.
+- ![workflow](screenshots/workflow.png)
 
 #### Research answers:
 
@@ -391,4 +391,4 @@ skipping: [lab04-vm]
 
 ## Summary
 
-This lab improved my automation skills with advanced Ansible features and CI/CD. I learned about error handling, selective execution, safe cleanup, and production-grade deployment patterns. The integration with GitHub Actions ensures reliable, repeatable deployments. All scenarios were tested and the application works as expected.
+This lab improved my automation skills with advanced Ansible features and CI/CD. I learned about error handling, selective execution, safe cleanup, and production-grade deployment patterns. The integration with GitHub Actions ensures reliable, repeatable deployments. All scenarios were tested and the application works as expected. Time spent: ~8 hours (don't count breaks).
