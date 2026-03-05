@@ -80,7 +80,7 @@ jobs:
     - name: Create temporary inventory
       run: |
         echo "[webservers]" > inventory.ini
-        echo "$SERVER_IP ansible_user=ubuntu ansible_private_key_file=key.pem" >> inventory.ini
+        echo "ubuntu ansible_host=$SERVER_IP ansible_user=ubuntu ansible_ssh_private_key_file=key.pem" >> inventory.ini
 
     - name: Ansible Run
       env:
