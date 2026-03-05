@@ -3,6 +3,3 @@
   ansible.builtin.service:
     name: docker
     state: restarted
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
