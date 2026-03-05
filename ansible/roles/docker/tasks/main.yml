@@ -1,64 +1,63 @@
 ---
 - name: Docker installation tasks
+  tags:
+    - docker
+    - docker_install
   block:
     - name: Add Docker GPG key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
-      register: gpg_result
-      until: gpg_result is success
+      register: docker_gpg_result
+      until: docker_gpg_result is success
       retries: 5
       delay: 10
 
     - name: Add Docker repository
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
     - name: Install Docker packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ docker_packages }}"
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Install Python Docker module
-      pip:
+      ansible.builtin.pip:
         name: docker
         state: present
 
   rescue:
-    - name: "Rescue: wait and retry GPG key"
-      pause:
+    - name: Rescue: wait and retry GPG key
+      ansible.builtin.pause:
         seconds: 10
-      when: gpg_result is failed
+      when: docker_gpg_result is failed
 
   always:
-    - name: "Always: ensure Docker service is enabled and started"
-      service:
+    - name: Always ensure Docker service is enabled and started
+      ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
-
-  tags:
-    - docker
-    - docker_install
+        enabled: true
 
 - name: Docker configuration tasks
-  block:
-    - name: Add user to docker group
-      user:
-        name: "{{ docker_user }}"
-        groups: docker
-        append: yes
-      notify: restart docker
-
-    - name: Configure Docker daemon (optional)
-      template:
-        src: daemon.json.j2
-        dest: /etc/docker/daemon.json
-      notify: restart docker
-      when: docker_custom_config | default(false) | bool
-
   tags:
     - docker
     - docker_config
+  block:
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true
+      notify: restart docker
+
+    - name: Configure Docker daemon (optional)
+      when: docker_custom_config | default(false)
+      ansible.builtin.template:
+        src: daemon.json.j2
+        dest: /etc/docker/daemon.json
+        mode: '0644'
+      notify: restart docker
