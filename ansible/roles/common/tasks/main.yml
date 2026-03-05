@@ -1,4 +1,6 @@
 ---
+# Package bootstrap is isolated in a block so shared controls
+# (become/tags/recovery) apply consistently to all package tasks.
 - name: Common role | Package management with recovery
   block:
     - name: Update apt cache
@@ -33,6 +35,8 @@
     - common
     - packages
 
+# User/timezone tasks are separated from package tasks for selective
+# execution with the `users` tag.
 - name: Common role | User/timezone related tasks
   block:
     - name: Read current timezone

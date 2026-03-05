@@ -1,4 +1,7 @@
 ---
+# Destructive actions are protected by a double gate:
+# 1) run with `--tags web_app_wipe`
+# 2) set `web_app_wipe=true`
 - name: Wipe web application deployment
   block:
     - name: Stop and remove compose stack
@@ -23,4 +26,4 @@
 
   when: web_app_wipe | default(false) | bool
   tags:
-    - web_app_wipe  
+    - web_app_wipe

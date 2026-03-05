@@ -1,6 +1,7 @@
 name: Ansible Deployment
 
 on:
+  # Manual trigger for controlled reruns/debugging.
   workflow_dispatch:
   push:
     branches: [ main, master, lab06 ]
@@ -56,6 +57,7 @@ jobs:
 
       - name: Configure SSH key
         run: |
+          # Prepare SSH identity for runner -> target host connectivity.
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
@@ -63,6 +65,7 @@ jobs:
 
       - name: Create dynamic inventory override
         run: |
+          # Keep static inventory untouched; inject CI target from secrets.
           cat > ansible/inventory/hosts.ci.ini <<EOF
           [webservers]
           ci-target ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }}
@@ -74,6 +77,7 @@ jobs:
         env:
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
+          # Vault password is written only for job runtime, then removed.
           cd ansible
           printf "%s" "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
           ansible-playbook -i inventory/hosts.ci.ini playbooks/deploy.yml \
@@ -83,5 +87,6 @@ jobs:
 
       - name: Verify deployment endpoint
         run: |
+          # Basic smoke test: fail workflow if health endpoint is unavailable.
           sleep 10
           curl -f "http://${{ secrets.VM_HOST }}:5000/health"

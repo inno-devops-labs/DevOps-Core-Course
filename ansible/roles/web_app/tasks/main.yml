@@ -1,9 +1,12 @@
 ---
+# Wipe tasks are included first to support clean reinstall in a single run
+# when `web_app_wipe=true` is provided.
 - name: Include wipe logic tasks
   ansible.builtin.include_tasks: wipe.yml
   tags:
     - web_app_wipe
 
+# Compose deployment block keeps render/apply/verify in one recoverable unit.
 - name: Deploy application with Docker Compose
   block:
     - name: Create compose project directory
@@ -30,6 +33,7 @@
         - dockerhub_password | length > 0
       no_log: true
 
+    # `pull: always` guarantees latest tag content is fetched on deployment.
     - name: Deploy stack with docker compose v2
       community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"
@@ -52,6 +56,7 @@
       changed_when: false
 
   rescue:
+    # Keep failure context visible before stopping the play.
     - name: Print compose failure debug details
       ansible.builtin.debug:
         var: web_app_compose_result
