@@ -19,7 +19,7 @@ def test_get_health_success(client: TestClient, mocker: MockerFixture):
     mock_service.health_check.return_value = HealthResponse(
         status="healthy",
         timestamp=datetime(2026, 2, 12, 11, 37, 1, 912380, tzinfo=timezone.utc),
-        uptime_seconds=1020
+        uptime_seconds=1020,
     )
 
     # Override зависимости
@@ -34,4 +34,3 @@ def test_get_health_success(client: TestClient, mocker: MockerFixture):
 
     mock_service.health_check.assert_awaited_once()
     app.dependency_overrides.clear()
-

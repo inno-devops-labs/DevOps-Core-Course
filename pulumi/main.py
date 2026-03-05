@@ -14,13 +14,11 @@ provider = yc.Provider(
     cloud_id=cloud_id,
     folder_id=folder_id,
     zone=zone,
-    service_account_key_file="authorized_key.json"
+    service_account_key_file="authorized_key.json",
 )
 
 network = yc.VpcNetwork(
-    "net",
-    name="net",
-    opts=pulumi.ResourceOptions(provider=provider)
+    "net", name="net", opts=pulumi.ResourceOptions(provider=provider)
 )
 
 subnet = yc.VpcSubnet(
@@ -29,7 +27,7 @@ subnet = yc.VpcSubnet(
     zone=zone,
     network_id=network.id,
     v4_cidr_blocks=["10.0.0.0/24"],
-    opts=pulumi.ResourceOptions(provider=provider)
+    opts=pulumi.ResourceOptions(provider=provider),
 )
 
 # Security Group
@@ -38,31 +36,22 @@ security_group = yc.VpcSecurityGroup(
     network_id=network.id,
     ingress=[
         yc.VpcSecurityGroupIngressArgs(
-            protocol="TCP",
-            description="SSH",
-            v4_cidr_blocks=[my_ip],
-            port=22
+            protocol="TCP", description="SSH", v4_cidr_blocks=[my_ip], port=22
         ),
         yc.VpcSecurityGroupIngressArgs(
-            protocol="TCP",
-            description="HTTP",
-            v4_cidr_blocks=["0.0.0.0/0"],
-            port=80
+            protocol="TCP", description="HTTP", v4_cidr_blocks=["0.0.0.0/0"], port=80
         ),
         yc.VpcSecurityGroupIngressArgs(
             protocol="TCP",
             description="App 5000",
             v4_cidr_blocks=["0.0.0.0/0"],
-            port=5000
+            port=5000,
         ),
     ],
     egress=[
-        yc.VpcSecurityGroupEgressArgs(
-            protocol="ANY",
-            v4_cidr_blocks=["0.0.0.0/0"]
-        )
+        yc.VpcSecurityGroupEgressArgs(protocol="ANY", v4_cidr_blocks=["0.0.0.0/0"])
     ],
-    opts=pulumi.ResourceOptions(provider=provider)
+    opts=pulumi.ResourceOptions(provider=provider),
 )
 
 # Image
@@ -74,10 +63,7 @@ vm = yc.ComputeInstance(
     name="pulumi-vm",
     platform_id="standard-v2",
     zone=zone,
-    resources=yc.ComputeInstanceResourcesArgs(
-        cores=2,
-        memory=2
-    ),
+    resources=yc.ComputeInstanceResourcesArgs(cores=2, memory=2),
     boot_disk=yc.ComputeInstanceBootDiskArgs(
         initialize_params=yc.ComputeInstanceBootDiskInitializeParamsArgs(
             image_id=image.id
@@ -85,15 +71,13 @@ vm = yc.ComputeInstance(
     ),
     network_interfaces=[
         yc.ComputeInstanceNetworkInterfaceArgs(
-            subnet_id=subnet.id,
-            nat=True,
-            security_group_ids=[security_group.id]
+            subnet_id=subnet.id, nat=True, security_group_ids=[security_group.id]
         )
     ],
     metadata={
         "ssh-keys": f"ubuntu:{open('C:/Users/kve10/.ssh/id_ed25519.pub').read()}"
     },
-    opts=pulumi.ResourceOptions(provider=provider)
+    opts=pulumi.ResourceOptions(provider=provider),
 )
 
 pulumi.export("public_ip", vm.network_interfaces.apply(lambda ni: ni[0].nat_ip_address))

@@ -14,6 +14,7 @@ from routes.root.schemas import (
     EndpointInfo,
 )
 
+
 @pytest.fixture
 def client() -> TestClient:
     return TestClient(app)
@@ -23,10 +24,7 @@ def test_get_info_router(client: TestClient, mocker: MockerFixture) -> None:
     mock_service = mocker.AsyncMock()
     mock_service.get_info.return_value = InfoResponse(
         service=ServiceInfo(
-            name="test-service",
-            version="1.0",
-            description="desc",
-            framework="FastAPI"
+            name="test-service", version="1.0", description="desc", framework="FastAPI"
         ),
         system=SystemInfo(
             hostname="localhost",
@@ -34,23 +32,20 @@ def test_get_info_router(client: TestClient, mocker: MockerFixture) -> None:
             platform_version="5.0",
             architecture="x86_64",
             cpu_count=4,
-            python_version="3.11"
+            python_version="3.11",
         ),
         runtime=RuntimeInfo(
             uptime_seconds=1000,
             uptime_human="0 hours, 16 minutes",
             current_time=datetime.now(tz=timezone.utc),
-            timezone="UTC"
+            timezone="UTC",
         ),
         request=RequestInfo(
-            client_ip="127.0.0.1",
-            user_agent="pytest",
-            method="GET",
-            path="/"
+            client_ip="127.0.0.1", user_agent="pytest", method="GET", path="/"
         ),
         endpoints=[
             EndpointInfo(path="/", method="GET", description="Service information")
-        ]
+        ],
     )
 
     app.dependency_overrides[SysInfoService] = lambda: mock_service
