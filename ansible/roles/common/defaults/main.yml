@@ -11,4 +11,4 @@ common_packages:
   - gnupg
   - lsb-release
 
-timezone: UTC
+common_timezone: UTC

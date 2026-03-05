@@ -1,44 +1,41 @@
 ---
-# Package installation block with error handling
 - name: Install system packages
+  become: true
+  tags:
+    - packages
   block:
     - name: Update apt cache
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ common_packages }}"
         state: present
 
   rescue:
     - name: Fix apt cache and retry
-      command: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
 
     - name: Retry package installation
-      apt:
+      ansible.builtin.apt:
         name: "{{ common_packages }}"
         state: present
 
   always:
     - name: Log package installation completion
-      copy:
+      ansible.builtin.copy:
         content: "Package installation completed at {{ ansible_date_time.iso8601 }}\n"
         dest: /tmp/ansible_common_packages.log
         mode: "0644"
 
-  become: true
-  tags:
-    - packages
-
-# User and system configuration block
 - name: Configure system settings
-  block:
-    - name: Set timezone
-      community.general.timezone:
-        name: "{{ timezone }}"
-
   become: true
   tags:
     - users
+  block:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"

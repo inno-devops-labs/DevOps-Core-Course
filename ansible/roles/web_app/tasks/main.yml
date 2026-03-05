@@ -1,70 +1,75 @@
 ---
 # Wipe logic — runs first when explicitly requested (variable + tag)
 - name: Include wipe tasks
-  include_tasks: wipe.yml
+  ansible.builtin.include_tasks: wipe.yml
   tags:
     - web_app_wipe
 
 # Deploy application with Docker Compose
 - name: Deploy application with Docker Compose
+  become: true
+  tags:
+    - app_deploy
+    - compose
   block:
     - name: Create application directory
-      file:
-        path: "{{ compose_project_dir }}"
+      ansible.builtin.file:
+        path: "{{ web_app_compose_dir }}"
         state: directory
         mode: "0755"
 
     - name: Template docker-compose file
-      template:
+      ansible.builtin.template:
         src: docker-compose.yml.j2
-        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        dest: "{{ web_app_compose_dir }}/docker-compose.yml"
         mode: "0644"
 
     - name: Pull latest Docker image
-      command: docker pull {{ docker_image }}:{{ docker_tag }}
-      changed_when: pull_result.stdout is search('Downloaded newer image')
-      register: pull_result
+      ansible.builtin.command:
+        cmd: docker pull {{ web_app_docker_image }}:{{ web_app_docker_tag }}
+      register: web_app_pull_result
+      changed_when: "'Downloaded newer image' in web_app_pull_result.stdout"
 
     - name: Deploy with docker compose
-      command: docker compose -f {{ compose_project_dir }}/docker-compose.yml up -d
-      register: compose_result
-      changed_when: compose_result.rc == 0
+      ansible.builtin.command:
+        cmd: docker compose -f {{ web_app_compose_dir }}/docker-compose.yml up -d
+      register: web_app_compose_result
+      changed_when: web_app_compose_result.rc == 0
 
     - name: Wait for application to be ready
-      wait_for:
-        port: "{{ app_port }}"
+      ansible.builtin.wait_for:
+        port: "{{ web_app_port }}"
         host: localhost
         delay: 5
         timeout: 30
 
     - name: Verify health endpoint
-      uri:
-        url: "http://localhost:{{ app_port }}/health"
+      ansible.builtin.uri:
+        url: "http://localhost:{{ web_app_port }}/health"
         method: GET
-        return_content: yes
+        return_content: true
         status_code: 200
-      register: health_check
+      register: web_app_health_check
 
     - name: Display health check result
-      debug:
-        var: health_check.json
+      ansible.builtin.debug:
+        var: web_app_health_check.json
 
   rescue:
     - name: Log deployment failure
-      debug:
-        msg: "Deployment of {{ app_name }} failed. Check Docker logs with: docker compose -f {{ compose_project_dir }}/docker-compose.yml logs"
+      ansible.builtin.debug:
+        msg: >-
+          Deployment of {{ web_app_name }} failed.
+          Check Docker logs with: docker compose -f {{ web_app_compose_dir }}/docker-compose.yml logs
 
     - name: Show docker compose logs on failure
-      command: docker compose -f {{ compose_project_dir }}/docker-compose.yml logs --tail=20
-      register: compose_logs
-      ignore_errors: yes
+      ansible.builtin.command:
+        cmd: docker compose -f {{ web_app_compose_dir }}/docker-compose.yml logs --tail=20
+      register: web_app_compose_logs
+      changed_when: false
+      failed_when: false
 
     - name: Display compose logs
-      debug:
-        var: compose_logs.stdout_lines
-      when: compose_logs is defined
-
-  become: true
-  tags:
-    - app_deploy
-    - compose
+      ansible.builtin.debug:
+        var: web_app_compose_logs.stdout_lines
+      when: web_app_compose_logs is defined
