@@ -1,7 +1,7 @@
 ---
 - name: Provision server
   hosts: webservers
-  become: yes
+  become: true
 
   roles:
     - common

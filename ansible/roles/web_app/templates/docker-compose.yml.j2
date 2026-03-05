@@ -1,10 +1,10 @@
 services:
-  {{ app_name }}:
-    image: "{{ docker_image }}:{{ docker_tag }}"
-    container_name: "{{ app_container_name }}"
-    restart: "{{ restart_policy }}"
+  {{ web_app_name }}:
+    image: "{{ web_app_docker_image }}:{{ web_app_docker_tag }}"
+    container_name: "{{ web_app_container_name }}"
+    restart: "{{ web_app_restart_policy }}"
     ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
+      - "{{ web_app_port }}:{{ web_app_internal_port }}"
 {% if web_app_environment %}
     environment:
 {% for key, value in web_app_environment.items() %}

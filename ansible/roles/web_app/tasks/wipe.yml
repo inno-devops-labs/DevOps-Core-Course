@@ -1,34 +1,34 @@
 ---
 - name: Remove deployed web application
-  when: web_app_wipe | bool
   tags:
     - web_app_wipe
+  when: web_app_wipe | bool
+  become: true
   block:
     - name: Check if compose project directory exists
-      stat:
-        path: "{{ compose_project_dir }}"
-      register: compose_dir
+      ansible.builtin.stat:
+        path: "{{ web_app_compose_project_dir }}"
+      register: web_app_compose_dir
 
     - name: Stop and remove Compose stack
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         state: absent
-      when: compose_dir.stat.isdir | default(false)
-      ignore_errors: true
+      when: web_app_compose_dir.stat.isdir | default(false)
+      failed_when: false
 
     - name: Remove docker-compose file
-      file:
-        path: "{{ compose_project_dir }}/docker-compose.yml"
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         state: absent
-      when: compose_dir.stat.exists | default(false)
+      when: web_app_compose_dir.stat.exists | default(false)
 
     - name: Remove application directory
-      file:
-        path: "{{ compose_project_dir }}"
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
         state: absent
-      when: compose_dir.stat.exists | default(false)
+      when: web_app_compose_dir.stat.exists | default(false)
 
     - name: Confirm application wipe
-      debug:
-        msg: "Application {{ app_name }} removed from {{ compose_project_dir }}"
-  become: true
+      ansible.builtin.debug:
+        msg: "Application {{ web_app_name }} removed from {{ web_app_compose_project_dir }}"

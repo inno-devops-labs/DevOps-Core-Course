@@ -2,34 +2,37 @@
   tags:
     - common
     - packages
+  become: true
   block:
     - name: Update apt cache for base packages
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ common_packages }}"
         state: present
   rescue:
     - name: Retry apt cache update with fix-missing
-      command: apt-get update --fix-missing
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
   always:
     - name: Log completion of package setup
-      copy:
+      ansible.builtin.copy:
         dest: /tmp/common_packages.log
         content: "Common role package block completed at {{ ansible_date_time.iso8601 }}\n"
         mode: "0644"
-  become: true
 
 - name: Manage common user accounts
   tags:
     - common
     - users
+  when: common_users | length > 0
+  become: true
   block:
     - name: Ensure declared users exist
-      user:
+      ansible.builtin.user:
         name: "{{ item.name }}"
         state: "{{ item.state | default('present') }}"
         groups: "{{ item.groups | default(omit) }}"
@@ -38,5 +41,3 @@
       loop: "{{ common_users }}"
       loop_control:
         label: "{{ item.name }}"
-  when: common_users | length > 0
-  become: true

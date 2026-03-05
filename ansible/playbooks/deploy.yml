@@ -1,7 +1,7 @@
 ---
 - name: Deploy app
   hosts: webservers
-  become: yes
+  become: true
   vars_files:
     - ../group_vars/all.yml
   roles:
