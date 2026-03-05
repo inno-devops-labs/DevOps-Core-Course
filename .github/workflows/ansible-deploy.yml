@@ -19,16 +19,30 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install ansible-lint
+
+      - name: Install Ansible tooling
         run: |
           pip install ansible ansible-lint
+          ansible-galaxy collection install community.docker community.general
+
+      - name: Prepare vault password file (for syntax-check)
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+
       - name: Run ansible-lint
         run: |
           cd ansible
           ansible-lint playbooks/*.yml
+
+      - name: Cleanup vault password file
+        if: always()
+        run: |
+          rm -f ansible/.vault_pass
 
   deploy:
     name: Deploy Application
@@ -37,14 +51,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepare vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+
       - name: Deploy with Ansible
         run: |
           cd ansible
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
-          ansible-playbook playbooks/deploy.yml --vault-password-file /tmp/vault_pass
-          rm /tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml
+
+      - name: Cleanup vault password file
+        if: always()
+        run: |
+          rm -f ansible/.vault_pass
 
       - name: Verify Deployment
         run: |
-          sleep 10
+          sleep 5
           curl -f http://localhost:8000/health
