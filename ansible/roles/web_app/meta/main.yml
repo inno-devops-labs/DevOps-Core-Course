@@ -1,0 +1,5 @@
+---
+# docker dependency guarantees compose/deployment prerequisites are present
+# even when only the web_app role is invoked.
+dependencies:
+  - role: docker

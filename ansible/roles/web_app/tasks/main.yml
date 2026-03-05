@@ -1,0 +1,53 @@
+---
+# Wipe logic runs first and is guarded by variable + tag in wipe.yml.
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create compose project directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Log in to Docker Hub
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+      no_log: true
+
+    - name: Template docker-compose.yml
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: '0644'
+
+    - name: Pull and start services with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        pull: always
+        state: present
+        recreate: auto
+
+    - name: Wait for application port
+      ansible.builtin.wait_for:
+        port: "{{ app_port }}"
+        timeout: 30
+
+    - name: Verify health endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:{{ app_port }}/health"
+        status_code: 200
+        return_content: true
+
+  rescue:
+    - name: Log deployment failure context
+      ansible.builtin.debug:
+        msg: "Docker Compose deployment failed for {{ app_name }} in {{ compose_project_dir }}"
+
+  tags:
+    - app_deploy
+    - compose

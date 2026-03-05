@@ -1,14 +1,50 @@
 ---
-# common role: system essentials
-# tasks will be added by you during lab
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+# common role: system essentials with grouped blocks/tags
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+- name: Common packages management
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-# you can add timezone configuration etc.
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Recover apt cache update failures
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: true
+
+  always:
+    - name: Log common packages block completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible-common-packages.log
+        mode: '0644'
+        content: "common packages block finished on {{ inventory_hostname }}\n"
+
+  become: true
+  tags:
+    - packages
+
+- name: Common users management
+  block:
+    - name: Ensure service user exists
+      ansible.builtin.user:
+        name: "{{ common_service_user }}"
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+  always:
+    - name: Log common users block completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible-common-users.log
+        mode: '0644'
+        content: "common users block finished on {{ inventory_hostname }}\n"
+
+  become: true
+  tags:
+    - users

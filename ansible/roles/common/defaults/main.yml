@@ -5,3 +5,6 @@ common_packages:
   - git
   - vim
   - htop
+
+# user task in Lab 6 block/tags exercise
+common_service_user: devops

@@ -1,0 +1,6 @@
+---
+# handlers for web_app role
+- name: restart web app compose project
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    state: restarted

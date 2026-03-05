@@ -3,13 +3,25 @@
 #   ansible-vault encrypt group_vars/all.yml
 
 # Registry (placeholders)
-dockerhub_username: tailrot
+dockerhub_username: your_dockerhub_username
 dockerhub_password: CHANGE_ME_TOKEN
 
-# App selection (pick one)
-app_name: app-python      # or app-go
-docker_image: "{{ dockerhub_username }}/{{ app_name }}"
-docker_image_tag: latest
-app_container_name: "{{ app_name }}"
-app_port: 5000
+# Application Configuration
+app_name: devops-app
+docker_image: "{{ dockerhub_username }}/devops-info-service"
+docker_tag: latest
+app_port: 8000
+app_internal_port: 8000
 app_env: {}
+
+# Docker Compose Config
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Wipe logic
+web_app_wipe: false
+
+# Optional secret, should be Vault encrypted
+# app_secret_key: !vault |
+#   $ANSIBLE_VAULT;1.1;AES256
+#   ...

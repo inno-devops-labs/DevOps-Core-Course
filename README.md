@@ -62,6 +62,7 @@ Starting with Lab 3, this monorepo uses **GitHub Actions** with intelligent path
 **Workflow Status:**
 - [![Python CI/CD](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/python-ci.yml)
 - [Go CI/CD](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/go-ci.yml)
+- [![Ansible Deployment](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/IU-DevOps-Course/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 
 See [CI_CD.md](CI_CD.md) and [SETUP_GITHUB_ACTIONS.md](SETUP_GITHUB_ACTIONS.md) for detailed CI/CD documentation.
 
