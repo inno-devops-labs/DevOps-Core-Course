@@ -7,8 +7,11 @@ on:
       - master
       - lab06
     paths:
+      - "ansible/playbooks/provision.yml"
+      - "ansible/playbooks/deploy.yml"
       - "ansible/vars/app_bonus.yml"
       - "ansible/playbooks/deploy_bonus.yml"
+      - "ansible/roles/common/**"
       - "ansible/roles/web_app/**"
       - "ansible/roles/docker/**"
       - "ansible/collections/requirements.yml"
@@ -20,8 +23,11 @@ on:
       - main
       - master
     paths:
+      - "ansible/playbooks/provision.yml"
+      - "ansible/playbooks/deploy.yml"
       - "ansible/vars/app_bonus.yml"
       - "ansible/playbooks/deploy_bonus.yml"
+      - "ansible/roles/common/**"
       - "ansible/roles/web_app/**"
       - "ansible/roles/docker/**"
       - "ansible/collections/requirements.yml"
@@ -54,10 +60,11 @@ jobs:
       - name: Run ansible-lint
         run: |
           cd ansible
+          LINT_TARGETS="playbooks/provision.yml playbooks/deploy.yml playbooks/deploy_bonus.yml roles/common roles/docker roles/web_app"
           if [ -f .ansible-lint ]; then
-            ansible-lint -c .ansible-lint playbooks/deploy_bonus.yml roles/docker roles/web_app
+            ansible-lint -c .ansible-lint ${LINT_TARGETS}
           else
-            ansible-lint playbooks/deploy_bonus.yml roles/docker roles/web_app
+            ansible-lint ${LINT_TARGETS}
           fi
 
   deploy:
@@ -111,13 +118,15 @@ jobs:
         env:
           BONUS_APP_IMAGE_TAG: ${{ vars.BONUS_APP_IMAGE_TAG || 'latest' }}
         run: |
+          set -euo pipefail
+          cleanup_vault_pass() { rm -f /tmp/vault_pass; }
+          trap cleanup_vault_pass EXIT
           cd ansible
           ansible-playbook -i inventory/hosts.local-docker.ini playbooks/deploy_bonus.yml \
             --vault-password-file /tmp/vault_pass \
             -e @vars/local_multiapp_test.yml \
             -e "docker_tag=${BONUS_APP_IMAGE_TAG}" \
             -e "web_app_pull_policy=missing"
-          rm -f /tmp/vault_pass
 
       - name: Verify bonus app endpoints
         env:

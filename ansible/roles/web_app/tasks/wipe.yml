@@ -26,6 +26,12 @@
           not found, skipping compose down step.
       when: not web_app_compose_file_stat.stat.exists
 
+    - name: Ensure application container is removed even without compose file
+      community.docker.docker_container:
+        name: "{{ app_name }}"
+        state: absent
+        force_kill: true
+
     - name: Remove docker compose file
       ansible.builtin.file:
         path: "{{ compose_project_dir }}/{{ docker_compose_filename }}"
