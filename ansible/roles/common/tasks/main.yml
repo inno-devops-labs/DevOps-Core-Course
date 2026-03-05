@@ -1,14 +1,65 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Manage common packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix apt cache issues with apt-get
+      ansible.builtin.command:
+        cmd: apt-get update --fix-missing
+        warn: false
+      register: common_apt_fix
+      changed_when: false
+      failed_when: common_apt_fix.rc != 0
+
+    - name: Retry apt cache update after fix
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+  always:
+    - name: Log common package tasks completion
+      ansible.builtin.file:
+        path: /tmp/common_packages_done
+        state: touch
+
+  become: true
+  tags:
+    - common
+    - packages
+
+- name: Manage common users
+  block:
+    - name: Ensure common users exist
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        groups: "{{ item.groups | default(omit) }}"
+        state: "{{ item.state | default('present') }}"
+        shell: "{{ item.shell | default('/bin/bash') }}"
+      loop: "{{ common_users | default([]) }}"
+      when: common_users | default([]) | length > 0
+
+  always:
+    - name: Log common user tasks completion
+      ansible.builtin.file:
+        path: /tmp/common_users_done
+        state: touch
+
+  become: true
+  tags:
+    - common
+    - users
 
 - name: Set timezone
   community.general.timezone:
     name: "{{ common_timezone }}"
+  tags:
+    - common

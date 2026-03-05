@@ -1,58 +1,99 @@
 ---
-- name: Install Docker dependencies
-  ansible.builtin.apt:
-    name:
-      - ca-certificates
-      - curl
-      - gnupg
-    state: present
+- name: Install Docker packages and dependencies
+  block:
+    - name: Install Docker dependencies
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
 
-- name: Create keyrings directory
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: "0755"
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "{{ docker_apt_repository }}"
+        filename: docker
+        state: present
+      notify: restart docker
 
-- name: Add Docker GPG key
-  ansible.builtin.get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker.asc
-    mode: "0644"
-    force: yes
-  notify: restart docker
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+      notify: restart docker
 
-- name: Add Docker repository
-  ansible.builtin.apt_repository:
-    repo: "{{ docker_apt_repository }}"
-    filename: docker
-    state: present
-  notify: restart docker
+    - name: Install python3-docker for Ansible docker modules
+      ansible.builtin.apt:
+        name: python3-docker
+        state: present
 
-- name: Install Docker packages
-  ansible.builtin.apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
-      - docker-compose-plugin
-    state: present
-    update_cache: yes
-  notify: restart docker
+  become: true
+  tags:
+    - docker
+    - docker_install
+    - packages
 
-- name: Ensure Docker service is running and enabled
-  ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: yes
+- name: Configure Docker key, service, and user
+  block:
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
 
-- name: Add user to docker group
-  ansible.builtin.user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: yes
+      notify: restart docker
 
-- name: Install python3-docker for Ansible docker modules
-  ansible.builtin.apt:
-    name: python3-docker
-    state: present
+    - name: Ensure Docker service is running and enabled
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+  rescue:
+    - name: Wait before retrying Docker GPG key configuration
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Retry adding Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: yes
+      notify: restart docker
+
+    - name: Retry enabling Docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+  always:
+    - name: Ensure Docker service is enabled after configuration
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+  become: true
+  tags:
+    - docker
+    - docker_config
