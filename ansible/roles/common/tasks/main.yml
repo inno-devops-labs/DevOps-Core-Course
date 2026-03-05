@@ -1,14 +1,42 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-
 - name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Set timezone
-  community.general.timezone:
-    name: "{{ timezone }}"
+    - name: Install packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix apt cache and retry
+      command: apt-get update --fix-missing
+
+    - name: Retry package installation
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log package installation completion
+      copy:
+        content: "Package installation completed at {{ ansible_date_time.iso8601 }}"
+        dest: /tmp/common_packages_done.log
+        mode: "0644"
+
+  become: true
+  tags:
+    - packages
+
+- name: Configure users and system
+  block:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ timezone }}"
+
+  become: true
+  tags:
+    - users

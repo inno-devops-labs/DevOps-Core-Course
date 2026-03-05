@@ -1,0 +1,14 @@
+---
+app_name: pythonapp
+docker_image: aidarsarvartdinov/pythonapp
+docker_tag: latest
+app_port: 5000
+app_internal_port: 5000
+
+# Docker Compose Config
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Wipe Logic Control (default: disabled)
+# Wipe only:     ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false
