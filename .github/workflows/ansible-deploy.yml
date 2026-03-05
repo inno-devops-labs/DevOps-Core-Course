@@ -2,7 +2,7 @@ name: Ansible Deployment
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, lab06 ]
     paths:
       - 'ansible/**'
       - '.github/workflows/ansible-deploy.yml'
@@ -30,9 +30,13 @@ jobs:
           pip install ansible ansible-lint
 
       - name: Run ansible-lint
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
           cd ansible
-          ansible-lint playbooks/*.yml
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          ansible-lint playbooks/*.yml --vault-password-file /tmp/vault_pass
+          rm /tmp/vault_pass
 
   deploy:
     name: Deploy Application
