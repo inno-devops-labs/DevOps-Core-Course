@@ -1,0 +1,19 @@
+---
+# Application Configuration
+app_name: devops-app
+docker_image: "{{ dockerhub_username }}/devops-info-service"
+docker_tag: latest
+app_port: 8000
+app_internal_port: 8000
+
+# Docker Compose Config
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Wipe Logic Control
+web_app_wipe: false  # Default: do not wipe
+web_app_wipe_images: false  # Also remove Docker images
+
+# Resource Limits
+app_memory_limit: 512m
+app_cpu_shares: 512

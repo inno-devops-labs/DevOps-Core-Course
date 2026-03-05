@@ -124,3 +124,6 @@ docker rm <container-name>
 # Remove an image
 docker rmi <image-name>:<tag>
 ```
+
+## Lab 6 Status
+[![Ansible Deployment](https://github.com/AliyaSag/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/AliyaSag/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)

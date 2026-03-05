@@ -3,11 +3,12 @@
   hosts: webservers
   become: yes
   gather_facts: yes
-  
+
   pre_tasks:
     - name: Show start message
       ansible.builtin.debug:
         msg: "Starting system provisioning at {{ ansible_date_time.iso8601 }}"
+      tags: always
 
   roles:
     - common
@@ -17,6 +18,7 @@
     - name: Gather system facts after provisioning
       ansible.builtin.setup:
         gather_subset: all
+      tags: facts
 
     - name: Display system info
       ansible.builtin.debug:
@@ -26,3 +28,4 @@
           - "Kernel: {{ ansible_kernel }}"
           - "Memory: {{ ansible_memtotal_mb }} MB"
           - "CPU: {{ ansible_processor_cores }} cores"
+      tags: facts

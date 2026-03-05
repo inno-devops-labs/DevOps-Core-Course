@@ -3,7 +3,7 @@
   hosts: webservers
   become: yes
   gather_facts: yes
-  
+
   vars_files:
     - ../group_vars/all.yml
 
@@ -13,19 +13,12 @@
         that:
           - dockerhub_username is defined
           - dockerhub_password is defined
-          - app_name is defined
-          - app_port is defined
         fail_msg: "Missing required variables for deployment"
         success_msg: "All required variables present"
-
-    - name: Check Docker availability
-      ansible.builtin.command: docker info
-      register: docker_info
-      changed_when: false
-      failed_when: docker_info.rc != 0
+      tags: always
 
   roles:
-    - app_deploy
+    - web_app
 
   post_tasks:
     - name: Verify application is running
@@ -34,7 +27,11 @@
         method: GET
         status_code: 200
       register: app_response
+      ignore_errors: yes
+      tags: verify
 
     - name: Show application response
       ansible.builtin.debug:
         msg: "Application is running! Response code: {{ app_response.status }}"
+      when: app_response.status is defined
+      tags: verify

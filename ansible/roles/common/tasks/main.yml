@@ -1,47 +1,79 @@
 ﻿---
-- name: Update apt cache with retry
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
-  register: apt_update
-  retries: 3
-  delay: 5
-  until: apt_update is success
+- name: System packages block
+  block:
+    - name: Update apt cache with retry
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      register: apt_update
+      retries: 3
+      delay: 5
+      until: apt_update is success
 
-- name: Install all system packages
-  ansible.builtin.apt:
-    name: \"{{ system_packages }}\"
-    state: present
+    - name: Install all system packages
+      ansible.builtin.apt:
+        name: "{{ system_packages }}"
+        state: present
 
-- name: Configure timezone
-  ansible.builtin.timezone:
-    name: \"{{ timezone_config }}\"
+  rescue:
+    - name: Fix apt cache on failure
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
 
-- name: Generate locale
-  ansible.builtin.locale_gen:
-    name: \"{{ locale_config }}\"
-    state: present
+    - name: Retry package installation
+      ansible.builtin.apt:
+        name: "{{ system_packages }}"
+        state: present
+      register: retry_result
 
-- name: Create application directories
-  ansible.builtin.file:
-    path: \"/data/{{ item }}\"
-    state: directory
-    mode: '0755'
-    owner: \"{{ ansible_user }}\"
-    group: \"{{ ansible_user }}\"
-  loop:
-    - apps
-    - logs
-    - backups
-    - configs
+  always:
+    - name: Log common role completion
+      ansible.builtin.file:
+        path: /tmp/common_role_completed.log
+        state: touch
+        mode: '0644'
 
-- name: Set system limits
-  ansible.builtin.lineinfile:
-    path: /etc/security/limits.conf
-    line: \"{{ item }}\"
-    create: yes
-  loop:
-    - \"* soft nofile 65535\"
-    - \"* hard nofile 65535\"
-    - \"* soft nproc 65535\"
-    - \"* hard nproc 65535\"
+  become: true
+  tags:
+    - packages
+    - common
+
+- name: User management block
+  block:
+    - name: Configure timezone
+      ansible.builtin.timezone:
+        name: "{{ timezone_config }}"
+
+    - name: Generate locale
+      ansible.builtin.locale_gen:
+        name: "{{ locale_config }}"
+        state: present
+
+    - name: Create application directories
+      ansible.builtin.file:
+        path: "/data/{{ item }}"
+        state: directory
+        mode: '0755'
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      loop:
+        - apps
+        - logs
+        - backups
+        - configs
+
+    - name: Set system limits
+      ansible.builtin.lineinfile:
+        path: /etc/security/limits.conf
+        line: "{{ item }}"
+        create: yes
+      loop:
+        - "* soft nofile 65535"
+        - "* hard nofile 65535"
+        - "* soft nproc 65535"
+        - "* hard nproc 65535"
+
+  become: true
+  tags:
+    - users
+    - common

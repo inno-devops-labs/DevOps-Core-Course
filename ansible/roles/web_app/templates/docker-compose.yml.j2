@@ -1,0 +1,42 @@
+version: '{{ docker_compose_version | default("3.8") }}'
+
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag | default("latest") }}
+    container_name: {{ app_name }}
+    restart: unless-stopped
+    ports:
+      - "{{ app_port }}:{{ app_internal_port | default(app_port) }}"
+    environment:
+      APP_NAME: {{ app_name }}
+      APP_PORT: {{ app_internal_port | default(app_port) }}
+      ENVIRONMENT: {{ environment | default("production") }}
+      {% if app_secret_key is defined %}
+      SECRET_KEY: {{ app_secret_key }}
+      {% endif %}
+      {% if database_url is defined %}
+      DATABASE_URL: {{ database_url }}
+      {% endif %}
+    {% if app_memory_limit is defined %}
+    mem_limit: {{ app_memory_limit }}
+    {% endif %}
+    {% if app_cpu_shares is defined %}
+    cpu_shares: {{ app_cpu_shares }}
+    {% endif %}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ app_internal_port | default(app_port) }}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

@@ -1,0 +1,9 @@
+---
+dependencies:
+  - role: docker
+    vars:
+      docker_user: "{{ ansible_user }}"
+  # Docker role must run before web_app because:
+  # - Docker Engine is required to run containers
+  # - Docker Compose requires Docker to be installed
+  # - User needs to be in docker group for permission

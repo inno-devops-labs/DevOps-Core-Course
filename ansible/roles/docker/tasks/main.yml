@@ -1,90 +1,125 @@
 ﻿---
-- name: Remove old docker versions
-  ansible.builtin.apt:
-    name:
-      - docker
-      - docker-engine
-      - docker.io
-      - containerd
-      - runc
-    state: absent
+- name: Docker installation block
+  block:
+    - name: Remove old docker versions
+      ansible.builtin.apt:
+        name:
+          - docker
+          - docker-engine
+          - docker.io
+          - containerd
+          - runc
+        state: absent
 
-- name: Install dependencies
-  ansible.builtin.apt:
-    name:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - gnupg
-      - lsb-release
-      - python3-pip
-      - python3-setuptools
-    state: present
+    - name: Install dependencies
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - python3-pip
+          - python3-setuptools
+        state: present
 
-- name: Create keyrings directory
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
 
-- name: Download Docker GPG key
-  ansible.builtin.get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker.asc
-    mode: '0644'
-    force: yes
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+        force: yes
+      register: gpg_result
 
-- name: Add Docker repository
-  ansible.builtin.apt_repository:
-    repo: \"deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable\"
-    state: present
-    update_cache: yes
-    filename: docker
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        update_cache: yes
+        filename: docker
 
-- name: Install Docker packages
-  ansible.builtin.apt:
-    name: \"{{ docker_packages }}\"
-    state: present
-    update_cache: yes
-  notify: restart docker service
+  rescue:
+    - name: Wait and retry GPG key download
+      ansible.builtin.pause:
+        seconds: 10
 
-- name: Create Docker config directory
-  ansible.builtin.file:
-    path: /etc/docker
-    state: directory
-    mode: '0755'
+    - name: Retry Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+        force: yes
 
-- name: Configure Docker daemon
-  ansible.builtin.copy:
-    content: \"{{ docker_daemon_config | to_nice_json }}\"
-    dest: /etc/docker/daemon.json
-    mode: '0644'
-  notify: restart docker service
+    - name: Retry adding repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        update_cache: yes
+        filename: docker
 
-- name: Start and enable Docker
-  ansible.builtin.systemd:
-    name: docker
-    state: started
-    enabled: yes
+  always:
+    - name: Ensure Docker service is enabled
+      ansible.builtin.systemd:
+        name: docker
+        enabled: yes
+        state: started
 
-- name: Add user to docker group
-  ansible.builtin.user:
-    name: \"{{ docker_user }}\"
-    groups: docker
-    append: yes
+  become: true
+  tags:
+    - docker_install
+    - docker
 
-- name: Install Docker Python module
-  ansible.builtin.pip:
-    name:
-      - docker
-      - docker-compose
-    state: present
+- name: Docker configuration block
+  block:
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: yes
+      notify: restart docker service
 
-- name: Verify Docker installation
-  ansible.builtin.command: docker --version
-  register: docker_version
-  changed_when: false
+    - name: Create Docker config directory
+      ansible.builtin.file:
+        path: /etc/docker
+        state: directory
+        mode: '0755'
 
-- name: Show Docker version
-  ansible.builtin.debug:
-    msg: \"Installed {{ docker_version.stdout }}\"
+    - name: Configure Docker daemon
+      ansible.builtin.copy:
+        content: "{{ docker_daemon_config | to_nice_json }}"
+        dest: /etc/docker/daemon.json
+        mode: '0644'
+      notify: restart docker service
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install Docker Python module
+      ansible.builtin.pip:
+        name:
+          - docker
+          - docker-compose
+        state: present
+
+    - name: Verify Docker installation
+      ansible.builtin.command: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Show Docker version
+      ansible.builtin.debug:
+        msg: "Installed {{ docker_version.stdout }}"
+
+  become: true
+  tags:
+    - docker_config
+    - docker
