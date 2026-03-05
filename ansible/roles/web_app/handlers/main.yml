@@ -1,7 +1,7 @@
 ---
 - name: Restart application container
   become: true
-  ansible.builtin.docker_container:
+  community.docker.docker_container:
     name: "{{ app_container_name }}"
     image: "{{ docker_image }}:{{ docker_image_tag }}"
     state: restarted
