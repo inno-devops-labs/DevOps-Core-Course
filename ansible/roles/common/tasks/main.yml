@@ -1,16 +1,63 @@
 ---
-- name: Ensure apt cache is up to date
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+# Common role: system provisioning with blocks and tags
+# Tag strategy: packages, users, common (role-level)
 
 - name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+  when: ansible_os_family == "Debian"
+  become: true
+  tags:
+    - packages
+    - common
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Set system timezone
-  community.general.timezone:
-    name: "{{ common_timezone }}"
-  when: common_timezone is defined
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
+  rescue:
+    - name: Retry apt update with fix-missing on failure
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
+
+    - name: Retry package installation after apt fix
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log common role package completion
+      ansible.builtin.copy:
+        content: "common packages block completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible-common-packages.log
+        mode: "0644"
+
+- name: User and system configuration
+  become: true
+  tags:
+    - users
+    - common
+  block:
+    - name: Ensure deploy user exists
+      ansible.builtin.user:
+        name: "{{ common_deploy_user | default(ansible_user) }}"
+        state: present
+        create_home: true
+        shell: /bin/bash
+
+    - name: Set system timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"
+      when: common_timezone is defined
+
+  always:
+    - name: Log common role users block completion
+      ansible.builtin.copy:
+        content: "common users block completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible-common-users.log
+        mode: "0644"

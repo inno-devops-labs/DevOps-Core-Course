@@ -4,4 +4,3 @@
 
 - name: Application deployment only
   import_playbook: deploy.yml
-

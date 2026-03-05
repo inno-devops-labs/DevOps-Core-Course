@@ -1,0 +1,5 @@
+---
+# Role dependencies: web_app requires Docker to be installed first.
+# The docker role installs Docker Engine and docker-compose-plugin.
+dependencies:
+  - role: docker

@@ -186,8 +186,8 @@ ansible_python_interpreter=/usr/bin/python3
 
 **Testing Connectivity:**
 ```bash
-ansible all -i inventory/hosts.ini -m ping
-ansible webservers -i inventory/hosts.ini -a "uptime"
+ansible all -i inventory/hosts.ini -m ping --ask-vault-pass
+ansible webservers -i inventory/hosts.ini -a "uptime" --ask-vault-pass
 ```
 
 **Resources:**
@@ -219,8 +219,8 @@ Verify Ansible can connect to your VM:
 
 ```bash
 cd ansible/
-ansible all -m ping
-ansible webservers -a "uname -a"
+ansible all -m ping --ask-vault-pass
+ansible webservers -a "uname -a" --ask-vault-pass
 ```
 
 You should see successful responses (green "SUCCESS" messages).
@@ -364,14 +364,14 @@ Create `playbooks/provision.yml`:
 
 **First Run:**
 ```bash
-ansible-playbook playbooks/provision.yml
+ansible-playbook playbooks/provision.yml --ask-vault-pass
 ```
 
 Observe the output - tasks should show "changed" status (yellow).
 
 **Second Run:**
 ```bash
-ansible-playbook playbooks/provision.yml
+ansible-playbook playbooks/provision.yml --ask-vault-pass
 ```
 
 **CRITICAL:** Tasks should show "ok" status (green), not "changed". This demonstrates idempotency!
@@ -620,13 +620,10 @@ Create `playbooks/deploy.yml`:
 ansible-playbook playbooks/deploy.yml --ask-vault-pass
 ```
 
-Or if using password file:
-```bash
-ansible-playbook playbooks/deploy.yml
-```
+(If you use a vault password file in `ansible.cfg`, you can omit `--ask-vault-pass`.)
 
 **Verify:**
-- Container is running: `ansible webservers -a "docker ps"`
+- Container is running: `ansible webservers -a "docker ps" --ask-vault-pass`
 - App is accessible: `curl http://<VM-IP>:5000/health`
 - Check main endpoint: `curl http://<VM-IP>:5000/`
 
@@ -742,7 +739,7 @@ Ansible has official plugins for major clouds.
 4. **Test the inventory:**
    ```bash
    ansible-inventory --graph    # Show discovered hosts
-   ansible all -m ping          # Test connectivity
+   ansible all -m ping --ask-vault-pass   # Test connectivity (use --ask-vault-pass if using vault)
    ```
 
 5. **Run your playbooks** with dynamic inventory

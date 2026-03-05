@@ -1,0 +1,13 @@
+exclude_paths:
+  - playbooks/deploy.yml
+  - playbooks/site.yml
+  - group_vars/all.yml
+
+skip_list:
+  - internal-error
+  - var-naming[no-role-prefix]
+  - yaml[empty-lines]
+  - yaml[new-line-at-end-of-file]
+  - name[casing]
+  - key-order[task]
+  - ignore-errors
