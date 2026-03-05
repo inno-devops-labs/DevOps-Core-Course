@@ -43,8 +43,7 @@ jobs:
       YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
       YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
       YC_ZONE: ${{ secrets.YC_ZONE }}
-      YC_SERVICE_ACCOUNT_KEY_FILE: ${{ runner.temp }}/yc-sa-key.json
-
+      YC_SERVICE_ACCOUNT_KEY_FILE: ${{ env.RUNNER_TEMP }}/yc-sa-key.json
     steps:
       - uses: actions/checkout@v4
 
