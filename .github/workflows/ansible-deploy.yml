@@ -16,23 +16,33 @@ on:
 
 jobs:
   lint:
-    name: Ansible Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  name: Ansible Lint
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
 
-      - name: Install ansible + ansible-lint
-        run: |
-          pip install ansible ansible-lint
+    - name: Install ansible + ansible-lint
+      run: |
+        pip install ansible ansible-lint
 
-      - name: Run ansible-lint
-        run: |
-          cd ansible
-          ansible-lint playbooks/*.yml
+      env:
+        ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+      run: |
+        echo "$ANSIBLE_VAULT_PASSWORD" > ansible/.vault_pass
+        chmod 600 ansible/.vault_pass
+
+    - name: Run ansible-lint
+      run: |
+        cd ansible
+        ansible-lint playbooks/*.yml
+
+    - name: Cleanup vault password file
+      if: always()
+      run: rm -f ansible/.vault_pass
 
   deploy:
     name: Deploy Application (SSH + YC dynamic inventory)
