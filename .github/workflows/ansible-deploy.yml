@@ -55,6 +55,9 @@ jobs:
     name: Deploy Application
     needs: lint
     runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
 
     env:
       ANSIBLE_HOST_KEY_CHECKING: "False"
@@ -74,6 +77,24 @@ jobs:
           pip install ansible
           ansible-galaxy collection install community.docker
 
+      - name: Validate required deployment secrets
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          missing=()
+          for var in SSH_PRIVATE_KEY VM_HOST VM_USER ANSIBLE_VAULT_PASSWORD; do
+            if [ -z "${!var}" ]; then
+              missing+=("$var")
+            fi
+          done
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "Missing required secrets: ${missing[*]}"
+            exit 1
+          fi
+
       - name: Write vault password from GitHub Secret
         working-directory: ansible
         shell: bash
@@ -82,15 +103,20 @@ jobs:
             echo "ERROR: GitHub Secret ANSIBLE_VAULT_PASSWORD is not set."
             exit 1
           fi
-          printf '%s' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+          printf '%s\n' "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
           chmod 600 .vault_pass
 
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/ansible_deploy
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/ansible_deploy
           chmod 600 ~/.ssh/ansible_deploy
-          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+          if [ -n "${{ secrets.KNOWN_HOSTS }}" ]; then
+            printf '%s\n' "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+          fi
 
       - name: Generate CI inventory
         working-directory: ansible/inventory
