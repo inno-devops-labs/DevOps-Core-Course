@@ -9,7 +9,7 @@
         state: absent
         remove_volumes: true
         remove_orphans: true
-      ignore_errors: true
+      ignore_errors: true   # noqa ignore-errors
 
     - name: Remove docker-compose file
       ansible.builtin.file:

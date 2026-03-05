@@ -38,7 +38,14 @@
 
   always:
     - name: Check container status
-      ansible.builtin.command: docker ps --filter "name={{ web_app_name }}" --format "table {{.Names}}\t{{.Status}}"
+      ansible.builtin.command:
+        argv:
+          - docker
+          - ps
+          - --filter
+          - "name={{ web_app_name }}"
+          - --format
+          - "table {{ '{{' }}.Names{{ '}}' }}\t{{ '{{' }}.Status{{ '}}' }}"
       register: web_app_container_status
       changed_when: false
 

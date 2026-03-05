@@ -1,7 +1,5 @@
 ---
-- name: restart app
-  community.docker.docker_compose_v2:
-    project_src: "{{ web_app_compose_project_dir }}"
-    state: present
-    pull: always
-    remove_orphans: true
+- name: Restart app
+  ansible.builtin.service:
+    name: "{{ web_app_name }}"
+    state: restarted

@@ -20,9 +20,10 @@
 
   rescue:
     - name: Fix apt if update failed
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
       when: ansible_os_family == "Debian"
-      ansible.builtin.command: apt-get update --fix-missing
-      changed_when: false
 
   always:
     - name: Log completion
