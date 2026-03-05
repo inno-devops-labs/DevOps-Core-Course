@@ -1,21 +1,23 @@
 ---
-- name: Wipe web application
-  block:
-
-    - name: Stop and remove Docker Compose containers
-      command: docker compose down
-      args:
-        chdir: "{{ compose_project_dir }}"
-      ignore_errors: true
-
-    - name: Remove application directory
-      file:
-        path: "{{ compose_project_dir }}"
-        state: absent
-
-    - name: Log wipe completion
-      debug:
-        msg: "Application {{ app_name }} wiped successfully"
-
+- name: Wipe Web Application
   tags:
     - web_app_wipe
+  block:
+
+    - name: Stop And Remove Docker Compose Containers
+      ansible.builtin.command: docker compose down
+      args:
+        chdir: /opt/{{ app_name }}
+      failed_when: false
+      changed_when: false
+
+    - name: Remove Application Directory
+      ansible.builtin.file:
+        path: /opt/{{ app_name }}
+        state: absent
+
+    - name: Log Wipe Completion
+      ansible.builtin.debug:
+        msg: "Application {{ app_name }} wiped successfully"
+
+  when: web_app_wipe | bool

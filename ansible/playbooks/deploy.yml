@@ -1,8 +1,8 @@
 ---
-- name: Deploy Python application
+- name: Deploy Python Application
   hosts: webservers
-  become: yes
+  become: true
   vars_files:
-    - /ansible/group_vars/all.yml
+    - group_vars/all.yml
   roles:
-    - web_app
+    - role: web_app

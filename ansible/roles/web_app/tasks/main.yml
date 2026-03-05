@@ -1,34 +1,34 @@
 ---
 - name: Include wipe tasks
-  include_tasks: wipe.yml
+  ansible.builtin.include_tasks: wipe.yml
   when: web_app_wipe | bool
   tags:
     - web_app_wipe
 
 - name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
   block:
 
     - name: Create application directory
-      file:
+      ansible.builtin.file:
         path: "{{ compose_project_dir }}"
         state: directory
         mode: "0755"
 
     - name: Template docker-compose.yml
-      template:
+      ansible.builtin.template:
         src: docker-compose.yml.j2
         dest: "{{ compose_project_dir }}/docker-compose.yml"
 
     - name: Deploy application
-      command: docker compose up -d
+      ansible.builtin.command: docker compose up -d
       args:
         chdir: "{{ compose_project_dir }}"
+      changed_when: false
 
   rescue:
     - name: Deployment failed
-      debug:
+      ansible.builtin.debug:
         msg: "Docker Compose deployment failed"
-
-  tags:
-    - app_deploy
-    - compose
