@@ -31,10 +31,15 @@ jobs:
         run: |
           pip install ansible ansible-lint
 
+      - name: Create vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+
       - name: Run ansible-lint
         run: |
           cd ansible
-          ansible-lint playbooks/*.yml
+          export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
+          ansible-lint -i inventory/hosts.ini playbooks/*.yml
 
   deploy:
     name: Deploy Application
