@@ -1,0 +1,74 @@
+name: Ansible Deployment
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "ansible/**"
+            - ".github/workflows/ansible-deployment.yml"
+    pull_request:
+        types: [closed]
+        branches: [main]
+        paths:
+            - "ansible/**"
+            - ".github/workflows/ansible-deployment.yml"
+        if: github.event.pull_request.merged == true
+
+jobs:
+    lint:
+        name: Ansible Lint
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.10"
+
+            - name: Install dependencies
+              run: |
+                  pip install ansible ansible-lint
+
+            - name: Run ansible-lint
+              run: ansible-lint --force-color .
+
+    deploy:
+        name: Deploy Application
+        needs: lint
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.10"
+
+            - name: Install Ansible
+              run: pip install ansible
+
+            - name: Setup SSH
+              run: |
+                  mkdir -p ~/.ssh
+                  echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+                  chmod 600 ~/.ssh/id_rsa
+                  ssh-keyscan ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+
+            - name: Deploy with Ansible
+              env:
+                  ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+              run: |
+                  ansible-playbook playbooks/deploy.yml --vault-password-file <(echo $ANSIBLE_VAULT_PASSWORD) --private-key ~/.ssh/id_rsa -i inventory/production.ini
+
+            - name: Verify Deployment
+              run: |
+                  curl -f http://${{ secrets.HOST }}:${{ secrets.APP_PORT }}/health || exit 1
+
+            - name: Cleanup SSH Private Key
+              if: always()
+              run: rm -f ~/.ssh/id_rsa

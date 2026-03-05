@@ -1,37 +1,74 @@
----
-- name: Install prerequisites for Docker
-  apt:
-      name: "{{ docker_prerequisites }}"
-      state: present
+- name: Install Docker with error handling
+  block:
+      - name: Install prerequisites for Docker
+        apt:
+            name: "{{ docker_prerequisites }}"
+            state: present
 
-- name: Add Docker GPG key
-  apt_key:
-      url: https://download.docker.com/linux/ubuntu/gpg
-      state: present
+      - name: Add Docker GPG key
+        apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
 
-- name: Add Docker repository
-  apt_repository:
-      repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-      state: present
-      update_cache: yes
+      - name: Add Docker repository
+        apt_repository:
+            repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+            state: present
+            update_cache: yes
 
-- name: Install Docker packages
-  apt:
-      name: "{{ docker_packages }}"
-      state: present
+      - name: Install Docker packages
+        apt:
+            name: "{{ docker_packages }}"
+            state: present
+
+  rescue:
+      - name: Handle Docker installation failure
+        debug:
+            msg: "Failed to install Docker. Please check the logs."
+
+  always:
+      - name: Cleanup temp files (if any)
+        file:
+            path: "/tmp/ansible_docker_temp"
+            state: absent
 
 - name: Ensure Docker service is running and enabled
-  service:
-      name: docker
-      state: started
-      enabled: yes
+  block:
+      - name: Ensure Docker service is running and enabled
+        service:
+            name: docker
+            state: started
+            enabled: yes
+
+  rescue:
+      - name: Handle Docker service failure
+        debug:
+            msg: "Failed to start/enable Docker service."
 
 - name: Add user to docker group
-  user:
-      name: "{{ ansible_user }}"
-      groups: docker
-      append: yes
+  block:
+      - name: Add user to docker group
+        user:
+            name: "{{ ansible_user }}"
+            groups: docker
+            append: yes
+
+  rescue:
+      - name: Handle user group addition failure
+        debug:
+            msg: "Failed to add user to docker group."
 
 - name: Install python3-docker for Ansible Docker modules
-  pip:
-      name: docker
+  block:
+      - name: Install python3-docker for Ansible Docker modules
+        pip:
+            name: docker
+
+  rescue:
+      - name: Handle python3-docker installation failure
+        debug:
+            msg: "Failed to install python3-docker."
+
+  tags:
+      - docker
+      - setup

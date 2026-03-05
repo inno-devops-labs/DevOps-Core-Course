@@ -1,14 +1,26 @@
----
-- name: Update apt cache
-  apt:
-      update_cache: yes
-      cache_valid_time: 3600
+- name: Update apt cache and install packages
+  block:
+      - name: Update apt cache
+        apt:
+            update_cache: yes
+            cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-      name: "{{ common_packages }}"
-      state: present
+      - name: Install common packages
+        apt:
+            name: "{{ common_packages }}"
+            state: present
+  rescue:
+      - name: Handle installation failure
+        debug:
+            msg: "Failed to install common packages. Please check the logs."
+  always:
+      - name: Cleanup temp files (if any)
+        file:
+            path: "/tmp/ansible_common_temp"
+            state: absent
 
-- name: Set timezone to UTC
-  timezone:
-      name: UTC
+  when: ansible_os_family == "Debian"
+  become: yes
+  tags:
+      - common
+      - packages

@@ -1,0 +1,41 @@
+- name: Deploy application with Docker Compose
+  block:
+      - name: Create app directory
+        file:
+            path: "{{ compose_project_dir }}"
+            state: directory
+            mode: "0755"
+        become: yes
+
+      - name: Template docker-compose file
+        template:
+            src: docker-compose.yml.j2
+            dest: "{{ compose_project_dir }}/docker-compose.yml"
+        notify: Restart containers if needed
+
+      - name: Deploy with docker-compose
+        community.docker.docker_compose:
+            project_src: "{{ compose_project_dir }}"
+            pull: yes
+            build: no
+        register: deploy_result
+        become: yes
+  rescue:
+      - name: Handle deployment failure
+        debug:
+            msg: "Failed to deploy application with Docker Compose. Error: {{ deploy_result.msg | default('Unknown error') }}"
+  always:
+      - name: Log deployment completion
+        debug:
+            msg: "Deployment completed successfully or failed."
+  when: ansible_os_family == "Debian"
+  become: yes
+  tags:
+      - docker-compose
+      - deploy
+
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  when: web_app_wipe | default(false)
+  tags:
+      - wipe

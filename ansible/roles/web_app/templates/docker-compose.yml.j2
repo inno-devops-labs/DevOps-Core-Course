@@ -1,0 +1,18 @@
+version: "{{ docker_compose_version }}"
+
+services:
+  {{ app_name }}:
+    image: "{{ docker_image }}:{{ docker_tag }}"
+    container_name: "{{ app_name }}"
+    ports:
+      - "{{ app_port }}:{{ app_internal_port | default(app_port) }}"
+    restart: unless-stopped
+    environment:
+      FLASK_ENV: production
+    volumes:
+      - "{{ compose_project_dir }}/app:/app"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ app_internal_port | default(app_port) }}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
