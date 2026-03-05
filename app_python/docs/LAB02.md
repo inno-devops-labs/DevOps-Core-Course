@@ -18,7 +18,7 @@ The `slim` variant was chosen because it provides a good balance between minimal
 
 Dependencies are installed before copying the application source code. This allows Docker to reuse cached layers when only the application code changes, which significantly speeds up rebuilds during development.
 
-### .dockerignore usage
+### .dockerignore usage 
 
 A `.dockerignore` file is used to exclude unnecessary files such as virtual environments, Git metadata, cache files, and IDE configuration. This reduces the build context size, speeds up the build process, and helps keep the final image smaller and cleaner.
 

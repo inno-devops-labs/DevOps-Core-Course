@@ -86,12 +86,10 @@ jobs:
       env:
         SERVER_IP: ${{ secrets.SERVER_IP }}
       run: |
-        ansible-playbook -i inventory.ini ./ansible/playbooks/deploy.yml \
-          --user ubuntu \
-          --private-key key.pem \
+         ansible-playbook -i inventory.ini ./ansible/playbooks/deploy.yml \
           --extra-vars "@ansible/group_vars/all.yml" \
           --vault-password-file="pass.txt" \
-          -e ansible_python_interpreter=/usr/bin/python3
+          -e ansible_python_interpreter=/usr/bin/python3 \
           --ssh-extra-args="-o StrictHostKeyChecking=no"
     
     - name: Remove Password
