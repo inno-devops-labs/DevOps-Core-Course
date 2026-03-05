@@ -1,8 +1,5 @@
 # Lab 6 — Advanced Ansible & CI/CD
 
-**Name:** Elina Notelina
-**Date:** 2026-03-05
-**Lab Points:** 10 pts (core) — bonus not attempted
 
 ---
 
@@ -510,33 +507,38 @@ Both conditions must be met for wipe tasks to execute during a normal tagged run
 **File:** `roles/web_app/tasks/wipe.yml`
 
 ```yaml
+---
 - name: Wipe web application
+  when: web_app_wipe | bool
+  become: true
+  tags:
+    - web_app_wipe
   block:
     - name: Stop and remove containers via docker compose
-      command: docker compose -f {{ compose_project_dir }}/docker-compose.yml down --remove-orphans
-      ignore_errors: yes
+      ansible.builtin.command:
+        cmd: docker compose -f {{ web_app_compose_dir }}/docker-compose.yml down --remove-orphans
+      changed_when: true
+      failed_when: false
 
     - name: Remove docker-compose file
-      file:
-        path: "{{ compose_project_dir }}/docker-compose.yml"
+      ansible.builtin.file:
+        path: "{{ web_app_compose_dir }}/docker-compose.yml"
         state: absent
 
     - name: Remove application directory
-      file:
-        path: "{{ compose_project_dir }}"
+      ansible.builtin.file:
+        path: "{{ web_app_compose_dir }}"
         state: absent
 
     - name: Remove Docker image (optional cleanup)
-      command: docker rmi {{ docker_image }}:{{ docker_tag }}
-      ignore_errors: yes
+      ansible.builtin.command:
+        cmd: docker rmi {{ web_app_docker_image }}:{{ web_app_docker_tag }}
+      changed_when: true
+      failed_when: false
 
     - name: Log wipe completion
-      debug:
-        msg: "Application {{ app_name }} wiped successfully from {{ compose_project_dir }}"
-
-  when: web_app_wipe | bool
-  tags:
-    - web_app_wipe
+      ansible.builtin.debug:
+        msg: "Application {{ web_app_name }} wiped successfully from {{ web_app_compose_dir }}"
 ```
 
 Wipe is included at the **beginning** of `main.yml` (before deployment tasks) to support the clean reinstallation use case.
@@ -734,13 +736,13 @@ name: Ansible Deployment
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ master, lab6 ]
     paths:
       - 'ansible/**'
       - '!ansible/docs/**'
       - '.github/workflows/ansible-deploy.yml'
   pull_request:
-    branches: [ main, master ]
+    branches: [ master, lab6 ]
     paths:
       - 'ansible/**'
 
@@ -758,12 +760,22 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install ansible ansible-lint
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Create vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
 
       - name: Run ansible-lint
         run: |
           cd ansible
           ansible-lint playbooks/*.yml
+
+      - name: Remove vault password file
+        if: always()
+        run: rm -f ansible/.vault_pass
 
   deploy:
     name: Deploy Application
@@ -789,14 +801,21 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Create vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+
       - name: Deploy with Ansible
         run: |
           cd ansible
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
           ansible-playbook playbooks/deploy.yml \
             -i inventory/hosts.ini \
-            --vault-password-file /tmp/vault_pass
-          rm /tmp/vault_pass
+            -e "ansible_ssh_private_key_file=~/.ssh/id_rsa"
+
+      - name: Remove vault password file
+        if: always()
+        run: rm -f ansible/.vault_pass
 
       - name: Verify Deployment
         run: |
@@ -810,11 +829,9 @@ jobs:
 | Secret | Purpose |
 |--------|---------|
 | `SSH_PRIVATE_KEY` | SSH private key for EC2 access |
-| `VM_HOST` | Target EC2 IP address (18.212.82.84) |
+| `VM_HOST` | Target EC2 IP address (52.91.90.128) |
 | `ANSIBLE_VAULT_PASSWORD` | Password to decrypt Ansible Vault files |
-| `VM_USER` | SSH username (`ubuntu`) — can also be hardcoded in inventory |
 
-Note: `VM_USER` is already set to `ubuntu` in `inventory/hosts.ini` (`ansible_user=ubuntu`), so a separate secret is optional but recommended for portability.
 
 ### Path Filters
 
@@ -853,19 +870,19 @@ Self-hosted runners run inside your infrastructure, so secrets never leave your 
 ### Full Test Summary
 
 | Test | Result | Details |
-|------|--------|---------|
-| Tag listing (`--list-tags`) | ✅ Pass | 6 tags on provision, 6 on deploy |
-| Selective execution (`--tags docker`) | ✅ Pass | Only docker tasks ran |
-| Skip tags (`--skip-tags common`) | ✅ Pass | Common role entirely skipped |
-| Rescue block triggered | ✅ Pass | Container conflict handled gracefully |
-| Docker Compose deployment | ✅ Pass | Container running, health check passed |
-| Idempotency (2nd run) | ✅ Pass | 1 changed (command module), rest ok |
-| Wipe Scenario 1: Normal deploy | ✅ Pass | Wipe tasks skipped, app deployed |
-| Wipe Scenario 2: Wipe only | ✅ Pass | App removed, directory cleaned |
-| Wipe Scenario 3: Clean reinstall | ✅ Pass | Wipe → fresh deploy, app healthy |
-| Wipe Scenario 4a: Tag without variable | ✅ Pass | Wipe blocked by `when` condition |
-| Health endpoint | ✅ Pass | `{"status":"healthy"}` returned |
-| Application root endpoint | ✅ Pass | Service info JSON returned |
+|------|------|---------|
+| Tag listing (`--list-tags`) | Pass | 6 tags on provision, 6 on deploy |
+| Selective execution (`--tags docker`) |  Pass | Only docker tasks ran |
+| Skip tags (`--skip-tags common`) | Pass | Common role entirely skipped |
+| Rescue block triggered |  Pass | Container conflict handled gracefully |
+| Docker Compose deployment |  Pass | Container running, health check passed |
+| Idempotency (2nd run) |  Pass | 1 changed (command module), rest ok |
+| Wipe Scenario 1: Normal deploy |  Pass | Wipe tasks skipped, app deployed |
+| Wipe Scenario 2: Wipe only |  Pass | App removed, directory cleaned |
+| Wipe Scenario 3: Clean reinstall |  Pass | Wipe → fresh deploy, app healthy |
+| Wipe Scenario 4a: Tag without variable |  Pass | Wipe blocked by `when` condition |
+| Health endpoint |  Pass | `{"status":"healthy"}` returned |
+| Application root endpoint |  Pass | Service info JSON returned |
 
 ### Application Accessibility
 
@@ -908,23 +925,7 @@ Docker Compose v2+ treats the `version` key as obsolete and emits a warning. Rem
 **3. Idempotency with command modules.**
 The `docker compose up -d` command always reports `changed` because Ansible's `command` module cannot determine if the state actually changed. This is an acceptable trade-off — all declarative tasks (file, template, apt) correctly report idempotent state.
 
-**4. Running Ansible on the target host.**
-Ansible was installed directly on the EC2 instance and run with `ansible_connection=local` for testing. This approach was used because the control machine (Windows) does not natively support Ansible.
-
-**5. SSH key permissions on Windows.**
+**4. SSH key permissions on Windows.**
 `key.pem` had overly permissive ACLs on Windows, causing SSH to reject it. Fixed with `icacls key.pem /inheritance:r /grant:r "$env:USERNAME:R"`.
 
 ---
-
-## Summary
-
-**Overall reflection:** This lab significantly matured the Ansible automation from Lab 5. Moving from individual tasks to blocks with rescue/always handlers makes roles much more production-ready — they can survive transient failures (GPG timeouts, network issues) and always clean up after themselves. Docker Compose is a clear improvement over `docker run` management in Ansible, making deployments more readable, portable, and independently operable. The wipe logic with double-gating was the most interesting design challenge: making destructive operations opt-in without hiding them behind a special "never" tag.
-
-**Total time spent:** ~3 hours
-
-**Key Learnings:**
-- Rescue blocks are essential for handling transient infrastructure failures
-- Double-gating (variable + tag) prevents destructive operations from running accidentally while still enabling clean reinstallation in a single command
-- Docker Compose templates with Jinja2 enable flexible, environment-aware deployments from a single role
-- Path filters in GitHub Actions significantly reduce unnecessary CI runs and costs
-- Role dependencies (`meta/main.yml`) eliminate the need to manually manage execution order in playbooks
