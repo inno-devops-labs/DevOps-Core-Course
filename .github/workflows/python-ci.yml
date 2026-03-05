@@ -79,7 +79,7 @@ jobs:
 
     - name: Ansible Run
       run: |
-        ansible-playbook -i secrets.SERVER_IP ./playbooks/deploy.yml \
+        ansible-playbook -i secrets.SERVER_IP ./ansible/playbooks/deploy.yml \
           --user ubuntu \
           --private-key key.pem \
           --extra-vars "@group_vars/all.yml" \
