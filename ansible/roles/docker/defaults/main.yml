@@ -1,0 +1,3 @@
+---
+docker_user: ubuntu
+docker_version: latest

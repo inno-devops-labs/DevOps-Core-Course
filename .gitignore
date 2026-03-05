@@ -17,3 +17,9 @@ Pulumi.*.yaml
 *.key
 *-credentials.json
 credentials
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc
+__pycache__/
