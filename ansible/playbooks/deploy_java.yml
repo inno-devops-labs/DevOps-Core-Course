@@ -1,9 +1,9 @@
 ---
-- name: Deploy Python application
+- name: Deploy Java Application
   hosts: webservers
   become: true
   vars_files:
-    - ../vars/app_python.yml
+    - ../vars/app_java.yml
 
   roles:
     - web_app

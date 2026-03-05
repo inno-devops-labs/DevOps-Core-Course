@@ -1,0 +1,23 @@
+---
+# ansible-lint configuration for this project
+# https://ansible-lint.readthedocs.io/configuring/
+profile: basic
+
+# Skip rules that are too strict for this lab environment
+skip_list:
+  - yaml[truthy]           # allow 'true'/'false' as booleans
+  - ignore-errors          # wipe.yml uses ignore_errors intentionally
+  - no-handler             # compose up handler kept for manual notify use
+  - partial-become         # become set at block/play level intentionally
+
+# Warn instead of fail for these
+warn_list:
+  - experimental
+  - no-changed-when
+  - command-instead-of-module  # apt-get --fix-missing has no module equivalent
+
+# Exclude paths that are not Ansible content
+exclude_paths:
+  - docs/
+  - collections/
+  - inventory/

@@ -1,44 +1,87 @@
 ﻿---
-- name: Ensure apt keyring directory exists
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: "0755"
+# Docker role: install and configure Docker engine
+# Tags: docker (whole role), docker_install (install only), docker_config (config only)
 
-- name: Download Docker GPG key
-  ansible.builtin.get_url:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    dest: /etc/apt/keyrings/docker.asc
-    mode: "0644"
-  notify: restart docker
+- name: Install Docker engine
+  block:
+    - name: Ensure apt keyring directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
 
-- name: Configure Docker apt repository
-  ansible.builtin.apt_repository:
-    repo: "{{ docker_apt_repo }}"
-    filename: docker
-    state: present
-    update_cache: true
-  notify: restart docker
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
 
-- name: Install Docker engine and plugins
-  ansible.builtin.apt:
-    name: "{{ docker_packages }}"
-    state: present
-    update_cache: true
+    - name: Configure Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "{{ docker_apt_repo }}"
+        filename: docker
+        state: present
+        update_cache: true
 
-- name: Ensure Docker service is enabled and running
-  ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: true
+    - name: Install Docker engine and plugins
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
 
-- name: Add deployment user to docker group
-  ansible.builtin.user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: true
+    - name: Install Python Docker SDK for Ansible Docker modules
+      ansible.builtin.apt:
+        name: python3-docker
+        state: present
 
-- name: Install Python Docker SDK for Ansible Docker modules
-  ansible.builtin.apt:
-    name: python3-docker
-    state: present
+  rescue:
+    - name: Wait before retrying Docker GPG key download
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Retry downloading Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: true
+
+    - name: Retry installing Docker engine and plugins
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
+
+  always:
+    - name: Ensure Docker service is enabled and started
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+      ignore_errors: true
+
+  become: true
+  tags:
+    - docker
+    - docker_install
+
+- name: Configure Docker
+  block:
+    - name: Add deployment user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true
+      notify: restart docker
+
+  always:
+    - name: Log docker config completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible_docker_config.log
+        content: "docker config block completed at {{ ansible_date_time.iso8601 }}\n"
+        mode: "0644"
+
+  become: true
+  tags:
+    - docker
+    - docker_config

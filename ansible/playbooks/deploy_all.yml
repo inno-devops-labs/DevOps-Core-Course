@@ -1,0 +1,42 @@
+---
+# deploy_all.yml
+# Deploys both the Python app and the Java app using role reusability.
+# The same web_app role is invoked twice, once per app, with different variables.
+#
+# Usage:
+#   ansible-playbook playbooks/deploy_all.yml
+#
+# Wipe both apps and redeploy:
+#   ansible-playbook playbooks/deploy_all.yml -e "web_app_wipe=true"
+#
+# Wipe only:
+#   ansible-playbook playbooks/deploy_all.yml -e "web_app_wipe=true" --tags web_app_wipe
+
+- name: Deploy All Applications
+  hosts: webservers
+  become: true
+
+  tasks:
+    - name: Deploy Python app (port 5000)
+      ansible.builtin.include_role:
+        name: web_app
+      vars:
+        app_name: devops-python
+        docker_image: "112005/devops-lab3-python"
+        docker_tag: latest
+        app_port: 5000
+        app_internal_port: 8080
+        compose_project_dir: "/opt/devops-python"
+        app_restart_policy: unless-stopped
+
+    - name: Deploy Java app (port 8001)
+      ansible.builtin.include_role:
+        name: web_app
+      vars:
+        app_name: devops-java
+        docker_image: "112005/devops-lab3-java"
+        docker_tag: latest
+        app_port: 8001
+        app_internal_port: 8080
+        compose_project_dir: "/opt/devops-java"
+        app_restart_policy: unless-stopped

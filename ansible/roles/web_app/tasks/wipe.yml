@@ -1,0 +1,39 @@
+---
+# web_app/tasks/wipe.yml
+#
+# Double-gated wipe logic:
+#   Gate 1 - Tag:      only included when --tags web_app_wipe is passed
+#   Gate 2 - Variable: when: web_app_wipe | bool   (default: false)
+#
+# Wipe only:
+#   ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean reinstall:
+#   ansible-playbook deploy.yml -e "web_app_wipe=true"
+
+- name: Wipe {{ app_name }} deployment
+  block:
+    - name: Stop and remove containers via Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: absent
+        remove_volumes: false
+      ignore_errors: true
+
+    - name: Remove docker-compose.yml file
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}/docker-compose.yml"
+        state: absent
+
+    - name: Remove application directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: absent
+
+    - name: Log wipe completion
+      ansible.builtin.debug:
+        msg: "Application {{ app_name }} wiped successfully from {{ compose_project_dir }}"
+
+  when: web_app_wipe | bool
+  become: true
+  tags:
+    - web_app_wipe

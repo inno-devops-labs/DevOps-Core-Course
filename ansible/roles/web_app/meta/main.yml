@@ -1,0 +1,13 @@
+---
+# web_app role dependencies
+# Ensures Docker is installed and running before attempting to deploy
+# the application via Docker Compose.
+galaxy_info:
+  author: devops-student
+  description: Deploy web application using Docker Compose
+  min_ansible_version: "2.16"
+
+dependencies:
+  - role: docker
+    # Docker must be installed and the daemon running before we can
+    # pull images and start containers via docker_compose_v2.

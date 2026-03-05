@@ -1,0 +1,107 @@
+name: Ansible Deploy — Java App
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "ansible/vars/app_java.yml"
+      - "ansible/playbooks/deploy_java.yml"
+      - "ansible/roles/web_app/**"
+      - ".github/workflows/ansible-deploy-java.yml"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "ansible/vars/app_java.yml"
+      - "ansible/playbooks/deploy_java.yml"
+      - "ansible/roles/web_app/**"
+      - ".github/workflows/ansible-deploy-java.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ansible-deploy-java-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Ansible and ansible-lint
+        run: pip install ansible ansible-lint
+
+      - name: Install required Ansible collections
+        run: ansible-galaxy collection install -r collections/requirements.yml
+
+      - name: Run ansible-lint on Java deploy playbook
+        run: ansible-lint playbooks/deploy_java.yml
+
+  deploy:
+    name: Deploy Java App
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    defaults:
+      run:
+        working-directory: ansible
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Ansible and collections
+        run: |
+          pip install ansible
+          ansible-galaxy collection install -r collections/requirements.yml
+
+      - name: Configure SSH for target VM
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Write Vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Deploy Java application
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          ansible-playbook playbooks/deploy_java.yml \
+            -i inventory/hosts.ini \
+            --vault-password-file /tmp/vault_pass \
+            --extra-vars "ansible_user=${{ secrets.VM_USER }} ansible_host=${{ secrets.VM_HOST }}"
+
+      - name: Clean up sensitive files
+        if: always()
+        run: rm -f /tmp/vault_pass ~/.ssh/id_rsa
+
+      - name: Verify Java app is running
+        run: |
+          sleep 15
+          curl -f http://${{ secrets.VM_HOST }}:8001/health || exit 1
+          echo "Java app health check passed"

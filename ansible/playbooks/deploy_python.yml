@@ -1,5 +1,5 @@
 ---
-- name: Deploy Python application
+- name: Deploy Python Application
   hosts: webservers
   become: true
   vars_files:

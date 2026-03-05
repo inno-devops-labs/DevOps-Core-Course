@@ -1,0 +1,34 @@
+---
+# web_app role defaults
+# Override per app by passing vars (see vars/app_python.yml, vars/app_java.yml)
+
+# ── Application identity ──────────────────────────────────────────────────────
+app_name: devops-app
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_tag: latest
+
+# ── Port mapping ──────────────────────────────────────────────────────────────
+# app_port       : port exposed on the host VM
+# app_internal_port : port the container actually listens on
+app_port: 5000
+app_internal_port: 8080
+
+# ── Docker Compose project ────────────────────────────────────────────────────
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# ── Container behaviour ───────────────────────────────────────────────────────
+app_restart_policy: unless-stopped
+
+# ── Environment variables passed into the container ──────────────────────────
+# Add or override per-app in the vars files or group_vars
+app_env: {}
+
+# ── Wipe Logic Control ────────────────────────────────────────────────────────
+# Default: do NOT wipe.  Set to true only when explicitly requested.
+#
+# Wipe only:
+#   ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean reinstall (wipe then deploy):
+#   ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

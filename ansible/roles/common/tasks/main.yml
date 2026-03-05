@@ -1,14 +1,83 @@
 ﻿---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+# Common role: system baseline configuration
+# Tags: common (whole role), packages (installs), users (user mgmt)
 
 - name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Set system timezone
-  community.general.timezone:
-    name: "{{ common_timezone }}"
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix broken apt on cache update failure
+      ansible.builtin.command:
+        cmd: apt-get update --fix-missing
+      changed_when: true
+
+    - name: Retry installing common packages after fix
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log packages block completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible_common_packages.log
+        content: "packages block completed at {{ ansible_date_time.iso8601 }}\n"
+        mode: "0644"
+
+  become: true
+  tags:
+    - packages
+    - common
+
+- name: Configure system timezone
+  block:
+    - name: Set system timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"
+
+  always:
+    - name: Log timezone configuration
+      ansible.builtin.copy:
+        dest: /tmp/ansible_common_timezone.log
+        content: "timezone block completed at {{ ansible_date_time.iso8601 }}\n"
+        mode: "0644"
+
+  become: true
+  tags:
+    - common
+
+- name: Manage deployment users
+  block:
+    - name: Ensure deployment group exists
+      ansible.builtin.group:
+        name: "{{ common_deploy_group }}"
+        state: present
+
+    - name: Ensure deployment user exists
+      ansible.builtin.user:
+        name: "{{ common_deploy_user }}"
+        groups: "{{ common_deploy_group }}"
+        append: true
+        shell: /bin/bash
+        create_home: true
+        state: present
+
+  always:
+    - name: Log users block completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible_common_users.log
+        content: "users block completed at {{ ansible_date_time.iso8601 }}\n"
+        mode: "0644"
+
+  become: true
+  tags:
+    - users
+    - common
