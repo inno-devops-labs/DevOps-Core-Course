@@ -1,0 +1,32 @@
+---
+- name: Login to Docker Hub
+  docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+  no_log: true
+
+- name: Pull image
+  docker_image:
+    name: "{{ docker_image }}"
+    tag: "{{ docker_image_tag }}"
+    source: pull
+
+- name: Run container
+  docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: started
+    restart_policy: "{{ restart_policy }}"
+    ports:
+      - "{{ app_port }}:5000"
+
+- name: Wait for app
+  wait_for:
+    port: "{{ app_port }}"
+    delay: 5
+    timeout: 30
+
+- name: Health check
+  uri:
+    url: "http://localhost:{{ app_port }}/health"
+    status_code: 200
