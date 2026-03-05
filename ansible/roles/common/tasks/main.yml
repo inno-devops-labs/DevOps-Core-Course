@@ -1,12 +1,53 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-  become: yes
+- name: Common role tasks
+  block:
+    - name: Package management tasks
+      block:
+        - name: Update apt cache
+          apt:
+            update_cache: yes
+            cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
-  become: yes
+        - name: Install common packages
+          apt:
+            name: "{{ common_packages }}"
+            state: present
+
+      rescue:
+        - name: Handle apt cache update failure
+          apt:
+            update_cache: yes
+            cache_valid_time: 3600
+            update_cache_retries: 3
+            update_cache_retry_max_delay: 10
+
+      always:
+        - name: Log package installation completion
+          copy:
+            content: "Common packages installed at {{ ansible_date_time.iso8601 }}"
+            dest: "/tmp/common-packages-installed.log"
+
+      become: yes
+      tags:
+        - packages
+
+    - name: User management tasks
+      block:
+        - name: Ensure common users exist
+          user:
+            name: "{{ item }}"
+            state: present
+          loop: "{{ common_users | default([]) }}"
+
+      always:
+        - name: Log user management completion
+          copy:
+            content: "User management completed at {{ ansible_date_time.iso8601 }}"
+            dest: "/tmp/common-users-managed.log"
+
+      become: yes
+      tags:
+        - users
+
+  tags:
+    - common

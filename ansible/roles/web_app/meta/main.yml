@@ -1,0 +1,4 @@
+---
+dependencies:
+  - role: docker
+    # Docker is required for deploying web applications
