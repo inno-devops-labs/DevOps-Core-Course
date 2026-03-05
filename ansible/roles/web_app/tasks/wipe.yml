@@ -1,5 +1,9 @@
 ---
 - name: Wipe web application
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+
   block:
 
     - name: Stop and remove containers
@@ -23,7 +27,3 @@
     - name: Log wipe completion
       ansible.builtin.debug:
         msg: "Application {{ app_name }} wiped successfully"
-
-  when: web_app_wipe | bool
-  tags:
-    - web_app_wipe

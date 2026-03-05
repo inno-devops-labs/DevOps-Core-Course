@@ -1,0 +1,11 @@
+skip_list:
+  - var-naming
+  - name
+  - key-order
+  - risky-file-permissions
+  - ignore-errors
+  - command-instead-of-module
+  - no-changed-when
+  - fqcn
+  - yaml[truthy]
+  - group_vars/all.yml

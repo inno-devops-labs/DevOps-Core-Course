@@ -25,7 +25,7 @@
         path: /tmp/common_packages_done.log
         state: touch
 
-  become: true
+  become: yes
   tags:
     - packages
 
@@ -47,6 +47,6 @@
         path: /tmp/common_users_done.log
         state: touch
 
-  become: true
+  become: yes
   tags:
     - users
