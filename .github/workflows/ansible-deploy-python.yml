@@ -1,0 +1,60 @@
+name: Ansible Python App Deployment
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'ansible/vars/app_python.yml'
+      - 'ansible/playbooks/deploy_python.yml'
+      - 'ansible/roles/web_app/**'
+      - '.github/workflows/ansible-deploy-python.yml'
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint docker-compose
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/deploy_python.yml
+
+  deploy:
+    name: Deploy Python App
+    needs: lint
+    runs-on: self-hosted
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          pip install ansible docker-compose
+          ansible-galaxy collection install community.docker
+
+      - name: Deploy Python Application
+        run: |
+          cd ansible
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          ansible-playbook playbooks/deploy_python.yml \
+            --vault-password-file /tmp/vault_pass
+          rm /tmp/vault_pass
+
+      - name: Verify Python App
+        run: |
+          sleep 10
+          curl -f http://localhost:5000 || exit 1
+          curl -f http://localhost:5000/health || exit 1

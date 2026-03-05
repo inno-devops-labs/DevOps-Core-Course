@@ -7,7 +7,7 @@ variable "region" {
 variable "prefix" {
   description = "Prefix for resource names"
   type        = string
-  default     = "lab04"
+  default     = "lab06"
 }
 
 variable "vpc_cidr" {

@@ -1,0 +1,95 @@
+---
+# Wipe logic runs first (when explicitly requested)
+# This allows clean reinstallation: wipe → deploy
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+# Deployment tasks
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create app directory
+      file:
+        path: "{{ compose_project_dir | default('/opt/' + app_name) }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Template docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir | default('/opt/' + app_name) }}/docker-compose.yml"
+        mode: '0644'
+        owner: root
+        group: root
+      register: compose_template
+
+    - name: Deploy with docker-compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir | default('/opt/' + app_name) }}"
+        state: present
+        pull: always
+        remove_orphans: yes
+      register: deploy_result
+
+    - name: Wait for application to be ready
+      wait_for:
+        port: "{{ app_port }}"
+        host: localhost
+        delay: "{{ app_health_check_delay | default(5) }}"
+        timeout: 60
+      when: app_port is defined
+
+    - name: Verify health endpoint
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        method: GET
+        status_code: [200, 404]
+        timeout: 30
+      register: health_check
+      until: health_check.status in [200, 404]
+      retries: "{{ app_health_check_retries | default(5) }}"
+      delay: "{{ app_health_check_delay | default(5) }}"
+      failed_when: false
+      changed_when: false
+      when: app_port is defined
+
+    - name: Log deployment completion
+      copy:
+        content: "Application {{ app_name }} deployed at {{ ansible_date_time.iso8601 }}\n"
+        dest: "/tmp/{{ app_name }}_deployment.log"
+        mode: '0644'
+      changed_when: false
+
+  rescue:
+    - name: Handle deployment failure
+      debug:
+        msg: "Deployment failed for {{ app_name }}. Check logs for details."
+
+    - name: Get Docker Compose logs
+      command: docker compose logs
+      args:
+        chdir: "{{ compose_project_dir | default('/opt/' + app_name) }}"
+      register: compose_logs
+      changed_when: false
+      failed_when: false
+
+    - name: Display error logs
+      debug:
+        var: compose_logs.stdout_lines
+      when: compose_logs.stdout_lines | length > 0
+
+  always:
+    - name: Ensure deployment directory exists
+      stat:
+        path: "{{ compose_project_dir | default('/opt/' + app_name) }}"
+      register: dir_check
+      changed_when: false
+
+  become: true
+  tags:
+    - app_deploy
+    - compose
+    - web_app

@@ -1,0 +1,4 @@
+ansible>=8.0
+ansible-lint>=6.20
+docker-compose>=1.29
+boto3>=1.28

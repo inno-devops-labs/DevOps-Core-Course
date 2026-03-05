@@ -1,9 +1,0 @@
----
-app_name: devops-app
-docker_image_tag: latest
-app_port: 5000
-app_container_name: "{{ app_name }}"
-app_env_vars: {}
-app_restart_policy: unless-stopped
-app_health_check_retries: 5
-app_health_check_delay: 5

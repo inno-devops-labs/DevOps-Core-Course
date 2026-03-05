@@ -14,7 +14,7 @@ provider "aws" {
   default_tags {
     tags = {
       Course    = "DevOps-Core-Course"
-      Lab       = "Lab04"
+      Lab       = "Lab06"
       ManagedBy = "Terraform"
       Owner     = "ellilin"
       Purpose   = "DevOps Learning"
@@ -96,13 +96,13 @@ resource "aws_security_group" "web" {
   description = "Allow SSH, HTTP and custom port 5000"
   vpc_id      = aws_vpc.main.id
 
-  # SSH from your IP (replace with your actual IP)
+  # SSH from anywhere (for GitHub Actions self-hosted runner)
   ingress {
-    description = "SSH from my IP"
+    description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.my_ip_address]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # HTTP from anywhere
@@ -114,11 +114,20 @@ resource "aws_security_group" "web" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Custom port 5000 for app
+  # Custom port 5000 for Python app
   ingress {
-    description = "App port 5000"
+    description = "Python app port 5000"
     from_port   = 5000
     to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Custom port 5001 for Bonus app
+  ingress {
+    description = "Bonus app port 5001"
+    from_port   = 5001
+    to_port     = 5001
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }

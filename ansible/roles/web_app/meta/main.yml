@@ -1,0 +1,8 @@
+---
+# Role dependencies
+# Ensures Docker is installed before deploying web application
+
+dependencies:
+  - role: docker
+    # Docker role will automatically install and configure Docker
+    # This ensures the web_app role can deploy containers using Docker Compose

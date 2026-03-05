@@ -1,14 +1,71 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-
+# Package installation block with error handling
 - name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      register: apt_update_result
 
-- name: Set timezone
-  timezone:
-    name: "{{ common_timezone }}"
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix apt cache issues
+      command: apt-get update --fix-missing
+      changed_when: true
+
+    - name: Retry package installation
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log package installation completion
+      copy:
+        content: "Common packages installed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/common_packages_install.log
+        mode: '0644'
+      changed_when: false
+
+  become: true
+  tags:
+    - packages
+    - common
+
+# User management block
+- name: Configure system settings
+  block:
+    - name: Set timezone
+      timezone:
+        name: "{{ common_timezone }}"
+
+    - name: Create deployment user
+      user:
+        name: "{{ common_deploy_user | default('deploy') }}"
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        state: present
+      when: common_deploy_user is defined
+
+  rescue:
+    - name: Handle user creation failure
+      debug:
+        msg: "Failed to configure system settings, but continuing..."
+
+  always:
+    - name: Log system configuration completion
+      copy:
+        content: "System configuration completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/system_config.log
+        mode: '0644'
+      changed_when: false
+
+  become: true
+  tags:
+    - users
+    - common

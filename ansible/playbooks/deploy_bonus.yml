@@ -1,10 +1,10 @@
 ---
-- name: Deploy application
+- name: Deploy Bonus Application
   hosts: webservers
   become: yes
   vars_files:
+    - ../vars/app_bonus.yml
     - ../group_vars/all.yml
 
   roles:
     - web_app
-

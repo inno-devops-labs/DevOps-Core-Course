@@ -1,0 +1,29 @@
+---
+# Application Configuration
+app_name: devops-app
+docker_image: "{{ dockerhub_username | default('docker.io/library') }}/{{ app_name }}"
+docker_tag: latest
+app_port: 5000
+app_internal_port: 5000
+app_container_name: "{{ app_name }}"
+app_env_vars: {}
+app_restart_policy: unless-stopped
+
+# Health Check Configuration
+app_health_check_retries: 5
+app_health_check_delay: 5
+
+# Docker Compose Configuration
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Wipe Logic Control
+# Set to true to remove application completely
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false  # Default: do not wipe
+web_app_remove_volumes: false  # Remove Docker volumes when wiping
+web_app_remove_images: false  # Remove Docker images when wiping
+
+# Application Environment
+app_environment: production

@@ -1,0 +1,53 @@
+---
+# Wipe logic for clean removal of deployed applications
+# Controlled by: web_app_wipe variable (default: false)
+# Gated by: web_app_wipe tag
+# Usage:
+#   Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+#   Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+
+- name: Wipe web application
+  block:
+    - name: Stop and remove containers
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir | default('/opt/' + app_name) }}"
+        state: absent
+        remove_volumes: "{{ web_app_remove_volumes | default(false) }}"
+      register: wipe_result
+      ignore_errors: yes
+
+    - name: Remove docker-compose file
+      file:
+        path: "{{ compose_project_dir | default('/opt/' + app_name) }}/docker-compose.yml"
+        state: absent
+      ignore_errors: yes
+
+    - name: Remove application directory
+      file:
+        path: "{{ compose_project_dir | default('/opt/' + app_name) }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Remove Docker images (optional)
+      community.docker.docker_image:
+        name: "{{ docker_image }}:{{ docker_tag | default('latest') }}"
+        state: absent
+        force_absent: yes
+      ignore_errors: yes
+      when: web_app_remove_images | default(false) | bool
+
+    - name: Log wipe completion
+      debug:
+        msg: "Application {{ app_name }} wiped successfully at {{ ansible_date_time.iso8601 }}"
+
+    - name: Create wipe log
+      copy:
+        content: "Application {{ app_name }} wiped at {{ ansible_date_time.iso8601 }}\n"
+        dest: "/tmp/{{ app_name }}_wipe.log"
+        mode: '0644'
+      changed_when: false
+
+  when: web_app_wipe | default(false) | bool
+  become: true
+  tags:
+    - web_app_wipe

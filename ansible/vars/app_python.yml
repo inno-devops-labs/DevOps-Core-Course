@@ -1,0 +1,12 @@
+---
+# Python application variables
+app_name: devops-python
+docker_image: "{{ dockerhub_username | default('ellilin') }}/devops-info-service"
+docker_tag: latest
+app_port: 5000
+app_internal_port: 5000
+compose_project_dir: "/opt/{{ app_name }}"
+app_env_vars: {}
+app_restart_policy: unless-stopped
+app_health_check_retries: 5
+app_health_check_delay: 5

@@ -1,0 +1,12 @@
+---
+# Go/Bonus application variables
+app_name: devops-go
+docker_image: "{{ dockerhub_username | default('ellilin') }}/devops-info-service-go"
+docker_tag: latest
+app_port: 5001
+app_internal_port: 8080
+compose_project_dir: "/opt/{{ app_name }}"
+app_env_vars: {}
+app_restart_policy: unless-stopped
+app_health_check_retries: 5
+app_health_check_delay: 5

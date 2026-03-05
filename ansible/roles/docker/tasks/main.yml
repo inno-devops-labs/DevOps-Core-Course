@@ -1,56 +1,128 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+# Docker installation block with error handling
+- name: Install Docker
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install dependencies
-  apt:
-    name:
-      - ca-certificates
-      - curl
-      - gnupg
-      - lsb-release
-    state: present
+    - name: Install dependencies
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
 
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
 
-- name: Update apt cache after adding Docker repo
-  apt:
-    update_cache: yes
+    - name: Update apt cache after adding Docker repo
+      apt:
+        update_cache: yes
 
-- name: Install Docker packages
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
-      - docker-compose-plugin
-    state: present
-  notify: restart docker
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+      notify: restart docker
 
-- name: Ensure Docker service is running and enabled
-  service:
-    name: docker
-    state: started
-    enabled: yes
+  rescue:
+    - name: Wait before retry (GPG key might have timed out)
+      wait_for:
+        timeout: 10
+      when: ansible_os_family == "Debian"
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_add_user }}"
-    groups: docker
-    append: yes
+    - name: Retry apt update
+      apt:
+        update_cache: yes
 
-- name: Install python3-docker
-  apt:
-    name: python3-docker
-    state: present
+    - name: Retry Docker GPG key addition
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Retry Docker installation
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+      notify: restart docker
+
+  always:
+    - name: Ensure Docker service is enabled
+      service:
+        name: docker
+        enabled: yes
+      changed_when: false
+
+  become: true
+  tags:
+    - docker_install
+    - docker
+
+# Docker configuration block
+- name: Configure Docker
+  block:
+    - name: Ensure Docker service is running
+      service:
+        name: docker
+        state: started
+
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_add_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install python3-docker
+      apt:
+        name: python3-docker
+        state: present
+
+    - name: Install docker-compose Python library
+      pip:
+        name: docker-compose
+        state: present
+      when: ansible_python.version.major >= 3
+
+  rescue:
+    - name: Handle Docker configuration failure
+      debug:
+        msg: "Docker configuration failed, but Docker should still be functional"
+
+  always:
+    - name: Verify Docker is running
+      command: docker --version
+      changed_when: false
+      register: docker_version
+
+    - name: Log Docker installation
+      copy:
+        content: "Docker installed: {{ docker_version.stdout }} at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/docker_install.log
+        mode: '0644'
+      changed_when: false
+
+  become: true
+  tags:
+    - docker_config
+    - docker
