@@ -57,20 +57,60 @@ Two blocks were created:
 #### Execution Examples
 
 ```bash
-# Run only docker tasks
-ansible-playbook playbooks/provision.yml --tags "docker"
-
-# Run only package installation
-ansible-playbook playbooks/provision.yml --tags "packages"
-
-# Skip common role
-ansible-playbook playbooks/provision.yml --skip-tags "common"
-
-# Run only docker installation (not config)
-ansible-playbook playbooks/provision.yml --tags "docker_install"
-
+```bash
 # List all available tags
-ansible-playbook playbooks/provision.yml --list-tags
+ansible-playbook playbooks/full_setup.yml --list-tags
+
+playbook: playbooks/full_setup.yml
+
+  play #1 (all): Complete server setup with roles  TAGS: []
+      TASK TAGS: [app_deploy, common, compose, docker, docker_config, docker_install, packages, users, web_app, web_app_wipe]
+```
+
+**Example: Run only docker tasks:**
+
+```bash
+$ ansible-playbook playbooks/provision.yml --tags "docker" --private-key ~/.ssh/test_vm
+
+PLAY [Provision server] ********************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [plumini]
+
+TASK [docker : Install Docker prerequisites] ***********************************
+ok: [plumini]
+
+TASK [docker : Create directory for Docker GPG key] ****************************
+ok: [plumini]
+
+TASK [docker : Add Docker GPG key] *********************************************
+ok: [plumini]
+
+TASK [docker : Add Docker repository] ******************************************
+ok: [plumini]
+
+TASK [docker : Update apt cache after adding repository] ***********************
+ok: [plumini]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [plumini]
+
+TASK [docker : Ensure Docker service is enabled and started] *******************
+ok: [plumini]
+
+TASK [docker : Add user to docker group] ***************************************
+ok: [plumini]
+
+TASK [docker : Verify Docker installation] *************************************
+ok: [plumini]
+
+TASK [docker : Display Docker version] *****************************************
+ok: [plumini] => {
+    "msg": "Docker version 29.2.1, build a5c7197"
+}
+
+PLAY RECAP *********************************************************************
+plumini                    : ok=11   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
 ### Research Answers
@@ -279,6 +319,59 @@ Code Push → Lint Ansible → Deploy Application → Verify Deployment
 Two jobs:
 1. **lint** - Runs `ansible-lint` on all playbooks
 2. **deploy** - Deploys via SSH to target VM (depends on lint passing)
+
+### Workflow Results
+
+![Successful CI/CD Workflow](../../app_python/docs/screenshots/15-successful-workflow-run.png)
+
+Both jobs passed successfully:
+- ✅ Ansible Lint (push) - Successful in 46s
+- ✅ Deploy Application (push) - Successful in 1m
+
+The workflow automatically:
+1. Checks out code
+2. Sets up Python and Ansible
+3. Runs ansible-lint for syntax validation
+4. Configures SSH authentication
+5. Executes the deployment playbook
+6. Verifies the application is accessible
+
+### Application Verification
+
+Application successfully deployed and accessible:
+
+```bash
+$ curl http://62.84.119.211:8000
+{
+  "service": {
+    "name": "devops-info-service",
+    "version": "1.0.0",
+    "description": "DevOps course info service",
+    "framework": "FastAPI"
+  },
+  "system": {
+    "hostname": "6b11b26efc9e",
+    "platform": "Linux",
+    "platform_version": "Linux-6.8.0-100-generic-x86_64-with-glibc2.41",
+    "architecture": "x86_64",
+    "cpu_count": 2,
+    "python_version": "3.13.12"
+  },
+  "runtime": {
+    "uptime_seconds": 564,
+    "uptime_human": "0 hours, 9 minutes",
+    "current_time": "2026-03-05T20:17:03.340005+00:00",
+    "timezone": "UTC"
+  }
+}
+
+$ curl http://62.84.119.211:8000/health
+{
+  "status": "healthy",
+  "timestamp": "2026-03-05T20:17:03.374947+00:00",
+  "uptime_seconds": 564
+}
+```
 
 ### Trigger Configuration
 
