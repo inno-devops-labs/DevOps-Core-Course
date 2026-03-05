@@ -1,0 +1,7 @@
+---
+# Handlers for web_app role
+- name: recreate docker compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    state: present
+    pull: yes

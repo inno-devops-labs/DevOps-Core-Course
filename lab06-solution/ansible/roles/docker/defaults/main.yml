@@ -1,0 +1,8 @@
+---
+# Docker configuration variables
+docker_user: ubuntu
+docker_packages:
+  - docker.io
+  - docker-compose
+  - python3-docker
+  - python3-dockerpycreds

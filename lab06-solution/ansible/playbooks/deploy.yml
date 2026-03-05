@@ -1,0 +1,13 @@
+---
+# Playbook: Deploy application with Docker Compose
+- name: Deploy application
+  hosts: webservers
+  become: yes
+
+  roles:
+    - web_app
+
+  post_tasks:
+    - name: Display deployment completion
+      debug:
+        msg: "Application {{ app_name }} deployed successfully on {{ inventory_hostname }}"

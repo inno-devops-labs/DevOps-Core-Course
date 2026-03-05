@@ -1,0 +1,55 @@
+---
+# Task 3: Wipe logic with variable + tag double-gating
+# Wipe runs first (when requested) for clean reinstallation
+
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+# Task 2: Docker Compose Deployment
+- name: Deploy Application with Docker Compose
+  block:
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Template docker-compose.yml
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: '0644'
+      notify: recreate docker compose
+
+    - name: Deploy application with docker-compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: present
+        pull: yes
+      register: docker_compose_result
+
+    - name: Wait for application to be ready
+      uri:
+        url: "http://127.0.0.1:{{ app_port }}/health"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 30
+      delay: 2
+      ignore_errors: yes
+
+    - name: Log deployment completion
+      copy:
+        content: |
+          Application deployed at {{ ansible_date_time.iso8601 }}
+          App Name: {{ app_name }}
+          Port: {{ app_port }}
+          Image: {{ docker_image }}:{{ docker_tag }}
+        dest: "/tmp/{{ app_name }}-deployment.log"
+
+  tags:
+    - app_deploy
+    - compose
+    - deployment

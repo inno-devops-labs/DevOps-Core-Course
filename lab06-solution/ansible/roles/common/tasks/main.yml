@@ -1,0 +1,33 @@
+---
+# Task 1: Refactor with Blocks & Tags
+# - Group tasks logically with blocks
+# - Apply rescue/always sections for error handling
+# - Use tags for selective execution
+
+- name: Include package installation tasks
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix missing packages on apt cache failure
+      apt:
+        update_cache: yes
+        update_cache_retries: 3
+
+  always:
+    - name: Log common role completion
+      copy:
+        content: "Common role completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/common-setup.log
+
+  tags:
+    - packages
+    - common

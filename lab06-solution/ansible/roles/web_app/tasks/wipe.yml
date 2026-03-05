@@ -1,0 +1,31 @@
+---
+# Task 3: Wipe Logic Implementation
+# Double-gating: variable + tag
+# Run with: ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+
+- name: Stop Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    state: absent
+  when: web_app_wipe | bool
+  ignore_errors: yes
+
+- name: Remove docker-compose.yml
+  file:
+    path: "{{ compose_project_dir }}/docker-compose.yml"
+    state: absent
+  when: web_app_wipe | bool
+  ignore_errors: yes
+
+- name: Remove application directory
+  file:
+    path: "{{ compose_project_dir }}"
+    state: absent
+  when: web_app_wipe | bool
+  ignore_errors: yes
+
+- name: Log wipe completion
+  copy:
+    content: "{{ app_name }} wiped at {{ ansible_date_time.iso8601 }}\n"
+    dest: "/tmp/{{ app_name }}-wipe.log"
+  when: web_app_wipe | bool

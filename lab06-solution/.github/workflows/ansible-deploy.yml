@@ -1,0 +1,77 @@
+---
+# Task 4: GitHub Actions Workflow for Ansible Deployment
+# Triggers on push to ansible directory
+# Runs linting and deployment verification
+
+name: Ansible Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - lab-06
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint Ansible Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install ansible-lint
+        run: pip install ansible-lint
+
+      - name: Run ansible-lint
+        run: ansible-lint ansible/
+
+  validate:
+    name: Validate Playbooks
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Install collections
+        run: |
+          cd ansible
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: Syntax check playbooks
+        run: |
+          cd ansible
+          ansible-playbook playbooks/provision.yml --syntax-check
+          ansible-playbook playbooks/deploy.yml --syntax-check
+
+  deploy-info:
+    name: Deployment Info
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Display workflow info
+        run: |
+          echo "Workflow: Ansible Deployment"
+          echo "Branch: ${{ github.ref }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Status: Ready for deployment"

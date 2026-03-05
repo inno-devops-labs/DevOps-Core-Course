@@ -1,0 +1,28 @@
+---
+# Task 2: Docker Compose Template with Jinja2
+# Supports dynamic configuration using variables
+
+version: '{{ docker_compose_version }}'
+
+services:
+  {{ app_name }}:
+    image: "{{ docker_image }}:{{ docker_tag }}"
+    container_name: "{{ app_name }}"
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    environment: {{ app_env | to_nice_json(indent=6) }}
+    restart_policy:
+      condition: unless-stopped
+      max_attempts: 5
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ app_internal_port }}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  app-network:
+    driver: bridge

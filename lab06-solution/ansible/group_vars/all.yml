@@ -1,0 +1,11 @@
+---
+# Global variables for all hosts
+# Sensitive variables should be encrypted with ansible-vault
+
+# Docker Hub credentials (use vault for production)
+dockerhub_username: "{{ vault_dockerhub_username | default('your_username') }}"
+dockerhub_password: "{{ vault_dockerhub_password | default('your_password') }}"
+
+# Application defaults
+app_name: devops-app
+docker_image_tag: latest

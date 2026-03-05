@@ -1,0 +1,5 @@
+---
+# Task 2: Role Dependencies
+# Ensure Docker is installed before deploying web application
+dependencies:
+  - role: docker

@@ -1,0 +1,14 @@
+---
+# Playbook: Provision web servers (common + docker)
+- name: Provision web servers
+  hosts: webservers
+  become: yes
+
+  roles:
+    - common
+    - docker
+
+  post_tasks:
+    - name: Display provision completion
+      debug:
+        msg: "Provision completed successfully for {{ inventory_hostname }}"

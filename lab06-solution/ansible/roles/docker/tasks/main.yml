@@ -1,0 +1,89 @@
+---
+# Task 1: Refactor Docker role with Blocks & Tags
+# - docker_install: installation tasks only
+# - docker_config: configuration tasks only
+# - docker: entire role
+
+- name: Docker Installation Block
+  block:
+    - name: Install apt prerequisites
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install docker packages
+      apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: yes
+
+  rescue:
+    - name: Retry Docker setup on GPG key failure
+      block:
+        - name: Wait before retry
+          pause:
+            seconds: 10
+
+        - name: Retry apt update
+          apt:
+            update_cache: yes
+            update_cache_retries: 3
+            cache_valid_time: 300
+
+        - name: Retry Docker installation
+          apt:
+            name: "{{ docker_packages }}"
+            state: present
+            update_cache: yes
+
+  tags:
+    - docker_install
+    - docker
+    - installation
+
+- name: Docker Configuration Block
+  block:
+    - name: Ensure docker service is enabled
+      systemd:
+        name: docker
+        enabled: yes
+
+    - name: Ensure docker service is started
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      notify: restart docker
+
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+  always:
+    - name: Verify docker is running
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+  tags:
+    - docker_config
+    - docker
+    - configuration
