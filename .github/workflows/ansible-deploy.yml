@@ -69,12 +69,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Ansible tooling
+      - name: Use preinstalled Ansible tooling
         run: |
-          python3 --version
-          python3 -m pip install --user --upgrade pip
-          python3 -m pip install --user ansible docker
-          echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
+          command -v ansible
+          command -v ansible-playbook
+          command -v ansible-galaxy
+          ansible --version
 
       - name: Install required Ansible collections
         run: ansible-galaxy collection install -r ansible/collections/requirements.yml
