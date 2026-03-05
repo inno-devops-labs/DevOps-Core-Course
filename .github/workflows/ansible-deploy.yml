@@ -7,18 +7,11 @@ on:
       - main
       - master
       - lab06
-    paths:
-      - "ansible/**"
-      - "!ansible/docs/**"
-      - ".github/workflows/ansible-deploy.yml"
+
   pull_request:
     branches:
       - main
       - master
-    paths:
-      - "ansible/**"
-      - "!ansible/docs/**"
-      - ".github/workflows/ansible-deploy.yml"
 
 concurrency:
   group: ansible-deploy-${{ github.ref }}
