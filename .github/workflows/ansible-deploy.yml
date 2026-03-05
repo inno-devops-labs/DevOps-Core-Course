@@ -29,10 +29,19 @@ jobs:
         run: |
           pip install ansible ansible-lint
 
+      - name: Create vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+
       - name: Run ansible-lint
         run: |
           cd ansible
           ansible-lint playbooks/*.yml
+
+      - name: Remove vault password file
+        if: always()
+        run: rm -f ansible/.vault_pass
 
   deploy:
     name: Deploy Application
