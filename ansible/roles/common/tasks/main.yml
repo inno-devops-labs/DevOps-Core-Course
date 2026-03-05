@@ -78,4 +78,3 @@
         dest: /tmp/ansible_common_users.log
         content: "users block completed at {{ ansible_date_time.iso8601 }}\n"
         mode: "0644"
-

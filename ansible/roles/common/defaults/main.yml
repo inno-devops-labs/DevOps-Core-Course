@@ -10,6 +10,5 @@ common_packages:
   - gnupg
   - lsb-release
 
-# Deployment user/group (created by users block)
 common_deploy_user: deploy
 common_deploy_group: deploy
