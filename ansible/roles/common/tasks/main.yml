@@ -1,10 +1,63 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+- name: Install baseline packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Retry apt cache refresh with fix-missing
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+
+    - name: Retry package installation after apt recovery
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+        update_cache: true
+
+  always:
+    - name: Record package block completion
+      ansible.builtin.lineinfile:
+        path: /tmp/ansible-common-packages.log
+        create: true
+        mode: "0644"
+        line: "{{ ansible_date_time.iso8601 }} common/packages completed on {{ inventory_hostname }}"
+
+  become: true
+  tags:
+    - common
+    - packages
+
+- name: Manage local users
+  block:
+    - name: Ensure managed users exist
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        state: present
+        shell: "{{ item.shell | default('/bin/bash') }}"
+        groups: "{{ item.groups | default(omit) }}"
+        append: true
+        create_home: true
+      loop: "{{ common_managed_users }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+  always:
+    - name: Record user block completion
+      ansible.builtin.lineinfile:
+        path: /tmp/ansible-common-users.log
+        create: true
+        mode: "0644"
+        line: "{{ ansible_date_time.iso8601 }} common/users completed on {{ inventory_hostname }}"
+
+  become: true
+  tags:
+    - common
+    - users

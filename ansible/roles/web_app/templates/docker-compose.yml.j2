@@ -1,0 +1,19 @@
+services:
+  {{ app_name }}:
+    image: "{{ docker_image }}:{{ docker_tag }}"
+    container_name: "{{ app_name }}"
+    restart: "{{ app_restart_policy }}"
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+{% if app_env | length > 0 %}
+    environment:
+{% for env_key, env_value in app_env.items() %}
+      {{ env_key }}: "{{ env_value }}"
+{% endfor %}
+{% endif %}
+    networks:
+      - app_net
+
+networks:
+  app_net:
+    name: "{{ app_name }}_net"

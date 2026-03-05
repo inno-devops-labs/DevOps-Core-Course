@@ -1,6 +1,4 @@
 ---
-- name: restart app container
-  community.docker.docker_container:
-    name: "{{ app_container_name }}"
-    state: started
-    restart: true
+- name: restart web application stack
+  ansible.builtin.command: docker compose -f {{ compose_project_dir }}/docker-compose.yml restart
+  changed_when: true

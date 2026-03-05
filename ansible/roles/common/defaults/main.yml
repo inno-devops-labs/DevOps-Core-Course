@@ -5,3 +5,9 @@ common_packages:
   - git
   - vim
   - htop
+
+common_managed_users:
+  - name: "{{ ansible_user | default('ubuntu') }}"
+    groups:
+      - sudo
+    shell: /bin/bash
