@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - lab06
     paths:
       - "ansible/**"
       - "!ansible/docs/**"
