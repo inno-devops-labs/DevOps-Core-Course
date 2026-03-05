@@ -17,7 +17,7 @@ sg = aws.ec2.SecurityGroup('web-secgrp',
 # Get the latest Ubuntu AMI
 ami = aws.ec2.get_ami(most_recent=True,
                   owners=['099720109477'], # Canonical
-                  filters=[{'name': 'name', 'values': ['ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*']}])
+                  filters=[{'name': 'name', 'values': ['ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*']}])
 
 # Create a new key pair
 with open(os.path.expanduser('~/.ssh/id_rsa.pub'), 'r') as f:

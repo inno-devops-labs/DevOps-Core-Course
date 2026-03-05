@@ -44,7 +44,7 @@ jobs:
           cache: pip
 
       - name: Install Ansible and ansible-lint
-        run: pip install ansible ansible-lint
+        run: pip install "ansible<10" ansible-lint
 
       - name: Install required Ansible collections
         run: ansible-galaxy collection install -r collections/requirements.yml
@@ -77,7 +77,7 @@ jobs:
 
       - name: Install Ansible and collections
         run: |
-          pip install ansible
+          pip install "ansible<10"
           ansible-galaxy collection install -r collections/requirements.yml
 
       - name: Configure SSH for target VM
