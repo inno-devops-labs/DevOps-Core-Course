@@ -63,7 +63,8 @@ jobs:
           ansible-playbook playbooks/deploy.yml \
             -i inventory/hosts.ini \
             --vault-password-file /tmp/vault_pass \
-            --tags "app_deploy"
+            --tags "app_deploy" \
+            --private-key=~/.ssh/id_ed25519_lab04
           rm /tmp/vault_pass
 
       - name: Verify Deployment
