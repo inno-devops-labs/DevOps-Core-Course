@@ -1,0 +1,48 @@
+
+PLAY [Deploy application container] ********************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab04-vm]
+
+TASK [docker : Ensure apt cache is up to date] *********************************
+ok: [lab04-vm]
+
+TASK [docker : Install Docker package from Ubuntu repo] ************************
+ok: [lab04-vm]
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [lab04-vm]
+
+TASK [docker : Ensure docker service is enabled and running] *******************
+ok: [lab04-vm]
+
+TASK [docker : Ensure user is added to docker group] ***************************
+ok: [lab04-vm]
+
+TASK [docker : Ensure docker service is enabled (always)] **********************
+ok: [lab04-vm]
+
+TASK [web_app : Include wipe tasks] ********************************************
+included: /home/vboxuser/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for lab04-vm
+
+TASK [web_app : Wipe web application (compose down)] ***************************
+skipping: [lab04-vm]
+
+TASK [web_app : Remove compose project directory] ******************************
+skipping: [lab04-vm]
+
+TASK [web_app : Log wipe completion] *******************************************
+skipping: [lab04-vm]
+
+TASK [web_app : Create compose project directory] ******************************
+ok: [lab04-vm]
+
+TASK [web_app : Template docker-compose.yml] ***********************************
+ok: [lab04-vm]
+
+TASK [web_app : Run Docker Compose (v2)] ***************************************
+fatal: [lab04-vm]: FAILED! => {"changed": false, "msg": "Docker CLI /usr/bin/docker does not have the compose plugin installed"}
+
+PLAY RECAP *********************************************************************
+lab04-vm                   : ok=10   changed=0    unreachable=0    failed=1    skipped=3    rescued=0    ignored=0   
+

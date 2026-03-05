@@ -1,0 +1,62 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [ "main", "master", "lab06" ]
+    paths:
+      - "ansible/**"
+      - ".github/workflows/ansible-deploy.yml"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ansible + lint
+        run: pip install ansible ansible-lint
+      - name: ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/*.yml
+
+  deploy:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Ansible + community.docker
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Create vault pass file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Deploy
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy.yml \
+            -i inventory/hosts.ini \
+            --vault-password-file /tmp/vault_pass
+
+      - name: Verify
+        run: |
+          sleep 5
+          curl -f "http://${{ secrets.VM_HOST }}:5000/health"

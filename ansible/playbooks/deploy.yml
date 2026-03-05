@@ -7,4 +7,4 @@
     - community.docker
 
   roles:
-    - app_deploy
+    - web_app

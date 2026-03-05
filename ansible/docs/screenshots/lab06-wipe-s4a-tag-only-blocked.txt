@@ -1,0 +1,21 @@
+
+PLAY [Deploy application container] ********************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab04-vm]
+
+TASK [web_app : Include wipe tasks] ********************************************
+included: /home/vboxuser/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for lab04-vm
+
+TASK [web_app : Wipe web application (compose down)] ***************************
+skipping: [lab04-vm]
+
+TASK [web_app : Remove compose project directory] ******************************
+skipping: [lab04-vm]
+
+TASK [web_app : Log wipe completion] *******************************************
+skipping: [lab04-vm]
+
+PLAY RECAP *********************************************************************
+lab04-vm                   : ok=2    changed=0    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+

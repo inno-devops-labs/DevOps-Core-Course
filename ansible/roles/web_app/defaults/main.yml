@@ -1,0 +1,18 @@
+---
+# Web app defaults
+
+app_name: devops-info-service
+
+docker_image: fayzullin/devops-info-service
+docker_tag: latest
+
+app_port: 5000
+app_internal_port: 5000
+
+docker_restart_policy: unless-stopped
+app_env: {}
+
+# wipe logic (double gate)
+web_app_wipe: false
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"

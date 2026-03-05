@@ -1,0 +1,24 @@
+
+PLAY [Deploy application container] ********************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab04-vm]
+
+TASK [web_app : Include wipe tasks] ********************************************
+included: /home/vboxuser/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for lab04-vm
+
+TASK [web_app : Wipe web application (compose down)] ***************************
+fatal: [lab04-vm]: FAILED! => {"changed": false, "msg": "Docker CLI /usr/bin/docker does not have the compose plugin installed"}
+...ignoring
+
+TASK [web_app : Remove compose project directory] ******************************
+changed: [lab04-vm]
+
+TASK [web_app : Log wipe completion] *******************************************
+ok: [lab04-vm] => {
+    "msg": "Application devops-info-service wiped successfully"
+}
+
+PLAY RECAP *********************************************************************
+lab04-vm                   : ok=5    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=1   
+

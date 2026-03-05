@@ -1,15 +1,49 @@
 ---
-- name: Ensure apt cache is up to date
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Common | Packages block
+  block:
+    - name: Ensure apt cache is up to date
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+  rescue:
+    - name: Fix apt cache on failure
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+  always:
+    - name: Log common completion
+      ansible.builtin.lineinfile:
+        path: /tmp/ansible-common-done.txt
+        create: true
+        line: "common role finished"
+        state: present
+  become: true
+  tags:
+    - common
+    - packages
 
-- name: Set timezone
-  community.general.timezone:
-    name: "{{ common_timezone }}"
-  when: common_timezone is defined
+
+- name: Common | Users block
+  block:
+    - name: Ensure admin user exists (optional)
+      ansible.builtin.user:
+        name: "{{ common_admin_user }}"
+        groups: sudo
+        append: true
+        state: present
+      when: common_admin_user is defined and common_admin_user | length > 0
+  always:
+    - name: Log users completion
+      ansible.builtin.lineinfile:
+        path: /tmp/ansible-users-done.txt
+        create: true
+        line: "users block finished"
+        state: present
+  become: true
+  tags:
+    - common
+    - users

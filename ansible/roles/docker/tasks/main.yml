@@ -1,27 +1,56 @@
 ---
-- name: Ensure apt cache is up to date
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Docker | Install block
+  block:
+    - name: Ensure apt cache is up to date
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Install Docker package from Ubuntu repo
-  ansible.builtin.apt:
-    name: "{{ docker_packages }}"
-    state: present
+    - name: Install Docker package from Ubuntu repo
+      ansible.builtin.apt:
+        name:
+          - docker.io
+        state: present
 
-- name: Install python3-docker for Ansible docker modules
-  ansible.builtin.apt:
-    name: python3-docker
-    state: present
+    - name: Install python3-docker for Ansible docker modules
+      ansible.builtin.apt:
+        name: python3-docker
+        state: present
 
-- name: Ensure docker service is enabled and running
-  ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: yes
+  rescue:
+    - name: Wait a bit and retry apt update (network hiccup)
+      ansible.builtin.pause:
+        seconds: 10
 
-- name: Ensure user is added to docker group
-  ansible.builtin.user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+    - name: Retry apt update
+      ansible.builtin.apt:
+        update_cache: yes
+
+  tags:
+    - docker
+    - docker_install
+  become: true
+
+
+- name: Docker | Config block
+  block:
+    - name: Ensure docker service is enabled and running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Ensure user is added to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true
+  always:
+    - name: Ensure docker service is enabled (always)
+      ansible.builtin.service:
+        name: docker
+        enabled: yes
+  tags:
+    - docker
+    - docker_config
+  become: true

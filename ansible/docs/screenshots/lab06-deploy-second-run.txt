@@ -1,0 +1,42 @@
+
+PLAY [Deploy application container] ********************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab04-vm]
+
+TASK [docker : Ensure apt cache is up to date] *********************************
+ok: [lab04-vm]
+
+TASK [docker : Install Docker package from Ubuntu repo] ************************
+ok: [lab04-vm]
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [lab04-vm]
+
+TASK [docker : Ensure docker service is enabled and running] *******************
+ok: [lab04-vm]
+
+TASK [docker : Ensure user is added to docker group] ***************************
+ok: [lab04-vm]
+
+TASK [docker : Ensure docker service is enabled (always)] **********************
+ok: [lab04-vm]
+
+TASK [web_app : Pull application image] ****************************************
+ok: [lab04-vm]
+
+TASK [web_app : Ensure old container is absent] ********************************
+changed: [lab04-vm]
+
+TASK [web_app : Run application container] *************************************
+changed: [lab04-vm]
+
+TASK [web_app : Wait for application port to become open] **********************
+ok: [lab04-vm]
+
+TASK [web_app : Check health endpoint] *****************************************
+ok: [lab04-vm]
+
+PLAY RECAP *********************************************************************
+lab04-vm                   : ok=12   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

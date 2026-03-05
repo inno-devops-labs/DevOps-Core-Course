@@ -1,0 +1,18 @@
+
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab04-vm]
+
+TASK [common : Ensure apt cache is up to date] *********************************
+ok: [lab04-vm]
+
+TASK [common : Install common packages] ****************************************
+ok: [lab04-vm]
+
+TASK [common : Log common completion] ******************************************
+ok: [lab04-vm]
+
+PLAY RECAP *********************************************************************
+lab04-vm                   : ok=4    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

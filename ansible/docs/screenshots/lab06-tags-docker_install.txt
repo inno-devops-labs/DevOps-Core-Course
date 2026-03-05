@@ -1,0 +1,18 @@
+
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab04-vm]
+
+TASK [docker : Ensure apt cache is up to date] *********************************
+changed: [lab04-vm]
+
+TASK [docker : Install Docker package from Ubuntu repo] ************************
+ok: [lab04-vm]
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [lab04-vm]
+
+PLAY RECAP *********************************************************************
+lab04-vm                   : ok=4    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

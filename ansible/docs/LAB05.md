@@ -54,7 +54,7 @@ All tasks are state-based and idempotent.
 
 ---
 
-### app_deploy role
+### web_app role
 Purpose: Deploy containerized application securely
 
 Tasks:
