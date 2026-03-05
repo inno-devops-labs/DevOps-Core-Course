@@ -285,19 +285,20 @@ Pipeline steps:
 
 ### ansible-lint execution
 
-    [INSERT LINT OUTPUT]
+
+![alt text](image-20.png)
 
 ------------------------------------------------------------------------
 
 ### Workflow run screenshot
 
-    [INSERT SCREENSHOT]
+![alt text](image-19.png)
 
 ------------------------------------------------------------------------
 
 ### Deployment verification
 
-    curl http://VM_IP:8000
+    curl http://VM_IP:5000
 
 Output:
 
