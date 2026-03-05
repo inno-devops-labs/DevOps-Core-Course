@@ -1,0 +1,21 @@
+[project]
+name = "app-python"
+version = "0.1.0"
+description = "Yes"
+authors = [
+    {name = "corndev",email = "128768882+nonamecorn@users.noreply.github.com"}
+]
+license = {text = "No"}
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "flask (==3.1.2)",
+    "requests (==2.32.5)",
+    "pytest (>=9.0.2,<10.0.0)",
+    "flake8 (>=7.3.0,<8.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
