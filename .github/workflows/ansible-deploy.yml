@@ -81,6 +81,6 @@ jobs:
           run: |
             echo "Waiting for service to start..."
             sleep 15
-            curl -f http://${{ secrets.VM_HOST }}:8000
-            curl -f http://${{ secrets.VM_HOST }}:8000/health || echo "Health endpoint not found, but main page is UP"
+            curl -f http://${{ secrets.VM_HOST }}:8080
+            curl -f http://${{ secrets.VM_HOST }}:8080/health || echo "Health endpoint not found, but main page is UP"
 
