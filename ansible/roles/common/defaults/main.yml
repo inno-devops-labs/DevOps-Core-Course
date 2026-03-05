@@ -9,5 +9,8 @@ common_packages:
   - ca-certificates
   - gnupg
   - lsb-release
+common_manage_user: "{{ ansible_user | default('devops') }}"
+common_manage_user_groups:
+  - sudo
 common_configure_timezone: true
 common_timezone: UTC

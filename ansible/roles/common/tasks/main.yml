@@ -1,15 +1,44 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: "{{ common_apt_cache_valid_time }}"
+- name: Manage common packages
+  become: true
+  tags:
+    - packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: "{{ common_apt_cache_valid_time }}"
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
-- name: Configure timezone
-  community.general.timezone:
-    name: "{{ common_timezone }}"
-  when: common_configure_timezone
+    - name: Configure timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"
+      when: common_configure_timezone
+  rescue:
+    - name: Fix apt metadata after cache failure
+      ansible.builtin.apt:
+        update_cache: true
+  always:
+    - name: Write common role completion log
+      ansible.builtin.copy:
+        dest: /tmp/common-role.log
+        content: "common role completed\n"
+        mode: "0644"
+
+- name: Manage deployment user
+  become: true
+  tags:
+    - users
+  block:
+    - name: Ensure deployment user exists
+      ansible.builtin.user:
+        name: "{{ common_manage_user }}"
+        groups: "{{ common_manage_user_groups }}"
+        append: true
+        shell: /bin/bash
+        create_home: true
+        state: present

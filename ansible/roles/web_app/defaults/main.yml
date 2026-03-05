@@ -6,9 +6,15 @@ docker_image_repository: "{{ dockerhub_username }}/devops-info-service-python"
 docker_image_tag: latest
 docker_image: "{{ docker_image_repository }}:{{ docker_image_tag }}"
 app_port: 5000
+app_internal_port: 5000
 app_container_name: "{{ app_name }}"
 app_restart_policy: unless-stopped
-app_environment: {}
+app_environment:
+  PORT: "{{ app_internal_port }}"
+compose_project_dir: "/opt/{{ app_name }}"
+compose_service_name: "{{ app_name }}"
+compose_file_path: "{{ compose_project_dir }}/docker-compose.yml"
+web_app_wipe: false
 app_wait_delay: 2
 app_wait_timeout: 60
 app_healthcheck_url: "http://127.0.0.1:{{ app_port }}/health"

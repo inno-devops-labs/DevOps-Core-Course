@@ -1,0 +1,31 @@
+---
+- name: Wipe web application deployment
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+  block:
+    - name: Check if compose project exists
+      ansible.builtin.stat:
+        path: "{{ compose_file_path }}"
+      register: web_app_compose_file
+
+    - name: Stop and remove compose stack
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: absent
+        remove_orphans: true
+      when: web_app_compose_file.stat.exists
+
+    - name: Remove compose file
+      ansible.builtin.file:
+        path: "{{ compose_file_path }}"
+        state: absent
+
+    - name: Remove compose project directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: absent
+
+    - name: Report wipe completion
+      ansible.builtin.debug:
+        msg: "Application {{ app_name }} wiped successfully"

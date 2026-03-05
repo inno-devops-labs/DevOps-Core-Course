@@ -1,0 +1,70 @@
+---
+- name: Include web app wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy web application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+  block:
+    - name: Validate Docker Hub credentials are provided
+      ansible.builtin.assert:
+        that:
+          - dockerhub_username is defined
+          - dockerhub_password is defined
+          - dockerhub_username | length > 0
+          - dockerhub_password | length > 0
+        fail_msg: dockerhub_username and dockerhub_password must be provided via Vault.
+      when: dockerhub_login_enabled | bool
+
+    - name: Login to Docker Hub
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+        reauthorize: true
+      no_log: true
+      when: dockerhub_login_enabled | bool
+
+    - name: Ensure compose project directory exists
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Render docker compose configuration
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_file_path }}"
+        mode: "0644"
+
+    - name: Deploy compose project
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: present
+        pull: always
+        recreate: auto
+        remove_orphans: true
+
+    - name: Wait for application port
+      ansible.builtin.wait_for:
+        host: "127.0.0.1"
+        port: "{{ app_port }}"
+        delay: "{{ app_wait_delay }}"
+        timeout: "{{ app_wait_timeout }}"
+
+    - name: Verify health endpoint
+      ansible.builtin.uri:
+        url: "{{ app_healthcheck_url }}"
+        method: GET
+        status_code: "{{ app_healthcheck_status_code }}"
+        return_content: true
+      register: web_app_health_result
+      retries: 5
+      delay: 2
+      until: web_app_health_result.status == app_healthcheck_status_code
+  rescue:
+    - name: Report compose deployment failure
+      ansible.builtin.debug:
+        msg: "Docker Compose deployment failed for {{ app_name }}"

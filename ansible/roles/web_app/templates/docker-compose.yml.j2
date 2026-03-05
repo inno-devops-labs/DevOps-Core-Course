@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  {{ compose_service_name }}:
+    image: {{ docker_image }}
+    container_name: {{ app_name }}
+    pull_policy: always
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+{% if app_environment | length > 0 %}
+    environment:
+{% for env_key, env_value in app_environment.items() %}
+      {{ env_key }}: "{{ env_value }}"
+{% endfor %}
+{% endif %}
+    restart: {{ app_restart_policy }}
+
+networks:
+  default:
+    name: {{ app_name }}-network

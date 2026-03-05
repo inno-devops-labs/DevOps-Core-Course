@@ -1,0 +1,107 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - lab6
+    paths:
+      - "ansible/**"
+      - "!ansible/docs/**"
+      - ".github/workflows/ansible-deploy.yml"
+  pull_request:
+    branches:
+      - master
+      - main
+      - lab6
+    paths:
+      - "ansible/**"
+      - "!ansible/docs/**"
+      - ".github/workflows/ansible-deploy.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ansible-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Ansible dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: Run ansible-lint
+        run: |
+          if [ -n "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" ]; then
+            printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+            export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
+            ansible-lint -x var-naming,name playbooks/*.yml roles/*/tasks/*.yml
+            rm -f /tmp/vault_pass
+          else
+            ansible-lint -x var-naming,name playbooks/provision.yml roles/*/tasks/*.yml
+          fi
+
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Ansible dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+          ansible-galaxy collection install -r requirements.yml
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf "%s" "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Run deployment playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+        run: |
+          printf "%s" "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml --vault-password-file /tmp/vault_pass
+          rm -f /tmp/vault_pass
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          curl --fail --silent --show-error "http://${{ secrets.VM_HOST }}:5000/"
+          curl --fail --silent --show-error "http://${{ secrets.VM_HOST }}:5000/health"
