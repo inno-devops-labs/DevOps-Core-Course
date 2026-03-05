@@ -20,7 +20,7 @@
 - Additional:
   - checks User-Agent and IP in request in block
 
-**CI Workflow Trigger:**   
+**CI Workflow Trigger:**
 - **push:** 'app_python/'
 - **pull_request:** 'app_python/'
 
