@@ -3,6 +3,7 @@ This is simple service that shows system info
 
 [![python-app](https://github.com/TheVex/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/TheVex/DevOps-Core-Course/actions/workflows/python-ci.yml)
 
+[![Ansible Deployment](https://github.com/TheVex/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/TheVex/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 
 #### Prerequisites ####
 
