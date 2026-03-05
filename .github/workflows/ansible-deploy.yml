@@ -1,0 +1,139 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [ "main", "master", "lab*" ]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+      - '!ansible/docs/**'
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+      - '!ansible/docs/**'
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ansible + ansible-lint
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/*.yml
+
+  deploy:
+    name: Deploy Application (SSH + YC dynamic inventory)
+    needs: lint
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+      YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+      YC_ZONE: ${{ secrets.YC_ZONE }}
+      YC_SERVICE_ACCOUNT_KEY_FILE: ${{ runner.temp }}/yc-sa-key.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible + collections
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Install YC CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /opt/yc -n
+          echo "/opt/yc/bin" >> $GITHUB_PATH
+          yc --version
+
+      - name: Write YC service account key file
+        env:
+          YC_SERVICE_ACCOUNT_KEY_JSON: ${{ secrets.YC_SERVICE_ACCOUNT_KEY_JSON }}
+        run: |
+          echo "$YC_SERVICE_ACCOUNT_KEY_JSON" > "$YC_SERVICE_ACCOUNT_KEY_FILE"
+          chmod 600 "$YC_SERVICE_ACCOUNT_KEY_FILE"
+
+      - name: Smoke check dynamic inventory (must include webservers)
+        run: |
+          cd ansible
+          python3 inventory/yandex_cloud.py > /tmp/inv.json
+          # quick sanity
+          python3 - <<'PY'
+          import json
+          d=json.load(open("/tmp/inv.json"))
+          hosts=d.get("webservers",{}).get("hosts",[])
+          print("webservers:", hosts)
+          if not hosts:
+            raise SystemExit("No hosts found in dynamic inventory")
+          PY
+          ansible-inventory -i inventory/yandex_cloud.py --graph
+
+      - name: Setup SSH key (for Ansible -> VM)
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Populate known_hosts from dynamic inventory
+        run: |
+          cd ansible
+          python3 - <<'PY' > /tmp/ips.txt
+          import json, subprocess
+          inv = subprocess.check_output(["python3","inventory/yandex_cloud.py"], text=True)
+          d = json.loads(inv)
+          hosts = d.get("webservers",{}).get("hosts",[])
+          for h in hosts:
+            print(d["_meta"]["hostvars"][h]["ansible_host"])
+          PY
+          mkdir -p ~/.ssh
+          while read -r ip; do
+            echo "Scanning host key for $ip"
+            ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts
+          done < /tmp/ips.txt
+
+      - name: Deploy with Ansible (Vault)
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          cd ansible
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+          ansible-playbook -i inventory/yandex_cloud.py playbooks/deploy.yml \
+            --vault-password-file /tmp/vault_pass
+          rm -f /tmp/vault_pass
+
+      - name: Verify Deployment (curl to discovered public IP)
+        run: |
+          cd ansible
+          VM_IP=$(python3 - <<'PY'
+          import json, subprocess
+          inv = subprocess.check_output(["python3","inventory/yandex_cloud.py"], text=True)
+          d = json.loads(inv)
+          host = d["webservers"]["hosts"][0]
+          print(d["_meta"]["hostvars"][host]["ansible_host"])
+          PY
+          )
+          echo "Using VM IP: $VM_IP"
+          sleep 10
+          # У тебя сейчас сервис на 5000. Если переведёшь на 8000 — поменяй порт тут.
+          curl -f "http://$VM_IP:5000/health"
+          curl -f "http://$VM_IP:5000/"
