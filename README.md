@@ -4,9 +4,9 @@
 [![Exam](https://img.shields.io/badge/Exam-Optional-green)](#exam-alternative)
 [![Duration](https://img.shields.io/badge/Duration-18%20Weeks-lightgrey)](#course-roadmap)
 
-[![Ansible Deployment](https://github.com/ellilin/devops-course/workflows/Ansible%20Deployment/badge.svg)](https://github.com/ellilin/devops-course/actions/workflows/ansible-deploy.yml)
-[![Python App](https://github.com/ellilin/devops-course/workflows/Ansible%20Python%20App%20Deployment/badge.svg)](https://github.com/ellilin/devops-course/actions/workflows/ansible-deploy-python.yml)
-[![Go App](https://github.com/ellilin/devops-course/workflows/Ansible%20Bonus%20App%20Deployment/badge.svg)](https://github.com/ellilin/devops-course/actions/workflows/ansible-deploy-bonus.yml)
+[![Ansible Deployment](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy.yml)
+[![Python App](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy-python.yml/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy-python.yml)
+[![Go App](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy-bonus.yml/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy-bonus.yml)
 
 Master **production-grade DevOps practices** through hands-on labs. Build, containerize, deploy, monitor, and scale applications using industry-standard tools.
 
