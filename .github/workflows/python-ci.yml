@@ -81,6 +81,7 @@ jobs:
       run: |
         echo "[webservers]" > inventory.ini
         echo "ubuntu ansible_host=$SERVER_IP ansible_user=ubuntu ansible_ssh_private_key_file=key.pem" >> inventory.ini
+        cat inventory.ini
 
     - name: Ansible Run
       env:
@@ -88,9 +89,7 @@ jobs:
       run: |
          ansible-playbook -i inventory.ini ./ansible/playbooks/deploy.yml \
           --extra-vars "@ansible/group_vars/all.yml" \
-          --vault-password-file="pass.txt" \
-          -e ansible_python_interpreter=/usr/bin/python3 \
-          --ssh-extra-args="-o StrictHostKeyChecking=no"
+          --vault-password-file="pass.txt"
     
     - name: Remove Password
       run: |
