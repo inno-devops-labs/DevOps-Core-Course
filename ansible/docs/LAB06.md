@@ -326,10 +326,3 @@ https://github.com/McLavrushka/DevOps-Core-Course/actions/workflows/ansible-depl
   - Changes to the shared `web_app` role trigger deployments for both apps.
 
 
-
-## Summary
-
-- The Ansible configuration was refactored to use blocks with error handling, a clear tag strategy, Docker Compose, and safe wipe logic, making playbooks closer to production‑grade.
-- Deployment of the `devops-info-service` app is now declarative, idempotent, and easily repeatable, with explicit evidence from `docker ps`, `curl`, and multiple playbook runs.
-- A CI/CD workflow based on GitHub Actions automates linting and deployment of the Ansible code; with GitHub Secrets configured, every change to `ansible/**` can be validated and deployed automatically.
-
