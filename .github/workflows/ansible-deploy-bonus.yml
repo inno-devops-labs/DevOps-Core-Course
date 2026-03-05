@@ -1,0 +1,118 @@
+name: Ansible Deploy Bonus App
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - lab06
+    paths:
+      - "ansible/vars/app_bonus.yml"
+      - "ansible/playbooks/deploy_bonus.yml"
+      - "ansible/roles/web_app/**"
+      - "ansible/roles/docker/**"
+      - "ansible/collections/requirements.yml"
+      - "ansible/ansible.cfg"
+      - "ansible/group_vars/**"
+      - ".github/workflows/ansible-deploy-bonus.yml"
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - "ansible/vars/app_bonus.yml"
+      - "ansible/playbooks/deploy_bonus.yml"
+      - "ansible/roles/web_app/**"
+      - "ansible/roles/docker/**"
+      - "ansible/collections/requirements.yml"
+      - "ansible/ansible.cfg"
+      - "ansible/group_vars/**"
+      - ".github/workflows/ansible-deploy-bonus.yml"
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Ansible Lint (Bonus app)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint
+
+      - name: Install required Ansible collections
+        run: ansible-galaxy collection install -r ansible/collections/requirements.yml
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint -c .ansible-lint playbooks/deploy_bonus.yml roles/docker roles/web_app
+
+  deploy:
+    name: Deploy bonus app
+    runs-on: [self-hosted, macOS, ARM64]
+    needs: lint
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible docker
+
+      - name: Install required Ansible collections
+        run: ansible-galaxy collection install -r ansible/collections/requirements.yml
+
+      - name: Ensure local lab containers are running
+        run: |
+          docker start lab05-registry lab05-ubuntu2404 >/dev/null || true
+          test "$(docker inspect -f '{{.State.Running}}' lab05-registry)" = "true"
+          test "$(docker inspect -f '{{.State.Running}}' lab05-ubuntu2404)" = "true"
+
+      - name: Prepare vault password file
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          if [ -n "${ANSIBLE_VAULT_PASSWORD:-}" ]; then
+            printf '%s\n' "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          elif [ -f "$HOME/.ansible_vault_pass_lab06" ]; then
+            cp "$HOME/.ansible_vault_pass_lab06" /tmp/vault_pass
+          else
+            echo "Vault password missing. Set secret ANSIBLE_VAULT_PASSWORD or create $HOME/.ansible_vault_pass_lab06 on the runner host." >&2
+            exit 1
+          fi
+          chmod 600 /tmp/vault_pass
+      - name: Run deployment playbook
+        env:
+          BONUS_APP_IMAGE_TAG: ${{ vars.BONUS_APP_IMAGE_TAG || 'latest' }}
+        run: |
+          cd ansible
+          ansible-playbook -i inventory/hosts.local-docker.ini playbooks/deploy_bonus.yml \
+            --vault-password-file /tmp/vault_pass \
+            -e @vars/local_multiapp_test.yml \
+            -e "docker_tag=${BONUS_APP_IMAGE_TAG}" \
+            -e "web_app_pull_policy=missing"
+          rm -f /tmp/vault_pass
+
+      - name: Verify bonus app endpoints
+        env:
+          BONUS_APP_PORT: ${{ vars.BONUS_APP_PORT || '8001' }}
+        run: |
+          sleep 10
+          docker exec lab05-ubuntu2404 curl -fsS "http://127.0.0.1:${BONUS_APP_PORT}/"
+          docker exec lab05-ubuntu2404 curl -fsS "http://127.0.0.1:${BONUS_APP_PORT}/health"
