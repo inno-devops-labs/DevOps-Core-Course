@@ -1,0 +1,10 @@
+---
+app_name: devops-go
+docker_image: "{{ dockerhub_username }}/devops-info-service-go"
+# Mutable tag for convenience; prefer overriding with immutable tag in CI.
+docker_tag: latest
+web_app_pull_policy: always
+app_port: 8001
+app_internal_port: 8080
+compose_project_dir: "/opt/{{ app_name }}"
+# trigger 2026-03-05T16:11:42Z
