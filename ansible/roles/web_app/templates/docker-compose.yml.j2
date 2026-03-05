@@ -1,5 +1,5 @@
 services:
-  {{ app_name }}:
+  {{ web_app_name }}:
     image: {{ web_app_docker_image }}:{{ web_app_docker_tag }}
     container_name: {{ web_app_name }}
     ports:
@@ -7,5 +7,5 @@ services:
     environment:
       HOST: "0.0.0.0"
       PORT: "{{ web_app_internal_port }}"
-      APP_SECRET_KEY: '{{ app_secret_key | to_json }}'
+      APP_SECRET_KEY: '{{ web_app_secret_key | to_json }}'
     restart: unless-stopped
