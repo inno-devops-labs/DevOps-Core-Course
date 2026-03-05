@@ -62,6 +62,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Create temporary vault password file for deploy
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          echo "$ANSIBLE_VAULT_PASSWORD" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+
       - name: Install Ansible + collections
         run: |
           pip install ansible
@@ -129,16 +136,10 @@ jobs:
             timeout 10s ssh-keyscan -H "$ip" >> ~/.ssh/known_hosts || true
           done < /tmp/ips.txt
 
-      - name: Deploy with Ansible (Vault)
-        env:
-          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+      - name: Deploy with Ansible
         run: |
           cd ansible
-          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
-          chmod 600 /tmp/vault_pass
-          ansible-playbook -i inventory/yandex_cloud.py playbooks/deploy.yml \
-            --vault-password-file /tmp/vault_pass
-          rm -f /tmp/vault_pass
+          ansible-playbook -i inventory/yandex_cloud.py playbooks/deploy.yml
 
       - name: Verify Deployment (curl to discovered public IP)
         run: |
@@ -155,3 +156,7 @@ jobs:
           sleep 10
           curl -f "http://$VM_IP:5000/health"
           curl -f "http://$VM_IP:5000/"
+
+      - name: Cleanup vault password file
+        if: always()
+        run: rm -f ansible/.vault_pass
