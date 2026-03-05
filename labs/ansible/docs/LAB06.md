@@ -977,7 +977,8 @@ Workflow excludes docs-only changes in `labs/ansible/docs/**`, reducing unnecess
 ![](./screenshots/lab6/succ-cicd.png)
 ![](./screenshots/lab6/ansible-lint-pass.png)
 ![](./screenshots/lab6/play-book-exec.png)
-![]
+![](./screenshots/lab6/app-respond.png)
+
 
 ### 4.5 Research answers (Task 4)
 1. **Risks of SSH keys in GitHub Secrets:**  
@@ -989,68 +990,3 @@ Workflow excludes docs-only changes in `labs/ansible/docs/**`, reducing unnecess
 4. **Why self-hosted runner can improve security:**  
    Full control over runner network, access boundaries, and hardening baseline.
 
----
-
-## Task 5: Documentation (1 pt)
-
-This file (`ansible/docs/LAB06.md`) provides:
-- Architecture and implementation details
-- Test commands and observed outcomes
-- Safety model for wipe logic
-- CI/CD workflow design
-- All required research answers
-
----
-
-## Testing Results
-
-### Idempotency
-Repeated runs of provision/deploy show transition from `changed` to mostly `ok` when state already converged.
-
-### Accessibility
-Verification endpoint used:
-```bash
-curl http://<vm_host>:8080/health
-```
-Expected status: `200`.
-
-
-
----
-
-## Challenges & Solutions
-
-1. **Docker apt setup occasional instability**  
-   Solved with `rescue` retry flow (pause + apt refresh + retry tasks).
-
-2. **Fact deprecation warning in repository task**  
-   Replaced legacy `ansible_distribution_release` use with `ansible_facts['distribution_release']`.
-
-3. **Hardcoded user in common role**  
-   Replaced with configurable variable `deploy_user`.
-
-4. **Safe destructive operations**  
-   Implemented double-gated wipe (variable + tag) and preserved clean reinstall path.
-
----
-
-## Bonus Part 1: Multi-App (1.5 pts)
-
-Not implemented in this submission.
-
-## Bonus Part 2: Multi-App CI/CD (1 pt)
-
-Not implemented in this submission.
-
----
-
-## Summary
-
-Lab 6 core tasks are implemented:
-- Advanced role structure with blocks/tags/rescue/always
-- Docker Compose-based deployment with dependency-aware role design
-- Safe wipe logic with explicit operator intent
-- CI/CD workflow for lint + deploy + runtime verification
-
-Estimated time spent: ~8 hours (implementation + testing + documentation).  
-Key learning: reliable automation requires both idempotent deployment and explicit safety controls for destructive actions.
