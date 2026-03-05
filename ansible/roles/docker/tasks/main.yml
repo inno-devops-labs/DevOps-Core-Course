@@ -1,5 +1,7 @@
 ---
 - name: Docker | Installation
+  become: true
+  tags: [ docker, docker_install ]
   block:
     - name: Install dependencies for apt over HTTPS
       ansible.builtin.apt:
@@ -8,7 +10,7 @@
           - gnupg
           - lsb-release
         state: present
-        update_cache: yes
+        update_cache: true
 
     - name: Add Docker GPG key
       ansible.builtin.apt_key:
@@ -28,7 +30,7 @@
           - docker-ce-cli
           - containerd.io
         state: present
-        update_cache: yes
+        update_cache: true
       notify: restart docker
 
   rescue:
@@ -43,30 +45,26 @@
 
     - name: Retry apt update
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
 
   always:
     - name: Ensure Docker service is enabled and running (always)
       ansible.builtin.service:
         name: docker
-        enabled: yes
+        enabled: true
         state: started
 
-  become: true
-  tags: [docker, docker_install]
-
 - name: Docker | Configuration
+  become: true
+  tags: [ docker, docker_config ]
   block:
     - name: Add user to docker group
       ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
-        append: yes
+        append: true
 
     - name: Install python docker SDK for Ansible modules
       ansible.builtin.apt:
         name: python3-docker
         state: present
-
-  become: true
-  tags: [docker, docker_config]

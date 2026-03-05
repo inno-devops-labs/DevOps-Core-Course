@@ -1,9 +1,11 @@
 ---
 - name: Common | Packages (apt update + install)
+  become: true
+  tags: [ packages ]
   block:
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
@@ -12,13 +14,13 @@
         state: present
 
   rescue:
-    - name: Fix apt cache on failure
+    - name: Fix apt cache on failure # noqa: command-instead-of-module
       ansible.builtin.command: apt-get update --fix-missing
       changed_when: false
 
     - name: Retry apt cache update after fix
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
 
   always:
     - name: Log common packages block completion
@@ -27,10 +29,9 @@
         content: "common packages block finished on {{ inventory_hostname }}\n"
         mode: "0644"
 
-  become: true
-  tags: [packages]
-
 - name: Common | Users management
+  become: true
+  tags: [ users ]
   block:
     - name: Create application user
       ansible.builtin.user:
@@ -44,6 +45,3 @@
         dest: /tmp/ansible-common-users.done
         content: "common users block finished on {{ inventory_hostname }}\n"
         mode: "0644"
-
-  become: true
-  tags: [users]

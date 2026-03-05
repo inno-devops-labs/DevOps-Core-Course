@@ -5,5 +5,4 @@ common_packages:
   - git
   - vim
   - htop
-
 common_app_user: devops

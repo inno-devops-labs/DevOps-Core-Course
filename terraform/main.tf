@@ -28,7 +28,7 @@ resource "yandex_vpc_security_group" "sg" {
   ingress {
     protocol       = "TCP"
     description    = "SSH from my IP"
-    v4_cidr_blocks = [var.my_ip_cidr]
+    v4_cidr_blocks = ["0.0.0.0/0"]
     port           = 22
   }
 
