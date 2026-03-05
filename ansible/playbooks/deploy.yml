@@ -6,4 +6,4 @@
     - ../group_vars/all.yml
 
   roles:
-    - app_deploy
+    - web_app

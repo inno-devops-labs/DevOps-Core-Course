@@ -1,0 +1,18 @@
+version: "{{ docker_compose_version }}"
+
+services:
+  {{ app_name }}:
+    image: "{{ docker_image }}:{{ docker_tag }}"
+    container_name: "{{ app_container_name }}"
+
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+
+    {% if app_env | length > 0 %}
+    environment:
+{% for key, value in app_env.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+
+    restart: unless-stopped

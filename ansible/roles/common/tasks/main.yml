@@ -1,10 +1,52 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+- name: Package installation block
+  block:
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+
+    - name: Fix apt cache if update failed
+      ansible.builtin.command: apt-get update --fix-missing
+
+  always:
+
+    - name: Log completion of common packages block
+      ansible.builtin.file:
+        path: /tmp/common_packages_done.log
+        state: touch
+
+  become: true
+  tags:
+    - packages
+
+
+- name: User management block
+  block:
+
+    - name: Create main user
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        state: present
+        groups: sudo
+        append: yes
+
+  always:
+
+    - name: Log completion of user block
+      ansible.builtin.file:
+        path: /tmp/common_users_done.log
+        state: touch
+
+  become: true
+  tags:
+    - users
