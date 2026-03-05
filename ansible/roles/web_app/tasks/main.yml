@@ -1,0 +1,70 @@
+---
+# Wipe logic — runs first when explicitly requested (variable + tag)
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+# Deploy application with Docker Compose
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Pull latest Docker image
+      command: docker pull {{ docker_image }}:{{ docker_tag }}
+      changed_when: pull_result.stdout is search('Downloaded newer image')
+      register: pull_result
+
+    - name: Deploy with docker compose
+      command: docker compose -f {{ compose_project_dir }}/docker-compose.yml up -d
+      register: compose_result
+      changed_when: compose_result.rc == 0
+
+    - name: Wait for application to be ready
+      wait_for:
+        port: "{{ app_port }}"
+        host: localhost
+        delay: 5
+        timeout: 30
+
+    - name: Verify health endpoint
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        method: GET
+        return_content: yes
+        status_code: 200
+      register: health_check
+
+    - name: Display health check result
+      debug:
+        var: health_check.json
+
+  rescue:
+    - name: Log deployment failure
+      debug:
+        msg: "Deployment of {{ app_name }} failed. Check Docker logs with: docker compose -f {{ compose_project_dir }}/docker-compose.yml logs"
+
+    - name: Show docker compose logs on failure
+      command: docker compose -f {{ compose_project_dir }}/docker-compose.yml logs --tail=20
+      register: compose_logs
+      ignore_errors: yes
+
+    - name: Display compose logs
+      debug:
+        var: compose_logs.stdout_lines
+      when: compose_logs is defined
+
+  become: true
+  tags:
+    - app_deploy
+    - compose
