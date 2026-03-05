@@ -1,7 +1,7 @@
 ---
 - name: Deploy Application
   hosts: all
-  become: yes
+  become: true
 
   roles:
     - role: web_app

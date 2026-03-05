@@ -1,0 +1,3 @@
+---
+exclude_paths:
+  - playbooks/vault_example.yml

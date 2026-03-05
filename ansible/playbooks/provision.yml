@@ -1,7 +1,7 @@
 ---
 - name: Provision server
   hosts: all
-  become: yes
+  become: true
 
   roles:
     - role: common

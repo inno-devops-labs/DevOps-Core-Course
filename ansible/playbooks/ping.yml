@@ -1,12 +1,12 @@
 ---
 - name: Test connectivity to all hosts
   hosts: all
-  gather_facts: yes
-  
+  gather_facts: true
+
   tasks:
     - name: Ping all hosts
       ansible.builtin.ping:
-      
+
     - name: Display hostname and OS
       ansible.builtin.debug:
         msg: "Host {{ inventory_hostname }} is running {{ ansible_distribution }} {{ ansible_distribution_version }}"

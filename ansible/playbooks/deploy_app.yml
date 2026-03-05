@@ -1,26 +1,26 @@
 ---
 - name: Deploy DevOps Info Service
   hosts: all
-  become: yes
-  gather_facts: yes
-  
+  become: true
+  gather_facts: true
+
   tasks:
     - name: Ensure Docker is running
       ansible.builtin.systemd:
         name: docker
         state: started
-      
+
     - name: Pull latest application image
       community.docker.docker_image:
         name: "{{ app_image }}"
         source: pull
-        force_source: yes
-      
+        force_source: true
+
     - name: Stop and remove existing container
       community.docker.docker_container:
         name: "{{ app_container_name }}"
         state: absent
-      
+
     - name: Deploy application container
       community.docker.docker_container:
         name: "{{ app_container_name }}"
@@ -33,7 +33,7 @@
           ENV: production
           HOST: 0.0.0.0
           PORT: "5000"
-      
+
     - name: Wait for application to be ready
       ansible.builtin.uri:
         url: "http://localhost:{{ app_port }}/health"
@@ -42,7 +42,7 @@
       until: result.status == 200
       retries: 5
       delay: 2
-      
+
     - name: Display application status
       ansible.builtin.debug:
         msg: "Application is running at http://{{ ansible_host }}:{{ app_port }}"
