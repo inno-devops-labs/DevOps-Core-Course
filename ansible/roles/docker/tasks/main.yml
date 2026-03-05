@@ -1,23 +1,27 @@
 ---
 # Docker installation block with error handling and retry logic
 - name: Install Docker
+  become: true
+  tags:
+    - docker_install
+    - docker
   block:
     - name: Add Docker GPG key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
 
     - name: Add Docker repository
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
     - name: Update apt cache
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
 
     - name: Install Docker packages
-      apt:
+      ansible.builtin.apt:
         name:
           - docker-ce
           - docker-ce-cli
@@ -27,20 +31,20 @@
 
   rescue:
     - name: Wait and retry on GPG key failure
-      wait_for:
+      ansible.builtin.wait_for:
         timeout: 10
 
     - name: Retry Docker repository add
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: "deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
     - name: Update apt cache retry
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
 
     - name: Retry Docker package installation
-      apt:
+      ansible.builtin.apt:
         name:
           - docker-ce
           - docker-ce-cli
@@ -48,38 +52,32 @@
           - docker-compose
         state: present
 
-  become: true
-  tags:
-    - docker_install
-    - docker
-
 # Docker configuration block
 - name: Configure Docker
+  become: true
+  tags:
+    - docker_config
+    - docker
   block:
     - name: Check Docker service running
-      service:
+      ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
+        enabled: true
 
     - name: Add user to docker group
-      user:
+      ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: "{{ docker_group }}"
-        append: yes
+        append: true
 
     - name: Install python3-docker package
-      apt:
+      ansible.builtin.apt:
         name: "{{ python3_docker_package }}"
         state: present
 
   always:
     - name: Ensure Docker service is enabled
-      service:
+      ansible.builtin.service:
         name: docker
-        enabled: yes
-
-  become: true
-  tags:
-    - docker_config
-    - docker
+        enabled: true

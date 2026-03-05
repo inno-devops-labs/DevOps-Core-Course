@@ -1,34 +1,33 @@
 ---
 # Package installation block with error handling
 - name: Install common packages
+  become: true
+  tags:
+    - packages
+    - common
   block:
     - name: Update apt cache
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
-      apt:
+      ansible.builtin.apt:
         name: "{{ common_packages }}"
         state: present
 
   rescue:
     - name: Fix apt cache and retry
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
         cache_valid_time: 0
 
     - name: Retry package installation
-      apt:
+      ansible.builtin.apt:
         name: "{{ common_packages }}"
         state: present
 
   always:
     - name: Log package installation completion
-      debug:
+      ansible.builtin.debug:
         msg: "Package installation completed for common role"
-
-  become: true
-  tags:
-    - packages
-    - common
