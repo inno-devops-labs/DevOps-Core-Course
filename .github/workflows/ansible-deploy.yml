@@ -65,17 +65,17 @@ jobs:
             ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
         - name: Create vault password file
-          run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
 
         - name: Run Playbook
           run: |
             cd ansible
             ansible-playbook playbooks/deploy.yml \
               -i inventory/hosts.ini \
-              --vault-password-file /tmp/vault_pass
+              --vault-password-file ansible/.vault_pass
 
         - name: Cleanup vault file
-          run: rm -f /tmp/vault_pass
+          run: rm -f ansible/.vault_pass
 
         - name: Verify Deployment
           run: |
