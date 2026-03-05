@@ -145,6 +145,6 @@ Workflow Overviews
   * Terraform Apply 
 
 Applies the infrastructure automatically (terraform apply -auto-approve) using stored AWS credentials.
- 
+
 ![tfpipe](./screenshots/lab04/pipeline.png)
 ![afterpipe](./screenshots/lab04/after_pipe.png)
