@@ -5,4 +5,4 @@
   roles:
     - common
     - docker
-    - app_deploy
+    - web_app

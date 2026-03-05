@@ -1,14 +1,50 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+# Common role: base system setup with blocks and tags.
+# Tags: common (role), packages, users
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+- name: Install packages and set timezone
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
 
-- name: Set timezone
-  community.general.timezone:
-    name: "{{ common_timezone }}"
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"
+
+  rescue:
+    - name: Retry apt cache update on failure
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: true
+
+  always:
+    - name: Log role completion
+      ansible.builtin.copy:
+        content: "common role completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible-common-complete.log
+        mode: "0644"
+
+  when: ansible_os_family == "Debian"
+  become: true
+  tags:
+    - packages
+    - common
+
+- name: Ensure deploy user exists
+  block:
+    - name: Create or update deploy user
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        state: present
+        create_home: yes
+
+  become: true
+  tags:
+    - users
+    - common

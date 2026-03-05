@@ -1,0 +1,8 @@
+---
+# Variables for bonus app (e.g. Go/Rust/Java) deployment.
+app_name: devops-go
+docker_image: "{{ dockerhub_username | default('your_username') }}/devops-info-service-go"
+docker_tag: latest
+app_port: 8001
+app_internal_port: 8080
+compose_project_dir: "/opt/{{ app_name }}"
