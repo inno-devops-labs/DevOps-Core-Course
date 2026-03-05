@@ -24,7 +24,7 @@
 - **push:** 'app_python/' 
 - **pull_request:** 'app_python/'
 
-**Versioning Strategy:** Calendar Versioning (CalVer) 
+**Versioning Strategy:** Calendar Versioning (CalVer)  
 - Version format: `YYYY.MM.DD`
 - Docker image tags: `2026.02.11` and `latest`
 - Why chosen: allows you to quickly and easily understand the build date, convenient for daily service updates
