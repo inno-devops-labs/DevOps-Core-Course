@@ -51,6 +51,13 @@ resource "yandex_vpc_security_group" "sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    protocol       = "TCP"
+    description    = "endpoints"
+    port           = 8000
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+
   # Allow all outgoing traffic
   egress {
     protocol       = "ANY"
