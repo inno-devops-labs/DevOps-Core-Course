@@ -56,6 +56,8 @@ jobs:
           ansible-galaxy collection install community.docker
 
       - name: Deploy
+        env:
+          ANSIBLE_VAULT_PASSWORD_FILE: /tmp/vault_pass
         run: |
           cd ansible
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
