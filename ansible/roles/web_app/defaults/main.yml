@@ -10,3 +10,10 @@ app_restart_policy: unless-stopped
 
 # Optional environment variables passed into container
 app_env: {}
+
+# Docker Compose
+app_internal_port: 8000
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Wipe Logic Control
+web_app_wipe: false

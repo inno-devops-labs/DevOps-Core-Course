@@ -1,15 +1,64 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+- name: Common packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
-- name: Set timezone (optional)
+  rescue:
+    - name: Retry apt update with --fix-missing
+      ansible.builtin.command: apt-get update --fix-missing
+
+  always:
+    - name: Log completion (packages)
+      ansible.builtin.copy:
+        content: "common: packages block completed
+"
+        dest: /tmp/common_packages_done.log
+        mode: "0644"
+
+  become: true
+  tags:
+    - packages
+    - common
+
+
+- name: Common users
+  block:
+    - name: Ensure users exist
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        groups: "{{ item.groups | default(omit) }}"
+        append: "{{ item.append | default(true) }}"
+        shell: "{{ item.shell | default('/bin/bash') }}"
+        state: present
+      loop: "{{ common_users }}"
+
+  always:
+    - name: Log completion (users)
+      ansible.builtin.copy:
+        content: "common: users block completed
+"
+        dest: /tmp/common_users_done.log
+        mode: "0644"
+
+  when: common_users | length > 0
+  become: true
+  tags:
+    - users
+    - common
+
+
+- name: Timezone
   community.general.timezone:
     name: "{{ common_timezone }}"
   when: common_set_timezone | bool
+  become: true
+  tags:
+    - common

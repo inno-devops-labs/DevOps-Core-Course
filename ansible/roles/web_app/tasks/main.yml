@@ -1,0 +1,64 @@
+---
+# Wipe logic runs first, but only executes when BOTH:
+#  1) -e "web_app_wipe=true"
+#  2) --tags web_app_wipe  (or you run all tags intentionally)
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  block:
+    - name: Check if container exists
+      community.docker.docker_container_info:
+        name: "{{ app_container_name | default(app_name) }}"
+      register: container_info
+      ignore_errors: true
+
+    - name: Remove existing container
+      community.docker.docker_container:
+        name: "{{ app_container_name | default(app_name) }}"
+        state: absent
+        force_kill: true
+      when: container_info.exists
+
+    - name: Ensure app directory exists
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose.yml
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Bring up application (compose v2)
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: present
+        pull: always
+
+    - name: Wait for app port to be reachable
+      ansible.builtin.wait_for:
+        host: "127.0.0.1"
+        port: "{{ app_port }}"
+        delay: 2
+        timeout: 60
+
+    - name: Check /health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_port }}/health"
+        method: GET
+        return_content: true
+        status_code: 200
+
+  rescue:
+    - name: Show deployment failure
+      ansible.builtin.debug:
+        msg: "Deployment failed for {{ app_name }}. Check docker compose logs."
+
+  tags:
+    - app_deploy
+    - compose

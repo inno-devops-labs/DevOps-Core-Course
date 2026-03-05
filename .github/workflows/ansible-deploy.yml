@@ -1,0 +1,93 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "ansible/**"
+      - ".github/workflows/ansible-deploy.yml"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "ansible/**"
+      - ".github/workflows/ansible-deploy.yml"
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible + ansible-lint
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/*.yml
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Setup SSH
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$VM_HOST" >> ~/.ssh/known_hosts
+
+      - name: Run Ansible deploy playbook
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+        run: |
+          cd ansible
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+          # Optional: if your inventory already has the host, you can remove "-i ..." and the -e vars.
+          ansible-playbook playbooks/deploy.yml \
+            -i inventory/hosts.ini \
+            --vault-password-file /tmp/vault_pass \
+            -e "ansible_host=$VM_HOST ansible_user=$VM_USER"
+
+          rm -f /tmp/vault_pass
+
+      - name: Verify deployment with curl
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+        run: |
+          sleep 10
+          curl -f "http://$VM_HOST:5000" >/dev/null
+          curl -f "http://$VM_HOST:5000/health" >/dev/null

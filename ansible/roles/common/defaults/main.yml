@@ -15,3 +15,10 @@ common_packages:
 
 common_timezone: "Europe/Moscow"
 common_set_timezone: true
+
+# Optional user management (Lab 6)
+# Example:
+common_users:
+  - name: devops
+    groups: sudo
+# common_users: []
