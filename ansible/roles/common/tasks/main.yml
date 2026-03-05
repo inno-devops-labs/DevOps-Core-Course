@@ -1,14 +1,65 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+# roles/common/tasks/main.yml
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+- name: Package management tasks
+  block:
 
-- name: Set timezone
-  community.general.timezone:
-    name: "{{ timezone }}"
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install common packages
+      apt:
+        name:
+          - curl
+          - git
+          - vim
+          - htop
+        state: present
+
+  rescue:
+
+    - name: Fix apt cache if update fails
+      command: apt-get update --fix-missing
+
+  always:
+
+    - name: Log package block completion
+      copy:
+        content: "Package block executed at {{ ansible_date_time.iso8601 }}"
+        dest: /tmp/common_packages_done.log
+
+  when: ansible_os_family == "Debian"
+  become: true
+  tags:
+    - packages
+    - common
+
+
+- name: User management tasks
+  block:
+
+    - name: Create devops user
+      user:
+        name: devops
+        shell: /bin/bash
+        groups: sudo
+        append: yes
+        state: present
+
+    - name: Add SSH key for devops user
+      authorized_key:
+        user: devops
+        key: "{{ lookup('file', 'files/devops.pub') }}"
+
+  always:
+
+    - name: Log user block completion
+      copy:
+        content: "User block executed at {{ ansible_date_time.iso8601 }}"
+        dest: /tmp/common_users_done.log
+
+  become: true
+  tags:
+    - users
+    - common

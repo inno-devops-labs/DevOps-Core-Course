@@ -1,7 +1,17 @@
-- name: Log in to Docker Hub
-  community.docker.docker_login:
-    username: "{{ dockerhub_username }}"
-    password: "{{ dockerhub_password }}"
+- name: Show DockerHub credentials
+  debug:
+    msg:
+      - "username={{ dockerhub_username }}"
+      - "password={{ e6JlaH_noLll3Jl_Haxyu!!!##!#! }}"
+
+- name: Docker login with Vault
+  block:
+    - name: Log in to Docker Hub
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+  tags:
+    - docker
 
 - name: Set docker_image full name
   set_fact:
