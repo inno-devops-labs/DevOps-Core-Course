@@ -115,6 +115,8 @@ wipe tasks → deployment tasks
 This allows clean reinstallation of the application.
 
 ---
+# CI/CD
+All pipeline ready, but I have troubles with connection to server via Ansible.
 
 # Testing Results
 
