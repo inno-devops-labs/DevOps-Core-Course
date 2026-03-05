@@ -71,8 +71,7 @@ jobs:
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /opt/yc -n
           echo "/opt/yc/bin" >> $GITHUB_PATH
-          export PATH="/opt/yc/bin:$PATH"
-          yc --version
+          /opt/yc/bin/yc --version
 
       - name: Write YC service account key file
         env:
@@ -81,6 +80,14 @@ jobs:
           echo "$YC_SERVICE_ACCOUNT_KEY_JSON" > "$RUNNER_TEMP/yc-sa-key.json"
           chmod 600 "$RUNNER_TEMP/yc-sa-key.json"
           echo "YC_SERVICE_ACCOUNT_KEY_FILE=$RUNNER_TEMP/yc-sa-key.json" >> $GITHUB_ENV
+
+      - name: Configure YC CLI auth (service account key)
+        run: |
+          /opt/yc/bin/yc config set service-account-key "$YC_SERVICE_ACCOUNT_KEY_FILE"
+          /opt/yc/bin/yc config set cloud-id "$YC_CLOUD_ID"
+          /opt/yc/bin/yc config set folder-id "$YC_FOLDER_ID"
+          /opt/yc/bin/yc config set compute-default-zone "$YC_ZONE"
+          /opt/yc/bin/yc config list
 
       - name: Smoke check dynamic inventory (must include webservers)
         run: |
