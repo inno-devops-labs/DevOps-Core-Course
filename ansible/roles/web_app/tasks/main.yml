@@ -23,7 +23,7 @@
   community.docker.docker_login:
     username: "{{ web_app_vault_dockerhub_username }}"
     password: "{{ web_app_vault_dockerhub_token }}"
-  no_log: false
+  no_log: true
   tags: [web_app]
 
 - name: Deploy with Docker Compose v2
