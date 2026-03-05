@@ -253,6 +253,9 @@ Added to README.md:
 ```markdown
 [![Ansible Deployment](https://github.com/ellilin/DevOps/workflows/Ansible%20Deployment/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy.yml)
 ```
+<img width="901" height="312" alt="image" src="https://github.com/user-attachments/assets/17029cf3-d65e-444d-b815-2c5545eec8be" />
+<img width="658" height="327" alt="image" src="https://github.com/user-attachments/assets/1add0a25-a31d-465b-9c51-f6396b81fee8" />
+
 
 ---
 
