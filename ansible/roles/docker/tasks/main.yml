@@ -1,63 +1,112 @@
 ---
-- name: Install Docker apt prerequisites
-  ansible.builtin.apt:
-    name: "{{ docker_prerequisite_packages }}"
-    state: present
-    update_cache: true
-    cache_valid_time: 3600
+- name: Install Docker and prerequisites
+  become: true
+  tags:
+    - docker_install
+  block:
+    - name: Install Docker apt prerequisites
+      ansible.builtin.apt:
+        name: "{{ docker_prerequisite_packages }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Ensure Docker apt keyrings directory exists
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: "0755"
+    - name: Ensure Docker apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
 
-- name: Download Docker GPG key
-  ansible.builtin.get_url:
-    url: "{{ docker_gpg_key_url }}"
-    dest: /etc/apt/keyrings/docker.asc
-    mode: "0644"
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: "{{ docker_gpg_key_url }}"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
 
-- name: Configure Docker apt repository
-  ansible.builtin.apt_repository:
-    repo: >-
-      deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc]
-      {{ docker_repo_url }} {{ ansible_facts['distribution_release'] }} stable
-    filename: docker
-    state: present
-    update_cache: true
+    - name: Configure Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc]
+          {{ docker_repo_url }} {{ ansible_facts['distribution_release'] }} stable
+        filename: docker
+        state: present
+        update_cache: true
 
-- name: Install Docker engine packages
-  ansible.builtin.apt:
-    name: "{{ docker_packages }}"
-    state: present
-  notify: restart docker
+    - name: Install Docker engine packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+      notify: Restart Docker Service
 
-- name: Install Python Docker SDK package
-  ansible.builtin.apt:
-    name: "{{ docker_python_packages }}"
-    state: present
+    - name: Install Python Docker SDK package
+      ansible.builtin.apt:
+        name: "{{ docker_python_packages }}"
+        state: present
 
-- name: Configure Docker daemon settings
-  ansible.builtin.copy:
-    dest: /etc/docker/daemon.json
-    content: "{{ docker_daemon_config | to_nice_json }}"
-    mode: "0644"
-  when: docker_manage_daemon_config | bool
-  notify: restart docker
+  rescue:
+    - name: Wait before retrying Docker repository setup
+      ansible.builtin.pause:
+        seconds: 10
 
-- name: Ensure Docker service is enabled and running
-  ansible.builtin.service:
-    name: "{{ docker_service_name }}"
-    state: started
-    enabled: true
+    - name: Retry apt cache update after repository failure
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
 
-- name: Add users to docker group
-  ansible.builtin.user:
-    name: "{{ item }}"
-    groups: docker
-    append: true
-  loop: "{{ docker_users | unique }}"
-  when:
-    - docker_users is defined
-    - docker_users | length > 0
+    - name: Retry Docker GPG key download
+      ansible.builtin.get_url:
+        url: "{{ docker_gpg_key_url }}"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Retry Docker apt repository configuration
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc]
+          {{ docker_repo_url }} {{ ansible_facts['distribution_release'] }} stable
+        filename: docker
+        state: present
+        update_cache: true
+
+    - name: Retry Docker engine package installation
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+      notify: Restart Docker Service
+
+  always:
+    - name: Ensure Docker service is enabled and running
+      ansible.builtin.service:
+        name: "{{ docker_service_name }}"
+        state: started
+        enabled: true
+
+- name: Configure Docker daemon and access
+  become: true
+  tags:
+    - docker_config
+  block:
+    - name: Configure Docker daemon settings
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        content: "{{ docker_daemon_config | to_nice_json }}"
+        mode: "0644"
+      when: docker_manage_daemon_config | bool
+      notify: Restart Docker Service
+
+    - name: Add users to docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users | unique }}"
+      when:
+        - docker_users is defined
+        - docker_users | length > 0
+
+  always:
+    - name: Ensure Docker service is enabled and running after configuration
+      ansible.builtin.service:
+        name: "{{ docker_service_name }}"
+        state: started
+        enabled: true

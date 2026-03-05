@@ -1,0 +1,41 @@
+---
+- name: Wipe web application deployment
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+  block:
+    - name: Check whether compose file exists
+      ansible.builtin.stat:
+        path: "{{ compose_project_dir }}/{{ docker_compose_filename }}"
+      register: web_app_compose_file_stat
+
+    - name: Stop and remove compose services
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        files:
+          - "{{ docker_compose_filename }}"
+        state: absent
+        remove_images: "{{ 'all' if (web_app_remove_images | bool) else omit }}"
+        remove_volumes: "{{ web_app_remove_volumes | bool }}"
+      when: web_app_compose_file_stat.stat.exists
+
+    - name: Skip compose stop when compose file is absent
+      ansible.builtin.debug:
+        msg: >-
+          Compose file {{ compose_project_dir }}/{{ docker_compose_filename }}
+          not found, skipping compose down step.
+      when: not web_app_compose_file_stat.stat.exists
+
+    - name: Remove docker compose file
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}/{{ docker_compose_filename }}"
+        state: absent
+
+    - name: Remove application directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: absent
+
+    - name: Log wipe completion
+      ansible.builtin.debug:
+        msg: "Wipe completed for {{ app_name }} in {{ compose_project_dir }}"

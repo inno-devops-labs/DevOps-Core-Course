@@ -1,8 +1,10 @@
 ---
-- name: Deploy application
+- name: Deploy Python application
   hosts: webservers
   become: true
   gather_facts: true
+  vars_files:
+    - ../vars/app_python.yml
 
   roles:
     - role: web_app

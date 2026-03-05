@@ -1,82 +1,101 @@
 ---
-- name: Login to Docker Hub
-  community.docker.docker_login:
-    username: "{{ dockerhub_username }}"
-    password: "{{ dockerhub_password }}"
-    registry_url: "{{ app_registry_url }}"
-    reauthorize: "{{ app_registry_reauthorize | bool }}"
-  no_log: true
-  when: app_registry_login_enabled | bool
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
 
-- name: Pull application image
-  community.docker.docker_image:
-    name: "{{ docker_image }}"
-    tag: "{{ docker_image_tag }}"
-    source: pull
+- name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+  block:
+    - name: Login to Docker Hub
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+        registry_url: "{{ app_registry_url }}"
+        reauthorize: "{{ app_registry_reauthorize | bool }}"
+      no_log: true
+      when: app_registry_login_enabled | bool
 
-- name: Inspect desired image metadata
-  community.docker.docker_image_info:
-    name: "{{ docker_image }}:{{ docker_image_tag }}"
-  register: app_image_info
-  changed_when: false
+    - name: Ensure compose project directory exists
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
 
-- name: Inspect current application container
-  community.docker.docker_container_info:
-    name: "{{ app_container_name }}"
-  register: app_container_info
-  failed_when: false
-  changed_when: false
+    - name: Render Docker Compose definition
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/{{ docker_compose_filename }}"
+        mode: "0644"
 
-- name: Calculate deployment state
-  ansible.builtin.set_fact:
-    app_desired_image_id: "{{ ((app_image_info.images | default([])) | first | default({})).Id | default('') }}"
-    app_current_image_id: "{{ (app_container_info.container.Image | default('')) if (app_container_info.exists | default(false)) else '' }}"
-    app_should_recreate: >-
-      {{
-        (app_container_recreate | bool) or
-        (
-          (app_container_info.exists | default(false)) and
-          (
-            (((app_image_info.images | default([])) | first | default({})).Id | default('')) != '' and
-            (app_container_info.container.Image | default('')) != '' and
-            ((((app_image_info.images | default([])) | first | default({})).Id | default('')) != (app_container_info.container.Image | default('')))
-          )
-        )
-      }}
-  changed_when: false
+    - name: Inspect existing container for compose migration
+      community.docker.docker_container_info:
+        name: "{{ app_name }}"
+      register: web_app_container_info
+      failed_when: false
+      changed_when: false
 
-- name: Run application container
-  community.docker.docker_container:
-    name: "{{ app_container_name }}"
-    image: "{{ docker_image }}:{{ docker_image_tag }}"
-    state: started
-    restart_policy: "{{ app_restart_policy }}"
-    recreate: "{{ app_should_recreate | bool }}"
-    published_ports: "{{ app_published_ports }}"
-    env: "{{ app_env }}"
-    labels: "{{ app_labels }}"
+    - name: Remove legacy non-compose container if present
+      community.docker.docker_container:
+        name: "{{ app_name }}"
+        state: absent
+        force_kill: true
+      when:
+        - web_app_container_info.exists | default(false)
+        - (web_app_container_info.container.Config.Labels['com.docker.compose.project'] | default('')) == ''
 
-- name: Wait for application port to become available
-  ansible.builtin.wait_for:
-    host: 127.0.0.1
-    port: "{{ app_port }}"
-    delay: "{{ app_wait_delay }}"
-    timeout: "{{ app_wait_timeout }}"
+    - name: Pull and start application stack
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        files:
+          - "{{ docker_compose_filename }}"
+        state: present
+        pull: "{{ web_app_pull_policy }}"
+        recreate: auto
+        remove_orphans: true
 
-- name: Verify application health endpoint
-  ansible.builtin.uri:
-    url: "http://127.0.0.1:{{ app_port }}{{ app_healthcheck_path }}"
-    method: GET
-    status_code: "{{ app_healthcheck_status }}"
-    return_content: true
-  register: app_health_result
-  retries: 5
-  delay: 2
-  until: app_health_result.status == (app_healthcheck_status | int)
+    - name: Wait for application port to become available
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        delay: "{{ app_wait_delay }}"
+        timeout: "{{ app_wait_timeout }}"
+      when: not ansible_check_mode
 
-- name: Assert healthy status in response body
-  ansible.builtin.assert:
-    that:
-      - app_health_result.json.status == "healthy"
-    fail_msg: "Health endpoint did not return status=healthy"
-    success_msg: "Health endpoint returned status=healthy"
+    - name: Verify application health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_port }}{{ app_healthcheck_path }}"
+        method: GET
+        status_code: "{{ app_healthcheck_status }}"
+        return_content: true
+      register: app_health_result
+      retries: 5
+      delay: 2
+      until: app_health_result.status == (app_healthcheck_status | int)
+      when: not ansible_check_mode
+
+    - name: Assert healthy status in response body
+      ansible.builtin.assert:
+        that:
+          - app_health_result.json is defined
+          - app_health_result.json.status is defined
+          - app_health_result.json.status == "healthy"
+        fail_msg: "Health endpoint did not return status=healthy"
+        success_msg: "Health endpoint returned status=healthy"
+      when: not ansible_check_mode
+
+  rescue:
+    - name: Report deployment failure details
+      ansible.builtin.debug:
+        msg: >-
+          Docker Compose deployment failed for {{ app_name }}.
+          Check rendered file {{ compose_project_dir }}/{{ docker_compose_filename }}
+          and host Docker logs.
+
+    - name: Fail deployment after rescue path
+      ansible.builtin.fail:
+        msg: "Deployment failed for {{ app_name }}. See previous task output for details."

@@ -9,17 +9,25 @@ dockerhub_password: your-dockerhub-access-token
 # Application configuration
 app_name: devops-info-service
 docker_image: "{{ dockerhub_username }}/{{ app_name }}"
-docker_image_tag: latest
+docker_tag: latest
 
 # Host port on VM (Lab 4 SG already allows 5000)
 app_port: 5000
 
-# Container port: app_python defaults to 3000, but the app can listen on 5000
-# if we pass PORT=5000. This keeps mapping aligned with Lab 5 (5000:5000).
-app_container_port: 5000
-app_container_name: "{{ app_name }}"
+# Internal container port.
+app_internal_port: 5000
+
+# Compose deployment directory on host.
+docker_compose_version: "3.8"
+compose_project_dir: "/opt/{{ app_name }}"
+# Use "always" with mutable tags like latest to avoid stale deploys.
+# If you pin immutable image tags, "missing" is also acceptable.
+web_app_pull_policy: always
 
 app_env:
   HOST: "0.0.0.0"
-  PORT: "{{ app_container_port | string }}"
+  PORT: "{{ app_internal_port | string }}"
   DEBUG: "false"
+
+# Safety flag for wipe logic (Lab 6 Task 3).
+web_app_wipe: false

@@ -13,3 +13,7 @@ common_packages:
 
 common_manage_timezone: true
 common_timezone: UTC
+
+# Optional user management block (Task 1.3 in Lab 6).
+common_default_shell: /bin/bash
+common_users: []

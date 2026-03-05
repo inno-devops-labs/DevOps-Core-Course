@@ -1,0 +1,19 @@
+---
+# Local overrides for Lab 6 bonus validation against Docker-based target.
+# Keeps per-app image names from vars/app_python.yml and vars/app_bonus.yml.
+
+docker_users:
+  - root
+
+docker_daemon_config:
+  storage-driver: vfs
+  log-driver: json-file
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  insecure-registries:
+    - host.docker.internal:5001
+
+app_registry_login_enabled: false
+dockerhub_username: host.docker.internal:5001
+web_app_pull_policy: missing

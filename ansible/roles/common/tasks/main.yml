@@ -1,15 +1,55 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+- name: Install and update common packages
+  become: true
+  tags:
+    - packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Retry apt metadata update with fix-missing  # noqa command-instead-of-module
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: true
+
+    - name: Retry common package installation
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log package block completion
+      ansible.builtin.lineinfile:
+        path: /tmp/ansible-common-role.log
+        line: "packages block completed on {{ inventory_hostname }}"
+        create: true
+        mode: "0644"
+
+- name: Manage common users
+  become: true
+  when: common_users | length > 0
+  tags:
+    - users
+  block:
+    - name: Ensure managed users are present
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        shell: "{{ item.shell | default(common_default_shell) }}"
+        state: "{{ item.state | default('present') }}"
+        create_home: "{{ item.create_home | default(true) }}"
+      loop: "{{ common_users }}"
 
 - name: Set timezone
   community.general.timezone:
     name: "{{ common_timezone }}"
   when: common_manage_timezone | bool
+  become: true
+  tags:
+    - common

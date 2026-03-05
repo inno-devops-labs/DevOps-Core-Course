@@ -16,7 +16,8 @@ docker_daemon_config:
   insecure-registries:
     - host.docker.internal:5001
 
-# App deploy overrides
+# Web app deploy overrides
 app_registry_login_enabled: false
 docker_image: host.docker.internal:5001/devops-info-service
-docker_image_tag: latest
+docker_tag: latest
+web_app_pull_policy: missing

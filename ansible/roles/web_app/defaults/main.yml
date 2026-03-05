@@ -1,30 +1,37 @@
 ---
 app_name: devops-info-service
-app_container_name: "{{ app_name }}"
-
 docker_image: "{{ (dockerhub_username | default('your-dockerhub-username')) ~ '/' ~ app_name }}"
-docker_image_tag: latest
+docker_tag: latest
+
 app_registry_login_enabled: true
 app_registry_url: https://index.docker.io/v1/
 app_registry_reauthorize: false
 
 app_port: 5000
-app_container_port: 5000
+app_internal_port: 5000
 app_restart_policy: unless-stopped
-app_container_recreate: false
 app_healthcheck_path: /health
 app_healthcheck_status: 200
 app_wait_timeout: 60
 app_wait_delay: 2
 
+docker_compose_version: "3.8"
+docker_compose_filename: docker-compose.yml
+compose_project_dir: "/opt/{{ app_name }}"
+# For mutable tags (for example, latest) use always so CD always pulls fresh image.
+# Override to "missing" in local tests when strict idempotency evidence is needed.
+web_app_pull_policy: always
+
 app_env:
   HOST: "0.0.0.0"
-  PORT: "{{ app_container_port | string }}"
+  PORT: "{{ app_internal_port | string }}"
   DEBUG: "false"
 
 app_labels:
   app.kubernetes.io/name: "{{ app_name }}"
   app.kubernetes.io/managed-by: ansible
 
-app_published_ports:
-  - "{{ app_port }}:{{ app_container_port }}"
+# Wipe logic: disabled by default for safe deploys.
+web_app_wipe: false
+web_app_remove_images: false
+web_app_remove_volumes: false

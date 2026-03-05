@@ -1,8 +1,10 @@
 ---
-- name: Deploy application
+- name: Deploy bonus application
   hosts: webservers
   become: true
   gather_facts: true
+  vars_files:
+    - ../vars/app_bonus.yml
 
   roles:
     - role: web_app
