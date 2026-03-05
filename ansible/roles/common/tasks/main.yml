@@ -1,14 +1,40 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Package installation
+  
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
-- name: Set timezone to UTC
-  timezone:
-    name: UTC
+  rescue:
+    - name: Fix apt cache
+      ansible.builtin.command: apt-get update --fix-missing
+
+  always:
+    - name: Log package installation completion
+      ansible.builtin.file:
+        path: /tmp/common_packages_done
+        state: touch
+
+  become: true
+  tags:
+    - packages
+
+
+- name: User configuration
+  block:
+    - name: Ensure user exists
+      ansible.builtin.user:
+        name: "{{ common_user }}"
+        state: present
+        groups: sudo
+        append: yes
+
+  become: true
+  tags:
+    - users

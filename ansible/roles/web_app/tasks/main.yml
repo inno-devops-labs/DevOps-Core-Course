@@ -1,0 +1,27 @@
+---
+- name: Include wipe tasks
+  import_tasks: wipe.yml
+
+- name: Deploy web application
+  block:
+
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Render docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+
+    - name: Start application via Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: present
+
+  become: true
+  tags:
+    - web_app
+    - web_app_deploy

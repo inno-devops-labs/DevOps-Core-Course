@@ -46,7 +46,7 @@ jobs:
 
   terraform-apply:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    #if: github.ref == 'refs/heads/main'
     needs: test
     steps:
       - name: Check out code
@@ -81,3 +81,59 @@ jobs:
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
           AWS_DEFAULT_REGION: us-east-1
         run: terraform apply -auto-approve tfplan
+    
+      - name: Get server IP from Terraform
+        id: get_ip
+        working-directory: app_python/terraform
+        run: echo "SERVER_IP=$(terraform output -raw public_ip)" >> $GITHUB_ENV
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: terraform-apply
+    #if: github.ref == 'refs/heads/main'
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+
+    - name: Install Ansible
+      run: pip install ansible
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: us-east-1
+    
+    - name: Set up SSH key
+      run: |
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+        chmod 600 key.pem
+
+    - name: Prepare Password
+      run: |
+        echo "${{ secrets.ANSIBLE_PASSWORD }}" > pass.txt
+        chmod 600 pass.txt
+
+    - name: Ansible Run
+      run: |
+        ansible-playbook -i secrets.SERVER_IP ./playbooks/deploy.yml \
+          --user ubuntu \
+          --private-key key.pem \
+          --extra-vars "@group_vars/all.yml" \
+          --vault-password-file="pass.txt" \
+          -e ansible_python_interpreter=/usr/bin/python3 \
+          -o StrictHostKeyChecking=no
+    
+    - name: Remove Password
+      run: |
+        rm pass.txt
+        rm key.pem
+
+    
