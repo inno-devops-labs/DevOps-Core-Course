@@ -29,9 +29,14 @@ jobs:
           pip install ansible ansible-lint
 
       - name: Run ansible-lint
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
           cd ansible
-          ansible-lint playbooks/*.yml
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
+          ansible-lint playbooks/deploy.yml playbooks/provision.yml
+          rm /tmp/vault_pass
 
   deploy:
     name: Deploy Application

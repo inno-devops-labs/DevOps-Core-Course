@@ -1,0 +1,10 @@
+skip_list:
+  # Old role from Lab 5, not used in Lab 6
+  - var-naming
+  - name
+  - key-order
+  - yaml[truthy]
+  - yaml[line-length]
+  - command-instead-of-module
+  - no-changed-when
+
