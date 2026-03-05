@@ -1,4 +1,3 @@
-```markdown
 # Lab 5 – Ansible Fundamentals
 
 ## Overview

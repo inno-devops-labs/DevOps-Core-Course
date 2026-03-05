@@ -1,29 +1,64 @@
 ---
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+- name: Docker installation tasks
+  block:
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      register: gpg_result
+      until: gpg_result is success
+      retries: 5
+      delay: 10
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
 
-- name: Install Docker packages
-  apt:
-    name: "{{ docker_packages }}"
-    state: present
-    update_cache: yes
-  notify: restart docker
+    - name: Install Docker packages
+      apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: yes
 
-- name: Install python3-docker (for Ansible docker modules)
-  pip:
-    name: docker
-    state: present
+    - name: Install Python Docker module
+      pip:
+        name: docker
+        state: present
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
-  notify: restart docker
+  rescue:
+    - name: "Rescue: wait and retry GPG key"
+      pause:
+        seconds: 10
+      when: gpg_result is failed
+
+  always:
+    - name: "Always: ensure Docker service is enabled and started"
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+  tags:
+    - docker
+    - docker_install
+
+- name: Docker configuration tasks
+  block:
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+      notify: restart docker
+
+    - name: Configure Docker daemon (optional)
+      template:
+        src: daemon.json.j2
+        dest: /etc/docker/daemon.json
+      notify: restart docker
+      when: docker_custom_config | default(false) | bool
+
+  tags:
+    - docker
+    - docker_config

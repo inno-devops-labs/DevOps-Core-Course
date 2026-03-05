@@ -1,10 +1,45 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: System provisioning tasks
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      register: apt_update
+      until: apt_update is success
+      retries: 3
+      delay: 5
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: "Rescue: fix apt if update failed"
+      command: apt-get update --fix-missing
+      when: ansible_os_family == "Debian"
+
+  always:
+    - name: "Always: log completion"
+      file:
+        path: /tmp/common_role_completed
+        state: touch
+        mode: '0644'
+
+  tags:
+    - common
+    - packages
+
+- name: User management tasks
+  block:
+    - name: Create a dedicated user (if needed)
+      user:
+        name: "{{ common_user | default('appuser') }}"
+        state: present
+        groups: sudo
+        shell: /bin/bash
+
+  when: create_app_user | default(false) | bool
+  tags:
+    - users

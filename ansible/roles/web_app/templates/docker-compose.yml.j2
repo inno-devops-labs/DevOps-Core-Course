@@ -1,0 +1,23 @@
+version: '{{ docker_compose_version | default("3.8") }}'
+
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag }}
+    container_name: {{ app_name }}
+    restart: {{ restart_policy | default("unless-stopped") }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    environment:
+      PORT: "{{ app_internal_port }}"
+      HOST: "0.0.0.0"
+      {% if app_env_vars is defined %}
+      {% for key, value in app_env_vars.items() %}
+      {{ key }}: "{{ value }}"
+      {% endfor %}
+      {% endif %}
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

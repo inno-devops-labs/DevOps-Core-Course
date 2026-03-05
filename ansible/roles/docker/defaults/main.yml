@@ -1,9 +1,9 @@
----
-docker_user: ubuntu
-docker_edition: ce
 docker_packages:
   - docker-ce
   - docker-ce-cli
   - containerd.io
   - docker-buildx-plugin
   - docker-compose-plugin
+
+docker_user: ubuntu
+docker_custom_config: false
