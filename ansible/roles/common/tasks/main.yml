@@ -1,14 +1,51 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+# Package installation block - grouped for error handling and tag-based execution
+- name: Install system packages
+  become: true
+  tags:
+    - packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
-- name: Set timezone
-  timezone:
-    name: "{{ common_timezone }}"
+  rescue:
+    # Runs only if block fails (e.g. network issue during apt update)
+    - name: Retry apt update with fix-missing flag
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+
+    - name: Install common packages (retry after fix)
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    # Always log completion regardless of success or failure
+    - name: Log package installation completion
+      ansible.builtin.debug:
+        msg: "Package installation block completed for {{ inventory_hostname }}"
+
+# User/timezone configuration block
+- name: Configure system settings
+  become: true
+  tags:
+    - users
+  block:
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"
+
+  always:
+    - name: Log system configuration completion
+      ansible.builtin.debug:
+        msg: "System configuration completed for {{ inventory_hostname }}"

@@ -1,0 +1,13 @@
+---
+# Ansible-lint configuration
+profile: basic
+
+# Skip rules that conflict with our design choices
+skip_list:
+  # Vault variables and playbook vars use shared names (no role prefix)
+  - var-naming[no-role-prefix]
+  # We use ignore_errors in wipe.yml intentionally (app may not exist yet)
+  - ignore-errors
+
+warn_list:
+  - args[module]

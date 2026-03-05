@@ -1,0 +1,17 @@
+---
+# Web app deployment defaults
+# Override these in vars_files or group_vars for specific apps
+
+app_name: devops-info-service
+docker_image: blxxdclxud/devops-info-service
+docker_tag: latest
+app_port: 5000
+app_internal_port: 5000
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Wipe Logic Control
+# Default: do NOT wipe - prevents accidental deletion
+# Set to true to remove application completely
+# Wipe only:     ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

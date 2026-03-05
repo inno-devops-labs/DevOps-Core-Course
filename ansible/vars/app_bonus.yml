@@ -1,0 +1,10 @@
+---
+# Bonus app deployment variables (Go/Rust/compiled app)
+# Uses the same Python image on a different port for demo purposes
+# In production this would point to a compiled language image from lab01 bonus
+app_name: devops-bonus
+docker_image: blxxdclxud/devops-info-service
+docker_tag: latest
+app_port: 8001
+app_internal_port: 5000
+compose_project_dir: "/opt/devops-bonus"

@@ -1,0 +1,5 @@
+---
+# Role dependencies - docker role must run before web_app
+# This ensures Docker is installed and running before we try to deploy containers
+dependencies:
+  - role: docker

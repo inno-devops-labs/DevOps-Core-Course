@@ -1,0 +1,97 @@
+name: Ansible Deployment - Bonus App
+
+on:
+  push:
+    branches: [main, master, lab06]
+    paths:
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/playbooks/deploy_bonus.yml'
+      - 'ansible/roles/web_app/**'
+      - '.github/workflows/ansible-deploy-bonus.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/playbooks/deploy_bonus.yml'
+      - '.github/workflows/ansible-deploy-bonus.yml'
+
+jobs:
+  lint:
+    name: Ansible Lint - Bonus
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint
+          ansible-galaxy collection install community.docker ansible.posix community.general
+
+      - name: Write vault password for lint
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+
+      - name: Run ansible-lint on bonus playbook
+        working-directory: ansible
+        run: |
+          ansible-lint playbooks/deploy_bonus.yml
+
+      - name: Cleanup vault password
+        if: always()
+        run: rm -f ansible/.vault_pass
+
+  deploy:
+    name: Deploy Bonus App
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible and collections
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.docker ansible.posix community.general
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Write vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+
+      - name: Deploy bonus application
+        working-directory: ansible
+        run: |
+          ansible-playbook playbooks/deploy_bonus.yml \
+            -i inventory/hosts.ini
+
+      - name: Cleanup vault password file
+        if: always()
+        run: rm -f ansible/.vault_pass
+
+      - name: Verify bonus app deployment via SSH
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} \
+            "docker ps && curl -sf http://localhost:8001/health && echo 'Bonus app verified!'"
