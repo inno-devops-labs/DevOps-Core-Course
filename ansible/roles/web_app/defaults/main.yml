@@ -1,10 +1,11 @@
+---
 web_app_wipe: false
 
-compose_project_dir: "/home/ubuntu/devops_app"
+web_app_compose_project_dir: "/home/ubuntu/devops_app"
 
 # Параметры приложения
-app_name: "devops-info-python"
-app_port: 8080
+web_app_app_name: "devops-info-python"
+web_app_app_port: 8080
 
 # Версия Docker Compose
-docker_compose_version: "3.8"
+web_app_docker_compose_version: "3.8"

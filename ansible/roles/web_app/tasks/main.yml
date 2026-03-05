@@ -16,33 +16,32 @@
 
 # 3. Основной блок деплоя через Compose
 - name: Deploy Web Application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+    - web_app
   block:
     - name: Ensure application directory exists
-      ansible.builtin.file:
-        path: "{{ compose_project_dir }}"
+      ansible.builtin.ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
         state: directory
         mode: "0755"
 
     - name: Render Docker Compose template
       ansible.builtin.template:
         src: docker-compose.yml.j2
-        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         mode: "0644"
 
     - name: Deploy via Docker Compose
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         state: present
         pull: always
       register: compose_output
 
     - name: Wait for application to be ready (Healthcheck)
       ansible.builtin.wait_for:
-        port: "{{ app_port }}"
+        port: "{{ web_app_app_port }}"
         delay: 5
         timeout: 30
-
-  tags:
-    - app_deploy
-    - compose
-    - web_app

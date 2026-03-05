@@ -1,21 +1,20 @@
 ---
 - name: Wipe web application
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
   block:
     - name: Stop and remove containers
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         state: absent
       ignore_errors: true
 
     - name: Remove app directory
-      file:
-        path: "{{ compose_project_dir }}"
+      ansible.builtin.ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
         state: absent
 
     - name: Log wipe
-      debug:
-        msg: "Application {{ app_name }} wiped"
-
-  when: web_app_wipe | bool
-  tags:
-    - web_app_wipe
+      ansible.builtin.ansible.builtin.debug:
+        msg: "Application {{ web_app_app_name }} wiped"
