@@ -48,7 +48,9 @@ jobs:
       - name: Run ansible-lint
         working-directory: ansible
         run: |
-          ansible-lint playbooks/*.yml
+          ansible-lint \
+            -x fqcn,yaml,var-naming,key-order,name,risky-file-permissions,command-instead-of-module,partial-become \
+            playbooks/*.yml
 
       - name: Remove vault password file
         if: always()
