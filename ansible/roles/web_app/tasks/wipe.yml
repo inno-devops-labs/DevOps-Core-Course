@@ -1,0 +1,21 @@
+---
+- name: Wipe web application
+  block:
+
+    - name: Stop and remove Docker Compose containers
+      command: docker compose down
+      args:
+        chdir: "{{ compose_project_dir }}"
+      ignore_errors: true
+
+    - name: Remove application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: absent
+
+    - name: Log wipe completion
+      debug:
+        msg: "Application {{ app_name }} wiped successfully"
+
+  tags:
+    - web_app_wipe

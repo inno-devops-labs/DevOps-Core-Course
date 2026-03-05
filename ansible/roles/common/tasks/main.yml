@@ -1,11 +1,56 @@
----
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+- name: Install base packages
+  block:
 
-- name: Install essential packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
-    install_recommends: no
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - git
+          - vim
+        state: present
+
+  rescue:
+
+    - name: Fix missing packages and retry update
+      command: apt-get update --fix-missing
+      become: true
+
+  always:
+
+    - name: Log package block completion
+      copy:
+        content: "Package installation block completed\n"
+        dest: /tmp/common_packages.log
+
+  become: true
+  tags:
+    - packages
+    - common
+
+
+- name: Manage system users
+  block:
+
+    - name: Ensure deploy user exists
+      user:
+        name: deploy
+        groups: sudo
+        append: yes
+        state: present
+
+  always:
+
+    - name: Log user block completion
+      copy:
+        content: "User management block completed\n"
+        dest: /tmp/common_users.log
+
+  become: true
+  tags:
+    - users
+    - common
