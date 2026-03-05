@@ -2,7 +2,7 @@ name: Ansible Python App Deployment
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, lab06 ]
     paths:
       - 'ansible/vars/app_python.yml'
       - 'ansible/playbooks/deploy_python.yml'

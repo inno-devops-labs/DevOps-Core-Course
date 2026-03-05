@@ -2,7 +2,7 @@ name: Ansible Bonus App Deployment
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, lab06 ]
     paths:
       - 'ansible/vars/app_bonus.yml'
       - 'ansible/playbooks/deploy_bonus.yml'
