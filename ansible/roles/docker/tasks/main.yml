@@ -2,9 +2,10 @@
   tags:
     - docker
     - docker_install
+  become: true
   block:
     - name: Install Docker prerequisites
-      apt:
+      ansible.builtin.apt:
         name:
           - ca-certificates
           - curl
@@ -12,52 +13,51 @@
         state: present
 
     - name: Add Docker GPG key
-      shell: |
+      ansible.builtin.shell: |
         install -m 0755 -d /etc/apt/keyrings
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
       args:
         creates: /etc/apt/keyrings/docker.asc
 
     - name: Add Docker repository
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
     - name: Install Docker packages
-      apt:
+      ansible.builtin.apt:
         name:
           - docker-ce
           - docker-ce-cli
           - containerd.io
           - python3-docker
         state: present
-        update_cache: yes
-      notify: restart docker
+        update_cache: true
+      notify: Restart Docker
   rescue:
     - name: Wait before retrying apt cache
-      wait_for:
+      ansible.builtin.wait_for:
         timeout: 10
 
     - name: Retry apt cache after failure
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
         cache_valid_time: 0
   always:
     - name: Ensure Docker service is enabled
-      service:
+      ansible.builtin.service:
         name: docker
         state: started
-        enabled: yes
-  become: true
+        enabled: true
 
 - name: Configure Docker post-installation settings
   tags:
     - docker
     - docker_config
+  become: true
   block:
     - name: Add user to docker group
-      user:
+      ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
-        append: yes
-  become: true
+        append: true

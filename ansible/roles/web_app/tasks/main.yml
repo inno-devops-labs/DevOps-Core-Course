@@ -1,56 +1,56 @@
 - name: Include wipe tasks when requested
-  include_tasks: wipe.yml
-  when: web_app_wipe | bool
   tags:
     - web_app_wipe
+  ansible.builtin.include_tasks: wipe.yml
+  when: web_app_wipe | bool
 
 - name: Deploy web application with Docker Compose
   tags:
     - app_deploy
     - compose
+  become: true
   block:
     - name: Login to Docker registry
-      docker_login:
-        username: "{{ dockerhub_username }}"
-        password: "{{ dockerhub_password }}"
+      community.docker.docker_login:
+        username: "{{ web_app_dockerhub_username }}"
+        password: "{{ web_app_dockerhub_password }}"
       no_log: true
       when:
-        - dockerhub_username is defined
-        - dockerhub_username | length > 0
-        - dockerhub_password is defined
-        - dockerhub_password | length > 0
+        - web_app_dockerhub_username is defined
+        - web_app_dockerhub_username | length > 0
+        - web_app_dockerhub_password is defined
+        - web_app_dockerhub_password | length > 0
 
     - name: Ensure compose project directory exists
-      file:
-        path: "{{ compose_project_dir }}"
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
         state: directory
         mode: "0755"
 
     - name: Template docker-compose definition
-      template:
+      ansible.builtin.template:
         src: docker-compose.yml.j2
-        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         mode: "0644"
 
     - name: Deploy stack with docker compose
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
-        project_name: "{{ app_name }}"
-        pull: "{{ docker_compose_pull }}"
+        project_src: "{{ web_app_compose_project_dir }}"
+        project_name: "{{ web_app_name }}"
+        pull: "{{ web_app_docker_compose_pull }}"
         state: present
 
     - name: Wait for application port
-      wait_for:
-        port: "{{ app_port }}"
+      ansible.builtin.wait_for:
+        port: "{{ web_app_port }}"
         delay: 5
         timeout: 45
 
     - name: Perform HTTP health check
-      uri:
-        url: "http://localhost:{{ app_port }}{{ app_healthcheck_endpoint }}"
+      ansible.builtin.uri:
+        url: "http://localhost:{{ web_app_port }}{{ web_app_healthcheck_endpoint }}"
         status_code: 200
   rescue:
     - name: Report deployment failure
-      debug:
-        msg: "Deployment failed for {{ app_name }}; inspect compose logs."
-  become: true
+      ansible.builtin.debug:
+        msg: "Deployment failed for {{ web_app_name }}; inspect compose logs."
