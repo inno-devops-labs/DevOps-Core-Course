@@ -1,7 +1,9 @@
 ---
 - name: Docker | Installation
   become: true
-  tags: [ docker, docker_install ]
+  tags:
+    - docker
+    - docker_install
   block:
     - name: Install dependencies for apt over HTTPS
       ansible.builtin.apt:
@@ -56,7 +58,9 @@
 
 - name: Docker | Configuration
   become: true
-  tags: [ docker, docker_config ]
+  tags:
+    - docker
+    - docker_config
   block:
     - name: Add user to docker group
       ansible.builtin.user:
