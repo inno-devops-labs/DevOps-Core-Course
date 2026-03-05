@@ -1,0 +1,32 @@
+---
+# Application identity
+app_name: devops-app
+app_container_name: "{{ app_name }}"
+
+# Image
+docker_image: "{{ dockerhub_username | default('') }}/{{ app_name }}"
+docker_tag: latest
+docker_image_tag: "{{ docker_tag }}"  # alias for group_vars compatibility
+
+# Ports
+app_port: 8000
+app_internal_port: 8000
+
+# Restart policy
+app_restart_policy: unless-stopped
+
+# Optional environment variables for the container
+app_env: {}
+
+# Health check
+app_health_path: /health
+app_wait_timeout: 30
+
+# Docker Compose
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Wipe logic: set to true to remove application completely.
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

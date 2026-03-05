@@ -1,0 +1,97 @@
+# Ansible Deployment: lint on PR/push, deploy on push to ansible/**
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'ansible/vars/app_python.yml'
+      - 'ansible/playbooks/deploy.yml'
+      - 'ansible/playbooks/deploy_python.yml'
+      - 'ansible/roles/common/**'
+      - 'ansible/roles/docker/**'
+      - 'ansible/roles/web_app/**'
+      - '.github/workflows/ansible-deploy.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'ansible/vars/app_python.yml'
+      - 'ansible/playbooks/deploy.yml'
+      - 'ansible/playbooks/deploy_python.yml'
+      - 'ansible/roles/common/**'
+      - 'ansible/roles/docker/**'
+      - 'ansible/roles/web_app/**'
+      - '.github/workflows/ansible-deploy.yml'
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/deploy.yml playbooks/deploy_python.yml playbooks/deploy_bonus.yml playbooks/deploy_all.yml playbooks/provision.yml playbooks/site.yml
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible and collections
+        run: |
+          pip install ansible
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Create inventory for CI
+        run: |
+          cd ansible
+          mkdir -p inventory
+          printf '%s\n' '[webservers]' "devops-lab4-vm ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }}" '' '[webservers:vars]' 'ansible_python_interpreter=/usr/bin/python3' > inventory/ci_hosts.ini
+
+      - name: Deploy Python App with Ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          cd ansible
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+          ansible-playbook playbooks/deploy_python.yml \
+            -i inventory/ci_hosts.ini \
+            --vault-password-file /tmp/vault_pass
+          rm -f /tmp/vault_pass
+
+      - name: Verify Python App
+        run: |
+          sleep 10
+          curl -f "http://${{ secrets.VM_HOST }}:8000" || exit 1
+          curl -f "http://${{ secrets.VM_HOST }}:8000/health" || exit 1

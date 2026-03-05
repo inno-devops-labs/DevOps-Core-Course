@@ -1,13 +1,64 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+# Common role: packages, users, timezone. Uses blocks for grouping and error handling.
+# Tags: packages, users, common (apply at playbook for role-level)
 
 - name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Retry apt update on failure (fix-missing)
+      ansible.builtin.apt:
+        update_cache: yes
+        update_cache_retries: 3
+        update_cache_retry_max_delay: 10
+
+    - name: Retry package install after cache fix
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log common packages block completion
+      ansible.builtin.copy:
+        content: "common packages block completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible-common-packages.log
+        mode: "0644"
+
+  become: true
+  tags:
+    - packages
+    - common
+
+- name: User management
+  block:
+    - name: Ensure devops deploy user exists (optional)
+      ansible.builtin.user:
+        name: "{{ common_deploy_user | default('devops') }}"
+        system: yes
+        shell: /bin/false
+        create_home: no
+      when: common_create_deploy_user | default(false) | bool
+
+  always:
+    - name: Log common users block completion
+      ansible.builtin.copy:
+        content: "common users block completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible-common-users.log
+        mode: "0644"
+
+  become: true
+  tags:
+    - users
+    - common
 
 - name: Set timezone
   ansible.builtin.file:
@@ -15,3 +66,6 @@
     dest: /etc/localtime
     state: link
   when: common_timezone is defined and common_timezone | length > 0
+  become: true
+  tags:
+    - common

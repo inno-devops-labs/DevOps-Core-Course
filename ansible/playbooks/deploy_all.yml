@@ -1,0 +1,27 @@
+---
+- name: Deploy All Applications
+  hosts: webservers
+  become: true
+
+  tasks:
+    - name: Deploy Python App
+      ansible.builtin.include_role:
+        name: web_app
+      vars:
+        app_name: devops-python
+        docker_image: "{{ dockerhub_username }}/devops-info-service"
+        docker_tag: latest
+        app_port: 8000
+        app_internal_port: 8000
+        compose_project_dir: "/opt/devops-python"
+
+    - name: Deploy Bonus App
+      ansible.builtin.include_role:
+        name: web_app
+      vars:
+        app_name: devops-go
+        docker_image: "{{ dockerhub_username }}/devops-info-service-go"
+        docker_tag: latest
+        app_port: 8001
+        app_internal_port: 8080
+        compose_project_dir: "/opt/devops-go"

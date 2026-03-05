@@ -71,5 +71,6 @@ docs/lab04-evidence/
 # Ansible
 *.retry
 .vault_pass
+ansible/inventory/ci_hosts.ini
 ansible/inventory/*.pyc
 __pycache__/

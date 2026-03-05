@@ -1,6 +1,8 @@
-# Ansible — Lab 5
+# Ansible — Lab 5 & 6
 
-Roles for VM provisioning (common, docker) and application deployment (app_deploy). Full report: [docs/LAB05.md](docs/LAB05.md).
+[![Ansible Deployment](https://github.com/pav0rkmert/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/pav0rkmert/DevOps-Core-Course/actions/workflows/ansible-deploy.yml) [![Ansible Deploy (Bonus)](https://github.com/pav0rkmert/DevOps-Core-Course/actions/workflows/ansible-deploy-bonus.yml/badge.svg)](https://github.com/pav0rkmert/DevOps-Core-Course/actions/workflows/ansible-deploy-bonus.yml)
+
+Roles for VM provisioning (common, docker) and application deployment (web_app with Docker Compose). Single-app: `deploy.yml`. Multi-app (Lab 6 bonus): `deploy_python.yml`, `deploy_bonus.yml`, `deploy_all.yml`. Reports: [docs/LAB05.md](docs/LAB05.md), [docs/LAB06.md](docs/LAB06.md).
 
 ## Quick start
 
@@ -27,7 +29,7 @@ Roles for VM provisioning (common, docker) and application deployment (app_deplo
    ansible-playbook playbooks/provision.yml   # second run: idempotency
    ansible-playbook playbooks/deploy.yml --vault-password-file=.vault_pass
    ```
-   Verify: `curl http://<VM-IP>:5000/health`
+   Verify: `curl http://<VM-IP>:8000/health` (or 5000 if overridden in vault)
 
 ## Structure
 
@@ -37,10 +39,15 @@ Roles for VM provisioning (common, docker) and application deployment (app_deplo
 | `inventory/yandex.yml` | Dynamic inventory for Yandex Cloud (bonus) |
 | `roles/common` | Base packages and timezone |
 | `roles/docker` | Docker install and handler |
-| `roles/app_deploy` | Docker Hub login, pull, container, health check |
+| `roles/web_app` | Docker Compose deploy, wipe logic (Lab 6) |
 | `playbooks/provision.yml` | common + docker |
-| `playbooks/deploy.yml` | app_deploy |
+| `playbooks/deploy.yml` | web_app (single app, group_vars) |
+| `playbooks/deploy_python.yml` | web_app for Python app (port 8000) |
+| `playbooks/deploy_bonus.yml` | web_app for Go app (port 8001) |
+| `playbooks/deploy_all.yml` | Deploy both apps |
 | `playbooks/site.yml` | Full run |
+| `vars/app_python.yml` | Python app variables (multi-app) |
+| `vars/app_bonus.yml` | Bonus Go app variables (multi-app) |
 | `group_vars/all.yml.example` | Variable template; real `all.yml` is vault-encrypted |
 
 ## Scripts

@@ -1,0 +1,5 @@
+---
+# Role dependencies: Docker must be installed before deploying the web app.
+# Running only this role (e.g. playbooks/deploy.yml) will automatically run docker role first.
+dependencies:
+  - role: docker
