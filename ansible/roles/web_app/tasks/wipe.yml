@@ -1,7 +1,7 @@
 ---
 - name: Wipe | stop and remove compose project
   community.docker.docker_compose_v2:
-    project_src: "{{ compose_project_dir }}"
+    project_src: "{{ web_app_compose_project_dir }}"
     state: absent
     remove_orphans: true
   become: true
@@ -9,7 +9,7 @@
 
 - name: Wipe | remove project directory
   ansible.builtin.file:
-    path: "{{ compose_project_dir }}"
+    path: "{{ web_app_compose_project_dir }}"
     state: absent
   become: true
   when: web_app_wipe | bool
