@@ -1,10 +1,42 @@
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+- name: Common | packages block
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+  rescue:
+    - name: Apt update fix-missing (rescue)
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+  always:
+    - name: Write common completion log (always)
+      ansible.builtin.copy:
+        dest: /tmp/ansible-common-complete.log
+        content: "common role completed on {{ ansible_date_time.iso8601 }}\n"
+        mode: "0644"
+  become: true
+  tags: [common, packages]
+
+- name: Common | users block
+  block:
+    - name: Ensure devops user exists
+      ansible.builtin.user:
+        name: "{{ common_devops_user | default('devops') }}"
+        groups: sudo
+        append: true
+        state: present
+
+    - name: Passwordless sudo for devops (lab automation)
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/90-devops-nopasswd
+        content: "{{ common_devops_user | default('devops') }} ALL=(ALL) NOPASSWD:ALL\n"
+        mode: "0440"
+        validate: "visudo -cf %s"
+  become: true
+  tags: [common, users]

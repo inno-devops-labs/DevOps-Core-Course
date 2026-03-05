@@ -1,0 +1,47 @@
+---
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags: [web_app_wipe]
+
+- name: Ensure compose project dir exists
+  ansible.builtin.file:
+    path: "{{ compose_project_dir }}"
+    state: directory
+    mode: "0755"
+  become: true
+  tags: [web_app]
+
+- name: Render docker-compose.yml from template
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ compose_project_dir }}/docker-compose.yml"
+    mode: "0644"
+  become: true
+  tags: [web_app]
+
+- name: Docker Hub login (Vault)
+  community.docker.docker_login:
+    username: "{{ vault_dockerhub_username }}"
+    password: "{{ vault_dockerhub_token }}"
+  no_log: true
+  tags: [web_app]
+
+- name: Deploy with Docker Compose v2
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    pull: always
+    state: present
+    recreate: auto
+    remove_orphans: true
+  become: true
+  tags: [web_app]
+
+- name: Verify app health
+  ansible.builtin.uri:
+    url: "http://localhost:{{ app_port }}/health"
+    status_code: 200
+  register: health
+  retries: 15
+  delay: 2
+  until: health.status == 200
+  tags: [web_app]

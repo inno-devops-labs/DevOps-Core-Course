@@ -15,3 +15,5 @@ app_workdir: /opt/devops-info
 app_healthcheck_url: "http://127.0.0.1:{{ app_published_port }}/health"
 app_healthcheck_retries: 15
 app_healthcheck_delay: 2
+
+web_app_wipe: false
