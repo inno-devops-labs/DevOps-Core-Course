@@ -5,4 +5,5 @@
     - ../group_vars/all.yml
   become: yes
   roles:
-    - app_deploy
+    - role: web_app
+      tags: [ web_app ]

@@ -1,3 +1,4 @@
 ---
 app_restart_policy: unless-stopped
-app_env: {}
+web_app_env: {}
+web_app_wipe: false
