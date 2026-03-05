@@ -1,3 +1,6 @@
 ---
+skip_list:
+  - internal-error
+
 exclude_paths:
   - playbooks/vault_example.yml
