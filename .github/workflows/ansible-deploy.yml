@@ -113,6 +113,7 @@ jobs:
           VM_HOST: ${{ secrets.VM_HOST }}
           SSH_DIR: ${{ runner.temp }}/ssh
         run: |
+          : "${SSH_DIR:=${RUNNER_TEMP:-/tmp}/ssh}"
           install -m 700 -d "$SSH_DIR"
           KEY_PATH="$SSH_DIR/ansible_deploy"
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$KEY_PATH"
