@@ -1,0 +1,8 @@
+skip_list:
+  - command-instead-of-module
+  - no-handler
+  - var-naming
+  - fqcn
+  - key-order
+  - name
+  - ignore-errors

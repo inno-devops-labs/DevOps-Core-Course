@@ -1,5 +1,9 @@
 ---
 - name: Docker installation
+  become: true
+  tags:
+    - docker
+    - docker_install
   block:
     - name: Install prerequisites for Docker repository
       ansible.builtin.apt:
@@ -43,18 +47,10 @@
 
     - name: Add Docker apt repository
       ansible.builtin.apt_repository:
-        repo: >-
-          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
-          https://download.docker.com/linux/ubuntu
-          {{ ansible_facts['distribution_release'] }} stable
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
-        filename: docker
       register: docker_repo
-
-    - name: Update apt cache after adding Docker repo
-      ansible.builtin.apt:
-        update_cache: true
-      when: docker_repo.changed
+      notify: Update apt cache
 
     - name: Install Docker packages
       ansible.builtin.apt:
@@ -83,13 +79,11 @@
         state: started
         enabled: true
 
+- name: Docker configuration
   become: true
   tags:
     - docker
-    - docker_install
-
-
-- name: Docker configuration
+    - docker_config
   block:
     - name: Add users to docker group
       ansible.builtin.user:
@@ -97,8 +91,3 @@
         groups: docker
         append: true
       loop: "{{ docker_users }}"
-
-  become: true
-  tags:
-    - docker
-    - docker_config
