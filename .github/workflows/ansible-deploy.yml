@@ -73,5 +73,5 @@ jobs:
       - name: Verify Deployment
         run: |
           sleep 10
-          curl -f http://${{ secrets.VM_HOST }}:8000/health
-          curl -f http://${{ secrets.VM_HOST }}:8000/
+          curl -f --max-time 15 http://${{ secrets.VM_HOST }}:5000/health
+          curl -f --max-time 15 http://${{ secrets.VM_HOST }}:5000/
