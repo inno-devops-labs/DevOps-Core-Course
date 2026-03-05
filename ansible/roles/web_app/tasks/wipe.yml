@@ -5,7 +5,8 @@
       community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"
         state: absent
-      ignore_errors: true
+      register: web_app_wipe_result
+      failed_when: false
 
     - name: Remove docker-compose.yml file
       ansible.builtin.file:

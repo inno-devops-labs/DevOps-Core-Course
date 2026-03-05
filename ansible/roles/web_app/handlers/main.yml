@@ -1,5 +1,5 @@
 ---
-- name: restart web app
+- name: Restart web app
   community.docker.docker_compose_v2:
     project_src: "{{ compose_project_dir }}"
     state: present
