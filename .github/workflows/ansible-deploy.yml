@@ -30,6 +30,10 @@ on:
       - ".github/workflows/ansible-deploy.yml"
   workflow_dispatch:
 
+concurrency:
+  group: ansible-deploy-python-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Ansible Lint (Python app)

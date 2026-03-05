@@ -30,6 +30,10 @@ on:
       - ".github/workflows/ansible-deploy-bonus.yml"
   workflow_dispatch:
 
+concurrency:
+  group: ansible-deploy-bonus-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Ansible Lint (Bonus app)
