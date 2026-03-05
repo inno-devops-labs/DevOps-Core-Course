@@ -1,0 +1,10 @@
+profile: min
+
+skip_list:
+  - var-naming[no-role-prefix]
+  - key-order[task]
+  - name[casing]
+  - risky-file-permissions
+  - ignore-errors
+  - command-instead-of-module
+  - yaml[new-line-at-end-of-file]
