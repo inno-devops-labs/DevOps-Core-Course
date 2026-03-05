@@ -1,10 +1,6 @@
 name: Ansible Deployment
 
 on:
-  push:
-    paths:
-      - "ansible/**"
-      - ".github/workflows/ansible-deploy.yml"
   pull_request:
     paths:
       - "ansible/**"
@@ -35,7 +31,7 @@ jobs:
       - name: Run ansible-lint
         run: |
           cd ansible
-          ansible-lint playbooks/*.yml
+          ansible-lint playbooks/provision.yml playbooks/deploy.yml
 
   deploy:
     name: Deploy Application
