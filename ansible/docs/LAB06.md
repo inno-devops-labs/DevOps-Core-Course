@@ -296,13 +296,11 @@ Pipeline steps:
 
 ------------------------------------------------------------------------
 
-### Deployment verification
+### Deployment
+![alt text](image-21.png)
+Unfortunetly my server is not reachable from github runner, so I guess I will have fail for Deployment CI state, sorry:(
 
-    curl http://VM_IP:5000
-
-Output:
-
-    [INSERT OUTPUT]
+![alt text](image-22.png)
 
 ------------------------------------------------------------------------
 
@@ -315,6 +313,8 @@ Temporary directory permission issue with Ansible:
 Role rename required updating playbooks and variable references.
 
 Docker compose module required installing `community.docker` collection.
+
+Server IP block from github runner
 
 ------------------------------------------------------------------------
 
