@@ -1,0 +1,54 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [ master, main, lab6 ]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+      - '!ansible/docs/**'
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint
+          cd ansible
+          ansible-lint
+
+  deploy:
+    if: github.event_name == 'push' && github.repository == 'Boogyy/DevOps-Core-Course'
+    needs: lint
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible deps
+        run: |
+          pip3 install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Deploy
+        run: |
+          cd ansible
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml --vault-password-file /tmp/vault_pass
+          rm -f /tmp/vault_pass
+
+      - name: Verify Deployment
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+        run: |
+          sleep 5
+          curl -fsS "http://${VM_HOST}:5000/health"
