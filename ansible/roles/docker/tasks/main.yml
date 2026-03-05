@@ -30,13 +30,13 @@
         state: present
 
   rescue:
-    - name: Rescue: wait and retry GPG key
+    - name: Wait and retry GPG key
       ansible.builtin.pause:
         seconds: 10
       when: docker_gpg_result is failed
 
   always:
-    - name: Always ensure Docker service is enabled and started
+    - name: Ensure Docker service is enabled and started
       ansible.builtin.service:
         name: docker
         state: started

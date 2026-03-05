@@ -1,6 +1,6 @@
 ---
 - name: Include wipe tasks
-  include_tasks: wipe.yml
+  ansible.builtin.include_tasks: wipe.yml
   when: web_app_wipe | default(false)
   tags:
     - web_app_wipe
@@ -12,7 +12,7 @@
   block:
     - name: Create application directory
       ansible.builtin.file:
-        path: "{{ compose_project_dir }}"
+        path: "{{ web_app_compose_project_dir }}"
         state: directory
         owner: root
         group: root
@@ -21,27 +21,27 @@
     - name: Template docker-compose file
       ansible.builtin.template:
         src: docker-compose.yml.j2
-        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         mode: '0644'
 
     - name: Deploy with docker compose
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         state: present
         pull: always
         remove_orphans: true
 
   rescue:
-    - name: Rescue - log failure
+    - name: Log failure
       ansible.builtin.debug:
-        msg: "Deployment failed for {{ app_name }}"
+        msg: "Deployment failed for {{ web_app_name }}"
 
   always:
-    - name: Always - check container status
-      ansible.builtin.command: docker ps --filter "name={{ app_name }}" --format "table {{.Names}}\t{{.Status}}"
-      register: container_status
+    - name: Check container status
+      ansible.builtin.command: docker ps --filter "name={{ web_app_name }}" --format "table {{.Names}}\t{{.Status}}"
+      register: web_app_container_status
       changed_when: false
 
     - name: Show container status
       ansible.builtin.debug:
-        var: container_status.stdout_lines
+        var: web_app_container_status.stdout_lines

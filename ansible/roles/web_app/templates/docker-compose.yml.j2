@@ -1,17 +1,17 @@
-version: '{{ docker_compose_version | default("3.8") }}'
+version: '{{ web_app_docker_compose_version | default("3.8") }}'
 
 services:
-  {{ app_name }}:
-    image: {{ docker_image }}:{{ docker_tag }}
-    container_name: {{ app_name }}
-    restart: {{ restart_policy | default("unless-stopped") }}
+  {{ web_app_name }}:
+    image: {{ web_app_docker_image }}:{{ web_app_docker_tag }}
+    container_name: {{ web_app_name }}
+    restart: {{ web_app_restart_policy | default("unless-stopped") }}
     ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
+      - "{{ web_app_port }}:{{ web_app_internal_port }}"
     environment:
-      PORT: "{{ app_internal_port }}"
+      PORT: "{{ web_app_internal_port }}"
       HOST: "0.0.0.0"
-      {% if app_env_vars is defined %}
-      {% for key, value in app_env_vars.items() %}
+      {% if web_app_env_vars is defined %}
+      {% for key, value in web_app_env_vars.items() %}
       {{ key }}: "{{ value }}"
       {% endfor %}
       {% endif %}

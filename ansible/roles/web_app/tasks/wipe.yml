@@ -5,7 +5,7 @@
   block:
     - name: Stop and remove containers
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         state: absent
         remove_volumes: true
         remove_orphans: true
@@ -13,14 +13,14 @@
 
     - name: Remove docker-compose file
       ansible.builtin.file:
-        path: "{{ compose_project_dir }}/docker-compose.yml"
+        path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         state: absent
 
     - name: Remove application directory
       ansible.builtin.file:
-        path: "{{ compose_project_dir }}"
+        path: "{{ web_app_compose_project_dir }}"
         state: absent
 
     - name: Log wipe completion
       ansible.builtin.debug:
-        msg: "Application {{ app_name }} wiped successfully"
+        msg: "Application {{ web_app_name }} wiped successfully"

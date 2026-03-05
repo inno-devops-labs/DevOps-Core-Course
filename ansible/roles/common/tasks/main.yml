@@ -19,13 +19,13 @@
         state: present
 
   rescue:
-    - name: Rescue: fix apt if update failed
+    - name: Fix apt if update failed
       when: ansible_os_family == "Debian"
       ansible.builtin.command: apt-get update --fix-missing
       changed_when: false
 
   always:
-    - name: Always: log completion
+    - name: Log completion
       ansible.builtin.file:
         path: /tmp/common_role_completed
         state: touch
@@ -36,7 +36,7 @@
   tags:
     - users
   block:
-    - name: Create a dedicated user
+    - name: Create dedicated user
       ansible.builtin.user:
         name: "{{ common_user | default('appuser') }}"
         state: present

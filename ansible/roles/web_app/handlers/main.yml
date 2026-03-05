@@ -1,5 +1,7 @@
 ---
 - name: restart app
-  docker_container:
-    name: "{{ app_container_name }}"
-    state: restarted
+  community.docker.docker_compose_v2:
+    project_src: "{{ web_app_compose_project_dir }}"
+    state: present
+    pull: always
+    remove_orphans: true

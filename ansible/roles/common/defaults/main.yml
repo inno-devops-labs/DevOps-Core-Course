@@ -1,3 +1,4 @@
+---
 common_packages:
   - python3-pip
   - curl
@@ -7,5 +8,5 @@ common_packages:
   - net-tools
   - tree
 
-create_app_user: false
+common_create_app_user: false
 common_user: appuser
