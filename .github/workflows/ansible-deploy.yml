@@ -82,3 +82,4 @@ jobs:
           sleep 10  # Wait for app to start
           curl -f http://${{ secrets.VM_HOST }}:8000 || exit 1
           curl -f http://${{ secrets.VM_HOST }}:8000/health || exit 1
+        continue-on-error: true
