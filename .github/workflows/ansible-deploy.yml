@@ -30,13 +30,13 @@ jobs:
 
             - name: Run ansible-lint
               env:
-                ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+                  ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
               run: |
-                cd ansible
-                echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
-                export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
-                ansible-lint playbooks/*.yml
-                rm /tmp/vault_pass
+                  cd ansible
+                  echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+                  export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
+                  ansible-lint playbooks/*.yml
+                  rm /tmp/vault_pass
 
     deploy:
         name: Deploy Application
@@ -59,7 +59,7 @@ jobs:
                   mkdir -p ~/.ssh
                   echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
                   chmod 600 ~/.ssh/id_rsa
-                  ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+                  ssh-keyscan -v -H ${{ secrets.VM_HOST }}
 
             - name: Deploy with Ansible
               env:
