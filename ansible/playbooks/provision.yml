@@ -1,8 +1,8 @@
 ﻿---
 - name: Provision infrastructure layer
   hosts: webservers
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
 
   pre_tasks:
     - name: Show start message
@@ -29,3 +29,4 @@
           - "Memory: {{ ansible_memtotal_mb }} MB"
           - "CPU: {{ ansible_processor_cores }} cores"
       tags: facts
+      

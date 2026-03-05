@@ -1,8 +1,8 @@
 ﻿---
 - name: Deploy application stack
   hosts: webservers
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
 
   vars_files:
     - ../group_vars/all.yml
@@ -27,7 +27,7 @@
         method: GET
         status_code: 200
       register: app_response
-      ignore_errors: yes
+      ignore_errors: true
       tags: verify
 
     - name: Show application response
@@ -35,3 +35,4 @@
         msg: "Application is running! Response code: {{ app_response.status }}"
       when: app_response.status is defined
       tags: verify
+      
