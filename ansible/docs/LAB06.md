@@ -477,7 +477,7 @@ wsl-local                  : ok=6    changed=3    unreachable=0    failed=0    s
 Register self-hosted runner in GitHub; install Docker and Python; add repository Secrets: `ANSIBLE_VAULT_PASSWORD` and `BECOME_PASSWORD`.
 
 ### Evidence of automated deployments
-The workflow writes a temporary vault file and runs `ansible-playbook` on the self-hosted runner; logs show successful deploy steps and health checks. Success deploy action: https://github.com/Chaleshka/DevOps-Core-Course/actions/runs/22712637817. Also you can check http://chaleshka.ru:5050 and http://chaleshka.ru:5050/health
+The workflow writes a temporary vault file and runs `ansible-playbook` on the self-hosted runner; logs show successful deploy steps and health checks. Success deploy action: https://github.com/Chaleshka/DevOps-Core-Course/actions/runs/22720230416. Also you can check http://chaleshka.ru:5050 and http://chaleshka.ru:5050/health
 
 ## 6. Challenges & Solutions
 
