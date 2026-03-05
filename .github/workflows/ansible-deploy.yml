@@ -28,7 +28,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ansible ansible-lint
-
+      - name: Write vault password file for CI
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.ansible_vault_pass
+          chmod 600 ~/.ansible_vault_pass
       - name: Run ansible-lint
         run: |
           cd ansible
