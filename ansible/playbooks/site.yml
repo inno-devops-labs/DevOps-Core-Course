@@ -1,4 +1,5 @@
 ---
+# Single entrypoint playbook.
 - name: Provision servers
   import_playbook: provision.yml
 

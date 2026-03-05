@@ -2,14 +2,14 @@ name: Ansible Deployment
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
     paths:
-      - 'ansible/**'
-      - '.github/workflows/ansible-deploy.yml'
+      - "ansible/**"
+      - ".github/workflows/ansible-deploy.yml"
   pull_request:
-    branches: [ master ]
+    branches: [master]
     paths:
-      - 'ansible/**'
+      - "ansible/**"
 
 jobs:
   lint:
@@ -19,12 +19,13 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install ansible + ansible-lint
         run: |
           pip install ansible ansible-lint
 
+      # Required for lint/syntax-check because group_vars/all.yml is Vault-encrypted.
       - name: Create vault password file
         run: |
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
@@ -45,13 +46,14 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install Ansible
         run: |
           pip install ansible
           ansible-galaxy collection install community.docker
 
+      # SSH setup for connecting to the target VM.
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -70,6 +72,7 @@ jobs:
             --vault-password-file /tmp/vault_pass
           rm /tmp/vault_pass
 
+      # Health checks with timeouts.
       - name: Verify Deployment
         run: |
           sleep 10

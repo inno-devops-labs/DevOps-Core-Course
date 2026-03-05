@@ -1,4 +1,5 @@
 ---
+# Docker role: split into install vs config blocks (separate tags).
 - name: Docker | Installation
   become: true
   tags:
@@ -16,14 +17,14 @@
 
     - name: Add Docker GPG key
       ansible.builtin.apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
+        url: "https://download.docker.com/linux/ubuntu/gpg"
         state: present
 
     - name: Add Docker repository
       ansible.builtin.apt_repository:
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
-      notify: restart docker
+      notify: Restart Docker
 
     - name: Install Docker packages
       ansible.builtin.apt:
@@ -33,16 +34,17 @@
           - containerd.io
         state: present
         update_cache: true
-      notify: restart docker
+      notify: Restart Docker
 
   rescue:
+    # Retry once on network/GPG flakiness.
     - name: Wait before retry (network/gpg flakiness)
       ansible.builtin.wait_for:
         timeout: 10
 
     - name: Retry Add Docker GPG key
       ansible.builtin.apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
+        url: "https://download.docker.com/linux/ubuntu/gpg"
         state: present
 
     - name: Retry apt update
@@ -50,6 +52,7 @@
         update_cache: true
 
   always:
+    # Ensure Docker daemon is usable even after partial failures.
     - name: Ensure Docker service is enabled and running (always)
       ansible.builtin.service:
         name: docker

@@ -1,4 +1,5 @@
 ---
+# Wipe is included first to support "clean reinstall" (wipe -> deploy).
 - name: Include wipe tasks
   ansible.builtin.include_tasks: wipe.yml
   tags:
@@ -25,7 +26,7 @@
     - name: Deploy via Docker Compose v2
       community.docker.docker_compose_v2:
         project_src: "{{ compose_project_dir }}"
-        pull: "always"
+        pull: always
         state: present
         recreate: auto
 

@@ -1,3 +1,9 @@
+# Variables:
+# - app_name: service/container name
+# - docker_image, docker_image_tag: image reference
+# - app_port, app_internal_port: host:container ports
+# - web_app_env: dict of environment variables (Vault values can be used)
+
 version: "{{ docker_compose_version }}"
 
 services:

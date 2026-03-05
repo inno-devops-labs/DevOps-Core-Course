@@ -2,6 +2,8 @@
 - name: Provision web servers
   hosts: webservers
   become: true
+
+  # Role-level tags allow selective runs: --tags docker / --skip-tags common, etc.
   roles:
     - role: common
       tags: [common]
