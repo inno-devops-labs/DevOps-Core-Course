@@ -108,8 +108,6 @@ jobs:
 
       - name: Configure SSH
         run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
           printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/ansible_deploy
           chmod 600 ~/.ssh/ansible_deploy
           if [ -n "${{ secrets.KNOWN_HOSTS }}" ]; then
