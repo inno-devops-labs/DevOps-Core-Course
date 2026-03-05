@@ -1,47 +1,89 @@
 ---
-- name: Install prerequisites for Docker
-  ansible.builtin.apt:
-    name:
-      - ca-certificates
-      - curl
-      - gnupg
-      - lsb-release
-    state: present
-    update_cache: yes
+# Docker role: installation and configuration with blocks and tags
+# Tag strategy: docker_install, docker_config, docker (role-level)
 
-- name: Add Docker official GPG key
-  ansible.builtin.apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
-  notify: restart docker
+- name: Install Docker
+  become: true
+  tags:
+    - docker_install
+    - docker
+  block:
+    - name: Install prerequisites for Docker
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: true
 
-- name: Add Docker APT repository
-  ansible.builtin.apt_repository:
-    repo: "{{ docker_apt_repo }}"
-    state: present
-    filename: docker
-  notify: restart docker
+    - name: Add Docker official GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      notify: Restart docker
 
-- name: Install Docker packages
-  ansible.builtin.apt:
-    name: "{{ docker_packages }}"
-    state: present
-    update_cache: yes
+    - name: Add Docker APT repository
+      ansible.builtin.apt_repository:
+        repo: "{{ docker_apt_repo }}"
+        state: present
+        filename: docker
+      notify: Restart docker
 
-- name: Ensure Docker service is enabled and running
-  ansible.builtin.service:
-    name: "{{ docker_service_name }}"
-    state: started
-    enabled: yes
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
 
-- name: Add user to docker group
-  ansible.builtin.user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+    - name: Install Python Docker package for Ansible modules
+      ansible.builtin.apt:
+        name: "{{ docker_python_packages }}"
+        state: present
 
-- name: Install Python Docker package for Ansible modules
-  ansible.builtin.apt:
-    name: "{{ docker_python_packages }}"
-    state: present
+  rescue:
+    - name: Wait before retrying GPG key (network timeout recovery)
+      ansible.builtin.pause:
+        seconds: 10
 
+    - name: Retry apt update
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Retry adding Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      notify: Restart docker
+
+    - name: Retry Docker repository and packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
+
+  always:
+    - name: Ensure Docker service is enabled
+      ansible.builtin.service:
+        name: "{{ docker_service_name }}"
+        state: started
+        enabled: true
+
+- name: Configure Docker
+  become: true
+  tags:
+    - docker_config
+    - docker
+  block:
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: "{{ docker_service_name }}"
+        state: started
+        enabled: true
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true

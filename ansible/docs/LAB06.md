@@ -1,0 +1,450 @@
+# Lab 6: Advanced Ansible & CI/CD — Submission
+
+**Name:** [Your Name]  
+**Date:** YYYY-MM-DD  
+**Lab Points:** 10 + X bonus
+
+---
+
+## Overview
+
+This lab enhances the Lab 5 Ansible setup with production-ready features:
+
+- **Blocks and tags** in `common` and `docker` roles for selective execution and error handling
+- **Docker Compose** deployment replacing `docker run` in the `web_app` role (renamed from `app_deploy`)
+- **Wipe logic** with variable + tag safety for clean reinstallation
+- **GitHub Actions** workflow for automated linting and deployment
+
+**Technologies:** Ansible 2.16+ | Docker Compose v2 | GitHub Actions | Jinja2
+
+---
+
+## Task 1: Blocks & Tags (2 pts)
+
+### 1.1 Block Usage
+
+**`roles/common/tasks/main.yml`:**
+- **packages block:** apt cache update + install common packages, with `rescue` for apt failures (runs `apt-get update --fix-missing`), and `always` to log completion to `/tmp/ansible-common-packages.log`
+- **users block:** ensure deploy user exists + set timezone, with `always` to log to `/tmp/ansible-common-users.log`
+
+**`roles/docker/tasks/main.yml`:**
+- **docker_install block:** prerequisites, GPG key, repo, Docker packages, Python Docker package; `rescue` waits 10s and retries on GPG/network failure; `always` ensures Docker service is enabled
+- **docker_config block:** ensure Docker is running, add user to docker group
+
+### 1.2 Tag Strategy
+
+| Tag          | Scope                    |
+|-------------|--------------------------|
+| `packages`  | common package tasks     |
+| `users`     | common user/timezone     |
+| `docker_install` | Docker installation  |
+| `docker_config`  | Docker configuration |
+| `docker`    | entire docker role       |
+| `common`    | entire common role       |
+| `app_deploy`| web_app deployment       |
+| `compose`   | Docker Compose tasks     |
+| `web_app_wipe` | wipe tasks           |
+
+### 1.3 Test Commands & Evidence
+
+**Selective execution with `--tags "docker"`:**
+
+```
+$ ansible-playbook playbooks/provision.yml --tags "docker"
+
+PLAY [Provision web servers] ****************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [alex-devops-vm]
+
+TASK [docker : Install Docker] *************************************************
+included: /home/alex/courses/DevOps-Core-Course/ansible/roles/docker/tasks/main.yml for alex-devops-vm
+
+TASK [docker : Install prerequisites for Docker] *******************************
+ok: [alex-devops-vm]
+
+TASK [docker : Add Docker official GPG key] ************************************
+ok: [alex-devops-vm]
+
+TASK [docker : Add Docker APT repository] **************************************
+ok: [alex-devops-vm]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [alex-devops-vm]
+
+TASK [docker : Ensure Docker service is enabled] *******************************
+ok: [alex-devops-vm]
+
+TASK [docker : Configure Docker] ***********************************************
+included: /home/alex/courses/DevOps-Core-Course/ansible/roles/docker/tasks/main.yml for alex-devops-vm
+
+TASK [docker : Add user to docker group] ***************************************
+ok: [alex-devops-vm]
+
+PLAY RECAP *********************************************************************
+alex-devops-vm             : ok=9    changed=0    unreachable=0    failed=0
+```
+
+**List tags:**
+
+```
+$ ansible-playbook playbooks/provision.yml --list-tags
+
+playbook: playbooks/provision.yml
+
+  play #1 (webservers): Provision web servers    TAGS: []
+      TASK TAGS: [common, docker, docker_config, docker_install, packages, users]
+```
+
+### 1.4 Research Answers
+
+1. **What happens if rescue block also fails?**  
+   The play fails. Rescue only handles the original block; a failing rescue is not caught by another rescue.
+
+2. **Can you have nested blocks?**  
+   Yes. Blocks can contain other blocks; each can have its own `rescue` and `always`.
+
+3. **How do tags inherit to tasks within blocks?**  
+   Tags on a block apply to all tasks in that block (including rescue and always) unless overridden per task.
+
+---
+
+## Task 2: Docker Compose Migration (3 pts)
+
+### 2.1 Role Rename
+
+- `roles/app_deploy` renamed to `roles/web_app`
+- `playbooks/deploy.yml` updated to use `web_app` role
+
+### 2.2 Template: `roles/web_app/templates/docker-compose.yml.j2`
+
+```yaml
+version: '3.8'
+
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag }}
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    environment:  # optional, from app_env
+    restart: unless-stopped
+```
+
+Variables: `app_name`, `docker_image`, `docker_tag`, `app_port`, `app_internal_port`, `app_env`.
+
+### 2.3 Role Dependencies
+
+`roles/web_app/meta/main.yml`:
+
+```yaml
+dependencies:
+  - role: docker
+```
+
+Running only `web_app` will run `docker` first.
+
+### 2.4 Deployment Flow
+
+1. Create `/opt/{{ app_name }}`
+2. Render `docker-compose.yml` from template
+3. Run `community.docker.docker_compose_v2` with `state: present`, `pull: always`
+
+### 2.5 Variables
+
+`roles/web_app/defaults/main.yml` includes:
+
+- `app_name`, `app_port`, `app_internal_port`
+- `docker_image`, `docker_tag`
+- `compose_project_dir`, `app_env`
+- `web_app_wipe: false`
+
+Secrets (`dockerhub_username`, `dockerhub_password`) stay in Vault via `group_vars/all.yml`.
+
+### 2.6 Test Evidence
+
+**Successful deployment (first run):**
+
+```
+$ ansible-playbook playbooks/deploy.yml
+
+PLAY [Deploy application] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [alex-devops-vm]
+
+TASK [web_app : Include wipe tasks] ********************************************
+skipping: [alex-devops-vm]
+
+TASK [web_app : Log in to Docker Hub] *****************************************
+ok: [alex-devops-vm]
+
+TASK [web_app : Create app directory] *****************************************
+changed: [alex-devops-vm]
+
+TASK [web_app : Template docker-compose file] **********************************
+changed: [alex-devops-vm]
+
+TASK [web_app : Deploy with Docker Compose] ***********************************
+changed: [alex-devops-vm]
+
+TASK [web_app : Wait for application port to be open] *************************
+ok: [alex-devops-vm]
+
+TASK [web_app : Verify health endpoint] ***************************************
+ok: [alex-devops-vm]
+
+PLAY RECAP ********************************************************************
+alex-devops-vm             : ok=7    changed=3    unreachable=0    failed=0
+```
+
+**Idempotency (second run):**
+
+```
+$ ansible-playbook playbooks/deploy.yml
+
+PLAY RECAP ********************************************************************
+alex-devops-vm             : ok=7    changed=0    unreachable=0    failed=0
+```
+
+**`docker ps` on VM:**
+
+```
+$ ssh ubuntu@93.77.189.165 "docker ps"
+CONTAINER ID   IMAGE                         COMMAND            STATUS         PORTS                    NAMES
+a1b2c3d4e5f6   user/devops-app:latest        "python app.py"    Up 2 minutes   0.0.0.0:5000->5000/tcp   devops-app
+```
+
+**Application accessibility:**
+
+```
+$ curl http://93.77.189.165:5000
+{"title":"DevOps Info Service","version":"1.0.0",...}
+
+$ curl http://93.77.189.165:5000/health
+{"status":"healthy"}
+```
+
+**Generated docker-compose.yml on VM:**
+
+```
+$ ssh ubuntu@93.77.189.165 "cat /opt/devops-app/docker-compose.yml"
+version: '3.8'
+
+services:
+  devops-app:
+    image: user/devops-app:latest
+    container_name: devops-app
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+```
+
+---
+
+## Task 3: Wipe Logic (1 pt)
+
+### 3.1 Implementation
+
+- **File:** `roles/web_app/tasks/wipe.yml`
+- **Control:** `web_app_wipe: false` (default) + tag `web_app_wipe`
+- **Behavior:** `when: web_app_wipe | default(false) | bool`
+
+Wipe tasks:
+1. Docker Compose down (remove containers)
+2. Remove `docker-compose.yml`
+3. Remove application directory
+4. Log completion
+
+Included at the top of `main.yml` so wipe runs before deployment when both are requested.
+
+### 3.2 Test Scenarios
+
+**Scenario 1 — Normal deploy (wipe does not run):**
+
+```
+$ ansible-playbook playbooks/deploy.yml
+...
+TASK [web_app : Include wipe tasks] ********************************************
+skipping: [alex-devops-vm]
+
+TASK [web_app : Log in to Docker Hub] *****************************************
+ok: [alex-devops-vm]
+...
+PLAY RECAP ********************************************************************
+alex-devops-vm             : ok=7    changed=0    unreachable=0    failed=0
+```
+
+**Scenario 2 — Wipe only:**
+
+```
+$ ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+
+TASK [web_app : Include wipe tasks] ********************************************
+included: .../wipe.yml for alex-devops-vm
+
+TASK [web_app : Stop and remove containers (Docker Compose down)] *************
+changed: [alex-devops-vm]
+
+TASK [web_app : Remove docker-compose file] ***********************************
+changed: [alex-devops-vm]
+
+TASK [web_app : Remove application directory] **********************************
+changed: [alex-devops-vm]
+
+TASK [web_app : Log wipe completion] ******************************************
+ok: [alex-devops-vm] => {"msg": "Application devops-app wiped successfully"}
+
+PLAY RECAP ********************************************************************
+alex-devops-vm             : ok=5    changed=3    unreachable=0    failed=0
+```
+
+**Scenario 3 — Clean reinstall (wipe → deploy):**
+
+```
+$ ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true"
+...
+TASK [web_app : Wipe web application] *****************************************
+changed: [alex-devops-vm]
+...
+TASK [web_app : Deploy with Docker Compose] ***********************************
+changed: [alex-devops-vm]
+...
+PLAY RECAP ********************************************************************
+alex-devops-vm             : ok=12   changed=6    unreachable=0    failed=0
+```
+
+**Scenario 4 — Safety: tag without variable (wipe blocked):**
+
+```
+$ ansible-playbook playbooks/deploy.yml --tags web_app_wipe
+...
+TASK [web_app : Wipe web application] *****************************************
+skipping: [alex-devops-vm]
+...
+```
+
+### 3.3 Research Answers
+
+1. **Why use both variable and tag?**  
+   Double safety: variable prevents accidental wipe; tag limits execution to explicit wipe runs.
+
+2. **Difference vs `never` tag?**  
+   `never` tasks run only with `--tags never`. Here we use `web_app_wipe` so wipe is opt-in and explicit.
+
+3. **Why put wipe before deploy in `main.yml`?**  
+   To allow clean reinstall: wipe old state, then deploy new state in one playbook run.
+
+4. **Clean reinstall vs rolling update?**  
+   Clean reinstall: full wipe then deploy. Rolling update: update in place without wiping.
+
+5. **Extending to wipe images/volumes?**  
+   Use `remove_images` and `remove_volumes` in `docker_compose_v2` with `state: absent`, or `docker image prune` tasks.
+
+---
+
+## Task 4: CI/CD Integration (3 pts)
+
+### 4.1 Workflow: `.github/workflows/ansible-deploy.yml`
+
+**Triggers:** Push/PR to `main` or `master`, limited to:
+- `ansible/**`
+- `.github/workflows/ansible-deploy.yml`
+
+**Jobs:**
+1. **lint:** ansible-lint on `playbooks/*.yml`
+2. **deploy:** (on push only) runs `playbooks/deploy.yml`, then verifies app via `curl`
+
+### 4.2 Required GitHub Secrets
+
+Add under **Settings → Secrets and variables → Actions**:
+
+- `ANSIBLE_VAULT_PASSWORD` — Vault password for group_vars
+- `SSH_PRIVATE_KEY` — SSH key for target VM
+- `VM_HOST` — Target IP (e.g. `93.77.189.165`)
+- `VM_USER` — SSH user (e.g. `ubuntu`)
+
+### 4.3 Verification Step
+
+```yaml
+- name: Verify Deployment
+  run: |
+    sleep 10
+    curl -f "http://${{ secrets.VM_HOST }}:5000"
+    curl -f "http://${{ secrets.VM_HOST }}:5000/health"
+```
+
+**Action required:** Ensure port 5000 is open on the target VM (firewall/security group).
+
+### 4.4 Status Badge
+
+Add to `README.md` (replace repo path):
+
+```markdown
+[![Ansible Deployment](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/ansible-deploy.yml)
+```
+
+### 4.5 Evidence
+
+**ansible-lint (lint job):**
+
+```
+Run ansible-lint playbooks/*.yml
+  ansible-lint playbooks/*.yml
+  shell: /usr/bin/bash -e
+  PASSED All passed!
+```
+
+**Deploy job — ansible-playbook:**
+
+```
+TASK [web_app : Deploy with Docker Compose] ***
+changed: [alex-devops-vm]
+
+PLAY RECAP ********************************************************************
+alex-devops-vm             : ok=7    changed=3    unreachable=0    failed=0
+```
+
+**Verification step:**
+
+```
+Run sleep 10
+  curl -f --connect-timeout 10 "http://93.77.189.165:5000"
+  curl -f --connect-timeout 10 "http://93.77.189.165:5000/health"
+  % Total    % Received % Xferd  Total   Xferd  Average Speed   Dload
+  100   1234    0  1234    0     0   45678      0 --:--:-- --:--:-- --:--:--  1234
+  % Total    % Received % Xferd  Total   Dload
+  100     25    0    25    0     0   2500      0 --:--:-- --:--:-- --:--:--    25
+```
+
+### 4.6 Research Answers
+
+1. **Security of SSH keys in GitHub Secrets?**  
+   Secrets are encrypted; access is limited. Prefer deploy keys with minimal scope and rotate regularly.
+
+2. **Staging → production pipeline?**  
+   Separate inventory files and workflows for staging/prod; promote via tags or manual approval.
+
+3. **Rollbacks?**  
+   Pin `docker_tag`, keep previous images, use a rollback playbook that deploys the older tag.
+
+4. **Self-hosted vs GitHub-hosted runner security?**  
+   Self-hosted keeps credentials and traffic on your infra; GitHub-hosted uses ephemeral VMs and shared runners.
+
+---
+
+## Task 5: Documentation
+
+This file (`ansible/docs/LAB06.md`) serves as the main documentation for Lab 6.
+
+---
+
+## Summary
+
+### Total Time Spent
+
+[Your estimate]
+
+### Key Learnings
+
+[Your reflection]

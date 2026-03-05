@@ -1,0 +1,57 @@
+---
+# Web app role: Docker Compose deployment with wipe logic
+# Tag strategy: app_deploy, compose, web_app_wipe
+
+# Wipe logic runs first (when explicitly requested via -e "web_app_wipe=true")
+- name: Include wipe tasks
+  tags:
+    - web_app_wipe
+  ansible.builtin.include_tasks: wipe.yml
+
+# Deployment with Docker Compose
+- name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+  block:
+    - name: Log in to Docker Hub
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+
+    - name: Create app directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Deploy with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        project_name: "{{ app_name }}"
+        state: present
+        pull: always
+
+    - name: Wait for application port to be open
+      ansible.builtin.wait_for:
+        port: "{{ app_port }}"
+        host: "127.0.0.1"
+        delay: 5
+        timeout: 60
+
+    - name: Verify health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ app_port }}{{ app_healthcheck_path }}"
+        status_code: 200
+        validate_certs: false
+
+  rescue:
+    - name: Log deployment failure
+      ansible.builtin.debug:
+        msg: "Deployment failed for {{ app_name }}"

@@ -1,0 +1,31 @@
+---
+# Base application name (used for service, container, and directory).
+app_name: "devops-app"
+
+# Host port (external) and container port (internal).
+# Match your Dockerfile EXPOSE and app configuration.
+app_port: 5000
+app_internal_port: 5000
+
+# Docker image and tag. Username typically from Vault (dockerhub_username).
+docker_image: "{{ dockerhub_username | default('') }}/{{ app_name }}"
+docker_tag: "latest"
+# Legacy alias for compatibility.
+docker_image_tag: "{{ docker_tag }}"
+
+# Restart policy for the container.
+app_restart_policy: "unless-stopped"
+
+# Optional environment variables for the container.
+app_env: {}
+
+# Healthcheck path inside the application.
+app_healthcheck_path: "/health"
+
+# Directory for Docker Compose project (compose file and runtime).
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Wipe logic: set to true to remove application completely.
+# Requires explicit -e "web_app_wipe=true" and optionally --tags web_app_wipe.
+# Default: false (wipe tasks do NOT run).
+web_app_wipe: false
