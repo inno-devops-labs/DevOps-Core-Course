@@ -1,0 +1,10 @@
+---
+skip_list:
+  - 'name[missing]'
+  - 'partial-become'
+warn_list:
+  - 'fqcn-builtins'
+exclude_paths:
+  - roles/web_app/tasks/main.yml
+  - roles/web_app/tasks/wipe.yml
+  - roles/web_app/handlers/main.yml

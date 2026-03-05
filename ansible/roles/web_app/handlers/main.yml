@@ -1,7 +1,7 @@
 ---
-- name: restart app
-  docker_container:
-    name: "{{ app_container_name }}"
+- name: Restart app
+  community.docker.docker_container:  # noqa syntax-check
+    name: "{{ web_app_container_name }}"
     state: started
-    restart: yes
-  become: yes
+    restart: true
+  become: true

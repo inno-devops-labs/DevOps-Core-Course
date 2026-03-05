@@ -1,53 +1,52 @@
 ---
 - name: Common role tasks
+  tags:
+    - common
   block:
     - name: Package management tasks
+      become: true
+      tags:
+        - packages
       block:
         - name: Update apt cache
-          apt:
-            update_cache: yes
+          ansible.builtin.apt:
+            update_cache: true
             cache_valid_time: 3600
 
         - name: Install common packages
-          apt:
+          ansible.builtin.apt:
             name: "{{ common_packages }}"
             state: present
 
       rescue:
         - name: Handle apt cache update failure
-          apt:
-            update_cache: yes
+          ansible.builtin.apt:
+            update_cache: true
             cache_valid_time: 3600
             update_cache_retries: 3
             update_cache_retry_max_delay: 10
 
       always:
         - name: Log package installation completion
-          copy:
+          ansible.builtin.copy:
             content: "Common packages installed at {{ ansible_date_time.iso8601 }}"
             dest: "/tmp/common-packages-installed.log"
-
-      become: yes
-      tags:
-        - packages
+            mode: '0644'
 
     - name: User management tasks
+      become: true
+      tags:
+        - users
       block:
         - name: Ensure common users exist
-          user:
+          ansible.builtin.user:
             name: "{{ item }}"
             state: present
           loop: "{{ common_users | default([]) }}"
 
       always:
         - name: Log user management completion
-          copy:
+          ansible.builtin.copy:
             content: "User management completed at {{ ansible_date_time.iso8601 }}"
             dest: "/tmp/common-users-managed.log"
-
-      become: yes
-      tags:
-        - users
-
-  tags:
-    - common
+            mode: '0644'
