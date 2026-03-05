@@ -1,5 +1,7 @@
 ---
 - name: Common | packages block
+  become: true
+  tags: [common, packages]
   block:
     - name: Update apt cache
       ansible.builtin.apt:
@@ -11,19 +13,20 @@
         name: "{{ common_packages }}"
         state: present
   rescue:
-    - name: Apt update fix-missing (rescue)
-      ansible.builtin.command: apt-get update --fix-missing
-      changed_when: false
+    - name: Apt update (rescue)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
   always:
     - name: Write common completion log (always)
       ansible.builtin.copy:
         dest: /tmp/ansible-common-complete.log
         content: "common role completed on {{ ansible_date_time.iso8601 }}\n"
         mode: "0644"
-  become: true
-  tags: [common, packages]
 
 - name: Common | users block
+  become: true
+  tags: [common, users]
   block:
     - name: Ensure devops user exists
       ansible.builtin.user:
@@ -38,5 +41,3 @@
         content: "{{ common_devops_user | default('devops') }} ALL=(ALL) NOPASSWD:ALL\n"
         mode: "0440"
         validate: "visudo -cf %s"
-  become: true
-  tags: [common, users]

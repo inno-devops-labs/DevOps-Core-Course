@@ -1,5 +1,7 @@
 ---
 - name: Docker | install block
+  become: true
+  tags: [docker, docker_install]
   block:
     - name: Ensure apt cache is updated
       ansible.builtin.apt:
@@ -20,7 +22,10 @@
 
     - name: Add Docker apt repo
       ansible.builtin.apt_repository:
-        repo: "deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        repo: >-
+          deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_distribution_release }} stable
         state: present
         filename: docker
 
@@ -49,15 +54,13 @@
         name: docker
         enabled: true
         state: started
-  become: true
-  tags: [docker, docker_install]
 
 - name: Docker | config block
+  become: true
+  tags: [docker, docker_config]
   block:
     - name: Add user to docker group
       ansible.builtin.user:
         name: "{{ docker_user }}"
         groups: docker
         append: true
-  become: true
-  tags: [docker, docker_config]

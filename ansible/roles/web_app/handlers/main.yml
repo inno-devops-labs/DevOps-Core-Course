@@ -1,5 +1,5 @@
 ---
-- name: restart app container
+- name: Restart app container
   community.docker.docker_container:
     name: "{{ app_container_name }}"
     image: "{{ app_image }}"
