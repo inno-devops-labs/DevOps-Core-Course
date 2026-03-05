@@ -2,11 +2,17 @@
 - name: Complete server setup with roles
   hosts: all
   become: yes
-  
+
   roles:
-    - common
-    - docker
-    - app_deploy
+    - role: common
+      tags:
+        - common
+    - role: docker
+      tags:
+        - docker
+    - role: web_app
+      tags:
+        - web_app
 
   post_tasks:
     - name: Display completion message

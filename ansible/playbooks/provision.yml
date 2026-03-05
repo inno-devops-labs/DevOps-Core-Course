@@ -1,0 +1,12 @@
+---
+- name: Provision server
+  hosts: all
+  become: yes
+
+  roles:
+    - role: common
+      tags:
+        - common
+    - role: docker
+      tags:
+        - docker
