@@ -1,0 +1,88 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'ansible/**'
+      - '!ansible/docs/**'
+      - '.github/workflows/ansible-deploy.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/*.yml
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible and dependencies
+        run: |
+          pip install ansible
+
+      - name: Install Ansible collections
+        run: |
+          ansible-galaxy collection install community.docker
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Write Vault password
+        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+
+      - name: Deploy with Ansible
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy.yml \
+            --vault-password-file .vault_pass
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+
+      - name: Clean up vault password file
+        if: always()
+        run: rm -f ansible/.vault_pass
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          curl -f http://${{ secrets.VM_HOST }}:8000 || exit 1
+          curl -f http://${{ secrets.VM_HOST }}:8000/health || exit 1

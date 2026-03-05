@@ -1,0 +1,9 @@
+---
+# Role metadata: ensures docker role runs before web_app
+galaxy_info:
+  role_name: web_app
+  description: Deploy a containerized web application using Docker Compose
+  min_ansible_version: "2.16"
+
+dependencies:
+  - role: docker

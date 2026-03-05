@@ -1,0 +1,22 @@
+---
+# Application identity
+app_name: devops-app
+docker_image: polinaminie/fastapi-devops-app
+docker_tag: latest
+
+# Port configuration
+app_port: 8000
+app_internal_port: 8000
+
+# Docker Compose config
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Application secret (override with Vault-encrypted value)
+app_secret_key: changeme
+
+# Wipe logic control
+# Set to true to remove the application completely before (re)deploying
+# Usage — wipe only:     ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Usage — clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

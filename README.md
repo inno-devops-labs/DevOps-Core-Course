@@ -3,6 +3,7 @@
 [![Labs](https://img.shields.io/badge/Labs-18-blue)](#labs)
 [![Exam](https://img.shields.io/badge/Exam-Optional-green)](#exam-alternative)
 [![Duration](https://img.shields.io/badge/Duration-18%20Weeks-lightgrey)](#course-roadmap)
+[![Ansible Deployment](https://github.com/polinaminie/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/polinaminie/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 
 Master **production-grade DevOps practices** through hands-on labs. Build, containerize, deploy, monitor, and scale applications using industry-standard tools.
 
@@ -19,27 +20,27 @@ Master **production-grade DevOps practices** through hands-on labs. Build, conta
 
 ## Course Roadmap
 
-| Week | Lab | Topic | Key Technologies |
-|------|-----|-------|------------------|
-| 1 | 1 | Web Application Development | Python/Go, Best Practices |
-| 2 | 2 | Containerization | Docker, Multi-stage Builds |
-| 3 | 3 | Continuous Integration | GitHub Actions, Snyk |
-| 4 | 4 | Infrastructure as Code | Terraform, Cloud Providers |
-| 5 | 5 | Configuration Management | Ansible Basics |
-| 6 | 6 | Continuous Deployment | Ansible Advanced |
-| 7 | 7 | Logging | Promtail, Loki, Grafana |
-| 8 | 8 | Monitoring | Prometheus, Grafana |
-| 9 | 9 | Kubernetes Basics | Minikube, Deployments, Services |
-| 10 | 10 | Helm Charts | Templating, Hooks |
-| 11 | 11 | Secrets Management | K8s Secrets, HashiCorp Vault |
-| 12 | 12 | Configuration & Storage | ConfigMaps, PVCs |
-| 13 | 13 | GitOps | ArgoCD |
-| 14 | 14 | Progressive Delivery | Argo Rollouts |
-| 15 | 15 | StatefulSets | Persistent Storage, Headless Services |
-| 16 | 16 | Cluster Monitoring | Kube-Prometheus, Init Containers |
-| — | **Exam Alternative Labs** | | |
-| 17 | 17 | Edge Deployment | Fly.io, Global Distribution |
-| 18 | 18 | Decentralized Storage | 4EVERLAND, IPFS, Web3 |
+| Week | Lab                       | Topic                       | Key Technologies                      |
+| ---- | ------------------------- | --------------------------- | ------------------------------------- |
+| 1    | 1                         | Web Application Development | Python/Go, Best Practices             |
+| 2    | 2                         | Containerization            | Docker, Multi-stage Builds            |
+| 3    | 3                         | Continuous Integration      | GitHub Actions, Snyk                  |
+| 4    | 4                         | Infrastructure as Code      | Terraform, Cloud Providers            |
+| 5    | 5                         | Configuration Management    | Ansible Basics                        |
+| 6    | 6                         | Continuous Deployment       | Ansible Advanced                      |
+| 7    | 7                         | Logging                     | Promtail, Loki, Grafana               |
+| 8    | 8                         | Monitoring                  | Prometheus, Grafana                   |
+| 9    | 9                         | Kubernetes Basics           | Minikube, Deployments, Services       |
+| 10   | 10                        | Helm Charts                 | Templating, Hooks                     |
+| 11   | 11                        | Secrets Management          | K8s Secrets, HashiCorp Vault          |
+| 12   | 12                        | Configuration & Storage     | ConfigMaps, PVCs                      |
+| 13   | 13                        | GitOps                      | ArgoCD                                |
+| 14   | 14                        | Progressive Delivery        | Argo Rollouts                         |
+| 15   | 15                        | StatefulSets                | Persistent Storage, Headless Services |
+| 16   | 16                        | Cluster Monitoring          | Kube-Prometheus, Init Containers      |
+| —    | **Exam Alternative Labs** |                             |                                       |
+| 17   | 17                        | Edge Deployment             | Fly.io, Global Distribution           |
+| 18   | 18                        | Decentralized Storage       | 4EVERLAND, IPFS, Web3                 |
 
 ---
 
@@ -47,23 +48,24 @@ Master **production-grade DevOps practices** through hands-on labs. Build, conta
 
 ### Grade Composition
 
-| Component | Weight | Points |
-|-----------|--------|--------|
-| **Labs (16 required)** | 80% | 160 pts |
-| **Final Exam** | 20% | 40 pts |
-| **Bonus Tasks** | Extra | +40 pts max |
-| **Total** | 100% | 200 pts |
+| Component              | Weight | Points      |
+| ---------------------- | ------ | ----------- |
+| **Labs (16 required)** | 80%    | 160 pts     |
+| **Final Exam**         | 20%    | 40 pts      |
+| **Bonus Tasks**        | Extra  | +40 pts max |
+| **Total**              | 100%   | 200 pts     |
 
 ### Exam Alternative
 
 Don't want to take the exam? Complete **both** bonus labs:
 
-| Lab | Topic | Points |
-|-----|-------|--------|
+| Lab        | Topic                  | Points |
+| ---------- | ---------------------- | ------ |
 | **Lab 17** | Fly.io Edge Deployment | 20 pts |
-| **Lab 18** | 4EVERLAND & IPFS | 20 pts |
+| **Lab 18** | 4EVERLAND & IPFS       | 20 pts |
 
 **Requirements:**
+
 - Complete both labs (17 + 18 = 40 pts, replaces exam)
 - Minimum 16/20 on each lab
 - Deadline: **1 week before exam date**
@@ -72,12 +74,12 @@ Don't want to take the exam? Complete **both** bonus labs:
 <details>
 <summary>📊 Grade Scale</summary>
 
-| Grade | Points | Percentage |
-|-------|--------|------------|
-| **A** | 180-200+ | 90-100% |
-| **B** | 150-179 | 75-89% |
-| **C** | 120-149 | 60-74% |
-| **D** | 0-119 | 0-59% |
+| Grade | Points   | Percentage |
+| ----- | -------- | ---------- |
+| **A** | 180-200+ | 90-100%    |
+| **B** | 150-179  | 75-89%     |
+| **C** | 120-149  | 60-74%     |
+| **D** | 0-119    | 0-59%      |
 
 **Minimum to Pass:** 120 points (60%)
 
@@ -87,6 +89,7 @@ Don't want to take the exam? Complete **both** bonus labs:
 <summary>📈 Grade Examples</summary>
 
 **Scenario 1: Labs + Exam**
+
 ```
 Labs: 16 × 9 = 144 pts
 Bonus: 5 labs × 2.5 = 12.5 pts
@@ -95,6 +98,7 @@ Total: 191.5 pts = 96% (A)
 ```
 
 **Scenario 2: Labs + Exam Alternative**
+
 ```
 Labs: 16 × 9 = 144 pts
 Bonus: 8 labs × 2.5 = 20 pts
@@ -119,29 +123,36 @@ Each lab is worth **10 points** (main tasks) + **2.5 points** (bonus).
 <summary>📋 Lab Categories</summary>
 
 **Foundation (Labs 1-2)**
+
 - Web app development
 - Docker containerization
 
 **CI/CD & Infrastructure (Labs 3-4)**
+
 - GitHub Actions
 - Terraform
 
 **Configuration Management (Labs 5-6)**
+
 - Ansible playbooks and roles
 
 **Observability (Labs 7-8)**
+
 - Loki logging stack
 - Prometheus monitoring
 
 **Kubernetes Core (Labs 9-12)**
+
 - K8s basics, Helm
 - Secrets, ConfigMaps
 
 **Advanced Kubernetes (Labs 13-16)**
+
 - ArgoCD, Argo Rollouts
 - StatefulSets, Monitoring
 
 **Exam Alternative (Labs 17-18)**
+
 - Fly.io, 4EVERLAND/IPFS
 
 </details>
@@ -185,15 +196,15 @@ git push -u origin lab1
 <details>
 <summary>🛠️ Required Tools</summary>
 
-| Tool | Purpose |
-|------|---------|
-| Git | Version control |
-| Docker | Containerization |
-| kubectl | Kubernetes CLI |
-| Helm | K8s package manager |
-| Minikube | Local K8s cluster |
-| Terraform | Infrastructure as Code |
-| Ansible | Configuration management |
+| Tool      | Purpose                  |
+| --------- | ------------------------ |
+| Git       | Version control          |
+| Docker    | Containerization         |
+| kubectl   | Kubernetes CLI           |
+| Helm      | K8s package manager      |
+| Minikube  | Local K8s cluster        |
+| Terraform | Infrastructure as Code   |
+| Ansible   | Configuration management |
 
 </details>
 
@@ -201,20 +212,24 @@ git push -u origin lab1
 <summary>📚 Documentation Links</summary>
 
 **Core:**
+
 - [Docker](https://docs.docker.com/)
 - [Kubernetes](https://kubernetes.io/docs/)
 - [Helm](https://helm.sh/docs/)
 
 **CI/CD:**
+
 - [GitHub Actions](https://docs.github.com/en/actions)
 - [Terraform](https://www.terraform.io/docs)
 - [Ansible](https://docs.ansible.com/)
 
 **Observability:**
+
 - [Prometheus](https://prometheus.io/docs/)
 - [Grafana](https://grafana.com/docs/)
 
 **Advanced:**
+
 - [ArgoCD](https://argo-cd.readthedocs.io/)
 - [Argo Rollouts](https://argoproj.github.io/argo-rollouts/)
 - [HashiCorp Vault](https://developer.hashicorp.com/vault/docs)
@@ -237,14 +252,17 @@ git push -u origin lab1
 <summary>🔧 Common Issues</summary>
 
 **Docker:**
+
 - Daemon not running → Start Docker Desktop
 - Permission denied → Add user to docker group
 
 **Minikube:**
+
 - Won't start → Try `--driver=docker`
 - Resource issues → Allocate more memory/CPU
 
 **Kubernetes:**
+
 - ImagePullBackOff → Check image name/registry
 - CrashLoopBackOff → Check logs: `kubectl logs <pod>`
 
