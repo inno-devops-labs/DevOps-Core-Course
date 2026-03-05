@@ -1,22 +1,27 @@
+---
 - name: Install Docker
+  become: true
+  tags:
+    - docker_install
+    - docker
   block:
 
     - name: Add Docker GPG key
-      apt_key:
+      ansible.builtin.apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
 
     - name: Add Docker repository
-      apt_repository:
+      ansible.builtin.apt_repository:
         repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
     - name: Update apt cache
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
 
     - name: Install Docker packages
-      apt:
+      ansible.builtin.apt:
         name:
           - docker-ce
           - docker-ce-cli
@@ -24,45 +29,37 @@
         state: present
 
   rescue:
-
     - name: Wait before retry
-      pause:
+      ansible.builtin.pause:
         seconds: 10
 
     - name: Retry apt update
-      apt:
-        update_cache: yes
+      ansible.builtin.apt:
+        update_cache: true
 
   always:
-
     - name: Ensure Docker service is enabled and started
-      service:
+      ansible.builtin.service:
         name: docker
         state: started
         enabled: true
 
-  become: true
-  tags:
-    - docker_install
-    - docker
-
 - name: Configure Docker
-  block:
-
-    - name: Add deploy user to docker group
-      user:
-        name: deploy
-        groups: docker
-        append: yes
-
-  always:
-
-    - name: Log docker configuration completion
-      copy:
-        content: "Docker configuration completed\n"
-        dest: /tmp/docker_config.log
-
   become: true
   tags:
     - docker_config
     - docker
+  block:
+
+    - name: Add deploy user to docker group
+      ansible.builtin.user:
+        name: deploy
+        groups: docker
+        append: true
+
+  always:
+    - name: Log docker configuration completion
+      ansible.builtin.copy:
+        content: "Docker configuration completed\n"
+        dest: /tmp/docker_config.log
+        mode: "0644"
