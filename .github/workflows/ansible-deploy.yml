@@ -27,7 +27,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install ansible ansible-lint
-          pip install docker-compose
 
       - name: Run ansible-lint
         run: |
@@ -51,8 +50,8 @@ jobs:
 
       - name: Install Ansible
         run: |
-          pip install ansible
-          pip install docker-compose
+          pip install ansible --break-system-packages
+          export PATH="$HOME/.local/bin:$PATH"
           ansible-galaxy collection install community.docker
 
       - name: Create vault password file
@@ -62,6 +61,7 @@ jobs:
 
       - name: Deploy with Ansible
         run: |
+          export PATH="$HOME/.local/bin:$PATH"
           cd ansible
           ansible-playbook playbooks/deploy.yml \
             --vault-password-file /tmp/vault_pass \

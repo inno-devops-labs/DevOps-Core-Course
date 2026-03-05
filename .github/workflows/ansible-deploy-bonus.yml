@@ -24,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install ansible ansible-lint docker-compose
+          pip install ansible ansible-lint
 
       - name: Run ansible-lint
         run: |
@@ -43,11 +43,13 @@ jobs:
 
       - name: Install Ansible
         run: |
-          pip install ansible docker-compose
+          pip install ansible --break-system-packages
+          export PATH="$HOME/.local/bin:$PATH"
           ansible-galaxy collection install community.docker
 
       - name: Deploy Bonus Application
         run: |
+          export PATH="$HOME/.local/bin:$PATH"
           cd ansible
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
           ansible-playbook playbooks/deploy_bonus.yml \
