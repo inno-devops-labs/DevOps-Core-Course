@@ -1,0 +1,21 @@
+version: '{{ docker_compose_version }}'
+
+services:
+  app:
+    image: "{{ dockerhub_username }}/devops-info-python:lab03"
+    container_name: "{{ app_name }}"
+    restart: always
+    ports:
+      - "{{ app_port }}:8080"
+    environment:
+      - DEBUG=false
+      - PORT=8080
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  default:
+    name: web_app_net

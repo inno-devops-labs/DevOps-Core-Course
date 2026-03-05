@@ -1,0 +1,70 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Lint Tools
+        run: pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          # Игнорируем специфичные предупреждения если нужно, или проверяем все плейбуки
+          ansible-lint playbooks/*.yml
+
+  deploy:
+    name: Deploy to VM
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible & Docker Deps
+        run: pip install ansible community.docker
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Run Playbook
+        run: |
+          cd ansible
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml \
+            -i inventory/hosts.ini \
+            --vault-password-file /tmp/vault_pass
+          rm /tmp/vault_pass
+
+      - name: Verify Deployment
+        run: |
+          echo "Waiting for service to start..."
+          sleep 15
+          # Проверяем основной порт и healthcheck (если он есть в приложении)
+          curl -f http://${{ secrets.VM_HOST }}:8000
+          curl -f http://${{ secrets.VM_HOST }}:8000/health || echo "Health endpoint not found, but main page is UP"

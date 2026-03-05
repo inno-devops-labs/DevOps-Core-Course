@@ -5,3 +5,4 @@ terraform.tfvars
 *.pem
 *.json
 .terraform.lock.hcl
+.vault_pass
