@@ -26,13 +26,19 @@
         group: root
       register: compose_template
 
-    - name: Deploy with docker-compose
-      community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir | default('/opt/' + app_name) }}"
-        state: present
-        pull: always
-        remove_orphans: yes
+    - name: Pull Docker images
+      command: docker compose pull
+      args:
+        chdir: "{{ compose_project_dir | default('/opt/' + app_name) }}"
+      changed_when: "'Downloaded' in pull_output.stdout or 'Pulled' in pull_output.stdout"
+      register: pull_output
+
+    - name: Deploy with docker compose up
+      command: docker compose up -d --remove-orphans
+      args:
+        chdir: "{{ compose_project_dir | default('/opt/' + app_name) }}"
       register: deploy_result
+      changed_when: "'Started' in deploy_result.stdout or 'Creating' in deploy_result.stdout"
 
     - name: Wait for application to be ready
       wait_for:

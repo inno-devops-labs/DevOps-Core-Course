@@ -1,7 +1,7 @@
 ---
 # Python application variables
 app_name: devops-python
-docker_image: "{{ dockerhub_username | default('ellilin') }}/devops-info-service"
+docker_image: "{{ dockerhub_username | default('ellilin') }}/devops-info-python"
 docker_tag: latest
 app_port: 5000
 app_internal_port: 5000

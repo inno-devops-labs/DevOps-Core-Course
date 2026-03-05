@@ -98,11 +98,13 @@
         name: python3-docker
         state: present
 
-    - name: Install docker-compose Python library
+    - name: Install docker-compose Python library (using break-system-packages for Ubuntu 24.04+)
       pip:
         name: docker-compose
         state: present
+        extra_args: --break-system-packages
       when: ansible_python.version.major >= 3
+      ignore_errors: yes
 
   rescue:
     - name: Handle Docker configuration failure

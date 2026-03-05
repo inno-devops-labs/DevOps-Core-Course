@@ -9,12 +9,12 @@
 - name: Wipe web application
   block:
     - name: Stop and remove containers
-      community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir | default('/opt/' + app_name) }}"
-        state: absent
-        remove_volumes: "{{ web_app_remove_volumes | default(false) }}"
+      command: docker compose down {{ '--volumes' if web_app_remove_volumes | default(false) | bool else '' }}
+      args:
+        chdir: "{{ compose_project_dir | default('/opt/' + app_name) }}"
       register: wipe_result
       ignore_errors: yes
+      changed_when: "'Removed' in wipe_result.stdout or 'Stopping' in wipe_result.stdout"
 
     - name: Remove docker-compose file
       file:
@@ -29,12 +29,10 @@
       ignore_errors: yes
 
     - name: Remove Docker images (optional)
-      community.docker.docker_image:
-        name: "{{ docker_image }}:{{ docker_tag | default('latest') }}"
-        state: absent
-        force_absent: yes
+      command: docker rmi -f {{ docker_image }}:{{ docker_tag | default('latest') }}
       ignore_errors: yes
       when: web_app_remove_images | default(false) | bool
+      changed_when: true
 
     - name: Log wipe completion
       debug:

@@ -1,7 +1,7 @@
 ---
 # Go/Bonus application variables
 app_name: devops-go
-docker_image: "{{ dockerhub_username | default('ellilin') }}/devops-info-service-go"
+docker_image: "{{ dockerhub_username | default('ellilin') }}/devops-info-go"
 docker_tag: latest
 app_port: 5001
 app_internal_port: 8080
