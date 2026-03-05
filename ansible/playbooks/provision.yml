@@ -4,5 +4,7 @@
   become: true
 
   roles:
-    - common
-    - docker
+    - role: common
+      tags: [common] # for lab06 added
+    - role: docker
+      tags: [docker] # for lab06 added

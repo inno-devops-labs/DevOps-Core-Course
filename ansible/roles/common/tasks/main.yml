@@ -1,15 +1,100 @@
+# Old version (lab05)
+# ---
+# - name: Update apt cache
+#   ansible.builtin.apt:
+#     update_cache: true
+#     cache_valid_time: 3600
+
+# - name: Install common packages
+#   ansible.builtin.apt:
+#     name: "{{ common_packages }}"
+#     state: present
+
+# - name: Set timezone (optional)
+#   community.general.timezone:
+#     name: "{{ common_timezone }}"
+#   when: common_set_timezone | bool
+
+# New version (lab06)
 ---
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+- name: Common | Packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
 
-- name: Set timezone (optional)
+  rescue:
+    - name: Fix apt cache (retry with --fix-missing)
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+
+    - name: Retry apt cache update
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Retry common packages install
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log completion (packages)
+      ansible.builtin.copy:
+        dest: /tmp/common_packages_done.log
+        content: "common packages finished on {{ inventory_hostname }} at {{ ansible_facts['date_time']['iso8601'] }}\n"
+        mode: "0644"
+
+  become: true
+  when: ansible_facts['os_family'] == "Debian"
+  tags:
+    - packages
+
+- name: Common | Users
+  block:
+    - name: Ensure deploy user exists
+      ansible.builtin.user:
+        name: "{{ deploy_user }}"
+        groups: "{{ deploy_user_groups | default(['sudo']) }}"
+        append: true
+        shell: /bin/bash
+        state: present
+
+    - name: Ensure SSH dir exists
+      ansible.builtin.file:
+        path: "/home/{{ deploy_user }}/.ssh"
+        state: directory
+        owner: "{{ deploy_user }}"
+        group: "{{ deploy_user }}"
+        mode: "0700"
+
+    - name: Install authorized keys
+      ansible.builtin.authorized_key:
+        user: "{{ deploy_user }}"
+        key: "{{ item }}"
+      loop: "{{ deploy_user_ssh_keys | default([]) }}"
+      when: (deploy_user_ssh_keys | default([])) | length > 0
+
+  always:
+    - name: Log completion (users)
+      ansible.builtin.copy:
+        dest: /tmp/common_users_done.log
+        content: "common users finished on {{ inventory_hostname }} at {{ ansible_facts['date_time']['iso8601'] }}\n"
+        mode: "0644"
+
+  become: true
+  tags:
+    - users
+
+- name: Common | Timezone (optional)
   community.general.timezone:
     name: "{{ common_timezone }}"
   when: common_set_timezone | bool
+  become: true
+  tags:
+    - common

@@ -1,0 +1,16 @@
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag }}
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+
+{% set env_map = app_env | default({}) %}
+{% if env_map is mapping and (env_map | length > 0) %}
+    environment:
+{%   for k, v in env_map.items() %}
+      {{ k }}: "{{ v }}"
+{%   endfor %}
+{% endif %}
+
+    restart: {{ app_restart_policy | default("unless-stopped") }}

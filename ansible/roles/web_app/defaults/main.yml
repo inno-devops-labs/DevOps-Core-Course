@@ -5,3 +5,4 @@ app_restart_policy: unless-stopped
 app_env: {}
 app_health_path: "/health"
 app_wait_timeout: 60
+web_app_wipe: false # lab06 wipe tasks do NOT run by default
