@@ -99,6 +99,11 @@ jobs:
         working-directory: ansible
         env:
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+          APP_NAME: devops-info-service
+          APP_PORT: "5000"
+          APP_INTERNAL_PORT: "5000"
+          DOCKER_IMAGE: j0cos/devops-info-service
+          DOCKER_TAG: latest
         run: |
           echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
           ansible-playbook playbooks/deploy.yml \
