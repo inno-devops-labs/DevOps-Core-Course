@@ -1,0 +1,11 @@
+---
+- name: Restart application container
+  community.docker.docker_container:
+      name: "{{ web_app_app_container_name }}"
+      image: "{{ web_app_docker_image }}:{{ web_app_docker_image_tag }}"
+      state: started
+      restart_policy: "{{ web_app_restart_policy }}"
+      published_ports:
+          - "{{ web_app_app_port }}:{{ web_app_app_port }}"
+      env: "{{ web_app_env_vars }}"
+      recreate: true

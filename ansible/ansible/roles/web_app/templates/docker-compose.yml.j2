@@ -1,0 +1,21 @@
+# Docker Compose template for web_app role
+# Variables: web_app_app_name, web_app_docker_image, web_app_docker_image_tag, web_app_app_port, web_app_app_internal_port, web_app_env_vars
+version: '{{ docker_compose_version | default("3.8") }}'
+
+services:
+  {{ web_app_app_name | default('devops-info-python') }}:
+    image: {{ web_app_docker_image }}:{{ web_app_docker_image_tag | default('latest') }}
+    container_name: {{ web_app_app_name | default('devops-info-python') }}
+    ports:
+      - "{{ web_app_app_port }}:{{ web_app_app_internal_port | default(web_app_app_port) }}"
+    environment:
+        {% for key, value in web_app_env_vars.items() %}
+        {{ key }}: "{{ value }}"
+        {% endfor %}
+    restart: unless-stopped
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    driver: bridge
