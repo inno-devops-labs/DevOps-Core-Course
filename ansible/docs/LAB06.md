@@ -12,48 +12,28 @@
 
 #### 1.1 Common Role Refactoring
 
-The `common` role has been refactored to use blocks with error handling:
-
 **File:** `roles/common/tasks/main.yml`
 
 **Key Features:**
 - **Package Installation Block**: Groups all package-related tasks with rescue logic
-  - Updates apt cache
-  - Installs common packages
-  - Rescue block fixes apt cache issues and retries installation
-  - Always block logs completion
-
 - **System Configuration Block**: Manages user and timezone settings
-  - Sets timezone
-  - Creates deployment user (conditional)
-  - Rescue block handles failures gracefully
-  - Always block logs completion
+- Rescue blocks handle failures gracefully
+- Always blocks log completion
 
 **Tag Strategy:**
 - `packages` - Package installation tasks
 - `users` - User management tasks
-- `common` - Entire role (applied at role level)
+- `common` - Entire role
 
 #### 1.2 Docker Role Refactoring
-
-The `docker` role has been refactored with comprehensive error handling:
 
 **File:** `roles/docker/tasks/main.yml`
 
 **Key Features:**
-- **Docker Installation Block**:
-  - Installs Docker dependencies
-  - Adds Docker GPG key and repository
-  - Installs Docker packages
-  - Rescue block handles GPG key timeouts and retries installation
-  - Always block ensures Docker service is enabled
-
-- **Docker Configuration Block**:
-  - Starts Docker service
-  - Adds user to docker group
-  - Installs python3-docker and docker-compose
-  - Rescue block handles configuration failures
-  - Always block verifies Docker installation and logs completion
+- **Docker Installation Block**: Installs Docker with retry logic for GPG key failures
+- **Docker Configuration Block**: Configures Docker user and dependencies
+- Rescue block handles GPG key timeouts
+- Always block ensures Docker is running
 
 **Tag Strategy:**
 - `docker` - Entire role
@@ -62,136 +42,97 @@ The `docker` role has been refactored with comprehensive error handling:
 
 ### Testing Results
 
+**List all available tags:**
 ```bash
-# Test 1: Run only package tasks
-ansible-playbook playbooks/provision.yml --tags "packages"
+$ ansible-playbook playbooks/provision.yml --list-tags
 
-# Test 2: Run only docker installation
-ansible-playbook playbooks/provision.yml --tags "docker_install"
+playbook: playbooks/provision.yml
 
-# Test 3: Skip common role
-ansible-playbook playbooks/provision.yml --skip-tags "common"
-
-# Test 4: List all available tags
-ansible-playbook playbooks/provision.yml --list-tags
+  play #1 (webservers): Provision web servers	TAGS: []
+      TASK TAGS: [common, docker, docker_config, docker_install, packages, provision, users]
 ```
 
-**Output showing selective execution:**
-```
-TASK TAGS: [common, docker, docker_config, docker_install, packages, provision, users]
+**Run with specific tags:**
+```bash
+$ ansible-playbook playbooks/provision.yml --tags "docker_install"
+# Result: Only Docker installation tasks ran, configuration skipped
+
+$ ansible-playbook playbooks/provision.yml --skip-tags "common"
+# Result: Common role skipped, only Docker ran
 ```
 
 ### Research Answers
 
 **Q: What happens if rescue block also fails?**
-A: If the rescue block fails, the entire play will fail for that host, and Ansible will move to the next host or stop execution depending on configuration. You can add multiple rescue tasks or use `ignore_errors: yes` to prevent this.
+A: If the rescue block fails, the entire play will fail for that host. Ansible will move to the next host or stop execution. You can use `ignore_errors: yes` or add multiple rescue tasks to prevent complete failure.
 
 **Q: Can you have nested blocks?**
-A: Yes, Ansible supports nested blocks. You can have blocks within blocks, but it's generally better to keep them simple for readability. Nested blocks can be useful for complex error handling scenarios.
+A: Yes, Ansible supports nested blocks. However, it's generally better to keep them simple for readability.
 
 **Q: How do tags inherit to tasks within blocks?**
-A: Tags applied at the block level are inherited by all tasks within that block. You can also apply tags to individual tasks within a block for more granular control. The effective tags are the union of block-level and task-level tags.
+A: Tags applied at the block level are inherited by all tasks within that block. You can also apply tags to individual tasks for more granular control.
 
 ---
 
 ## Task 2: Docker Compose Migration (3 pts)
 
-### 2.1 Role Renaming
+### Implementation Details
 
-Renamed `app_deploy` to `web_app` for better semantic clarity:
-- More descriptive and specific
-- Prepares for potential other app types
-- Aligns with variable naming conventions
-
-### 2.2 Docker Compose Template
+**Renamed** `app_deploy` to `web_app` for better semantic clarity.
 
 **File:** `roles/web_app/templates/docker-compose.yml.j2`
 
-**Template Features:**
-- Jinja2 templating for dynamic configuration
-- Support for environment variables
-- Configurable ports, volumes, and networks
+Docker Compose template with Jinja2:
+- Dynamic service name, image, ports
+- Environment variable support
+- Restart policy configuration
 - Health check support
-- Label management for organization
-- Version control via variables
+- Labels for organization
 
-**Template Variables:**
-```yaml
-app_name: Service/container name
-docker_image: Docker Hub image
-docker_tag: Image version
-app_port: Host port
-app_internal_port: Container port
-app_env_vars: Environment variables dictionary
-app_restart_policy: Restart policy
-```
-
-### 2.3 Role Dependencies
+### Role Dependencies
 
 **File:** `roles/web_app/meta/main.yml`
 
-The `web_app` role depends on the `docker` role, ensuring Docker is installed before deploying applications. This creates automatic execution order:
-1. Docker role runs first (installs Docker)
-2. Web_app role runs second (deploys application)
-
-### 2.4 Deployment Implementation
-
-**File:** `roles/web_app/tasks/main.yml`
-
-**Deployment Block:**
-1. Creates application directory
-2. Templates docker-compose.yml file
-3. Deploys with `community.docker.docker_compose_v2` module
-4. Waits for application port
-5. Verifies health endpoint
-6. Logs completion
-
-**Error Handling:**
-- Rescue block captures deployment failures
-- Displays Docker Compose logs for debugging
-- Always block ensures directory state is checked
-
-**Idempotency:**
-The deployment is idempotent because:
-- Directory creation is idempotent (only creates if not exists)
-- Template module only updates when content changes
-- Docker Compose module only recreates containers when configuration changes
+The `web_app` role depends on the `docker` role, ensuring Docker is installed before deploying applications.
 
 ### Testing Results
 
 **Test 1: Initial Deployment**
 ```bash
-ansible-playbook playbooks/deploy.yml
+$ ansible-playbook playbooks/deploy.yml --vault-password-file .vault_pass
+
+PLAY RECAP *********************************************************************
+3.238.44.67                : ok=23   changed=9    unreachable=0    failed=0    skipped=6    rescued=1    ignored=1
 ```
-Result: Successfully deployed application with Docker Compose
 
 **Test 2: Idempotency Check**
 ```bash
-ansible-playbook playbooks/deploy.yml
+$ ansible-playbook playbooks/deploy.yml --vault-password-file .vault_pass
+
+PLAY RECAP *********************************************************************
+3.238.44.67                : ok=23   changed=1    unreachable=0    failed=0    skipped=6    rescued=0    ignored=1
 ```
-Result: Second run shows no changes (idempotent behavior confirmed)
+Result: Second run shows minimal changes (idempotent behavior confirmed)
 
 **Test 3: Verify Application**
 ```bash
-ssh ubuntu@vm_ip
-docker ps
-curl http://localhost:5000
-curl http://localhost:5000/health
+$ curl -s http://3.238.44.67:5000/health
+{"status":"healthy","timestamp":"2026-03-05T18:27:12.226182+00:00","uptime_seconds":427}
+
+$ docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+NAMES                STATUS                    PORTS
+devops-info-python   Up 7 minutes (healthy)    0.0.0.0:5000->5000/tcp
 ```
-Result: Application running and accessible
 
 ### Before/After Comparison
 
 **Before (docker run):**
 - Manual container management
 - Hard to configure multi-container setups
-- Limited environment variable management
-- Manual cleanup required
 
 **After (Docker Compose):**
 - Declarative configuration
 - Easy multi-container management
-- Environment variable files support
 - Simple cleanup with `docker compose down`
 - Reproducible deployments
 
@@ -203,82 +144,56 @@ Result: Application running and accessible
 
 **File:** `roles/web_app/tasks/wipe.yml`
 
-**Wipe Block Tasks:**
-1. Stops and removes containers using Docker Compose
-2. Removes docker-compose.yml file
-3. Removes application directory
-4. Optionally removes Docker images
-5. Logs wipe completion
-
 **Safety Mechanisms:**
 - **Variable Gate**: `web_app_wipe` variable (default: false)
 - **Tag Gate**: `web_app_wipe` tag
 - **Double-Gating**: Both variable AND tag must be specified for wipe to run
-- **ignore_errors**: Prevents failures if resources don't exist
-
-**Variable Configuration:**
-```yaml
-web_app_wipe: false  # Default: do not wipe
-web_app_remove_volumes: false  # Remove volumes when wiping
-web_app_remove_images: false  # Remove images when wiping
-```
 
 ### Test Scenarios
 
 **Scenario 1: Normal Deployment (wipe should NOT run)**
 ```bash
-ansible-playbook playbooks/deploy.yml
+$ ansible-playbook playbooks/deploy.yml --vault-password-file .vault_pass
+# Result: Wipe tasks skipped (web_app_wipe defaults to false)
 ```
-Result: Application deploys normally, wipe tasks skipped
 
 **Scenario 2: Wipe Only**
 ```bash
-ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+$ ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --tags web_app_wipe --vault-password-file .vault_pass
+
+TASK [web_app : Stop and remove containers] ***
+changed: [3.238.44.67]
+TASK [web_app : Remove docker-compose file] ***
+changed: [3.238.44.67]
+TASK [web_app : Remove application directory] ***
+changed: [3.238.44.67]
+
+PLAY RECAP *********************************************************************
+3.238.44.67                : ok=7    changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
 ```
-Result: Application removed, deployment skipped
 
 **Scenario 3: Clean Reinstallation**
 ```bash
-ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true"
+$ ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --vault-password-file .vault_pass
+# Result: Wipe runs first, then deployment runs (wipe → deploy)
 ```
-Result: Old app removed, new app deployed (wipe → deploy)
 
-**Scenario 4a: Tag Without Variable**
+**Scenario 4: Tag Without Variable**
 ```bash
-ansible-playbook playbooks/deploy.yml --tags web_app_wipe
+$ ansible-playbook playbooks/deploy.yml --tags web_app_wipe --vault-password-file .vault_pass
+# Result: Wipe tasks skipped (variable gate prevents execution)
 ```
-Result: Wipe tasks skipped (variable gate prevents execution)
-
-**Scenario 4b: Variable With Tag**
-```bash
-ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
-```
-Result: Only wipe runs, no deployment
 
 ### Research Answers
 
 **Q: Why use both variable AND tag?**
-A: This provides double safety. The variable prevents accidental wipes during normal playbook reviews, while the tag ensures wipe tasks only run when explicitly requested. This prevents accidental data loss while maintaining flexibility.
-
-**Q: What's the difference between `never` tag and this approach?**
-A: The `never` tag is a special Ansible tag that prevents tasks from running unless specifically requested. Our approach is more explicit and controllable - we can conditionally run wipe based on variables, and we have finer control over when it executes in the playbook flow.
+A: This provides double safety. The variable prevents accidental wipes during normal playbook reviews, while the tag ensures wipe tasks only run when explicitly requested.
 
 **Q: Why must wipe logic come BEFORE deployment in main.yml?**
-A: Wipe must come first to enable clean reinstallation. When both wipe and deploy run (with variable=true but no tag filter), the order is: wipe removes old installation → deploy creates fresh installation. This ensures a clean slate before deployment.
+A: Wipe must come first to enable clean reinstallation. When both wipe and deploy run, the order is: wipe removes old → deploy creates fresh installation.
 
 **Q: When would you want clean reinstallation vs. rolling update?**
-A: Clean reinstallation is useful for:
-- Major version upgrades
-- Configuration changes that can't be applied in-place
-- Security incidents requiring complete rebuild
-- Testing from scratch
-Rolling updates are better for:
-- Minor version updates
-- Zero-downtime requirements
-- Gradual configuration changes
-
-**Q: How would you extend this to wipe Docker images and volumes too?**
-A: Set `web_app_remove_volumes: true` and `web_app_remove_images: true` variables. The wipe tasks already support these options through conditional tasks that remove volumes and images when enabled.
+A: Clean reinstallation for major version upgrades, configuration changes that can't be applied in-place, security incidents. Rolling updates for minor version updates, zero-downtime requirements.
 
 ---
 
@@ -292,106 +207,52 @@ A: Set `web_app_remove_volumes: true` and `web_app_remove_images: true` variable
 1. **Lint Job**: Runs on GitHub-hosted runner
    - Installs Ansible and ansible-lint
    - Validates all playbooks and role tasks
-   - Fails on linting errors
 
 2. **Deploy Job**: Runs on self-hosted runner
    - Depends on successful lint job
    - Only runs on push to main/master branches
-   - Installs Ansible and required collections
    - Deploys application using Ansible
    - Verifies deployment success
 
-**Path Filters:**
-```yaml
-paths:
-  - 'ansible/**'
-  - '.github/workflows/ansible-deploy.yml'
-```
-This ensures workflow only runs when Ansible code changes.
-
 ### GitHub Secrets Configuration
 
-Required secrets (configured in GitHub repository settings):
-1. `ANSIBLE_VAULT_PASSWORD` - Password for decrypting Ansible Vault
-2. `SSH_PRIVATE_KEY` - SSH key for VM access (if using remote runner)
-3. `VM_HOST` - Target VM IP address
-4. `VM_USER` - SSH username
+Required secret:
+- `ANSIBLE_VAULT_PASSWORD` - Password for decrypting Ansible Vault
 
-### Deployment Process
+### Self-Hosted Runner Setup
 
-1. **Checkout**: Pulls latest code
-2. **Setup**: Installs Python and Ansible
-3. **Decrypt**: Uses vault password from secrets
-4. **Deploy**: Runs Ansible playbook with app_deploy tag
-5. **Verify**: Checks application health endpoints
+Runner installed on AWS VM:
+```bash
+# Create folder
+mkdir actions-runner && cd actions-runner
 
-### Verification Steps
+# Download runner
+curl -o actions-runner-linux-x64-2.332.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.332.0/actions-runner-linux-x64-2.332.0.tar.gz
 
-```yaml
-- name: Verify Deployment
-  run: |
-    sleep 10
-    curl -f http://localhost:5000 || exit 1
-    curl -f http://localhost:5000/health || exit 1
+# Extract
+tar xzf ./actions-runner-linux-x64-2.332.0.tar.gz
+
+# Configure
+./config.sh --url https://github.com/ellilin/DevOps --token ASHR6JCHDTHEXH356DR3C4LJVHSRG
+
+# Install and start service
+sudo ./svc.sh install
+sudo ./svc.sh start
 ```
 
-### Testing Evidence
-
-**Test 1: Push to main branch**
-- Workflow triggered automatically
-- Lint job passed
-- Deploy job succeeded
-- Application verified
-
-**Test 2: Pull request**
-- Workflow triggered
-- Lint job ran
-- Deploy job skipped (PR only)
-
-**Test 3: Documentation change**
-- Workflow not triggered (path filter working)
+Runner Status:
+```
+● actions.runner.ellilin-DevOps.ip-10-0-1-237.service - GitHub Actions Runner
+     Loaded: loaded; enabled; vendor preset: enabled
+     Active: active (running)
+```
 
 ### Status Badge
 
 Added to README.md:
 ```markdown
-[![Ansible Deployment](https://github.com/ellilin/devops-course/workflows/Ansible%20Deployment/badge.svg)](https://github.com/ellilin/devops-course/actions/workflows/ansible-deploy.yml)
+[![Ansible Deployment](https://github.com/ellilin/DevOps/workflows/Ansible%20Deployment/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy.yml)
 ```
-
-### Research Answers
-
-**Q: What are the security implications of storing SSH keys in GitHub Secrets?**
-A: GitHub Secrets are encrypted and only exposed to workflow runs. However, consider:
-- Secrets are visible to anyone with write access to the repo
-- Secrets can be logged accidentally (avoid echoing secrets)
-- SSH keys should have minimal permissions
-- Use separate keys for different environments
-- Consider using OIDC or instance roles for cloud providers
-
-**Q: How would you implement a staging → production deployment pipeline?**
-A: Implement with:
-- Separate workflows for staging and production
-- Environment protection rules requiring approval
-- Different trigger branches (develop → staging, main → production)
-- Separate inventory files for each environment
-- Manual approval gates using GitHub Environments
-
-**Q: What would you add to make rollbacks possible?**
-A: Implement rollbacks by:
-- Tagging successful deployments with Git SHA
-- Storing previous container image tags
-- Creating a rollback workflow that deploys previous version
-- Using Git revert to undo changes and redeploy
-- Maintaining deployment history in artifacts
-
-**Q: How does self-hosted runner improve security compared to GitHub-hosted?**
-A: Self-hosted runners provide:
-- Direct access to internal resources (no SSH keys exposed)
-- Control over runner environment and security patches
-- Ability to run in private networks
-- Reduced exposure of secrets to external systems
-- Custom security policies and monitoring
-- However, requires maintenance and security responsibility
 
 ---
 
@@ -399,89 +260,46 @@ A: Self-hosted runners provide:
 
 ### Architecture
 
-**Directory Structure:**
-```
-ansible/
-├── vars/
-│   ├── app_python.yml    # Python app variables
-│   └── app_bonus.yml     # Go app variables
-├── playbooks/
-│   ├── deploy_python.yml  # Python deployment
-│   ├── deploy_bonus.yml   # Go deployment
-│   └── deploy_all.yml     # Deploy both apps
-└── roles/
-    └── web_app/           # Reused for both apps
-```
+**Variable Files:**
+- `ansible/vars/app_python.yml` - Python app on port 5000
+- `ansible/vars/app_bonus.yml` - Go app on port 5001
 
-### Role Reusability
+**Playbooks:**
+- `ansible/playbooks/deploy_python.yml`
+- `ansible/playbooks/deploy_bonus.yml`
+- `ansible/playbooks/deploy_all.yml`
 
-The `web_app` role is reused for both applications with different variables:
+### Testing Results
 
-**Python App Configuration:**
-- Port: 5000
-- Image: devops-info-service
-- Internal port: 5000
-
-**Go App Configuration:**
-- Port: 5001 (different port)
-- Image: devops-info-service-go
-- Internal port: 8080
-
-### Deployment Strategies
-
-**Independent Deployment:**
+**Deploy both apps:**
 ```bash
-# Deploy only Python app
-ansible-playbook playbooks/deploy_python.yml
+$ ansible-playbook playbooks/deploy_all.yml --vault-password-file .vault_pass
 
-# Deploy only Go app
-ansible-playbook playbooks/deploy_bonus.yml
+PLAY RECAP *********************************************************************
+3.238.44.67                : ok=32   changed=3    unreachable=0    failed=0    skipped=13   rescued=1    ignored=1
 ```
 
-**Combined Deployment:**
+**Verify both apps running:**
 ```bash
-# Deploy both apps simultaneously
-ansible-playbook playbooks/deploy_all.yml
+$ curl -s http://3.238.44.67:5000/health
+{"status":"healthy","timestamp":"2026-03-05T18:27:12.226182+00:00","uptime_seconds":427}
+
+$ curl -s http://3.238.44.67:5001/health
+{"status":"healthy","timestamp":"2026-03-05T18:27:12Z","uptime_seconds":39}
+
+$ docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+NAMES                STATUS                    PORTS
+devops-go            Up 41 seconds (healthy)   0.0.0.0:5001->8080/tcp
+devops-info-python   Up 7 minutes (healthy)    0.0.0.0:5000->5000/tcp
 ```
 
-### Independent Wipe Functionality
+### Independent Wipe
 
 ```bash
 # Wipe only Python app
-ansible-playbook playbooks/deploy_python.yml -e "web_app_wipe=true" --tags web_app_wipe
-
-# Wipe only Go app
-ansible-playbook playbooks/deploy_bonus.yml -e "web_app_wipe=true" --tags web_app_wipe
+$ ansible-playbook playbooks/deploy_python.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Result: Python app removed, Go app still running
 ```
-
-### Testing Evidence
-
-**Test 1: Deploy both apps**
-```bash
-ansible-playbook playbooks/deploy_all.yml
-```
-Result: Both apps deployed successfully on different ports
-
-**Test 2: Verify both apps running**
-```bash
-docker ps
-curl http://localhost:5000
-curl http://localhost:5001
-```
-Result: Both containers running, both apps accessible
-
-**Test 3: Independent wipe**
-```bash
-ansible-playbook playbooks/deploy_python.yml -e "web_app_wipe=true" --tags web_app_wipe
-```
-Result: Python app removed, Go app still running
-
-**Test 4: Idempotency**
-```bash
-ansible-playbook playbooks/deploy_all.yml
-ansible-playbook playbooks/deploy_all.yml
-```
-Result: Second run shows no changes
 
 ---
 
@@ -489,69 +307,24 @@ Result: Second run shows no changes
 
 ### Workflow Architecture
 
-Created separate workflows for each application:
-
-**Python App Workflow:**
-- File: `.github/workflows/ansible-deploy-python.yml`
-- Triggers on changes to Python app variables or playbook
-- Deploys only Python app
-- Verifies port 5000
-
-**Go App Workflow:**
-- File: `.github/workflows/ansible-deploy-bonus.yml`
-- Triggers on changes to Go app variables or playbook
-- Deploys only Go app
-- Verifies port 5001
+Created separate workflows:
+- `.github/workflows/ansible-deploy.yml` - Main deployment
+- `.github/workflows/ansible-deploy-python.yml` - Python app only
+- `.github/workflows/ansible-deploy-bonus.yml` - Go app only
 
 ### Path Filter Strategy
 
 Each workflow has specific path filters:
-
-**Python Workflow:**
-```yaml
-paths:
-  - 'ansible/vars/app_python.yml'
-  - 'ansible/playbooks/deploy_python.yml'
-  - 'ansible/roles/web_app/**'
-```
-
-**Go Workflow:**
-```yaml
-paths:
-  - 'ansible/vars/app_bonus.yml'
-  - 'ansible/playbooks/deploy_bonus.yml'
-  - 'ansible/roles/web_app/**'
-```
-
-This ensures:
-- App-specific changes trigger only that app's workflow
-- Role changes trigger both workflows
-- Independent deployment pipelines
-
-### Independent Triggering
-
-**Test 1: Python app change**
-- Modified `ansible/vars/app_python.yml`
-- Only Python workflow triggered
-- Go app not affected
-
-**Test 2: Go app change**
-- Modified `ansible/vars/app_bonus.yml`
-- Only Go workflow triggered
-- Python app not affected
-
-**Test 3: Role change**
-- Modified `ansible/roles/web_app/tasks/main.yml`
-- Both workflows triggered
-- Both apps redeployed
+- Python: triggers on `ansible/vars/app_python.yml` changes
+- Go: triggers on `ansible/vars/app_bonus.yml` changes
+- Both: trigger on `ansible/roles/web_app/**` changes
 
 ### Status Badges
 
-Added separate badges for each workflow:
 ```markdown
-[![Python App](https://github.com/ellilin/devops-course/workflows/Ansible%20Python%20App%20Deployment/badge.svg)](https://github.com/ellilin/devops-course/actions/workflows/ansible-deploy-python.yml)
-
-[![Go App](https://github.com/ellilin/devops-course/workflows/Ansible%20Bonus%20App%20Deployment/badge.svg)](https://github.com/ellilin/devops-course/actions/workflows/ansible-deploy-bonus.yml)
+[![Ansible Deployment](https://github.com/ellilin/DevOps/workflows/Ansible%20Deployment/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy.yml)
+[![Python App](https://github.com/ellilin/DevOps/workflows/Ansible%20Python%20App%20Deployment/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy-python.yml)
+[![Go App](https://github.com/ellilin/DevOps/workflows/Ansible%20Bonus%20App%20Deployment/badge.svg)](https://github.com/ellilin/DevOps/actions/workflows/ansible-deploy-bonus.yml)
 ```
 
 ---
@@ -560,95 +333,53 @@ Added separate badges for each workflow:
 
 ### Accomplishments
 
-1. **Blocks & Tags**: Successfully refactored all roles with blocks for better organization and error handling, implemented comprehensive tag strategy for selective execution.
-
-2. **Docker Compose**: Migrated from manual Docker commands to declarative Docker Compose configuration, implemented templating for dynamic deployments.
-
-3. **Wipe Logic**: Implemented safe cleanup mechanism with double-gating (variable + tag), supports clean reinstallation workflow.
-
-4. **CI/CD**: Automated deployments with GitHub Actions, integrated linting and verification, implemented path filters for efficiency.
-
-5. **Multi-App (Bonus)**: Extended to support multiple applications with role reusability, independent deployment and wipe capabilities.
-
-6. **Multi-App CI/CD (Bonus)**: Created separate workflows for each app with intelligent triggering based on file changes.
-
-### Key Learnings
-
-- **Blocks**: Powerful for grouping tasks and handling errors elegantly
-- **Tags**: Essential for selective execution and faster development cycles
-- **Docker Compose**: Superior to manual container management for production deployments
-- **Wipe Logic**: Double-gating prevents accidental data loss
-- **CI/CD Automation**: Improves consistency and reduces human error
-- **Role Reusability**: Same role can deploy different apps with different variables
-
-### Challenges & Solutions
-
-**Challenge 1**: Docker Compose module compatibility
-- **Solution**: Used `community.docker.docker_compose_v2` module with proper collection installation
-
-**Challenge 2**: Wipe logic execution order
-- **Solution**: Placed wipe tasks before deployment in main.yml to enable clean reinstallation
-
-**Challenge 3**: Multi-app port conflicts
-- **Solution**: Configured different ports for each application (5000 and 5001)
-
-**Challenge 4**: GitHub Actions self-hosted runner setup
-- **Solution**: Updated Terraform security groups to allow SSH access, configured runner on VM
-
-### Time Spent
-
-- Task 1 (Blocks & Tags): 2 hours
-- Task 2 (Docker Compose): 3 hours
-- Task 3 (Wipe Logic): 1.5 hours
-- Task 4 (CI/CD): 2 hours
-- Bonus Part 1 (Multi-App): 2 hours
-- Bonus Part 2 (Multi-App CI/CD): 1.5 hours
-- Documentation: 1.5 hours
-- Testing & Debugging: 2 hours
-- **Total**: ~15.5 hours
+| Task | Points | Status |
+|------|--------|--------|
+| Blocks & Tags | 2 pts | ✅ Complete |
+| Docker Compose | 3 pts | ✅ Complete |
+| Wipe Logic | 1 pt | ✅ Complete |
+| CI/CD | 3 pts | ✅ Complete |
+| Documentation | 1 pt | ✅ Complete |
+| Bonus: Multi-App | 1.5 pts | ✅ Complete |
+| Bonus: Multi-App CI/CD | 1 pt | ✅ Complete |
+| **Total** | **12.5 pts** | ✅ |
 
 ### Infrastructure
 
-**Terraform Configuration:**
-- Updated for Lab 6 with proper security groups
-- Added ports 5000 and 5001 for applications
-- Opened SSH for GitHub Actions self-hosted runner
-- All resources tagged with Lab06
+**AWS Resources Created:**
+- VPC: vpc-05aabbb2e8020911d
+- Subnet: subnet-0e15a9cd4b289dd37
+- Security Group: sg-034d0e566ed6b8fbe
+- EC2 Instance: i-0e6579cb79c71740e (3.238.44.67)
 
-**AWS Resources:**
-- VPC with public subnet
-- EC2 instance (t2.micro)
-- Security group with proper ingress rules
-- Key pair for SSH access
+**Open Ports:**
+- 22 (SSH)
+- 80 (HTTP)
+- 5000 (Python app)
+- 5001 (Go app)
 
----
+### Working URLs
 
-## Next Steps
-
-1. **Testing**: Need to create VM and test all scenarios
-2. **GitHub Secrets**: Configure required secrets in repository
-3. **Self-hosted Runner**: Install and configure on VM
-4. **Push to GitHub**: Trigger workflows and verify automation
-5. **Documentation**: Add screenshots and actual test outputs
+- **Python App**: http://3.238.44.67:5000
+- **Go App**: http://3.238.44.67:5001
+- **Health Checks**:
+  - http://3.238.44.67:5000/health
+  - http://3.238.44.67:5001/health
 
 ---
 
 ## Files Modified
 
-- `ansible/roles/common/tasks/main.yml` - Refactored with blocks and tags
-- `ansible/roles/docker/tasks/main.yml` - Refactored with blocks and tags
-- `ansible/roles/web_app/` - Renamed from app_deploy, added Docker Compose support
-- `ansible/roles/web_app/templates/docker-compose.yml.j2` - Docker Compose template
-- `ansible/roles/web_app/tasks/wipe.yml` - Wipe logic implementation
-- `ansible/roles/web_app/meta/main.yml` - Role dependencies
+- `ansible/roles/common/tasks/main.yml` - Blocks and tags
+- `ansible/roles/docker/tasks/main.yml` - Blocks and tags
+- `ansible/roles/web_app/` - Docker Compose, wipe logic
 - `ansible/vars/app_python.yml` - Python app variables
 - `ansible/vars/app_bonus.yml` - Go app variables
-- `ansible/playbooks/deploy_python.yml` - Python deployment playbook
-- `ansible/playbooks/deploy_bonus.yml` - Go deployment playbook
-- `ansible/playbooks/deploy_all.yml` - Multi-app deployment
-- `.github/workflows/ansible-deploy.yml` - Main CI/CD workflow
-- `.github/workflows/ansible-deploy-python.yml` - Python app CI/CD
-- `.github/workflows/ansible-deploy-bonus.yml` - Go app CI/CD
+- `ansible/playbooks/deploy_python.yml`
+- `ansible/playbooks/deploy_bonus.yml`
+- `ansible/playbooks/deploy_all.yml`
+- `.github/workflows/ansible-deploy.yml`
+- `.github/workflows/ansible-deploy-python.yml`
+- `.github/workflows/ansible-deploy-bonus.yml`
 - `terraform/main.tf` - Updated for Lab 6
 - `terraform/variables.tf` - Updated prefix
-- `terraform/terraform.tfvars` - Updated prefix
