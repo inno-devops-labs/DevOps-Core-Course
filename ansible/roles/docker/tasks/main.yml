@@ -83,4 +83,3 @@
         dest: /tmp/ansible_docker_config.log
         content: "docker config block completed at {{ ansible_date_time.iso8601 }}\n"
         mode: "0644"
-
