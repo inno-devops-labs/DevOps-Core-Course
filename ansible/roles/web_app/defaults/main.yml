@@ -11,8 +11,7 @@ app_healthcheck_endpoint: /health
 
 # Compose configuration
 compose_project_dir: "/opt/{{ app_name }}"
-docker_compose_version: "3.8"
-docker_compose_pull: true
+docker_compose_pull: "always"  # valid values: always, missing, never, policy
 web_app_environment: {}
 
 # Registry credentials (override with Vault as needed)

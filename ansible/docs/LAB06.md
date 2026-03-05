@@ -92,7 +92,7 @@ ansible-playbook playbooks/provision.yml --list-tags
 
 **Output**
 
-    [INSERT TERMINAL OUTPUT HERE]
+![alt text](image-7.png)
 
 ------------------------------------------------------------------------
 
@@ -106,7 +106,7 @@ ansible-playbook playbooks/provision.yml --tags docker --list-tasks
 
 **Output**
 
-    [INSERT TERMINAL OUTPUT HERE]
+![alt text](image-8.png)
 
 ------------------------------------------------------------------------
 
@@ -155,7 +155,7 @@ ansible-playbook playbooks/deploy.yml --syntax-check
 
 Output:
 
-    [INSERT OUTPUT]
+![alt text](image-9.png)
 
 ------------------------------------------------------------------------
 
@@ -168,33 +168,19 @@ ansible-playbook playbooks/deploy.yml
 ```
 
 Output:
+![alt text](image-13.png)
+Failed because of
+![alt text](image-12.png)
+So I changed and ran again
+![alt text](image-11.png)
 
-    [INSERT DEPLOYMENT OUTPUT]
-
-Look for:
-
-    PLAY RECAP
-    changed=X
-    failed=0
+(Had to fix a docker compose file, since I used legacy legacy option)
 
 ------------------------------------------------------------------------
 
 ### Idempotency verification
 
-Playbook executed twice:
-
-``` bash
-ansible-playbook playbooks/deploy.yml
-ansible-playbook playbooks/deploy.yml
-```
-
-Second run output:
-
-    [INSERT SECOND RUN OUTPUT]
-
-Expected result:
-
-    changed=0
+Look at prev run - only the fixed part changed
 
 ------------------------------------------------------------------------
 
@@ -207,8 +193,7 @@ docker ps
 ```
 
 Output:
-
-    [INSERT docker ps OUTPUT]
+![alt text](image-14.png)
 
 ------------------------------------------------------------------------
 
@@ -217,12 +202,11 @@ Output:
 Command executed:
 
 ``` bash
-curl http://VM_IP:8000
+curl http://VM_IP:5000
 ```
 
 Output:
-
-    [INSERT RESPONSE]
+![alt text](image-15.png)
 
 ------------------------------------------------------------------------
 
@@ -234,19 +218,9 @@ The wipe logic allows removing the deployed application safely.
 
 The mechanism uses two conditions:
 
-1.  variable
+1.  variable ```web_app_wipe=true```
 
-```{=html}
-<!-- -->
-```
-    web_app_wipe=true
-
-2.  tag
-
-```{=html}
-<!-- -->
-```
-    web_app_wipe
+2.  tag ```web_app_wipe```
 
 Both must be provided for wipe-only runs.
 
@@ -262,7 +236,7 @@ Command:
 
 Result:
 
-    [INSERT OUTPUT]
+![alt text](image-16.png)
 
 ------------------------------------------------------------------------
 
@@ -274,7 +248,7 @@ Command:
 
 Output:
 
-    [INSERT OUTPUT]
+![alt text](image-17.png)
 
 ------------------------------------------------------------------------
 
@@ -285,8 +259,7 @@ Command:
     ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true"
 
 Output:
-
-    [INSERT OUTPUT]
+![alt text](image-18.png)
 
 ------------------------------------------------------------------------
 
