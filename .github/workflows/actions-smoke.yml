@@ -1,0 +1,16 @@
+name: Actions Smoke Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ lab06 ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print context
+        run: |
+          echo "Smoke workflow started"
+          echo "ref=${GITHUB_REF}"
+          echo "sha=${GITHUB_SHA}"
