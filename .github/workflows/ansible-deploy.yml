@@ -71,6 +71,7 @@ jobs:
         run: |
           curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /opt/yc -n
           echo "/opt/yc/bin" >> $GITHUB_PATH
+          export PATH="/opt/yc/bin:$PATH"
           yc --version
 
       - name: Write YC service account key file
