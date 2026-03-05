@@ -7,4 +7,4 @@ docker_packages:
   - docker-buildx-plugin
   - docker-compose-plugin
 
-deploy_user: ubuntu
+docker_deploy_user: ubuntu

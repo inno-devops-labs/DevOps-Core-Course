@@ -1,9 +1,12 @@
 ---
 - name: Install system packages
+  become: true
+  tags:
+    - packages
   block:
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Upgrade apt packages
@@ -24,7 +27,9 @@
 
   rescue:
     - name: Fix apt cache and retry
-      ansible.builtin.command: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
       changed_when: true
 
     - name: Retry package installation
@@ -38,7 +43,7 @@
           - net-tools
           - software-properties-common
         state: present
-        update_cache: yes
+        update_cache: true
 
   always:
     - name: Log package installation completion
@@ -47,11 +52,10 @@
         dest: /tmp/common_packages_complete.log
         mode: '0644'
 
+- name: Configure users and system
   become: true
   tags:
-    - packages
-
-- name: Configure users and system
+    - users
   block:
     - name: Ensure deploy user exists
       ansible.builtin.user:
@@ -67,7 +71,3 @@
       ansible.builtin.hostname:
         name: "{{ inventory_hostname }}"
       when: inventory_hostname is defined
-
-  become: true
-  tags:
-    - users

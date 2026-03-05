@@ -1,5 +1,8 @@
 ---
 - name: Install Docker
+  become: true
+  tags:
+    - docker_install
   block:
     - name: Install Docker prerequisites
       ansible.builtin.apt:
@@ -10,7 +13,7 @@
           - gnupg
           - lsb-release
         state: present
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Create directory for Docker GPG key
@@ -27,13 +30,16 @@
 
     - name: Add Docker repository
       ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
+        repo: >-
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_facts['distribution_release'] }} stable
         state: present
         filename: docker
 
     - name: Update apt cache after adding repository
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install Docker packages
@@ -48,7 +54,7 @@
 
     - name: Retry apt update
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
 
     - name: Retry Docker installation
       ansible.builtin.apt:
@@ -60,19 +66,18 @@
       ansible.builtin.systemd:
         name: docker
         state: started
-        enabled: yes
-
-  become: true
-  tags:
-    - docker_install
+        enabled: true
 
 - name: Configure Docker
+  become: true
+  tags:
+    - docker_config
   block:
     - name: Add user to docker group
       ansible.builtin.user:
-        name: "{{ deploy_user }}"
+        name: "{{ docker_deploy_user }}"
         groups: docker
-        append: yes
+        append: true
 
     - name: Verify Docker installation
       ansible.builtin.command: docker --version
@@ -82,7 +87,3 @@
     - name: Display Docker version
       ansible.builtin.debug:
         msg: "{{ docker_version.stdout }}"
-
-  become: true
-  tags:
-    - docker_config
