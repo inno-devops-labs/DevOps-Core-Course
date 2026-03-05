@@ -107,13 +107,18 @@ jobs:
           chmod 600 .vault_pass
 
       - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+          VM_HOST: ${{ secrets.VM_HOST }}
         run: |
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/ansible_deploy
-          chmod 600 ~/.ssh/ansible_deploy
-          if [ -n "${{ secrets.KNOWN_HOSTS }}" ]; then
-            printf '%s\n' "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/ansible_deploy"
+          chmod 600 "$HOME/.ssh/ansible_deploy"
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           else
-            ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+            ssh-keyscan -H "$VM_HOST" >> "$HOME/.ssh/known_hosts"
           fi
 
       - name: Generate CI inventory
@@ -121,7 +126,7 @@ jobs:
         run: |
           cat <<EOF > ci_hosts.ini
           [webservers]
-          ci ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }} ansible_ssh_private_key_file=~/.ssh/ansible_deploy
+          ci ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }} ansible_ssh_private_key_file=$HOME/.ssh/ansible_deploy
           EOF
 
       - name: Deploy with Ansible
