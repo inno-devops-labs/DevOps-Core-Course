@@ -21,6 +21,7 @@
       ansible.builtin.template:
         src: docker-compose.yml.j2
         dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
 
     - name: Deploy application
       ansible.builtin.command: docker compose up -d

@@ -2,6 +2,7 @@
 - name: Wipe Web Application
   tags:
     - web_app_wipe
+  when: web_app_wipe | bool
   block:
 
     - name: Stop And Remove Docker Compose Containers
@@ -19,5 +20,3 @@
     - name: Log Wipe Completion
       ansible.builtin.debug:
         msg: "Application {{ app_name }} wiped successfully"
-
-  when: web_app_wipe | bool

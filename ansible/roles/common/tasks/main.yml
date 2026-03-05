@@ -21,9 +21,10 @@
 
   rescue:
     - name: Fix missing packages and retry update
-      ansible.builtin.command: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: yes
+        force_apt_get: yes
       become: true
-      changed_when: false
 
   always:
     - name: Log package block completion
