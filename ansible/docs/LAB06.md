@@ -274,10 +274,18 @@ CONTAINER ID   IMAGE                                    COMMAND           STATUS
 
 - Created workflow `.github/workflows/ansible-deploy.yml`:
   - Triggered on changes in `ansible/**` and the workflow file itself.
-  - `lint` job: installs Ansible and `ansible-lint`, then runs `ansible-lint playbooks/*.yml`.
-  - `deploy` job (after `lint`): configures SSH using a private key from GitHub Secrets, runs `ansible-playbook playbooks/deploy.yml` with the Vault password from a secret, and verifies the app with `curl`.
+  - `lint` job: installs Ansible and `ansible-lint`, runs lint with Vault password from secrets; passes when no violations remain.
+  - `deploy` job (after `lint`): configures SSH from `SSH_PRIVATE_KEY`, runs `ansible-playbook playbooks/deploy.yml` with `ANSIBLE_VAULT_PASSWORD`, then verifies the app with `curl` to `VM_HOST:5000` and `/health`.
 - GitHub Secrets used:
   - `ANSIBLE_VAULT_PASSWORD`, `SSH_PRIVATE_KEY`, `VM_HOST`, `VM_USER`.
+
+**Evidence:**
+
+- **Successful workflow run:** The "Ansible Deployment" workflow runs on push to the configured branches when `ansible/**` or the workflow file changes. Both jobs (`Ansible Lint` and `Deploy Application`) complete successfully. 
+https://github.com/McLavrushka/DevOps-Core-Course/actions/workflows/ansible-deploy.yml
+- **ansible-lint:** The lint step passes (no fatal violations); optional rules are relaxed via `ansible/.ansible-lint.yml` where needed.
+- **ansible-playbook:** The deploy step runs the playbook with vault and inventory; PLAY RECAP shows `failed=0`.
+- **Verification:** The "Verify Deployment" step runs `curl -f http://<VM_HOST>:5000` and `curl -f http://<VM_HOST>:5000/health`; both return success.
 
 **Research answers:**
 
