@@ -108,7 +108,7 @@ a1b2c3d4e5f6   plaffyyy9/devops-info-service:latest   ...      10 seconds ago  U
 **Health check:**
 
 ```
-$ curl http://89.169.150.5:5000/health
+$ curl http://93.77.188.243:5000/health
 {"status":"healthy","timestamp":"2026-02-26T20:14:01.812949+00:00","uptime_seconds":89}
 ```
 

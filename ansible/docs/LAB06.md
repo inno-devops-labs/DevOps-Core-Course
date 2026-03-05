@@ -40,7 +40,7 @@ The `vault_dockerhub_password` should be encrypted with Ansible Vault and can be
 For CI/CD to work, the following secrets should already be configured in your GitHub repository:
 - `DOCKER_PASSWORD` and `DOCKER_USERNAME` for Docker Hub authentication
 - `SSH_PRIVATE_KEY`: Private SSH key for VM access
-- `VM_HOST`: IP address of your target VM (89.169.150.5)
+- `VM_HOST`: IP address of your target VM (93.77.188.243)
 - `ANSIBLE_VAULT_PASSWORD`: Password to decrypt the vault file
 
 The `VM_HOST` secret should contain your VM's IP address (89.169.150.5). Even though this is currently hardcoded in the inventory file, using a GitHub secret makes the workflow more flexible for different environments.
