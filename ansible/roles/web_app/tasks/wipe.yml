@@ -11,10 +11,10 @@
       failed_when: false
 
     - name: Remove app directory
-      ansible.builtin.ansible.builtin.file:
+      ansible.builtin.file:
         path: "{{ web_app_compose_project_dir }}"
         state: absent
 
     - name: Log wipe
-      ansible.builtin.ansible.builtin.debug:
+      ansible.builtin.debug:
         msg: "Application {{ web_app_app_name }} wiped"
