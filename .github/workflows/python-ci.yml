@@ -80,12 +80,10 @@ jobs:
     - name: Create temporary inventory
       run: |
         echo "[webservers]" > inventory.ini
-        echo "ubuntu ansible_host=$SERVER_IP ansible_user=ubuntu ansible_ssh_private_key_file=key.pem" >> inventory.ini
+        echo "ubuntu ansible_host=${{ secrets.SERVER_IP }} ansible_user=ubuntu ansible_ssh_private_key_file=key.pem" >> inventory.ini
         cat inventory.ini
 
     - name: Ansible Run
-      env:
-        SERVER_IP: ${{ secrets.SERVER_IP }}
       run: |
          ansible-playbook -i inventory.ini ./ansible/playbooks/deploy.yml \
           --extra-vars "@ansible/group_vars/all.yml" \

@@ -148,4 +148,4 @@ Applies the infrastructure automatically (terraform apply -auto-approve) using s
 
 ![tfpipe](./screenshots/lab04/pipeline.png)
 ![afterpipe](./screenshots/lab04/after_pipe.png)
-  
+   
