@@ -1,0 +1,12 @@
+
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab-vm]
+
+TASK [common : Install packages] ***********************************************
+ok: [lab-vm]
+
+PLAY RECAP *********************************************************************
+lab-vm                     : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

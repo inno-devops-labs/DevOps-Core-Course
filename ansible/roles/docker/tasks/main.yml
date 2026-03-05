@@ -1,61 +1,73 @@
 ---
-- name: Ensure keyrings directory exists
-  ansible.builtin.file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: "0755"
+- name: Docker install
+  block:
+    - name: Ensure keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
 
-- name: Download Docker GPG key
-  ansible.builtin.get_url:
-    url: "{{ docker_apt_key_url }}"
-    dest: /tmp/docker.gpg
-    mode: "0644"
-  changed_when: false
+    - name: Download Docker GPG key (idempotent)
+      ansible.builtin.get_url:
+        url: "{{ docker_apt_key_url }}"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: false
 
-- name: Dearmor Docker GPG key into keyring
-  ansible.builtin.command: >
-    gpg --dearmor -o /etc/apt/keyrings/docker.gpg /tmp/docker.gpg
-  args:
-    creates: /etc/apt/keyrings/docker.gpg
-  notify: restart docker
+    - name: Dearmor Docker key
+      ansible.builtin.command: >
+        gpg --dearmor -o /etc/apt/keyrings/docker.gpg /etc/apt/keyrings/docker.asc
+      args:
+        creates: /etc/apt/keyrings/docker.gpg
 
-- name: Add Docker apt repository
-  ansible.builtin.apt_repository:
-    repo: "{{ docker_apt_repo }}"
-    filename: docker
-    state: present
-    update_cache: true
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: "{{ docker_apt_repo }}"
+        state: present
+        filename: docker
 
-- name: Update apt cache after adding Docker repo (idempotent)
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+    - name: Update apt cache after adding Docker repo (idempotent)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install Docker packages
-  ansible.builtin.apt:
-    name: "{{ docker_packages }}"
-    state: present
-    install_recommends: false
-    update_cache: false
-    force_apt_get: true
-    dpkg_options: "force-confdef,force-confold"
-  environment:
-    DEBIAN_FRONTEND: noninteractive
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
 
-- name: Ensure Docker service started and enabled
-  ansible.builtin.service:
-    name: "{{ docker_service_name }}"
-    state: started
-    enabled: true
+  rescue:
+    - name: Wait and retry apt update (network/GPG transient)
+      ansible.builtin.pause:
+        seconds: 10
+    - name: Retry apt update
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Add users to docker group
-  ansible.builtin.user:
-    name: "{{ item }}"
-    groups: docker
-    append: true
-  loop: "{{ docker_users }}"
+  always:
+    - name: Ensure Docker service enabled and started
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+        state: started
 
-- name: Install python3-docker for Ansible docker modules
-  ansible.builtin.apt:
-    name: python3-docker
-    state: present
+  become: true
+  tags: [docker, docker_install]
+
+- name: Docker config
+  block:
+    - name: Add users to docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users }}"
+
+    - name: Install python3-docker for Ansible docker modules
+      ansible.builtin.apt:
+        name: python3-docker
+        state: present
+
+  become: true
+  tags: [docker, docker_config]

@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  {{ app_name }}:
+    image: "{{ docker_image }}:{{ docker_tag | default(docker_image_tag) }}"
+    container_name: "{{ app_name }}"
+    ports:
+      - "{{ app_port }}:{{ app_internal_port | default(app_port) }}"
+{% if (app_env | default({})) | length > 0 %}
+    environment:
+{% for k, v in (app_env | default({})).items() %}
+      {{ k }}: "{{ v }}"
+{% endfor %}
+{% endif %}
+    restart: unless-stopped

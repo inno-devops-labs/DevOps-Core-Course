@@ -1,0 +1,3 @@
+lab-vm | CHANGED | rc=0 >>
+CONTAINER ID   IMAGE                                   COMMAND                  CREATED      STATUS       PORTS                    NAMES
+61a2ddfd5031   egorlazutkin/devops-info-service:lab2   "uvicorn app:app --h…"   7 days ago   Up 6 hours   0.0.0.0:5000->5000/tcp   devops-info-service

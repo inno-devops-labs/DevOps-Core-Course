@@ -1,0 +1,5 @@
+
+playbook: playbooks/provision.yml
+
+  play #1 (webservers): Provision web servers	TAGS: []
+      TASK TAGS: [common, docker, docker_config, docker_install, packages, users]

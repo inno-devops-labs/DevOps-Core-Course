@@ -1,4 +1,5 @@
 [![CI/CD](https://github.com/Boogyy/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/Boogyy/DevOps-Core-Course/actions)
+[![Ansible Deployment](https://github.com/Boogyy/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/Boogyy/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 
 
 # DevOps Info Service — FastAPI Implementation

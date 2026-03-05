@@ -1,0 +1,27 @@
+
+PLAY [Deploy application] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab-vm]
+
+TASK [web_app : Include wipe tasks (runs only when explicitly requested)] ******
+included: /Users/george/Desktop/Devops/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for lab-vm
+
+TASK [web_app : Check if compose project dir exists] ***************************
+ok: [lab-vm]
+
+TASK [web_app : Compose down (ignore if not present)] **************************
+changed: [lab-vm]
+
+TASK [web_app : Remove compose file] *******************************************
+changed: [lab-vm]
+
+TASK [web_app : Remove application directory] **********************************
+changed: [lab-vm]
+
+TASK [web_app : Log wipe completion] *******************************************
+ok: [lab-vm]
+
+PLAY RECAP *********************************************************************
+lab-vm                     : ok=7    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

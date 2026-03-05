@@ -1,0 +1,36 @@
+
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab-vm]
+
+TASK [docker : Ensure keyrings directory exists] *******************************
+ok: [lab-vm]
+
+TASK [docker : Download Docker GPG key] ****************************************
+ok: [lab-vm]
+
+TASK [docker : Dearmor Docker key] *********************************************
+ok: [lab-vm]
+
+TASK [docker : Add Docker apt repository] **************************************
+ok: [lab-vm]
+
+TASK [docker : Update apt cache after adding Docker repo (idempotent)] *********
+ok: [lab-vm]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [lab-vm]
+
+TASK [docker : Ensure Docker service enabled and started] **********************
+ok: [lab-vm]
+
+TASK [docker : Add users to docker group] **************************************
+ok: [lab-vm] => (item=ubuntu)
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [lab-vm]
+
+PLAY RECAP *********************************************************************
+lab-vm                     : ok=10   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

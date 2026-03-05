@@ -1,0 +1,72 @@
+
+PLAY [Deploy application] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab-vm]
+
+TASK [docker : Ensure keyrings directory exists] *******************************
+ok: [lab-vm]
+
+TASK [docker : Download Docker GPG key (idempotent)] ***************************
+ok: [lab-vm]
+
+TASK [docker : Dearmor Docker key] *********************************************
+ok: [lab-vm]
+
+TASK [docker : Add Docker apt repository] **************************************
+ok: [lab-vm]
+
+TASK [docker : Update apt cache after adding Docker repo (idempotent)] *********
+ok: [lab-vm]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [lab-vm]
+
+TASK [docker : Ensure Docker service enabled and started] **********************
+ok: [lab-vm]
+
+TASK [docker : Add users to docker group] **************************************
+ok: [lab-vm] => (item=ubuntu)
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [lab-vm]
+
+TASK [web_app : Include wipe tasks (runs only when explicitly requested)] ******
+included: /Users/george/Desktop/Devops/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for lab-vm
+
+TASK [web_app : Check if compose project dir exists] ***************************
+ok: [lab-vm]
+
+TASK [web_app : Remove legacy container from Lab 5 (if exists)] ****************
+changed: [lab-vm]
+
+TASK [web_app : Compose down (ignore if not present)] **************************
+changed: [lab-vm]
+
+TASK [web_app : Remove compose file] *******************************************
+changed: [lab-vm]
+
+TASK [web_app : Remove application directory] **********************************
+changed: [lab-vm]
+
+TASK [web_app : Log wipe completion] *******************************************
+ok: [lab-vm]
+
+TASK [web_app : Create app directory] ******************************************
+changed: [lab-vm]
+
+TASK [web_app : Template docker-compose.yml] ***********************************
+changed: [lab-vm]
+
+TASK [web_app : Docker Compose up (v2)] ****************************************
+changed: [lab-vm]
+
+TASK [web_app : Wait for app port] *********************************************
+ok: [lab-vm]
+
+TASK [web_app : Health check] **************************************************
+ok: [lab-vm]
+
+PLAY RECAP *********************************************************************
+lab-vm                     : ok=22   changed=7    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

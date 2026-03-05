@@ -11,6 +11,10 @@
       ansible.builtin.debug:
         var: dockerhub_username
 
+    - name: Show app_name
+      ansible.builtin.debug:
+        var: app_name
+
     - name: Check dockerhub_password is defined (do not print)
       ansible.builtin.assert:
         that:

@@ -1,0 +1,11 @@
+---
+app_name: "devops-info-service"
+compose_project_dir: "/opt/{{ app_name }}"
+
+docker_tag: "lab2"
+
+app_port: 5000
+app_internal_port: 5000
+
+app_env: {}
+web_app_wipe: false

@@ -1,0 +1,81 @@
+
+PLAY [Deploy application] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab-vm]
+
+TASK [docker : Ensure keyrings directory exists] *******************************
+ok: [lab-vm]
+
+TASK [docker : Download Docker GPG key (idempotent)] ***************************
+ok: [lab-vm]
+
+TASK [docker : Dearmor Docker key] *********************************************
+ok: [lab-vm]
+
+TASK [docker : Add Docker apt repository] **************************************
+ok: [lab-vm]
+
+TASK [docker : Update apt cache after adding Docker repo (idempotent)] *********
+ok: [lab-vm]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [lab-vm]
+
+TASK [docker : Ensure Docker service enabled and started] **********************
+ok: [lab-vm]
+
+TASK [docker : Add users to docker group] **************************************
+ok: [lab-vm] => (item=ubuntu)
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [lab-vm]
+
+TASK [web_app : Include wipe tasks (runs only when explicitly requested)] ******
+included: /Users/george/Desktop/Devops/DevOps-Core-Course/ansible/roles/web_app/tasks/wipe.yml for lab-vm
+
+TASK [web_app : Check if compose project dir exists] ***************************
+skipping: [lab-vm]
+
+TASK [web_app : Compose down (ignore if not present)] **************************
+skipping: [lab-vm]
+
+TASK [web_app : Remove compose file] *******************************************
+skipping: [lab-vm]
+
+TASK [web_app : Remove application directory] **********************************
+skipping: [lab-vm]
+
+TASK [web_app : Log wipe completion] *******************************************
+skipping: [lab-vm]
+
+TASK [web_app : Create app directory] ******************************************
+ok: [lab-vm]
+
+TASK [web_app : Template docker-compose.yml] ***********************************
+changed: [lab-vm]
+
+TASK [web_app : Docker Compose up (v2)] ****************************************
+[ERROR]: Task failed: Module failed: Error when processing container devops-info-service: Error response from daemon: Conflict. The container name "/devops-info-service" is already in use by container "61a2ddfd5031766de5853dd8f3748e677d26344037654fdad7e37e8403a18a83". You have to remove (or rename) that container to be able to reuse that name.
+General error: Error response from daemon: Conflict. The container name "/devops-info-service" is already in use by container "61a2ddfd5031766de5853dd8f3748e677d26344037654fdad7e37e8403a18a83". You have to remove (or rename) that container to be able to reuse that name.
+Origin: /Users/george/Desktop/Devops/DevOps-Core-Course/ansible/roles/web_app/tasks/main.yml:21:7
+
+19       register: compose_template
+20
+21     - name: Docker Compose up (v2)
+         ^ column 7
+
+fatal: [lab-vm]: FAILED! => {"actions": [{"id": "egorlazutkin/devops-info-service:lab2", "status": "Pulling", "what": "image"}, {"id": "devops-info-service_default", "status": "Creating", "what": "network"}, {"id": "devops-info-service", "status": "Creating", "what": "container"}], "changed": true, "cmd": "/usr/bin/docker compose --ansi never --progress json --project-directory /opt/devops-info-service up --detach --no-color --quiet-pull --pull always --", "containers": [], "images": null, "msg": "Error when processing container devops-info-service: Error response from daemon: Conflict. The container name \"/devops-info-service\" is already in use by container \"61a2ddfd5031766de5853dd8f3748e677d26344037654fdad7e37e8403a18a83\". You have to remove (or rename) that container to be able to reuse that name.\nGeneral error: Error response from daemon: Conflict. The container name \"/devops-info-service\" is already in use by container \"61a2ddfd5031766de5853dd8f3748e677d26344037654fdad7e37e8403a18a83\". You have to remove (or rename) that container to be able to reuse that name.", "rc": 1, "stderr": "{\"level\":\"warning\",\"msg\":\"/opt/devops-info-service/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion\",\"time\":\"2026-03-05T19:02:55+01:00\"}\n{\"id\":\"Image egorlazutkin/devops-info-service:lab2\",\"status\":\"Working\",\"text\":\"Pulling\"}\n{\"id\":\"Image egorlazutkin/devops-info-service:lab2\",\"status\":\"Done\",\"text\":\"Pulled\"}\n{\"id\":\"Network devops-info-service_default\",\"status\":\"Working\",\"text\":\"Creating\"}\n{\"id\":\"Network devops-info-service_default\",\"status\":\"Done\",\"text\":\"Created\"}\n{\"id\":\"Container devops-info-service\",\"status\":\"Working\",\"text\":\"Creating\"}\n{\"id\":\"Container devops-info-service\",\"status\":\"Error\",\"text\":\"Error response from daemon: Conflict. The container name \\\"/devops-info-service\\\" is already in use by container \\\"61a2ddfd5031766de5853dd8f3748e677d26344037654fdad7e37e8403a18a83\\\". You have to remove (or rename) that container to be able to reuse that name.\"}\n{\"error\":true,\"message\":\"Error response from daemon: Conflict. The container name \\\"/devops-info-service\\\" is already in use by container \\\"61a2ddfd5031766de5853dd8f3748e677d26344037654fdad7e37e8403a18a83\\\". You have to remove (or rename) that container to be able to reuse that name.\"}\n", "stderr_lines": ["{\"level\":\"warning\",\"msg\":\"/opt/devops-info-service/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion\",\"time\":\"2026-03-05T19:02:55+01:00\"}", "{\"id\":\"Image egorlazutkin/devops-info-service:lab2\",\"status\":\"Working\",\"text\":\"Pulling\"}", "{\"id\":\"Image egorlazutkin/devops-info-service:lab2\",\"status\":\"Done\",\"text\":\"Pulled\"}", "{\"id\":\"Network devops-info-service_default\",\"status\":\"Working\",\"text\":\"Creating\"}", "{\"id\":\"Network devops-info-service_default\",\"status\":\"Done\",\"text\":\"Created\"}", "{\"id\":\"Container devops-info-service\",\"status\":\"Working\",\"text\":\"Creating\"}", "{\"id\":\"Container devops-info-service\",\"status\":\"Error\",\"text\":\"Error response from daemon: Conflict. The container name \\\"/devops-info-service\\\" is already in use by container \\\"61a2ddfd5031766de5853dd8f3748e677d26344037654fdad7e37e8403a18a83\\\". You have to remove (or rename) that container to be able to reuse that name.\"}", "{\"error\":true,\"message\":\"Error response from daemon: Conflict. The container name \\\"/devops-info-service\\\" is already in use by container \\\"61a2ddfd5031766de5853dd8f3748e677d26344037654fdad7e37e8403a18a83\\\". You have to remove (or rename) that container to be able to reuse that name.\"}"], "stdout": "", "stdout_lines": []}
+
+TASK [web_app : Log deploy failure] ********************************************
+ok: [lab-vm]
+
+TASK [web_app : Wait for app port] *********************************************
+skipping: [lab-vm]
+
+TASK [web_app : Health check] **************************************************
+skipping: [lab-vm]
+
+PLAY RECAP *********************************************************************
+lab-vm                     : ok=14   changed=1    unreachable=0    failed=0    skipped=7    rescued=1    ignored=0   
+

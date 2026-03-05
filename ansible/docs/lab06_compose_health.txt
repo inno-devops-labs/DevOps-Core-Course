@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+date: Thu, 05 Mar 2026 17:30:14 GMT
+server: uvicorn
+content-length: 90
+content-type: application/json
+
+{"status":"healthy","timestamp":"2026-03-05T17:30:15.347235+00:00","uptime_seconds":21576}

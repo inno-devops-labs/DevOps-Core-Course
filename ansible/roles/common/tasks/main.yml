@@ -1,15 +1,52 @@
 ---
-- name: Update apt cache (idempotent)
-  ansible.builtin.apt:
-    update_cache: true
-    cache_valid_time: 3600
+- name: Common setup
+  block:
+    - name: Update apt cache (idempotent)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+  rescue:
+    - name: Fix missing packages and retry apt update
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+  always:
+    - name: Log common role completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible_common_done.txt
+        content: "common role finished at {{ ansible_date_time.iso8601 }}\n"
+      changed_when: false
+  become: true
+  tags: [common]
 
 - name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+  block:
+    - name: Install packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+  become: true
+  tags: [packages, common]
 
-- name: Set timezone (optional)
-  community.general.timezone:
-    name: "{{ common_timezone }}"
-  when: common_set_timezone | bool
+- name: Users management (example)
+  block:
+    - name: Ensure docker group exists (usually exists)
+      ansible.builtin.group:
+        name: docker
+        state: present
+  become: true
+  tags: [users, common]
+
+
+- name: Lab06 demo block (forced failure to show rescue)
+  block:
+    - name: Force failure (demo)
+      ansible.builtin.command: /bin/false
+      changed_when: false
+  rescue:
+    - name: Rescue executed (demo)
+      ansible.builtin.copy:
+        dest: /tmp/lab06_rescue_common.txt
+        content: "Rescue block executed at {{ ansible_date_time.iso8601 }}\n"
+      changed_when: false
+  when: lab06_demo_rescue | default(false) | bool
+  tags: [lab06_demo]

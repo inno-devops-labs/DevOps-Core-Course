@@ -29,3 +29,5 @@ id_rsa.pub
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+ansible/.ansible/
+ansible/actions-runner/

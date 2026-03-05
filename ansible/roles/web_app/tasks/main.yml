@@ -1,0 +1,57 @@
+---
+- name: Include wipe tasks (runs only when explicitly requested)
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/wipe.yml"
+  tags: [web_app_wipe]
+
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create app directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose.yml
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+      register: compose_template
+
+    - name: Docker Compose up (v2)
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        pull: always
+        state: present
+      register: compose_up
+
+  rescue:
+    - name: Log deploy failure
+      ansible.builtin.copy:
+        dest: /tmp/web_app_deploy_failed.txt
+        content: "Deploy failed at {{ ansible_facts['date_time']['iso8601'] }}\n"
+      changed_when: false
+
+  tags: [app_deploy, compose]
+
+- name: Wait for app port
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: "{{ app_port }}"
+    delay: 1
+    timeout: 30
+  tags: [app_deploy, verify]
+  when:
+    - compose_up is defined
+    - compose_up is succeeded
+
+
+- name: Health check
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ app_port }}/health"
+    status_code: 200
+  tags: [app_deploy, verify]
+  when:
+  
+  
+

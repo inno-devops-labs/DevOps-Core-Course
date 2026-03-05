@@ -1,0 +1,23 @@
+
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab-vm]
+
+TASK [common : Force failure (demo)] *******************************************
+[ERROR]: Task failed: Module failed: non-zero return code
+Origin: /Users/george/Desktop/Devops/DevOps-Core-Course/ansible/roles/common/tasks/main.yml:42:7
+
+40 - name: Lab06 demo block (forced failure to show rescue)
+41   block:
+42     - name: Force failure (demo)
+         ^ column 7
+
+fatal: [lab-vm]: FAILED! => {"changed": false, "cmd": ["/bin/false"], "delta": "0:00:00.002440", "end": "2026-03-05 17:45:27.088484", "msg": "non-zero return code", "rc": 1, "start": "2026-03-05 17:45:27.086044", "stderr": "", "stderr_lines": [], "stdout": "", "stdout_lines": []}
+
+TASK [common : Rescue executed (demo)] *****************************************
+ok: [lab-vm]
+
+PLAY RECAP *********************************************************************
+lab-vm                     : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=1    ignored=0   
+
