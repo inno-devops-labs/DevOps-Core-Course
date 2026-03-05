@@ -1,0 +1,19 @@
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_image_tag }}
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+{% if app_env_vars is defined and app_env_vars %}
+    environment:
+{% for key, value in app_env_vars.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+    restart: unless-stopped
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

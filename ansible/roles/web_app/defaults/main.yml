@@ -1,0 +1,7 @@
+---
+app_internal_port: 80
+compose_project_dir: "/opt/{{ app_name }}"
+
+app_env_vars: {}
+
+web_app_wipe: false

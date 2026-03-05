@@ -1,54 +1,105 @@
 ---
-- name: Install prerequisite packages for Docker repository
-  apt:
-    name:
-      - ca-certificates
-      - curl
-      - gnupg
-    state: present
-    update_cache: yes
+- name: Install Docker
+  block:
+    - name: Install prerequisite packages for Docker repository
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: yes
 
-- name: Create directory for Docker GPG key
-  file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: "0755"
+    - name: Create directory for Docker GPG key
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
 
-- name: Add Docker official GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    keyring: /etc/apt/keyrings/docker.gpg
-    state: present
+    - name: Add Docker official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        keyring: /etc/apt/keyrings/docker.gpg
+        state: present
 
-- name: Add Docker repository
-  apt_repository:
-    repo: >-
-      deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
-      https://download.docker.com/linux/ubuntu
-      {{ ansible_distribution_release }} stable
-    filename: docker
-    state: present
+    - name: Add Docker repository
+      apt_repository:
+        repo: >-
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
 
-- name: Install Docker packages
-  apt:
-    name: "{{ docker_packages }}"
-    state: present
-    update_cache: yes
-  notify: restart docker
+    - name: Install Docker packages
+      apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: yes
+      notify: restart docker
 
-- name: Ensure Docker service is started and enabled
-  service:
-    name: docker
-    state: started
-    enabled: yes
+  rescue:
+    - name: Wait before retrying GPG key (network timeout handling)
+      ansible.builtin.pause:
+        seconds: 10
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+    - name: Retry apt update on GPG key failure
+      apt:
+        update_cache: yes
+        force_apt_get: yes
 
-- name: Install python3-docker for Ansible Docker modules
-  apt:
-    name: python3-docker
-    state: present
+    - name: Retry adding Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        keyring: /etc/apt/keyrings/docker.gpg
+        state: present
+
+    - name: Retry installing Docker packages
+      apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: yes
+      notify: restart docker
+
+  always:
+    - name: Ensure Docker service is enabled
+      service:
+        name: docker
+        enabled: yes
+      ignore_errors: yes
+
+  become: true
+  tags:
+    - docker
+    - docker_install
+
+- name: Configure Docker
+  block:
+    - name: Ensure Docker service is started and enabled
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install python3-docker for Ansible Docker modules
+      apt:
+        name: python3-docker
+        state: present
+
+  always:
+    - name: Log Docker configuration completion
+      ansible.builtin.copy:
+        content: "Docker configured at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/docker_role_completion.log
+        mode: '0644'
+
+  become: true
+  tags:
+    - docker
+    - docker_config

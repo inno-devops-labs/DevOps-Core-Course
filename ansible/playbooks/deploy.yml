@@ -1,4 +1,6 @@
 ---
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
 - name: Deploy application
   hosts: webservers
   become: yes
@@ -6,4 +8,4 @@
     - ../group_vars/all.yml
 
   roles:
-    - app_deploy
+    - web_app

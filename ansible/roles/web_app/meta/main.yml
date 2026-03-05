@@ -1,0 +1,5 @@
+---
+dependencies:
+  - role: docker
+    vars:
+      docker_user: "{{ ansible_user }}"
