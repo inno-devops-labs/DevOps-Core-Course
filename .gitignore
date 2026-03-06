@@ -6,6 +6,8 @@ Thumbs.db
 
 # --- Python ---
 __pycache__/
+.pytest_cache/
+.ruff_cache/
 *.py[cod]
 *.pyo
 *.pyd
