@@ -1,8 +1,8 @@
 ---
-app_name: devops-app
-docker_image: roma3213/info_service
-docker_tag: latest
-app_port: 5000
-app_internal_port: 5000
-compose_project_dir: "/opt/{{ app_name }}"
+web_app_name: devops-app
+web_app_image: roma3213/info_service
+web_app_tag: latest
+web_app_port: 5000
+web_app_internal_port: 5000
+web_app_compose_project_dir: "/opt/{{ web_app_name }}"
 web_app_wipe: false
