@@ -1,0 +1,101 @@
+---
+services:
+  loki:
+    image: grafana/loki:{{ loki_version }}
+    container_name: loki
+    ports:
+      - "{{ loki_port }}:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/config.yml
+    networks:
+      - {{ monitoring_network }}
+    labels:
+      logging: "promtail"
+      app: "loki"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '{{ loki_cpu_limit }}'
+          memory: {{ loki_memory_limit }}
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:{{ promtail_version }}
+    container_name: promtail
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - {{ monitoring_network }}
+    labels:
+      logging: "promtail"
+      app: "promtail"
+    depends_on:
+      loki:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '{{ promtail_cpu_limit }}'
+          memory: {{ promtail_memory_limit }}
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:{{ grafana_version }}
+    container_name: grafana
+    ports:
+      - "{{ grafana_port }}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_ADMIN_USER={{ grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    networks:
+      - {{ monitoring_network }}
+    labels:
+      logging: "promtail"
+      app: "grafana"
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '{{ grafana_cpu_limit }}'
+          memory: {{ grafana_memory_limit }}
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    restart: unless-stopped
+
+volumes:
+  loki-data:
+  grafana-data:
+
+networks:
+  {{ monitoring_network }}:
+    driver: bridge

@@ -15,6 +15,8 @@ Pulumi.*.yaml
 # Credentials
 *.pem
 *.key
+.env
+monitoring/.env
 
 # Ansible
 *.retry

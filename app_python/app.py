@@ -3,19 +3,48 @@ DevOps Info Service
 Main application module
 """
 import os
+import json
 import socket
 import platform
 import logging
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 
+
+class JSONFormatter(logging.Formatter):
+    """Format log records as JSON for structured log aggregation."""
+
+    def format(self, record):
+        log_data = {
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+        }
+        if hasattr(record, 'method'):
+            log_data['method'] = record.method
+        if hasattr(record, 'path'):
+            log_data['path'] = record.path
+        if hasattr(record, 'status_code'):
+            log_data['status_code'] = record.status_code
+        if hasattr(record, 'client_ip'):
+            log_data['client_ip'] = record.client_ip
+        if record.exc_info:
+            log_data['exception'] = self.formatException(record.exc_info)
+        return json.dumps(log_data)
+
+
 app = Flask(__name__)
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logging.root.handlers = [handler]
+logging.root.setLevel(logging.INFO)
+
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.handlers = [handler]
+werkzeug_logger.setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 # Configuration
@@ -58,11 +87,37 @@ def get_uptime():
     }
 
 
+@app.before_request
+def log_request():
+    """Log incoming HTTP requests."""
+    logger.info(
+        'Incoming request',
+        extra={
+            'method': request.method,
+            'path': request.path,
+            'client_ip': request.remote_addr,
+        }
+    )
+
+
+@app.after_request
+def log_response(response):
+    """Log HTTP response status."""
+    logger.info(
+        'Request completed',
+        extra={
+            'method': request.method,
+            'path': request.path,
+            'status_code': response.status_code,
+            'client_ip': request.remote_addr,
+        }
+    )
+    return response
+
+
 @app.route('/')
 def index():
     """Main endpoint - service and system information."""
-    logger.debug(f'Request: {request.method} {request.path}')
-
     uptime = get_uptime()
     system = get_system_info()
 
@@ -106,8 +161,6 @@ def index():
 @app.route('/health')
 def health():
     """Health check endpoint for monitoring."""
-    logger.debug(f'Health check: {request.method} {request.path}')
-
     uptime = get_uptime()
 
     return jsonify({
@@ -120,6 +173,15 @@ def health():
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
+    logger.warning(
+        'Not found',
+        extra={
+            'method': request.method,
+            'path': request.path,
+            'status_code': 404,
+            'client_ip': request.remote_addr,
+        }
+    )
     return jsonify({
         'error': 'Not Found',
         'message': 'Endpoint does not exist'
@@ -129,7 +191,15 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
-    logger.error(f'Internal server error: {error}')
+    logger.error(
+        f'Internal server error: {error}',
+        extra={
+            'method': request.method,
+            'path': request.path,
+            'status_code': 500,
+            'client_ip': request.remote_addr,
+        }
+    )
     return jsonify({
         'error': 'Internal Server Error',
         'message': 'An unexpected error occurred'
@@ -137,6 +207,9 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
-    logger.info(f'Starting DevOps Info Service on {HOST}:{PORT}')
+    logger.info(
+        f'Starting DevOps Info Service on {HOST}:{PORT}',
+        extra={'method': 'STARTUP', 'path': '/'}
+    )
     logger.info(f'Debug mode: {DEBUG}')
     app.run(host=HOST, port=PORT, debug=DEBUG)

@@ -1,0 +1,8 @@
+---
+- name: Deploy Monitoring Stack (Loki + Promtail + Grafana)
+  hosts: webservers
+  become: true
+
+  roles:
+    - role: monitoring
+      tags: [monitoring]

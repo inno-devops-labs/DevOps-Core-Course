@@ -1,0 +1,33 @@
+---
+# Service versions
+loki_version: "3.0.0"
+promtail_version: "3.0.0"
+grafana_version: "12.3.1"
+
+# Ports
+loki_port: 3100
+promtail_port: 9080
+grafana_port: 3000
+
+# Retention
+loki_retention_period: "168h"
+loki_schema_version: "v13"
+
+# Resource limits
+loki_memory_limit: "1G"
+loki_cpu_limit: "1.0"
+promtail_memory_limit: "512M"
+promtail_cpu_limit: "0.5"
+grafana_memory_limit: "512M"
+grafana_cpu_limit: "1.0"
+
+# Grafana credentials
+# grafana_admin_user and grafana_admin_password must be provided
+# via Ansible Vault (inventory/group_vars/all.yml) or extra vars.
+# Example: ansible-vault edit inventory/group_vars/all.yml
+grafana_admin_user: "admin"
+grafana_admin_password: "{{ vault_grafana_admin_password }}"
+
+# Deployment
+monitoring_compose_dir: "/opt/monitoring"
+monitoring_network: "logging"
