@@ -1,5 +1,6 @@
 # DevOps Engineering: Core Practices
 
+[![Ansible Deployment](https://github.com/TurikRoma/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/TurikRoma/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 [![Labs](https://img.shields.io/badge/Labs-18-blue)](#labs)
 [![Exam](https://img.shields.io/badge/Exam-Optional-green)](#exam-alternative)
 [![Duration](https://img.shields.io/badge/Duration-18%20Weeks-lightgrey)](#course-roadmap)
