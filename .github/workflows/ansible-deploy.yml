@@ -40,8 +40,9 @@ jobs:
 
       - name: Install Ansible and dependencies
         run: |
-          pip install --user ansible community.docker docker
+          pip install --user ansible docker
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+          ansible-galaxy collection install community.docker
 
       - name: Deploy with Ansible
         run: |
