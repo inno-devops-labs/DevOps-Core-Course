@@ -1,0 +1,4 @@
+---
+- name: Wait for app to start
+  ansible.builtin.pause:
+    seconds: 5

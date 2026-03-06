@@ -1,0 +1,82 @@
+# .github/workflows/ansible-deploy.yml
+# Purpose:
+#   CI/CD pipeline for Lab06:
+#     1) Lint Ansible playbooks/roles (ansible-lint)
+#     2) Deploy to VM via SSH (ansible-playbook deploy.yml)
+# Requirements / Secrets:
+#   SSH_PRIVATE_KEY           - private key for VM access
+#   VM_HOST                   - VM hostname/IP
+#   VM_USER                   - SSH username
+#   ANSIBLE_VAULT_PASSWORD    - to decrypt group_vars/all.yml vault
+# Notes:
+#   Health verification is executed on the VM via SSH (curl localhost),
+#   which works even when ports are not publicly reachable (NAT/firewall).
+
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [ main, master, lab06 ]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+      - '!ansible/docs/**'
+  pull_request:
+    branches: [ main, master, lab06 ]
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+      - '!ansible/docs/**'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('ansible/requirements-ci.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Create venv + install tools
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r ansible/requirements-ci.txt
+          ansible-galaxy collection install community.docker
+
+      - name: Create vault password file for CI
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ansible/.vault_pass
+          chmod 600 ansible/.vault_pass
+
+      - name: Lint
+        run: |
+          . .venv/bin/activate
+          cd ansible
+          ANSIBLE_CONFIG="$PWD/ansible.cfg" \
+          ANSIBLE_ROLES_PATH="$PWD/roles" \
+          ansible-lint playbooks/*.yml roles/
+
+      - name: Deploy
+        run: |
+          . .venv/bin/activate
+          cd ansible
+          ANSIBLE_CONFIG="$PWD/ansible.cfg" \
+          ANSIBLE_ROLES_PATH="$PWD/roles" \
+          ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml \
+            --vault-password-file .vault_pass
+
+      - name: Verify on VM via Ansible
+        run: |
+          . .venv/bin/activate
+          cd ansible
+          ANSIBLE_CONFIG="$PWD/ansible.cfg" \
+          ANSIBLE_ROLES_PATH="$PWD/roles" \
+          ansible -i inventory/hosts.ini webservers -m uri -a "url=http://127.0.0.1:5000/health status_code=200"

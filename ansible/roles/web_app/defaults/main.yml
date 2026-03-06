@@ -1,0 +1,42 @@
+---
+# roles/web_app/defaults/main.yml
+# Purpose:
+#   Default variables for the web_app role.
+# How to override:
+#   - group_vars/all.yml (recommended)
+#   - or CLI: -e "var=value"
+#
+# NOTE:
+#   Destructive wipe requires BOTH:
+#     -e "web_app_wipe=true" AND --tags web_app_wipe
+
+# Host port exposed on the VM (used in health check)
+web_app_app_port: 5000
+
+# Port inside the container
+web_app_container_port: 5000
+
+# Docker image tag (e.g., latest, v1.2.3)
+web_app_docker_image_tag: latest
+
+# Container name (for cleanup / backward compatibility)
+web_app_container_name: "{{ app_name }}"
+
+# Restart policy: no | always | on-failure | unless-stopped
+web_app_restart_policy: unless-stopped
+
+# Environment variables passed to the container (dictionary)
+# Example:
+#   web_app_env:
+#     LOG_LEVEL: "info"
+#     FEATURE_X: "true"
+web_app_env: {}
+
+# Where docker-compose.yml is placed on the target host
+web_app_compose_project_dir: "/opt/{{ app_name }}"
+
+# Compose file version
+web_app_docker_compose_version: "3.8"
+
+# Wipe gate (destructive). Must be explicitly enabled + tag selected.
+web_app_wipe: false

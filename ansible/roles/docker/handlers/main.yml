@@ -1,5 +1,9 @@
 ---
-- name: restart docker
+# roles/docker/handlers/main.yml
+# Purpose:
+#   Handlers for docker role. Triggered by notify when docker config changes.
+
+- name: Restart docker
   ansible.builtin.service:
     name: docker
     state: restarted

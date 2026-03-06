@@ -46,3 +46,6 @@ Pulumi.*.yaml
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+
+# GitHub Actions self-hosted runner (local)
+actions-runner/
