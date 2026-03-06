@@ -1,10 +1,43 @@
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-
 - name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install packages
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix apt cache and retry
+      command: apt-get update --fix-missing
+
+    - name: Retry package installation
+      apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  always:
+    - name: Log completion
+      file:
+        path: /tmp/common_role_complete
+        state: touch
+
+  become: true
+  tags:
+    - packages
+
+- name: Create application user
+  block:
+    - name: Ensure app user exists
+      user:
+        name: "{{ app_user | default('appuser') }}"
+        shell: /bin/bash
+        create_home: yes
+
+  become: true
+  tags:
+    - users
