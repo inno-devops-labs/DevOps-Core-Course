@@ -1,0 +1,18 @@
+---
+- name: Ensure Grafana admin password is set
+  ansible.builtin.assert:
+    that: grafana_admin_password | length > 0
+    fail_msg: >-
+      Grafana admin password is required. Set env GF_SECURITY_ADMIN_PASSWORD
+      (e.g. export GF_SECURITY_ADMIN_PASSWORD=yourpass) or set grafana_admin_password in group_vars/vault.
+  tags: always
+
+- name: Setup monitoring directory and configs
+  ansible.builtin.include_tasks: setup.yml
+  tags:
+    - monitoring_setup
+
+- name: Deploy monitoring stack
+  ansible.builtin.include_tasks: deploy.yml
+  tags:
+    - monitoring_deploy

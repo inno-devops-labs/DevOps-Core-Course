@@ -40,5 +40,8 @@ __pycache__/
 ansible/.vault_pass
 ansible/inventory/*.pyc
 
+# Monitoring secrets
+monitoring/.env
+
 # Test
 test

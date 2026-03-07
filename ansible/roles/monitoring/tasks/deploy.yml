@@ -1,0 +1,35 @@
+---
+- name: Deploy monitoring stack with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir }}"
+    state: present
+    pull: always
+  register: compose_result
+  become: true
+
+- name: Wait for Loki to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ loki_port }}/ready"
+    return_content: true
+    status_code: 200
+  register: loki_ready
+  retries: 12
+  delay: 10
+  until: loki_ready.status == 200
+
+- name: Wait for Grafana to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ grafana_port }}/api/health"
+    return_content: true
+    status_code: 200
+  register: grafana_ready
+  retries: 12
+  delay: 10
+  until: grafana_ready.status == 200
+
+- name: Display deployment status
+  ansible.builtin.debug:
+    msg: >
+      Monitoring stack deployed.
+      Loki: http://localhost:{{ loki_port }}
+      Grafana: http://localhost:{{ grafana_port }}

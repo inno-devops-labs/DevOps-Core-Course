@@ -1,0 +1,12 @@
+---
+# Grafana admin password: set env before run, e.g.:
+#   export GF_SECURITY_ADMIN_PASSWORD=your_password
+# or set grafana_admin_password in group_vars (e.g. vault).
+- name: Deploy Monitoring Stack (Loki + Promtail + Grafana)
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+
+  roles:
+    - role: monitoring

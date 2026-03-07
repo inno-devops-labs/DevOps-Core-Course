@@ -3,17 +3,40 @@ DevOps Info Service
 Main application module
 """
 import os
+import json
 import socket
 import platform
 import logging
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+
+class JSONFormatter(logging.Formatter):
+    """Format log records as JSON for structured logging."""
+
+    EXTRA_FIELDS = ("method", "path", "status_code", "client_ip")
+
+    def format(self, record):
+        log_data = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        for field in self.EXTRA_FIELDS:
+            value = getattr(record, field, None)
+            if value is not None:
+                log_data[field] = value
+        if record.exc_info and record.exc_info[0]:
+            log_data["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_data)
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logging.root.handlers = [handler]
+logging.root.setLevel(logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app
@@ -75,11 +98,29 @@ def get_request_info():
     }
 
 
+@app.before_request
+def log_request():
+    logger.info("Incoming request", extra={
+        "method": request.method,
+        "path": request.path,
+        "client_ip": request.remote_addr,
+    })
+
+
+@app.after_request
+def log_response(response):
+    logger.info("Response sent", extra={
+        "method": request.method,
+        "path": request.path,
+        "status_code": response.status_code,
+        "client_ip": request.remote_addr,
+    })
+    return response
+
+
 @app.route('/')
 def index():
     """Main endpoint providing comprehensive service and system information."""
-    logger.info(
-        f'Request: {request.method} {request.path} from {request.remote_addr}')
 
     uptime = get_uptime()
 
@@ -118,7 +159,6 @@ def index():
 @app.route('/health')
 def health():
     """Health check endpoint for monitoring and orchestration tools."""
-    logger.debug(f'Health check from {request.remote_addr}')
 
     uptime = get_uptime()
 

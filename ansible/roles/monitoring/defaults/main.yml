@@ -1,0 +1,41 @@
+---
+monitoring_dir: /opt/monitoring
+
+loki_version: "3.0.0"
+promtail_version: "3.0.0"
+grafana_version: "12.3.1"
+
+loki_port: 3100
+grafana_port: 3000
+promtail_port: 9080
+
+loki_retention_period: "168h"
+loki_schema_version: v13
+
+grafana_admin_user: admin
+# Password must be set via env GF_SECURITY_ADMIN_PASSWORD or group_vars/vault
+grafana_admin_password: "{{ lookup('env', 'GF_SECURITY_ADMIN_PASSWORD') }}"
+
+app_python_image: karishka1222/devops-python-app
+app_python_tag: latest
+app_python_port: 8000
+app_python_internal_port: 5000
+
+app_go_image: karishka1222/devops-go-app
+app_go_tag: latest
+app_go_port: 8001
+app_go_internal_port: 8080
+
+resource_limits:
+  loki:
+    cpus: "1.0"
+    memory: "1G"
+  promtail:
+    cpus: "0.5"
+    memory: "256M"
+  grafana:
+    cpus: "1.0"
+    memory: "512M"
+  app:
+    cpus: "0.5"
+    memory: "256M"
