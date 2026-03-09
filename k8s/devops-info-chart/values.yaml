@@ -59,3 +59,25 @@ strategy:
   rollingUpdate:
     maxSurge: 1
     maxUnavailable: 0
+
+# Service account used for Vault Kubernetes authentication
+serviceAccount:
+  name: "default"
+
+# Application secrets — store placeholder values here; never commit real secrets.
+# Override during deploy: helm upgrade ... --set secrets.password=real-value
+# Or use an external secret manager (Vault, AWS Secrets Manager, etc.)
+secrets:
+  username: "app-user"
+  password: "changeme"
+  apiKey: "placeholder-api-key"
+
+# HashiCorp Vault Agent Injector integration
+vault:
+  enabled: false
+  role: "devops-info-role"
+  secretPath: "myapp/config"
+
+# Named-template environment variables (bonus — DRY pattern)
+appEnv: "production"
+logLevel: "info"

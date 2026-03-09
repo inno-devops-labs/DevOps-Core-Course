@@ -28,3 +28,18 @@ Create chart name+version for helm.sh/chart label.
 {{- define "devops-info-chart.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
+
+{{/*
+Common application environment variables — DRY helper (Bonus Task).
+Centralises env vars shared across multiple containers / templates.
+
+Usage:
+  env:
+    {{- include "devops-info-chart.envVars" . | nindent 12 }}
+*/}}
+{{- define "devops-info-chart.envVars" -}}
+- name: APP_ENV
+  value: {{ .Values.appEnv | default "production" | quote }}
+- name: LOG_LEVEL
+  value: {{ .Values.logLevel | default "info" | quote }}
+{{- end }}
