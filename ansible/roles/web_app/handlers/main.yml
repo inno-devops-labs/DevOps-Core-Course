@@ -1,6 +1,6 @@
 ---
 - name: Restart app compose
-  ansible.builtin.command: docker compose up -d --force-recreate
-  args:
+  ansible.builtin.command:
+    cmd: docker compose up -d --force-recreate
     chdir: "{{ web_app_compose_project_dir }}"
   changed_when: true

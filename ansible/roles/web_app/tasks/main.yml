@@ -12,7 +12,12 @@
     - compose
   block:
     - name: Log in to Docker Hub
-      ansible.builtin.command: docker login --username "{{ dockerhub_username }}" --password "{{ dockerhub_password }}"
+      ansible.builtin.shell:
+        cmd: set -o pipefail && echo "$DHPASS" | docker login --username "$DHUSER" --password-stdin
+        executable: /bin/bash
+      environment:
+        DHUSER: "{{ dockerhub_username }}"
+        DHPASS: "{{ dockerhub_password }}"
       no_log: true
       changed_when: true
 
@@ -30,15 +35,15 @@
       notify: Restart app compose
 
     - name: Pull Docker image
-      ansible.builtin.command: docker compose pull
-      args:
+      ansible.builtin.command:
+        cmd: docker compose pull
         chdir: "{{ web_app_compose_project_dir }}"
       register: web_app_pull_result
       changed_when: "'Downloaded' in web_app_pull_result.stderr or 'Pull complete' in web_app_pull_result.stderr"
 
     - name: Deploy with docker compose
-      ansible.builtin.command: docker compose up -d
-      args:
+      ansible.builtin.command:
+        cmd: docker compose up -d
         chdir: "{{ web_app_compose_project_dir }}"
       register: web_app_compose_result
       changed_when: "'Started' in web_app_compose_result.stderr or 'Creating' in web_app_compose_result.stderr"
@@ -67,7 +72,3 @@
     - name: Fail the play
       ansible.builtin.fail:
         msg: "Application deployment failed"
-
-  tags:
-    - app_deploy
-    - compose

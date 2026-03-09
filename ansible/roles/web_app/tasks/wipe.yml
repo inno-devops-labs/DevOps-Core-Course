@@ -6,12 +6,11 @@
     - web_app_wipe
   block:
     - name: Stop and remove containers via docker compose
-      ansible.builtin.command: docker compose down --remove-orphans
-      args:
+      ansible.builtin.command:
+        cmd: docker compose down --remove-orphans
         chdir: "{{ web_app_compose_project_dir }}"
-      register: web_app_down_result
-      changed_when: web_app_down_result.rc == 0
       failed_when: false
+      changed_when: true
 
     - name: Remove docker-compose file
       ansible.builtin.file:
@@ -24,10 +23,10 @@
         state: absent
 
     - name: Remove Docker image
-      ansible.builtin.command: "docker rmi {{ docker_image }}:{{ docker_image_tag }}"
-      register: web_app_rmi_result
-      changed_when: web_app_rmi_result.rc == 0
+      ansible.builtin.command:
+        cmd: "docker rmi {{ docker_image }}:{{ docker_image_tag }}"
       failed_when: false
+      changed_when: true
 
     - name: Log wipe completion
       ansible.builtin.debug:

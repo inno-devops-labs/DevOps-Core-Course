@@ -17,7 +17,8 @@
 
   rescue:
     - name: Fix apt cache on failure
-      ansible.builtin.command: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
       changed_when: true
 
     - name: Retry package installation

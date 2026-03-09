@@ -1,6 +1,4 @@
 ---
-version: '3.8'
-
 services:
   {{ web_app_name }}:
     image: {{ docker_image }}:{{ docker_image_tag }}
@@ -10,8 +8,8 @@ services:
     restart: {{ web_app_restart_policy }}
     environment:
       APP_NAME: "{{ web_app_name }}"
-{% if app_env_vars is defined %}
-{% for key, value in app_env_vars.items() %}
+{% if web_app_env_vars is defined %}
+{% for key, value in web_app_env_vars.items() %}
       {{ key }}: "{{ value }}"
 {% endfor %}
 {% endif %}
