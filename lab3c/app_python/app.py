@@ -5,6 +5,7 @@ FastAPI application module.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import platform
@@ -28,11 +29,12 @@ SERVICE_FRAMEWORK = "FastAPI"
 
 START_TIME = datetime.now(timezone.utc)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
 logger = logging.getLogger("devops-info-service")
+logger.setLevel(logging.INFO)
+
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+logger.handlers = [handler]
 
 app = FastAPI(
     title="DevOps Info Service",
@@ -75,9 +77,38 @@ def isoformat_utc(dt: datetime) -> str:
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    logger.info("Request: %s %s", request.method, request.url.path)
+    start_time = datetime.now(timezone.utc)
+    logger.info(
+        json.dumps(
+            {
+                "timestamp": isoformat_utc(start_time),
+                "level": "INFO",
+                "service": SERVICE_NAME,
+                "event": "request",
+                "method": request.method,
+                "path": request.url.path,
+                "client_ip": request.client.host if request.client else "unknown",
+                "user_agent": request.headers.get("user-agent", "unknown"),
+            }
+        )
+    )
     response = await call_next(request)
-    logger.info("Response: %s %s -> %s", request.method, request.url.path, response.status_code)
+    end_time = datetime.now(timezone.utc)
+    logger.info(
+        json.dumps(
+            {
+                "timestamp": isoformat_utc(end_time),
+                "level": "INFO",
+                "service": SERVICE_NAME,
+                "event": "response",
+                "method": request.method,
+                "path": request.url.path,
+                "status": response.status_code,
+                "client_ip": request.client.host if request.client else "unknown",
+                "user_agent": request.headers.get("user-agent", "unknown"),
+            }
+        )
+    )
     return response
 
 
@@ -99,7 +130,19 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
-    logger.exception("Unhandled error: %s", exc)
+    logger.error(
+        json.dumps(
+            {
+                "timestamp": isoformat_utc(datetime.now(timezone.utc)),
+                "level": "ERROR",
+                "service": SERVICE_NAME,
+                "event": "exception",
+                "method": request.method,
+                "path": request.url.path,
+                "error": str(exc),
+            }
+        )
+    )
     return JSONResponse(
         status_code=500,
         content={
