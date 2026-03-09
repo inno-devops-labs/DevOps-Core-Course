@@ -1,0 +1,126 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Application Logs",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "" },
+          "editorMode": "code",
+          "expr": "{app=~\"devops-.*\"}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
+    },
+    {
+      "title": "Request Rate (logs/sec by app)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "datasource": { "type": "loki", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "" },
+          "editorMode": "code",
+          "expr": "sum by (app) (rate({app=~\"devops-.*\"} [1m]))",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20,
+            "pointSize": 5,
+            "showPoints": "auto"
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "title": "Error Logs",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "datasource": { "type": "loki", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "" },
+          "editorMode": "code",
+          "expr": "{app=~\"devops-.*\"} | json | level=\"ERROR\"",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
+    },
+    {
+      "title": "Log Level Distribution",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 18 },
+      "datasource": { "type": "loki", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "" },
+          "editorMode": "code",
+          "expr": "sum by (level) (count_over_time({app=~\"devops-.*\"} | json [5m]))",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        },
+        "pieType": "pie",
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "right" }
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["loki", "logging", "devops"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Application Logs Dashboard",
+  "uid": "app-logs-dashboard",
+  "version": 1
+}
