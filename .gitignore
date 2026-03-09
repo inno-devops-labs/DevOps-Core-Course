@@ -69,3 +69,8 @@ credentials
 
 # Test
 test
+
+# Ansible
+*.retry
+.vault_pass
+ansible/inventory/*.pyc

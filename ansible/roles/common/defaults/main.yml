@@ -1,0 +1,17 @@
+---
+# Default packages to install
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - vim
+  - htop
+  - wget
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - software-properties-common
+
+# Timezone setting
+common_timezone: "Europe/Moscow"
