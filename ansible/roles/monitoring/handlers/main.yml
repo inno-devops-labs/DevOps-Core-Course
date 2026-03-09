@@ -1,0 +1,14 @@
+---
+- name: restart_loki
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir }}"
+    state: restarted
+    services:
+      - loki
+
+- name: restart_promtail
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir }}"
+    state: restarted
+    services:
+      - promtail

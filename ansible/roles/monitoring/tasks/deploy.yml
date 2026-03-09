@@ -1,0 +1,45 @@
+---
+- name: Deploy monitoring stack with Docker Compose v2
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir }}"
+    pull: missing
+    state: present
+  register: compose_result
+
+- name: Wait for Loki to be ready
+  uri:
+    url: "http://localhost:{{ loki_port }}/ready"
+    method: GET
+    status_code: 200
+  register: loki_ready
+  retries: 15
+  delay: 5
+  until: loki_ready.status == 200
+
+- name: Wait for Grafana to be ready
+  uri:
+    url: "http://localhost:{{ grafana_port }}/api/health"
+    method: GET
+    status_code: 200
+  register: grafana_ready
+  retries: 15
+  delay: 5
+  until: grafana_ready.status == 200
+
+- name: Configure Loki data source in Grafana
+  uri:
+    url: "http://localhost:{{ grafana_port }}/api/datasources"
+    method: POST
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: "Loki"
+      type: "loki"
+      url: "http://loki:{{ loki_port }}"
+      access: "proxy"
+      isDefault: true
+    status_code: [200, 409]  # 409 = already exists (idempotent)
+  changed_when: grafana_ds.status == 200
+  register: grafana_ds

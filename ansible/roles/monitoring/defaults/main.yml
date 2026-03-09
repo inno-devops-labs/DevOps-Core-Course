@@ -1,0 +1,39 @@
+---
+# ── Image versions ──────────────────────────────────────────────────────────
+loki_version: "3.0.0"
+promtail_version: "3.0.0"
+grafana_version: "12.3.1"
+
+# ── Ports ───────────────────────────────────────────────────────────────────
+loki_port: 3100
+promtail_port: 9080
+grafana_port: 3000
+
+# ── Retention ───────────────────────────────────────────────────────────────
+loki_retention_period: "168h"   # 7 days
+
+# ── Loki schema ─────────────────────────────────────────────────────────────
+loki_schema_version: "v13"
+loki_schema_from: "2020-10-24"
+
+# ── Deployment directory on the target host ─────────────────────────────────
+monitoring_dir: "/opt/monitoring"
+
+# ── Grafana security (override via vault or group_vars) ─────────────────────
+grafana_admin_user: "admin"
+grafana_admin_password: "changeme"
+
+# ── Resource limits ─────────────────────────────────────────────────────────
+loki_memory_limit: "1G"
+loki_cpus: "1.0"
+promtail_memory_limit: "256M"
+promtail_cpus: "0.5"
+grafana_memory_limit: "512M"
+grafana_cpus: "1.0"
+
+# ── Application images to monitor ───────────────────────────────────────────
+monitored_apps:
+  - name: devops-python
+    image: "zsalavat/devops-info-service-python:latest"
+    port: 8000
+    internal_port: 5000

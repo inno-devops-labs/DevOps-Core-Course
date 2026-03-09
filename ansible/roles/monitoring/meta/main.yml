@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  role_name: monitoring
+  author: setterwars
+  description: Deploy Loki + Promtail + Grafana logging stack with Docker Compose
+  min_ansible_version: "2.16"
+
+dependencies:
+  - role: docker

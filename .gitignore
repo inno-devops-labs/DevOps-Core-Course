@@ -15,6 +15,7 @@ terraform.tfvars
 
 # Sensitive files
 secrets.auto.tfvars
+.env
 
 Pulumi.*.yaml
 venv/
