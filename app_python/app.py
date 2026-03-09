@@ -6,6 +6,7 @@ Production-minded FastAPI application that exposes runtime and system details.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import platform
@@ -21,12 +22,41 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
+class JSONFormatter(logging.Formatter):
+    """Custom JSON log formatter for structured logging."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        log_entry: Dict[str, Any] = {
+            "timestamp": datetime.now(timezone.utc)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if hasattr(record, "method"):
+            log_entry["method"] = record.method
+        if hasattr(record, "path"):
+            log_entry["path"] = record.path
+        if hasattr(record, "status_code"):
+            log_entry["status_code"] = record.status_code
+        if hasattr(record, "client_ip"):
+            log_entry["client_ip"] = record.client_ip
+        if record.exc_info and record.exc_info[1]:
+            log_entry["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_entry, ensure_ascii=False)
+
+
 def _configure_logging() -> logging.Logger:
-    """Configure application-wide logging and return a module logger."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
+    """Configure application-wide logging with JSON output."""
+    handler = logging.StreamHandler()
+    handler.setFormatter(JSONFormatter())
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+
     return logging.getLogger(__name__)
 
 
@@ -146,10 +176,26 @@ def get_request_info(request: Request) -> Dict[str, Any]:
 
 @app.middleware("http")
 async def log_request(request: Request, call_next):
-    """Log incoming requests with basic metadata."""
+    """Log incoming requests with structured metadata."""
     client_ip = request.client.host if request.client else "unknown"
-    logger.info("Request received: %s %s from %s", request.method, request.url.path, client_ip)
+    logger.info(
+        "Request received",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "client_ip": client_ip,
+        },
+    )
     response = await call_next(request)
+    logger.info(
+        "Response sent",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "client_ip": client_ip,
+        },
+    )
     return response
 
 
@@ -208,5 +254,12 @@ async def handle_unexpected_error(request: Request, exc: Exception):
 
 if __name__ == "__main__":
     log_level = "debug" if DEBUG else "info"
-    logger.info("Starting DevOps Info Service on %s:%s (debug=%s)", HOST, PORT, DEBUG)
+    logger.info(
+        "Starting DevOps Info Service",
+        extra={
+            "method": "STARTUP",
+            "path": f"{HOST}:{PORT}",
+            "client_ip": "localhost",
+        },
+    )
     uvicorn.run(app, host=HOST, port=PORT, log_level=log_level)
