@@ -1,0 +1,237 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Request Rate by Endpoint",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "" },
+          "editorMode": "code",
+          "expr": "sum(rate(http_requests_total[5m])) by (endpoint)",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15, "pointSize": 5 },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "title": "Error Rate (5xx)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "" },
+          "editorMode": "code",
+          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m]))",
+          "legendFormat": "5xx errors/sec",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 },
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "title": "Request Duration p95",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "" },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))",
+          "legendFormat": "p95 {{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 15 },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "title": "Request Duration Heatmap",
+      "type": "heatmap",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "" },
+          "editorMode": "code",
+          "expr": "sum(increase(http_request_duration_seconds_bucket[1m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "calculate": false,
+        "color": { "scheme": "Oranges" },
+        "yAxis": { "unit": "s" }
+      }
+    },
+    {
+      "title": "Active Requests",
+      "type": "gauge",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "" },
+          "editorMode": "code",
+          "expr": "http_requests_in_progress",
+          "legendFormat": "in-progress",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 50 }
+            ]
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Status Code Distribution",
+      "type": "piechart",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "" },
+          "editorMode": "code",
+          "expr": "sum by (status) (rate(http_requests_total[5m]))",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "pieType": "pie",
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "right" }
+      }
+    },
+    {
+      "title": "Service Up/Down",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "" },
+          "editorMode": "code",
+          "expr": "up{job=\"app\"}",
+          "legendFormat": "app-python",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } }, "type": "value" }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "title": "Endpoint Call Counter",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "" },
+          "editorMode": "code",
+          "expr": "sum(rate(devops_info_endpoint_calls_total[5m])) by (endpoint)",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "drawStyle": "bars", "fillOpacity": 50 },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["prometheus", "metrics", "devops"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Application Metrics Dashboard",
+  "uid": "app-metrics-dashboard",
+  "version": 1
+}
