@@ -2,14 +2,14 @@
 version: '3.8'
 
 services:
-  {{ app_name }}:
+  {{ web_app_name }}:
     image: {{ docker_image }}:{{ docker_image_tag }}
-    container_name: {{ app_name }}
+    container_name: {{ web_app_name }}
     ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
-    restart: {{ app_restart_policy }}
+      - "{{ web_app_port }}:{{ web_app_internal_port }}"
+    restart: {{ web_app_restart_policy }}
     environment:
-      APP_NAME: "{{ app_name }}"
+      APP_NAME: "{{ web_app_name }}"
 {% if app_env_vars is defined %}
 {% for key, value in app_env_vars.items() %}
       {{ key }}: "{{ value }}"

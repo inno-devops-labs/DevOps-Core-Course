@@ -1,10 +1,13 @@
 ---
 # Package installation block with error handling
 - name: Install system packages
+  become: true
+  tags:
+    - packages
   block:
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install common packages
@@ -14,7 +17,7 @@
 
   rescue:
     - name: Fix apt cache on failure
-      ansible.builtin.shell: apt-get update --fix-missing
+      ansible.builtin.command: apt-get update --fix-missing
       changed_when: true
 
     - name: Retry package installation
@@ -28,7 +31,3 @@
         content: "Common packages provisioned at {{ ansible_date_time.iso8601 }}\n"
         dest: /tmp/ansible_common_done.log
         mode: '0644'
-
-  become: true
-  tags:
-    - packages
