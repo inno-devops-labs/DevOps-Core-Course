@@ -11,11 +11,11 @@ import argparse
 import json
 from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 
 app = FastAPI()
+
 
 # JSON Logging setup
 class JSONFormatter(logging.Formatter):
@@ -30,12 +30,13 @@ class JSONFormatter(logging.Formatter):
             log_record.update(record.extra)
         return json.dumps(log_record)
 
+
 # Configure root logger
 logger = logging.getLogger()
 handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
 logger.addHandler(handler)
-logger.setLevel(logging.INFO) 
+logger.setLevel(logging.INFO)
 
 # Configuration
 parser = argparse.ArgumentParser()
@@ -73,8 +74,8 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
         )
         return response
 
-app.add_middleware(RequestLogMiddleware)
 
+app.add_middleware(RequestLogMiddleware)
 
 
 def get_service_info():
