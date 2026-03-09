@@ -120,10 +120,7 @@ Example JSON log line:
 }
 ```
 
-Screenshots used in the report are stored in `lab7c/docs/`, for example:
-- `lab7c/docs/grafana-explore.png` — Explore view with `{app="devops-python"}`.
-- `lab7c/docs/grafana-dashboard.png` — dashboard with all four panels.
-
+Screenshots are stored in `lab7c/docs/`.
 ## 5. Dashboard & LogQL
 
 ### 5.1 Explore queries
