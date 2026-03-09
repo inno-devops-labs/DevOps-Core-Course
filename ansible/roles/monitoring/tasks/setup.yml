@@ -1,0 +1,53 @@
+---
+# monitoring/tasks/setup.yml — create directories and template configs
+
+- name: Create monitoring directory structure
+  become: true
+  tags:
+    - monitoring
+    - monitoring_setup
+  block:
+    - name: Create project directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
+        mode: "0755"
+      loop:
+        - "{{ monitoring_project_dir }}"
+        - "{{ monitoring_project_dir }}/loki"
+        - "{{ monitoring_project_dir }}/promtail"
+        - "{{ monitoring_project_dir }}/grafana/provisioning/datasources"
+
+    - name: Template Loki configuration
+      ansible.builtin.template:
+        src: loki-config.yml.j2
+        dest: "{{ monitoring_project_dir }}/loki/config.yml"
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
+        mode: "0644"
+
+    - name: Template Promtail configuration
+      ansible.builtin.template:
+        src: promtail-config.yml.j2
+        dest: "{{ monitoring_project_dir }}/promtail/config.yml"
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
+        mode: "0644"
+
+    - name: Template Grafana datasource provisioning
+      ansible.builtin.template:
+        src: grafana-datasource.yml.j2
+        dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/loki.yml"
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
+        mode: "0644"
+
+    - name: Template Docker Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ monitoring_project_dir }}/docker-compose.yml"
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
+        mode: "0644"

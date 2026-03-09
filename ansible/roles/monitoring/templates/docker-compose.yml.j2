@@ -1,0 +1,95 @@
+---
+services:
+  loki:
+    image: grafana/loki:{{ monitoring_loki_version }}
+    container_name: loki
+    ports:
+      - "{{ monitoring_loki_port }}:{{ monitoring_loki_port }}"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/config.yml
+    networks:
+      - logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ monitoring_loki_port }}/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: {{ monitoring_loki_memory_limit }}
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:{{ monitoring_promtail_version }}
+    container_name: promtail
+    ports:
+      - "{{ monitoring_promtail_port }}:{{ monitoring_promtail_port }}"
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - logging
+    depends_on:
+      loki:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: {{ monitoring_promtail_memory_limit }}
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:{{ monitoring_grafana_version }}
+    container_name: grafana
+    ports:
+      - "{{ monitoring_grafana_port }}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_AUTH_BASIC_ENABLED=true
+      - GF_SECURITY_ADMIN_USER={{ monitoring_grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ monitoring_grafana_admin_password }}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_LOG_MODE=console
+    networks:
+      - logging
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: {{ monitoring_grafana_memory_limit }}
+    restart: unless-stopped
+
+  app-python:
+    image: 112005/devops-lab3-python:latest
+    container_name: app-python
+    ports:
+      - "8000:8080"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    restart: unless-stopped
+
+volumes:
+  loki-data:
+  grafana-data:
+
+networks:
+  logging:
+    driver: bridge

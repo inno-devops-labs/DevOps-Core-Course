@@ -6,18 +6,52 @@ import os
 import socket
 import platform
 import logging
+import json
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
+from pythonjsonlogger import jsonlogger
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# ── JSON logging setup ────────────────────────────────────────────────────────
+class CustomJsonFormatter(jsonlogger.JsonFormatter):
+    def add_fields(self, log_record, record, message_dict):
+        super().add_fields(log_record, record, message_dict)
+        log_record["timestamp"] = datetime.now(timezone.utc).isoformat()
+        log_record["level"] = record.levelname
+        log_record["service"] = "devops-info-service"
+
+handler = logging.StreamHandler()
+handler.setFormatter(CustomJsonFormatter("%(timestamp)s %(level)s %(name)s %(message)s"))
+logging.root.setLevel(logging.INFO)
+logging.root.handlers = [handler]
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# ── Request / response logging hooks ─────────────────────────────────────────
+@app.before_request
+def log_request():
+    g.start_time = datetime.now(timezone.utc)
+    logger.info("http_request", extra={
+        "method": request.method,
+        "path": request.path,
+        "client_ip": request.remote_addr,
+        "user_agent": request.headers.get("User-Agent", "unknown"),
+    })
+
+@app.after_request
+def log_response(response):
+    duration_ms = None
+    if hasattr(g, "start_time"):
+        delta = datetime.now(timezone.utc) - g.start_time
+        duration_ms = round(delta.total_seconds() * 1000, 2)
+    logger.info("http_response", extra={
+        "method": request.method,
+        "path": request.path,
+        "status_code": response.status_code,
+        "duration_ms": duration_ms,
+    })
+    return response
 
 # Configuration
 HOST = os.getenv('HOST', '0.0.0.0')
@@ -157,7 +191,7 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
-    logger.error(f'Internal error: {error}')
+    logger.error("internal_server_error", extra={"error": str(error)})
     return jsonify({
         'error': 'Internal Server Error',
         'message': 'An unexpected error occurred'
@@ -165,8 +199,10 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
-    logger.info('Starting DevOps Info Service...')
-    logger.info(f'Host: {HOST}, Port: {PORT}, Debug: {DEBUG}')
-    logger.info(f'Application started at {START_TIME.isoformat()}')
-    
+    logger.info("app_startup", extra={
+        "host": HOST,
+        "port": PORT,
+        "debug": DEBUG,
+        "started_at": START_TIME.isoformat(),
+    })
     app.run(host=HOST, port=PORT, debug=DEBUG)

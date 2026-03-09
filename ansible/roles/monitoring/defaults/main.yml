@@ -1,0 +1,29 @@
+---
+# monitoring role defaults — all values parameterisable via vars files or extra-vars
+
+# ── Service versions ──────────────────────────────────────────────────────────
+monitoring_loki_version: "3.0.0"
+monitoring_promtail_version: "3.0.0"
+monitoring_grafana_version: "12.3.1"
+
+# ── Ports ─────────────────────────────────────────────────────────────────────
+monitoring_loki_port: 3100
+monitoring_promtail_port: 9080
+monitoring_grafana_port: 3000
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+monitoring_project_dir: /opt/monitoring
+
+# ── Loki settings ─────────────────────────────────────────────────────────────
+monitoring_loki_retention: "168h"
+monitoring_loki_schema_version: "v13"
+monitoring_loki_schema_from: "2024-01-01"
+
+# ── Grafana credentials (override via Vault or extra-vars) ────────────────────
+monitoring_grafana_admin_user: admin
+monitoring_grafana_admin_password: "changeme"
+
+# ── Resource limits ───────────────────────────────────────────────────────────
+monitoring_loki_memory_limit: "1G"
+monitoring_promtail_memory_limit: "256M"
+monitoring_grafana_memory_limit: "512M"

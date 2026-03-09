@@ -1,0 +1,15 @@
+---
+# monitoring role — main orchestration
+# Calls setup.yml then deploy.yml
+
+- name: Include monitoring setup tasks
+  ansible.builtin.include_tasks: setup.yml
+  tags:
+    - monitoring
+    - monitoring_setup
+
+- name: Include monitoring deploy tasks
+  ansible.builtin.include_tasks: deploy.yml
+  tags:
+    - monitoring
+    - monitoring_deploy
