@@ -1,0 +1,18 @@
+apiVersion: v2
+name: app2-chart
+description: Helm chart for the DevOps Info Service v2 (http-echo app)
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - echo
+  - http
+  - devops
+maintainers:
+  - name: Vladimir Zhidkov
+sources:
+  - https://github.com/vladimirzhidkov/DevOps-Core-Course
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: "file://../common-lib"

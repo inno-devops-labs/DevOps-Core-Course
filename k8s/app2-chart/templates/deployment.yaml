@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: {{ .Values.strategy.type }}
+    {{- if eq .Values.strategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+    {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "-text={{ .Values.args.text }}"
+            - "-listen=:{{ .Values.args.listenPort }}"
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+              name: http
+          resources:
+            requests:
+              memory: {{ .Values.resources.requests.memory | quote }}
+              cpu: {{ .Values.resources.requests.cpu | quote }}
+            limits:
+              memory: {{ .Values.resources.limits.memory | quote }}
+              cpu: {{ .Values.resources.limits.cpu | quote }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.httpGet.path }}
+              port: {{ .Values.livenessProbe.httpGet.port }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.httpGet.path }}
+              port: {{ .Values.readinessProbe.httpGet.port }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+      restartPolicy: Always

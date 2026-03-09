@@ -1,0 +1,13 @@
+apiVersion: v2
+name: common-lib
+description: Shared Helm template library for DevOps Course applications
+type: library
+version: 0.1.0
+keywords:
+  - library
+  - shared
+  - templates
+maintainers:
+  - name: Vladimir Zhidkov
+sources:
+  - https://github.com/vladimirzhidkov/DevOps-Core-Course

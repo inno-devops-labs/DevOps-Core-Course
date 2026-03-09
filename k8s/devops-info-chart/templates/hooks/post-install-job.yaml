@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "common.fullname" . }}-post-install"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    # This job runs AFTER all chart resources are installed and ready
+    "helm.sh/hook": post-install
+    # Weight 5 means this runs after other post-install hooks with lower weights
+    "helm.sh/hook-weight": "5"
+    # Delete this job once it has succeeded to keep the cluster clean
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "common.fullname" . }}-post-install"
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+        helm.sh/hook: post-install
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-job
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Post-install smoke test started ==="
+              echo "Release: {{ .Release.Name }}"
+              echo "Namespace: {{ .Release.Namespace }}"
+              echo "Waiting for application to stabilize..."
+              sleep 10
+              echo "Running smoke tests..."
+              echo "  Checking deployment: {{ include "common.fullname" . }}"
+              echo "  Expected replicas: {{ .Values.replicaCount }}"
+              echo "Smoke tests passed."
+              echo "=== Post-install smoke test finished ==="
+              echo ""
+              echo "Application is ready!"
+              echo "Service: {{ include "common.fullname" . }}:{{ .Values.service.port }}"

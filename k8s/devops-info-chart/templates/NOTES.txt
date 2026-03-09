@@ -1,0 +1,33 @@
+1. DevOps Info Service has been deployed!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Chart version: {{ .Chart.Version }}
+App version: {{ .Chart.AppVersion }}
+
+Replicas: {{ .Values.replicaCount }}
+Image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+
+{{- if eq .Values.service.type "NodePort" }}
+
+Get the application URL:
+  http://$(minikube ip):{{ .Values.service.nodePort }}
+
+Or use port-forward:
+  kubectl port-forward svc/{{ include "common.fullname" . }} 8080:{{ .Values.service.port }}
+  http://localhost:8080
+
+{{- else if eq .Values.service.type "LoadBalancer" }}
+
+Get the application URL (wait for EXTERNAL-IP to be assigned):
+  kubectl get svc {{ include "common.fullname" . }} -w
+
+{{- else }}
+
+Use port-forward to access the service:
+  kubectl port-forward svc/{{ include "common.fullname" . }} 8080:{{ .Values.service.port }}
+  http://localhost:8080
+
+{{- end }}
+
+Health check endpoint: /health
