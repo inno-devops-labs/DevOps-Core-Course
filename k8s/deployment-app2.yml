@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-info-service-v2
+  labels:
+    app: devops-info-service-v2
+    environment: development
+    managed-by: kubectl
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devops-info-service-v2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: devops-info-service-v2
+        version: latest
+    spec:
+      containers:
+        - name: devops-info-service-v2
+          image: hashicorp/http-echo:latest
+          args:
+            - "-text=Hello from App 2!"
+            - "-listen=:5678"
+          ports:
+            - containerPort: 5678
+              protocol: TCP
+              name: http
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+      restartPolicy: Always

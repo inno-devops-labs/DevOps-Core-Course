@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-info-service
+  labels:
+    app: devops-info-service
+    environment: development
+    managed-by: kubectl
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: devops-info-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: devops-info-service
+        version: latest
+    spec:
+      containers:
+        - name: devops-info-service
+          image: vladimirzhidkov/devops-info-service:lab02
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              protocol: TCP
+              name: http
+          env:
+            - name: PORT
+              value: "5000"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+      restartPolicy: Always
