@@ -18,7 +18,8 @@ from typing import Any, Dict, Tuple
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import http_exception_handler
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 
@@ -107,6 +108,34 @@ app = FastAPI(
     description=SERVICE_INFO["description"],
 )
 
+# ---------------------------------------------------------------------------
+# Prometheus Metrics
+# ---------------------------------------------------------------------------
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+)
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+)
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+devops_info_endpoint_calls = Counter(
+    "devops_info_endpoint_calls_total",
+    "Endpoint-specific call counter",
+    ["endpoint"],
+)
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time spent collecting system information",
+)
+
 
 def _iso_utc_now() -> str:
     """Return the current time in ISO 8601 format with a UTC 'Z' suffix."""
@@ -175,8 +204,12 @@ def get_request_info(request: Request) -> Dict[str, Any]:
 
 
 @app.middleware("http")
-async def log_request(request: Request, call_next):
-    """Log incoming requests with structured metadata."""
+async def log_and_instrument_request(request: Request, call_next):
+    """Log incoming requests and record Prometheus metrics."""
+    # Skip metrics endpoint from instrumentation to avoid recursion
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
     client_ip = request.client.host if request.client else "unknown"
     logger.info(
         "Request received",
@@ -186,7 +219,24 @@ async def log_request(request: Request, call_next):
             "client_ip": client_ip,
         },
     )
+
+    http_requests_in_progress.inc()
+    start = time.monotonic()
     response = await call_next(request)
+    duration = time.monotonic() - start
+    http_requests_in_progress.dec()
+
+    endpoint = request.url.path
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status=str(response.status_code),
+    ).inc()
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=endpoint,
+    ).observe(duration)
+
     logger.info(
         "Response sent",
         extra={
@@ -199,22 +249,31 @@ async def log_request(request: Request, call_next):
     return response
 
 
+@app.get("/metrics", summary="Prometheus metrics", include_in_schema=False)
+async def metrics():
+    """Expose Prometheus metrics."""
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 @app.get("/", summary="Service information")
 async def index(request: Request):
     """Main endpoint returning service, system, runtime, and request info."""
-    response = {
-        "service": SERVICE_INFO,
-        "system": get_system_info(),
-        "runtime": get_runtime_info(),
-        "request": get_request_info(request),
-        "endpoints": ENDPOINTS,
-    }
+    devops_info_endpoint_calls.labels(endpoint="/").inc()
+    with devops_info_system_collection_seconds.time():
+        response = {
+            "service": SERVICE_INFO,
+            "system": get_system_info(),
+            "runtime": get_runtime_info(),
+            "request": get_request_info(request),
+            "endpoints": ENDPOINTS,
+        }
     return response
 
 
 @app.get("/health", summary="Health check")
 async def health():
     """Health endpoint suitable for probes and monitoring."""
+    devops_info_endpoint_calls.labels(endpoint="/health").inc()
     uptime_seconds, _ = get_uptime()
     payload = {
         "status": "healthy",
