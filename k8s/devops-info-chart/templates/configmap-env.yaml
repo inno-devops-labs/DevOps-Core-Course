@@ -1,0 +1,14 @@
+{{/*
+ConfigMap that injects key/value pairs as environment variables via envFrom.
+Values come from values.yaml (appEnv, logLevel) and the environment field.
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info-chart.fullname" . }}-env
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.appEnv | default "production" | quote }}
+  LOG_LEVEL: {{ .Values.logLevel | default "info" | quote }}
+  VISITS_FILE: {{ .Values.persistence.visitsFile | default "/data/visits" | quote }}

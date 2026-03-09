@@ -124,8 +124,37 @@ docker pull <dockerhub-username>/<image>:<tag>
 
 ## API Endpoints
 
-- `GET /` - Service and system information
+- `GET /` - Service and system information (increments visit counter)
 - `GET /health` - Health check for probes and monitoring
+- `GET /visits` - Returns the total number of visits to the root endpoint
+
+## Persistent Visits Counter
+
+The application tracks how many times the root endpoint (`/`) has been called.
+The counter is stored in a plain text file at the path set by the `VISITS_FILE`
+environment variable (default: `/data/visits`).
+
+On each request to `/`:
+1. The counter file is read (defaults to `0` if missing).
+2. The value is incremented and written back atomically (file locking via `fcntl`).
+3. The new count is included in the JSON response under the `visits` key.
+
+The `/visits` endpoint lets you query the current count without modifying it.
+
+### Docker Compose (with persistence)
+
+```bash
+# From app_python/
+docker compose up --build
+curl http://localhost:5000/
+curl http://localhost:5000/visits
+# Restart and verify counter continues from where it left off
+docker compose restart
+curl http://localhost:5000/visits
+```
+
+The named volume `visits_data` is mounted at `/data` inside the container, so
+the counter file survives container restarts and recreations.
 
 ## Configuration
 
@@ -136,3 +165,4 @@ The service is configured through environment variables:
 | `HOST` | `0.0.0.0` | Host interface to bind |
 | `PORT` | `5000` | Port to listen on |
 | `DEBUG` | `false` | Enable debug-level logging |
+| `VISITS_FILE` | `/data/visits` | Path to the visit counter file |

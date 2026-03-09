@@ -81,3 +81,10 @@ vault:
 # Named-template environment variables (bonus — DRY pattern)
 appEnv: "production"
 logLevel: "info"
+
+# Persistent storage for the visits counter
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""       # empty string = use cluster default
+  visitsFile: "/data/visits"

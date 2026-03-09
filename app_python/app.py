@@ -6,6 +6,7 @@ Production-minded FastAPI application that exposes runtime and system details.
 
 from __future__ import annotations
 
+import fcntl
 import json
 import logging
 import os
@@ -98,7 +99,10 @@ SERVICE_INFO: Dict[str, str] = {
 ENDPOINTS = [
     {"path": "/", "method": "GET", "description": "Service information"},
     {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/visits", "method": "GET", "description": "Visit counter"},
 ]
+
+VISITS_FILE: str = os.getenv("VISITS_FILE", "/data/visits")
 
 START_TIME: datetime = datetime.now(timezone.utc)
 
@@ -249,6 +253,32 @@ async def log_and_instrument_request(request: Request, call_next):
     return response
 
 
+def _read_visits() -> int:
+    """Read the current visit count from disk. Returns 0 if file is missing or corrupt."""
+    try:
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def _increment_visits() -> int:
+    """Atomically increment the visit counter and return the new value."""
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    with open(VISITS_FILE, "a+") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            f.seek(0)
+            raw = f.read().strip()
+            count = int(raw) + 1 if raw else 1
+            f.seek(0)
+            f.truncate()
+            f.write(str(count))
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+    return count
+
+
 @app.get("/metrics", summary="Prometheus metrics", include_in_schema=False)
 async def metrics():
     """Expose Prometheus metrics."""
@@ -259,6 +289,7 @@ async def metrics():
 async def index(request: Request):
     """Main endpoint returning service, system, runtime, and request info."""
     devops_info_endpoint_calls.labels(endpoint="/").inc()
+    visits = _increment_visits()
     with devops_info_system_collection_seconds.time():
         response = {
             "service": SERVICE_INFO,
@@ -266,8 +297,16 @@ async def index(request: Request):
             "runtime": get_runtime_info(),
             "request": get_request_info(request),
             "endpoints": ENDPOINTS,
+            "visits": visits,
         }
     return response
+
+
+@app.get("/visits", summary="Visit counter")
+async def visits_endpoint():
+    """Return the total number of visits to the root endpoint."""
+    devops_info_endpoint_calls.labels(endpoint="/visits").inc()
+    return {"visits": _read_visits()}
 
 
 @app.get("/health", summary="Health check")

@@ -1,0 +1,14 @@
+{
+  "app_name": "devops-info-service",
+  "environment": "production",
+  "version": "1.0.0",
+  "features": {
+    "visits_counter": true,
+    "prometheus_metrics": true,
+    "structured_logging": true
+  },
+  "settings": {
+    "log_level": "info",
+    "request_timeout_seconds": 30
+  }
+}
