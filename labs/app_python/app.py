@@ -8,10 +8,34 @@ import os
 import uvicorn
 import logging
 import argparse
+import json
 from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+import time
 
 app = FastAPI()
+
+# JSON Logging setup
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "level": record.levelname,
+            "name": record.name,
+            "message": record.getMessage(),
+        }
+        if hasattr(record, "extra"):
+            log_record.update(record.extra)
+        return json.dumps(log_record)
+
+# Configure root logger
+logger = logging.getLogger()
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logger.addHandler(handler)
+logger.setLevel(logging.INFO) 
 
 # Configuration
 parser = argparse.ArgumentParser()
@@ -28,6 +52,29 @@ DEBUG = args.debug
 
 # Timer of application start
 start_time = datetime.now()
+
+
+# Request Logging Setup
+class RequestLogMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        # Log request details
+        logger.info(
+            "HTTP Request",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "client_ip": request.client.host,
+                "duration_seconds": round(process_time, 3)
+            }
+        )
+        return response
+
+app.add_middleware(RequestLogMiddleware)
+
 
 
 def get_service_info():
@@ -111,6 +158,19 @@ def get_status(request: Request):
         "request": get_request_info(request),
         "endpoints": get_all_endpoints()
     }
+
+
+@app.on_event("startup")
+def startup_event():
+    logger.info(
+        "Application startup",
+        extra={
+            "host": HOST,
+            "port": PORT,
+            "debug": DEBUG,
+            "python_version": platform.python_version()
+        }
+    )
 
 
 # Application execution
