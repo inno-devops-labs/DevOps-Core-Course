@@ -1,0 +1,5 @@
+# Минимальный конфиг: провайдеры только из официального registry.terraform.io
+# Используется скриптом lab04_evidence.sh при ошибке "Invalid provider registry host"
+provider_installation {
+  direct {}
+}

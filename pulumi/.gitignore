@@ -1,0 +1,29 @@
+# Pulumi files
+Pulumi.*.yaml
+!Pulumi.yaml
+.pulumi/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials
+*.pem
+*.key
+*.json
+credentials
+.credentials
