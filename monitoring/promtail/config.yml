@@ -1,0 +1,63 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["logging=promtail"]
+    relabel_configs:
+      # Extract container name
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      # Extract container ID
+      - source_labels: ['__meta_docker_container_id']
+        target_label: 'container_id'
+      # Extract image name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      # Extract app label if present
+      - source_labels: ['__meta_docker_container_label_app']
+        target_label: 'app'
+      # Add job label
+      - source_labels: ['__meta_docker_container_label_logging']
+        target_label: 'job'
+        replacement: 'docker'
+    
+    # Pipeline stages to parse JSON logs
+    pipeline_stages:
+      # Parse JSON from log line
+      - json:
+          expressions:
+            level: level
+            message: message
+            timestamp: timestamp
+            logger: logger
+            service: service
+            method: method
+            path: path
+            status_code: status_code
+            client_ip: client_ip
+      
+      # Add extracted fields as labels
+      - labels:
+          level:
+          service:
+          method:
+          status_code:
+      
+      # Use timestamp from log if available
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano

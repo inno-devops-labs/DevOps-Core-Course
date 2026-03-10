@@ -1,0 +1,14 @@
+---
+# Main tasks for monitoring role
+
+- name: Include setup tasks
+  ansible.builtin.include_tasks: setup.yml
+  tags:
+    - monitoring
+    - setup
+
+- name: Include deployment tasks
+  ansible.builtin.include_tasks: deploy.yml
+  tags:
+    - monitoring
+    - deploy

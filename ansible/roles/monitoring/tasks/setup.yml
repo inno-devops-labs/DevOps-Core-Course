@@ -1,0 +1,41 @@
+---
+# Setup tasks for monitoring stack
+
+- name: Create monitoring directory structure
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ monitoring_dir }}"
+    - "{{ monitoring_dir }}/loki"
+    - "{{ monitoring_dir }}/promtail"
+    - "{{ monitoring_dir }}/docs"
+
+- name: Template Loki configuration
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_dir }}/loki/config.yml"
+    mode: '0644'
+  notify: Restart monitoring stack
+
+- name: Template Promtail configuration
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ monitoring_dir }}/promtail/config.yml"
+    mode: '0644'
+  notify: Restart monitoring stack
+
+- name: Template Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_dir }}/docker-compose.yml"
+    mode: '0644'
+  notify: Restart monitoring stack
+
+- name: Create .env file for secrets
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ monitoring_dir }}/.env"
+    mode: '0600'
+  no_log: true
