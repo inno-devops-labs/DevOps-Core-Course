@@ -1,13 +1,13 @@
 ---
 # Application configuration
-app_name: devops-app
-docker_image: merkulovlr05/devops-info
-docker_tag: latest
-app_port: 8000
-app_internal_port: 8000
+web_app_name: devops-app
+web_app_docker_image: merkulovlr05/devops-info
+web_app_docker_tag: latest
+web_app_port: 8000
+web_app_internal_port: 8000
 
 # Docker Compose config
-compose_project_dir: "/opt/{{ app_name }}"
+web_app_compose_dir: "/opt/{{ web_app_name }}"
 
 # Wipe logic control (default: do not wipe)
 # Wipe only:     ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe

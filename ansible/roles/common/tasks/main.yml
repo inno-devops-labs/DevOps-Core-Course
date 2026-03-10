@@ -2,10 +2,13 @@
 # Refactored with blocks and tags (Lab 6 Task 1)
 
 - name: Install common packages
+  become: true
+  tags:
+    - packages
   block:
     - name: Update apt cache
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
 
     - name: Install required packages
@@ -15,8 +18,8 @@
 
   rescue:
     - name: Fix apt cache on failure
-      ansible.builtin.command: apt-get update --fix-missing
-      changed_when: true
+      ansible.builtin.apt:
+        update_cache: true
 
     - name: Retry package installation
       ansible.builtin.apt:
@@ -30,16 +33,11 @@
         dest: /tmp/ansible_common_packages.log
         mode: "0644"
 
+- name: Configure system
   become: true
   tags:
-    - packages
-
-- name: Configure system
+    - users
   block:
     - name: Set timezone
       community.general.timezone:
         name: "{{ common_timezone }}"
-
-  become: true
-  tags:
-    - users

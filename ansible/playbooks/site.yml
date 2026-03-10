@@ -1,7 +1,7 @@
 ---
 - name: Full infrastructure setup and deployment
   hosts: webservers
-  become: yes
+  become: true
 
   roles:
     - role: common

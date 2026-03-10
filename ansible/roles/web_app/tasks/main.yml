@@ -7,6 +7,9 @@
 
 # Deploy application with Docker Compose
 - name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
   block:
     - name: Log in to Docker Hub
       community.docker.docker_login:
@@ -16,50 +19,51 @@
 
     - name: Create application directory
       ansible.builtin.file:
-        path: "{{ compose_project_dir }}"
+        path: "{{ web_app_compose_dir }}"
         state: directory
         mode: "0755"
 
     - name: Template docker-compose file
       ansible.builtin.template:
         src: docker-compose.yml.j2
-        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        dest: "{{ web_app_compose_dir }}/docker-compose.yml"
         mode: "0644"
+      register: web_app_compose_template
 
     - name: Pull latest Docker image
       ansible.builtin.command:
         cmd: "docker compose pull"
-        chdir: "{{ compose_project_dir }}"
-      changed_when: true
+        chdir: "{{ web_app_compose_dir }}"
+      register: web_app_pull_result
+      changed_when: "'Pull complete' in web_app_pull_result.stdout"
 
     - name: Deploy with docker compose
       ansible.builtin.command:
         cmd: "docker compose up -d --force-recreate"
-        chdir: "{{ compose_project_dir }}"
-      changed_when: true
+        chdir: "{{ web_app_compose_dir }}"
+      register: web_app_deploy_result
+      changed_when: web_app_deploy_result.rc == 0
 
     - name: Wait for application to be ready
       ansible.builtin.wait_for:
-        port: "{{ app_port }}"
+        port: "{{ web_app_port }}"
         delay: 5
         timeout: 30
 
     - name: Verify health endpoint
       ansible.builtin.uri:
-        url: "http://localhost:{{ app_port }}/health"
+        url: "http://localhost:{{ web_app_port }}/health"
         method: GET
-        return_content: yes
+        return_content: true
         status_code: 200
-      register: health_check
+      register: web_app_health_check
       retries: 5
       delay: 5
-      until: health_check.status == 200
+      until: web_app_health_check.status == 200
 
   rescue:
     - name: Handle deployment failure
       ansible.builtin.debug:
-        msg: "Deployment of {{ app_name }} failed. Check Docker logs with: docker compose -f {{ compose_project_dir }}/docker-compose.yml logs"
-
-  tags:
-    - app_deploy
-    - compose
+        msg: >-
+          Deployment of {{ web_app_name }} failed.
+          Check Docker logs with: docker compose -f {{ web_app_compose_dir }}/docker-compose.yml logs

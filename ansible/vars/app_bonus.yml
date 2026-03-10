@@ -1,7 +1,7 @@
 ---
-app_name: devops-go
-docker_image: merkulovlr05/devops-info-go
-docker_tag: latest
-app_port: 8001
-app_internal_port: 8080
-compose_project_dir: "/opt/devops-go"
+web_app_name: devops-go
+web_app_docker_image: merkulovlr05/devops-info-go
+web_app_docker_tag: latest
+web_app_port: 8001
+web_app_internal_port: 8080
+web_app_compose_dir: "/opt/devops-go"
