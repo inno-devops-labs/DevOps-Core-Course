@@ -29,6 +29,9 @@ jobs:
         run: |
           pip install ansible ansible-lint
 
+      - name: Create dummy vault password for linting
+        run: echo "dummy" > ansible/.vault_pass
+
       - name: Run ansible-lint
         run: |
           cd ansible
