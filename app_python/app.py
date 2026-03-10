@@ -6,7 +6,6 @@ import os
 import socket
 import platform
 import logging
-import json
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request, g
 from pythonjsonlogger import jsonlogger
