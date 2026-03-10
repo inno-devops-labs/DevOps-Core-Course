@@ -1,0 +1,91 @@
+# Promtail 3.0 Configuration
+# Documentation: https://grafana.com/docs/loki/latest/send-data/promtail/configuration/
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: info
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: ""
+    batchwait: 1s
+    batchsize: 1048576
+    timeout: 10s
+
+scrape_configs:
+  # Docker service discovery for all containers
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["logging=promtail"]
+    
+    relabel_configs:
+      # Extract container name and remove leading slash
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      
+      # Extract container ID
+      - source_labels: ['__meta_docker_container_id']
+        target_label: 'container_id'
+      
+      # Extract app label if exists
+      - source_labels: ['__meta_docker_container_label_app']
+        target_label: 'app'
+      
+      # Extract compose service name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      
+      # Extract compose project name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'project'
+      
+      # Set job name based on container name
+      - source_labels: ['container']
+        target_label: 'job'
+    
+    pipeline_stages:
+      # Parse JSON logs if they are in JSON format
+      - json:
+          expressions:
+            level: level
+            message: message
+            timestamp: timestamp
+      
+      # Use extracted level as label
+      - labels:
+          level:
+      
+      # Set timestamp from log if available
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+          fallback_formats:
+            - RFC3339
+            - "2006-01-02T15:04:05.000Z"
+
+  # Fallback job for all containers (without filtering)
+  - job_name: docker-all
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 15s
+    
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      
+      - action: replace
+        target_label: 'job'
+        replacement: 'docker'
