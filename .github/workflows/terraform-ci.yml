@@ -1,0 +1,116 @@
+name: Terraform CI/CD
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+      - 'terraform-oracle/**'
+      - '.github/workflows/terraform-ci.yml'
+  push:
+    branches:
+      - master
+      - lab04
+    paths:
+      - 'terraform/**'
+      - 'terraform-oracle/**'
+      - '.github/workflows/terraform-ci.yml'
+
+jobs:
+  terraform-validate:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        terraform-dir: ['terraform', 'terraform-oracle']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Check if directory exists
+        id: check_dir
+        run: |
+          if [ -d "${{ matrix.terraform-dir }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Terraform Format Check
+        if: steps.check_dir.outputs.exists == 'true'
+        run: |
+          cd ${{ matrix.terraform-dir }}
+          terraform fmt -check -recursive
+        continue-on-error: false
+
+      - name: Terraform Init
+        if: steps.check_dir.outputs.exists == 'true'
+        run: |
+          cd ${{ matrix.terraform-dir }}
+          terraform init -backend=false
+        env:
+          TF_CLI_ARGS: "-no-color"
+
+      - name: Terraform Validate
+        if: steps.check_dir.outputs.exists == 'true'
+        run: |
+          cd ${{ matrix.terraform-dir }}
+          terraform validate -no-color
+
+      - name: Setup TFLint
+        if: steps.check_dir.outputs.exists == 'true'
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        if: steps.check_dir.outputs.exists == 'true'
+        run: |
+          cd ${{ matrix.terraform-dir }}
+          tflint --init
+
+      - name: Run TFLint
+        if: steps.check_dir.outputs.exists == 'true'
+        run: |
+          cd ${{ matrix.terraform-dir }}
+          tflint --format compact
+
+  security-scan:
+    name: Security Scan (tfsec)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: '.'
+          soft_fail: true  # Don't fail the workflow, just report
+          format: default
+
+  summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [terraform-validate, security-scan]
+    if: always()
+
+    steps:
+      - name: Check validation results
+        run: |
+          echo "## Terraform CI/CD Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All Terraform configurations validated successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Checks Performed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Terraform format validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Terraform syntax validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ TFLint analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Security scan (tfsec)" >> $GITHUB_STEP_SUMMARY

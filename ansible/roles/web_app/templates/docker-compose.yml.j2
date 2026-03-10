@@ -1,0 +1,19 @@
+---
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_tag | default('latest') }}
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    environment:
+      APP_NAME: "{{ app_name }}"
+{% if app_secret_key is defined %}
+      SECRET_KEY: "{{ app_secret_key }}"
+{% endif %}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ app_internal_port }}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

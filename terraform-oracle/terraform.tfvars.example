@@ -1,0 +1,16 @@
+# Oracle Cloud Configuration
+# Copy this file to terraform.tfvars and fill in your actual values
+# NEVER commit terraform.tfvars to Git!
+
+tenancy_ocid     = "ocid1.tenancy.oc1..aaaaaaaxxxxxx"
+user_ocid        = "ocid1.user.oc1..aaaaaaaxxxxxx"
+compartment_ocid = "ocid1.compartment.oc1..aaaaaaaxxxxxx"
+fingerprint      = "xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"
+region           = "eu-frankfurt-1"
+
+# Path to your OCI API private key
+private_key_path = "~/.oci/oci_api_key.pem"
+
+# SSH Configuration
+ssh_user             = "ubuntu"
+ssh_public_key_path  = "~/.ssh/oracle_cloud_key.pub"

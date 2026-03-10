@@ -1,0 +1,8 @@
+config:
+  lab04-pulumi:cloud_id: "b1g5j96nedr4nscj4tgp"
+  lab04-pulumi:folder_id: "b1ggslr285ass6at43mg"
+  lab04-pulumi:zone: "ru-central1-a"
+  lab04-pulumi:ssh_public_key_path: "~/.ssh/yandex_cloud_key.pub"
+  lab04-pulumi:ssh_user: "ubuntu"
+  yandex:token:
+    secure: "your-yandex-cloud-oauth-token-here"

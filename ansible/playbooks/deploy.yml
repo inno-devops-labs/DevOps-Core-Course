@@ -1,0 +1,9 @@
+---
+- name: Deploy application
+  hosts: webservers
+  become: yes
+
+  roles:
+    - role: web_app
+      tags:
+        - web_app

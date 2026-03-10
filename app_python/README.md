@@ -1,5 +1,7 @@
 # DevOps Info Service
 
+![Python CI](https://github.com/merkulovleo/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+
 A Python web application built with Flask that provides system and runtime information via REST API endpoints.
 
 ## Overview
@@ -60,6 +62,27 @@ Example:
 
 ```bash
 HOST=127.0.0.1 PORT=8080 DEBUG=true python app.py
+```
+
+## Testing
+
+Run unit tests:
+
+```bash
+pip install -r requirements.txt
+pytest tests/ -v
+```
+
+With coverage report:
+
+```bash
+pytest tests/ -v --cov=. --cov-report=term-missing
+```
+
+Lint:
+
+```bash
+flake8 app.py tests/ --max-line-length=100
 ```
 
 ## Docker

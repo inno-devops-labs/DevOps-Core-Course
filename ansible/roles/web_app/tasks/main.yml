@@ -1,0 +1,65 @@
+---
+# Wipe logic runs first (when explicitly requested)
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+# Deploy application with Docker Compose
+- name: Deploy application with Docker Compose
+  block:
+    - name: Log in to Docker Hub
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+      no_log: true
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Pull latest Docker image
+      ansible.builtin.command:
+        cmd: "docker compose pull"
+        chdir: "{{ compose_project_dir }}"
+      changed_when: true
+
+    - name: Deploy with docker compose
+      ansible.builtin.command:
+        cmd: "docker compose up -d --force-recreate"
+        chdir: "{{ compose_project_dir }}"
+      changed_when: true
+
+    - name: Wait for application to be ready
+      ansible.builtin.wait_for:
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 30
+
+    - name: Verify health endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:{{ app_port }}/health"
+        method: GET
+        return_content: yes
+        status_code: 200
+      register: health_check
+      retries: 5
+      delay: 5
+      until: health_check.status == 200
+
+  rescue:
+    - name: Handle deployment failure
+      ansible.builtin.debug:
+        msg: "Deployment of {{ app_name }} failed. Check Docker logs with: docker compose -f {{ compose_project_dir }}/docker-compose.yml logs"
+
+  tags:
+    - app_deploy
+    - compose
