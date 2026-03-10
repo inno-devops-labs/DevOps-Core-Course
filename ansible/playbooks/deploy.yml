@@ -4,4 +4,6 @@
   become: yes
 
   roles:
-    - app_deploy
+    - role: web_app
+      tags:
+        - web_app
