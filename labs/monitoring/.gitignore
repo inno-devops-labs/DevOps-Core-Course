@@ -1,0 +1,5 @@
+# Secrets - never commit
+.env
+
+# Data directories (if running locally)
+data/
