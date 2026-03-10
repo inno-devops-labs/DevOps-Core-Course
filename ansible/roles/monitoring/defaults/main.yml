@@ -1,0 +1,10 @@
+---
+monitoring_loki_version: "3.0.0"
+monitoring_promtail_version: "3.0.0"
+monitoring_grafana_version: "12.3.1"
+monitoring_loki_port: 3100
+monitoring_grafana_port: 3000
+monitoring_promtail_port: 9080
+monitoring_retention_period: "168h"
+monitoring_compose_dir: "/opt/monitoring"
+monitoring_grafana_admin_password: "admin"

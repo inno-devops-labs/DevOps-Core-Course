@@ -1,0 +1,86 @@
+---
+- name: Setup monitoring directories
+  tags:
+    - monitoring_setup
+  block:
+    - name: Create monitoring directory
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ monitoring_compose_dir }}"
+        - "{{ monitoring_compose_dir }}/loki"
+        - "{{ monitoring_compose_dir }}/promtail"
+
+    - name: Template Loki configuration
+      ansible.builtin.template:
+        src: loki-config.yml.j2
+        dest: "{{ monitoring_compose_dir }}/loki/config.yml"
+        mode: "0644"
+
+    - name: Template Promtail configuration
+      ansible.builtin.template:
+        src: promtail-config.yml.j2
+        dest: "{{ monitoring_compose_dir }}/promtail/config.yml"
+        mode: "0644"
+
+    - name: Template Docker Compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ monitoring_compose_dir }}/docker-compose.yml"
+        mode: "0644"
+
+- name: Deploy monitoring stack
+  tags:
+    - monitoring_deploy
+  block:
+    - name: Pull monitoring images
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ monitoring_compose_dir }}"
+      register: monitoring_pull_result
+      changed_when: "'Pull complete' in monitoring_pull_result.stdout"
+
+    - name: Deploy monitoring with docker compose
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ monitoring_compose_dir }}"
+      register: monitoring_deploy_result
+      changed_when: monitoring_deploy_result.rc == 0
+
+    - name: Wait for Loki to be ready
+      ansible.builtin.uri:
+        url: "http://localhost:{{ monitoring_loki_port }}/ready"
+        method: GET
+        status_code: 200
+      register: monitoring_loki_ready
+      retries: 10
+      delay: 5
+      until: monitoring_loki_ready.status == 200
+
+    - name: Wait for Grafana to be ready
+      ansible.builtin.uri:
+        url: "http://localhost:{{ monitoring_grafana_port }}/api/health"
+        method: GET
+        status_code: 200
+      register: monitoring_grafana_ready
+      retries: 10
+      delay: 5
+      until: monitoring_grafana_ready.status == 200
+
+    - name: Configure Loki data source in Grafana
+      ansible.builtin.uri:
+        url: "http://localhost:{{ monitoring_grafana_port }}/api/datasources"
+        method: POST
+        user: admin
+        password: "{{ monitoring_grafana_admin_password }}"
+        force_basic_auth: true
+        body_format: json
+        body:
+          name: Loki
+          type: loki
+          url: "http://loki:{{ monitoring_loki_port }}"
+          access: proxy
+          isDefault: true
+        status_code: [200, 409]

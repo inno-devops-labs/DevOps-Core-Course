@@ -1,5 +1,6 @@
 """DevOps Info Service - A Flask web application for Lab 01."""
 
+import json
 import logging
 import os
 import platform
@@ -17,11 +18,42 @@ HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
 
-logging.basicConfig(
-    level=logging.DEBUG if DEBUG else logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+
+class JSONFormatter(logging.Formatter):
+    """Format log records as JSON for structured logging."""
+
+    def format(self, record):
+        log_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info and record.exc_info[0]:
+            log_entry["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_entry)
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logging.root.handlers = [handler]
+logging.root.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+@app.before_request
+def log_request():
+    """Log incoming HTTP request."""
+    logger.info("Incoming request: %s %s from %s",
+                request.method, request.path, request.remote_addr)
+
+
+@app.after_request
+def log_response(response):
+    """Log HTTP response."""
+    logger.info("Response: %s %s -> %d",
+                request.method, request.path, response.status_code)
+    return response
 
 
 @app.route("/")
