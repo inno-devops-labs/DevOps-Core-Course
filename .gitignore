@@ -30,3 +30,6 @@ __pycache__/
 
 .venv
 auto/
+
+# Monitoring secrets
+monitoring/.env

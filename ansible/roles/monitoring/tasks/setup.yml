@@ -1,0 +1,87 @@
+---
+- name: Create monitoring directory structure
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ monitoring_base_dir }}"
+    - "{{ monitoring_base_dir }}/loki"
+    - "{{ monitoring_base_dir }}/promtail"
+    - "{{ monitoring_base_dir }}/grafana/provisioning/datasources"
+    - "{{ monitoring_base_dir }}/grafana/provisioning/dashboards"
+    - "{{ monitoring_base_dir }}/grafana/dashboards"
+    - "{{ monitoring_base_dir }}/app"
+    - "{{ monitoring_base_dir }}/docs"
+
+- name: Template Loki configuration
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_base_dir }}/loki/config.yml"
+    mode: "0644"
+  notify: restart monitoring stack
+
+- name: Template Promtail configuration
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ monitoring_base_dir }}/promtail/config.yml"
+    mode: "0644"
+  notify: restart monitoring stack
+
+- name: Template Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_base_dir }}/docker-compose.yml"
+    mode: "0644"
+  notify: restart monitoring stack
+
+- name: Template Grafana datasource provisioning
+  ansible.builtin.template:
+    src: grafana-datasource.yml.j2
+    dest: "{{ monitoring_base_dir }}/grafana/provisioning/datasources/loki.yml"
+    mode: "0644"
+  notify: restart monitoring stack
+
+- name: Copy Grafana dashboard provisioning config
+  ansible.builtin.copy:
+    content: |
+      apiVersion: 1
+      providers:
+        - name: "default"
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards
+            foldersFromFilesStructure: false
+    dest: "{{ monitoring_base_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
+  notify: restart monitoring stack
+
+- name: Copy application source
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ monitoring_base_dir }}/app/{{ item.dest }}"
+    mode: "0644"
+  loop:
+    - { src: app.py, dest: app.py }
+    - { src: Dockerfile, dest: Dockerfile }
+  notify: restart monitoring stack
+
+- name: Copy Grafana dashboard JSON
+  ansible.builtin.copy:
+    src: logs-dashboard.json
+    dest: "{{ monitoring_base_dir }}/grafana/dashboards/logs.json"
+    mode: "0644"
+  notify: restart monitoring stack
+
+- name: Create .env file for Grafana secrets
+  ansible.builtin.copy:
+    content: |
+      GF_SECURITY_ADMIN_USER={{ grafana_admin_user }}
+      GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
+    dest: "{{ monitoring_base_dir }}/.env"
+    mode: "0600"
+  notify: restart monitoring stack

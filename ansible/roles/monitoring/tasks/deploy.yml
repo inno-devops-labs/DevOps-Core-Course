@@ -1,0 +1,54 @@
+---
+- name: Build application image
+  ansible.builtin.command:
+    cmd: docker compose build
+    chdir: "{{ monitoring_base_dir }}"
+  register: compose_build
+  changed_when: "'Successfully built' in compose_build.stdout or 'exporting' in compose_build.stderr"
+
+- name: Deploy monitoring stack with Docker Compose
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ monitoring_base_dir }}"
+  register: compose_up
+  changed_when: "'Started' in compose_up.stderr or 'Creating' in compose_up.stderr"
+
+- name: Wait for Loki to be ready
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ loki_port }}/ready"
+    method: GET
+    status_code: 200
+  register: loki_health
+  until: loki_health.status == 200
+  retries: 30
+  delay: 5
+
+- name: Wait for Grafana to be ready
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ grafana_port }}/api/health"
+    method: GET
+    status_code: 200
+  register: grafana_health
+  until: grafana_health.status == 200
+  retries: 30
+  delay: 5
+
+- name: Verify Loki datasource in Grafana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ grafana_port }}/api/datasources"
+    method: GET
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: grafana_datasources
+  until: grafana_datasources.json | length > 0
+  retries: 10
+  delay: 3
+
+- name: Display deployment status
+  ansible.builtin.debug:
+    msg: >
+      Monitoring stack deployed successfully!
+      Grafana: http://{{ ansible_host | default('localhost') }}:{{ grafana_port }}
+      Loki: http://{{ ansible_host | default('localhost') }}:{{ loki_port }}

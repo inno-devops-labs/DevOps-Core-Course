@@ -1,0 +1,160 @@
+version: "{{ docker_compose_version }}"
+
+services:
+  loki:
+    image: grafana/loki:{{ loki_version }}
+    container_name: loki
+    command: -config.file=/etc/loki/config.yml
+    ports:
+      - "{{ loki_port }}:{{ loki_port }}"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "loki"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ loki_port }}/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ resource_loki_cpu }}"
+          memory: {{ resource_loki_mem }}
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:{{ promtail_version }}
+    container_name: promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "promtail"
+    depends_on:
+      loki:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ resource_promtail_cpu }}"
+          memory: {{ resource_promtail_mem }}
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:{{ grafana_version }}
+    container_name: grafana
+    ports:
+      - "{{ grafana_port }}:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED={{ grafana_anonymous_enabled }}
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "grafana"
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ resource_grafana_cpu }}"
+          memory: {{ resource_grafana_mem }}
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    restart: unless-stopped
+
+  app-python:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: app-python
+    ports:
+      - "{{ app_python_port }}:8000"
+    environment:
+      - APP_NAME={{ app_name_python }}
+      - APP_PORT=8000
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "{{ app_name_python }}"
+    depends_on:
+      loki:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ resource_app_cpu }}"
+          memory: {{ resource_app_mem }}
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    restart: unless-stopped
+
+  app-python-bonus:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: app-python-bonus
+    ports:
+      - "{{ app_python_bonus_port }}:8000"
+    environment:
+      - APP_NAME={{ app_name_python_bonus }}
+      - APP_PORT=8000
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "{{ app_name_python_bonus }}"
+    depends_on:
+      loki:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ resource_app_cpu }}"
+          memory: {{ resource_app_mem }}
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    restart: unless-stopped
+
+networks:
+  logging:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:
