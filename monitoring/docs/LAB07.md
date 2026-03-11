@@ -136,10 +136,6 @@
 
 ![Dashboard](screenshots/3.png)
 
-
-
-## Build Log Dashboard
-
 ```bash
 docker compose ps
 ```
@@ -157,7 +153,7 @@ promtail           grafana/promtail:3.0.0       "/usr/bin/promtail -…"   promt
 
 
 
-## Ansible Automation
+## BONUS: Ansible Automation
 
 ### Ansible playbook execution
 

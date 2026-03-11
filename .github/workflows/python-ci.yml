@@ -71,7 +71,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-security-
     
-      - name: Install dependencies
+      - name: Run Snyk scan for main dependencies
         run: |
           pip install -r app_python/requirements.txt
           pip install -r app_python/requirements-dev.txt
@@ -80,16 +80,17 @@ jobs:
         uses: snyk/actions/setup@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Run Snyk scan for main dependencies
-        run: snyk test --file=app_python/requirements.txt
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --file=app_python/requirements.txt
 
       - name: Run Snyk scan for dev dependencies
-        run: snyk test --file=app_python/requirements-dev.txt --package-manager=pip
+        uses: snyk/actions/setup@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --file=app_python/requirements-dev.txt
 
   docker:
     needs: test
