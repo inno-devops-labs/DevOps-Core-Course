@@ -1,12 +1,13 @@
 replicaCount: 1
 
 image:
-  tag: "latest"
+  repository: sayfetik/info-service-python
+  tag: vault
   pullPolicy: Always
 
 service:
   type: NodePort
-  nodePort: 30082
+  nodePort: 30083
 
 resources:
   requests:
@@ -30,6 +31,13 @@ env:
   APP_NAME: "info-service-dev"
   DEBUG: "true"
   LOG_LEVEL: "DEBUG"
+
+secrets:
+  data:
+    username: dev-user
+    password: dev-pass-123
+    api_key: dev-api-key
+    db_password: dev-db-pass
 
 podSecurityContext: {}
 securityContext: {}

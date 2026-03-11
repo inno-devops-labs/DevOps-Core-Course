@@ -1,8 +1,9 @@
 replicaCount: 5
 
 image:
-  tag: "1.1.0"
-  pullPolicy: IfNotPresent
+  repository: sayfetik/info-service-python
+  tag: vault
+  pullPolicy: Always
 
 service:
   type: LoadBalancer
@@ -28,9 +29,24 @@ readinessProbe:
   successThreshold: 1
 
 env:
-  APP_NAME: "info-service-prod"
-  DEBUG: "false"
+  APP_NAME: "info-service-prod-with-vault"
+  DEBUG: "true"
   LOG_LEVEL: "WARNING"
+  CONFIG_FORMAT: "all"
+
+secrets:
+  enabled: false
+
+vault:
+  enabled: true
+  address: http://vault.vault.svc.cluster.local:8200
+  role: info-service-role
+  secretPath: secret/data/info-service
+  autoReload: true
+  templates:
+    env: true
+    json: true
+    yaml: true
 
 podSecurityContext:
   fsGroup: 1000

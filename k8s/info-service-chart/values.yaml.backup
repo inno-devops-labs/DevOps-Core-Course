@@ -2,8 +2,8 @@ replicaCount: 3
 
 image:
   repository: sayfetik/info-service-python
-  tag: vault
-  pullPolicy: Always 
+  tag: latest
+  pullPolicy: IfNotPresent 
 
 imagePullSecrets: []
 
@@ -78,24 +78,6 @@ hooks:
   notification:
     enabled: true
 
-secrets:
-  enabled: true
-  name: app-credentials
-  data:
-    username: admin
-    password: SuperSecretPassword123!
-    api_key: dev-api-key-12345
-    db_password: dev-db-pass
-
-vault:
-  enabled: false
-  address: http://vault.vault.svc.cluster.local:8200
-  authPath: kubernetes
-  role: info-service-role
-  secretPath: secret/data/info-service
-
-secretRef:
-  name: info-service-secrets
 env:
   APP_NAME: "info-service-helm"
   DEBUG: "false"

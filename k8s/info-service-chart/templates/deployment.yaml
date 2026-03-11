@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "common-lib.names.fullname" (dict "ctx" $ "name" .Chart.Name) }}
+  name: {{ include "info-service.fullname" . }}
   labels:
-    {{- include "common-lib.labels.standard" (dict "ctx" $ "name" .Chart.Name) | nindent 4 }}
+    {{- include "info-service.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "common-lib.labels.selector" (dict "ctx" $ "name" .Chart.Name) | nindent 6 }}
+      {{- include "info-service.selectorLabels" . | nindent 6 }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,17 +17,33 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "common-lib.labels.selector" (dict "ctx" $ "name" .Chart.Name) | nindent 8 }}
-    spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+        {{- include "info-service.selectorLabels" . | nindent 8 }}
+      {{- if .Values.vault.enabled }}
+      annotations:
+        {{- include "info-service.vault.annotations" . | nindent 8 }}
+        vault.hashicorp.com/agent-inject-file-env: ".env"
+        vault.hashicorp.com/agent-inject-file-config.json: "config.json"
+        vault.hashicorp.com/agent-inject-file-config.yaml: "config.yaml"
+        vault.hashicorp.com/agent-inject-period: "30s"
       {{- end }}
+    spec:
       serviceAccountName: {{ include "info-service.serviceAccountName" . }}
-      {{- include "common-lib.security.context" .Values.podSecurityContext | nindent 6 }}
+      {{- if .Values.vault.enabled }}
+      initContainers:
+      - name: wait-for-vault
+        image: busybox:latest
+        command: ['sh', '-c', 'until [ -f /vault/secrets/config ]; do echo waiting for vault secrets; sleep 2; done']
+        volumeMounts:
+        - name: vault-secrets
+          mountPath: /vault/secrets
+      volumes:
+      - name: vault-secrets
+        emptyDir: {}
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
-        {{- include "common-lib.security.context" .Values.securityContext | nindent 8 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
@@ -39,18 +55,19 @@ spec:
         - name: {{ $key }}
           value: {{ $value | quote }}
         {{- end }}
+        {{- if not .Values.vault.enabled }}
+        {{- if .Values.secrets.enabled }}
+        envFrom:
+        - secretRef:
+            name: {{ include "info-service.fullname" . }}-secrets
+        {{- end }}
+        {{- end }}
         {{- include "common-lib.resources" .Values.resources | nindent 8 }}
         {{- include "common-lib.probes.liveness" .Values.livenessProbe | nindent 8 }}
         {{- include "common-lib.probes.readiness" .Values.readinessProbe | nindent 8 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- if .Values.vault.enabled }}
+        volumeMounts:
+        - name: vault-secrets
+          mountPath: /vault/secrets
+          readOnly: true
+        {{- end }}
