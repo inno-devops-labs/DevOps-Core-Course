@@ -12,12 +12,11 @@
     - monitoring_deploy
     - compose
 
-- name: Display compose result
-  debug:
-    msg: "Stack deployed: {{ compose_result.actions | default([]) }}"
+- name: Wait for all services to be ready
+  pause:
+    seconds: 30
   tags:
-    - monitoring_deploy
-    - debug
+    - monitoring_wait
 
 - name: Wait for Loki to be ready
   uri:
@@ -60,6 +59,20 @@
   tags:
     - monitoring_wait
     - grafana
+
+- name: Wait for Prometheus to be ready
+  uri:
+    url: "http://localhost:{{ prometheus_port }}/-/healthy"
+    method: GET
+    status_code: 200
+    timeout: 10
+  register: prometheus_ready
+  until: prometheus_ready.status == 200
+  retries: 12
+  delay: 5
+  tags:
+    - monitoring_wait
+    - prometheus
 
 - name: Wait for Python apps to be ready
   uri:

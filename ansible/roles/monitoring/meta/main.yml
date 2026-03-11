@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: "scruffyscarf"
+  author: "sayfetik"
   description: "Deploy Loki monitoring stack with Docker Compose"
   license: "MIT"
   min_ansible_version: "2.16"

@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: "scruffyscarf"
+  author: "sayfetik"
   description: "Common system configuration"
   license: "MIT"
   min_ansible_version: "2.12"

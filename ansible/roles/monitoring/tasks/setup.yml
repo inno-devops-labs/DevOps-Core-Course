@@ -10,15 +10,12 @@
     - "{{ monitoring_dir }}"
     - "{{ monitoring_dir }}/loki"
     - "{{ monitoring_dir }}/promtail"
-    - "{{ monitoring_data_dir }}"
+    - "{{ monitoring_dir }}/prometheus"
+    - "{{ monitoring_dir }}/grafana/provisioning/datasources"
+    - "{{ monitoring_dir }}/grafana/provisioning/dashboards"
+    - "{{ monitoring_dir }}/grafana/dashboards"
   tags:
     - monitoring_dirs
-
-- name: Remove Loki config if it is a directory
-  file:
-    path: "{{ monitoring_dir }}/loki/config.yml"
-    state: absent
-  when: ansible_facts is defined
 
 - name: Template Loki configuration
   template:
@@ -37,6 +34,54 @@
   tags:
     - monitoring_config
     - promtail_config
+
+- name: Template Prometheus configuration
+  template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_dir }}/prometheus/prometheus.yml"
+    mode: '0644'
+  tags:
+    - monitoring_config
+    - prometheus_config
+
+- name: Template Grafana datasources
+  template:
+    src: grafana-datasources.yml.j2
+    dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/datasources.yml"
+    mode: '0644'
+  tags:
+    - monitoring_config
+    - grafana_config
+
+- name: Create Grafana dashboard provisioning config
+  copy:
+    content: |
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards
+    dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: '0644'
+  tags:
+    - monitoring_config
+    - grafana_config
+
+- name: Copy Grafana dashboard
+  copy:
+    src: "{{ item }}"
+    dest: "{{ monitoring_dir }}/grafana/dashboards/"
+    mode: '0644'
+  loop:
+    - grafana-app-dashboard.json
+  tags:
+    - monitoring_config
+    - grafana_dashboards
 
 - name: Template Docker Compose file
   template:
