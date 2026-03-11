@@ -18,6 +18,7 @@ pulumi/node_modules/
 *.pem
 *.key
 *.json
+!monitoring/grafana/dashboards/*.json
 credentials
 *.openrc
 openrc.sh
@@ -27,3 +28,7 @@ openrc.sh
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+
+# Enviroment
+.env
+*/.env

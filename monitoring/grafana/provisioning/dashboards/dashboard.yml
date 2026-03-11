@@ -1,0 +1,10 @@
+apiVersion: 1
+
+dashboards:
+  - name: lab07
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

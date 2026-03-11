@@ -2,30 +2,86 @@ import os
 import socket
 import platform
 import logging
+import json
 from datetime import datetime, timezone
 from typing import Dict, Any
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes")
 
+# Custom JSON formatter
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_entry = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "message": record.getMessage(),
+        }
+        # Add extra fields
+        if hasattr(record, 'service'):
+            log_entry['service'] = record.service
+        if hasattr(record, 'version'):
+            log_entry['version'] = record.version
+        if hasattr(record, 'method'):
+            log_entry['method'] = record.method
+        if hasattr(record, 'path'):
+            log_entry['path'] = record.path
+        if hasattr(record, 'status_code'):
+            log_entry['status_code'] = record.status_code
+        if hasattr(record, 'client_ip'):
+            log_entry['client_ip'] = record.client_ip
+        if hasattr(record, 'user_agent'):
+            log_entry['user_agent'] = record.user_agent
+        if hasattr(record, 'process_time_ms'):
+            log_entry['process_time_ms'] = record.process_time_ms
+        return json.dumps(log_entry)
+
 # Logging
-logging.basicConfig(
-    level=logging.DEBUG if DEBUG else logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 logger = logging.getLogger("devops-info-service")
-logger.info("Starting DevOps Info Service (FastAPI)")
+logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+
+formatter = JSONFormatter(datefmt="%Y-%m-%dT%H:%M:%SZ")
+
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+logger.info("Starting DevOps Info Service (FastAPI)", extra={"service": "devops-info-service", "version": "1.0.0"})
 
 # Application and start time
 app = FastAPI(title="devops-info-service", version="1.0.0", debug=DEBUG)
 START_TIME = datetime.now(timezone.utc)
+
+# Middleware for request logging
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = datetime.now(timezone.utc)
+        response = await call_next(request)
+        process_time = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+        req_info = get_request_info(request)
+        logger.info(
+            "HTTP Request",
+            extra={
+                "method": req_info["method"],
+                "path": req_info["path"],
+                "status_code": response.status_code,
+                "client_ip": req_info["client_ip"],
+                "user_agent": req_info["user_agent"],
+                "process_time_ms": round(process_time, 2)
+            }
+        )
+        return response
+
+app.add_middleware(RequestLoggingMiddleware)
 
 
 def get_uptime() -> Dict[str, Any]:
@@ -95,7 +151,7 @@ ENDPOINTS = [
 async def index(request: Request):
     """Main endpoint returning comprehensive info about service & runtime."""
 
-    logger.debug(f"Request: {request.method} {request.url.path} from {request.client}")
+    logger.info("Index endpoint accessed", extra={"endpoint": "/", "method": "GET"})
     system = get_system_info()
     uptime = get_uptime()
 
@@ -123,7 +179,7 @@ async def index(request: Request):
 async def health(request: Request):
     """Simple health endpoint (used for liveness/readiness)."""
 
-    logger.debug(f"Request: {request.method} {request.url.path} from {request.client}")
+    logger.info("Health check endpoint accessed", extra={"endpoint": "/health", "method": "GET"})
     uptime = get_uptime()
     payload = {
         "status": "healthy",
@@ -135,19 +191,19 @@ async def health(request: Request):
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    logger.warning(f"HTTP exception: {exc.detail} ({exc.status_code}) for {request.url.path}")
+    logger.warning("HTTP exception", extra={"status_code": exc.status_code, "detail": exc.detail, "path": request.url.path})
     return JSONResponse(status_code=exc.status_code, content={"error": exc.detail})
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    logger.error(f"Validation error for {request.url.path}: {exc}")
+    logger.error("Validation error", extra={"path": request.url.path, "details": str(exc)})
     return JSONResponse(status_code=400, content={"error": "Invalid request", "details": str(exc)})
 
 
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
-    logger.exception(f"Unhandled error for {request.url.path}: {exc}")
+    logger.exception("Unhandled error", extra={"path": request.url.path, "error": str(exc)})
     return JSONResponse(status_code=500, content={"error": "Internal Server Error", "message": str(exc)})
 
 

@@ -3,11 +3,33 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"time"
 )
+
+// LogEntry represents a structured log entry
+type LogEntry struct {
+	Level     string `json:"level"`
+	Message   string `json:"message"`
+	Time      string `json:"time"`
+	Service   string `json:"service,omitempty"`
+	Version   string `json:"version,omitempty"`
+	Method    string `json:"method,omitempty"`
+	Path      string `json:"path,omitempty"`
+	ClientIP  string `json:"client_ip,omitempty"`
+	UserAgent string `json:"user_agent,omitempty"`
+}
+
+// logJSON logs a structured JSON message
+func logJSON(entry LogEntry) {
+	entry.Time = time.Now().UTC().Format(time.RFC3339)
+	if err := json.NewEncoder(os.Stdout).Encode(entry); err != nil {
+		log.Printf("Error encoding log: %v", err)
+	}
+}
 
 // Service application start time for uptime calculation.
 var startTime = time.Now().UTC()
@@ -74,6 +96,15 @@ func pluralize(n int64) string {
 
 // mainHandler handles GET / request with service and system information.
 func mainHandler(w http.ResponseWriter, r *http.Request) {
+	logJSON(LogEntry{
+		Level:     "info",
+		Message:   "HTTP Request to index",
+		Method:    r.Method,
+		Path:      r.URL.Path,
+		ClientIP:  r.RemoteAddr,
+		UserAgent: r.UserAgent(),
+	})
+
 	hostname, _ := os.Hostname()
 	secs, human := uptime()
 	resp := FullResponse{
@@ -115,6 +146,15 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 // healthHandler handles GET /health request (Kubernetes readiness/liveness probes).
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+	logJSON(LogEntry{
+		Level:     "info",
+		Message:   "HTTP Request to health",
+		Method:    r.Method,
+		Path:      r.URL.Path,
+		ClientIP:  r.RemoteAddr,
+		UserAgent: r.UserAgent(),
+	})
+
 	secs, _ := uptime()
 
 	// Define health response structure inline.
@@ -135,12 +175,25 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 // main starts the HTTP server on configured port.
 func main() {
+	logJSON(LogEntry{
+		Level:   "info",
+		Message: "Starting DevOps Info Service",
+		Service: "devops-info-service",
+		Version: "1.0.0",
+	})
+
 	http.HandleFunc("/", mainHandler)
 	http.HandleFunc("/health", healthHandler)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+
+	logJSON(LogEntry{
+		Level:   "info",
+		Message: "Server starting",
+		Service: "devops-info-service",
+	})
 
 	http.ListenAndServe(":"+port, nil)
 }
