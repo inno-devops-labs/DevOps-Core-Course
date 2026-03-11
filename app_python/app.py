@@ -9,6 +9,7 @@ import platform
 import logging
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
+from pythonjsonlogger import jsonlogger
 
 # Flask app initialization
 app = Flask(__name__)
@@ -22,10 +23,32 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 START_TIME = datetime.now(timezone.utc)
 
 # Setting up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logHandler = logging.StreamHandler()
+formatter = jsonlogger.JsonFormatter(
+    fmt='%(asctime)s %(levelname)s %(name)s %(message)s',
+    datefmt='%Y-%m-%dT%H:%M:%S%z'
 )
-logger = logging.getLogger(__name__)
+logHandler.setFormatter(formatter)
+logger = logging.getLogger()
+logger.addHandler(logHandler)
+logger.setLevel(logging.INFO)
+
+@app.before_request
+def log_request():
+    logger.info("Request received", extra={
+        'method': request.method,
+        'path': request.path,
+        'ip': request.remote_addr
+    })
+
+@app.after_request
+def log_response(response):
+    logger.info("Response sent", extra={
+        'status': response.status_code,
+        'method': request.method,
+        'path': request.path
+    })
+    return response
 
 
 def get_system_info():
@@ -89,7 +112,6 @@ def index():
             {"path": "/health", "method": "GET", "description": "Health check"},
         ],
     }
-    logger.info(f"Request: {request.method} {request.path} from {client_ip}")
     return jsonify(response)
 
 
