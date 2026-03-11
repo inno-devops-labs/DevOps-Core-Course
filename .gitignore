@@ -1,2 +1,3 @@
 test
 .secrets
+monitoring/.env

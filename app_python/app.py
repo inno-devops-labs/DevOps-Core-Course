@@ -5,20 +5,92 @@ import platform
 import socket
 from datetime import datetime, timezone
 import logging
+import json
+import time
+import uuid
+from contextlib import asynccontextmanager
 
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-logging.basicConfig(
-    level=logging.INFO if not DEBUG else logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "app": "devops-python",
+            "logger": record.name
+        }
+        if hasattr(record, "extra_info"):
+            log_record.update(record.extra_info)
+        return json.dumps(log_record)
+
+
+logger = logging.getLogger("app")
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter())
+logger.addHandler(handler)
+logger.propagate = False
 
 app = FastAPI()
 start_time = datetime.now()
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    request_id = str(uuid.uuid4())
+    start_time = time.time()
+
+    log_context = {
+        "request_id": request_id,
+        "client_ip": request.client.host if request.client else "unknown",
+        "method": request.method,
+        "path": request.url.path
+    }
+
+    try:
+        response = await call_next(request)
+        process_time = int((time.time() - start_time) * 1000)
+
+        log_context.update({
+            "status_code": response.status_code,
+            "duration_ms": process_time
+        })
+
+        logger.info(f"Request handled: {request.method} {request.url.path}",
+                    extra={"extra_info": log_context})
+
+        return response
+
+    except Exception as e:
+        process_time = int((time.time() - start_time) * 1000)
+        log_context.update({
+            "status_code": 500,
+            "duration_ms": process_time,
+            "error": str(e)
+        })
+        logger.error(f"Request failed: {str(e)}",
+                     extra={"extra_info": log_context})
+        raise e
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    startup_config = {
+        "version": "1.0.0",
+        "mode": "production",
+        "log_level": "INFO"
+    }
+    logger.info("Application starting up", extra={
+                "extra_info": {"config": startup_config}})
+
+    yield
+
+    logger.info("Application shutting down")
 
 
 @app.get("/")
@@ -93,8 +165,6 @@ async def not_found(request, exc):
             'message': 'Endpoint does not exist'
         }
     )
-
-# Custom error handler for 500 Internal Server Error
 
 
 @app.exception_handler(500)
