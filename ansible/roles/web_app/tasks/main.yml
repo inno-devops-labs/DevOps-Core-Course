@@ -32,7 +32,9 @@
       ansible.builtin.wait_for:
         host: 127.0.0.1
         port: "{{ app_port }}"
-        timeout: 60
+        delay: 5
+        timeout: 120
+        state: started
 
   rescue:
 
