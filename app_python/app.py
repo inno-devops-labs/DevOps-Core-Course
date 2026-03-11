@@ -11,27 +11,72 @@ from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
 
+USE_JSON_LOGGING = os.getenv("LOG_FORMAT", "").lower() == "json"
 
 app = Flask(__name__)
-
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-
 # Application start time (for uptime calculation)
 START_TIME = datetime.now(timezone.utc)
 
-
 # Logging configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+if USE_JSON_LOGGING:
+    from pythonjsonlogger import jsonlogger
+
+    handler = logging.StreamHandler()
+    formatter = jsonlogger.JsonFormatter()
+    handler.setFormatter(formatter)
+    logging.root.handlers = [handler]
+    logging.root.setLevel(logging.INFO)
+    logger = logging.getLogger(__name__)
+else:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+    logger = logging.getLogger(__name__)
+
+# Startup log
+logger.info(
+    "Application starting",
+    extra={"host": HOST, "port": PORT, "debug": DEBUG} if USE_JSON_LOGGING else {},
 )
-logger = logging.getLogger(__name__)
-logger.info("Application starting...")
+
+
+@app.before_request
+def log_request():
+    """Log incoming request (extra fields for JSON logging)."""
+    if USE_JSON_LOGGING:
+        logger.info(
+            "Request received",
+            extra={
+                "method": request.method,
+                "path": request.path,
+                "client_ip": request.remote_addr or "unknown",
+            },
+        )
+    else:
+        logger.info("Request: %s %s from %s", request.method, request.path, request.remote_addr)
+
+
+@app.after_request
+def log_response(response):
+    """Log response status after request."""
+    if USE_JSON_LOGGING:
+        logger.info(
+            "Response sent",
+            extra={
+                "method": request.method,
+                "path": request.path,
+                "status_code": response.status_code,
+                "client_ip": request.remote_addr or "unknown",
+            },
+        )
+    return response
 
 
 def get_system_info() -> dict:
@@ -127,7 +172,13 @@ def health():
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 Not Found errors."""
-    logger.warning("404 Not Found: %s %s", request.method, request.path)
+    if USE_JSON_LOGGING:
+        logger.warning(
+            "404 Not Found",
+            extra={"method": request.method, "path": request.path},
+        )
+    else:
+        logger.warning("404 Not Found: %s %s", request.method, request.path)
     return (
         jsonify(
             {
@@ -143,7 +194,10 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 Internal Server Error."""
-    logger.exception("500 Internal Server Error: %s", error)
+    logger.exception(
+        "500 Internal Server Error",
+        extra={"error": str(error)} if USE_JSON_LOGGING else {},
+    )
     return (
         jsonify(
             {
@@ -163,4 +217,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -13,7 +13,8 @@ Pulumi.*.yaml
 pulumi/venv/
 pulumi/.venv/
 
-# Credentials
+# Credentials & secrets
+.env
 *.pem
 *.key
 credentials
