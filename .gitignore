@@ -25,3 +25,4 @@ __pycache__/
 # ===== Credentials =====
 *.pem
 *.key
+.env

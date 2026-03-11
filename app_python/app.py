@@ -4,6 +4,7 @@ Main application module providing system information and health status.
 Built with FastAPI for modern async support and automatic documentation.
 """
 import os
+import json
 import socket
 import platform
 import logging
@@ -12,12 +13,49 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+
+STANDARD_LOG_RECORD_FIELDS = {
+    'args', 'asctime', 'created', 'exc_info', 'exc_text', 'filename',
+    'funcName', 'levelname', 'levelno', 'lineno', 'module', 'msecs',
+    'message', 'msg', 'name', 'pathname', 'process', 'processName',
+    'relativeCreated', 'stack_info', 'thread', 'threadName', 'taskName'
+}
+
+
+class JSONFormatter(logging.Formatter):
+    """Format log records as JSON for structured logging."""
+
+    def format(self, record):
+        log_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        for key, value in record.__dict__.items():
+            if key in STANDARD_LOG_RECORD_FIELDS or key.startswith('_'):
+                continue
+            try:
+                json.dumps(value)
+                log_entry[key] = value
+            except TypeError:
+                log_entry[key] = str(value)
+        if record.exc_info and record.exc_info[0] is not None:
+            log_entry["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_entry)
+
+
+# Configure JSON logging
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logging.root.handlers = [handler]
+logging.root.setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
+
+for logger_name in ('uvicorn', 'uvicorn.error', 'uvicorn.access'):
+    uvicorn_logger = logging.getLogger(logger_name)
+    uvicorn_logger.handlers = [handler]
+    uvicorn_logger.propagate = False
 
 # Configuration from environment variables
 HOST = os.getenv('HOST', '0.0.0.0')
@@ -46,6 +84,47 @@ app = FastAPI(
     description="A web service providing system information and health status",
     version="1.0.0"
 )
+
+logger.info("DevOps Info Service starting up", extra={
+    "host": HOST, "port": PORT, "debug": DEBUG
+})
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all HTTP requests and responses."""
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(
+        f"{request.method} {request.url.path} from {client_ip}",
+        extra={
+            "method": request.method,
+            "path": str(request.url.path),
+            "client_ip": client_ip,
+            "user_agent": request.headers.get("user-agent", "Unknown"),
+        },
+    )
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception(
+            f"Unhandled exception during {request.method} {request.url.path}",
+            extra={
+                "method": request.method,
+                "path": str(request.url.path),
+                "client_ip": client_ip,
+            },
+        )
+        raise
+    logger.info(
+        f"Response {response.status_code} for {request.method} {request.url.path}",
+        extra={
+            "method": request.method,
+            "path": str(request.url.path),
+            "client_ip": client_ip,
+            "status_code": response.status_code,
+        },
+    )
+    return response
 
 
 def get_uptime():
@@ -108,9 +187,6 @@ def get_request_info(request: Request):
 @app.get('/')
 async def index(request: Request):
     """Main endpoint - service and system information."""
-    client_ip = request.client.host if request.client else 'unknown'
-    logger.info(f'Request: {request.method} {request.url.path} from {client_ip}')
-
     return {
         'service': SERVICE_INFO,
         'system': get_system_info(),
@@ -136,7 +212,15 @@ async def health():
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc):
     """Handle 404 errors."""
-    logger.warning(f'404 Not Found: {request.url.path}')
+    logger.warning(
+        f'404 Not Found: {request.url.path}',
+        extra={
+            'method': request.method,
+            'path': str(request.url.path),
+            'status_code': 404,
+            'client_ip': request.client.host if request.client else 'unknown',
+        },
+    )
     return JSONResponse(
         status_code=404,
         content={
@@ -150,7 +234,15 @@ async def not_found_handler(request: Request, exc):
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
     """Handle 500 errors."""
-    logger.error(f'500 Internal Server Error: {str(exc)}')
+    logger.error(
+        f'500 Internal Server Error: {str(exc)}',
+        extra={
+            'method': request.method,
+            'path': str(request.url.path),
+            'status_code': 500,
+            'client_ip': request.client.host if request.client else 'unknown',
+        },
+    )
     return JSONResponse(
         status_code=500,
         content={
@@ -164,4 +256,4 @@ if __name__ == '__main__':
     import uvicorn
     logger.info(f'Starting DevOps Info Service on {HOST}:{PORT}')
     logger.info(f'Debug mode: {DEBUG}')
-    uvicorn.run('app:app', host=HOST, port=PORT, reload=DEBUG)
+    uvicorn.run('app:app', host=HOST, port=PORT, reload=DEBUG, access_log=False, log_config=None)
