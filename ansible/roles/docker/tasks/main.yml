@@ -44,7 +44,10 @@
 
     - name: Add Docker repository
       apt_repository:
-        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable"
+        repo: >-
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_facts['distribution_release'] }} stable
         state: present
         update_cache: no
       tags:
@@ -90,7 +93,7 @@
     - name: Ensure pip is up to date
       pip:
         name: pip
-        state: latest
+        state: present
         executable: pip3
       tags:
         - docker_install

@@ -41,7 +41,7 @@ def main_info():
 
     response = {
         "service": {
-            "name": "info-service",
+            "name": "devops-info-service",
             "version": "1.0.0",
             "description": "DevOps course info service",
             "framework": "Flask"
@@ -90,6 +90,13 @@ def health_check():
 
     logging.info("Health check accessed")
     return jsonify(response), 200
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors with JSON response."""
+    response = jsonify({"error": "Not Found"})
+    response.status_code = 404
+    return response
 
 # Run
 if __name__ == "__main__":

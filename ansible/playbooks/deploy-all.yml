@@ -62,4 +62,3 @@
             method: GET
           register: go_check
           ignore_errors: true
-
