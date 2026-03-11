@@ -39,16 +39,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install ansible
 
+      - name: Write vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.vault_pass.txt
+          chmod 600 ~/.vault_pass.txt
+
       - name: Show Ansible version
         run: ansible --version
 
       - name: Syntax check provision playbook
         working-directory: ansible
-        run: ansible-playbook -i inventory/hosts.ini playbooks/provision.yml --syntax-check
+        run: ansible-playbook -i inventory/hosts.ini playbooks/provision.yml --syntax-check --vault-password-file ~/.vault_pass.txt
 
       - name: Syntax check deploy playbook
         working-directory: ansible
-        run: ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml --syntax-check
+        run: ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml --syntax-check --vault-password-file ~/.vault_pass.txt
 
   deploy:
     needs: syntax-check
@@ -66,6 +71,11 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts
 
+      - name: Write vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.vault_pass.txt
+          chmod 600 ~/.vault_pass.txt
+
       - name: Write inventory from secrets
         run: |
           cat > ansible/inventory/hosts.ini <<INVENTORY
@@ -80,8 +90,8 @@ jobs:
 
       - name: Run provision playbook
         working-directory: ansible
-        run: ansible-playbook -i inventory/hosts.ini playbooks/provision.yml
+        run: ansible-playbook -i inventory/hosts.ini playbooks/provision.yml --vault-password-file ~/.vault_pass.txt
 
       - name: Run deploy playbook
         working-directory: ansible
-        run: ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml
+        run: ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml --vault-password-file ~/.vault_pass.txt
