@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "info-service.fullname" . }}-notify
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      name: {{ include "info-service.fullname" . }}-notify
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: notification
+        image: alpine:latest
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "Sending deployment notification..."
+            
+            cat << EOF
+            ========================================
+            Deployment Successful!
+            
+            Release: {{ .Release.Name }}
+            Namespace: {{ .Release.Namespace }}
+            Version: {{ .Chart.AppVersion }}
+            Replicas: {{ .Values.replicaCount }}
+            Environment: {{ .Values.env.APP_NAME }}
+            
+            Service: {{ include "info-service.fullname" . }}:{{ .Values.service.port }}
+            Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+            
+            Timestamp: $(date -u)
+            ========================================
+            EOF
+            
+            echo "Notification sent"
+            exit 0

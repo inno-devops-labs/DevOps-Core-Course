@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common-lib.names.fullname" (dict "ctx" $ "name" .Chart.Name) }}
+  labels:
+    {{- include "common-lib.labels.standard" (dict "ctx" $ "name" .Chart.Name) | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "common-lib.labels.selector" (dict "ctx" $ "name" .Chart.Name) | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        {{- include "common-lib.labels.selector" (dict "ctx" $ "name" .Chart.Name) | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "echo-app.serviceAccountName" . }}
+      {{- include "common-lib.security.context" .Values.podSecurityContext | nindent 6 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        {{- include "common-lib.security.context" .Values.securityContext | nindent 8 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+          - -text="Hello from Echo App (App2)"
+          - -listen=:{{ .Values.service.targetPort }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+          protocol: TCP
+        env:
+        {{- range $key, $value := .Values.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- include "common-lib.resources" .Values.resources | nindent 8 }}
+        {{- include "common-lib.probes.liveness" .Values.livenessProbe | nindent 8 }}
+        {{- include "common-lib.probes.readiness" .Values.readinessProbe | nindent 8 }}

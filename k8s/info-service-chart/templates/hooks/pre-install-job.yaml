@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "info-service.fullname" . }}-pre-install
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: {{ include "info-service.fullname" . }}-pre-install
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: pre-install-validation
+        image: alpine:latest
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "Pre-install validation started..."
+            
+            echo "Checking image: {{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            if [ -z "{{ .Values.image.tag }}" ]; then
+              echo "ERROR: Image tag is not set!"
+              exit 1
+            fi
+            
+            if [ {{ .Values.resources.limits.memory }} =~ "Mi" ] && [ {{ .Values.resources.requests.memory }} =~ "Mi" ]; then
+              echo "Memory limits look good"
+            else
+              echo "Warning: Memory limits not in Mi format"
+            fi
+            
+            {{- range $key, $value := .Values.env }}
+            echo "ENV {{ $key }} is set"
+            {{- end }}
+            
+            echo "Service will expose port {{ .Values.service.port }} -> {{ .Values.service.targetPort }}"
+            
+            echo "Pre-install validation completed successfully"
+            exit 0

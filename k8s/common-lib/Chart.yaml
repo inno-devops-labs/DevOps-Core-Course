@@ -1,0 +1,12 @@
+apiVersion: v2
+name: common-lib
+description: A Helm library chart with shared templates for DevOps services
+type: library
+version: 0.1.0
+keywords:
+  - common
+  - library
+  - helpers
+maintainers:
+  - name: DevOps Student
+    email: student@example.com

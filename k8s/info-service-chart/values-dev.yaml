@@ -1,0 +1,35 @@
+replicaCount: 1
+
+image:
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: NodePort
+  nodePort: 30082
+
+resources:
+  requests:
+    memory: "32Mi"
+    cpu: "10m"
+  limits:
+    memory: "64Mi"
+    cpu: "50m"
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 3
+  timeoutSeconds: 1
+
+env:
+  APP_NAME: "info-service-dev"
+  DEBUG: "true"
+  LOG_LEVEL: "DEBUG"
+
+podSecurityContext: {}
+securityContext: {}
