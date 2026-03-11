@@ -2,13 +2,31 @@ name: Python CI (Lab03)
 
 on:
   push:
-    branches: [ "main", "master", "lab3", "lab03" ]
+    branches:
+      - main
+      - master
+      - lab3
+      - lab03
+      - lab4
+      - lab04
+      - lab5
+      - lab05
+      - lab6
+      - lab06
+      - lab7
+      - lab07
     paths:
       - "app_python/**"
+      - "monitoring/**"
+      - "ansible/**"
+      - "playbooks/**"
       - ".github/workflows/python-ci.yml"
   pull_request:
     paths:
       - "app_python/**"
+      - "monitoring/**"
+      - "ansible/**"
+      - "playbooks/**"
       - ".github/workflows/python-ci.yml"
 
 concurrency:
@@ -46,7 +64,20 @@ jobs:
   docker-build-push:
     needs: test-lint
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'master' || github.ref_name == 'lab3' || github.ref_name == 'lab03')
+    if: github.event_name == 'push' && (
+        github.ref_name == 'main' ||
+        github.ref_name == 'master' ||
+        github.ref_name == 'lab3' ||
+        github.ref_name == 'lab03' ||
+        github.ref_name == 'lab4' ||
+        github.ref_name == 'lab04' ||
+        github.ref_name == 'lab5' ||
+        github.ref_name == 'lab05' ||
+        github.ref_name == 'lab6' ||
+        github.ref_name == 'lab06' ||
+        github.ref_name == 'lab7' ||
+        github.ref_name == 'lab07'
+      )
 
     steps:
       - uses: actions/checkout@v4
