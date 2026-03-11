@@ -20,8 +20,8 @@ def test_root(client):
     assert "platform" in data["system"]
     
     assert "endpoints" in data
-    assert any(e["path"] == "/" for e in data["endpoints"])
-    assert any(e["path"] == "/health" for e in data["endpoints"])
+    assert "/" in data["endpoints"]
+    assert "/health" in data["endpoints"]
 
 
 def test_health(client):
