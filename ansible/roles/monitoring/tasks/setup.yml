@@ -1,0 +1,63 @@
+---
+- name: Create monitoring directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  loop:
+    - "{{ monitoring_dir }}"
+    - "{{ monitoring_dir }}/loki"
+    - "{{ monitoring_dir }}/promtail"
+    - "{{ monitoring_data_dir }}"
+  tags:
+    - monitoring_dirs
+
+- name: Remove Loki config if it is a directory
+  file:
+    path: "{{ monitoring_dir }}/loki/config.yml"
+    state: absent
+  when: ansible_facts is defined
+
+- name: Template Loki configuration
+  template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_dir }}/loki/config.yml"
+    mode: '0644'
+  tags:
+    - monitoring_config
+    - loki_config
+
+- name: Template Promtail configuration
+  template:
+    src: promtail-config.yml.j2
+    dest: "{{ monitoring_dir }}/promtail/config.yml"
+    mode: '0644'
+  tags:
+    - monitoring_config
+    - promtail_config
+
+- name: Template Docker Compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_dir }}/docker-compose.yml"
+    mode: '0644'
+  tags:
+    - monitoring_config
+    - compose_config
+
+- name: Login to Docker Hub
+  docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+    registry: "https://index.docker.io/v1/"
+  no_log: true
+  when:
+    - dockerhub_username is defined
+    - dockerhub_password is defined
+    - dockerhub_username != ''
+    - dockerhub_password != ''
+  tags:
+    - monitoring_auth
+    - docker

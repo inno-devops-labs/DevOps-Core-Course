@@ -1,0 +1,51 @@
+---
+loki_version: "3.0.0"
+promtail_version: "3.0.0"
+grafana_version: "12.3.1"
+
+loki_port: 3100
+promtail_port: 9080
+grafana_port: 3000
+
+monitoring_apps:
+  - name: "devops-python"
+    port: 8000
+    internal_port: 5000
+    container_name: "app-python"
+    label: "devops-python"
+  - name: "devops-python-extra"
+    port: 8001
+    internal_port: 5000
+    container_name: "app-python-extra"
+    label: "devops-python-extra"
+
+loki_retention_period: "168h"
+loki_storage_type: "tsdb"
+loki_schema_version: "v13"
+loki_auth_enabled: false
+loki_allow_structured_metadata: true
+
+monitoring_cpu_limit: "1.0"
+monitoring_memory_limit: "1G"
+monitoring_cpu_reservation: "0.5"
+monitoring_memory_reservation: "512M"
+
+monitoring_dir: "/opt/monitoring"
+monitoring_data_dir: "/var/lib/monitoring"
+
+grafana_admin_user: "admin"
+grafana_admin_password: "admin"
+
+compose_project_name: "monitoring"
+compose_project_dir: "{{ monitoring_dir }}"
+
+monitoring_network: "monitoring_network"
+monitoring_network_driver: "bridge"
+
+log_max_size: "10m"
+log_max_file: "3"
+
+health_check_interval: 30
+health_check_timeout: 10
+health_check_retries: 5
+health_check_start_period: 40

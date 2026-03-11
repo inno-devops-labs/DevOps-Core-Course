@@ -3,6 +3,7 @@
   hosts: webservers
   become: true
   vars_files:
+    - ../group_vars/all.yml
     - ../vars/app_python.yml
   vars:
     web_app_wipe: false

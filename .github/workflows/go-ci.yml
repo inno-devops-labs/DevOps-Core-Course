@@ -64,6 +64,7 @@ jobs:
           parallel-finished: true
 
 
+
   security:
     runs-on: ubuntu-latest
     needs: test
@@ -77,13 +78,15 @@ jobs:
         with:
           go-version: "1.22"
 
-      - name: Run Snyk security scan
+      - name: Setup Snyk
         uses: snyk/actions/setup@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=app_go/go.mod
+
+      - name: Run Snyk security scan
+        run: snyk test --file=app_go/go.mod
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
 
 

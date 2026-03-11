@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  author: "scruffyscarf"
+  description: "Common system configuration"
+  license: "MIT"
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+  galaxy_tags:
+    - system
+    - common
+    - base
+
+dependencies: []

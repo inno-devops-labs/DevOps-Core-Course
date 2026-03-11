@@ -1,0 +1,129 @@
+networks:
+  logging:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:
+
+services:
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    command: 
+      - -config.file=/etc/loki/config.yml
+      - -config.expand-env=true
+    networks:
+      - logging
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      app: "loki"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: 
+      - -config.file=/etc/promtail/config.yml
+    networks:
+      - logging
+    restart: unless-stopped
+    depends_on:
+      - loki
+    labels:
+      logging: "promtail"
+      app: "promtail"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_SECURITY_ALLOW_EMBEDDING=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - logging
+    restart: unless-stopped
+    depends_on:
+      - loki
+    labels:
+      logging: "promtail"
+      app: "grafana"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  app-python:
+    image: info-service-python:latest
+    container_name: app-python
+    ports:
+      - "8000:5000"
+    environment:
+      - APP_NAME=devops-python
+      - PORT=5000
+      - HOST=0.0.0.0
+    networks:
+      - logging
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; exit(0 if socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect_ex(('localhost', 5000)) == 0 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  app-python-extra:
+    image: info-service-python:latest
+    container_name: app-python-extra
+    ports:
+      - "8001:5000"
+    environment:
+      - APP_NAME=devops-python-extra
+      - PORT=5000
+      - HOST=0.0.0.0
+    networks:
+      - logging
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      app: "devops-python-extra"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; exit(0 if socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect_ex(('localhost', 5000)) == 0 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

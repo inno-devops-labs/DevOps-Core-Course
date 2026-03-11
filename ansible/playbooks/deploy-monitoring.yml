@@ -1,0 +1,64 @@
+---
+- name: Deploy Loki Monitoring Stack
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../vars/app_python.yml
+  vars:
+    monitoring_apps:
+      - name: "devops-python"
+        port: 8000
+        internal_port: 5000
+        container_name: "app-python"
+        label: "devops-python"
+      - name: "devops-python-extra"
+        port: 8001
+        internal_port: 5000
+        container_name: "app-python-extra"
+        label: "devops-python-extra"
+    grafana_admin_password: "admin"
+
+  pre_tasks:
+    - name: Display deployment info
+      debug:
+        msg: |
+          ========================================
+          Deploying Monitoring Stack
+          Loki: {{ loki_version | default('3.0.0') }}
+          Grafana: {{ grafana_version | default('12.3.1') }}
+          Retention: {{ loki_retention_period | default('168h') }}
+          ========================================
+      tags: always
+
+  roles:
+    - role: monitoring
+      tags: [monitoring, loki, grafana]
+
+  post_tasks:
+    - name: Verify all services
+      block:
+        - name: Check Loki
+          uri:
+            url: "http://localhost:{{ loki_port | default(3100) }}/ready"
+            method: GET
+          register: loki_check
+
+        - name: Check Promtail
+          uri:
+            url: "http://localhost:{{ promtail_port | default(9080) }}/ready"
+            method: GET
+          register: promtail_check
+
+        - name: Check Grafana
+          uri:
+            url: "http://localhost:{{ grafana_port | default(3000) }}/api/health"
+            method: GET
+          register: grafana_check
+
+        - name: Display verification results
+          debug:
+            msg: |
+              Loki: {{ 'OK' if loki_check.status == 200 else 'FAILED' }}
+              Promtail: {{ 'OK' if promtail_check.status == 200 else 'FAILED' }}
+              Grafana: {{ 'OK' if grafana_check.status == 200 else 'FAILED' }}
+      tags: [monitoring, verify]

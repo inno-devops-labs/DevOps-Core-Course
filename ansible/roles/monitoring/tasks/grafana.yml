@@ -1,0 +1,90 @@
+---
+- name: Configure Grafana data source
+  uri:
+    url: "http://localhost:{{ grafana_port }}/api/datasources"
+    method: POST
+    user: "{{ grafana_admin_user }}:{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      name: "Loki"
+      type: "loki"
+      url: "http://loki:{{ loki_port }}"
+      access: "proxy"
+      isDefault: true
+      jsonData:
+        maxLines: 1000
+  register: datasource_result
+  failed_when: 
+    - datasource_result.status != 200
+    - datasource_result.status != 409
+  tags:
+    - monitoring_grafana
+    - datasource
+
+- name: Display datasource result
+  debug:
+    msg: "Data source configured: {{ datasource_result.status == 200 or datasource_result.status == 409 }}"
+  tags:
+    - monitoring_grafana
+    - debug
+
+- name: Get existing dashboards
+  uri:
+    url: "http://localhost:{{ grafana_port }}/api/search?query=Application%20Logs"
+    method: GET
+    user: "{{ grafana_admin_user }}:{{ grafana_admin_password }}"
+    force_basic_auth: yes
+  register: dashboards_search
+  tags:
+    - monitoring_grafana
+    - dashboards
+
+- name: Create default dashboard if not exists
+  uri:
+    url: "http://localhost:{{ grafana_port }}/api/dashboards/db"
+    method: POST
+    user: "{{ grafana_admin_user }}:{{ grafana_admin_password }}"
+    force_basic_auth: yes
+    headers:
+      Content-Type: "application/json"
+    body_format: json
+    body:
+      dashboard:
+        title: "Application Logs Dashboard"
+        tags: ["loki", "monitoring", "logs"]
+        timezone: "browser"
+        panels: [
+          {
+            "title": "Live Logs",
+            "type": "logs",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "targets": [{"expr": "{app=~\"devops-python.*\"}", "refId": "A"}]
+          },
+          {
+            "title": "Request Rate",
+            "type": "timeseries",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "targets": [{"expr": "sum by (app) (rate({app=~\"devops-python.*\"}[1m]))", "refId": "A"}]
+          },
+          {
+            "title": "Error Logs",
+            "type": "logs",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "targets": [{"expr": "{app=~\"devops-python.*\"} | json | level=\"ERROR\"", "refId": "A"}]
+          },
+          {
+            "title": "Log Level Distribution",
+            "type": "piechart",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+            "targets": [{"expr": "sum by (level) (count_over_time({app=~\"devops-python.*\"} | json [5m]))", "refId": "A"}]
+          }
+        ]
+        uid: "application-logs"
+      overwrite: true
+  when: dashboards_search.json | length == 0
+  tags:
+    - monitoring_grafana
+    - dashboards

@@ -1,7 +1,6 @@
 ---
-- name: Restart sshd
-  systemd:
-    name: sshd
+- name: Restart ssh
+  service:
+    name: ssh
     state: restarted
-    daemon_reload: yes
-  become: true
+  when: ansible_service_mgr != "systemd"

@@ -14,4 +14,7 @@ common_packages:
   - gnupg
   - lsb-release
 
-common_timezone: "Europe/Moscow"
+timezone: "Europe/Moscow"
+app_user: "appuser"
+admin_users: []
+auto_upgrade: false

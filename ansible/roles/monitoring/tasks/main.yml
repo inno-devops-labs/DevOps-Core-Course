@@ -1,0 +1,49 @@
+---
+- name: Include setup tasks
+  include_tasks: setup.yml
+  tags:
+    - monitoring_setup
+
+- name: Include deploy tasks
+  include_tasks: deploy.yml
+  tags:
+    - monitoring_deploy
+
+- name: Include Grafana configuration tasks
+  include_tasks: grafana.yml
+  tags:
+    - monitoring_grafana
+
+- name: Generate test traffic
+  shell: |
+    for i in {1..20}; do
+      curl -s http://localhost:8000/ > /dev/null
+      curl -s http://localhost:8001/health > /dev/null
+    done
+    curl -s http://localhost:8000/nonexistent > /dev/null
+  register: traffic_result
+  changed_when: false
+  failed_when: false
+  tags:
+    - monitoring_test
+    - traffic
+
+- name: Display completion message
+  debug:
+    msg: |
+      ========================================
+      Monitoring Stack Deployed Successfully!
+      ========================================
+      Grafana: http://localhost:{{ grafana_port }}
+      Login: {{ grafana_admin_user }} / {{ grafana_admin_password }}
+      
+      Loki: http://localhost:{{ loki_port }}
+      Promtail: http://localhost:{{ promtail_port }}
+      
+      Python Apps:
+      {% for app in monitoring_apps %}
+      - {{ app.name }}: http://localhost:{{ app.port }}
+      {% endfor %}
+      ========================================
+  tags:
+    - monitoring_debug

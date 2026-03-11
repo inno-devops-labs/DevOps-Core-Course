@@ -22,6 +22,10 @@
           - curl
           - gnupg
           - lsb-release
+          - python3
+          - python3-pip
+          - python3-setuptools
+          - python3-venv
         state: present
         update_cache: yes
       tags:
@@ -83,12 +87,22 @@
         - docker_install
         - packages
 
+    - name: Ensure pip is up to date
+      pip:
+        name: pip
+        state: latest
+        executable: pip3
+      tags:
+        - docker_install
+        - python
+
     - name: Install Docker Python SDK
       pip:
         name:
           - docker
           - docker-compose
         state: present
+        executable: pip3
       tags:
         - docker_install
         - python
@@ -120,11 +134,23 @@
 
 - name: Docker configuration block
   block:
-    - name: Ensure Docker service is running
-      service:
+    - name: Start and enable Docker service
+      systemd:
         name: docker
         state: started
         enabled: true
+        daemon_reload: true
+      tags:
+        - docker_config
+        - service
+
+    - name: Wait for Docker to be ready
+      command: docker info
+      register: docker_info
+      retries: 10
+      delay: 3
+      until: docker_info is success
+      changed_when: false
       tags:
         - docker_config
         - service

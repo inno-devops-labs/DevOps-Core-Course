@@ -50,7 +50,6 @@ jobs:
           flag-name: python
           parallel: true
 
-
   security:
     runs-on: ubuntu-latest
     needs: test
@@ -77,21 +76,20 @@ jobs:
           pip install -r app_python/requirements.txt
           pip install -r app_python/requirements-dev.txt
 
-      - name: Run Snyk scan for main dependencies
+      - name: Setup Snyk
         uses: snyk/actions/setup@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=app_python/requirements.txt
+
+      - name: Run Snyk scan for main dependencies
+        run: snyk test --file=app_python/requirements.txt
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Run Snyk scan for dev dependencies
-        uses: snyk/actions/setup@master
+        run: snyk test --file=app_python/requirements-dev.txt --package-manager=pip
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=app_python/requirements-dev.txt
 
   docker:
     needs: test

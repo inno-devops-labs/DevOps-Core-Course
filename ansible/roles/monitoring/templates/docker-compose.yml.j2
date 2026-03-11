@@ -1,0 +1,140 @@
+---
+networks:
+  {{ monitoring_network }}:
+    driver: {{ monitoring_network_driver }}
+
+volumes:
+  loki-data:
+  grafana-data:
+
+services:
+  loki:
+    image: grafana/loki:{{ loki_version }}
+    container_name: loki
+    ports:
+      - "{{ loki_port }}:{{ loki_port }}"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    command:
+      - -config.file=/etc/loki/config.yml
+      - -config.expand-env=true
+    networks:
+      - {{ monitoring_network }}
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      app: "loki"
+    deploy:
+      resources:
+        limits:
+          cpus: '{{ monitoring_cpu_limit }}'
+          memory: {{ monitoring_memory_limit }}
+        reservations:
+          cpus: '{{ monitoring_cpu_reservation }}'
+          memory: {{ monitoring_memory_reservation }}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "{{ log_max_size }}"
+        max-file: "{{ log_max_file }}"
+
+  promtail:
+    image: grafana/promtail:{{ promtail_version }}
+    container_name: promtail
+    ports:
+      - "{{ promtail_port }}:{{ promtail_port }}"
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command:
+      - -config.file=/etc/promtail/config.yml
+    networks:
+      - {{ monitoring_network }}
+    restart: unless-stopped
+    depends_on:
+      - loki
+    labels:
+      logging: "promtail"
+      app: "promtail"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "{{ log_max_size }}"
+        max-file: "{{ log_max_file }}"
+
+  grafana:
+    image: grafana/grafana:{{ grafana_version }}
+    container_name: grafana
+    ports:
+      - "{{ grafana_port }}:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_ADMIN_USER={{ grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
+      - GF_SECURITY_ALLOW_EMBEDDING=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - {{ monitoring_network }}
+    restart: unless-stopped
+    depends_on:
+      - loki
+    labels:
+      logging: "promtail"
+      app: "grafana"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "{{ log_max_size }}"
+        max-file: "{{ log_max_file }}"
+
+{% if dockerhub_username is defined and dockerhub_username and dockerhub_username != '' %}
+{% for app in monitoring_apps %}
+  {{ app.container_name }}:
+    image: {{ dockerhub_username }}/{{ app.name }}:latest
+    container_name: {{ app.container_name }}
+    ports:
+      - "{{ app.port }}:{{ app.internal_port }}"
+    environment:
+      - APP_NAME={{ app.label }}
+      - PORT={{ app.internal_port }}
+      - HOST=0.0.0.0
+    networks:
+      - {{ monitoring_network }}
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      app: "{{ app.label }}"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "{{ log_max_size }}"
+        max-file: "{{ log_max_file }}"
+{% endfor %}
+{% endif %}

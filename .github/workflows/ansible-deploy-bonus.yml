@@ -49,7 +49,9 @@ jobs:
         run: |
           cd ansible
           export ANSIBLE_ROLES_PATH="$GITHUB_WORKSPACE/ansible/roles"
-          ansible-playbook playbooks/deploy-bonus.yml --syntax-check
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+          ansible-playbook playbooks/deploy-bonus.yml --syntax-check --vault-password-file .vault_pass
+          rm .vault_pass
 
       - name: Run ansible-lint
         run: |

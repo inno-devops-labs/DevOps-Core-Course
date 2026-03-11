@@ -1,62 +1,59 @@
+"""
+DevOps Info Service
+Main application module
+"""
 import os
-import socket
 import platform
+import socket
+import time
 import logging
 from datetime import datetime, timezone
-
 from flask import Flask, jsonify, request
+
+# Configuration
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", 5000))
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+# Application start time
+app = Flask(__name__)
+start_time = time.time()
 
 # Logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format="%(asctime)s [%(levelname)s] %(message)s"
 )
-logger = logging.getLogger(__name__)
 
-# App
-app = Flask(__name__)
-
-# Config
-HOST = os.getenv('HOST', '0.0.0.0')
-PORT = int(os.getenv('PORT', 5000))
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-
-# Start time
-START_TIME = datetime.now(timezone.utc)
-
-
+# Helpers
 def get_uptime():
-    delta = datetime.now(timezone.utc) - START_TIME
-    seconds = int(delta.total_seconds())
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    return seconds, f"{hours} hours, {minutes} minutes"
+    uptime_seconds = int(time.time() - start_time)
+    hours = uptime_seconds // 3600
+    minutes = (uptime_seconds % 3600) // 60
+    return uptime_seconds, f"{hours} hour(s), {minutes} minute(s)"
 
-
-def get_system_info():
-    return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "platform_version": platform.version(),
-        "architecture": platform.machine(),
-        "cpu_count": os.cpu_count(),
-        "python_version": platform.python_version()
-    }
-
-
+# Routes
 @app.route("/", methods=["GET"])
-def index():
-    logger.info("GET /")
+def main_info():
+    """Main endpoint - service and system information."""
+    # Implementation
     uptime_seconds, uptime_human = get_uptime()
 
-    return jsonify({
+    response = {
         "service": {
-            "name": "devops-info-service",
+            "name": "info-service",
             "version": "1.0.0",
             "description": "DevOps course info service",
             "framework": "Flask"
         },
-        "system": get_system_info(),
+        "system": {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "platform_version": platform.version(),
+            "architecture": platform.machine(),
+            "cpu_count": os.cpu_count(),
+            "python_version": platform.python_version()
+        },
         "runtime": {
             "uptime_seconds": uptime_seconds,
             "uptime_human": uptime_human,
@@ -73,29 +70,27 @@ def index():
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"}
         ]
-    })
+    }
+
+    logging.info("Main endpoint accessed")
+    return jsonify(response)
 
 
 @app.route("/health", methods=["GET"])
-def health():
+def health_check():
+    """Health endpoint - available server information."""
+    # Implementation
     uptime_seconds, _ = get_uptime()
-    return jsonify({
+
+    response = {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime_seconds
-    })
+    }
 
+    logging.info("Health check accessed")
+    return jsonify(response), 200
 
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"error": "Not Found"}), 404
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({"error": "Internal Server Error"}), 500
-
-
+# Run
 if __name__ == "__main__":
-    logger.info("Starting application...")
     app.run(host=HOST, port=PORT, debug=DEBUG)

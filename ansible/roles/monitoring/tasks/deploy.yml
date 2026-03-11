@@ -1,0 +1,77 @@
+---
+- name: Deploy monitoring stack with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir }}"
+    files:
+      - docker-compose.yml
+    state: present
+    recreate: auto
+    remove_orphans: true
+  register: compose_result
+  tags:
+    - monitoring_deploy
+    - compose
+
+- name: Display compose result
+  debug:
+    msg: "Stack deployed: {{ compose_result.actions | default([]) }}"
+  tags:
+    - monitoring_deploy
+    - debug
+
+- name: Wait for Loki to be ready
+  uri:
+    url: "http://localhost:{{ loki_port }}/ready"
+    method: GET
+    status_code: 200
+    timeout: 10
+  register: loki_ready
+  until: loki_ready.status == 200
+  retries: 12
+  delay: 5
+  tags:
+    - monitoring_wait
+    - loki
+
+- name: Wait for Promtail to be ready
+  uri:
+    url: "http://localhost:{{ promtail_port }}/ready"
+    method: GET
+    status_code: 200
+    timeout: 10
+  register: promtail_ready
+  until: promtail_ready.status == 200
+  retries: 12
+  delay: 5
+  tags:
+    - monitoring_wait
+    - promtail
+
+- name: Wait for Grafana to be ready
+  uri:
+    url: "http://localhost:{{ grafana_port }}/api/health"
+    method: GET
+    status_code: 200
+    timeout: 10
+  register: grafana_ready
+  until: grafana_ready.status == 200
+  retries: 12
+  delay: 5
+  tags:
+    - monitoring_wait
+    - grafana
+
+- name: Wait for Python apps to be ready
+  uri:
+    url: "http://localhost:{{ item.port }}/health"
+    method: GET
+    status_code: 200
+    timeout: 10
+  loop: "{{ monitoring_apps }}"
+  register: app_ready
+  until: app_ready is not failed
+  retries: 12
+  delay: 5
+  tags:
+    - monitoring_wait
+    - apps

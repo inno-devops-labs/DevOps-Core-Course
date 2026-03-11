@@ -5,25 +5,53 @@
   tags:
     - web_app_wipe
 
-- name: Login to Docker Hub
+- name: Login to Docker Hub (only if credentials provided)
   docker_login:
     username: "{{ dockerhub_username }}"
     password: "{{ dockerhub_password }}"
     registry: "https://index.docker.io/v1/"
   no_log: true
+  when:
+    - dockerhub_username is defined
+    - dockerhub_password is defined
+    - dockerhub_username != ''
+    - dockerhub_password != ''
+    - docker_pull | default(true) | bool
   tags:
     - app
     - auth
     - docker
 
-- name: Pull Docker image
+- name: Pull Docker image (if needed)
   docker_image:
-    name: "{{ docker_image }}:{{ docker_image_tag }}"
+    name: "{{ docker_image }}:{{ docker_tag }}"
     source: pull
     force_source: true
+  when: docker_pull | default(true) | bool
   tags:
     - app
     - pull
+    - docker
+
+- name: Check if image exists locally
+  shell: "docker images -q {{ docker_image }}:{{ docker_tag }}"
+  register: image_exists
+  changed_when: false
+  failed_when: false
+  tags:
+    - app
+    - check
+    - docker
+
+- name: Fail if image doesn't exist locally and pull is disabled
+  fail:
+    msg: "Image {{ docker_image }}:{{ docker_tag }} not found locally and pull is disabled. Please build the image first or enable pull."
+  when:
+    - not (docker_pull | default(true) | bool)
+    - image_exists.stdout == ''
+  tags:
+    - app
+    - check
     - docker
 
 - name: Check if container exists
@@ -72,11 +100,11 @@
 - name: Deploy application container
   docker_container:
     name: "{{ app_container_name }}"
-    image: "{{ docker_image }}:{{ docker_image_tag }}"
+    image: "{{ docker_image }}:{{ docker_tag }}"
     state: started
     restart_policy: "{{ docker_restart_policy }}"
     ports:
-      - "{{ app_host_port }}:{{ app_port }}"
+      - "{{ app_port }}:{{ app_internal_port }}"
     env: "{{ app_environment | default({}) }}"
     pull: false
   tags:
@@ -86,7 +114,7 @@
 
 - name: Wait for application to start
   wait_for:
-    port: "{{ app_host_port }}"
+    port: "{{ app_port }}"
     host: "127.0.0.1"
     delay: 5
     timeout: "{{ app_health_check_timeout }}"
@@ -97,7 +125,7 @@
 
 - name: Check application health endpoint
   uri:
-    url: "http://localhost:{{ app_host_port }}{{ app_health_check_path }}"
+    url: "http://localhost:{{ app_port }}{{ health_check_path }}"
     method: GET
     status_code: 200
     timeout: 10
