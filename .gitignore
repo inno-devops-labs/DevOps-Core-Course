@@ -34,3 +34,4 @@ app_python/test_venv/*
 ansible/.vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+.env

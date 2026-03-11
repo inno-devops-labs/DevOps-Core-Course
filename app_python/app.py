@@ -2,6 +2,8 @@ import os
 import socket
 import platform
 import logging
+import json
+import time
 from datetime import datetime, timezone
 from typing import List, Dict, Any
 
@@ -14,12 +16,32 @@ HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 8000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-# Logging setup
-logging.basicConfig(
-    level=logging.DEBUG if DEBUG else logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# JSON Logging Formatter
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_data = {
+            'timestamp': datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            'level': record.levelname,
+            'message': record.getMessage(),
+            'logger': record.name
+        }
+        if hasattr(record, 'method'):
+            log_data['method'] = record.method
+        if hasattr(record, 'path'):
+            log_data['path'] = record.path
+        if hasattr(record, 'status_code'):
+            log_data['status_code'] = record.status_code
+        if hasattr(record, 'client_ip'):
+            log_data['client_ip'] = record.client_ip
+        return json.dumps(log_data)
+
+# Logging setup with JSON formatter
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+logger.addHandler(handler)
+logger.propagate = False
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
@@ -74,6 +96,30 @@ app = FastAPI(
     description="Lab 1 - System and service information API",
     version="1.0.0"
 )
+
+# Middleware for request/response logging
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    client_ip = request.client.host if request.client else "unknown"
+    method = request.method
+    path = str(request.url.path)
+    
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    log_record = logger.makeRecord(
+        logger.name, logging.INFO, "", 0, 
+        f"{method} {path} {response.status_code}",
+        (), None
+    )
+    log_record.method = method
+    log_record.path = path
+    log_record.status_code = response.status_code
+    log_record.client_ip = client_ip
+    logger.handle(log_record)
+    
+    return response
 
 # Helper functions
 def get_uptime() -> Dict[str, Any]:
@@ -149,9 +195,6 @@ async def root(request: Request):
     """
     Main endpoint - comprehensive service and system information
     """
-    client_host = request.client.host if request.client else 'unknown'
-    logger.info(f"Request: {request.method} {request.url.path} from {client_host}")
-    
     response = MainResponse(
         service=get_service_info(),
         system=get_system_info(),
@@ -167,8 +210,6 @@ async def health():
     """
     Health check endpoint for monitoring and probes
     """
-    logger.debug("Health check requested")
-    
     uptime = get_uptime()
     return HealthResponse(
         status="healthy",
@@ -191,7 +232,17 @@ async def not_found_handler(request: Request, exc):
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
     """Handle 500 errors"""
-    logger.error(f"Internal error: {exc}")
+    log_record = logger.makeRecord(
+        logger.name, logging.ERROR, "", 0,
+        f"Internal error: {exc}",
+        (), None
+    )
+    log_record.method = request.method
+    log_record.path = str(request.url.path)
+    log_record.status_code = 500
+    log_record.client_ip = request.client.host if request.client else "unknown"
+    logger.handle(log_record)
+    
     return JSONResponse(
         status_code=500,
         content={
@@ -204,21 +255,24 @@ async def internal_error_handler(request: Request, exc):
 @app.on_event("startup")
 async def startup_event():
     """Log startup information"""
-    logger.info("=" * 50)
-    logger.info("DevOps Info Service starting...")
-    logger.info(f"Host: {HOST}")
-    logger.info(f"Port: {PORT}")
-    logger.info(f"Debug: {DEBUG}")
-    logger.info(f"Python: {platform.python_version()}")
-    logger.info(f"FastAPI docs: http://{HOST}:{PORT}/docs")
-    logger.info("=" * 50)
+    logger.info("DevOps Info Service starting")
+    logger.info(f"Configuration: host={HOST}, port={PORT}, debug={DEBUG}")
+    logger.info(f"Python version: {platform.python_version()}")
+    logger.info(f"FastAPI docs available at: http://{HOST}:{PORT}/docs")
 
 # Run application
 if __name__ == "__main__":
     import uvicorn
+    
+    log_config = uvicorn.config.LOGGING_CONFIG
+    log_config["formatters"]["default"]["fmt"] = "%(message)s"
+    log_config["formatters"]["access"]["fmt"] = "%(message)s"
+    
     uvicorn.run(
         app,
         host=HOST,
         port=PORT,
-        log_level="debug" if DEBUG else "info"
+        log_level="debug" if DEBUG else "info",
+        log_config=log_config,
+        access_log=False
     )
