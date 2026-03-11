@@ -43,6 +43,13 @@
         state: absent
       failed_when: false
 
+    - name: Free host port if occupied by another container (e.g. devops-app when deploying devops-python)
+      ansible.builtin.shell: |
+        cid=$(docker ps -q --filter "publish={{ app_port }}")
+        [ -n "$cid" ] && docker rm -f $cid || true
+      changed_when: false
+      failed_when: false
+
     - name: Pull Docker image
       ansible.builtin.command:
         cmd: "docker compose pull"

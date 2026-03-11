@@ -79,13 +79,23 @@ yandex.VpcSecurityGroupRule(
     v4_cidr_blocks=["0.0.0.0/0"],
 )
 
-# App port 8000 (Lab 6: Docker Compose deploy)
+# App port 8000 (Lab 6: Python app)
 yandex.VpcSecurityGroupRule(
     "app-8000-rule",
     security_group_binding=sg.id,
     direction="ingress",
     protocol="TCP",
     port=8000,
+    v4_cidr_blocks=["0.0.0.0/0"],
+)
+
+# App port 8001 (Lab 6 Bonus: Go app)
+yandex.VpcSecurityGroupRule(
+    "app-8001-rule",
+    security_group_binding=sg.id,
+    direction="ingress",
+    protocol="TCP",
+    port=8001,
     v4_cidr_blocks=["0.0.0.0/0"],
 )
 

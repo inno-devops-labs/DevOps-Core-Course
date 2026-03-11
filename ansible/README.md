@@ -34,6 +34,7 @@ Run the commands below from the **`ansible/`** directory.
 6. **Deploy application** (Docker Compose):
    ```bash
    ansible-playbook playbooks/deploy.yml --ask-vault-pass
+   # Or: deploy_python.yml (Python only), deploy_bonus.yml (Go only), deploy_all.yml (both)
    ```
 
 7. **Verify:**
@@ -41,6 +42,12 @@ Run the commands below from the **`ansible/`** directory.
    ansible webservers -a "docker ps" --ask-vault-pass
    curl http://<VM_IP>:8000/health
    ```
+
+8. **Deploy monitoring stack (Lab 7 bonus)** — Loki, Promtail, Grafana + apps:
+   ```bash
+   ansible-playbook playbooks/deploy-monitoring.yml --ask-vault-pass
+   ```
+   Then open http://<VM_IP>:3000 (Grafana), add Loki data source `http://loki:3100`.
 
 ## Tag-based execution
 
@@ -71,31 +78,42 @@ ansible/
 ├── ansible.cfg
 ├── requirements.yml
 ├── inventory/
-│   └── hosts.ini
+│   ├── hosts.ini            static (default)
+│   └── yandex_cloud.yml     dynamic (Lab 5 bonus)
 ├── group_vars/
 │   ├── all.yml              (encrypted)
 │   └── all.yml.example
+├── vars/
+│   ├── app_python.yml       Lab 6 bonus: Python app vars
+│   └── app_bonus.yml        Lab 6 bonus: Go app vars
 ├── playbooks/
-│   ├── provision.yml         common + docker
-│   └── deploy.yml            web_app (Docker Compose)
+│   ├── provision.yml        common + docker
+│   ├── deploy.yml           web_app (default/single app)
+│   ├── deploy_python.yml    Python app only
+│   ├── deploy_bonus.yml     Go app only
+│   ├── deploy_all.yml       both apps
+│   └── deploy-monitoring.yml  Loki stack (Lab 7 bonus)
 ├── roles/
 │   ├── common/               base system (apt, packages, timezone)
 │   ├── docker/               Docker CE install and service
-│   └── web_app/              Docker Compose deployment + wipe logic
+│   ├── web_app/              Docker Compose deployment + wipe logic
+│   └── monitoring/           Loki/Promtail/Grafana stack (Lab 7 bonus)
 │       ├── defaults/main.yml
-│       ├── handlers/main.yml
 │       ├── meta/main.yml     (depends on docker role)
 │       ├── tasks/
 │       │   ├── main.yml
-│       │   └── wipe.yml
+│       │   ├── setup.yml     (dirs + template configs)
+│       │   └── deploy.yml     (docker_compose_v2 + wait for Loki/Grafana)
 │       └── templates/
-│           └── docker-compose.yml.j2
+│           ├── docker-compose.yml.j2
+│           ├── loki-config.yml.j2
+│           └── promtail-config.yml.j2
 └── docs/
     ├── LAB05.md
     └── LAB06.md
 ```
 
-Documentation: `docs/LAB05.md`, `docs/LAB06.md`
+Documentation: `docs/LAB05.md`, `docs/LAB05_BONUS.md` (dynamic inventory), `docs/LAB06.md`
 
 ### Troubleshooting
 

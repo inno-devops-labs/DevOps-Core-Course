@@ -1,0 +1,10 @@
+monitoring_project_dir: /opt/monitoring
+loki_version: "3.0.0"
+promtail_version: "3.0.0"
+grafana_version: "12.3.1"
+loki_http_port: 3100
+grafana_http_port: 3000
+promtail_http_port: 9080
+loki_retention_hours: 168  # 7 days
+dockerhub_username_for_monitoring: "{{ dockerhub_username | default('your-dockerhub-username') }}"
+grafana_admin_password: "{{ vault_grafana_admin_password | default('admin') }}"

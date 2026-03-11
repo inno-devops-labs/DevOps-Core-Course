@@ -1,0 +1,135 @@
+services:
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    user: "0:0"  
+    command: -config.file=/etc/loki/config.yml
+    ports:
+      - "3100:3100"
+    labels:
+      logging: "promtail"
+      app: "loki"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/var/loki
+    networks:
+      - logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    command: -config.file=/etc/promtail/config.yml
+    labels:
+      logging: "promtail"
+      app: "promtail"
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - logging
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    labels:
+      logging: "promtail"
+      app: "grafana"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  app-python:
+    image: ${DOCKERHUB_USERNAME:-your-dockerhub-username}/devops-info-service:latest
+    platform: linux/amd64 
+    container_name: devops-python
+    ports:
+      - "8000:5001"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  app-go:
+    build:
+      context: ../app_go
+      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME:-your-dockerhub-username}/devops-info-service-go:latest
+    platform: linux/amd64 
+    container_name: devops-go
+    ports:
+      - "8001:8080"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-go"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+networks:
+  logging:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:

@@ -1,0 +1,5 @@
+- name: Setup monitoring (dirs and configs)
+  ansible.builtin.include_tasks: setup.yml
+
+- name: Deploy and verify Loki stack
+  ansible.builtin.include_tasks: deploy.yml

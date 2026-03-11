@@ -1,27 +1,22 @@
 ---
-name: Ansible Deployment
+name: Ansible Deploy Bonus (Go App)
 
 on:
   push:
     branches: [main, master, lab06]
     paths:
-      - 'ansible/vars/app_python.yml'
-      - 'ansible/playbooks/deploy.yml'
-      - 'ansible/playbooks/deploy_python.yml'
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/playbooks/deploy_bonus.yml'
       - 'ansible/playbooks/deploy_all.yml'
       - 'ansible/roles/web_app/**'
-      - 'ansible/roles/common/**'
-      - 'ansible/roles/docker/**'
-      - 'ansible/group_vars/**'
-      - 'ansible/inventory/**'
-      - 'ansible/playbooks/provision.yml'
-      - '!ansible/docs/**'
-      - '.github/workflows/ansible-deploy.yml'
+      - '.github/workflows/ansible-deploy-bonus.yml'
   pull_request:
     branches: [main, master, lab06]
     paths:
-      - 'ansible/**'
-      - '!ansible/docs/**'
+      - 'ansible/vars/app_bonus.yml'
+      - 'ansible/playbooks/deploy_bonus.yml'
+      - 'ansible/playbooks/deploy_all.yml'
+      - 'ansible/roles/web_app/**'
 
 jobs:
   lint:
@@ -46,7 +41,7 @@ jobs:
           ansible-lint playbooks/*.yml
 
   deploy:
-    name: Deploy Application
+    name: Deploy Bonus (Go) Application
     needs: lint
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -72,17 +67,17 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy Python Application
+      - name: Deploy Bonus Application
         run: |
           cd ansible
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
-          ansible-playbook playbooks/deploy_python.yml \
+          ansible-playbook playbooks/deploy_bonus.yml \
             -i inventory/hosts.ini \
             --vault-password-file /tmp/vault_pass
           rm /tmp/vault_pass
 
-      - name: Verify Deployment
+      - name: Verify Bonus App Deployment
         run: |
           sleep 10
-          curl -f http://${{ secrets.VM_HOST }}:8000 || exit 1
-          curl -f http://${{ secrets.VM_HOST }}:8000/health || exit 1
+          curl -f http://${{ secrets.VM_HOST }}:8001 || exit 1
+          curl -f http://${{ secrets.VM_HOST }}:8001/health || exit 1

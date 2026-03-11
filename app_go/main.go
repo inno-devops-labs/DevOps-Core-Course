@@ -63,6 +63,35 @@ type HealthResponse struct {
 
 var startTime = time.Now()
 
+type statusCapturingResponseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusCapturingResponseWriter) WriteHeader(statusCode int) {
+	w.status = statusCode
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func withAccessLog(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		sw := &statusCapturingResponseWriter{ResponseWriter: w, status: http.StatusOK}
+
+		next(sw, r)
+
+		durationMs := float64(time.Since(start).Nanoseconds()) / 1e6
+		log.Printf(
+			"request completed method=%s path=%s status=%d client_ip=%s duration_ms=%.2f",
+			r.Method,
+			r.URL.Path,
+			sw.status,
+			getClientIP(r),
+			durationMs,
+		)
+	}
+}
+
 func getHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -185,14 +214,15 @@ func roundFloat(val float64, precision int) float64 {
 }
 
 func main() {
-	http.HandleFunc("/", mainHandler)
-	http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/", withAccessLog(mainHandler))
+	http.HandleFunc("/health", withAccessLog(healthHandler))
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
+	log.Printf("starting server port=%s", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}

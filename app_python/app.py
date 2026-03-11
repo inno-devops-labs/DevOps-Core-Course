@@ -7,13 +7,24 @@ import time
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
+from pythonjsonlogger import jsonlogger
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+def setup_json_logging():
+    """Configure JSON logging for Loki/Grafana (Lab 7)."""
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+    root = logging.getLogger()
+    root.setLevel(getattr(logging, log_level, logging.INFO))
+    handler = logging.StreamHandler()
+    formatter = jsonlogger.JsonFormatter(
+        "%(timestamp)s %(level)s %(name)s %(message)s",
+        rename_fields={"levelname": "level", "asctime": "timestamp"},
+    )
+    handler.setFormatter(formatter)
+    root.handlers = [handler]
+
+
+setup_json_logging()
 logger = logging.getLogger(__name__)
 
 try:
@@ -28,6 +39,37 @@ except ValueError as e:
 
 app = Flask(__name__)
 start_time = time.time()
+
+
+@app.before_request
+def log_request_start():
+    """Log incoming request (context for JSON logs)."""
+    request.start_time = time.time()
+    logger.info(
+        "Request started",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "client_ip": request.remote_addr or "unknown",
+        },
+    )
+
+
+@app.after_request
+def log_request_end(response):
+    """Log response status and duration."""
+    duration_ms = (time.time() - getattr(request, "start_time", time.time())) * 1000
+    logger.info(
+        "Request completed",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "status_code": response.status_code,
+            "client_ip": request.remote_addr or "unknown",
+            "duration_ms": round(duration_ms, 2),
+        },
+    )
+    return response
 
 
 def format_uptime(seconds):
@@ -95,7 +137,7 @@ def get_system_info():
 def main():
     """Main endpoint returning service and system information."""
     try:
-        logger.info("Main endpoint accessed")
+        logger.info("Main endpoint accessed", extra={"path": "/", "method": "GET"})
         uptime_seconds = time.time() - start_time
 
         system_info = get_system_info()
@@ -159,7 +201,7 @@ def health_check():
             "uptime_seconds": round(uptime_seconds, 2)
         }
 
-        logger.debug(f"Health check: {response_data}")
+        logger.debug("Health check", extra={"status": "healthy"})
         return jsonify(response_data), 200
 
     except Exception as e:
@@ -190,9 +232,11 @@ def internal_error(error):
     }), 500
 
 
-if __name__ == '__main__':
-    logger.info(f"Starting application on {HOST}:{PORT}")
-    logger.info(f"Debug mode: {DEBUG}")
+if __name__ == "__main__":
+    logger.info(
+        "Starting application",
+        extra={"host": HOST, "port": PORT, "debug": DEBUG},
+    )
     try:
         app.run(host=HOST, port=PORT, debug=DEBUG)
     except Exception as e:

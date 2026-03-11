@@ -1,0 +1,14 @@
+plugin: yandex.cloud.yandex_compute
+
+folder_id: "{{ lookup('env', 'YANDEX_FOLDER_ID') }}"
+
+auth_kind: token
+
+compose:
+  ansible_host: network_interfaces[0].primary_v4_address.one_to_one_nat.address
+  ansible_user: ubuntu
+
+# Group by zone (optional)
+keyed_groups:
+  - key: zone_id
+    prefix: zone

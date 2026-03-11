@@ -1,0 +1,8 @@
+- name: Deploy Loki monitoring stack
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+
+  roles:
+    - monitoring
