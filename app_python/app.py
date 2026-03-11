@@ -283,6 +283,7 @@ def internal_error(error):
         },
     ), 500
 
+
 @app.route('/boom')
 def boom():
     raise RuntimeError("synthetic lab error")
