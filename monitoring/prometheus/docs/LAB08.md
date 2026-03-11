@@ -256,7 +256,7 @@ ok: [info-service] => {
 }
 
 TASK [docker : Include cleanup tasks] ***************************************************************************************************************************
-included: /Users/scruffyscarf/DevOps-Core-Course/ansible/roles/docker/tasks/cleanup.yml for info-service
+included: /Users/sayfetik/DevOps-Core-Course/ansible/roles/docker/tasks/cleanup.yml for info-service
 
 TASK [docker : Remove all Docker repository files] **************************************************************************************************************
 ok: [info-service] => (item=/etc/apt/sources.list.d/docker.list)
@@ -368,7 +368,7 @@ ok: [info-service] => (item={'key': 'PermitRootLogin', 'value': 'no'})
 ok: [info-service] => (item={'key': 'ClientAliveInterval', 'value': '300'})
 
 TASK [monitoring : Include setup tasks] *************************************************************************************************************************
-included: /Users/scruffyscarf/DevOps-Core-Course/ansible/roles/monitoring/tasks/setup.yml for info-service
+included: /Users/sayfetik/DevOps-Core-Course/ansible/roles/monitoring/tasks/setup.yml for info-service
 
 TASK [monitoring : Create monitoring directories] ***************************************************************************************************************
 ok: [info-service] => (item=/opt/monitoring)
@@ -392,7 +392,7 @@ TASK [monitoring : Login to Docker Hub] ****************************************
 skipping: [info-service]
 
 TASK [monitoring : Include deploy tasks] ************************************************************************************************************************
-included: /Users/scruffyscarf/DevOps-Core-Course/ansible/roles/monitoring/tasks/deploy.yml for info-service
+included: /Users/sayfetik/DevOps-Core-Course/ansible/roles/monitoring/tasks/deploy.yml for info-service
 
 TASK [monitoring : Deploy monitoring stack with Docker Compose] *************************************************************************************************
 ok: [info-service]
@@ -443,7 +443,7 @@ ok: [info-service] => {
 }
 
 TASK [docker : Include cleanup tasks] ***************************************************************************************************************************
-included: /Users/scruffyscarf/DevOps-Core-Course/ansible/roles/docker/tasks/cleanup.yml for info-service
+included: /Users/sayfetik/DevOps-Core-Course/ansible/roles/docker/tasks/cleanup.yml for info-service
 
 TASK [docker : Remove all Docker repository files] **************************************************************************************************************
 ok: [info-service] => (item=/etc/apt/sources.list.d/docker.list)
@@ -555,7 +555,7 @@ ok: [info-service] => (item={'key': 'PermitRootLogin', 'value': 'no'})
 ok: [info-service] => (item={'key': 'ClientAliveInterval', 'value': '300'})
 
 TASK [monitoring : Include setup tasks] *************************************************************************************************************************
-included: /Users/scruffyscarf/DevOps-Core-Course/ansible/roles/monitoring/tasks/setup.yml for info-service
+included: /Users/sayfetik/DevOps-Core-Course/ansible/roles/monitoring/tasks/setup.yml for info-service
 
 TASK [monitoring : Create monitoring directories] ***************************************************************************************************************
 ok: [info-service] => (item=/opt/monitoring)
@@ -579,7 +579,7 @@ TASK [monitoring : Login to Docker Hub] ****************************************
 skipping: [info-service]
 
 TASK [monitoring : Include deploy tasks] ************************************************************************************************************************
-included: /Users/scruffyscarf/DevOps-Core-Course/ansible/roles/monitoring/tasks/deploy.yml for info-service
+included: /Users/sayfetik/DevOps-Core-Course/ansible/roles/monitoring/tasks/deploy.yml for info-service
 
 TASK [monitoring : Deploy monitoring stack with Docker Compose] *************************************************************************************************
 ok: [info-service]
