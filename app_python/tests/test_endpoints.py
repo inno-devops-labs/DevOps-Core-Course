@@ -13,7 +13,7 @@ def test_root(client):
     assert resp.status_code == 200
     data = resp.get_json()
     assert "service" in data
-    assert data["service"]["name"] == "devops-info-service"
+    assert data["service"]["name"] == "info-service"
     
     assert "system" in data
     assert "hostname" in data["system"]
@@ -37,4 +37,4 @@ def test_404(client):
     resp = client.get("/notfound")
     assert resp.status_code == 404
     data = resp.get_json()
-    assert data["error"] == "Not Found"
+    assert data["error"] == "Not found"
