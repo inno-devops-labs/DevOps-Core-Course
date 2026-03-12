@@ -1,0 +1,33 @@
+---
+- name: Deploy monitoring with Docker Compose v2 (Loki, Promtail, Grafana only)
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir }}"
+    state: present
+    build: never
+  register: monitoring_compose
+
+# Connect existing app containers (from web_app role) to logging network so Promtail can scrape
+- name: Attach app containers to monitoring_logging network (if they exist)
+  ansible.builtin.command:
+    cmd: "docker network connect monitoring_logging {{ item }}"
+  loop: [devops-python, devops-go]
+  register: net_connect
+  failed_when: false
+  changed_when: net_connect.rc == 0
+
+- name: Wait for Grafana HTTP port
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ monitoring_grafana_port }}"
+    delay: 5
+    timeout: 90
+
+- name: Wait for Loki ready (internal port on host via published port)
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_loki_host_port }}/ready"
+    method: GET
+    status_code: 200
+  register: loki_ready
+  retries: 12
+  delay: 5
+  until: loki_ready.status == 200

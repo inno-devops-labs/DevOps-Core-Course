@@ -1,0 +1,32 @@
+---
+# Monitoring stack (Lab 7 bonus): Loki + Promtail + Grafana + apps
+monitoring_dir: "/opt/monitoring"
+
+monitoring_loki_version: "3.0.0"
+monitoring_promtail_version: "3.0.0"
+monitoring_grafana_version: "12.3.1"
+
+monitoring_loki_image: "grafana/loki:{{ monitoring_loki_version }}"
+monitoring_promtail_image: "grafana/promtail:{{ monitoring_promtail_version }}"
+monitoring_grafana_image: "grafana/grafana:{{ monitoring_grafana_version }}"
+
+monitoring_loki_host_port: 3101
+monitoring_loki_internal_port: 3100
+monitoring_promtail_host_port: 9081
+monitoring_promtail_internal_port: 9080
+monitoring_grafana_port: 3000
+
+monitoring_loki_retention: "168h"
+monitoring_loki_path_prefix: "/tmp/loki"
+monitoring_loki_schema_from: "2024-01-01"
+
+# Set dockerhub_username in vault (group_vars) like Lab 6; default is placeholder
+monitoring_dockerhub_username: "{{ dockerhub_username | default('your_username') }}"
+monitoring_python_image: "{{ monitoring_dockerhub_username }}/devops-info-python:lab03"
+monitoring_go_image: "{{ monitoring_dockerhub_username }}/devops-info-go:lab03"
+
+monitoring_grafana_admin_user: "admin"
+monitoring_grafana_admin_password: "admin"
+
+# POST Loki data source to Grafana API after deploy
+monitoring_configure_grafana_datasource: true

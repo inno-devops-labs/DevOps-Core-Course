@@ -1,0 +1,8 @@
+---
+# Lab 7 bonus: deploy Loki + Promtail + Grafana via monitoring role.
+# Run from WSL with: ansible-playbook -i inventory/hosts.ini playbooks/deploy-monitoring.yml [--ask-vault-pass]
+- name: Deploy monitoring stack (Loki stack)
+  hosts: webservers
+  become: true
+  roles:
+    - role: monitoring

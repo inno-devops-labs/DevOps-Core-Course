@@ -1,16 +1,16 @@
 auth_enabled: false
 
 server:
-  http_listen_port: 3100
+  http_listen_port: {{ monitoring_loki_internal_port }}
   grpc_listen_port: 9096
 
 common:
   instance_addr: 127.0.0.1
-  path_prefix: /tmp/loki
+  path_prefix: {{ monitoring_loki_path_prefix }}
   storage:
     filesystem:
-      chunks_directory: /tmp/loki/chunks
-      rules_directory: /tmp/loki/rules
+      chunks_directory: {{ monitoring_loki_path_prefix }}/chunks
+      rules_directory: {{ monitoring_loki_path_prefix }}/rules
   replication_factor: 1
   ring:
     kvstore:
@@ -25,7 +25,7 @@ query_range:
 
 schema_config:
   configs:
-    - from: 2024-01-01
+    - from: {{ monitoring_loki_schema_from }}
       store: tsdb
       object_store: filesystem
       schema: v13
@@ -34,5 +34,4 @@ schema_config:
         period: 24h
 
 limits_config:
-  retention_period: 168h
-
+  retention_period: {{ monitoring_loki_retention }}

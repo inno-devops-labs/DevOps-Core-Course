@@ -1,0 +1,28 @@
+---
+# Add Loki as Grafana data source if missing (idempotent via API).
+- name: Check if Loki datasource exists in Grafana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources/name/Loki"
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: [200, 404]
+  register: ds_check
+
+- name: Create Loki data source in Grafana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources"
+    method: POST
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: Loki
+      type: loki
+      access: proxy
+      url: "http://loki:{{ monitoring_loki_internal_port }}"
+      isDefault: true
+    status_code: [200, 409]
+  when: ds_check.status == 404

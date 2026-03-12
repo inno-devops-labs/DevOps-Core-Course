@@ -1,0 +1,19 @@
+---
+# Lab 7 bonus: deploy Loki stack with Docker Compose (idempotent).
+# Tags: monitoring
+
+- name: Setup monitoring directory and configs
+  ansible.builtin.include_tasks: setup.yml
+  tags:
+    - monitoring
+
+- name: Deploy monitoring stack
+  ansible.builtin.include_tasks: deploy.yml
+  tags:
+    - monitoring
+
+- name: Configure Grafana Loki data source
+  ansible.builtin.include_tasks: grafana-datasource.yml
+  when: monitoring_configure_grafana_datasource | bool
+  tags:
+    - monitoring

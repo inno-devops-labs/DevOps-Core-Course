@@ -1,0 +1,33 @@
+---
+- name: Ensure monitoring directory exists
+  ansible.builtin.file:
+    path: "{{ monitoring_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Ensure loki and promtail subdirs exist
+  ansible.builtin.file:
+    path: "{{ monitoring_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - loki
+    - promtail
+
+- name: Template Loki config
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_dir }}/loki/config.yml"
+    mode: "0644"
+
+- name: Template Promtail config
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ monitoring_dir }}/promtail/config.yml"
+    mode: "0644"
+
+- name: Template docker-compose for monitoring
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_dir }}/docker-compose.yml"
+    mode: "0644"

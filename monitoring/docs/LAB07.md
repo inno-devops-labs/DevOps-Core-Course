@@ -1,158 +1,178 @@
+# LAB07 — Observability & Logging with Loki Stack
+
 ## 1. Architecture
 
-- **Stack:** Loki 3.0 + Promtail 3.0 + Grafana 12.3 + two apps (Python, Go).
-- **Flow:** Docker containers write logs → Promtail discovers containers via Docker socket → Promtail pushes logs to Loki → Grafana reads from Loki → dashboards & Explore show logs.
-- **Labels:** Container name (`container`), app name (`app`), and log level/fields from JSON logs are used for filtering and aggregations.
-- **Storage:** Loki uses TSDB + filesystem backend with 7‑day retention (schema v13, single instance).
+Stack: **Loki 3.0** (log store) + **Promtail 3.0** (collector) + **Grafana 12.3** (UI) + Python and Go apps.
+
+Flow:
+```
+Apps (8000, 8001) → stdout
+       ↓
+Docker containers → log files
+       ↓
+Promtail (Docker socket + /var/lib/docker/containers) → discovers containers, reads logs
+       ↓
+Loki (3100) ← Promtail pushes logs
+       ↓
+Grafana (3000) → queries Loki, shows Explore + dashboards
+```
+
+- **Labels:** Promtail sends `container`, `container_id`, `app` (from Docker labels). LogQL uses these to filter.
+- **Storage:** Loki uses TSDB + filesystem under `/tmp/loki`, schema v13, 7-day retention.
+
+---
 
 ## 2. Setup Guide
 
-### 2.1 Prerequisites
+**Prerequisites:** Docker + Docker Compose v2; images `devops-info-python:lab03` and `devops-info-go:lab03` (or set `DOCKERHUB_USERNAME` and use Docker Hub).
 
-- Docker and Docker Compose v2 installed.
-- Python and Go images from previous labs built locally:
-  - `devops-info-python:lab03` (Flask app).
-  - `devops-info-go:lab03` (bonus app).
+**Steps:**
 
-### 2.2 Start Monitoring Stack (local machine)
+1. From repo root:
+   ```bash
+   cd DevOps-Core-Course/monitoring
+   export DOCKERHUB_USERNAME="your_username"
+   docker compose up -d
+   docker compose ps
+   ```
+2. Verify:
+   ```bash
+   curl http://127.0.0.1:3101/ready
+   curl http://127.0.0.1:9081/targets
+   curl http://127.0.0.1:3000/api/health
+   ```
+3. Open Grafana: `http://localhost:3000`. Add data source **Loki**, URL `http://loki:3100`, Save & Test.
+4. In **Explore** (Loki), run e.g. `{container=~"devops-python|devops-go|loki"}` to see logs from 3+ containers.
 
-```bash
-cd DevOps-Core-Course/monitoring
-docker compose up -d
-docker compose ps
-```
+**Evidence (Task 1):** Logs from at least 3 containers in Grafana Explore.
 
-Verify services:
+![Logs Grafana Explore](screenshots/logs-graphana.png)
+![Logs Grafana Explore](screenshots/logs-go.png)
+![Logs Grafana Explore](screenshots/logs-python.png)
 
-```bash
-curl http://localhost:3100/ready       # Loki
-curl http://localhost:9080/targets     # Promtail
-curl http://localhost:3000/api/health  # Grafana
-```
-
-Access Grafana UI in browser: `http://localhost:3000`.
+---
 
 ## 3. Configuration
 
-### 3.1 Docker Compose
+**Docker Compose:** One network `logging`; services loki, promtail, grafana, app-python, app-bonus. Loki host port 3101→3100, Promtail 9081→9080 (so they don’t conflict). Apps have labels `logging: "promtail"` and `app: "devops-python"` / `app: "devops-go"`.
 
-- **Services:** `loki`, `promtail`, `grafana`, `app-python`, `app-bonus` on a shared `logging` network.
-- **Volumes:** `loki-data` for Loki TSDB data, `grafana-data` for dashboards and settings.
-- **Resource limits:** CPU and memory limits/reservations are set for each service to avoid resource exhaustion.
-- **Health checks:** HTTP checks on Loki (`/ready`) and Grafana (`/api/health`) plus Promtail `/ready`.
+**Loki** (`loki/config.yml`): Server on 3100; `common.path_prefix` and storage under `/tmp/loki` (writable without volume); schema v13 + TSDB + filesystem; `limits_config.retention_period: 168h` (7 days). No compactor `shared_store` (removed in Loki 3.0).
 
-### 3.2 Loki (`monitoring/loki/config.yml`)
+Snippet:
+```yaml
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+limits_config:
+  retention_period: 168h
+```
 
-- `auth_enabled: false` for local development.
-- `server.http_listen_port: 3100`.
-- `common.storage.filesystem` with chunk and rule directories under `/var/loki`.
-- `schema_config` uses **schema v13** with `store: tsdb` and `object_store: filesystem`.
-- `limits_config.retention_period: 168h` (7 days).
-- `compactor` with `retention_enabled: true` to delete old logs.
+**Promtail** (`promtail/config.yml`): Sends to `http://loki:3100/loki/api/v1/push`. Docker discovery via `docker_sd_configs` and `unix:///var/run/docker.sock`. Relabels: `container` from container name (strip leading `/`), `container_id`, and `app` from Docker label `app`.
 
-### 3.3 Promtail (`monitoring/promtail/config.yml`)
+Snippet:
+```yaml
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: [__meta_docker_container_name]
+        target_label: container
+        regex: "/(.*)"
+        replacement: "$1"
+      - source_labels: [__meta_docker_container_label_app]
+        target_label: app
+        regex: "(.+)"
+        replacement: "$1"
+```
 
-- `server.http_listen_port: 9080` for readiness/targets endpoints.
-- `clients` send to `http://loki:3100/loki/api/v1/push`.
-- `docker_sd_configs` discovers Docker containers via `/var/run/docker.sock`.
-- `relabel_configs` extract:
-  - `container` label from `__meta_docker_container_name` (without leading `/`).
-  - `container_id` from `__meta_docker_container_id`.
-- `pipeline_stages.match` keeps only containers with label `logging="promtail"` so only selected apps are scraped.
+---
 
-## 4. Application Logging (Python App)
+## 4. Application Logging
 
-- Logging switched from plain text to **JSON** using a custom `JSONFormatter` for Python `logging`.
-- Each log line includes:
-  - `timestamp`, `level`, and `message`.
-  - HTTP context: method, path, status code, client IP.
-  - Service metadata: service name, version.
-- Flask hooks:
-  - `@app.before_request` logs incoming requests.
-  - `@app.after_request` logs responses.
-  - Error handlers log exceptions with level `ERROR`.
-- JSON fields can be parsed with `| json` in LogQL and used in filters/aggregations.
+Python app (Lab 1) was updated to log in **JSON**: one line per event with `timestamp`, `level`, `message`, and HTTP context (`method`, `path`, `status_code`, `client_ip`). Implemented with a custom `JSONFormatter` (or e.g. python-json-logger). Flask: `@app.before_request` logs request, `@app.after_request` logs response; error handlers log at ERROR. JSON allows LogQL to use `| json` and filter by `level`, `method`, etc.
 
-## 5. Dashboard (Grafana)
+**Evidence (Task 2):** JSON log line.
 
-### 5.1 Data Source
+![JSON log output from Python app](screenshots/json-1.png)
 
-1. Open Grafana → **Connections → Data sources → Add data source**.
-2. Choose **Loki**.
-3. URL: `http://loki:3100`.
-4. Click **Save & Test** (should report “Data source connected”).
+![JSON log output from Python app](screenshots/json-2.png)
 
-### 5.2 Panels and Queries
+---
 
-Dashboard contains 4 panels using data source **Loki**:
+## 5. Dashboard
 
-1. **Logs Table** (Logs):
-   - Query: `{app=~"devops-.*"}`.
-   - Shows recent logs from all apps.
-2. **Request Rate** (Time series):
-   - Query: `sum by (app) (rate({app=~"devops-.*"}[1m]))`.
-   - Shows logs per second per app.
-3. **Error Logs** (Logs):
-   - Query: `{app=~"devops-.*"} | json | level="ERROR"`.
-   - Shows only error-level entries.
-4. **Log Level Distribution** (Stat / Pie):
-   - Query: `sum by (level) (count_over_time({app=~"devops-.*"} | json [5m]))`.
-   - Shows count of logs per level (INFO, ERROR, etc.).
+Data source: **Loki** with URL `http://loki:3100`.
 
-## 6. Production Configuration
+Four panels:
 
-- **Resource limits:** All services have CPU and memory limits/reservations in `docker-compose.yml`.
-- **Grafana security:**
-  - Anonymous access disabled: `GF_AUTH_ANONYMOUS_ENABLED=false`.
-  - Admin user/password provided via environment (`GF_SECURITY_ADMIN_USER`, `GF_SECURITY_ADMIN_PASSWORD`).
-  - For real deployments, set these through a `.env` file and do not commit secrets.
-- **Retention:** Loki keeps logs for 7 days via `limits_config.retention_period`.
-- **Health checks:** Docker health checks ensure Loki, Promtail, and Grafana are healthy before use.
+| Panel               | Type        | LogQL query                                                                 |
+|---------------------|------------|-----------------------------------------------------------------------------|
+| Logs Table          | Logs       | `{app=~"devops-.*"}` — recent logs from both apps                          |
+| Request Rate        | Time series| `sum by (app) (rate({app=~"devops-.*"}[1m]))` — logs/sec per app           |
+| Error Logs          | Logs       | `{app=~"devops-.*"} \| json \| level="ERROR"` — only ERROR level            |
+| Log Level Distribution | Pie | `sum by (level) (count_over_time({app=~"devops-.*"} \| json [5m]))` — count by level |
+
+
+**Evidence (Task 3):** Screenshot of the dashboard with all 4 panels
+
+![JSON log output from Python app](screenshots/graphana-charts.png)
+
+---
+
+## 6. Production Config
+
+- **Resource limits:** All services have `deploy.resources.limits` (and reservations) in `docker-compose.yml` (e.g. Loki/Grafana 1 CPU, 1G RAM).
+- **Grafana:** `GF_AUTH_ANONYMOUS_ENABLED=false`. Admin user/password via `GF_SECURITY_ADMIN_USER` and `GF_SECURITY_ADMIN_PASSWORD` (use `.env` in real use).
+- **Retention:** Loki `limits_config.retention_period: 168h` (7 days).
+- **Health checks:** Loki `curl -f http://localhost:3100/ready`, Promtail `http://localhost:9080/ready`, Grafana `http://localhost:3000/api/health` in `healthcheck:`.
+
+**Evidence (Task 4):** `docker compose ps` showing services healthy; screenshot of Grafana login (no anonymous access).
+
+![Login](screenshots/login.png)
+![Docker](screenshots/docker-compose-ps.png)
+
+---
 
 ## 7. Testing
 
-### 7.1 Generate Logs
-
+**Generate logs:**
 ```bash
-# Python app
-for i in {1..20}; do curl http://localhost:8000/; done
-for i in {1..20}; do curl http://localhost:8000/health; done
-
-# Bonus Go app (if available)
-for i in {1..20}; do curl http://localhost:8001/; done
-for i in {1..20}; do curl http://localhost:8001/health; done
+for i in $(seq 1 20); do curl -s http://127.0.0.1:8000/ > /dev/null; curl -s http://127.0.0.1:8000/health > /dev/null; done
+for i in $(seq 1 20); do curl -s http://127.0.0.1:8001/ > /dev/null; curl -s http://127.0.0.1:8001/health > /dev/null; done
 ```
 
-### 7.2 LogQL Queries (Grafana → Explore)
+**LogQL evidence:**
 
-- All logs for Python app:
+![LogQL queries in Grafana Explore](screenshots/logql-1.png)
+![LogQL queries in Grafana Explore](screenshots/logql-2.png)
 
-```logql
-{app="devops-python"}
-```
-
-- Only errors:
-
-```logql
-{app="devops-python"} |= "ERROR"
-```
-
-- Filter by JSON fields:
-
-```logql
-{app="devops-python"} | json | method="GET"
-```
-
-- Request rate by app:
-
-```logql
-sum by (app) (rate({app=~"devops-.*"}[1m]))
-```
+---
 
 ## 8. Challenges
 
-- **Loki TSDB config:** Needed to carefully follow Loki 3.0 documentation for `common`, `schema_config`, and `storage_config` sections to avoid startup errors.
-- **Docker discovery in Promtail:** Getting Docker service discovery and relabeling right was required so that container names appear cleanly as labels.
-- **JSON logging integration:** Converting existing Flask logging to structured JSON while keeping request context required a custom formatter and hooks.
-- **Security vs convenience:** Anonymous Grafana is very convenient for local testing, but the lab required turning it off and using environment variables for admin credentials.
+- **Loki permission denied:** With a volume on `/var/loki`, Loki failed with “permission denied” creating rules dir. Switched to `/tmp/loki` (no volume) so the process can write.
 
+---
+
+## Bonus — Ansible automation
+
+**Role:** `ansible/roles/monitoring/` — templates `docker-compose.yml`, Loki and Promtail configs to `{{ monitoring_dir }}` (default `/opt/monitoring`), deploys with `community.docker.docker_compose_v2`, waits for Grafana and Loki ready, then creates Grafana **Loki** data source via API (`http://loki:3100`). Depends on **docker** role.
+
+**Run (WSL):**
+```bash
+cd DevOps-Core-Course/ansible
+ansible-playbook -i inventory/hosts.ini playbooks/deploy-monitoring.yml --ask-vault-pass
+```
+**Idempotency:** Run again; second run should show **changed=0** for template/compose if nothing changed.
+
+**Evidence:**
+
+![First run](screenshots/bonus-1.png)
+![Second run](screenshots/bonus-2.png)
