@@ -8,8 +8,20 @@ from datetime import datetime, timezone
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from pythonjsonlogger import jsonlogger
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logger = logging.getLogger("app")
+logger.setLevel(logging.INFO)
+_handler = logging.StreamHandler()
+_handler.setFormatter(
+    jsonlogger.JsonFormatter(
+        fmt="%(asctime)s %(levelname)s %(name)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+        rename_fields={"asctime": "timestamp", "levelname": "level"},
+    )
+)
+logger.addHandler(_handler)
+
 app = FastAPI()
 START = datetime.now(timezone.utc)
 
@@ -34,11 +46,15 @@ def system_info():
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    client = request.client.host if request.client else None
-    ua = request.headers.get("user-agent", "")
     resp = await call_next(request)
-    logging.info(
-        "%s %s %s %s", client, request.method, request.url.path, resp.status_code
+    logger.info(
+        "http request",
+        extra={
+            "client_ip": request.client.host if request.client else "unknown",
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": resp.status_code,
+        },
     )
     return resp
 

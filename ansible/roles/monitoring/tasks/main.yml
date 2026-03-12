@@ -1,0 +1,12 @@
+---
+- name: Include setup tasks
+  ansible.builtin.import_tasks: setup.yml
+  tags:
+    - monitoring
+    - monitoring_setup
+
+- name: Include deploy tasks
+  ansible.builtin.import_tasks: deploy.yml
+  tags:
+    - monitoring
+    - monitoring_deploy

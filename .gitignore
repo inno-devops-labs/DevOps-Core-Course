@@ -6,3 +6,6 @@ __pycache__
 *.retry
 ansible/.vault_pass
 ansible/inventory/*.pyc
+
+# Monitoring secrets
+monitoring/.env

@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 python-dotenv
+python-json-logger
 httpx
 pytest
 pytest-cov

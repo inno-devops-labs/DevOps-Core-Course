@@ -1,0 +1,60 @@
+---
+- name: Deploy Loki monitoring stack
+  hosts: webservers
+  become: true
+
+  vars_files:
+    - "{{ playbook_dir }}/../inventory/group_vars/all.yml"
+
+  pre_tasks:
+    - name: Verify Docker is available
+      ansible.builtin.command: docker --version
+      changed_when: false
+      register: docker_version
+
+    - name: Show Docker version
+      ansible.builtin.debug:
+        msg: "Docker version: {{ docker_version.stdout }}"
+
+    - name: Verify Docker Compose v2 is available
+      ansible.builtin.command: docker compose version
+      changed_when: false
+      register: compose_version
+
+    - name: Show Docker Compose version
+      ansible.builtin.debug:
+        msg: "Docker Compose version: {{ compose_version.stdout }}"
+
+  roles:
+    - role: monitoring
+
+  post_tasks:
+    - name: Verify Loki is healthy
+      ansible.builtin.uri:
+        url: "http://localhost:{{ loki_port | default(3100) }}/ready"
+        status_code: 200
+      register: loki_health
+      until: loki_health.status == 200
+      retries: 10
+      delay: 10
+
+    - name: Verify Grafana is healthy
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grafana_port | default(3000) }}/api/health"
+        status_code: 200
+      register: grafana_health
+      until: grafana_health.status == 200
+      retries: 10
+      delay: 10
+
+    - name: Print stack summary
+      ansible.builtin.debug:
+        msg:
+          - "=========================================="
+          - "  Monitoring Stack Deployed Successfully  "
+          - "=========================================="
+          - "  Loki:     http://{{ inventory_hostname }}:{{ loki_port | default(3100) }}"
+          - "  Promtail: http://{{ inventory_hostname }}:{{ promtail_port | default(9080) }}/targets"
+          - "  Grafana:  http://{{ inventory_hostname }}:{{ grafana_port | default(3000) }}"
+          - "  Login:    {{ grafana_admin_user | default('admin') }} / <your password>"
+          - "=========================================="

@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: monitoring
+  author: polinanime
+  description: Deploy Loki + Promtail + Grafana logging stack via Docker Compose
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - focal
+  galaxy_tags:
+    - monitoring
+    - logging
+    - loki
+    - grafana
+    - docker
+
+dependencies:
+  - role: docker

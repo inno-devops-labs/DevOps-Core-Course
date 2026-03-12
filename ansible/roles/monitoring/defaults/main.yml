@@ -1,0 +1,56 @@
+---
+# Service versions
+loki_version: "3.6.7"
+promtail_version: "3.6.7"
+grafana_version: "12.3.5"
+
+# Ports
+loki_port: 3100
+promtail_port: 9080
+grafana_port: 3000
+
+# Retention
+loki_retention_period: "168h"
+
+# Schema
+loki_schema_version: "v13"
+
+# Resource limits
+loki_memory_limit: "1G"
+loki_memory_reservation: "256M"
+loki_cpu_limit: "1.0"
+loki_cpu_reservation: "0.25"
+
+promtail_memory_limit: "256M"
+promtail_memory_reservation: "64M"
+promtail_cpu_limit: "0.5"
+promtail_cpu_reservation: "0.1"
+
+grafana_memory_limit: "512M"
+grafana_memory_reservation: "128M"
+grafana_cpu_limit: "1.0"
+grafana_cpu_reservation: "0.1"
+
+app_python_memory_limit: "256M"
+app_python_memory_reservation: "64M"
+app_python_cpu_limit: "0.5"
+app_python_cpu_reservation: "0.1"
+
+# Grafana credentials (override via vault or extra vars)
+grafana_admin_user: "admin"
+grafana_admin_password: "changeme"
+grafana_anonymous_enabled: "false"
+
+# App image
+app_python_image: "polinanime/devops-info-service:latest"
+app_python_port: 8000
+
+# Monitoring directory on the target host
+monitoring_dir: "/opt/monitoring"
+
+# Network name
+monitoring_network: "logging"
+
+# Docker socket path
+docker_socket: "unix:///var/run/docker.sock"
+docker_containers_path: "/var/lib/docker/containers"
