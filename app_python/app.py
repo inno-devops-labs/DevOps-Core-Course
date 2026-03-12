@@ -2,6 +2,7 @@ import fastapi
 from datetime import datetime, timezone
 import uvicorn
 import logging
+import json
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -9,15 +10,30 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 app = fastapi.FastAPI()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('app.log')
-    ]
-)
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage()
+        }
+
+        if record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(log_record)
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter())
+
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
+logger.propagate = False
+
 
 start_time = None
 
@@ -70,7 +86,8 @@ async def log_requests(request: fastapi.Request, call_next):
 
     except Exception as ex:
         logger.error(
-            f"Request failed: {request.method} {request.url.path} - Error: {str(ex)}")
+            f"Request failed: {request.method} {request.url.path} - Error: {str(ex)}"
+        )
         raise
 
 
