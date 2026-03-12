@@ -1,0 +1,156 @@
+services:
+  loki:
+    image: grafana/loki:3.0.0
+    command: ["-config.file=/etc/loki/config.yml"]
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "loki"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    command: ["-config.file=/etc/promtail/config.yml"]
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - promtail-positions:/tmp
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "promtail"
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9080/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-change-me}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "grafana"
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  app-python:
+    build:
+      context: ../app_python
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=False
+    ports:
+      - "8000:8000"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    depends_on:
+      promtail:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  app-go:
+    build:
+      context: ../app_go
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8001
+    ports:
+      - "8001:8001"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-go"
+    depends_on:
+      promtail:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+networks:
+  logging:
+    name: logging
+
+volumes:
+  loki-data:
+  grafana-data:
+  promtail-positions:
+
