@@ -49,7 +49,7 @@ resource "aws_security_group" "lab04_sg" {
 
 resource "aws_key_pair" "lab04" {
   key_name   = "lab04-key"
-  public_key = file("${pathexpand("~/.ssh/id_ed25519.pub")}")
+  public_key = file("${path.module}/lab04-key.pub")
 }
 
 resource "aws_instance" "lab04_vm" {
