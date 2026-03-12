@@ -8,3 +8,4 @@ terraform.tfvars
 .vault_pass
 venv/
 .ansible/
+.env
