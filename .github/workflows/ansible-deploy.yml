@@ -89,5 +89,15 @@ jobs:
       - name: Verify deployment
         run: |
           sleep 10
-          curl -fsS "http://${{ secrets.VM_HOST }}:8000" >/dev/null
-          curl -fsS "http://${{ secrets.VM_HOST }}:8000/health" >/dev/null
+          ssh -i ~/.ssh/id_rsa "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" '
+            set -e
+            if curl -fsS "http://127.0.0.1:8000/health" >/dev/null; then
+              echo "Health check passed on port 8000"
+            elif curl -fsS "http://127.0.0.1:5000/health" >/dev/null; then
+              echo "Health check passed on port 5000"
+            else
+              echo "Health check failed on ports 8000 and 5000" >&2
+              docker ps >&2 || true
+              exit 1
+            fi
+          '
