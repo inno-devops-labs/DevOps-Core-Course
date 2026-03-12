@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -76,6 +75,22 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// LogEntry describes a structured log record for Loki / Promtail / Grafana.
+type LogEntry struct {
+	Timestamp  string `json:"timestamp"`
+	Level      string `json:"level"`
+	Logger     string `json:"logger"`
+	Message    string `json:"message"`
+	Method     string `json:"method,omitempty"`
+	Path       string `json:"path,omitempty"`
+	StatusCode int    `json:"status_code,omitempty"`
+	ClientIP   string `json:"client_ip,omitempty"`
+	UserAgent  string `json:"user_agent,omitempty"`
+	LatencyMS  int64  `json:"latency_ms,omitempty"`
+	Address    string `json:"address,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
 // routeKey uniquely identifies a route by method and path.
 type routeKey struct {
 	Method string
@@ -142,6 +157,19 @@ func (rt *router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rr.Handler(w, r)
 		return
 	}
+
+	// Structured 404 log with request context
+	info := requestInfo(r)
+	logJSON(LogEntry{
+		Level:      "WARN",
+		Logger:     "app",
+		Message:    "not_found",
+		Method:     info.Method,
+		Path:       info.Path,
+		StatusCode: http.StatusNotFound,
+		ClientIP:   info.ClientIP,
+		UserAgent:  info.UserAgent,
+	})
 
 	writeJSON(w, http.StatusNotFound, ErrorResponse{
 		Error:   "Not Found",
@@ -241,6 +269,28 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+// logJSON writes a single structured log line to stdout.
+// stdout/stderr is what Docker log collectors (Promtail) read from containers.
+func logJSON(entry LogEntry) {
+	if entry.Timestamp == "" {
+		entry.Timestamp = time.Now().UTC().Format("2006-01-02T15:04:05Z")
+	}
+	if entry.Logger == "" {
+		entry.Logger = "app"
+	}
+
+	b, err := json.Marshal(entry)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, `{"timestamp":"%s","level":"ERROR","logger":"app","message":"log_marshal_failed","error":%q}`+"\n",
+			time.Now().UTC().Format("2006-01-02T15:04:05Z"),
+			err.Error(),
+		)
+		return
+	}
+
+	fmt.Fprintln(os.Stdout, string(b))
+}
+
 type statusWriter struct {
 	http.ResponseWriter
 	status int
@@ -252,23 +302,40 @@ func (sw *statusWriter) WriteHeader(code int) {
 	sw.ResponseWriter.WriteHeader(code)
 }
 
-// loggingMiddleware logs request metadata and the final status code.
+// loggingMiddleware logs request metadata before and after request handling.
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+		info := requestInfo(r)
+
+		// Structured "request started" log
+		logJSON(LogEntry{
+			Level:     "INFO",
+			Logger:    "app",
+			Message:   "request_started",
+			Method:    info.Method,
+			Path:      info.Path,
+			ClientIP:  info.ClientIP,
+			UserAgent: info.UserAgent,
+		})
 
 		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(sw, r)
 
 		lat := time.Since(start)
-		log.Printf("Request %s %s from %s UA=%s -> %d (%s)",
-			r.Method,
-			r.URL.Path,
-			clientIP(r),
-			r.UserAgent(),
-			sw.status,
-			lat,
-		)
+
+		// Structured "request finished" log with status and latency
+		logJSON(LogEntry{
+			Level:      "INFO",
+			Logger:     "app",
+			Message:    "request_finished",
+			Method:     info.Method,
+			Path:       info.Path,
+			StatusCode: sw.status,
+			ClientIP:   info.ClientIP,
+			UserAgent:  info.UserAgent,
+			LatencyMS:  lat.Milliseconds(),
+		})
 	})
 }
 
@@ -277,7 +344,21 @@ func recoverMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				log.Printf("ERROR 500 Internal Server Error: %v", rec)
+				info := requestInfo(r)
+
+				// Structured internal error log
+				logJSON(LogEntry{
+					Level:      "ERROR",
+					Logger:     "app",
+					Message:    "internal_error",
+					Method:     info.Method,
+					Path:       info.Path,
+					StatusCode: http.StatusInternalServerError,
+					ClientIP:   info.ClientIP,
+					UserAgent:  info.UserAgent,
+					Error:      fmt.Sprint(rec),
+				})
+
 				writeJSON(w, http.StatusInternalServerError, ErrorResponse{
 					Error:   "Internal Server Error",
 					Message: "An unexpected error occurred",
@@ -313,9 +394,9 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // crashHandler intentionally panics to verify 500 error handling.
-// func crashHandler(w http.ResponseWriter, r *http.Request) {
-// 	panic("crash test")
-// }
+func crashHandler(w http.ResponseWriter, r *http.Request) {
+	panic("crash test")
+}
 
 func main() {
 	host := os.Getenv("HOST")
@@ -324,26 +405,40 @@ func main() {
 	}
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "5000"
+		port = "5001"
 	}
 	debug := strings.ToLower(os.Getenv("DEBUG")) == "true"
 
+	// Optional debug flag log
 	if debug {
-		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-		log.Println("DEBUG enabled")
-	} else {
-		log.SetFlags(log.LstdFlags)
+		logJSON(LogEntry{
+			Level:   "INFO",
+			Logger:  "app",
+			Message: "debug_enabled",
+		})
 	}
 
 	rt := newRouter()
 	rt.Handle(http.MethodGet, "/", "Root endpoint: returns service metadata and diagnostic information.", rootHandler(rt))
 	rt.Handle(http.MethodGet, "/health", "Health check endpoint for monitoring and Kubernetes probes.", healthHandler)
-	// rt.Handle(http.MethodGet, "/crash", "Intentional error to test 500 handler.", crashHandler)
+	rt.Handle(http.MethodGet, "/crash", "Intentional error to test 500 handler.", crashHandler)
 
 	handler := recoverMiddleware(loggingMiddleware(rt))
 
 	addr := net.JoinHostPort(host, port)
-	log.Printf("Listening on http://%s", addr)
+
+	// Startup logs for container log collection and troubleshooting
+	logJSON(LogEntry{
+		Level:   "INFO",
+		Logger:  "app",
+		Message: "application_started",
+	})
+	logJSON(LogEntry{
+		Level:   "INFO",
+		Logger:  "app",
+		Message: "server_listening",
+		Address: addr,
+	})
 
 	srv := &http.Server{
 		Addr:              addr,
@@ -351,5 +446,13 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logJSON(LogEntry{
+			Level:   "ERROR",
+			Logger:  "app",
+			Message: "server_stopped",
+			Error:   err.Error(),
+		})
+		os.Exit(1)
+	}
 }

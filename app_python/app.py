@@ -6,10 +6,12 @@ Provides basic system/runtime/request information and a health check endpoint.
 Configured via environment variables (HOST, PORT, DEBUG).
 """
 
+import json
 import logging
 import os
 import platform
 import socket
+import sys
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
@@ -25,18 +27,71 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 # Timestamp captured at startup (used to calculate uptime)
 START_TIME = datetime.now(timezone.utc)
 
+# Static service metadata returned by the root endpoint
 SERVICE = {
     "name": "devops-info-service",
     "version": "1.0.0",
     "description": "DevOps course info service",
     "framework": "Flask",
-    }
+}
+
+
+# JSON log formatter
+# Produces structured logs suitable for Loki / Promtail / Grafana
+class JSONFormatter(logging.Formatter):
+    """Serialize log records as JSON for centralized logging systems."""
+
+    def format(self, record):
+        payload = {
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+
+        # Add selected custom fields from `extra={...}` if they are present
+        for field in (
+            "method",
+            "path",
+            "status_code",
+            "client_ip",
+            "user_agent",
+            "latency_ms",
+        ):
+            value = getattr(record, field, None)
+            if value is not None:
+                payload[field] = value
+
+        # Include traceback for exception logs
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(payload, ensure_ascii=False)
+
 
 # Logging configuration (stdout; suitable for Docker/Kubernetes)
-logging.basicConfig(
-    level=logging.DEBUG if DEBUG else logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-)
+# We explicitly log to stdout because container log collectors read stdout/stderr
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(JSONFormatter())
+
+# Configure root logger so library/application logs also go through JSON formatter
+root_logger = logging.getLogger()
+root_logger.handlers.clear()
+root_logger.addHandler(handler)
+root_logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+
+# Configure Flask app logger separately and prevent duplicate log propagation
+app.logger.handlers.clear()
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+app.logger.propagate = False
+
+# Configure Werkzeug logger too, so startup/request logs are also JSON
+werkzeug_logger = logging.getLogger("werkzeug")
+werkzeug_logger.handlers.clear()
+werkzeug_logger.addHandler(handler)
+werkzeug_logger.setLevel(logging.INFO)
+werkzeug_logger.propagate = False
 
 
 # General functions of application
@@ -144,10 +199,10 @@ def health():
 
 
 # Test-only endpoint to trigger HTTP 500 (uncomment to verify error handler)
-# @app.get("/crash")
-# def crash():
-#     """Intentional error to test 500 handler."""
-#     1 / 0
+@app.get("/crash")
+def crash():
+    """Intentional error to test 500 handler."""
+    1 / 0
 
 
 # Error Handlers
@@ -155,7 +210,17 @@ def health():
 def not_found(error):
     """Return JSON error for unknown endpoints."""
 
-    app.logger.warning("404 Not Found: %s %s", request.method, request.path)
+    info = request_info()
+    app.logger.warning(
+        "not_found",
+        extra={
+            "method": info["method"],
+            "path": info["path"],
+            "status_code": 404,
+            "client_ip": info["client_ip"],
+            "user_agent": info["user_agent"],
+        },
+    )
     return jsonify({
         "error": "Not Found",
         "message": "Endpoint does not exist",
@@ -166,7 +231,17 @@ def not_found(error):
 def internal_error(error):
     """Return JSON error for unhandled server exceptions."""
 
-    app.logger.exception("500 Internal Server Error")
+    info = request_info()
+    app.logger.exception(
+        "internal_error",
+        extra={
+            "method": info["method"],
+            "path": info["path"],
+            "status_code": 500,
+            "client_ip": info["client_ip"],
+            "user_agent": info["user_agent"],
+        },
+    )
     return jsonify({
         "error": "Internal Server Error",
         "message": "An unexpected error occurred",
@@ -178,12 +253,15 @@ def internal_error(error):
 def log_requests():
     """Log basic request metadata before handling."""
 
+    info = request_info()
     app.logger.info(
-        "Request %s %s from %s UA=%s",
-        request.method,
-        request.path,
-        request.headers.get("X-Forwarded-For", request.remote_addr),
-        request.headers.get("User-Agent"),
+        "request_started",
+        extra={
+            "method": info["method"],
+            "path": info["path"],
+            "client_ip": info["client_ip"],
+            "user_agent": info["user_agent"],
+        },
     )
 
 
@@ -191,15 +269,27 @@ def log_requests():
 def log_response(response):
     """Log response status code after handling."""
 
+    info = request_info()
     app.logger.info(
-        "Response %s %s -> %s",
-        request.method,
-        request.path,
-        response.status_code,
+        "request_finished",
+        extra={
+            "method": info["method"],
+            "path": info["path"],
+            "status_code": response.status_code,
+            "client_ip": info["client_ip"],
+            "user_agent": info["user_agent"],
+        },
     )
 
     return response
 
 
 if __name__ == "__main__":
-    app.run(host=HOST, port=PORT, debug=DEBUG)
+    # Startup log to confirm the app has launched and which port it uses
+    app.logger.info(
+        "application_started",
+        extra={
+            "status_code": 200,
+        },
+    )
+    app.run(host=HOST, port=PORT, debug=DEBUG, use_reloader=False)
