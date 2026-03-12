@@ -26,7 +26,7 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-# Application start time (UTC)
+# Application start time (UTC)2
 START_TIME = datetime.now(timezone.utc)
 
 
