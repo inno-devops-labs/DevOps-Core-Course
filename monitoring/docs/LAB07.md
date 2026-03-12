@@ -145,7 +145,7 @@ grafana:
 **Python application:**
 ```yaml
 app-python:
-  image: <your-dockerhub-username>/devops-info-service:json-logging
+  image: acecution/devops-info-service:json-logging
   ports: ["8000:8000"]
   labels:
     logging: "promtail"
