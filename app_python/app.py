@@ -43,7 +43,8 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record):
         payload = {
-            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "timestamp": 
+            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -70,11 +71,13 @@ class JSONFormatter(logging.Formatter):
 
 
 # Logging configuration (stdout; suitable for Docker/Kubernetes)
-# We explicitly log to stdout because container log collectors read stdout/stderr
+# We explicitly log to stdout because container
+# log collectors read stdout/stderr
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(JSONFormatter())
 
-# Configure root logger so library/application logs also go through JSON formatter
+# Configure root logger so library/application logs also go
+# through JSON formatter
 root_logger = logging.getLogger()
 root_logger.handlers.clear()
 root_logger.addHandler(handler)
