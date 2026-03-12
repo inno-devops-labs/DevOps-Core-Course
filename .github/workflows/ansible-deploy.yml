@@ -1,0 +1,93 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'ansible/**'
+      - '!ansible/docs/**'
+      - '.github/workflows/ansible-deploy.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'ansible/**'
+      - '!ansible/docs/**'
+      - '.github/workflows/ansible-deploy.yml'
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint
+          ansible-galaxy collection install community.docker
+
+      - name: Run ansible-lint
+        run: ansible-lint playbooks/*.yml
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible runtime
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Configure SSH access
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Build CI inventory
+        run: |
+          cat > inventory/ci-hosts.ini <<CI_INVENTORY
+          [webservers]
+          target ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }} ansible_ssh_private_key_file=/home/runner/.ssh/id_rsa
+          CI_INVENTORY
+
+      - name: Deploy with Ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          trap 'rm -f /tmp/vault_pass' EXIT
+          printf '%s' "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml \
+            -i inventory/ci-hosts.ini \
+            --vault-password-file /tmp/vault_pass
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          curl -fsS "http://${{ secrets.VM_HOST }}:8000" >/dev/null
+          curl -fsS "http://${{ secrets.VM_HOST }}:8000/health" >/dev/null
