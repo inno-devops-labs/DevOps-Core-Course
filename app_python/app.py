@@ -247,3 +247,4 @@ async def internal_error(request: Request, exc):
             "message": "An unexpected error occurred"
         }
     )
+    

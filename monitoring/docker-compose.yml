@@ -128,3 +128,4 @@ volumes:
   loki-data:
   grafana-data:
   promtail-positions:
+  
