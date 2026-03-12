@@ -11,6 +11,7 @@ import os
 import platform
 import socket
 import json
+import sys
 from datetime import datetime, timezone
 from typing import Any, Dict
 
@@ -80,7 +81,7 @@ class JSONFormatter(logging.Formatter):
 
 
 def configure_logging() -> logging.Logger:
-    handler = logging.StreamHandler()
+    handler = logging.StreamHandler(stream=sys.stdout)
     handler.setFormatter(JSONFormatter())
 
     root_logger = logging.getLogger()
