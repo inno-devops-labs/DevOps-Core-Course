@@ -10,6 +10,7 @@ import os
 import socket
 import platform
 import logging
+import json
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
@@ -34,11 +35,16 @@ START_TIME = datetime.now(timezone.utc)
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format="%(message)s"
 )
 logger = logging.getLogger(__name__)
 
-logger.info("DevOps Info Service starting...")
+logger.info(json.dumps({
+    "timestamp": datetime.now(timezone.utc).isoformat(),
+    "level": "INFO",
+    "event": "startup",
+    "message": "DevOps Info Service starting..."
+}))
 
 # ------------------------------------------------------------------------------
 # Helper functions
@@ -83,7 +89,17 @@ def index():
     """
     Main endpoint returning service, system, runtime, and request information.
     """
-    logger.info("Handling request: %s %s", request.method, request.path)
+    logger.info(json.dumps({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": "INFO",
+        "event": "request",
+        "endpoint": "index",
+        "method": request.method,
+        "path": request.path,
+        "client_ip": request.remote_addr,
+        "status_code": 200,
+        "user_agent": request.headers.get("User-Agent"),
+    }))
 
     uptime_seconds, uptime_human = get_uptime()
 
@@ -123,6 +139,18 @@ def health():
     """
     uptime_seconds, _ = get_uptime()
 
+    logger.info(json.dumps({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": "INFO",
+        "event": "request",
+        "endpoint": "health",
+        "method": request.method,
+        "path": request.path,
+        "client_ip": request.remote_addr,
+        "status_code": 200,
+        "user_agent": request.headers.get("User-Agent"),
+    }))
+
     return jsonify({
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -138,7 +166,16 @@ def not_found(error):
     """
     Handle 404 errors.
     """
-    logger.warning("404 Not Found: %s", request.path)
+    logger.warning(json.dumps({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": "WARNING",
+        "event": "http_error",
+        "error_type": "NotFound",
+        "path": request.path,
+        "method": request.method,
+        "status_code": 404,
+        "client_ip": request.remote_addr,
+    }))
     return jsonify({
         "error": "Not Found",
         "message": "Endpoint does not exist",
@@ -150,7 +187,17 @@ def internal_error(error):
     """
     Handle 500 errors.
     """
-    logger.error("500 Internal Server Error: %s", error)
+    logger.error(json.dumps({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": "ERROR",
+        "event": "http_error",
+        "error_type": "InternalServerError",
+        "path": request.path,
+        "method": request.method,
+        "status_code": 500,
+        "client_ip": request.remote_addr,
+        "error": str(error),
+    }))
     return jsonify({
         "error": "Internal Server Error",
         "message": "An unexpected error occurred",
