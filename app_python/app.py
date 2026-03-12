@@ -2,15 +2,11 @@ import logging
 import os
 import platform
 import socket
+import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger("devops-info-service")
+from flask import Flask, jsonify, request, g
+from pythonjsonlogger import jsonlogger
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
@@ -18,12 +14,27 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 app = Flask(__name__)
 
-# App start time (for uptime)
 START_TIME = datetime.now(timezone.utc)
 
 
+def configure_logging():
+    logger = logging.getLogger()
+    logger.handlers.clear()
+    logger.setLevel(logging.INFO)
+
+    handler = logging.StreamHandler()
+    formatter = jsonlogger.JsonFormatter(
+        "%(asctime)s %(name)s %(levelname)s %(message)s"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+
+configure_logging()
+logger = logging.getLogger("devops-info-service")
+
+
 def get_uptime():
-    """Return uptime in seconds and human format."""
     delta = datetime.now(timezone.utc) - START_TIME
     seconds = int(delta.total_seconds())
 
@@ -47,7 +58,6 @@ def get_uptime():
 
 
 def get_system_info():
-    """Collect system information."""
     return {
         "hostname": socket.gethostname(),
         "platform": platform.system(),
@@ -59,7 +69,6 @@ def get_system_info():
 
 
 def get_service_info():
-    """Service metadata."""
     return {
         "name": "devops-info-service",
         "version": "1.0.0",
@@ -69,7 +78,6 @@ def get_service_info():
 
 
 def get_request_info():
-    """Request metadata."""
     return {
         "client_ip": request.headers.get("X-Forwarded-For", request.remote_addr),
         "user_agent": request.headers.get("User-Agent", "unknown"),
@@ -79,7 +87,6 @@ def get_request_info():
 
 
 def get_runtime_info():
-    """Runtime metadata."""
     uptime = get_uptime()
     return {
         "uptime_seconds": uptime["seconds"],
@@ -89,11 +96,33 @@ def get_runtime_info():
     }
 
 
+@app.before_request
+def before_request_logging():
+    g.start_time = time.time()
+
+
+@app.after_request
+def after_request_logging(response):
+    duration_ms = round((time.time() - g.start_time) * 1000, 2)
+
+    logger.info(
+        "http_request",
+        extra={
+            "event": "http_request",
+            "service": "devops-info-service",
+            "method": request.method,
+            "path": request.path,
+            "status_code": response.status_code,
+            "client_ip": request.headers.get("X-Forwarded-For", request.remote_addr),
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+            "duration_ms": duration_ms,
+        },
+    )
+    return response
+
+
 @app.route("/", methods=["GET"])
 def index():
-    """Main endpoint - service and system information."""
-    logger.info("Request received: %s %s", request.method, request.path)
-
     response = {
         "service": get_service_info(),
         "system": get_system_info(),
@@ -109,9 +138,6 @@ def index():
 
 @app.route("/health", methods=["GET"])
 def health():
-    """Health check endpoint."""
-    logger.info("Health check: %s %s", request.method, request.path)
-
     uptime = get_uptime()
     return (
         jsonify(
@@ -127,7 +153,15 @@ def health():
 
 @app.errorhandler(404)
 def not_found(error):
-    """Handle 404 errors."""
+    logger.warning(
+        "not_found",
+        extra={
+            "event": "not_found",
+            "path": request.path,
+            "method": request.method,
+            "client_ip": request.headers.get("X-Forwarded-For", request.remote_addr),
+        },
+    )
     return (
         jsonify(
             {
@@ -141,8 +175,14 @@ def not_found(error):
 
 @app.errorhandler(500)
 def internal_error(error):
-    """Handle 500 errors."""
-    logger.exception("Internal server error: %s", error)
+    logger.exception(
+        "internal_server_error",
+        extra={
+            "event": "internal_server_error",
+            "path": request.path,
+            "method": request.method,
+        },
+    )
     return (
         jsonify(
             {
@@ -155,5 +195,14 @@ def internal_error(error):
 
 
 if __name__ == "__main__":
-    logger.info("Starting DevOps Info Service on %s:%s (debug=%s)", HOST, PORT, DEBUG)
+    logger.info(
+        "service_start",
+        extra={
+            "event": "service_start",
+            "host": HOST,
+            "port": PORT,
+            "debug": DEBUG,
+            "service": "devops-info-service",
+        },
+    )
     app.run(host=HOST, port=PORT, debug=DEBUG)
