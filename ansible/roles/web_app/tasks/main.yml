@@ -1,0 +1,64 @@
+---
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+  block:
+    - name: Log in to Docker Hub when credentials are provided
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+      when:
+        - dockerhub_username is defined
+        - dockerhub_password is defined
+        - dockerhub_username | length > 0
+        - dockerhub_password | length > 0
+      no_log: "{{ app_deploy_no_log | default(web_app_deploy_no_log) }}"
+
+    - name: Ensure compose project directory exists
+      ansible.builtin.file:
+        path: "{{ compose_project_dir | default(web_app_compose_project_dir) }}"
+        state: directory
+        mode: "0755"
+
+    - name: Render docker-compose manifest
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir | default(web_app_compose_project_dir) }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Remove conflicting standalone container if present
+      community.docker.docker_container:
+        name: "{{ app_name | default(web_app_name) }}"
+        state: absent
+
+    - name: Deploy stack via Docker Compose v2
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir | default(web_app_compose_project_dir) }}"
+        state: present
+        pull: always
+
+    - name: Wait for application port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port | default(web_app_port) }}"
+        delay: 2
+        timeout: 90
+
+    - name: Verify health endpoint
+      ansible.builtin.uri:
+        url: "{{ app_healthcheck_url | default(web_app_healthcheck_url) }}"
+        method: GET
+        status_code: 200
+      register: web_app_healthcheck
+      changed_when: false
+
+  rescue:
+    - name: Report deployment failure context
+      ansible.builtin.debug:
+        msg: "Compose deployment failed for {{ app_name | default(web_app_name) }} (project: {{ compose_project_dir | default(web_app_compose_project_dir) }})."

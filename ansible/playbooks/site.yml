@@ -1,0 +1,6 @@
+---
+- name: Provision web servers
+  import_playbook: provision.yml
+
+- name: Deploy application stack
+  import_playbook: deploy.yml

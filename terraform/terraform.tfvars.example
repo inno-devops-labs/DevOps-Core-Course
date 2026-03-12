@@ -1,0 +1,3 @@
+# Local VM alternative:
+# No terraform.tfvars is required for Terraform in this mode.
+# Leave this file as documentation marker for the lab structure.

@@ -5,9 +5,9 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 Running the Application
-python -m src.app
+python app.py
 # Or with custom config
-PORT=8080 python -m src.app
+PORT=8080 python app.py
 API Endpoints
 GET / - Service and system information
 GET /health - Health check

@@ -7,54 +7,13 @@ import os
 import socket
 import platform
 import logging
-import json
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 
-
-class JSONFormatter(logging.Formatter):
-    """Format logs as structured JSON for log aggregation systems."""
-
-    _default_fields = set(logging.makeLogRecord({}).__dict__.keys())
-
-    @staticmethod
-    def _to_json_value(value):
-        try:
-            json.dumps(value)
-            return value
-        except TypeError:
-            return str(value)
-
-    def format(self, record):
-        log_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-        }
-
-        if record.exc_info:
-            log_entry["exception"] = self.formatException(record.exc_info)
-
-        for key, value in record.__dict__.items():
-            if key not in self._default_fields and not key.startswith("_"):
-                log_entry[key] = self._to_json_value(value)
-
-        return json.dumps(log_entry, ensure_ascii=True)
-
-
-def configure_logging():
-    root_logger = logging.getLogger()
-    root_logger.handlers.clear()
-    root_logger.setLevel(logging.INFO)
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(JSONFormatter())
-    root_logger.addHandler(stream_handler)
-
-
-configure_logging()
-logger = logging.getLogger("devops-info-service")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -95,35 +54,9 @@ def get_service():
     }
 
 
-@app.before_request
-def log_request_started():
-    logger.info(
-        "request_started",
-        extra={
-            "method": request.method,
-            "path": request.path,
-            "client_ip": request.remote_addr,
-            "user_agent": request.headers.get("User-Agent"),
-        },
-    )
-
-
-@app.after_request
-def log_request_completed(response):
-    logger.info(
-        "request_completed",
-        extra={
-            "method": request.method,
-            "path": request.path,
-            "status_code": response.status_code,
-            "client_ip": request.remote_addr,
-        },
-    )
-    return response
-
-
 @app.route("/")
 def index():
+    logger.debug(f"Request: {request.method} {request.path}")
     """Main endpoint - service and system information."""
     return {
         "service": get_service(),
@@ -156,6 +89,7 @@ def get_uptime():
 
 @app.route("/health")
 def health():
+    logger.debug(f"Request: {request.method} {request.path}")
     return jsonify(
         {
             "status": "healthy",
@@ -167,30 +101,11 @@ def health():
 
 @app.errorhandler(404)
 def not_found(error):
-    logger.warning(
-        "not_found",
-        extra={
-            "method": request.method,
-            "path": request.path,
-            "status_code": 404,
-            "client_ip": request.remote_addr,
-        },
-    )
     return jsonify({"error": "Not Found", "message": "Endpoint does not exist"}), 404
 
 
 @app.errorhandler(500)
 def internal_error(error):
-    logger.error(
-        "internal_error",
-        extra={
-            "method": request.method,
-            "path": request.path,
-            "status_code": 500,
-            "client_ip": request.remote_addr,
-            "error": str(error),
-        },
-    )
     return (
         jsonify(
             {

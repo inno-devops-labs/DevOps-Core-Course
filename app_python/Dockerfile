@@ -1,8 +1,8 @@
 FROM python:3.14-slim
-RUN useradd --shell /bin/sh appuser
+RUN useradd --shell sh appuser
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY src/ ./src/
+COPY . .
 USER appuser
-CMD ["python", "-m", "src.app"]
+CMD ["python", "app.py"]

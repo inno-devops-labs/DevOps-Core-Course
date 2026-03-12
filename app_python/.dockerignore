@@ -2,3 +2,5 @@
 !requirements.txt
 !src/
 !src/**
+!app.py
+!requirements.txt

@@ -1,0 +1,34 @@
+name: python-ci
+on:
+  push:
+    paths:
+      - app_python/**
+      - .github/workflows/python-ci.yml
+
+jobs:
+  lint:
+    permissions: write-all
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.14]
+        poetry-version: [2.3.2]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ./app_python
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: snok/install-poetry@v1
+        with:
+          version: ${{ matrix.poetry-version }}
+      - name: Install Dependencies
+        run: poetry install --no-root
+      - name: run flake8
+        run: poetry run flake8 src tests
+      - name: run pytest
+        run: poetry run pytest
