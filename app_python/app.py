@@ -1,15 +1,57 @@
-import os
-import socket
-import platform
+import json
 import logging
+import os
+import platform
+import socket
+import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_obj = {
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            log_obj["exception"] = self.formatException(record.exc_info)
+        for key, value in record.__dict__.items():
+            if key not in (
+                "name",
+                "msg",
+                "args",
+                "levelname",
+                "levelno",
+                "pathname",
+                "filename",
+                "module",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "thread",
+                "threadName",
+                "processName",
+                "process",
+                "message",
+            ):
+                log_obj[key] = value
+        return json.dumps(log_obj)
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logging.root.setLevel(logging.INFO)
+logging.root.handlers = [handler]
+
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -86,12 +128,30 @@ def get_endpoints():
     ]
 
 
+@app.before_request
+def before_request():
+    g.start_time = time.time()
+
+
+@app.after_request
+def after_request(response):
+    duration_ms = round((time.time() - g.start_time) * 1000, 2)
+    logger.info(
+        "http_request",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "status": response.status_code,
+            "duration_ms": duration_ms,
+            "remote_addr": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", "unknown"),
+        },
+    )
+    return response
+
+
 @app.route("/")
 def index():
-    logger.info(
-        f"Request: {request.method} {request.path} from {request.remote_addr}"
-    )
-
     return jsonify(
         {
             "service": get_service_info(),
@@ -142,5 +202,8 @@ def internal_error(error):
 
 
 if __name__ == "__main__":
-    logger.info("Starting...")
+    logger.info(
+        "app_startup",
+        extra={"host": HOST, "port": PORT, "debug": DEBUG},
+    )
     app.run(host=HOST, port=PORT, debug=DEBUG)
