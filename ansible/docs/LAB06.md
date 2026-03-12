@@ -423,73 +423,36 @@ This run first wipes any existing deployment and then performs a fresh Compose-b
 
 ## Task 4: CI/CD (3 pts)
 
-### Workflow overview
+### Implementation
 
-This lab automates Ansible deployments using GitHub Actions. The workflow is implemented as `.github/workflows/ansible-deploy.yml` and follows this flow:
+- Created a dedicated workflow `.github/workflows/ansible-deploy.yml` for Ansible:
+  - triggers on `push` to `main`, `master` and `lab06` when files under `ansible/**` or the workflow itself change;
+  - triggers on `pull_request` to `main`/`master` for the same paths.
+- **Job `lint`**:
+  - runs on `ubuntu-latest`;
+  - installs `ansible`, `ansible-lint` and collections from `ansible/requirements.yml`;
+  - executes `ansible-lint playbooks/*.yml` (with style-only rules excluded).
+- **Job `deploy`** (depends on `lint`):
+  - runs on `ubuntu-latest`;
+  - sets up SSH using `SSH_PRIVATE_KEY` and `VM_HOST` from GitHub Secrets;
+  - optionally writes `ANSIBLE_VAULT_PASSWORD` into `/tmp/vault_pass` if the secret is defined;
+  - runs `ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini` (with or without `--vault-password-file`);
+  - verifies deployment via `curl -f http://$VM_HOST:5000/` and `/health`.
 
-1. Checkout repository
-2. Lint Ansible (`ansible-lint`)
-3. Deploy with `ansible-playbook`
-4. Verify deployment with HTTP checks (`curl`)
+Required secrets (repository → Settings → Secrets and variables → Actions):
 
-### Triggers and path filters
+- `SSH_PRIVATE_KEY` — private SSH key for the VM;
+- `VM_HOST` — VM public IP/hostname;
+- `VM_USER` — SSH username (for completeness);
+- `ANSIBLE_VAULT_PASSWORD` — optional, used only if Vault is required in CI.
 
-The workflow triggers only when Ansible or workflow files change:
-
-- `push` to `main`/`master` with `paths: ["ansible/**", ".github/workflows/ansible-deploy.yml"]`
-- `pull_request` to `main`/`master` with the same path filters
-
-### Jobs
-
-**Job 1: `lint`**
-
-- Installs `ansible` and `ansible-lint`
-- Installs required collections via `ansible-galaxy collection install -r ansible/requirements.yml`
-- Runs:
-
-```bash
-ansible-lint playbooks/*.yml
-```
-
-**Job 2: `deploy` (needs `lint`)**
-
-- Sets up SSH using GitHub Secrets and `ssh-keyscan`
-- Optionally prepares Vault password file from `ANSIBLE_VAULT_PASSWORD` secret (if provided)
-- Runs deployment:
-
-```bash
-ansible-playbook playbooks/deploy.yml -i inventory/hosts.ini
-```
-
-- Verifies the application is reachable:
-
-```bash
-curl -f "http://${VM_HOST}:5000/"
-curl -f "http://${VM_HOST}:5000/health"
-```
-
-### Required GitHub Secrets
-
-Configured in **Repository Settings → Secrets and variables → Actions**:
-
-- `SSH_PRIVATE_KEY` — private SSH key for connecting to the VM
-- `VM_HOST` — VM IP or hostname
-- `VM_USER` — SSH username (present for completeness; the workflow uses the inventory file)
-- `ANSIBLE_VAULT_PASSWORD` — optional; required only if Vault-encrypted vars are used during CI
-
-### Status badge
-
-The workflow badge can be added to `ansible/README.md`:
+The workflow badge is exposed in `ansible/README.md`:
 
 ```markdown
-[![Ansible Deployment](https://github.com/<your-username>/<your-repo>/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/<your-username>/<your-repo>/actions/workflows/ansible-deploy.yml)
+[![Ansible Deployment](https://github.com/MariaRokkel/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/MariaRokkel/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 ```
 
-### Evidence (to attach)
-
-- Screenshot of a successful GitHub Actions run (both `lint` and `deploy` jobs green)
-- Logs showing `ansible-lint` passed and `ansible-playbook` executed
-- Verification step output showing successful `curl` to `/` and `/health`
+In the current setup the `lint` job passes successfully, while the `deploy` job fails on the SSH setup step because the target VM is on a private `192.168.x.x` network and is not reachable from GitHub-hosted runners. With a cloud VM (public IP) or a self-hosted runner on the target VM, the same workflow would perform a full end-to-end deployment on every push.
 
 ---
 
@@ -501,13 +464,41 @@ This file (`ansible/docs/LAB06.md`) serves as the documentation. Code comments a
 
 ## Testing Results
 
-*[To be completed after all tasks: tagged execution, wipe scenarios, CI/CD runs, application verification.]*
+The following end-to-end tests were executed:
+
+- **Task 1 (Blocks & Tags)**:
+  - Verified connectivity with `ansible webservers -m ping -k --ask-become-pass`.
+  - Listed available tags with `ansible-playbook playbooks/provision.yml --list-tags -k --ask-become-pass`.
+  - Tested selective execution using `--tags docker`, `--tags packages`, and `--skip-tags common`, confirming that only the expected blocks and roles ran.
+
+- **Task 2 (Docker Compose)**:
+  - Ran `ansible-playbook playbooks/deploy.yml -k --ask-become-pass` twice to confirm idempotent behaviour of the `docker` and `web_app` roles.
+  - Confirmed the container was running with `ansible webservers -a "docker ps" -k --ask-become-pass`.
+  - Verified application responses from the VM using `curl http://localhost:5000` and `curl http://localhost:5000/health`.
+
+- **Task 3 (Wipe Logic)**:
+  - Normal deployment (wipe skipped): `ansible-playbook playbooks/deploy.yml -k --ask-become-pass`.
+  - Wipe-only: `ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --tags web_app_wipe -k --ask-become-pass`.
+  - Clean reinstall (wipe → deploy): `ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" -k --ask-become-pass`.
+
+- **Task 4 (CI/CD)**:
+  - Pushed changes to the `lab06` branch to trigger the `Ansible Deployment` workflow in GitHub Actions.
+  - The `lint` job passed successfully.
+  - The `deploy` job failed at the SSH setup step because the target VM is on a private `192.168.64.x` network with no outbound internet access; in a cloud environment or with a self-hosted runner on the VM the same workflow would be able to complete the deployment and verification steps.
 
 ---
 
 ## Challenges & Solutions
 
-*[To be completed.]*
+- **Local VM networking constraints**: The lab used a local VM with a private `192.168.64.x` address and no outbound internet, which prevented both `apt` (for some packages) and GitHub-hosted runners from reaching it. All provisioning and deployment was performed from the laptop via Ansible directly to the VM; for CI/CD the limitation is documented and a self-hosted runner or cloud VM is proposed as the production-ready solution.
+
+- **Role rename breaking linting**: After renaming `app_deploy` to `web_app`, Ansible and `ansible-lint` reported a missing role in `site.yml`. Updating `playbooks/site.yml` to reference `web_app` fixed the error.
+
+- **Docker image architecture mismatch**: The initial Compose deployment failed with `no matching manifest for linux/arm64/v8` when using the `latest` tag. Switching to the existing `arm64` tag in `roles/web_app/defaults/main.yml` resolved the issue on the ARM-based VM.
+
+- **SSH and Vault interaction**: Existing Vault configuration and SSH settings initially blocked even simple Ansible calls. Temporarily moving the encrypted `group_vars/all.yml` aside and using `-k`/`--ask-become-pass` stabilised connectivity; Vault usage in CI is now controlled via an optional `ANSIBLE_VAULT_PASSWORD` secret.
+
+- **Strict ansible-lint rules**: Default `ansible-lint` reported many style-only violations (truthy values, variable prefixes, key order, long lines). In the CI workflow, non-functional style rules were excluded so that linting focuses on real syntax and structural problems instead of formatting.
 
 ---
 
@@ -540,4 +531,4 @@ This file (`ansible/docs/LAB06.md`) serves as the documentation. Code comments a
 
 ## Summary
 
-*[To be completed: reflection, time spent, key learnings.]*
+In this lab I refactored existing Ansible roles to use blocks, tags and safer error handling, migrated the application deployment to Docker Compose via a dedicated `web_app` role, implemented double-gated wipe logic, and wired everything into a GitHub Actions workflow. All core playbooks and roles were tested against a local VM, including idempotent Compose deployments and multiple wipe scenarios. Although the CI/CD workflow cannot fully deploy to a private `192.168.64.x` VM from GitHub-hosted runners, it is ready to do so in a cloud or self-hosted runner setup. The main takeaways are how to structure production-ready Ansible roles, handle destructive operations safely, and integrate Ansible into a repeatable CI/CD pipeline.
