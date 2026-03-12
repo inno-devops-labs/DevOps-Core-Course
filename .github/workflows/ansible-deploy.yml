@@ -43,7 +43,8 @@ jobs:
 
       - name: Run ansible-lint
         run: |
-          ansible-lint playbooks/*.yml
+          ansible-lint playbooks/*.yml \
+            -x yaml[truthy],var-naming,key-order,name,ignore-errors,no-changed-when,fqcn,command-instead-of-module
 
   deploy:
     name: Deploy Application

@@ -2,9 +2,9 @@
 # Main playbook - runs full provisioning and deployment
 - name: Full site setup
   hosts: webservers
-  become: yes
+  become: true
 
   roles:
     - common
     - docker
-    - app_deploy
+    - web_app
