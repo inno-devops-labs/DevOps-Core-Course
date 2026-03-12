@@ -20,6 +20,8 @@ My machine handles the VM without issues. The VM specs:
 
 Terraform was not applied against a cloud provider since a local VM was chosen. However, the full Terraform configuration for AWS is present in `terraform/` — it defines a VPC, subnets, security groups, and an EC2 instance — and passes `terraform validate` successfully.
 
+
+
 ### 3. Pulumi Implementation
 
 Similarly, Pulumi was not run against a cloud provider. The full Pulumi Python configuration is available in `pulumi/` and mirrors the Terraform setup. `pulumi preview` confirms the plan is valid.
