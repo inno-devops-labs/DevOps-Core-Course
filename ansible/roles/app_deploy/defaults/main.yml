@@ -1,5 +1,0 @@
----
-app_port: 5000
-app_restart_policy: unless-stopped
-# Extra env vars for the container (key: value)
-app_env: {}

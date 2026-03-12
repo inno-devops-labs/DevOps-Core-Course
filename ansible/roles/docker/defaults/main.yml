@@ -1,6 +1,6 @@
 ---
 # User to add to docker group (will run docker without sudo)
-docker_group_user: "{{ ansible_facts['user_id'] | default(ansible_user_id) }}"
+docker_group_user: "{{ ansible_user }}"
 
 # Docker package state
 docker_install_state: present

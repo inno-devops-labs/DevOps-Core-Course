@@ -13,3 +13,6 @@ common_packages:
 
 # Timezone (optional)
 common_timezone: "UTC"
+
+# User to ensure exists (for deployment/app)
+common_app_user: "deploy"

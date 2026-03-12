@@ -1,0 +1,19 @@
+---
+# Application configuration
+app_name: devops-app
+docker_image: mararokkel/devops-info-service
+docker_tag: arm64
+
+app_port: 5000
+app_internal_port: 5000
+
+# Docker Compose configuration
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Extra environment variables for the application
+app_env: {}
+
+# Wipe logic control
+web_app_wipe: false
+

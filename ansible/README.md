@@ -1,5 +1,7 @@
 # Ansible — Lab 5
 
+[![Ansible Deployment](https://github.com/MariaRokkel/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/MariaRokkel/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
+
 ## Quick start
 
 1. **Install Ansible** (macOS: `brew install ansible`). Check: `ansible --version`.

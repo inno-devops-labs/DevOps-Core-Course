@@ -1,24 +1,75 @@
 ---
-- name: Disable broken HashiCorp apt repo (if present)
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/hashicorp.list
-    state: absent
-
-- name: Update apt cache
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+# Role: common — system packages, users, timezone
+# Tags: packages, users, common (role-level)
 
 - name: Install common packages
-  ansible.builtin.apt:
-    name: "{{ common_packages }}"
-    state: present
+  block:
+    - name: Disable broken HashiCorp apt repo (if present)
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/hashicorp.list
+        state: absent
 
-- name: Get current timezone
-  ansible.builtin.command: timedatectl show -p Timezone --value
-  register: current_tz
-  changed_when: false
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Retry apt update with fix-missing on failure
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+
+  always:
+    - name: Log package block completion
+      ansible.builtin.copy:
+        content: "packages block completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible-common-packages.log
+        mode: "0644"
+
+  when: ansible_os_family == "Debian"
+  become: true
+  tags:
+    - packages
+    - common
+
+- name: Manage users
+  block:
+    - name: Ensure application user exists
+      ansible.builtin.user:
+        name: "{{ common_app_user }}"
+        system: yes
+        shell: /usr/sbin/nologin
+        create_home: no
+        state: present
+
+  always:
+    - name: Log users block completion
+      ansible.builtin.copy:
+        content: "users block completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/ansible-common-users.log
+        mode: "0644"
+
+  become: true
+  tags:
+    - users
+    - common
 
 - name: Set timezone
-  ansible.builtin.command: timedatectl set-timezone "{{ common_timezone }}"
-  when: current_tz.stdout != common_timezone
+  block:
+    - name: Get current timezone
+      ansible.builtin.command: timedatectl show -p Timezone --value
+      register: current_tz
+      changed_when: false
+
+    - name: Set timezone
+      ansible.builtin.command: timedatectl set-timezone "{{ common_timezone }}"
+      when: current_tz.stdout != common_timezone
+
+  become: true
+  tags:
+    - common
