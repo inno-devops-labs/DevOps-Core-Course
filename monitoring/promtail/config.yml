@@ -1,0 +1,34 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /var/log/promtail/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+
+    relabel_configs:
+      # Only keep containers that opt-in to logging via label
+      - source_labels: [__meta_docker_container_label_logging]
+        regex: promtail
+        action: keep
+
+      # Extract clean container name (without leading slash)
+      - source_labels: [__meta_docker_container_name]
+        target_label: container
+        regex: "/(.*)"
+        replacement: "$1"
+        action: replace
+
+      # Propagate app label from container label to Loki label
+      - source_labels: [__meta_docker_container_label_app]
+        target_label: app
+        action: replace
+

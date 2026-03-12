@@ -29,3 +29,7 @@ service-account*.json
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/.vault_pass_tmp
+
+# Environment files
+.env
+*.env
