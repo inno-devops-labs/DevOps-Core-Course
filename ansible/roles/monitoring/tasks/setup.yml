@@ -1,0 +1,49 @@
+---
+# Create monitoring directory structure and template configs (Lab 7)
+- name: Create monitoring project directory
+  ansible.builtin.file:
+    path: "{{ monitoring_project_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Create Loki config directory
+  ansible.builtin.file:
+    path: "{{ monitoring_project_dir }}/loki"
+    state: directory
+    mode: "0755"
+
+- name: Create Promtail config directory
+  ansible.builtin.file:
+    path: "{{ monitoring_project_dir }}/promtail"
+    state: directory
+    mode: "0755"
+
+- name: Create Grafana datasources directory
+  ansible.builtin.file:
+    path: "{{ monitoring_datasources_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Template Loki config
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_project_dir }}/loki/config.yml"
+    mode: "0644"
+
+- name: Template Promtail config
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ monitoring_project_dir }}/promtail/config.yml"
+    mode: "0644"
+
+- name: Template Grafana Loki datasource provisioning
+  ansible.builtin.template:
+    src: datasource-loki.yml.j2
+    dest: "{{ monitoring_datasources_path }}/datasource-loki.yml"
+    mode: "0644"
+
+- name: Template docker-compose for monitoring stack
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_project_dir }}/docker-compose.yml"
+    mode: "0644"

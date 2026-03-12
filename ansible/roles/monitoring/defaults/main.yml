@@ -1,0 +1,37 @@
+---
+# Loki stack versions and ports (Lab 7 bonus)
+loki_image: grafana/loki
+loki_version: "3.0.0"
+loki_port: 3100
+loki_grpc_port: 9096
+
+promtail_image: grafana/promtail
+promtail_version: "3.0.0"
+promtail_port: 9080
+
+grafana_image: grafana/grafana
+grafana_version: "12.3.1"
+grafana_port: 3000
+
+# Retention and schema
+loki_retention_period: "168h"   # 7 days
+loki_schema_version: "v13"
+loki_index_period: "24h"
+
+# Paths on target host
+monitoring_project_dir: "/opt/monitoring"
+monitoring_loki_config_path: "{{ monitoring_project_dir }}/loki/config.yml"
+monitoring_promtail_config_path: "{{ monitoring_project_dir }}/promtail/config.yml"
+monitoring_datasources_path: "{{ monitoring_project_dir }}/grafana/datasources"
+
+# Resource limits (production-ready)
+loki_memory_limit: "1G"
+loki_cpu_limit: "1.0"
+promtail_memory_limit: "512M"
+promtail_cpu_limit: "0.5"
+grafana_memory_limit: "512M"
+grafana_cpu_limit: "0.5"
+
+# Grafana: set via vault or extra vars in production
+grafana_admin_user: admin
+# grafana_admin_password: set in group_vars or vault

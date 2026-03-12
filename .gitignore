@@ -74,3 +74,6 @@ docs/lab04-evidence/
 ansible/inventory/ci_hosts.ini
 ansible/inventory/*.pyc
 __pycache__/
+
+# Monitoring (Lab 7) - do not commit secrets
+monitoring/.env

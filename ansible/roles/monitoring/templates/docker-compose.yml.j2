@@ -1,0 +1,92 @@
+# Loki + Promtail + Grafana - Ansible templated (Lab 7)
+services:
+  loki:
+    image: {{ loki_image }}:{{ loki_version }}
+    container_name: loki
+    ports:
+      - "{{ loki_port }}:{{ loki_port }}"
+    volumes:
+      - {{ monitoring_project_dir }}/loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/config.yml
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ loki_cpu_limit }}"
+          memory: {{ loki_memory_limit }}
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:{{ loki_port }}/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  promtail:
+    image: {{ promtail_image }}:{{ promtail_version }}
+    container_name: promtail
+    volumes:
+      - {{ monitoring_project_dir }}/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ promtail_cpu_limit }}"
+          memory: {{ promtail_memory_limit }}
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  grafana:
+    image: {{ grafana_image }}:{{ grafana_version }}
+    container_name: grafana
+    ports:
+      - "{{ grafana_port }}:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_ADMIN_USER={{ grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:{{ grafana_port }}
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - {{ monitoring_project_dir }}/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ grafana_cpu_limit }}"
+          memory: {{ grafana_memory_limit }}
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      loki:
+        condition: service_healthy
+
+networks:
+  logging:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:

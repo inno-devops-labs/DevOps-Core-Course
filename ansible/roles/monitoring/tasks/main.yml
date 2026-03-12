@@ -1,0 +1,13 @@
+---
+# Monitoring role: Loki + Promtail + Grafana (Lab 7 bonus)
+- name: Include setup tasks (dirs, configs)
+  ansible.builtin.include_tasks: setup.yml
+  tags:
+    - monitoring
+    - monitoring_setup
+
+- name: Include deploy tasks (docker compose, wait)
+  ansible.builtin.include_tasks: deploy.yml
+  tags:
+    - monitoring
+    - monitoring_deploy

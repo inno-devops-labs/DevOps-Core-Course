@@ -1,0 +1,42 @@
+# Loki {{ loki_version }} - templated by Ansible (Lab 7)
+auth_enabled: false
+
+server:
+  http_listen_port: {{ loki_port }}
+  grpc_listen_port: {{ loki_grpc_port }}
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: "2020-10-24"
+      store: tsdb
+      object_store: filesystem
+      schema: {{ loki_schema_version }}
+      index:
+        prefix: index_
+        period: {{ loki_index_period }}
+
+limits_config:
+  retention_period: {{ loki_retention_period }}
+
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  apply_retention_interval: 10m
+  delete_request_store: filesystem
+  delete_request_store_key_prefix: index/
+
+analytics:
+  reporting_enabled: false

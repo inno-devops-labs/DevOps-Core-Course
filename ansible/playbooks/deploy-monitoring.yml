@@ -1,0 +1,11 @@
+---
+# Deploy Loki + Promtail + Grafana stack (Lab 7 bonus)
+# Usage: ansible-playbook playbooks/deploy-monitoring.yml
+# Set grafana_admin_password in group_vars (vault) or -e
+- name: Deploy monitoring stack (Loki, Promtail, Grafana)
+  hosts: webservers
+  vars:
+    # Override in group_vars or -e; do not commit real password
+    grafana_admin_password: "{{ grafana_admin_password | default('admin') }}"
+  roles:
+    - role: monitoring
