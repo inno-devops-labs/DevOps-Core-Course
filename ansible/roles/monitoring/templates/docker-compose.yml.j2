@@ -1,0 +1,152 @@
+version: "3.8"
+
+services:
+  loki:
+    image: grafana/loki:{{ monitoring_loki_version }}
+    container_name: loki
+    ports:
+      - "{{ monitoring_loki_port }}:{{ monitoring_loki_port }}"
+    volumes:
+      - loki-data:/loki
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+    command: -config.file=/etc/loki/config.yml
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ monitoring_loki_port }}/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    mem_limit: {{ monitoring_loki_mem_limit }}
+    cpus: {{ monitoring_loki_cpus }}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_loki_cpus }}"
+          memory: {{ monitoring_loki_mem_limit | upper }}
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    networks:
+      - logging
+
+  promtail:
+    image: grafana/promtail:{{ monitoring_promtail_version }}
+    container_name: promtail
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - {{ monitoring_docker_containers_path }}:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+    mem_limit: {{ monitoring_promtail_mem_limit }}
+    cpus: {{ monitoring_promtail_cpus }}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_promtail_cpus }}"
+          memory: {{ monitoring_promtail_mem_limit | upper }}
+        reservations:
+          cpus: "0.15"
+          memory: 128M
+    networks:
+      - logging
+
+  grafana:
+    image: grafana/grafana:{{ monitoring_grafana_version }}
+    container_name: grafana
+    ports:
+      - "{{ monitoring_grafana_port }}:{{ monitoring_grafana_port }}"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_ADMIN_USER={{ monitoring_grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+    env_file:
+      - .env
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ monitoring_grafana_port }}/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    mem_limit: {{ monitoring_grafana_mem_limit }}
+    cpus: {{ monitoring_grafana_cpus }}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_grafana_cpus }}"
+          memory: {{ monitoring_grafana_mem_limit | upper }}
+        reservations:
+          cpus: "0.35"
+          memory: 256M
+    networks:
+      - logging
+{% if monitoring_python_app_enabled %}
+
+  app-python:
+    image: {{ monitoring_python_app_image }}
+    container_name: devops-python
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+    ports:
+      - "{{ monitoring_python_app_port }}:8000"
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    mem_limit: {{ monitoring_app_mem_limit }}
+    cpus: {{ monitoring_app_cpus }}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_app_cpus }}"
+          memory: {{ monitoring_app_mem_limit | upper }}
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    networks:
+      - logging
+{% endif %}
+{% if monitoring_go_app_enabled %}
+
+  app-go:
+    image: {{ monitoring_go_app_image }}
+    container_name: devops-go
+    environment:
+      - PORT=8080
+    ports:
+      - "{{ monitoring_go_app_port }}:8080"
+    labels:
+      logging: "promtail"
+      app: "devops-go"
+    mem_limit: {{ monitoring_app_mem_limit }}
+    cpus: {{ monitoring_app_cpus }}
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_app_cpus }}"
+          memory: {{ monitoring_app_mem_limit | upper }}
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    networks:
+      - logging
+{% endif %}
+
+volumes:
+  loki-data:
+  grafana-data:
+
+networks:
+  logging:
+    driver: bridge

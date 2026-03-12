@@ -6,3 +6,4 @@
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+monitoring/.env

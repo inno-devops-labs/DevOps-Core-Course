@@ -1,0 +1,66 @@
+---
+- name: Deploy monitoring stack with Docker Compose v2
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_project_dir }}"
+    pull: always
+    state: present
+    recreate: auto
+
+- name: Wait for Loki port
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ monitoring_loki_port }}"
+    delay: 2
+    timeout: 120
+
+- name: Wait for Grafana port
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ monitoring_grafana_port }}"
+    delay: 2
+    timeout: 120
+
+- name: Verify Loki readiness endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_loki_port }}/ready"
+    method: GET
+    status_code: 200
+
+- name: Verify Grafana health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/health"
+    method: GET
+    status_code: 200
+
+- name: Query Loki datasource in Grafana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources/name/Loki"
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code:
+      - 200
+      - 404
+  register: grafana_loki_datasource
+  changed_when: false
+
+- name: Create Loki datasource in Grafana when missing
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources"
+    method: POST
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: Loki
+      type: loki
+      access: proxy
+      url: "http://loki:{{ monitoring_loki_port }}"
+      isDefault: true
+      editable: true
+    status_code:
+      - 200
+      - 409
+  when: grafana_loki_datasource.status == 404
