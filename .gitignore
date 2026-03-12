@@ -27,3 +27,5 @@ credentials.json
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+
+.env
