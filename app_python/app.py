@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import platform
@@ -16,6 +17,23 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 START_TIME = datetime.now(timezone.utc)
 
+# Custom JSON Log Formatter
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        # Include custom request context if passed via 'extra'
+        if hasattr(record, "req_context"):
+            log_record.update(record.req_context)
+
+        if record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(log_record)
 
 def iso_utc_z(dt: datetime) -> str:
     utc_dt = dt.astimezone(timezone.utc)
@@ -83,15 +101,35 @@ def get_endpoints() -> list[dict]:
 def create_app() -> Flask:
     app = Flask(__name__)
 
-    logging.basicConfig(
-        level=logging.DEBUG if DEBUG else logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger(APP_NAME)
+    logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 
-    @app.before_request
-    def log_request() -> None:
-        logger.debug("Request: %s %s", request.method, request.path)
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(JsonFormatter())
+        logger.addHandler(handler)
+
+    logging.getLogger("werkzeug").disabled = True
+
+    logger.info("Application starting up", extra={"req_context": {"version": APP_VERSION, "host": HOST, "port": PORT}})
+
+    @app.after_request
+    def log_response(response):
+        context = {
+            "method": request.method,
+            "path": request.path,
+            "status_code": response.status_code,
+            "client_ip": get_client_ip()
+        }
+
+        if response.status_code >= 500:
+            logger.error(f"HTTP Request Server Error", extra={"req_context": context})
+        elif response.status_code >= 400:
+            logger.warning(f"HTTP Request Client Error", extra={"req_context": context})
+        else:
+            logger.info(f"HTTP Request Processed", extra={"req_context": context})
+
+        return response
 
     @app.get("/")
     def index():
@@ -122,27 +160,11 @@ def create_app() -> Flask:
 
     @app.errorhandler(404)
     def not_found(_error):
-        return (
-            jsonify(
-                {
-                    "error": "Not Found",
-                    "message": "Endpoint does not exist",
-                }
-            ),
-            404,
-        )
+        return jsonify({"error": "Not Found", "message": "Endpoint does not exist"}), 404
 
     @app.errorhandler(500)
     def internal_error(_error):
-        return (
-            jsonify(
-                {
-                    "error": "Internal Server Error",
-                    "message": "An unexpected error occurred",
-                }
-            ),
-            500,
-        )
+        return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}), 500
 
     return app
 
