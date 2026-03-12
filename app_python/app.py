@@ -2,7 +2,9 @@ import os
 import platform
 import socket
 import logging
+import sys
 from datetime import datetime, timezone
+from pythonjsonlogger import jsonlogger
 
 from flask import Flask, jsonify, request
 
@@ -18,11 +20,19 @@ SERVICE_DESCRIPTION = "DevOps course info service"
 FRAMEWORK = "Flask"
 
 ### App and logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+logHandler = logging.StreamHandler(sys.stdout)
+
+formatter = jsonlogger.JsonFormatter(
+    "%(asctime)s %(levelname)s %(message)s %(method)s %(path)s %(status)s %(client_ip)s"
+)
+
+logHandler.setFormatter(formatter)
+logger.addHandler(logHandler)
 
 app = Flask(__name__)
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
 
 START_TIME = datetime.now(timezone.utc)
 
@@ -100,6 +110,56 @@ def not_found(error):
 def internal_error(error):
     return jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred."}), 500
 
+@app.errorhandler(Exception)
+def handle_error(e):
+    logger.error(
+        "Unhandled exception",
+        extra={
+            "method": request.method if request else "-",
+            "path": request.path if request else "-",
+            "status": 500,
+            "client_ip": request.remote_addr if request else "-",
+        },
+        exc_info=True
+    )
+    return {"error": "internal server error"}, 500
+
+### Logging middleware
+
+@app.before_request
+def log_request():
+    logger.info(
+        "Request received",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "client_ip": request.remote_addr,
+        },
+    )
+
+@app.after_request
+def log_response(response):
+    logger.info(
+        "Response sent",
+        extra={
+            "status": response.status_code,
+            "path": request.path,
+            "method": request.method,
+            "client_ip": request.remote_addr,
+        },
+    )
+    return response
+
 ### Entrypoint
 if __name__ == "__main__":
+    logger.info(
+        "Application started",
+        extra={
+            "method": "-",
+            "path": "-",
+            "status": "-",
+            "client_ip": "-",
+            "port": PORT
+        }
+    )
     app.run(host=HOST, port=PORT, debug=DEBUG)
