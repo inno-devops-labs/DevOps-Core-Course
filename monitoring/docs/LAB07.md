@@ -248,9 +248,9 @@ rate({app="devops-python"} | json | level="ERROR" [5m])
 
 ### Evidence — Task 2: Application Integration
 
-![Grafana showing logs from applications](./evidence/task2-app-logs-grafana.png)
+![Grafana showing logs from applications](./evidence/explore4.png)
 
-*Screenshot: Grafana Explore showing logs from both applications using query `{app=~"devops-.*"}` or `{app="devops-python"}` after generating traffic with curl loops*
+*Screenshot: Grafana Explore showing logs from both applications using query `{app="devops-python"}` after generating traffic with curl loops*
 
 ### Evidence — Task 2: LogQL Queries
 
@@ -429,10 +429,176 @@ roles/monitoring/
 
 ### Evidence — Bonus: Ansible Deployment
 
-![Ansible playbook execution](./evidence/bonus-ansible-deploy.png)
 
-*Screenshot: Terminal output of `ansible-playbook playbooks/deploy-monitoring.yml` showing successful execution with tasks completing (green OK messages)*
+**First run (deployment):**
+```
+adelina@Ubuntu25:~/DevOps-Core-Course/ansible$ ansible-playbook playbooks/deploy-monitoring.yml
 
-![Ansible idempotency test](./evidence/bonus-ansible-idempotent.png)
+PLAY [Deploy monitoring stack] *************************************************
+[WARNING]: Found group_vars that is not a directory, skipping:
+/home/adelina/DevOps-Core-Course/ansible/inventory/group_vars
 
-*Screenshot: Second run of the same playbook showing idempotency — all tasks report "ok" with no changes (changed=0)*
+TASK [Gathering Facts] *********************************************************
+ok: [aws-vm]
+
+TASK [docker : Install prerequisites for Docker repository] ********************
+ok: [aws-vm]
+
+TASK [docker : Create keyrings directory] **************************************
+ok: [aws-vm]
+
+TASK [docker : Add Docker GPG key] *********************************************
+ok: [aws-vm]
+
+TASK [docker : Add Docker repository] ******************************************
+ok: [aws-vm]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [aws-vm]
+
+TASK [docker : Ensure Docker service is enabled and started] *******************
+ok: [aws-vm]
+
+TASK [docker : Add user to docker group] ***************************************
+ok: [aws-vm]
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [aws-vm]
+
+TASK [monitoring : Setup monitoring directory structure and configs] ***********
+included: /home/adelina/DevOps-Core-Course/ansible/roles/monitoring/tasks/setup.yml for aws-vm
+
+TASK [monitoring : Create monitoring directories] ******************************
+ok: [aws-vm] => (item=/opt/monitoring)
+ok: [aws-vm] => (item=/opt/monitoring/loki)
+ok: [aws-vm] => (item=/opt/monitoring/promtail)
+
+TASK [monitoring : Template docker-compose file] *******************************
+changed: [aws-vm]
+
+TASK [monitoring : Template Loki configuration] ********************************
+changed: [aws-vm]
+
+TASK [monitoring : Template Promtail configuration] ****************************
+changed: [aws-vm]
+
+TASK [monitoring : Deploy monitoring stack] ************************************
+included: /home/adelina/DevOps-Core-Course/ansible/roles/monitoring/tasks/deploy.yml for aws-vm
+
+TASK [monitoring : Pull monitoring Docker images] ******************************
+ok: [aws-vm] => (item=grafana/loki:3.0.0)
+ok: [aws-vm] => (item=grafana/promtail:3.0.0)
+ok: [aws-vm] => (item=grafana/grafana:12.3.1)
+
+TASK [monitoring : Deploy monitoring stack with docker compose] ****************
+changed: [aws-vm]
+
+TASK [monitoring : Wait for Loki to be ready] **********************************
+ok: [aws-vm]
+
+TASK [monitoring : Wait for Grafana to be ready] *******************************
+FAILED - RETRYING: [aws-vm]: Wait for Grafana to be ready (12 retries left).
+ok: [aws-vm]
+
+TASK [monitoring : Configure Loki data source in Grafana] **********************
+ok: [aws-vm]
+
+TASK [monitoring : Display datasource configuration result] ********************
+ok: [aws-vm] => {
+    "msg": "Loki datasource configured (HTTP 200)"
+}
+
+PLAY RECAP *********************************************************************
+aws-vm                     : ok=21   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+adelina@Ubuntu25:~/DevOps-Core-Course/ansible$ 
+
+```
+
+Terminal output of `ansible-playbook playbooks/deploy-monitoring.yml` showing successful first execution — 21 tasks OK, 4 changed (templating configs + deploying stack)*
+
+**Second run (idempotency test):**
+
+```
+adelina@Ubuntu25:~/DevOps-Core-Course/ansible$ ansible-playbook playbooks/deploy-monitoring.yml
+
+PLAY [Deploy monitoring stack] *************************************************
+[WARNING]: Found group_vars that is not a directory, skipping:
+/home/adelina/DevOps-Core-Course/ansible/inventory/group_vars
+
+TASK [Gathering Facts] *********************************************************
+ok: [aws-vm]
+
+TASK [docker : Install prerequisites for Docker repository] ********************
+ok: [aws-vm]
+
+TASK [docker : Create keyrings directory] **************************************
+ok: [aws-vm]
+
+TASK [docker : Add Docker GPG key] *********************************************
+ok: [aws-vm]
+
+TASK [docker : Add Docker repository] ******************************************
+ok: [aws-vm]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [aws-vm]
+
+TASK [docker : Ensure Docker service is enabled and started] *******************
+ok: [aws-vm]
+
+TASK [docker : Add user to docker group] ***************************************
+ok: [aws-vm]
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [aws-vm]
+
+TASK [monitoring : Setup monitoring directory structure and configs] ***********
+included: /home/adelina/DevOps-Core-Course/ansible/roles/monitoring/tasks/setup.yml for aws-vm
+
+TASK [monitoring : Create monitoring directories] ******************************
+ok: [aws-vm] => (item=/opt/monitoring)
+ok: [aws-vm] => (item=/opt/monitoring/loki)
+ok: [aws-vm] => (item=/opt/monitoring/promtail)
+
+TASK [monitoring : Template docker-compose file] *******************************
+ok: [aws-vm]
+
+TASK [monitoring : Template Loki configuration] ********************************
+ok: [aws-vm]
+
+TASK [monitoring : Template Promtail configuration] ****************************
+ok: [aws-vm]
+
+TASK [monitoring : Deploy monitoring stack] ************************************
+included: /home/adelina/DevOps-Core-Course/ansible/roles/monitoring/tasks/deploy.yml for aws-vm
+
+TASK [monitoring : Pull monitoring Docker images] ******************************
+ok: [aws-vm] => (item=grafana/loki:3.0.0)
+ok: [aws-vm] => (item=grafana/promtail:3.0.0)
+ok: [aws-vm] => (item=grafana/grafana:12.3.1)
+
+TASK [monitoring : Deploy monitoring stack with docker compose] ****************
+ok: [aws-vm]
+
+TASK [monitoring : Wait for Loki to be ready] **********************************
+ok: [aws-vm]
+
+TASK [monitoring : Wait for Grafana to be ready] *******************************
+ok: [aws-vm]
+
+TASK [monitoring : Configure Loki data source in Grafana] **********************
+ok: [aws-vm]
+
+TASK [monitoring : Display datasource configuration result] ********************
+ok: [aws-vm] => {
+    "msg": "Loki datasource configured (HTTP 409)"
+}
+
+PLAY RECAP *********************************************************************
+aws-vm                     : ok=21   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+adelina@Ubuntu25:~/DevOps-Core-Course/ansible$
+```
+
+Second run of the same playbook showing idempotency — all 21 tasks report "ok" with **changed=0** (no modifications, stack already deployed)*
