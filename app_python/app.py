@@ -10,10 +10,11 @@ import logging
 import os
 import platform
 import socket
+import json
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 
 APP_NAME = "devops-info-service"
 APP_VERSION = "1.0.0"
@@ -28,15 +29,70 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 # Application start time (UTC)
 START_TIME = datetime.now(timezone.utc)
 
-# Logging
-logging.basicConfig(
-    level=logging.DEBUG if DEBUG else logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logging.getLogger("werkzeug").disabled = True
-logger = logging.getLogger(APP_NAME)
+class JSONFormatter(logging.Formatter):
+    """Format log records as JSON with UTC timestamps."""
+
+    RESERVED_ATTRS = {
+        "name",
+        "msg",
+        "args",
+        "levelname",
+        "levelno",
+        "pathname",
+        "filename",
+        "module",
+        "exc_info",
+        "exc_text",
+        "stack_info",
+        "lineno",
+        "funcName",
+        "created",
+        "msecs",
+        "relativeCreated",
+        "thread",
+        "threadName",
+        "processName",
+        "process",
+        "message",
+    }
+
+    def format(self, record: logging.LogRecord) -> str:  # type: ignore[override]
+        log_record = {
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+
+        for key, value in record.__dict__.items():
+            if key in self.RESERVED_ATTRS or key.startswith("_"):
+                continue
+            log_record[key] = value
+
+        if record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(log_record, default=str)
+
+
+def configure_logging() -> logging.Logger:
+    handler = logging.StreamHandler()
+    handler.setFormatter(JSONFormatter())
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+
+    werkzeug_logger = logging.getLogger("werkzeug")
+    werkzeug_logger.setLevel(logging.WARNING)
+
+    app_logger = logging.getLogger(APP_NAME)
+    app_logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+    return app_logger
 
 app = Flask(__name__)
+logger = configure_logging()
 
 
 def get_uptime() -> Dict[str, Any]:
@@ -74,13 +130,36 @@ def get_client_ip() -> str:
 
 @app.before_request
 def log_request() -> None:
-    logger.debug(
-        "Request: %s %s UA=%s IP=%s",
-        request.method,
-        request.path,
-        request.headers.get("User-Agent", ""),
-        get_client_ip(),
+    g.request_start = datetime.now(timezone.utc)
+    logger.info(
+        "request_received",
+        extra={
+            "event": "request_received",
+            "method": request.method,
+            "path": request.path,
+            "client_ip": get_client_ip(),
+            "user_agent": request.headers.get("User-Agent", ""),
+        },
     )
+
+
+@app.after_request
+def log_response(response):
+    start_time = getattr(g, "request_start", datetime.now(timezone.utc))
+    duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+    logger.info(
+        "response_sent",
+        extra={
+            "event": "response_sent",
+            "method": request.method,
+            "path": request.path,
+            "status": response.status_code,
+            "client_ip": get_client_ip(),
+            "duration_ms": duration_ms,
+            "content_length": response.content_length or 0,
+        },
+    )
+    return response
 
 
 @app.route("/", methods=["GET"])
@@ -143,6 +222,15 @@ def health():
 
 @app.errorhandler(404)
 def not_found(_error):
+    logger.warning(
+        "not_found",
+        extra={
+            "event": "not_found",
+            "method": request.method,
+            "path": request.path,
+            "client_ip": get_client_ip(),
+        },
+    )
     return (
         jsonify({"error": "Not Found", "message": "Endpoint does not exist"}),
         404,
@@ -151,7 +239,15 @@ def not_found(_error):
 
 @app.errorhandler(500)
 def internal_error(_error):
-    logger.exception("Unhandled exception")
+    logger.exception(
+        "Unhandled exception",
+        extra={
+            "event": "internal_error",
+            "method": request.method,
+            "path": request.path,
+            "client_ip": get_client_ip(),
+        },
+    )
     return (
         jsonify(
             {
@@ -165,12 +261,15 @@ def internal_error(_error):
 
 def main() -> None:
     logger.info(
-        "Starting %s v%s on %s:%s (DEBUG=%s)",
-        APP_NAME,
-        APP_VERSION,
-        HOST,
-        PORT,
-        DEBUG,
+        "service_startup",
+        extra={
+            "event": "startup",
+            "service": APP_NAME,
+            "version": APP_VERSION,
+            "host": HOST,
+            "port": PORT,
+            "debug": DEBUG,
+        },
     )
     app.run(host=HOST, port=PORT, debug=DEBUG)
 
