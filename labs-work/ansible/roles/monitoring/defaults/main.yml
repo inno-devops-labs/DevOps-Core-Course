@@ -1,0 +1,28 @@
+---
+monitoring_loki_version: "3.0.0"
+monitoring_promtail_version: "3.0.0"
+monitoring_grafana_version: "12.3.1"
+
+monitoring_loki_port: 3100
+monitoring_promtail_port: 9080
+monitoring_grafana_port: 3000
+monitoring_app_python_port: 8000
+monitoring_app_go_port: 8001
+
+monitoring_loki_retention: "168h"
+monitoring_compose_dir: "/opt/monitoring"
+monitoring_restart_policy: "unless-stopped"
+monitoring_wipe: false
+
+monitoring_loki_memory: "256M"
+monitoring_loki_cpus: "0.5"
+monitoring_promtail_memory: "128M"
+monitoring_promtail_cpus: "0.25"
+monitoring_grafana_memory: "256M"
+monitoring_grafana_cpus: "0.5"
+monitoring_app_python_memory: "128M"
+monitoring_app_python_cpus: "0.25"
+monitoring_app_go_memory: "64M"
+monitoring_app_go_cpus: "0.25"
+
+monitoring_grafana_admin_password: "{{ vault_grafana_admin_password | default('changeme') }}"

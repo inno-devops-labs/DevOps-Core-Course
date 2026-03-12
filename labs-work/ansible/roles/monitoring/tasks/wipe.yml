@@ -1,0 +1,20 @@
+---
+- name: Wipe monitoring stack
+  when: monitoring_wipe | bool
+  tags:
+    - monitoring_wipe
+  block:
+    - name: Stop and remove monitoring via Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ monitoring_compose_dir }}"
+        state: absent
+      failed_when: false
+
+    - name: Remove monitoring directory
+      ansible.builtin.file:
+        path: "{{ monitoring_compose_dir }}"
+        state: absent
+
+    - name: Log wipe completion
+      ansible.builtin.debug:
+        msg: "Monitoring stack has been wiped from {{ monitoring_compose_dir }}"

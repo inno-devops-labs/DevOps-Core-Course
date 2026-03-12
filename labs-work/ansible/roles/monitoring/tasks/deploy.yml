@@ -1,0 +1,64 @@
+---
+- name: Deploy monitoring stack
+  tags:
+    - monitoring_deploy
+    - monitoring
+  block:
+    - name: Deploy monitoring via Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ monitoring_compose_dir }}"
+        state: present
+        pull: always
+
+    - name: Wait for Loki port
+      ansible.builtin.wait_for:
+        port: "{{ monitoring_loki_port }}"
+        delay: 5
+        timeout: 60
+
+    - name: Wait for Grafana port
+      ansible.builtin.wait_for:
+        port: "{{ monitoring_grafana_port }}"
+        delay: 5
+        timeout: 60
+
+    - name: Loki health check
+      ansible.builtin.uri:
+        url: "http://localhost:{{ monitoring_loki_port }}/ready"
+        return_content: true
+        status_code: 200
+      register: loki_health
+      retries: 5
+      delay: 5
+      until: loki_health.status == 200
+
+    - name: Grafana health check
+      ansible.builtin.uri:
+        url: "http://localhost:{{ monitoring_grafana_port }}/api/health"
+        return_content: true
+        status_code: 200
+      register: grafana_health
+      retries: 5
+      delay: 5
+      until: grafana_health.status == 200
+  rescue:
+    - name: Log deployment failure
+      ansible.builtin.debug:
+        msg: "Monitoring stack deployment failed"
+
+    - name: Show Docker Compose logs
+      ansible.builtin.command:
+        cmd: docker compose logs --tail=50
+        chdir: "{{ monitoring_compose_dir }}"
+      register: monitoring_compose_logs
+      changed_when: false
+      failed_when: false
+
+    - name: Display compose logs
+      ansible.builtin.debug:
+        var: monitoring_compose_logs.stdout_lines
+      when: monitoring_compose_logs is defined
+
+    - name: Fail with deployment error
+      ansible.builtin.fail:
+        msg: "Monitoring stack deployment failed. Check compose logs above."

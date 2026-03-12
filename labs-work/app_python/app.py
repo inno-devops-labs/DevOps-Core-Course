@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import platform
@@ -14,11 +15,37 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 START_TIME = datetime.now(timezone.utc)
 
-logging.basicConfig(
-    level=logging.DEBUG if DEBUG else logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_entry = {
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+        }
+        if hasattr(record, 'method'):
+            log_entry['method'] = record.method
+        if hasattr(record, 'path'):
+            log_entry['path'] = record.path
+        if hasattr(record, 'status_code'):
+            log_entry['status_code'] = record.status_code
+        if hasattr(record, 'client_ip'):
+            log_entry['client_ip'] = record.client_ip
+        return json.dumps(log_entry)
+
+
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logging.root.handlers = []
+logging.root.addHandler(handler)
+logging.root.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 logger = logging.getLogger(__name__)
+
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.handlers = []
+werkzeug_logger.addHandler(handler)
+werkzeug_logger.propagate = False
 
 
 def get_uptime():
@@ -68,10 +95,22 @@ def get_endpoints_list():
     ]
 
 
+@app.after_request
+def log_request(response):
+    logger.info(
+        "Request processed",
+        extra={
+            'method': request.method,
+            'path': request.path,
+            'status_code': response.status_code,
+            'client_ip': request.remote_addr,
+        },
+    )
+    return response
+
+
 @app.route('/')
 def index():
-    logger.info(f"Request received: {request.method} {request.path}")
-
     uptime = get_uptime()
 
     response = {
