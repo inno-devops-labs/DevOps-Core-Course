@@ -118,5 +118,5 @@ def internal_error(error):
 
 
 if __name__ == "__main__":
+    logger.info("application_starting", extra={"host": HOST, "port": PORT})
     app.run(host=HOST, port=PORT)
-    logger.info("Application starting...")

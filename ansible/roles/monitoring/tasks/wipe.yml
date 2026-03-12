@@ -1,0 +1,27 @@
+---
+- name: Wipe monitoring deployment
+  when: monitoring_wipe | bool
+  tags:
+    - monitoring_wipe
+  block:
+    - name: Check if monitoring compose manifest exists
+      ansible.builtin.stat:
+        path: "{{ monitoring_compose_project_dir }}/docker-compose.yml"
+      register: monitoring_compose_manifest
+
+    - name: Stop and remove monitoring stack
+      community.docker.docker_compose_v2:
+        project_src: "{{ monitoring_compose_project_dir }}"
+        state: absent
+        remove_orphans: true
+        remove_images: "{{ 'all' if monitoring_wipe_remove_images | bool else omit }}"
+      when: monitoring_compose_manifest.stat.exists
+
+    - name: Remove monitoring compose project directory
+      ansible.builtin.file:
+        path: "{{ monitoring_compose_project_dir }}"
+        state: absent
+
+    - name: Confirm monitoring wipe completion
+      ansible.builtin.debug:
+        msg: "Monitoring stack wiped successfully from {{ monitoring_compose_project_dir }}"

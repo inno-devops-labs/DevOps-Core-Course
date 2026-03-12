@@ -1,0 +1,104 @@
+---
+- name: Include monitoring wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - monitoring_wipe
+
+- name: Deploy monitoring stack with Docker Compose
+  tags:
+    - monitoring_deploy
+    - compose
+  block:
+    - name: Ensure monitoring directory structure exists
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ monitoring_compose_project_dir }}"
+        - "{{ monitoring_compose_project_dir }}/loki"
+        - "{{ monitoring_compose_project_dir }}/promtail"
+        - "{{ monitoring_compose_project_dir }}/grafana"
+        - "{{ monitoring_compose_project_dir }}/grafana/provisioning"
+        - "{{ monitoring_compose_project_dir }}/grafana/provisioning/datasources"
+
+    - name: Render Loki configuration
+      ansible.builtin.template:
+        src: loki-config.yml.j2
+        dest: "{{ monitoring_compose_project_dir }}/loki/config.yml"
+        mode: "0644"
+
+    - name: Render Promtail configuration
+      ansible.builtin.template:
+        src: promtail-config.yml.j2
+        dest: "{{ monitoring_compose_project_dir }}/promtail/config.yml"
+        mode: "0644"
+
+    - name: Render Grafana datasource provisioning
+      ansible.builtin.template:
+        src: grafana-datasource.yml.j2
+        dest: "{{ monitoring_compose_project_dir }}/grafana/provisioning/datasources/loki.yml"
+        mode: "0644"
+
+    - name: Render monitoring docker compose manifest
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ monitoring_compose_project_dir }}/docker-compose.yml"
+        mode: "0640"
+      no_log: "{{ monitoring_deploy_no_log }}"
+
+    - name: Deploy monitoring stack via Docker Compose v2
+      community.docker.docker_compose_v2:
+        project_src: "{{ monitoring_compose_project_dir }}"
+        state: present
+        pull: always
+
+    - name: Wait for Loki HTTP port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ monitoring_loki_port }}"
+        delay: 2
+        timeout: 120
+
+    - name: Wait for Promtail HTTP port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ monitoring_promtail_port }}"
+        delay: 2
+        timeout: 120
+
+    - name: Wait for Grafana HTTP port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ monitoring_grafana_port }}"
+        delay: 2
+        timeout: 120
+
+    - name: Verify Loki readiness endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ monitoring_loki_port }}/ready"
+        method: GET
+        status_code: 200
+      register: monitoring_loki_ready
+      changed_when: false
+
+    - name: Verify Promtail readiness endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ monitoring_promtail_port }}/ready"
+        method: GET
+        status_code: 200
+      register: monitoring_promtail_ready
+      changed_when: false
+
+    - name: Verify Grafana health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/health"
+        method: GET
+        status_code: 200
+      register: monitoring_grafana_ready
+      changed_when: false
+
+  rescue:
+    - name: Report monitoring deployment failure context
+      ansible.builtin.debug:
+        msg: "Monitoring deployment failed for project {{ monitoring_compose_project_dir }}."
