@@ -65,9 +65,9 @@ resource "yandex_vpc_security_group" "devops" {
   }
 
   ingress {
-    description    = "Allow go app port"
+    description    = "Allow graphana"
     protocol       = "TCP"
-    port           = 8001
+    port           = 3000
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 
