@@ -1,0 +1,66 @@
+name: Terraform Validate
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - lab04
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+  pull_request:
+    branches:
+      - master
+      - main
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+
+concurrency:
+  group: terraform-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        workdir:
+          - terraform
+          - terraform/github-import
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        working-directory: ${{ matrix.workdir }}
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        working-directory: ${{ matrix.workdir }}
+        run: terraform validate
+
+      - name: Initialize TFLint plugins
+        working-directory: ${{ matrix.workdir }}
+        run: tflint --init
+
+      - name: Run TFLint
+        working-directory: ${{ matrix.workdir }}
+        run: tflint --format compact

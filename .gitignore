@@ -1,1 +1,34 @@
 test
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Pulumi
+.pulumi/
+Pulumi.*.yaml
+pulumi/venv/
+
+# Python caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+**/__pycache__/
+**/*.pyc
+
+# Credentials and keys
+*.pem
+*.key
+*.p12
+*.jks
+*.json
+credentials
