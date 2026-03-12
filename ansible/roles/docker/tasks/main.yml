@@ -1,0 +1,53 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: "{{ docker_apt_cache_valid_time }}"
+
+- name: Install Docker prerequisites
+  ansible.builtin.apt:
+    name: "{{ docker_prerequisite_packages }}"
+    state: present
+
+- name: Ensure Docker keyring directory exists
+  ansible.builtin.file:
+    path: "{{ docker_apt_keyring_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Download Docker GPG key
+  ansible.builtin.get_url:
+    url: "{{ docker_gpg_key_url }}"
+    dest: "{{ docker_apt_keyring_file }}"
+    mode: "0644"
+  notify: restart docker
+
+- name: Add Docker apt repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ docker_architecture_map.get(ansible_architecture, 'amd64') }}
+      signed-by={{ docker_apt_keyring_file }}]
+      https://download.docker.com/linux/{{ docker_repo_distribution }}
+      {{ docker_apt_release }} stable
+    state: present
+    filename: docker
+  notify: restart docker
+
+- name: Install Docker packages
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: true
+  notify: restart docker
+
+- name: Ensure Docker service is enabled and running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: "{{ docker_user }}"
+    groups: docker
+    append: true
