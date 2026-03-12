@@ -29,6 +29,7 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 # Application start time (UTC)
 START_TIME = datetime.now(timezone.utc)
 
+
 class JSONFormatter(logging.Formatter):
     """Format log records as JSON with UTC timestamps."""
 
@@ -55,10 +56,12 @@ class JSONFormatter(logging.Formatter):
         "process",
         "message",
     }
-
-    def format(self, record: logging.LogRecord) -> str:  # type: ignore[override]
+      # type: ignore[override]
+    def format(self, record: logging.LogRecord) -> str:
         log_record = {
-            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(
+                record.created, tz=timezone.utc
+            ).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -90,6 +93,7 @@ def configure_logging() -> logging.Logger:
     app_logger = logging.getLogger(APP_NAME)
     app_logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
     return app_logger
+
 
 app = Flask(__name__)
 logger = configure_logging()
@@ -146,7 +150,8 @@ def log_request() -> None:
 @app.after_request
 def log_response(response):
     start_time = getattr(g, "request_start", datetime.now(timezone.utc))
-    duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+    duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds()
+                       * 1000)
     logger.info(
         "response_sent",
         extra={
