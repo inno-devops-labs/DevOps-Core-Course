@@ -2,14 +2,10 @@ import os
 import socket
 import platform
 import logging
+import json
+import time
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
+from flask import Flask, g, jsonify, request
 
 app = Flask(__name__)
 
@@ -23,6 +19,61 @@ SERVICE_DESCRIPTION = "DevOps course info service"
 SERVICE_FRAMEWORK = "Flask"
 
 START_TIME = datetime.now(timezone.utc)
+
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record):
+        payload = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        for key, value in record.__dict__.items():
+            if key.startswith("_") or key in {
+                "args",
+                "asctime",
+                "created",
+                "exc_info",
+                "exc_text",
+                "filename",
+                "funcName",
+                "levelname",
+                "levelno",
+                "lineno",
+                "module",
+                "msecs",
+                "message",
+                "msg",
+                "name",
+                "pathname",
+                "process",
+                "processName",
+                "relativeCreated",
+                "stack_info",
+                "taskName",
+                "thread",
+                "threadName",
+            }:
+                continue
+            payload[key] = value
+        if record.exc_info is not None:
+            payload["exception"] = self.formatException(record.exc_info)
+        return json.dumps(payload, ensure_ascii=True)
+
+
+def configure_logging():
+    handler = logging.StreamHandler()
+    handler.setFormatter(JsonFormatter())
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(handler)
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
+    return logging.getLogger("devops-info-service")
+
+
+logger = configure_logging()
 
 
 def get_uptime():
@@ -79,9 +130,41 @@ def get_endpoints():
     ]
 
 
+def build_request_context(status_code=None):
+    context = {
+        "service": SERVICE_NAME,
+        "client_ip": request.remote_addr,
+        "method": request.method,
+        "path": request.path,
+        "user_agent": request.headers.get("User-Agent", "Unknown"),
+    }
+    if status_code is not None:
+        context["status_code"] = status_code
+    if hasattr(g, "request_started_at"):
+        context["duration_ms"] = round((time.perf_counter() - g.request_started_at) * 1000, 2)
+    return context
+
+
+@app.before_request
+def before_request():
+    g.request_started_at = time.perf_counter()
+    logger.info("request_started", extra=build_request_context())
+
+
+@app.after_request
+def after_request(response):
+    context = build_request_context(response.status_code)
+    if response.status_code >= 500:
+        logger.error("request_finished", extra=context)
+    elif response.status_code >= 400:
+        logger.warning("request_finished", extra=context)
+    else:
+        logger.info("request_finished", extra=context)
+    return response
+
+
 @app.route("/")
 def index():
-    logger.debug(f"Request: {request.method} {request.path}")
     response = {
         "service": get_service_info(),
         "system": get_system_info(),
@@ -94,7 +177,6 @@ def index():
 
 @app.route("/health")
 def health():
-    logger.debug(f"Health check: {request.method} {request.path}")
     response = {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -105,13 +187,13 @@ def health():
 
 @app.errorhandler(404)
 def not_found(error):
-    logger.warning(f"404 error: {request.path}")
+    logger.warning("endpoint_not_found", extra=build_request_context(404))
     return jsonify({"error": "Not Found", "message": "Endpoint does not exist"}), 404
 
 
 @app.errorhandler(500)
 def internal_error(error):
-    logger.error(f"500 error: {str(error)}")
+    logger.exception("internal_server_error", extra=build_request_context(500))
     return (
         jsonify(
             {
@@ -124,10 +206,16 @@ def internal_error(error):
 
 
 if __name__ == "__main__":
-    logger.info("Application starting...")
-    logger.info(f"Service: {SERVICE_NAME} v{SERVICE_VERSION}")
-    logger.info(f"Listening on {HOST}:{PORT}")
-    logger.info(f"Debug mode: {DEBUG}")
+    logger.info(
+        "application_starting",
+        extra={
+            "service": SERVICE_NAME,
+            "version": SERVICE_VERSION,
+            "host": HOST,
+            "port": PORT,
+            "debug": DEBUG,
+        },
+    )
     app.run(host=HOST, port=PORT, debug=DEBUG)
 
 

@@ -5,3 +5,4 @@ local_vm/qemu/.artifacts/
 ansible/inventory/*.pyc
 __pycache__/
 .venv-lab5/
+monitoring/.env
