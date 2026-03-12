@@ -2,14 +2,72 @@
 
 from __future__ import annotations
 
+import json
+import logging
 import os
 import platform
 import socket
+import sys
+import time
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 
 APP_START = datetime.now(timezone.utc)
+
+
+class JsonFormatter(logging.Formatter):
+    """Emit one JSON object per line for Loki."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict[str, object] = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "service": "devops-info-service",
+        }
+
+        for field in (
+            "event",
+            "method",
+            "path",
+            "status_code",
+            "client_ip",
+            "duration_ms",
+            "user_agent",
+            "host",
+            "port",
+            "debug",
+        ):
+            value = getattr(record, field, None)
+            if value is not None:
+                payload[field] = value
+
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(payload, ensure_ascii=True)
+
+
+def configure_logging() -> logging.Logger:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(JsonFormatter())
+
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+    root_logger.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
+
+    logging.getLogger("uvicorn.access").handlers.clear()
+    logging.getLogger("uvicorn.access").propagate = True
+    logging.getLogger("uvicorn.error").handlers.clear()
+    logging.getLogger("uvicorn.error").propagate = True
+
+    return logging.getLogger("devops-info-service")
+
+
+logger = configure_logging()
 
 app = FastAPI(title="DevOps Info Service", version="1.0.0")
 
@@ -21,6 +79,50 @@ def get_uptime() -> dict[str, str | int]:
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     return {"seconds": seconds, "human": f"{hours} hours, {minutes} minutes"}
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.perf_counter()
+    client_ip = request.headers.get(
+        "x-forwarded-for",
+        request.client.host if request.client else "unknown",
+    )
+    user_agent = request.headers.get("user-agent", "")
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        logger.exception(
+            "request_failed",
+            extra={
+                "event": "http_request",
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": 500,
+                "client_ip": client_ip,
+                "duration_ms": duration_ms,
+                "user_agent": user_agent,
+            },
+        )
+        raise
+
+    duration_ms = round((time.perf_counter() - start) * 1000, 2)
+    log_method = logger.error if response.status_code >= 400 else logger.info
+    log_method(
+        "request_completed",
+        extra={
+            "event": "http_request",
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "client_ip": client_ip,
+            "duration_ms": duration_ms,
+            "user_agent": user_agent,
+        },
+    )
+    return response
 
 
 @app.get("/", summary="Service information")
@@ -49,7 +151,10 @@ async def index(request: Request):
             "timezone": "UTC",
         },
         "request": {
-            "client_ip": request.headers.get("x-forwarded-for", request.client.host if request.client else None),
+            "client_ip": request.headers.get(
+                "x-forwarded-for",
+                request.client.host if request.client else None,
+            ),
             "user_agent": request.headers.get("user-agent", ""),
             "method": request.method,
             "path": request.url.path,
@@ -77,9 +182,18 @@ def main():
     port = int(os.getenv("PORT", 5000))
     debug = os.getenv("DEBUG", "False").lower() == "true"
 
+    logger.info(
+        "application_starting",
+        extra={
+            "event": "startup",
+            "host": host,
+            "port": port,
+            "debug": debug,
+        },
+    )
+
     import uvicorn
 
-    # When reload is enabled uvicorn expects an import string, not the app object
     target = "app:app" if debug else app
     uvicorn.run(target, host=host, port=port, reload=debug)
 
