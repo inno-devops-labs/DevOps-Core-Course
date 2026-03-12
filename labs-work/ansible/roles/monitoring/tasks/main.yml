@@ -1,0 +1,31 @@
+---
+- name: Include wipe tasks
+  ansible.builtin.include_tasks:
+    file: wipe.yml
+    apply:
+      tags:
+        - monitoring_wipe
+  tags:
+    - monitoring_wipe
+
+- name: Include setup tasks
+  ansible.builtin.include_tasks:
+    file: setup.yml
+    apply:
+      tags:
+        - monitoring_setup
+        - monitoring
+  tags:
+    - monitoring_setup
+    - monitoring
+
+- name: Include deploy tasks
+  ansible.builtin.include_tasks:
+    file: deploy.yml
+    apply:
+      tags:
+        - monitoring_deploy
+        - monitoring
+  tags:
+    - monitoring_deploy
+    - monitoring

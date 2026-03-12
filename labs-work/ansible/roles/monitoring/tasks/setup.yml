@@ -1,0 +1,40 @@
+---
+- name: Create monitoring directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ monitoring_compose_dir }}"
+    - "{{ monitoring_compose_dir }}/loki"
+    - "{{ monitoring_compose_dir }}/promtail"
+    - "{{ monitoring_compose_dir }}/grafana/provisioning/datasources"
+    - "{{ monitoring_compose_dir }}/grafana/provisioning/dashboards"
+
+- name: Template Loki config
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_compose_dir }}/loki/config.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Template Promtail config
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ monitoring_compose_dir }}/promtail/config.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Template Grafana datasource
+  ansible.builtin.template:
+    src: grafana-datasource.yml.j2
+    dest: "{{ monitoring_compose_dir }}/grafana/provisioning/datasources/loki.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_compose_dir }}/docker-compose.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
