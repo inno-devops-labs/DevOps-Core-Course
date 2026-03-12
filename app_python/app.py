@@ -1,25 +1,50 @@
+import json
 import os
-import socket
 import platform
+import socket
+import time
 import logging
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+
+class JSONFormatter(logging.Formatter):
+    """Outputs each log record as a single-line JSON object for log aggregation."""
+
+    def format(self, record):
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        for attr in ("method", "path", "status_code", "client_ip", "duration_ms"):
+            value = getattr(record, attr, None)
+            if value is not None:
+                entry[attr] = value
+        if record.exc_info and record.exc_info[0] is not None:
+            entry["exception"] = self.formatException(record.exc_info)
+        return json.dumps(entry)
+
+
+_json_handler = logging.StreamHandler()
+_json_handler.setFormatter(JSONFormatter())
+logging.root.handlers = [_json_handler]
+logging.root.setLevel(logging.INFO)
+
+for _name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+    _uv = logging.getLogger(_name)
+    _uv.handlers = [_json_handler]
+    _uv.propagate = False
+
 logger = logging.getLogger(__name__)
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
-
-app = FastAPI(
-    title="DevOps Info Service",
-    description="DevOps course info service",
-    version="1.0.0",
-)
 
 START_TIME = datetime.now(timezone.utc)
 
@@ -43,12 +68,45 @@ def get_system_info():
     }
 
 
+@asynccontextmanager
+async def lifespan(_app):
+    logger.info("Application started on %s:%d (debug=%s)", HOST, PORT, DEBUG)
+    yield
+    logger.info("Application shutting down")
+
+
+app = FastAPI(
+    title="DevOps Info Service",
+    description="DevOps course info service",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration_ms = round((time.time() - start) * 1000, 2)
+    logger.info(
+        "%s %s %s",
+        request.method,
+        request.url.path,
+        response.status_code,
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "client_ip": request.client.host if request.client else None,
+            "duration_ms": duration_ms,
+        },
+    )
+    return response
+
+
 @app.get("/")
 async def root(request: Request):
-    logger.info("Main endpoint accessed")
-
     uptime = get_uptime()
-
     return {
         "service": {
             "name": "devops-info-service",
@@ -96,6 +154,16 @@ async def not_found_handler(request: Request, exc):
 
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
+    logger.error(
+        "Internal server error on %s %s",
+        request.method,
+        request.url.path,
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "client_ip": request.client.host if request.client else None,
+        },
+    )
     return JSONResponse(
         status_code=500,
         content={

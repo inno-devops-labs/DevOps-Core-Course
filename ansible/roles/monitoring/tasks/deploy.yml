@@ -1,0 +1,59 @@
+---
+- name: Pull monitoring Docker images
+  ansible.builtin.command:
+    cmd: "docker pull {{ item }}"
+  loop:
+    - "grafana/loki:{{ monitoring_loki_version }}"
+    - "grafana/promtail:{{ monitoring_promtail_version }}"
+    - "grafana/grafana:{{ monitoring_grafana_version }}"
+  register: monitoring_pull_result
+  changed_when: "'Downloaded newer image' in item"
+
+- name: Deploy monitoring stack with docker compose
+  ansible.builtin.command:
+    cmd: docker compose -f {{ monitoring_compose_dir }}/docker-compose.yml up -d
+  register: monitoring_compose_result
+  changed_when: monitoring_compose_result.rc == 0
+
+- name: Wait for Loki to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ monitoring_loki_port }}/ready"
+    method: GET
+    status_code: 200
+  register: loki_health
+  retries: 12
+  delay: 5
+  until: loki_health.status == 200
+
+- name: Wait for Grafana to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ monitoring_grafana_port }}/api/health"
+    method: GET
+    status_code: 200
+  register: grafana_health
+  retries: 12
+  delay: 5
+  until: grafana_health.status == 200
+
+- name: Configure Loki data source in Grafana
+  ansible.builtin.uri:
+    url: "http://localhost:{{ monitoring_grafana_port }}/api/datasources"
+    method: POST
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: Loki
+      type: loki
+      url: "http://loki:{{ monitoring_loki_port }}"
+      access: proxy
+      isDefault: true
+    status_code:
+      - 200
+      - 409
+  register: datasource_result
+
+- name: Display datasource configuration result
+  ansible.builtin.debug:
+    msg: "Loki datasource configured (HTTP {{ datasource_result.status }})"

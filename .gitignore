@@ -1,5 +1,9 @@
 test
 
+# Secrets (do not commit)
+.env
+monitoring/.env
+
 # Ansible
 *.retry
 .vault_pass

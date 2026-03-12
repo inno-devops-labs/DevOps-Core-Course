@@ -1,0 +1,10 @@
+---
+- name: Setup monitoring directory structure and configs
+  ansible.builtin.include_tasks: setup.yml
+  tags:
+    - monitoring_setup
+
+- name: Deploy monitoring stack
+  ansible.builtin.include_tasks: deploy.yml
+  tags:
+    - monitoring_deploy
