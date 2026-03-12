@@ -1,0 +1,23 @@
+---
+# Local overrides for Lab 7 monitoring validation against the Docker-based
+# Ubuntu target (`hosts.local-docker.ini`).
+
+docker_users:
+  - root
+
+docker_daemon_config:
+  storage-driver: vfs
+  log-driver: json-file
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  insecure-registries:
+    - host.docker.internal:5001
+
+monitoring_pull_policy: missing
+monitoring_registry_login_enabled: false
+monitoring_grafana_admin_password: admin
+monitoring_python_app_image: host.docker.internal:5001/devops-info-service
+monitoring_python_app_tag: latest
+monitoring_bonus_app_image: host.docker.internal:5001/devops-info-service-go
+monitoring_bonus_app_tag: latest

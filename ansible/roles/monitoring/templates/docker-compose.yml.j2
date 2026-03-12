@@ -1,0 +1,184 @@
+services:
+  loki:
+    image: grafana/loki:{{ monitoring_loki_version }}
+    container_name: loki
+    command: -config.file=/etc/loki/config.yml
+    restart: unless-stopped
+    ports:
+      - "{{ monitoring_loki_port }}:3100"
+    labels:
+      logging: "promtail"
+      app: "loki"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    networks:
+      - logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_resources.loki.limit_cpus }}"
+          memory: "{{ monitoring_resources.loki.limit_memory }}"
+        reservations:
+          cpus: "{{ monitoring_resources.loki.reservation_cpus }}"
+          memory: "{{ monitoring_resources.loki.reservation_memory }}"
+
+  promtail:
+    image: grafana/promtail:{{ monitoring_promtail_version }}
+    container_name: promtail
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    ports:
+      - "{{ monitoring_promtail_port }}:9080"
+    labels:
+      logging: "promtail"
+      app: "promtail"
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - promtail-data:/tmp
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - logging
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/bin/promtail", "-config.file=/etc/promtail/config.yml", "-check-syntax"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_resources.promtail.limit_cpus }}"
+          memory: "{{ monitoring_resources.promtail.limit_memory }}"
+        reservations:
+          cpus: "{{ monitoring_resources.promtail.reservation_cpus }}"
+          memory: "{{ monitoring_resources.promtail.reservation_memory }}"
+
+  grafana:
+    image: grafana/grafana:{{ monitoring_grafana_version }}
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "{{ monitoring_grafana_port }}:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "{{ monitoring_grafana_anonymous_enabled | string | lower }}"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "{{ monitoring_grafana_anonymous_org_role }}"
+      GF_SECURITY_ALLOW_EMBEDDING: "{{ monitoring_grafana_allow_embedding | string | lower }}"
+      GF_SECURITY_ADMIN_USER: "{{ monitoring_grafana_admin_user }}"
+      GF_SECURITY_ADMIN_PASSWORD: "{{ monitoring_grafana_admin_password }}"
+    labels:
+      logging: "promtail"
+      app: "grafana"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - logging
+    depends_on:
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_resources.grafana.limit_cpus }}"
+          memory: "{{ monitoring_resources.grafana.limit_memory }}"
+        reservations:
+          cpus: "{{ monitoring_resources.grafana.reservation_cpus }}"
+          memory: "{{ monitoring_resources.grafana.reservation_memory }}"
+
+{% if monitoring_python_app_enabled %}
+  app-python:
+    image: "{{ monitoring_python_app_image }}:{{ monitoring_python_app_tag }}"
+    container_name: "{{ monitoring_python_app_name }}"
+    restart: unless-stopped
+    ports:
+      - "{{ monitoring_python_app_port }}:{{ monitoring_python_app_internal_port }}"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "{{ monitoring_python_app_internal_port }}"
+      DEBUG: "false"
+      LOG_LEVEL: "INFO"
+    labels:
+      logging: "promtail"
+      app: "{{ monitoring_python_app_name }}"
+    networks:
+      - logging
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:{{ monitoring_python_app_internal_port }}/health', timeout=5)"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_resources.python_app.limit_cpus }}"
+          memory: "{{ monitoring_resources.python_app.limit_memory }}"
+        reservations:
+          cpus: "{{ monitoring_resources.python_app.reservation_cpus }}"
+          memory: "{{ monitoring_resources.python_app.reservation_memory }}"
+{% endif %}
+
+{% if monitoring_bonus_app_enabled %}
+  app-go:
+    image: "{{ monitoring_bonus_app_image }}:{{ monitoring_bonus_app_tag }}"
+    container_name: "{{ monitoring_bonus_app_name }}"
+    restart: unless-stopped
+    ports:
+      - "{{ monitoring_bonus_app_port }}:{{ monitoring_bonus_app_internal_port }}"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "{{ monitoring_bonus_app_internal_port }}"
+      DEBUG: "false"
+    labels:
+      logging: "promtail"
+      app: "{{ monitoring_bonus_app_name }}"
+    networks:
+      - logging
+    healthcheck:
+      test: ["CMD", "/app/devops-info-service", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_resources.bonus_app.limit_cpus }}"
+          memory: "{{ monitoring_resources.bonus_app.limit_memory }}"
+        reservations:
+          cpus: "{{ monitoring_resources.bonus_app.reservation_cpus }}"
+          memory: "{{ monitoring_resources.bonus_app.reservation_memory }}"
+{% endif %}
+
+networks:
+  logging:
+    name: "{{ monitoring_network_name }}"
+
+volumes:
+  loki-data:
+  promtail-data:
+  grafana-data:

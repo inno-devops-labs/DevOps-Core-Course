@@ -1,0 +1,53 @@
+---
+- name: Ensure monitoring directory structure exists
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ monitoring_project_dir }}"
+    - "{{ monitoring_project_dir }}/loki"
+    - "{{ monitoring_project_dir }}/promtail"
+    - "{{ monitoring_project_dir }}/grafana"
+    - "{{ monitoring_project_dir }}/grafana/provisioning"
+    - "{{ monitoring_project_dir }}/grafana/provisioning/datasources"
+    - "{{ monitoring_project_dir }}/grafana/provisioning/dashboards"
+    - "{{ monitoring_project_dir }}/grafana/dashboards"
+
+- name: Render monitoring docker compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_project_dir }}/{{ monitoring_compose_filename }}"
+    mode: "0644"
+
+- name: Render Loki configuration
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_project_dir }}/loki/config.yml"
+    mode: "0644"
+
+- name: Render Promtail configuration
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ monitoring_project_dir }}/promtail/config.yml"
+    mode: "0644"
+
+- name: Render Grafana datasource provisioning
+  ansible.builtin.template:
+    src: grafana-datasource.yml.j2
+    dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/loki.yml"
+    mode: "0644"
+
+- name: Render Grafana dashboard provisioning
+  ansible.builtin.template:
+    src: grafana-dashboards.yml.j2
+    dest: "{{ monitoring_project_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
+
+- name: Render Grafana dashboard JSON
+  ansible.builtin.template:
+    src: lab07-logs-dashboard.json.j2
+    dest: "{{ monitoring_project_dir }}/grafana/dashboards/lab07-logs-dashboard.json"
+    mode: "0644"

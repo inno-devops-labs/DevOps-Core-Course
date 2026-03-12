@@ -31,3 +31,12 @@ app_env:
 
 # Safety flag for wipe logic (Lab 6 Task 3).
 web_app_wipe: false
+
+# Monitoring stack (Lab 7 bonus role)
+monitoring_grafana_admin_user: admin
+monitoring_grafana_admin_password: change-me-now
+monitoring_grafana_anonymous_enabled: false
+monitoring_python_app_image: "{{ dockerhub_username }}/devops-info-service"
+monitoring_python_app_tag: latest
+monitoring_bonus_app_image: "{{ dockerhub_username }}/devops-info-service-go"
+monitoring_bonus_app_tag: latest

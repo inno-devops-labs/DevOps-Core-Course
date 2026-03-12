@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -70,10 +71,11 @@ type HealthResponse struct {
 }
 
 var (
-	startTime = time.Now().UTC()
-	host      = getEnv("HOST", "0.0.0.0")
-	port      = getEnv("PORT", "8080")
-	debug     = getEnv("DEBUG", "false") == "true"
+	startTime       = time.Now().UTC()
+	host            = getEnv("HOST", "0.0.0.0")
+	port            = getEnv("PORT", "8080")
+	debug           = getEnv("DEBUG", "false") == "true"
+	healthcheckMode = flag.Bool("healthcheck", false, "run a container self-check and exit")
 )
 
 // getEnv returns environment variable value or default
@@ -256,7 +258,33 @@ func printStartupBanner() {
 	fmt.Println("\n" + strings.Repeat("=", 50) + "\n")
 }
 
+func runSelfHealthcheck() error {
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	response, err := client.Get("http://127.0.0.1:" + port + "/health")
+	if err != nil {
+		return fmt.Errorf("request failed: %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", response.StatusCode)
+	}
+
+	return nil
+}
+
 func main() {
+	flag.Parse()
+
+	if *healthcheckMode {
+		if err := runSelfHealthcheck(); err != nil {
+			log.Printf("Healthcheck failed: %v", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	printStartupBanner()
 
 	handler := setupRouter()

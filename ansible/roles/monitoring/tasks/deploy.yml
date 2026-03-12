@@ -1,0 +1,126 @@
+---
+- name: Login to container registry when credentials are provided
+  community.docker.docker_login:
+    username: "{{ dockerhub_username | default('') }}"
+    password: "{{ dockerhub_password | default('') }}"
+    registry_url: "{{ monitoring_registry_url }}"
+    reauthorize: "{{ monitoring_registry_reauthorize | bool }}"
+  no_log: true
+  when:
+    - monitoring_registry_login_enabled | bool
+    - (dockerhub_username | default('') | length) > 0
+    - (dockerhub_password | default('') | length) > 0
+
+- name: Skip registry login when credentials are not configured
+  ansible.builtin.debug:
+    msg: >-
+      monitoring_registry_login_enabled=true, but dockerhub credentials are not set.
+      Continuing without registry login.
+  when:
+    - monitoring_registry_login_enabled | bool
+    - (dockerhub_username | default('') | length) == 0
+      or (dockerhub_password | default('') | length) == 0
+
+- name: Deploy monitoring stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_project_dir }}"
+    files:
+      - "{{ monitoring_compose_filename }}"
+    state: present
+    pull: "{{ monitoring_pull_policy }}"
+    recreate: auto
+    remove_orphans: true
+
+- name: Wait for monitoring ports to become available
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ item.port }}"
+    delay: 2
+    timeout: 90
+  loop:
+    - port: "{{ monitoring_loki_port }}"
+      enabled: true
+    - port: "{{ monitoring_promtail_port }}"
+      enabled: true
+    - port: "{{ monitoring_grafana_port }}"
+      enabled: true
+    - port: "{{ monitoring_python_app_port }}"
+      enabled: "{{ monitoring_python_app_enabled | bool }}"
+    - port: "{{ monitoring_bonus_app_port }}"
+      enabled: "{{ monitoring_bonus_app_enabled | bool }}"
+  when:
+    - not ansible_check_mode
+    - item.enabled | bool
+
+- name: Verify Loki readiness endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_loki_port }}/ready"
+    method: GET
+    status_code: 200
+  register: monitoring_loki_ready
+  retries: 10
+  delay: 3
+  until: monitoring_loki_ready.status == 200
+  when: not ansible_check_mode
+
+- name: Verify Promtail targets endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_promtail_port }}/targets"
+    method: GET
+    status_code: 200
+  register: monitoring_promtail_targets
+  retries: 10
+  delay: 3
+  until: monitoring_promtail_targets.status == 200
+  when: not ansible_check_mode
+
+- name: Verify Grafana health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/health"
+    method: GET
+    status_code: 200
+  register: monitoring_grafana_health
+  retries: 10
+  delay: 3
+  until: monitoring_grafana_health.status == 200
+  when: not ansible_check_mode
+
+- name: Verify Python application health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_python_app_port }}/health"
+    method: GET
+    status_code: 200
+  register: monitoring_python_health
+  retries: 10
+  delay: 3
+  until: monitoring_python_health.status == 200
+  when:
+    - not ansible_check_mode
+    - monitoring_python_app_enabled | bool
+
+- name: Verify bonus application health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_bonus_app_port }}/health"
+    method: GET
+    status_code: 200
+  register: monitoring_bonus_health
+  retries: 10
+  delay: 3
+  until: monitoring_bonus_health.status == 200
+  when:
+    - not ansible_check_mode
+    - monitoring_bonus_app_enabled | bool
+
+- name: Verify Loki datasource is provisioned in Grafana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources/uid/loki"
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: monitoring_grafana_datasource
+  retries: 10
+  delay: 3
+  until: monitoring_grafana_datasource.status == 200
+  when: not ansible_check_mode

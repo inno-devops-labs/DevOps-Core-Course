@@ -1,0 +1,118 @@
+
+PLAY [Deploy monitoring stack from temporary runner] ***************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [lab05-ubuntu2404]
+
+TASK [docker : Install Docker apt prerequisites] *******************************
+changed: [lab05-ubuntu2404]
+
+TASK [docker : Ensure Docker apt keyrings directory exists] ********************
+ok: [lab05-ubuntu2404]
+
+TASK [docker : Download Docker GPG key] ****************************************
+changed: [lab05-ubuntu2404]
+
+TASK [docker : Configure Docker apt repository] ********************************
+changed: [lab05-ubuntu2404]
+
+TASK [docker : Install Docker engine packages] *********************************
+changed: [lab05-ubuntu2404]
+
+TASK [docker : Install Python Docker SDK package] ******************************
+changed: [lab05-ubuntu2404]
+
+TASK [docker : Ensure Docker service is enabled and running] *******************
+changed: [lab05-ubuntu2404]
+
+TASK [docker : Configure Docker daemon settings] *******************************
+changed: [lab05-ubuntu2404]
+
+TASK [docker : Add users to docker group] **************************************
+changed: [lab05-ubuntu2404] => (item=root)
+
+TASK [docker : Ensure Docker service is enabled and running after configuration] ***
+ok: [lab05-ubuntu2404]
+
+TASK [docker : Apply pending Docker handler changes before dependent roles] ****
+
+RUNNING HANDLER [docker : Restart Docker Service] ******************************
+changed: [lab05-ubuntu2404]
+
+TASK [docker : Read current Docker storage driver] *****************************
+ok: [lab05-ubuntu2404]
+
+TASK [docker : Restart Docker when runtime storage driver mismatches daemon config] ***
+skipping: [lab05-ubuntu2404]
+
+TASK [monitoring : Include monitoring setup tasks] *****************************
+included: /Users/pepega/Developer/learning/DevOps-Core-Course/ansible/roles/monitoring/tasks/setup.yml for lab05-ubuntu2404
+
+TASK [monitoring : Ensure monitoring directory structure exists] ***************
+changed: [lab05-ubuntu2404] => (item=/opt/monitoring)
+changed: [lab05-ubuntu2404] => (item=/opt/monitoring/loki)
+changed: [lab05-ubuntu2404] => (item=/opt/monitoring/promtail)
+changed: [lab05-ubuntu2404] => (item=/opt/monitoring/grafana)
+changed: [lab05-ubuntu2404] => (item=/opt/monitoring/grafana/provisioning)
+changed: [lab05-ubuntu2404] => (item=/opt/monitoring/grafana/provisioning/datasources)
+changed: [lab05-ubuntu2404] => (item=/opt/monitoring/grafana/provisioning/dashboards)
+changed: [lab05-ubuntu2404] => (item=/opt/monitoring/grafana/dashboards)
+
+TASK [monitoring : Render monitoring docker compose file] **********************
+changed: [lab05-ubuntu2404]
+
+TASK [monitoring : Render Loki configuration] **********************************
+changed: [lab05-ubuntu2404]
+
+TASK [monitoring : Render Promtail configuration] ******************************
+changed: [lab05-ubuntu2404]
+
+TASK [monitoring : Render Grafana datasource provisioning] *********************
+changed: [lab05-ubuntu2404]
+
+TASK [monitoring : Render Grafana dashboard provisioning] **********************
+changed: [lab05-ubuntu2404]
+
+TASK [monitoring : Render Grafana dashboard JSON] ******************************
+changed: [lab05-ubuntu2404]
+
+TASK [monitoring : Include monitoring deployment tasks] ************************
+included: /Users/pepega/Developer/learning/DevOps-Core-Course/ansible/roles/monitoring/tasks/deploy.yml for lab05-ubuntu2404
+
+TASK [monitoring : Login to container registry when credentials are provided] ***
+skipping: [lab05-ubuntu2404]
+
+TASK [monitoring : Skip registry login when credentials are not configured] ****
+skipping: [lab05-ubuntu2404]
+
+TASK [monitoring : Deploy monitoring stack] ************************************
+changed: [lab05-ubuntu2404]
+
+TASK [monitoring : Wait for monitoring ports to become available] **************
+ok: [lab05-ubuntu2404] => (item={'port': 3100, 'enabled': True})
+ok: [lab05-ubuntu2404] => (item={'port': 9080, 'enabled': True})
+ok: [lab05-ubuntu2404] => (item={'port': 3000, 'enabled': True})
+ok: [lab05-ubuntu2404] => (item={'port': 8000, 'enabled': True})
+ok: [lab05-ubuntu2404] => (item={'port': 8001, 'enabled': True})
+
+TASK [monitoring : Verify Loki readiness endpoint] *****************************
+ok: [lab05-ubuntu2404]
+
+TASK [monitoring : Verify Promtail targets endpoint] ***************************
+ok: [lab05-ubuntu2404]
+
+TASK [monitoring : Verify Grafana health endpoint] *****************************
+ok: [lab05-ubuntu2404]
+
+TASK [monitoring : Verify Python application health endpoint] ******************
+ok: [lab05-ubuntu2404]
+
+TASK [monitoring : Verify bonus application health endpoint] *******************
+ok: [lab05-ubuntu2404]
+
+TASK [monitoring : Verify Loki datasource is provisioned in Grafana] ***********
+ok: [lab05-ubuntu2404]
+
+PLAY RECAP *********************************************************************
+lab05-ubuntu2404           : ok=30   changed=17   unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+

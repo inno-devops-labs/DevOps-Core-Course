@@ -1,0 +1,66 @@
+---
+monitoring_project_dir: /opt/monitoring
+monitoring_compose_filename: docker-compose.yml
+monitoring_pull_policy: always
+monitoring_registry_login_enabled: false
+monitoring_registry_url: https://index.docker.io/v1/
+monitoring_registry_reauthorize: false
+
+monitoring_loki_version: 3.0.0
+monitoring_promtail_version: 3.0.0
+monitoring_grafana_version: 12.3.1
+
+monitoring_loki_port: 3100
+monitoring_promtail_port: 9080
+monitoring_grafana_port: 3000
+monitoring_retention_period: 168h
+monitoring_schema_version: v13
+monitoring_network_name: monitoring-net
+monitoring_dashboard_title: Lab 07 - Application Logs
+
+monitoring_grafana_admin_user: admin
+monitoring_grafana_admin_password: change-me-now
+monitoring_grafana_anonymous_enabled: false
+monitoring_grafana_anonymous_org_role: Admin
+monitoring_grafana_allow_embedding: false
+
+monitoring_python_app_enabled: true
+monitoring_python_app_name: devops-python
+monitoring_python_app_image: "{{ (dockerhub_username | default('your-dockerhub-username')) ~ '/devops-info-service' }}"
+monitoring_python_app_tag: latest
+monitoring_python_app_port: 8000
+monitoring_python_app_internal_port: 3000
+
+monitoring_bonus_app_enabled: true
+monitoring_bonus_app_name: devops-go
+monitoring_bonus_app_image: "{{ (dockerhub_username | default('your-dockerhub-username')) ~ '/devops-info-service-go' }}"
+monitoring_bonus_app_tag: latest
+monitoring_bonus_app_port: 8001
+monitoring_bonus_app_internal_port: 8080
+
+monitoring_resources:
+  loki:
+    limit_cpus: "1.0"
+    limit_memory: 1G
+    reservation_cpus: "0.25"
+    reservation_memory: 256M
+  promtail:
+    limit_cpus: "0.5"
+    limit_memory: 512M
+    reservation_cpus: "0.10"
+    reservation_memory: 128M
+  grafana:
+    limit_cpus: "1.0"
+    limit_memory: 1G
+    reservation_cpus: "0.25"
+    reservation_memory: 256M
+  python_app:
+    limit_cpus: "0.5"
+    limit_memory: 512M
+    reservation_cpus: "0.10"
+    reservation_memory: 128M
+  bonus_app:
+    limit_cpus: "0.5"
+    limit_memory: 512M
+    reservation_cpus: "0.10"
+    reservation_memory: 128M

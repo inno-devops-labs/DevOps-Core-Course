@@ -7,3 +7,6 @@ test
 ansible/.vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+
+# Lab 7
+monitoring/.env

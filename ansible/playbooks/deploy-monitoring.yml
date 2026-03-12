@@ -1,0 +1,11 @@
+---
+- name: Deploy monitoring stack
+  hosts: webservers
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: monitoring
+      tags:
+        - monitoring
+        - observability

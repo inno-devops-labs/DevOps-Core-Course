@@ -3,12 +3,16 @@ DevOps Info Service
 Main application module providing system information and health check.
 """
 
+import json
+import logging
 import os
 import platform
 import socket
+import sys
+import time
 from datetime import UTC, datetime
 
-from flask import Flask, jsonify, request
+from flask import Flask, g, jsonify, request
 
 app = Flask(__name__)
 
@@ -16,9 +20,67 @@ app = Flask(__name__)
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 3000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+SERVICE_NAME = 'devops-info-service'
 
 # Application start time for uptime calculation
 START_TIME = datetime.now(UTC)
+
+
+class JSONFormatter(logging.Formatter):
+    """Serialize log records to JSON for log aggregation systems."""
+
+    def format(self, record):
+        payload = {
+            'timestamp': datetime.fromtimestamp(record.created, UTC).isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage()
+        }
+
+        structured_data = getattr(record, 'structured_data', None)
+        if isinstance(structured_data, dict):
+            payload.update(
+                {
+                    key: value for key, value in structured_data.items()
+                    if value is not None
+                }
+            )
+
+        if record.exc_info:
+            payload['exception'] = self.formatException(record.exc_info)
+
+        return json.dumps(payload, ensure_ascii=True)
+
+
+def configure_logging():
+    """Configure the root logger to emit JSON logs to stdout."""
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(JSONFormatter())
+
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+    root_logger.setLevel(LOG_LEVEL)
+
+    app.logger.handlers.clear()
+    app.logger.propagate = True
+
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.handlers.clear()
+    werkzeug_logger.propagate = True
+
+
+def log_event(level, message, **fields):
+    """Emit a structured application log entry."""
+    logging.getLogger(SERVICE_NAME).log(
+        level,
+        message,
+        extra={'structured_data': fields}
+    )
+
+
+configure_logging()
 
 
 def get_system_info():
@@ -86,6 +148,41 @@ def get_endpoints_list():
     ]
 
 
+@app.before_request
+def before_request_logging():
+    """Store request timing for structured access logs."""
+    g.request_started_at = time.perf_counter()
+
+
+@app.after_request
+def after_request_logging(response):
+    """Emit a structured access log for every request."""
+    duration_ms = round(
+        (time.perf_counter() - getattr(g, 'request_started_at', time.perf_counter()))
+        * 1000,
+        2
+    )
+
+    level = logging.INFO
+    if response.status_code >= 500:
+        level = logging.ERROR
+    elif response.status_code >= 400:
+        level = logging.WARNING
+
+    log_event(
+        level,
+        'request.completed',
+        service=SERVICE_NAME,
+        method=request.method,
+        path=request.path,
+        status_code=response.status_code,
+        client_ip=request.remote_addr,
+        user_agent=request.headers.get('User-Agent', 'Unknown'),
+        duration_ms=duration_ms
+    )
+    return response
+
+
 @app.route('/')
 def index():
     """
@@ -140,6 +237,15 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 errors."""
+    log_event(
+        logging.ERROR,
+        'request.failed',
+        service=SERVICE_NAME,
+        method=request.method,
+        path=request.path,
+        client_ip=request.remote_addr,
+        error=str(error)
+    )
     return jsonify({
         'error': 'Internal Server Error',
         'message': 'An unexpected error occurred',
@@ -148,13 +254,15 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
-    print("🚀 Starting DevOps Info Service...")
-    print(f"📍 Server: http://{HOST}:{PORT}")
-    print(f"📊 Debug mode: {DEBUG}")
-    print(f"⏰ Started at: {START_TIME.isoformat()}")
-    print("\nAvailable endpoints:")
-    print("  GET /       - Service information")
-    print("  GET /health - Health check")
-    print("\n" + "="*50 + "\n")
+    log_event(
+        logging.INFO,
+        'app.startup',
+        service=SERVICE_NAME,
+        host=HOST,
+        port=PORT,
+        debug=DEBUG,
+        started_at=START_TIME.isoformat(),
+        endpoints=['/', '/health']
+    )
 
     app.run(host=HOST, port=PORT, debug=DEBUG)
