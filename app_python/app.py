@@ -43,7 +43,7 @@ class JSONFormatter(logging.Formatter):
 
     def format(self, record):
         payload = {
-            "timestamp": 
+            "timestamp":
             datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "level": record.levelname,
             "logger": record.name,
@@ -296,3 +296,4 @@ if __name__ == "__main__":
         },
     )
     app.run(host=HOST, port=PORT, debug=DEBUG, use_reloader=False)
+    
