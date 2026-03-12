@@ -1,41 +1,86 @@
-- name: Install dependencies
-  apt:
-    name:
-      - ca-certificates
-      - gnupg
-    state: present
+---
+- name: Install and configure Docker engine
+  block:
+    - name: Docker installation tasks
+      block:
+        - name: Update apt cache for Docker installation
+          ansible.builtin.apt:
+            update_cache: true
+            cache_valid_time: 3600
 
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+        - name: Install Docker apt prerequisites
+          ansible.builtin.apt:
+            name:
+              - ca-certificates
+              - gnupg
+            state: present
 
-- name: Add Docker repo
-  apt_repository:
-    repo: "deb https://download.docker.com/linux/ubuntu jammy stable"
-    state: present
+        - name: Add Docker GPG key
+          ansible.builtin.apt_key:
+            url: "{{ docker_gpg_url }}"
+            state: present
 
-- name: Install Docker
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-    state: present
+        - name: Add Docker apt repository
+          ansible.builtin.apt_repository:
+            repo: "{{ docker_apt_repo }}"
+            state: present
 
-- name: Ensure Docker is running
-  service:
-    name: docker
-    state: started
-    enabled: true
+        - name: Install Docker engine packages
+          ansible.builtin.apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-compose-plugin
+              - python3-docker
+            state: present
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+      rescue:
+        - name: Wait before retrying Docker key setup
+          ansible.builtin.pause:
+            seconds: "{{ docker_retry_wait_seconds }}"
 
-- name: Install python docker module
-  apt:
-    name: python3-docker
-    state: present
+        - name: Retry apt cache update after Docker key failure
+          ansible.builtin.apt:
+            update_cache: true
+
+        - name: Retry Docker GPG key addition
+          ansible.builtin.apt_key:
+            url: "{{ docker_gpg_url }}"
+            state: present
+
+        - name: Retry Docker apt repository configuration
+          ansible.builtin.apt_repository:
+            repo: "{{ docker_apt_repo }}"
+            state: present
+
+        - name: Retry Docker engine installation
+          ansible.builtin.apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-compose-plugin
+              - python3-docker
+            state: present
+      tags:
+        - docker_install
+
+    - name: Docker configuration tasks
+      block:
+        - name: Add deployment user to docker group
+          ansible.builtin.user:
+            name: "{{ docker_user }}"
+            groups: docker
+            append: true
+      tags:
+        - docker_config
+
+  always:
+    - name: Ensure Docker service is enabled and started
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+  become: true

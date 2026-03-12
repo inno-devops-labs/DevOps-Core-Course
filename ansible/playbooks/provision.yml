@@ -1,6 +1,11 @@
+---
 - name: Provision web servers
   hosts: webservers
 
   roles:
-    - common
-    - docker
+    - role: common
+      tags:
+        - common
+    - role: docker
+      tags:
+        - docker

@@ -1,1 +1,5 @@
+---
 docker_user: ubuntu
+docker_apt_repo: "deb https://download.docker.com/linux/ubuntu jammy stable"
+docker_gpg_url: https://download.docker.com/linux/ubuntu/gpg
+docker_retry_wait_seconds: 10

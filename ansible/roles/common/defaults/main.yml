@@ -1,6 +1,18 @@
+---
+# Packages shared across all hosts.
 common_packages:
   - python3-pip
   - curl
   - git
   - vim
   - htop
+
+# Optional extra users managed by the common role.
+# Example:
+# common_managed_users:
+#   - name: deploy
+#     groups: [sudo]
+common_managed_users: []
+
+# Completion marker for block/always logging.
+common_completion_log: /tmp/common-role.log

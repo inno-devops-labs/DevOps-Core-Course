@@ -1,0 +1,4 @@
+---
+# Docker must exist before Compose deployment tasks run.
+dependencies:
+  - role: docker

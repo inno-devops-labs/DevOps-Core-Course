@@ -1,0 +1,29 @@
+---
+# Application configuration
+app_name: devops-app
+docker_image: "{{ dockerhub_username | default('your_dockerhub_username') }}/devops-info-service"
+docker_tag: latest
+app_port: 8000
+app_internal_port: 8000
+
+# Docker Compose project configuration
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Secrets should be overridden via Ansible Vault in group_vars/all.yml.
+app_secret_key: change-me-in-vault
+
+# App runtime environment passed to docker-compose template.
+app_env:
+  PORT: "{{ app_internal_port | string }}"
+  APP_SECRET_KEY: "{{ app_secret_key }}"
+
+# Optional Docker Hub auth for private images.
+dockerhub_username: ""
+dockerhub_password: ""
+
+# Wipe Logic Control
+# Set to true to remove application completely.
+# Wipe only: ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

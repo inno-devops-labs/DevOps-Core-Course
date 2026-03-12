@@ -1,8 +1,63 @@
-- name: Update apt cache
-  apt:
-    update_cache: yes
+---
+- name: Run common role tasks with block-level controls
+  block:
+    - name: Manage package prerequisites
+      block:
+        - name: Refresh apt cache
+          ansible.builtin.apt:
+            update_cache: true
+            cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+        - name: Install common packages
+          ansible.builtin.apt:
+            name: "{{ common_packages }}"
+            state: present
+
+      rescue:
+        - name: Repair apt metadata when cache update fails
+          ansible.builtin.command: apt-get update --fix-missing
+          changed_when: false
+
+        - name: Retry apt cache update after repair
+          ansible.builtin.apt:
+            update_cache: true
+
+      always:
+        - name: Log package block completion
+          ansible.builtin.lineinfile:
+            path: "{{ common_completion_log }}"
+            line: "packages block finished at {{ ansible_date_time.iso8601 }}"
+            create: true
+            mode: "0644"
+      tags:
+        - packages
+
+    - name: Manage users
+      block:
+        - name: Ensure remote Ansible user exists
+          ansible.builtin.user:
+            name: "{{ ansible_user }}"
+            shell: /bin/bash
+            state: present
+
+        - name: Ensure additional managed users exist
+          ansible.builtin.user:
+            name: "{{ item.name }}"
+            shell: "{{ item.shell | default('/bin/bash') }}"
+            groups: "{{ item.groups | default(omit) }}"
+            append: true
+            state: present
+          loop: "{{ common_managed_users }}"
+          when: common_managed_users | length > 0
+
+      always:
+        - name: Log users block completion
+          ansible.builtin.lineinfile:
+            path: "{{ common_completion_log }}"
+            line: "users block finished at {{ ansible_date_time.iso8601 }}"
+            create: true
+            mode: "0644"
+      tags:
+        - users
+
+  become: true
