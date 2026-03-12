@@ -49,11 +49,12 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
         client_ip = request.client.host if request.client else "unknown"
         if "x-forwarded-for" in request.headers:
-            client_ip = request.headers["x-forwarded-for"].split(",")[0].strip()
+            client_ip = \
+                 request.headers["x-forwarded-for"].split(",")[0].strip()
 
         try:
             response = await call_next(request)
-        except Exception as exc:
+        except Exception:
             duration = time.time() - start_time
             logger.error("HTTP request error", extra={
                 "method": request.method,
@@ -73,6 +74,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             "duration": round(duration, 4)
         })
         return response
+
 
 app.add_middleware(LoggingMiddleware)
 
@@ -243,7 +245,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 if __name__ == "__main__":
     import uvicorn
 
-    logger.info(f"Starting server", extra={
+    logger.info("Starting server", extra={
         "event": "serve",
         "host": HOST,
         "port": PORT,
