@@ -12,6 +12,9 @@ terraform.tfvars
 pulumi/venv/
 Pulumi.*.yaml
 
+# Environment
+.env
+
 # Credentials
 *.pem
 *.key
