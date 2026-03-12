@@ -1,15 +1,22 @@
 import os
-import socket
-import platform
 import logging
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
+from pythonjsonlogger import jsonlogger
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+# ----------------------
+# JSON Logging Setup
+# ----------------------
+logger = logging.getLogger()
+
+logHandler = logging.StreamHandler()
+formatter = jsonlogger.JsonFormatter(
+    fmt="%(asctime)s %(name)s %(levelname)s %(message)s"
 )
-logger = logging.getLogger(__name__)
+logHandler.setFormatter(formatter)
+logger.addHandler(logHandler)
+logger.setLevel(logging.INFO)
 
 
 app = Flask(__name__)
