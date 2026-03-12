@@ -111,6 +111,8 @@ HTTP middleware logs every request with context:
 
 Four panels built in Grafana:
 
+![panels](./screenshots/img_9.png)
+
 ### 1. Logs Table
 Shows recent logs from all apps.
 ```logql

@@ -16,7 +16,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "{job=\"docker\"}",
+          "expr": "{container=~\".+\"}",
           "refId": "A"
         }
       ],
@@ -40,7 +40,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (container) (rate({job=\"docker\"} [1m]))",
+          "expr": "sum by (container) (rate({container=~\".+\"} [1m]))",
           "refId": "A"
         }
       ],
@@ -73,7 +73,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "{job=\"docker\"} | json | level=\"ERROR\" or level=\"error\"",
+          "expr": "{container=~\".+\"} | json | level=\"ERROR\" or level=\"error\"",
           "refId": "A"
         }
       ],
@@ -97,7 +97,7 @@
       "targets": [
         {
           "datasource": { "type": "loki", "uid": "loki" },
-          "expr": "sum by (level) (count_over_time({job=\"docker\"} | json [5m]))",
+          "expr": "sum by (level) (count_over_time({container=~\".+\"} | json [5m]))",
           "refId": "A"
         }
       ],
