@@ -25,6 +25,9 @@ services:
           memory: 512M
 
   promtail:
+    build:
+      context: ./promtail
+      dockerfile: Dockerfile
     image: grafana/promtail:3.0.0
     command: -config.file=/etc/promtail/config.yml
     ports:
@@ -39,11 +42,15 @@ services:
     depends_on:
       - loki
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9080/ready || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf http://localhost:9080/ready || curl -sf http://localhost:9080/-/ready",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 25s
     deploy:
       resources:
         limits:
