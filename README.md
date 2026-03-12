@@ -181,6 +181,42 @@ git push -u origin lab1
 
 ---
 
+## Quick Start - Lab 07 (Logging Stack)
+
+To deploy the monitoring stack from Lab 07:
+
+```bash
+# Navigate to monitoring directory
+cd monitoring
+
+# Start the stack (Loki, Promtail, Grafana, app-python)
+docker compose up -d --build
+
+# Verify all services are running
+docker compose ps
+
+# Access Grafana
+open http://localhost:3000
+
+# Generate test logs
+for i in {1..20}; do curl -s http://localhost:8000/ > /dev/null; done
+
+# View logs in Grafana Explore with query: {container="devops-python-app"}
+```
+
+**Services:**
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Grafana | 3000 | Web UI for logs visualization |
+| Loki | 3100 | Log aggregation storage |
+| Promtail | 9080 | Log collector agent |
+| app-python | 8000 | Flask application with JSON logging |
+
+**Documentation:** See [monitoring/docs/LAB07.md](monitoring/docs/LAB07.md)
+
+---
+
 ## Resources
 
 <details>

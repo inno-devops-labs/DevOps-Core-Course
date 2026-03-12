@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY requirements.txt .
 
+# Use --trusted-host for corporate networks with SSL inspection
 RUN pip install --no-cache-dir -r requirements.txt
-
 RUN useradd -m appuser
 
 COPY app.py .

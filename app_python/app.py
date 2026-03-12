@@ -7,15 +7,44 @@ import os
 import socket
 import platform
 import logging
+import json
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Custom JSON formatter for structured logging
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_data = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "logger": record.name,
+        }
+        # Add extra fields from log record
+        if hasattr(record, 'event'):
+            log_data["event"] = record.event
+        if hasattr(record, 'method'):
+            log_data["method"] = record.method
+        if hasattr(record, 'path'):
+            log_data["path"] = record.path
+        if hasattr(record, 'status_code'):
+            log_data["status_code"] = record.status_code
+        if hasattr(record, 'duration_ms'):
+            log_data["duration_ms"] = record.duration_ms
+        if hasattr(record, 'remote_addr'):
+            log_data["remote_addr"] = record.remote_addr
+        if hasattr(record, 'user_agent'):
+            log_data["user_agent"] = record.user_agent
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_data)
+
+# Configure JSON logging
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
 
 # Configuration from environment variables
 HOST = os.getenv('HOST', '0.0.0.0')
@@ -52,12 +81,43 @@ def get_uptime():
     }
 
 
+@app.before_request
+def log_request():
+    """Log incoming request details."""
+    request.start_time = datetime.now(timezone.utc)
+    logger.info(
+        "Request started",
+        extra={
+            "event": "request_started",
+            "method": request.method,
+            "path": request.path,
+            "remote_addr": request.remote_addr,
+            "user_agent": request.headers.get('User-Agent', 'unknown')
+        }
+    )
+
+
+@app.after_request
+def log_response(response):
+    """Log response details."""
+    duration = datetime.now(timezone.utc) - request.start_time
+    logger.info(
+        "Request completed",
+        extra={
+            "event": "request_completed",
+            "method": request.method,
+            "path": request.path,
+            "status_code": response.status_code,
+            "duration_ms": duration.total_seconds() * 1000,
+            "remote_addr": request.remote_addr
+        }
+    )
+    return response
+
+
 @app.route('/')
 def index():
     """Main endpoint - service and system information."""
-    logger.info(f'Request: {request.method} {request.path} ' +
-                'from {request.remote_addr}')
-
     return jsonify({
         "service": {
             "name": "devops-info-service",

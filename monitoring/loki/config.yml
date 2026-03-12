@@ -1,0 +1,71 @@
+# Loki Configuration - Loki 3.0 with TSDB storage
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: info
+
+common:
+  path_prefix: /loki
+  replication_factor: 1
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/tsdb-index
+    cache_location: /loki/tsdb-cache
+  filesystem:
+    directory: /loki/chunks
+
+limits_config:
+  retention_period: 168h
+  max_entries_limit_per_query: 5000
+  allow_structured_metadata: true
+  volume_enabled: true
+
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  delete_request_store: filesystem
+
+ingester:
+  chunk_idle_period: 30m
+  chunk_block_size: 262144
+  chunk_encoding: snappy
+  chunk_retain_period: 1m
+  wal:
+    enabled: true
+    dir: /loki/wal
+    replay_memory_ceiling: 4GB
+
+query_scheduler:
+  max_outstanding_requests_per_tenant: 32768
+
+frontend:
+  max_outstanding_per_tenant: 32768
+  compress_responses: true
+
+querier:
+  max_concurrent: 10

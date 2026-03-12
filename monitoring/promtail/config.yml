@@ -1,0 +1,48 @@
+# Promtail Configuration - Log collector for Loki
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 9095
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # Docker container logs with logging=promtail label
+  - job_name: docker-labeled
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_label_logging']
+        regex: 'promtail'
+        action: keep
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/?(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'log_stream'
+      - source_labels: ['__meta_docker_container_label_logging']
+        target_label: 'logging'
+      - source_labels: ['__meta_docker_container_label_app']
+        target_label: 'app'
+
+  # All other Docker containers (fallback)
+  - job_name: docker-all
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_label_logging']
+        regex: 'promtail'
+        action: drop
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/?(.*)'
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_log_stream']
+        target_label: 'log_stream'
+      - source_labels: ['__meta_docker_container_label_app']
+        target_label: 'app'
