@@ -28,11 +28,6 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
-variable "my_ip_address" {
-  description = "Your IP address for SSH access (e.g., 1.2.3.4/32)"
-  type        = string
-  sensitive   = true
-}
 
 variable "key_name" {
   description = "Name of the existing key pair in AWS"

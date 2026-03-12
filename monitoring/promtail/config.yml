@@ -1,0 +1,40 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /var/lib/promtail/positions/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: container-logs
+          __path__: /var/lib/docker/containers/*/*-json.log
+
+    pipeline_stages:
+      # Docker JSON log format: {"log":"...", "stream":"...", "time":"..."}
+      - json:
+          expressions:
+            output: log
+
+      # Use the extracted log content as the output
+      - output:
+          source: output
+
+      # Try to parse JSON from the log content
+      - json:
+          expressions:
+            level: level
+            logger: logger
+            message: message
+
+      # Extract labels from parsed JSON
+      - labels:
+          level:
+          logger:

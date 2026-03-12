@@ -1,0 +1,109 @@
+services:
+  loki:
+    image: grafana/loki:{{ loki_version }}
+    container_name: loki
+    ports:
+      - "{{ loki_port }}:{{ loki_port }}"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/config.yml
+    networks:
+      - logging
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:{{ loki_port }}/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: {{ loki_cpu_limit }}
+          memory: {{ loki_memory_limit }}
+        reservations:
+          cpus: {{ loki_cpu_reservation }}
+          memory: {{ loki_memory_reservation }}
+
+  promtail:
+    image: grafana/promtail:{{ promtail_version }}
+    container_name: promtail
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail-positions:/var/lib/promtail/positions
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - logging
+    depends_on:
+      - loki
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: {{ promtail_cpu_limit }}
+          memory: {{ promtail_memory_limit }}
+        reservations:
+          cpus: {{ promtail_cpu_reservation }}
+          memory: {{ promtail_memory_reservation }}
+
+  grafana:
+    image: grafana/grafana:{{ grafana_version }}
+    container_name: grafana
+    ports:
+      - "{{ grafana_port }}:{{ grafana_port }}"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - logging
+    depends_on:
+      - loki
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:{{ grafana_port }}/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    environment:
+      - GF_SECURITY_ADMIN_USER={{ grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_INSTALL_PLUGINS=
+      - GF_SERVER_ROOT_URL=http://localhost:{{ grafana_port }}
+      - GF_SECURITY_ALLOW_EMBEDDING=false
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: {{ grafana_cpu_limit }}
+          memory: {{ grafana_memory_limit }}
+        reservations:
+          cpus: {{ grafana_cpu_reservation }}
+          memory: {{ grafana_memory_reservation }}
+
+networks:
+  logging:
+    driver: bridge
+
+volumes:
+  loki-data:
+    driver: local
+  grafana-data:
+    driver: local
+  promtail-positions:
+    driver: local

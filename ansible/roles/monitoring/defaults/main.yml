@@ -1,0 +1,35 @@
+---
+# Default variables for monitoring role
+
+loki_version: "3.0.0"
+promtail_version: "3.0.0"
+grafana_version: "12.3.1"
+
+loki_port: 3100
+grafana_port: 3000
+
+# Retention period in hours (7 days = 168 hours)
+loki_retention_period: 168h
+
+# Resource limits
+loki_memory_limit: 1G
+loki_memory_reservation: 512M
+loki_cpu_limit: 1.0
+loki_cpu_reservation: 0.5
+
+promtail_memory_limit: 256M
+promtail_memory_reservation: 128M
+promtail_cpu_limit: 0.5
+promtail_cpu_reservation: 0.25
+
+grafana_memory_limit: 1G
+grafana_memory_reservation: 512M
+grafana_cpu_limit: 1.0
+grafana_cpu_reservation: 0.5
+
+# Grafana authentication
+grafana_admin_user: admin
+grafana_admin_password: "{{ vault_grafana_admin_password | default('admin') }}"
+
+# Paths
+monitoring_dir: "{{ ansible_user_home }}/monitoring"

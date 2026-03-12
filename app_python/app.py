@@ -1,12 +1,14 @@
 """
 DevOps Info Service
-Main application module
+Main application module with JSON structured logging
 """
 
+import json
 import logging
 import os
 import platform
 import socket
+import sys
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
@@ -21,11 +23,92 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 # Application start time
 START_TIME = datetime.now(timezone.utc)
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+
+class JSONFormatter(logging.Formatter):
+    """Custom JSON formatter for structured logging."""
+
+    def format(self, record):
+        log_data = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+
+        # Add exception info if present
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
+
+        # Add extra fields if present
+        if hasattr(record, "method"):
+            log_data["method"] = record.method
+        if hasattr(record, "path"):
+            log_data["path"] = record.path
+        if hasattr(record, "status"):
+            log_data["status"] = record.status
+        if hasattr(record, "client_ip"):
+            log_data["client_ip"] = record.client_ip
+        if hasattr(record, "duration_ms"):
+            log_data["duration_ms"] = record.duration_ms
+
+        return json.dumps(log_data)
+
+
+def setup_logging():
+    """Configure all loggers to use JSON formatter."""
+    # Remove existing handlers
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
+    # Create and configure JSON handler
+    json_handler = logging.StreamHandler(sys.stdout)
+    json_handler.setFormatter(JSONFormatter())
+    json_handler.setLevel(logging.INFO)
+
+    # Configure root logger
+    logging.root.setLevel(logging.INFO)
+    logging.root.addHandler(json_handler)
+
+    # Configure werkzeug logger
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.INFO)
+    werkzeug_logger.handlers = [json_handler]
+
+    # Configure our app logger
+    return logging.getLogger(__name__)
+
+
+# Setup logging
+logger = setup_logging()
+
+
+@app.before_request
+def log_request():
+    """Log incoming requests."""
+    request.start_time = datetime.now(timezone.utc)
+
+
+@app.after_request
+def log_response(response):
+    """Log response information."""
+    duration_ms = (datetime.now(timezone.utc) - request.start_time).total_seconds() * 1000
+
+    log_record = logger.makeRecord(
+        logger.name,
+        logging.INFO,
+        "", 0,
+        f"{request.method} {request.path}",
+        (), None
+    )
+    log_record.method = request.method
+    log_record.path = request.path
+    log_record.status = response.status_code
+    log_record.client_ip = request.remote_addr
+    log_record.duration_ms = round(duration_ms, 2)
+    json_handler = logging.root.handlers[0]
+    json_handler.handle(log_record)
+
+    return response
 
 
 def get_uptime():
@@ -74,8 +157,6 @@ def get_request_info():
 @app.route("/")
 def index():
     """Main endpoint - service and system information."""
-    logger.debug(f"Request: {request.method} {request.path}")
-
     uptime = get_uptime()
     now = datetime.now(timezone.utc)
 
@@ -120,6 +201,19 @@ def health():
 @app.errorhandler(404)
 def not_found(error):
     """Handle 404 errors."""
+    log_record = logger.makeRecord(
+        logger.name,
+        logging.WARNING,
+        "", 0,
+        f"Not Found: {request.path}",
+        (), None
+    )
+    log_record.method = request.method
+    log_record.path = request.path
+    log_record.status = 404
+    log_record.client_ip = request.remote_addr
+    logging.root.handlers[0].handle(log_record)
+
     return jsonify({"error": "Not Found", "message": "Endpoint does not exist"}), 404
 
 
@@ -134,4 +228,4 @@ def internal_error(error):
 
 if __name__ == "__main__":
     logger.info(f"Starting DevOps Info Service on {HOST}:{PORT}")
-    app.run(host=HOST, port=PORT, debug=DEBUG)
+    app.run(host=HOST, port=PORT, debug=DEBUG, use_reloader=False)

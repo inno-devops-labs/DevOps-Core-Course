@@ -1,0 +1,22 @@
+---
+# Ansible playbook to deploy Grafana Loki monitoring stack
+# Usage: ansible-playbook -i inventory/hosts.ini playbooks/deploy-monitoring.yml
+
+- name: Deploy monitoring stack
+  hosts: webservers
+  become: true
+  vars:
+    ansible_user_home: "{{ lookup('env', 'HOME', default='/home/{{ ansible_user }}') }}"
+
+  pre_tasks:
+    - name: Display deployment information
+      ansible.builtin.debug:
+        msg: "Deploying monitoring stack with Loki {{ loki_version }}, Promtail {{ promtail_version }}, Grafana {{ grafana_version }}"
+
+  roles:
+    - role: monitoring
+
+  post_tasks:
+    - name: Display dashboard URL
+      ansible.builtin.debug:
+        msg: "Grafana dashboard available at http://{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] | default('localhost') }}:{{ grafana_port }}/d/devops-logs-dashboard/devops-application-logs"

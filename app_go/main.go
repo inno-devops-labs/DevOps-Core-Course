@@ -11,6 +11,77 @@ import (
 	"time"
 )
 
+// JSONLog represents a structured log entry
+type JSONLog struct {
+	Timestamp string `json:"timestamp"`
+	Level     string `json:"level"`
+	Logger    string `json:"logger"`
+	Message   string `json:"message"`
+	Method    string `json:"method,omitempty"`
+	Path      string `json:"path,omitempty"`
+	Status    int    `json:"status,omitempty"`
+	ClientIP  string `json:"client_ip,omitempty"`
+	DurationMS float64 `json:"duration_ms,omitempty"`
+}
+
+// JSONLogger is a structured JSON logger
+type JSONLogger struct {
+	name string
+}
+
+// NewJSONLogger creates a new JSON logger
+func NewJSONLogger(name string) *JSONLogger {
+	return &JSONLogger{name: name}
+}
+
+// Info logs an info level message
+func (l *JSONLogger) Info(msg string) {
+	l.log("INFO", msg, nil)
+}
+
+// Error logs an error level message
+func (l *JSONLogger) Error(msg string) {
+	l.log("ERROR", msg, nil)
+}
+
+// InfoWithFields logs an info message with additional fields
+func (l *JSONLogger) InfoWithFields(msg string, fields map[string]interface{}) {
+	l.log("INFO", msg, fields)
+}
+
+// log creates and outputs a JSON log entry
+func (l *JSONLogger) log(level, msg string, fields map[string]interface{}) {
+	logEntry := JSONLog{
+		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
+		Level:     level,
+		Logger:    l.name,
+		Message:   msg,
+	}
+
+	if fields != nil {
+		if method, ok := fields["method"].(string); ok {
+			logEntry.Method = method
+		}
+		if path, ok := fields["path"].(string); ok {
+			logEntry.Path = path
+		}
+		if status, ok := fields["status"].(int); ok {
+			logEntry.Status = status
+		}
+		if clientIP, ok := fields["client_ip"].(string); ok {
+			logEntry.ClientIP = clientIP
+		}
+		if duration, ok := fields["duration_ms"].(float64); ok {
+			logEntry.DurationMS = duration
+		}
+	}
+
+	jsonBytes, _ := json.Marshal(logEntry)
+	log.Println(string(jsonBytes))
+}
+
+var logger = NewJSONLogger("devops-info-service")
+
 // Service metadata
 type Service struct {
 	Name        string `json:"name"`
@@ -145,6 +216,7 @@ func getRequestInfo(r *http.Request) Request {
 
 // mainHandler handles the main endpoint
 func mainHandler(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
 	uptime := getUptime()
 	info := ServiceInfo{
 		Service: Service{
@@ -164,9 +236,18 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(info); err != nil {
-		log.Printf("Error encoding response: %v", err)
+		logger.Error(fmt.Sprintf("Error encoding response: %v", err))
 	}
-	log.Printf("Serving info request from %s", r.RemoteAddr)
+
+	// Log the request with structured fields
+	duration := time.Since(startTime).Seconds() * 1000
+	logger.InfoWithFields(fmt.Sprintf("Serving info request from %s", r.RemoteAddr), map[string]interface{}{
+		"method":     r.Method,
+		"path":       r.URL.Path,
+		"status":     200,
+		"client_ip":  r.RemoteAddr,
+		"duration_ms": duration,
+	})
 }
 
 // healthHandler handles health check endpoint
@@ -180,20 +261,32 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
+		logger.Error(fmt.Sprintf("Error encoding response: %v", err))
 	}
 }
 
 // errorHandler handles 404 errors
 func errorHandler(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNotFound)
 	if err := json.NewEncoder(w).Encode(ErrorResponse{
 		Error:   "Not Found",
 		Message: "Endpoint does not exist",
 	}); err != nil {
-		log.Printf("Error encoding response: %v", err)
+		logger.Error(fmt.Sprintf("Error encoding response: %v", err))
+		return
 	}
+
+	// Log the 404 request with structured fields
+	duration := time.Since(startTime).Seconds() * 1000
+	logger.InfoWithFields("Endpoint not found", map[string]interface{}{
+		"method":      r.Method,
+		"path":        r.URL.Path,
+		"status":      404,
+		"client_ip":   r.RemoteAddr,
+		"duration_ms": duration,
+	})
 }
 
 func main() {
@@ -206,14 +299,15 @@ func main() {
 	http.HandleFunc("/", mainHandler)
 	http.HandleFunc("/health", healthHandler)
 
-	// Log startup
-	log.Printf("Starting DevOps Info Service on %s", addr)
-	log.Printf("Go version: %s", runtime.Version())
-	log.Printf("Platform: %s/%s", runtime.GOOS, runtime.GOARCH)
-	log.Printf("CPU count: %d", runtime.NumCPU())
+	// Log startup with structured messages
+	logger.Info(fmt.Sprintf("Starting DevOps Info Service on %s", addr))
+	logger.Info(fmt.Sprintf("Go version: %s", runtime.Version()))
+	logger.Info(fmt.Sprintf("Platform: %s/%s", runtime.GOOS, runtime.GOARCH))
+	logger.Info(fmt.Sprintf("CPU count: %d", runtime.NumCPU()))
 
 	// Start server
 	if err := http.ListenAndServe(addr, nil); err != nil {
+		logger.Error(fmt.Sprintf("Server failed to start: %v", err))
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

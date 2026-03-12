@@ -1,0 +1,58 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: "2024-01-01"
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: tsdb_index_
+        period: 24h
+
+limits_config:
+  retention_period: 168h
+  split_queries_by_interval: 30m
+  max_streams_per_user: 10000
+  max_global_streams_per_user: 10000
+  max_query_parallelism: 32
+  ingestion_rate_mb: 16
+  ingestion_burst_size_mb: 32
+
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+  delete_request_cancel_period: 24h
+  retention_delete_delay: 2h
+  compaction_interval: 10m
+  delete_request_store: filesystem
+
+querier:
+  max_concurrent: 32
+
+ingester:
+  lifecycler:
+    ring:
+      replication_factor: 1
+
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+  rule_path: /loki/rules-temp

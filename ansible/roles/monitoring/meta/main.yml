@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: monitoring
+  author: ellilin
+  description: Deploy Grafana Loki monitoring stack with Docker Compose
+  company: DevOps Course
+  license: MIT
+  min_ansible_version: "2.16"
+
+dependencies:
+  - role: docker
+    version: "1.0.0"
+    vars:
+      docker_install_compose: true

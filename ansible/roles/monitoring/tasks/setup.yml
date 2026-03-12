@@ -1,0 +1,47 @@
+---
+# Setup tasks for monitoring role
+
+- name: Create monitoring directory
+  ansible.builtin.file:
+    path: "{{ monitoring_dir }}"
+    state: directory
+    mode: '0755'
+  become: true
+
+- name: Create subdirectories
+  ansible.builtin.file:
+    path: "{{ monitoring_dir }}/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - loki
+    - promtail
+    - docs
+  become: true
+
+- name: Template Loki configuration
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_dir }}/loki/config.yml"
+    mode: '0644'
+  become: true
+  notify:
+    - Restart monitoring stack
+
+- name: Template Promtail configuration
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ monitoring_dir }}/promtail/config.yml"
+    mode: '0644'
+  become: true
+  notify:
+    - Restart monitoring stack
+
+- name: Template Docker Compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_dir }}/docker-compose.yml"
+    mode: '0644'
+  become: true
+  notify:
+    - Restart monitoring stack
