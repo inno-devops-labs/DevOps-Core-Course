@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  author: devops-student
+  description: Monitoring stack with Loki, Promtail, and Grafana
+  min_ansible_version: "2.16"
+
+dependencies:
+  - role: docker

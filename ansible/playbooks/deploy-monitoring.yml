@@ -1,0 +1,9 @@
+---
+- name: Deploy monitoring stack (Loki + Promtail + Grafana)
+  hosts: localhost
+  connection: local
+  become: false
+
+  roles:
+    - role: monitoring
+      tags: monitoring
