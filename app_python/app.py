@@ -21,7 +21,7 @@ APP_VERSION = "1.0.0"
 APP_DESCRIPTION = "DevOps course info service"
 APP_FRAMEWORK = "Flask"
 
-# Configuration (env)
+# Configuration (env)2
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"

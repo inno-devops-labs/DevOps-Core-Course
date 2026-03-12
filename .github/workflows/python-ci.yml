@@ -6,6 +6,8 @@ on:
     paths:
       - "app_python/**"
       - ".github/workflows/python-ci.yml"
+    tags:
+      - "v*"
   pull_request:
     paths:
       - "app_python/**"
