@@ -12,3 +12,6 @@ app_python/__pycache__/
 
 # OS
 .DS_Store
+
+# Env
+.env

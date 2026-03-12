@@ -1,8 +1,12 @@
 import os
+import sys
 import socket
 from flask import Flask, jsonify, request
 import platform
+
 import logging
+from pythonjsonlogger import jsonlogger
+
 from datetime import datetime, timezone
 
 HOST = os.getenv('HOST', '0.0.0.0')
@@ -11,11 +15,15 @@ DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
 
 app = Flask(__name__)
 
-logging.basicConfig(
-    level=logging.DEBUG if DEBUG else logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+logHandler = logging.StreamHandler(sys.stdout)
+formatter = jsonlogger.JsonFormatter(
+    "%(asctime)s %(levelname)s %(message)s %(method)s %(path)s %(client_ip)s %(status_code)s"
 )
-logger = logging.getLogger(__name__)
+logHandler.setFormatter(formatter)
+logger.addHandler(logHandler)
+logging.getLogger("werkzeug").disabled = True
 
 START_TIME = datetime.now(timezone.utc)
 
@@ -66,6 +74,33 @@ def get_response():
     }
     return response
 
+@app.before_request
+def log_request():
+    request.start_time = datetime.now(timezone.utc)
+    logger.info(
+        "request_started",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "client_ip": request.remote_addr,
+        }
+    )
+
+
+@app.after_request
+def log_response(response):
+    logger.info(
+        "request_finished",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "client_ip": request.remote_addr,
+            "status_code": response.status_code,
+        }
+    )
+    return response
+
+
 @app.route('/health')
 def health():
     logger.info(f"Health check from {request.remote_addr}")
@@ -96,7 +131,14 @@ def internal_error(error):
 
 @app.errorhandler(Exception)
 def handle_exception(e):
-    logger.exception("Unexpected error")
+    logger.exception(
+        "Unexpected error",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "client_ip": request.remote_addr
+        }
+    )
     return jsonify({
         "error": "Internal Server Error",
         "message": str(e)
