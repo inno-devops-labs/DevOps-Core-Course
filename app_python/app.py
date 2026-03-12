@@ -56,7 +56,8 @@ class JSONFormatter(logging.Formatter):
         "process",
         "message",
     }
-      # type: ignore[override]
+
+    # type: ignore[override]
     def format(self, record: logging.LogRecord) -> str:
         log_record = {
             "timestamp": datetime.fromtimestamp(
@@ -150,8 +151,8 @@ def log_request() -> None:
 @app.after_request
 def log_response(response):
     start_time = getattr(g, "request_start", datetime.now(timezone.utc))
-    duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds()
-                       * 1000)
+    temp = datetime.now(timezone.utc) - start_time
+    duration_ms = int(temp.total_seconds() * 1000)
     logger.info(
         "response_sent",
         extra={
