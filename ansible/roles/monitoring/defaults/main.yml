@@ -1,0 +1,32 @@
+---
+monitoring_dir: /opt/monitoring
+
+loki_version: "3.0.0"
+promtail_version: "3.0.0"
+grafana_version: "12.3.1"
+
+loki_port: 3100
+grafana_port: 3000
+promtail_port: 9080
+
+loki_retention_period: "168h"
+loki_schema_version: "v13"
+
+grafana_admin_password: "securepassword123"
+
+resource_limits:
+  loki:
+    cpus: "1.0"
+    memory: "1G"
+    cpus_reservation: "0.5"
+    memory_reservation: "512M"
+  promtail:
+    cpus: "0.5"
+    memory: "512M"
+    cpus_reservation: "0.25"
+    memory_reservation: "256M"
+  grafana:
+    cpus: "1.0"
+    memory: "1G"
+    cpus_reservation: "0.5"
+    memory_reservation: "512M"
