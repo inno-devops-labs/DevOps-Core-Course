@@ -9,7 +9,7 @@
         name: web_app
       vars:
         web_app_name: devops-python
-        web_app_docker_image: your_dockerhub_username/devops-info-service
+        web_app_docker_image: brainpumpkin/devops-info-service
         web_app_docker_tag: latest
         web_app_port: 8000
         web_app_internal_port: 8000
@@ -20,7 +20,7 @@
         name: web_app
       vars:
         web_app_name: devops-go
-        web_app_docker_image: your_dockerhub_username/devops-info-service-go
+        web_app_docker_image: brainpumpkin/devops-info-service-go
         web_app_docker_tag: latest
         web_app_port: 8001
         web_app_internal_port: 8080
