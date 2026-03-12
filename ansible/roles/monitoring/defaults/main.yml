@@ -1,0 +1,12 @@
+---
+monitoring_project_dir: /opt/monitoring
+monitoring_loki_image: grafana/loki:3.0.0
+monitoring_promtail_image: grafana/promtail:3.0.0
+monitoring_grafana_image: grafana/grafana:12.3.1
+monitoring_loki_port: 3100
+monitoring_promtail_port: 9080
+monitoring_grafana_port: 3000
+monitoring_retention_period: 168h
+monitoring_grafana_admin_user: admin
+monitoring_grafana_admin_password: change-me-in-vault
+monitoring_compose_project_name: devops-monitoring

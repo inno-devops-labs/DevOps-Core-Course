@@ -1,0 +1,67 @@
+name: {{ monitoring_compose_project_name }}
+
+services:
+  loki:
+    image: {{ monitoring_loki_image }}
+    container_name: devops-loki
+    command: -config.file=/etc/loki/config.yml
+    ports:
+      - "{{ monitoring_loki_port }}:{{ monitoring_loki_port }}"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    labels:
+      logging: "promtail"
+      app: "devops-loki"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:{{ monitoring_loki_port }}/ready >/dev/null 2>&1 || curl -fsS http://localhost:{{ monitoring_loki_port }}/ready >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  promtail:
+    image: {{ monitoring_promtail_image }}
+    container_name: devops-promtail
+    command: -config.file=/etc/promtail/config.yml
+    ports:
+      - "{{ monitoring_promtail_port }}:{{ monitoring_promtail_port }}"
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    labels:
+      logging: "promtail"
+      app: "devops-promtail"
+
+  grafana:
+    image: {{ monitoring_grafana_image }}
+    container_name: devops-grafana
+    ports:
+      - "{{ monitoring_grafana_port }}:{{ monitoring_grafana_port }}"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_ADMIN_USER: "{{ monitoring_grafana_admin_user }}"
+      GF_SECURITY_ADMIN_PASSWORD: "{{ monitoring_grafana_admin_password }}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+    labels:
+      logging: "promtail"
+      app: "devops-grafana"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:{{ monitoring_grafana_port }}/api/health >/dev/null 2>&1 || curl -fsS http://localhost:{{ monitoring_grafana_port }}/api/health >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  loki-data:
+  grafana-data:

@@ -3,14 +3,16 @@ DevOps Info Service
 Main application module for Lab 1.
 """
 
+import json
 import logging
 import os
 import platform
 import socket
+import time
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from flask import Flask, jsonify, request
+from flask import Flask, g, jsonify, request
 
 
 app = Flask(__name__)
@@ -26,13 +28,53 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 START_TIME = datetime.now(timezone.utc)
 
 
-# Logging configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+class JsonFormatter(logging.Formatter):
+    """Render application logs as one-line JSON objects."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload: Dict[str, Any] = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+
+        context = getattr(record, "context", None)
+        if isinstance(context, dict):
+            payload.update(context)
+
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(payload)
+
+
+def configure_logging() -> logging.Logger:
+    """Configure JSON logging for structured log aggregation."""
+    app_logger = logging.getLogger("devops-info-service")
+    app_logger.setLevel(logging.INFO)
+    app_logger.propagate = False
+
+    if not app_logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(JsonFormatter())
+        app_logger.addHandler(handler)
+
+    logging.getLogger("werkzeug").setLevel(logging.WARNING)
+    return app_logger
+
+
+logger = configure_logging()
+logger.info(
+    "Application starting",
+    extra={
+        "context": {
+            "event": "startup",
+            "host": HOST,
+            "port": PORT,
+        }
+    },
 )
-logger = logging.getLogger(__name__)
-logger.info("Application starting...")
 
 
 def get_uptime() -> Dict[str, Any]:
@@ -72,6 +114,26 @@ def get_request_info() -> Dict[str, Any]:
     }
 
 
+@app.before_request
+def before_request_logging() -> None:
+    """Track request start time for latency logging."""
+    g.request_started_at = time.perf_counter()
+
+
+@app.after_request
+def after_request_logging(response):
+    """Emit one structured log entry per HTTP request."""
+    request_info = get_request_info()
+    request_info["status_code"] = response.status_code
+
+    started_at = getattr(g, "request_started_at", None)
+    if started_at is not None:
+        request_info["duration_ms"] = round((time.perf_counter() - started_at) * 1000, 2)
+
+    logger.info("HTTP request handled", extra={"context": request_info})
+    return response
+
+
 @app.route("/", methods=["GET"])
 def index():
     """Main endpoint - service and system information."""
@@ -108,7 +170,6 @@ def index():
         ],
     }
 
-    logger.info("Handled main / request")
     return jsonify(response)
 
 
@@ -121,14 +182,15 @@ def health():
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime["seconds"],
     }
-    logger.info("Health check OK")
     return jsonify(payload), 200
 
 
 @app.errorhandler(404)
 def not_found(error):
     """Return JSON for 404 errors."""
-    logger.warning("404 Not Found: %s %s", request.method, request.path)
+    request_info = get_request_info()
+    request_info["status_code"] = 404
+    logger.warning("Not found", extra={"context": request_info})
     return (
         jsonify(
             {
@@ -143,7 +205,9 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     """Return JSON for 500 errors."""
-    logger.exception("500 Internal Server Error")
+    request_info = get_request_info()
+    request_info["status_code"] = 500
+    logger.error("Internal server error", extra={"context": request_info})
     return (
         jsonify(
             {
@@ -156,5 +220,8 @@ def internal_error(error):
 
 
 if __name__ == "__main__":
-    logger.info("Starting Flask development server on %s:%s", HOST, PORT)
+    logger.info(
+        "Starting Flask development server",
+        extra={"context": {"event": "flask_start", "host": HOST, "port": PORT}},
+    )
     app.run(host=HOST, port=PORT, debug=DEBUG)
