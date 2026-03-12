@@ -209,9 +209,7 @@ File: `.github/workflows/ansible-deploy.yml`
 
 Added to root `README.md`:
 
-```markdown
-[![Ansible Deployment](https://github.com/sofiakulagina/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/sofiakulagina/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
-```
+![Ansible Deployment](https://github.com/sofiakulagina/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/sofiakulagina/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 
 ---
 
