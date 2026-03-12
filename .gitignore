@@ -31,3 +31,6 @@ ansible/inventory/*.pyc
 __pycache__/
 ansible/.ansible/
 ansible/actions-runner/
+
+# Monitoring
+monitoring/.env
