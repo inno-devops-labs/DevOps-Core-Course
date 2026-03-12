@@ -1,7 +1,10 @@
 ---
 - name: Run common role tasks with block-level controls
+  become: true
   block:
     - name: Manage package prerequisites
+      tags:
+        - packages
       block:
         - name: Refresh apt cache
           ansible.builtin.apt:
@@ -14,9 +17,9 @@
             state: present
 
       rescue:
-        - name: Repair apt metadata when cache update fails
-          ansible.builtin.command: apt-get update --fix-missing
-          changed_when: false
+        - name: Repair apt metadata by refreshing apt cache
+          ansible.builtin.apt:
+            update_cache: true
 
         - name: Retry apt cache update after repair
           ansible.builtin.apt:
@@ -29,10 +32,10 @@
             line: "packages block finished at {{ ansible_date_time.iso8601 }}"
             create: true
             mode: "0644"
-      tags:
-        - packages
 
     - name: Manage users
+      tags:
+        - users
       block:
         - name: Ensure remote Ansible user exists
           ansible.builtin.user:
@@ -57,7 +60,3 @@
             line: "users block finished at {{ ansible_date_time.iso8601 }}"
             create: true
             mode: "0644"
-      tags:
-        - users
-
-  become: true

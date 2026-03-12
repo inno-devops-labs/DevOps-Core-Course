@@ -116,14 +116,14 @@ File: `ansible/roles/web_app/tasks/main.yml`
 
 File: `ansible/roles/web_app/defaults/main.yml`
 
-- `app_name`, `docker_image`, `docker_tag`
-- `app_port`, `app_internal_port`
-- `compose_project_dir`, `docker_compose_version`
-- `app_secret_key` (override with Vault)
-- `app_env`
+- `web_app_name`, `web_app_docker_image`, `web_app_docker_tag`
+- `web_app_port`, `web_app_internal_port`
+- `web_app_compose_project_dir`, `web_app_docker_compose_version`
+- `web_app_secret_key` (override with Vault)
+- `web_app_env`
 - `web_app_wipe` (default `false`)
 
-Use Vault to override secrets in `inventory/group_vars/all.yml`.
+The role keeps compatibility with legacy variable names (`app_name`, `docker_image`, etc.) through `default(...)`, so existing Vault values continue to work.
 
 ---
 

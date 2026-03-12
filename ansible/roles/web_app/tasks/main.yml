@@ -6,30 +6,35 @@
     - web_app_wipe
 
 - name: Deploy application with Docker Compose
+  when: not (web_app_wipe | bool and 'web_app_wipe' in ansible_run_tags and ansible_run_tags | length == 1)
+  tags:
+    - app_deploy
+    - compose
+    - web_app_wipe
   block:
     - name: Log in to Docker Hub when credentials are provided
       community.docker.docker_login:
-        username: "{{ dockerhub_username }}"
-        password: "{{ dockerhub_password }}"
+        username: "{{ web_app_dockerhub_username }}"
+        password: "{{ web_app_dockerhub_password }}"
       when:
-        - dockerhub_username | length > 0
-        - dockerhub_password | length > 0
+        - web_app_dockerhub_username | length > 0
+        - web_app_dockerhub_password | length > 0
 
     - name: Create Docker Compose project directory
       ansible.builtin.file:
-        path: "{{ compose_project_dir }}"
+        path: "{{ web_app_compose_project_dir }}"
         state: directory
         mode: "0755"
 
     - name: Template docker-compose file
       ansible.builtin.template:
         src: docker-compose.yml.j2
-        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
         mode: "0644"
 
     - name: Deploy stack with Docker Compose v2
       community.docker.docker_compose_v2:
-        project_src: "{{ compose_project_dir }}"
+        project_src: "{{ web_app_compose_project_dir }}"
         files:
           - docker-compose.yml
         pull: always
@@ -40,14 +45,14 @@
     - name: Wait for application port
       ansible.builtin.wait_for:
         host: 127.0.0.1
-        port: "{{ app_port }}"
+        port: "{{ web_app_port }}"
         delay: 2
         timeout: 60
         state: started
 
     - name: Verify health endpoint
       ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ app_port }}/health"
+        url: "http://127.0.0.1:{{ web_app_port }}/health"
         status_code: 200
         timeout: 10
       register: web_app_health
@@ -57,13 +62,5 @@
     - name: Report deployment failure
       ansible.builtin.debug:
         msg: >-
-          Docker Compose deployment failed for {{ app_name }}.
-          Check docker compose logs in {{ compose_project_dir }}.
-
-  # Skip deployment only in wipe-only mode:
-  # ansible-playbook ... -e "web_app_wipe=true" --tags web_app_wipe
-  when: not (web_app_wipe | bool and 'web_app_wipe' in ansible_run_tags and ansible_run_tags | length == 1)
-  tags:
-    - app_deploy
-    - compose
-    - web_app_wipe
+          Docker Compose deployment failed for {{ web_app_name }}.
+          Check docker compose logs in {{ web_app_compose_project_dir }}.

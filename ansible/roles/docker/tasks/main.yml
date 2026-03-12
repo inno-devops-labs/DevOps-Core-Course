@@ -1,7 +1,10 @@
 ---
 - name: Install and configure Docker engine
+  become: true
   block:
     - name: Docker installation tasks
+      tags:
+        - docker_install
       block:
         - name: Update apt cache for Docker installation
           ansible.builtin.apt:
@@ -63,18 +66,16 @@
               - docker-compose-plugin
               - python3-docker
             state: present
-      tags:
-        - docker_install
 
     - name: Docker configuration tasks
+      tags:
+        - docker_config
       block:
         - name: Add deployment user to docker group
           ansible.builtin.user:
             name: "{{ docker_user }}"
             groups: docker
             append: true
-      tags:
-        - docker_config
 
   always:
     - name: Ensure Docker service is enabled and started
@@ -82,5 +83,3 @@
         name: docker
         state: started
         enabled: true
-
-  become: true
