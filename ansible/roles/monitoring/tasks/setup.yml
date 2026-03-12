@@ -1,0 +1,43 @@
+---
+- name: Create monitoring base directory
+  ansible.builtin.file:
+    path: "{{ monitoring_base_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Create Loki config directory
+  ansible.builtin.file:
+    path: "{{ monitoring_base_dir }}/loki"
+    state: directory
+    mode: "0755"
+
+- name: Create Promtail config directory
+  ansible.builtin.file:
+    path: "{{ monitoring_base_dir }}/promtail"
+    state: directory
+    mode: "0755"
+
+- name: Create Grafana data directory
+  ansible.builtin.file:
+    path: "{{ monitoring_grafana_data_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Render Docker Compose file for monitoring stack
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_base_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Render Loki config
+  ansible.builtin.template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_base_dir }}/loki/config.yml"
+    mode: "0644"
+
+- name: Render Promtail config
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: "{{ monitoring_base_dir }}/promtail/config.yml"
+    mode: "0644"
+

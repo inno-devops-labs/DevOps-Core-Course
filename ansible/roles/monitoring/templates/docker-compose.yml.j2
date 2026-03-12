@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  loki:
+    image: "{{ monitoring_loki_image }}"
+    command: -config.file=/etc/loki/config.yml
+    ports:
+      - "{{ monitoring_loki_port }}:3100"
+    volumes:
+      - {{ monitoring_base_dir }}/loki/config.yml:/etc/loki/config.yml:ro
+      - {{ monitoring_loki_data_dir }}:/loki
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  promtail:
+    image: "{{ monitoring_promtail_image }}"
+    command: -config.file=/etc/promtail/config.yml
+    ports:
+      - "{{ monitoring_promtail_port }}:9080"
+    volumes:
+      - {{ monitoring_base_dir }}/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  grafana:
+    image: "{{ monitoring_grafana_image }}"
+    ports:
+      - "{{ monitoring_grafana_port }}:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_ALLOW_EMBEDDING=false
+      - GF_SECURITY_ADMIN_USER={{ monitoring_grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ monitoring_grafana_admin_password }}
+    volumes:
+      - {{ monitoring_grafana_data_dir }}:/var/lib/grafana
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+networks:
+  logging:
+    driver: bridge
+

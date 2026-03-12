@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  author: "DevOps Lab Student"
+  description: "Deploy Loki + Promtail + Grafana monitoring stack with Docker Compose v2"
+  min_ansible_version: "2.16"
+
+dependencies:
+  - role: docker
+

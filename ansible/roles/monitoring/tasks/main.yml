@@ -1,0 +1,7 @@
+---
+- name: Setup monitoring stack files
+  ansible.builtin.import_tasks: setup.yml
+
+- name: Deploy monitoring stack
+  ansible.builtin.import_tasks: deploy.yml
+

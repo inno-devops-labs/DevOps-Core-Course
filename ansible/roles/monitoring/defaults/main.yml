@@ -1,0 +1,24 @@
+---
+# Default variables for monitoring role
+
+monitoring_base_dir: /opt/monitoring
+
+monitoring_loki_image: grafana/loki:3.0.0
+monitoring_promtail_image: grafana/promtail:3.0.0
+monitoring_grafana_image: grafana/grafana:12.3.1
+
+monitoring_loki_port: 3100
+monitoring_promtail_port: 9080
+monitoring_grafana_port: 3000
+
+monitoring_retention_period: 168h
+monitoring_schema_version: v13
+
+monitoring_loki_data_dir: "{{ monitoring_base_dir }}/loki"
+monitoring_grafana_data_dir: "{{ monitoring_base_dir }}/grafana"
+
+monitoring_grafana_admin_user: admin
+monitoring_grafana_admin_password: change_me_ansible
+
+monitoring_compose_project_name: monitoring
+
