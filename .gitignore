@@ -12,3 +12,4 @@ ansible/inventory/*.pyc
 *~
 /.ansible/
 /tmp/
+/monitoring/.env
