@@ -11,6 +11,7 @@ import json
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 
+
 # Custom JSON formatter for structured logging
 class JSONFormatter(logging.Formatter):
     def format(self, record):
@@ -38,6 +39,7 @@ class JSONFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_data)
+
 
 # Configure JSON logging
 handler = logging.StreamHandler()
