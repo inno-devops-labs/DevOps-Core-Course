@@ -1,8 +1,0 @@
-services:
-  {{ app_name }}:
-    image: "{{ docker_image }}:{{ docker_image_tag }}"
-    container_name: "{{ app_container_name }}"
-    restart: "{{ app_restart_policy }}"
-    ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
-    environment: {{ app_env }}
