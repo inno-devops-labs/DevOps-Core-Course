@@ -36,5 +36,6 @@ credentials
 # Ansible
 *.retry
 .vault_pass
+ansible/group_vars/all.yml
 ansible/inventory/*.pyc
 __pycache__/

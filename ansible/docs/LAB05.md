@@ -58,12 +58,96 @@ Paste output snippets below:
 
 ### First run (`provision.yml`)
 ```text
-# paste your terminal output here
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [web-01]
+
+TASK [common : Update apt cache] ***********************************************
+ok: [web-01]
+
+TASK [common : Install common packages] ****************************************
+ok: [web-01]
+
+TASK [common : Read current timezone] ******************************************
+ok: [web-01]
+
+TASK [common : Set timezone] ***************************************************
+skipping: [web-01]
+
+TASK [docker : Update apt cache] ***********************************************
+ok: [web-01]
+
+TASK [docker : Install Docker prerequisites] ***********************************
+ok: [web-01]
+
+TASK [docker : Ensure Docker keyring directory exists] *************************
+ok: [web-01]
+
+TASK [docker : Download Docker GPG key] ****************************************
+ok: [web-01]
+
+TASK [docker : Add Docker apt repository] **************************************
+ok: [web-01]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [web-01]
+
+TASK [docker : Ensure Docker service is enabled and running] *******************
+ok: [web-01]
+
+TASK [docker : Add user to docker group] ***************************************
+ok: [web-01]
+
+PLAY RECAP *********************************************************************
+web-01                     : ok=12   changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
 ```
 
 ### Second run (`provision.yml`)
 ```text
-# paste your terminal output here
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [web-01]
+
+TASK [common : Update apt cache] ***********************************************
+ok: [web-01]
+
+TASK [common : Install common packages] ****************************************
+ok: [web-01]
+
+TASK [common : Read current timezone] ******************************************
+ok: [web-01]
+
+TASK [common : Set timezone] ***************************************************
+skipping: [web-01]
+
+TASK [docker : Update apt cache] ***********************************************
+ok: [web-01]
+
+TASK [docker : Install Docker prerequisites] ***********************************
+ok: [web-01]
+
+TASK [docker : Ensure Docker keyring directory exists] *************************
+ok: [web-01]
+
+TASK [docker : Download Docker GPG key] ****************************************
+ok: [web-01]
+
+TASK [docker : Add Docker apt repository] **************************************
+ok: [web-01]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [web-01]
+
+TASK [docker : Ensure Docker service is enabled and running] *******************
+ok: [web-01]
+
+TASK [docker : Add user to docker group] ***************************************
+ok: [web-01]
+
+PLAY RECAP *********************************************************************
+web-01                     : ok=12   changed=0    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
 ```
 
 Analysis:
@@ -122,17 +206,59 @@ Paste output snippets:
 
 ### `deploy.yml` output
 ```text
-# paste output here
+PLAY [Deploy application] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [web-01]
+
+TASK [app_deploy : Validate required Docker Hub credentials] *******************
+ok: [web-01] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [app_deploy : Read current container information] *************************
+ok: [web-01]
+
+TASK [app_deploy : Log in to Docker Hub] ***************************************
+ok: [web-01]
+
+TASK [app_deploy : Pull application image] *************************************
+ok: [web-01]
+
+TASK [app_deploy : Stop existing container when redeploy is required] **********
+skipping: [web-01]
+
+TASK [app_deploy : Remove old container when redeploy is required] *************
+skipping: [web-01]
+
+TASK [app_deploy : Run application container] **********************************
+changed: [web-01]
+
+TASK [app_deploy : Wait for application port] **********************************
+ok: [web-01]
+
+TASK [app_deploy : Verify health endpoint] *************************************
+ok: [web-01]
+
+PLAY RECAP *********************************************************************
+web-01                     : ok=8    changed=1    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0
 ```
 
 ### `docker ps` output
 ```text
-# paste output here
+web-01 | CHANGED | rc=0 >>
+CONTAINER ID   IMAGE                    COMMAND           CREATED          STATUS          PORTS                                          NAMES
+c10a9b0e7565   linktur/devops-lab2:v1   "python app.py"   27 minutes ago   Up 27 minutes   0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp   devops-lab2
 ```
 
 ### Health checks
 ```text
-# paste curl outputs here
+curl http://10.241.1.215:5000/health
+{"status":"healthy","timestamp":"2026-03-13T20:51:31.374Z","uptime_seconds":4768}
+
+curl http://10.241.1.215:5000/
+{"endpoints":[{"description":"Service information","method":"GET","path":"/"},{"description":"Health check","method":"GET","path":"/health"}],"request":{"client_ip":"10.241.1.148","method":"GET","path":"/","user_agent":"curl/7.81.0"},"runtime":{"current_time":"2026-03-13T20:51:31.383Z","timezone":"UTC","uptime_human":"1 hours, 19 minutes","uptime_seconds":4768},"service":{"description":"DevOps course info service","framework":"Flask","name":"devops-info-service","version":"1.0.0"},"system":{"architecture":"x86_64","cpu_count":1,"hostname":"c10a9b0e7565","platform":"Linux","platform_version":"Debian GNU/Linux 13 (trixie)","python_version":"3.13.12"}}
 ```
 
 ### Handler execution
@@ -162,3 +288,8 @@ Vault protects secrets in version control and CI logs. It allows collaboration w
 - `ansible` may not be preinstalled on control node: install in WSL or Linux before running.
 - Docker repo can require distro-specific release names; override `docker_apt_release` if needed.
 - Ensure VM firewall allows `22` and `5000` from your workstation.
+
+## 8. Screenshots
+
+![Lab 05 Screenshot 1](../../Lab-1/app_python/docs/screenshots/lab_05_1.png)
+![Lab 05 Screenshot 2](../../Lab-1/app_python/docs/screenshots/lab_05_2.png)
