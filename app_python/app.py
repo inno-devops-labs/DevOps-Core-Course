@@ -3,40 +3,79 @@ DevOps Info Service
 Main application module
 """
 
-import os
-import socket
-import platform
+import json
 import logging
+import os
+import platform
+import socket
+import time
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
 
-# ------------------------------------------------------------------------------
-# Configuration
-# ------------------------------------------------------------------------------
+from flask import Flask, jsonify, g, request
+
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 START_TIME = datetime.now(timezone.utc)
 
-# ------------------------------------------------------------------------------
-# Logging
-# ------------------------------------------------------------------------------
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
 
-# ------------------------------------------------------------------------------
-# App
-# ------------------------------------------------------------------------------
+class JSONFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        log_record = {
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+
+        for key, value in record.__dict__.items():
+            if key.startswith("_"):
+                continue
+            if key in {
+                "name",
+                "msg",
+                "args",
+                "exc_info",
+                "exc_text",
+                "stack_info",
+                "lineno",
+                "funcName",
+                "created",
+                "msecs",
+                "relativeCreated",
+                "levelno",
+                "levelname",
+                "pathname",
+                "filename",
+                "module",
+                "thread",
+                "threadName",
+                "processName",
+                "process",
+            }:
+                continue
+            if key not in log_record:
+                log_record[key] = value
+
+        if record.exc_info:
+            log_record["exc_info"] = self.formatException(record.exc_info)
+
+        return json.dumps(log_record, default=str)
+
+
+logger = logging.getLogger("devops-python")
+logger.setLevel(logging.INFO)
+
+_handler = logging.StreamHandler()
+_handler.setFormatter(JSONFormatter())
+logger.handlers.clear()
+logger.addHandler(_handler)
+logger.propagate = False
+
 app = Flask(__name__)
 
 
-# ------------------------------------------------------------------------------
-# Helpers
-# ------------------------------------------------------------------------------
 def get_uptime():
     delta = datetime.now(timezone.utc) - START_TIME
     seconds = int(delta.total_seconds())
@@ -59,13 +98,45 @@ def get_system_info():
     }
 
 
-# ------------------------------------------------------------------------------
-# Routes
-# ------------------------------------------------------------------------------
+@app.before_request
+def log_request():
+    g.request_start_time = time.perf_counter()
+    logger.info(
+        "request_started",
+        extra={
+            "event": "request_started",
+            "method": request.method,
+            "path": request.path,
+            "remote_addr": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent"),
+        },
+    )
+
+
+@app.after_request
+def log_response(response):
+    start_time = getattr(g, "request_start_time", None)
+    duration_ms = None
+    if start_time is not None:
+        duration_ms = (time.perf_counter() - start_time) * 1000
+
+    logger.info(
+        "request_completed",
+        extra={
+            "event": "request_completed",
+            "method": request.method,
+            "path": request.path,
+            "remote_addr": request.remote_addr,
+            "status_code": response.status_code,
+            "duration_ms": duration_ms,
+        },
+    )
+
+    return response
+
+
 @app.route("/", methods=["GET"])
 def index():
-    logger.info("Handling main endpoint request")
-
     uptime = get_uptime()
 
     response = {
@@ -118,11 +189,16 @@ def health():
     )
 
 
-# ------------------------------------------------------------------------------
-# Error Handling
-# ------------------------------------------------------------------------------
 @app.errorhandler(404)
 def not_found(error):
+    logger.warning(
+        "not_found",
+        extra={
+            "event": "error_404",
+            "method": request.method,
+            "path": request.path,
+        },
+    )
     return jsonify(
         {
             "error": "Not Found",
@@ -133,6 +209,15 @@ def not_found(error):
 
 @app.errorhandler(500)
 def internal_error(error):
+    logger.error(
+        "internal_server_error",
+        extra={
+            "event": "error_500",
+            "method": request.method,
+            "path": request.path,
+        },
+        exc_info=error,
+    )
     return jsonify(
         {
             "error": "Internal Server Error",
@@ -141,9 +226,14 @@ def internal_error(error):
     ), 500
 
 
-# ------------------------------------------------------------------------------
-# Entrypoint
-# ------------------------------------------------------------------------------
 if __name__ == "__main__":
-    logger.info("Starting DevOps Info Service")
+    logger.info(
+        "Starting DevOps Info Service",
+        extra={
+            "event": "startup",
+            "host": HOST,
+            "port": PORT,
+            "debug": DEBUG,
+        },
+    )
     app.run(host=HOST, port=PORT, debug=DEBUG)
