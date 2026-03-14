@@ -107,10 +107,27 @@ def test_index_endpoint(client):
     assert req_info["path"] == "/"
 
     endpoints = data["endpoints"]
-    assert len(endpoints) == 2
+    assert len(endpoints) == 3
     paths = {e["path"] for e in endpoints}
     assert "/" in paths
     assert "/health" in paths
+    assert "/metrics" in paths
+
+
+def test_metrics_endpoint(client):
+    """Test that /metrics endpoint is exposed and returns Prometheus format."""
+    client.get("/")
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "text/plain" in response.content_type
+
+    content = response.data.decode("utf-8")
+    assert "# HELP http_requests_total" in content
+    assert "# TYPE http_requests_total counter" in content
+    assert 'http_requests_total{endpoint="/",method="GET",status_code="200"}' in content
+    assert "# TYPE http_request_duration_seconds histogram" in content
+    assert "# TYPE http_requests_in_progress gauge" in content
 
 
 def test_health_endpoint(client):

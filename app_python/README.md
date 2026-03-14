@@ -41,6 +41,7 @@ DevOps Info Service - small Flask based service what return and report system me
 ## Available Endpoints
 - `GET /` - Returns system metadata including hostname, IP address, and current timestamp.
 - `GET /health` - Returns the health status of the service.
+- `GET /metrics` - Returns Prometheus metrics in text exposition format.
 
 
 ## Docker 

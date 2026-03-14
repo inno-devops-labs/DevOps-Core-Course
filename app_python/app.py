@@ -8,9 +8,40 @@ from datetime import datetime, timezone
 from typing import Dict
 
 from flask import Flask, request, jsonify, g
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from pythonjsonlogger import jsonlogger
 
 app = Flask(__name__)
+
+
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint", "status_code"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+    ["method", "endpoint"],
+)
+
+endpoint_calls = Counter(
+    "devops_info_endpoint_calls_total",
+    "Total calls per endpoint",
+    ["endpoint"],
+)
+
+system_info_duration_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "System information collection duration in seconds",
+)
 
 
 # take parameters from environment variables with defaults
@@ -45,15 +76,33 @@ logging.root.handlers = [handler]
 
 logger = logging.getLogger("devops-info-service")
 
+
+def normalize_endpoint(path: str) -> str:
+    if path in {"/", "/health", "/metrics"}:
+        return path
+    return "/other"
+
 # ── Request / response lifecycle hooks ─────────────────────────────────────
 @app.before_request
 def _before() -> None:
+    g.endpoint = normalize_endpoint(request.path)
     g.start_ts = time.monotonic()
+    http_requests_in_progress.labels(method=request.method, endpoint=g.endpoint).inc()
 
 
 @app.after_request
 def _after(response):  # type: ignore[return]
-    duration_ms = round((time.monotonic() - g.start_ts) * 1000, 2)
+    endpoint = getattr(g, "endpoint", normalize_endpoint(request.path))
+    method = request.method
+    status_code = str(response.status_code)
+    duration_seconds = time.monotonic() - g.start_ts
+    duration_ms = round(duration_seconds * 1000, 2)
+
+    http_requests_total.labels(method=method, endpoint=endpoint, status_code=status_code).inc()
+    http_request_duration_seconds.labels(method=method, endpoint=endpoint, status_code=status_code).observe(duration_seconds)
+    endpoint_calls.labels(endpoint=endpoint).inc()
+    http_requests_in_progress.labels(method=method, endpoint=endpoint).dec()
+
     xff = request.headers.get("X-Forwarded-For")
     client_ip = xff.split(",")[0].strip() if xff else request.remote_addr
     logger.info(
@@ -113,13 +162,16 @@ def get_request_info() -> Dict[str, object]:
 @app.route("/", methods=["GET"])
 def index():
     logger.info("Handling index request", extra={"path": request.path, "method": request.method})
+    with system_info_duration_seconds.time():
+        system_info = get_system_info()
+
     payload = {
         "service": {
             "name" : "devops-info-service",
             "version": "1.0.0",
             "description": "DevOps course info service"
         },
-        "system": get_system_info(),
+        "system": system_info,
         "runtime": {
             "uptime_seconds": get_uptime()["seconds"],
             "uptime_human": get_uptime()["human"],
@@ -130,6 +182,7 @@ def index():
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
     return jsonify(payload)
@@ -147,6 +200,11 @@ def health():
     )
     logger.debug("Health response", extra={"uptime": get_uptime()})
     return response, 200
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 # error handlers
 @app.errorhandler(404)

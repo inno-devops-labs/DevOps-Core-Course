@@ -50,6 +50,11 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/bin/promtail -config.file=/etc/promtail/config.yml -check-syntax || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -87,24 +92,69 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
+          cpus: "0.5"
           memory: 512M
         reservations:
           cpus: "0.25"
           memory: 128M
+
+  # ── Metrics storage and query ─────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=10GB
+    networks:
+      - logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      grafana:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      app-python:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
   # ── Python application ─────────────────────────────────────────────────
   app-python:
     image: zsalavat/devops-info-service-python:latest
     container_name: app-python
     ports:
-      - "8000:5000"
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
     networks:
       - logging
     restart: unless-stopped
     labels:
       logging: "promtail"
       app: "devops-python"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -117,6 +167,7 @@ services:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
   logging:
