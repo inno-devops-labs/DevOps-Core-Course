@@ -1,0 +1,34 @@
+---
+# Wipe logic runs first (when explicitly requested)
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+  block:
+    - name: Create app directory
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker-compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Deploy with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ web_app_compose_project_dir }}"
+        state: present
+        pull: always
+
+  rescue:
+    - name: Handle deployment failure
+      ansible.builtin.debug:
+        msg: "Deployment of {{ web_app_name }} failed"
