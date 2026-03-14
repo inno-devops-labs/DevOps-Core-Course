@@ -4,4 +4,4 @@ common_packages:
   - git
   - vim
   - htop
-timezone: UTC
+common_timezone: UTC

@@ -1,13 +1,39 @@
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+---
+- name: Manage common packages
+  become: true
+  tags:
+    - common
+    - packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+  rescue:
+    - name: Fix apt cache issues
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
+      register: common_apt_fix_result
+      changed_when: false
+      failed_when: false
+
+  always:
+    - name: Log completion of common package management
+      ansible.builtin.file:
+        path: /tmp/common_packages_completed.log
+        state: touch
+        mode: "0644"
 
 - name: Set timezone
-  timezone:
-    name: "{{ timezone }}"
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+  become: true
+  tags:
+    - common
