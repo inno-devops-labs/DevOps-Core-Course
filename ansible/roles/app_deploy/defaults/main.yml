@@ -1,6 +1,0 @@
----
-# Application deployment defaults
-app_port: 5000
-app_container_name: devops-app
-docker_image_tag: v0
-restart_policy: unless-stopped

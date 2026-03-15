@@ -1,9 +1,12 @@
 ---
 - name: Deploy application
   hosts: webservers
-  become: yes
-  vars_files:
-    - ../group_vars/all.yml
+  become: true
+
+  pre_tasks:
+    - name: Debug - show dockerhub_username
+      ansible.builtin.debug:
+        var: dockerhub_username
 
   roles:
-    - app_deploy
+    - web_app

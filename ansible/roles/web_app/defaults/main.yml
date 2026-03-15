@@ -1,0 +1,18 @@
+---
+# Application deployment defaults
+# All variables are prefixed with web_app_ for role namespace compliance
+web_app_app_name: devops-app
+web_app_app_port: 5000
+web_app_app_internal_port: 5000
+web_app_docker_tag: v0
+web_app_restart_policy: unless-stopped
+web_app_compose_project_dir: "/opt/{{ web_app_app_name }}"
+
+# Wipe Logic Control
+# Set to true to remove application completely
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false
+
+# Health check configuration
+web_app_app_healthcheck: true

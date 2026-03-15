@@ -1,0 +1,34 @@
+---
+# Wipe tasks for web application
+# Double-gating mechanism: requires both web_app_wipe=true AND tag web_app_wipe
+# This prevents accidental data loss
+
+- name: Wipe web application
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+  block:
+    - name: Check if compose project directory exists
+      ansible.builtin.stat:
+        path: "{{ web_app_compose_project_dir }}"
+      register: web_app_compose_dir_check
+
+    - name: Stop and remove containers with docker-compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ web_app_compose_project_dir }}"
+        state: absent
+      when: web_app_compose_dir_check.stat.exists
+
+    - name: Remove docker-compose.yml file
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+        state: absent
+
+    - name: Remove application directory
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
+        state: absent
+
+    - name: Log wipe completion
+      ansible.builtin.debug:
+        msg: "Application {{ web_app_app_name }} wiped successfully from {{ web_app_compose_project_dir }}"

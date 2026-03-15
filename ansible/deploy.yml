@@ -1,9 +1,7 @@
 ---
-- name: Complete site setup
+- name: Deploy application
   hosts: webservers
   become: true
 
   roles:
-    - common
-    - docker
     - web_app
