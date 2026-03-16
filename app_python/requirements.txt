@@ -13,3 +13,4 @@ requests==2.32.5
 urllib3==2.6.3
 Werkzeug==3.1.5
 zope.interface==8.2
+prometheus-client==0.23.1

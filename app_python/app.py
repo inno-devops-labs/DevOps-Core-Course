@@ -12,9 +12,12 @@ import os
 import platform
 import socket
 import sys
+import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, Response, g, jsonify, request
+from prometheus_client import (CONTENT_TYPE_LATEST, Counter, Gauge,
+                               Histogram, generate_latest)
 
 # Flask application instance
 app = Flask(__name__)
@@ -34,6 +37,27 @@ SERVICE = {
     "description": "DevOps course info service",
     "framework": "Flask",
 }
+
+# Prometheus metrics
+# Counter: total HTTP requests by method / endpoint / status code
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+# Histogram: request duration distribution
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint", "status_code"],
+)
+
+# Gauge: current number of requests being processed
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
 
 
 # JSON log formatter
@@ -147,6 +171,17 @@ def request_info():
     }
 
 
+def normalized_endpoint():
+    """
+    Return a normalized endpoint for metrics labels.
+
+    Uses Flask route rule when available, fallback to raw request path.
+    """
+    if request.url_rule is not None:
+        return request.url_rule.rule
+    return request.path
+
+
 def endpoints_info():
     """
     Build an API endpoints list dynamically from Flask URL map.
@@ -199,6 +234,12 @@ def health():
         "uptime_seconds": rt["uptime_seconds"],
     }
     return jsonify(payload)
+
+
+@app.get("/metrics")
+def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(generate_latest(), content_type=CONTENT_TYPE_LATEST)
 
 
 # Test-only endpoint to trigger HTTP 500 (uncomment to verify error handler)
@@ -256,6 +297,14 @@ def internal_error(error):
 def log_requests():
     """Log basic request metadata before handling."""
 
+    # Skip Prometheus self-scrape from app HTTP metrics
+    g.track_metrics = request.path != "/metrics"
+
+    # Save request start time and increment in-progress gauge
+    if g.track_metrics:
+        g.request_start_time = time.perf_counter()
+        http_requests_in_progress.inc()
+
     info = request_info()
     app.logger.info(
         "request_started",
@@ -273,16 +322,44 @@ def log_response(response):
     """Log response status code after handling."""
 
     info = request_info()
-    app.logger.info(
-        "request_finished",
-        extra={
-            "method": info["method"],
-            "path": info["path"],
-            "status_code": response.status_code,
-            "client_ip": info["client_ip"],
-            "user_agent": info["user_agent"],
-        },
-    )
+
+    # Record Prometheus metrics after request is processed
+    if getattr(g, "track_metrics", False):
+        duration = time.perf_counter() - g.request_start_time
+        endpoint = normalized_endpoint()
+        status_code = str(response.status_code)
+
+        http_requests_total.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_code=status_code,
+        ).inc()
+
+        http_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_code=status_code,
+        ).observe(duration)
+
+        http_requests_in_progress.dec()
+
+        latency_ms = round(duration * 1000, 2)
+    else:
+        latency_ms = None
+
+    extra_payload = {
+        "method": info["method"],
+        "path": info["path"],
+        "status_code": response.status_code,
+        "client_ip": info["client_ip"],
+        "user_agent": info["user_agent"],
+    }
+
+    # Add measured latency for normal app requests
+    if latency_ms is not None:
+        extra_payload["latency_ms"] = latency_ms
+
+    app.logger.info("request_finished", extra=extra_payload)
 
     return response
 
