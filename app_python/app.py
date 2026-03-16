@@ -4,7 +4,14 @@ import platform
 import socket
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request, g
+from flask import Flask, Response, jsonify, request, g
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 from pythonjsonlogger import jsonlogger
 
 
@@ -20,30 +27,86 @@ def create_app() -> Flask:
 
     start_time = datetime.now(timezone.utc)
 
+    http_requests_total = Counter(
+        "http_requests_total",
+        "Total HTTP requests",
+        ["method", "endpoint", "status"],
+    )
+
+    http_request_duration_seconds = Histogram(
+        "http_request_duration_seconds",
+        "HTTP request duration seconds",
+        ["method", "endpoint"],
+    )
+
+    http_requests_in_progress = Gauge(
+        "http_requests_in_progress",
+        "HTTP requests currently being processed",
+    )
+
+    endpoint_calls = Counter(
+        "devops_info_endpoint_calls",
+        "Endpoint calls",
+        ["endpoint"],
+    )
+
+    system_info_duration = Histogram(
+        "devops_info_system_collection_seconds",
+        "System info collection time",
+    )
+
     def uptime_seconds() -> int:
         delta = datetime.now(timezone.utc) - start_time
         return int(delta.total_seconds())
 
     @app.before_request
-    def before_request_logging() -> None:
+    def before_request_metrics() -> None:
         g.request_start_time = datetime.now(timezone.utc)
+        http_requests_in_progress.inc()
 
     @app.after_request
-    def after_request_logging(response):
-        logger.info(
-            "request",
-            extra={
-                "method": request.method,
-                "path": request.path,
-                "status_code": response.status_code,
-                "client_ip": request.remote_addr,
-                "user_agent": request.headers.get("User-Agent", ""),
-            },
-        )
+    def after_request_metrics(response):
+        try:
+            start_time_local = getattr(g, "request_start_time", None)
+            if start_time_local is not None:
+                duration = (
+                    datetime.now(timezone.utc) - start_time_local
+                ).total_seconds()
+                http_request_duration_seconds.labels(
+                    method=request.method,
+                    endpoint=request.path,
+                ).observe(duration)
+
+            http_requests_total.labels(
+                method=request.method,
+                endpoint=request.path,
+                status=str(response.status_code),
+            ).inc()
+
+            logger.info(
+                "request",
+                extra={
+                    "method": request.method,
+                    "path": request.path,
+                    "status_code": response.status_code,
+                    "client_ip": request.remote_addr,
+                    "user_agent": request.headers.get("User-Agent", ""),
+                },
+            )
+        finally:
+            http_requests_in_progress.dec()
+
         return response
 
     @app.errorhandler(Exception)
     def handle_exception(exc):
+        http_requests_total.labels(
+            method=request.method,
+            endpoint=request.path,
+            status="500",
+        ).inc()
+        http_requests_in_progress.dec()
+
         logger.error(
             "unhandled_exception",
             extra={
@@ -58,6 +121,9 @@ def create_app() -> Flask:
 
     @app.route("/", methods=["GET"])
     def index():
+        endpoint_calls.labels(endpoint="/").inc()
+
+        system_start = datetime.now(timezone.utc)
         system_info = {
             "hostname": socket.gethostname(),
             "platform": platform.system(),
@@ -66,6 +132,10 @@ def create_app() -> Flask:
             "cpu_count": os.cpu_count(),
             "python_version": platform.python_version(),
         }
+        system_duration = (
+            datetime.now(timezone.utc) - system_start
+        ).total_seconds()
+        system_info_duration.observe(system_duration)
 
         now = datetime.now(timezone.utc)
         uptime = uptime_seconds()
@@ -107,6 +177,11 @@ def create_app() -> Flask:
                     "method": "GET",
                     "description": "Health check",
                 },
+                {
+                    "path": "/metrics",
+                    "method": "GET",
+                    "description": "Prometheus metrics",
+                },
             ],
         }
 
@@ -114,6 +189,8 @@ def create_app() -> Flask:
 
     @app.route("/health", methods=["GET"])
     def health():
+        endpoint_calls.labels(endpoint="/health").inc()
+
         return jsonify(
             {
                 "status": "healthy",
@@ -121,6 +198,10 @@ def create_app() -> Flask:
                 "uptime_seconds": uptime_seconds(),
             }
         )
+
+    @app.route("/metrics", methods=["GET"])
+    def metrics() -> Response:
+        return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
     def run() -> None:
         app.run(host=host, port=port)

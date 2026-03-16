@@ -1,0 +1,77 @@
+{
+  "title": "DevOps Info Service - Metrics",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Request Rate by Endpoint",
+      "targets": [
+        {
+          "expr": "sum by (endpoint) (rate(http_requests_total[5m]))",
+          "legendFormat": "{{endpoint}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Error Rate (5xx)",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m]))",
+          "legendFormat": "errors"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 Request Duration",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "p95 latency"
+        }
+      ]
+    },
+    {
+      "type": "heatmap",
+      "title": "Request Duration Heatmap",
+      "targets": [
+        {
+          "expr": "rate(http_request_duration_seconds_bucket[5m])"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Requests In Progress",
+      "targets": [
+        {
+          "expr": "http_requests_in_progress",
+          "legendFormat": "in progress"
+        }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "Status Code Distribution",
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(http_requests_total[5m]))",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "App Uptime (up metric)",
+      "targets": [
+        {
+          "expr": "up{job=\"app\"}",
+          "legendFormat": "up"
+        }
+      ]
+    }
+  ]
+}
+
