@@ -92,6 +92,39 @@ services:
           memory: 256M
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    restart: unless-stopped
+
   app-python:
     build:
       context: ../app_python
@@ -105,6 +138,12 @@ services:
     labels:
       logging: "promtail"
       app: "devops-python"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -125,6 +164,12 @@ services:
     labels:
       logging: "promtail"
       app: "devops-go"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -138,6 +183,7 @@ services:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
   logging:

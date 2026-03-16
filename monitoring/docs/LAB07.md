@@ -43,7 +43,7 @@ curl http://localhost:3000/api/health  # Grafana
 
 **Evidence (Task 1) — Grafana Explore:** logs from at least 3 containers.
 
-![Grafana Explore — logs from at least 3 containers](screenshots/t1_grafana_logs.png)
+![Grafana Explore — logs from at least 3 containers](lab_7_screenshots/t1_grafana_logs.png)
 
 Generate test traffic:
 
@@ -105,19 +105,19 @@ Logging hooks `@app.before_request` and `@app.after_request` capture every HTTP 
 
 **Evidence (Task 2)** — JSON log output from app:
 
-![Application JSON log output (terminal or Loki)](screenshots/t2_json_log_output.png)
+![Application JSON log output (terminal or Loki)](lab_7_screenshots/t2_json_log_output.png)
 
 **Evidence (Task 2)** — Grafana showing logs from both applications:
 
-![Grafana Explore — logs from both apps](screenshots/t2_grafana_logs.png)
+![Grafana Explore — logs from both apps](lab_7_screenshots/t2_grafana_logs.png)
 
 **Evidence (Task 2)** — Grafana showing logs from 3+ LogQL queries:
 
-![Grafana Explore — logs from both apps](screenshots/t2_q1.png)
+![Grafana Explore — logs from both apps](lab_7_screenshots/t2_q1.png)
 
-![Grafana Explore — logs from both apps](screenshots/t2_q2.png)
+![Grafana Explore — logs from both apps](lab_7_screenshots/t2_q2.png)
 
-![Grafana Explore — logs from both apps](screenshots/t2_q3.png)
+![Grafana Explore — logs from both apps](lab_7_screenshots/t2_q3.png)
 
 ## Dashboard
 
@@ -132,17 +132,17 @@ Four panels created in Grafana:
 
 **Evidence (Task 3)** — dashboard with all 4 panels:
 
-![Grafana dashboard with four panels](screenshots/t3_dashboard.png)
+![Grafana dashboard with four panels](lab_7_screenshots/t3_dashboard.png)
 
 ## Production Config
 
 **Evidence (Task 4)** — all services healthy:
 
-![Grafana dashboard with four panels](screenshots/t4.png)
+![Grafana dashboard with four panels](lab_7_screenshots/t4.png)
 
 **Evidence (Task 4)** — Grafana login required (no anonymous access):
 
-![Grafana login page (login required)](screenshots/t4_login.png)
+![Grafana login page (login required)](lab_7_screenshots/t4_login.png)
 
 - **Anonymous auth disabled** — Grafana requires login, credentials in `.env` (not in repo)
 - **Resource limits** on all services (CPU + memory limits and reservations)

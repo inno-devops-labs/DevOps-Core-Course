@@ -92,6 +92,39 @@ services:
           memory: 256M
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v{{ prometheus_version }}
+    container_name: prometheus
+    ports:
+      - "{{ prometheus_port }}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time={{ prometheus_retention_days }}d'
+      - '--storage.tsdb.retention.size={{ prometheus_retention_size }}'
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ resource_limits.prometheus.cpus }}"
+          memory: {{ resource_limits.prometheus.memory }}
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    restart: unless-stopped
+
   app-python:
     image: {{ app_python_image }}:{{ app_python_tag }}
     container_name: app-python
@@ -102,6 +135,12 @@ services:
     labels:
       logging: "promtail"
       app: "devops-python"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:{{ app_python_internal_port }}/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -122,6 +161,12 @@ services:
     labels:
       logging: "promtail"
       app: "devops-go"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ app_go_internal_port }}/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -135,6 +180,7 @@ services:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
   logging:

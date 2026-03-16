@@ -4,16 +4,34 @@ monitoring_dir: /opt/monitoring
 loki_version: "3.0.0"
 promtail_version: "3.0.0"
 grafana_version: "12.3.1"
+prometheus_version: "3.9.0"
 
 loki_port: 3100
 grafana_port: 3000
 promtail_port: 9080
+prometheus_port: 9090
 
 loki_retention_period: "168h"
 loki_schema_version: v13
 
+prometheus_retention_days: 15
+prometheus_retention_size: "10GB"
+prometheus_scrape_interval: "15s"
+
+prometheus_targets:
+  - job: "prometheus"
+    targets: ["localhost:9090"]
+  - job: "loki"
+    targets: ["loki:3100"]
+    path: "/metrics"
+  - job: "grafana"
+    targets: ["grafana:3000"]
+    path: "/metrics"
+  - job: "app"
+    targets: ["app-python:5000"]
+    path: "/metrics"
+
 grafana_admin_user: admin
-# Password must be set via env GF_SECURITY_ADMIN_PASSWORD or group_vars/vault
 grafana_admin_password: "{{ lookup('env', 'GF_SECURITY_ADMIN_PASSWORD') }}"
 
 app_python_image: karishka1222/devops-python-app
@@ -36,6 +54,9 @@ resource_limits:
   grafana:
     cpus: "1.0"
     memory: "512M"
+  prometheus:
+    cpus: "1.0"
+    memory: "1G"
   app:
     cpus: "0.5"
     memory: "256M"

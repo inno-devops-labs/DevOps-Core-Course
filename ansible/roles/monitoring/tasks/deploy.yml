@@ -17,6 +17,16 @@
   delay: 10
   until: loki_ready.status == 200
 
+- name: Wait for Prometheus to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ prometheus_port }}/-/healthy"
+    return_content: true
+    status_code: 200
+  register: prometheus_ready
+  retries: 12
+  delay: 10
+  until: prometheus_ready.status == 200
+
 - name: Wait for Grafana to be ready
   ansible.builtin.uri:
     url: "http://localhost:{{ grafana_port }}/api/health"
@@ -32,4 +42,5 @@
     msg: >
       Monitoring stack deployed.
       Loki: http://localhost:{{ loki_port }}
+      Prometheus: http://localhost:{{ prometheus_port }}
       Grafana: http://localhost:{{ grafana_port }}

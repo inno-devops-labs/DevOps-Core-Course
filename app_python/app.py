@@ -4,11 +4,13 @@ Main application module
 """
 import os
 import json
+import time
 import socket
 import platform
 import logging
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 
 class JSONFormatter(logging.Formatter):
@@ -50,21 +52,52 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 # Application start time for uptime calculation
 START_TIME = datetime.now(timezone.utc)
 
+# ── Prometheus metrics ──────────────────────────────────────────────
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint'],
+    buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0]
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
+
+endpoint_calls = Counter(
+    'devops_info_endpoint_calls',
+    'Endpoint call count',
+    ['endpoint']
+)
+
+system_info_duration = Histogram(
+    'devops_info_system_collection_seconds',
+    'Time spent collecting system information'
+)
+
 
 def get_system_info():
     """Collect system information."""
-    try:
-        return {
-            'hostname': socket.gethostname(),
-            'platform': platform.system(),
-            'platform_version': platform.version(),
-            'architecture': platform.machine(),
-            'cpu_count': os.cpu_count(),
-            'python_version': platform.python_version()
-        }
-    except Exception as e:
-        logger.error(f"Error getting system info: {e}")
-        return {}
+    with system_info_duration.time():
+        try:
+            return {
+                'hostname': socket.gethostname(),
+                'platform': platform.system(),
+                'platform_version': platform.version(),
+                'architecture': platform.machine(),
+                'cpu_count': os.cpu_count(),
+                'python_version': platform.python_version()
+            }
+        except Exception as e:
+            logger.error(f"Error getting system info: {e}")
+            return {}
 
 
 def get_uptime():
@@ -99,7 +132,11 @@ def get_request_info():
 
 
 @app.before_request
-def log_request():
+def before_request_hook():
+    if request.path == '/metrics':
+        return
+    request._start_time = time.monotonic()
+    http_requests_in_progress.inc()
     logger.info("Incoming request", extra={
         "method": request.method,
         "path": request.path,
@@ -108,7 +145,21 @@ def log_request():
 
 
 @app.after_request
-def log_response(response):
+def after_request_hook(response):
+    if request.path == '/metrics':
+        return response
+    duration = time.monotonic() - getattr(request, '_start_time', time.monotonic())
+    endpoint = request.path
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status=str(response.status_code)
+    ).inc()
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=endpoint
+    ).observe(duration)
+    http_requests_in_progress.dec()
     logger.info("Response sent", extra={
         "method": request.method,
         "path": request.path,
@@ -118,10 +169,16 @@ def log_response(response):
     return response
 
 
+@app.route('/metrics')
+def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
 @app.route('/')
 def index():
     """Main endpoint providing comprehensive service and system information."""
-
+    endpoint_calls.labels(endpoint='/').inc()
     uptime = get_uptime()
 
     response_data = {
@@ -149,6 +206,11 @@ def index():
                 'path': '/health',
                 'method': 'GET',
                 'description': 'Health check'
+            },
+            {
+                'path': '/metrics',
+                'method': 'GET',
+                'description': 'Prometheus metrics'
             }
         ]
     }
@@ -159,7 +221,7 @@ def index():
 @app.route('/health')
 def health():
     """Health check endpoint for monitoring and orchestration tools."""
-
+    endpoint_calls.labels(endpoint='/health').inc()
     uptime = get_uptime()
 
     return jsonify({

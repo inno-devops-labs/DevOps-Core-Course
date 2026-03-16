@@ -8,7 +8,9 @@
     - "{{ monitoring_dir }}"
     - "{{ monitoring_dir }}/loki"
     - "{{ monitoring_dir }}/promtail"
+    - "{{ monitoring_dir }}/prometheus"
     - "{{ monitoring_dir }}/grafana/provisioning/datasources"
+    - "{{ monitoring_dir }}/grafana/provisioning/dashboards"
   become: true
 
 - name: Template Loki config
@@ -25,9 +27,16 @@
     mode: "0644"
   become: true
 
-- name: Template Grafana datasource provisioning
+- name: Template Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_dir }}/prometheus/prometheus.yml"
+    mode: "0644"
+  become: true
+
+- name: Provision Grafana datasources
   ansible.builtin.copy:
-    dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/loki.yml"
+    dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/datasources.yml"
     mode: "0644"
     content: |
       apiVersion: 1
@@ -36,8 +45,45 @@
           type: loki
           access: proxy
           url: http://loki:{{ loki_port }}
+          isDefault: false
+          editable: true
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus:{{ prometheus_port }}
           isDefault: true
           editable: true
+  become: true
+
+- name: Remove old Loki-only datasource file
+  ansible.builtin.file:
+    path: "{{ monitoring_dir }}/grafana/provisioning/datasources/loki.yml"
+    state: absent
+  become: true
+
+- name: Provision Grafana dashboard provider config
+  ansible.builtin.copy:
+    dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
+    content: |
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /etc/grafana/provisioning/dashboards
+            foldersFromFilesStructure: false
+  become: true
+
+- name: Provision Grafana application dashboard
+  ansible.builtin.copy:
+    src: grafana-app-dashboard.json
+    dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/app-dashboard.json"
+    mode: "0644"
   become: true
 
 - name: Template docker-compose file
