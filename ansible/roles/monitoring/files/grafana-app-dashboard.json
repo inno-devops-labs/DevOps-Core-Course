@@ -13,8 +13,10 @@
       "title": "Request Rate",
       "type": "timeseries",
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
       "targets": [
         {
+          "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
           "expr": "sum(rate(http_requests_total[5m])) by (endpoint)",
           "legendFormat": "{{endpoint}}",
           "refId": "A"
@@ -22,8 +24,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
-          "displayName": "{{endpoint}}"
+          "unit": "reqps"
         }
       }
     },
@@ -32,8 +33,10 @@
       "title": "Error Rate (5xx)",
       "type": "timeseries",
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
       "targets": [
         {
+          "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
           "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m]))",
           "legendFormat": "errors/s",
           "refId": "A"
@@ -51,8 +54,10 @@
       "title": "Request Duration p95",
       "type": "timeseries",
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
       "targets": [
         {
+          "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
           "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
           "legendFormat": "p95 latency",
           "refId": "A"
@@ -69,8 +74,10 @@
       "title": "Active Requests",
       "type": "gauge",
       "gridPos": {"h": 8, "w": 6, "x": 12, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
       "targets": [
         {
+          "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
           "expr": "http_requests_in_progress",
           "legendFormat": "in progress",
           "refId": "A"
@@ -79,6 +86,8 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "min": 0,
+          "max": 20,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -95,8 +104,10 @@
       "title": "App Uptime",
       "type": "stat",
       "gridPos": {"h": 8, "w": 6, "x": 18, "y": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
       "targets": [
         {
+          "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
           "expr": "up{job=\"app\"}",
           "legendFormat": "status",
           "refId": "A"
@@ -106,8 +117,21 @@
         "defaults": {
           "unit": "short",
           "mappings": [
-            {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}
-          ]
+            {
+              "type": "value",
+              "options": {
+                "0": {"text": "DOWN", "color": "red", "index": 0},
+                "1": {"text": "UP", "color": "green", "index": 1}
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "green", "value": 1}
+            ]
+          }
         }
       }
     },
@@ -116,27 +140,42 @@
       "title": "Status Code Distribution",
       "type": "piechart",
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
       "targets": [
         {
+          "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
           "expr": "sum by (status) (rate(http_requests_total[5m]))",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        }
+      }
     },
     {
       "id": 7,
       "title": "Request Duration Heatmap",
       "type": "heatmap",
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
       "targets": [
         {
-          "expr": "rate(http_request_duration_seconds_bucket[5m])",
+          "datasource": {"type": "prometheus", "uid": "prometheus-ds"},
+          "expr": "sum(rate(http_request_duration_seconds_bucket[5m])) by (le)",
           "legendFormat": "{{le}}",
           "refId": "A",
           "format": "heatmap"
         }
-      ]
+      ],
+      "options": {
+        "calculate": false,
+        "yAxis": {
+          "unit": "s"
+        }
+      }
     }
   ]
 }

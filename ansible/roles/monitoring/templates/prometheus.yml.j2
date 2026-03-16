@@ -6,7 +6,11 @@ scrape_configs:
 {% for target in prometheus_targets %}
   - job_name: '{{ target.job }}'
     static_configs:
+{% if target.use_host_gateway is defined and target.use_host_gateway %}
+      - targets: ['host.docker.internal:{{ target.port }}']
+{% else %}
       - targets: {{ target.targets | to_json }}
+{% endif %}
 {% if target.path is defined %}
     metrics_path: '{{ target.path }}'
 {% endif %}

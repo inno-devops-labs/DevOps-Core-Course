@@ -27,7 +27,7 @@ prometheus_targets:
   - job: "grafana"
     targets: ["grafana:3000"]
   - job: "app"
-    targets: ["app-python:8000"]
+    targets: ["host.docker.internal:8000"]
     path: "/metrics"
 
 # Resource limits
