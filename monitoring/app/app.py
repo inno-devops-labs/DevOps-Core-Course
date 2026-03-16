@@ -6,6 +6,40 @@ import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
+
+# --------------- Prometheus metrics ---------------
+
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+
+devops_info_endpoint_calls = Counter(
+    "devops_info_endpoint_calls",
+    "Endpoint calls by endpoint name",
+    ["endpoint"],
+)
+
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time spent collecting system information",
+)
+
+# --------------- JSON logging ---------------
+
 
 class JSONFormatter(logging.Formatter):
     def format(self, record):
@@ -47,6 +81,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(payload).encode())
 
     def do_GET(self):
+        start = time.time()
+        http_requests_in_progress.inc()
         client_ip = self.client_address[0]
 
         logger.info(
@@ -54,13 +90,23 @@ class Handler(BaseHTTPRequestHandler):
             extra={"method": "GET", "path": self.path, "client_ip": client_ip},
         )
 
+        status_code = 200
         try:
+            if self.path == "/metrics":
+                data = generate_latest()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(data)
+                return
+
             if self.path == "/health":
                 payload = {
                     "status": "healthy",
                     "uptime_seconds": int(time.time() - START_TIME),
                 }
                 self._send_json(200, payload)
+                devops_info_endpoint_calls.labels(endpoint="/health").inc()
                 logger.info(
                     "Health check OK",
                     extra={
@@ -73,12 +119,14 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             if self.path == "/":
-                payload = {
-                    "message": "Hello from DevOps monitoring lab",
-                    "app_name": APP_NAME,
-                    "hostname": socket.gethostname(),
-                }
+                with devops_info_system_collection_seconds.time():
+                    payload = {
+                        "message": "Hello from DevOps monitoring lab",
+                        "app_name": APP_NAME,
+                        "hostname": socket.gethostname(),
+                    }
                 self._send_json(200, payload)
+                devops_info_endpoint_calls.labels(endpoint="/").inc()
                 logger.info(
                     "Root endpoint served",
                     extra={
@@ -90,7 +138,9 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 return
 
+            status_code = 404
             self._send_json(404, {"error": "not found", "path": self.path})
+            devops_info_endpoint_calls.labels(endpoint="/not_found").inc()
             logger.warning(
                 "Route not found",
                 extra={
@@ -102,6 +152,7 @@ class Handler(BaseHTTPRequestHandler):
             )
 
         except Exception:
+            status_code = 500
             logger.exception(
                 "Unhandled error",
                 extra={
@@ -112,6 +163,13 @@ class Handler(BaseHTTPRequestHandler):
                 },
             )
             self._send_json(500, {"error": "internal server error"})
+
+        finally:
+            endpoint = self.path if self.path in ("/", "/health") else "/other"
+            duration = time.time() - start
+            http_requests_total.labels(method="GET", endpoint=endpoint, status=str(status_code)).inc()
+            http_request_duration_seconds.labels(method="GET", endpoint=endpoint).observe(duration)
+            http_requests_in_progress.dec()
 
     def log_message(self, format, *args):
         pass

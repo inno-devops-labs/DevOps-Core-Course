@@ -8,6 +8,7 @@
     - "{{ monitoring_base_dir }}"
     - "{{ monitoring_base_dir }}/loki"
     - "{{ monitoring_base_dir }}/promtail"
+    - "{{ monitoring_base_dir }}/prometheus"
     - "{{ monitoring_base_dir }}/grafana/provisioning/datasources"
     - "{{ monitoring_base_dir }}/grafana/provisioning/dashboards"
     - "{{ monitoring_base_dir }}/grafana/dashboards"
@@ -28,6 +29,13 @@
     mode: "0644"
   notify: restart monitoring stack
 
+- name: Template Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_base_dir }}/prometheus/prometheus.yml"
+    mode: "0644"
+  notify: restart monitoring stack
+
 - name: Template Docker Compose file
   ansible.builtin.template:
     src: docker-compose.yml.j2
@@ -38,7 +46,7 @@
 - name: Template Grafana datasource provisioning
   ansible.builtin.template:
     src: grafana-datasource.yml.j2
-    dest: "{{ monitoring_base_dir }}/grafana/provisioning/datasources/loki.yml"
+    dest: "{{ monitoring_base_dir }}/grafana/provisioning/datasources/datasources.yml"
     mode: "0644"
   notify: restart monitoring stack
 
@@ -68,13 +76,17 @@
   loop:
     - { src: app.py, dest: app.py }
     - { src: Dockerfile, dest: Dockerfile }
+    - { src: requirements.txt, dest: requirements.txt }
   notify: restart monitoring stack
 
-- name: Copy Grafana dashboard JSON
+- name: Copy Grafana dashboard JSON files
   ansible.builtin.copy:
-    src: logs-dashboard.json
-    dest: "{{ monitoring_base_dir }}/grafana/dashboards/logs.json"
+    src: "{{ item.src }}"
+    dest: "{{ monitoring_base_dir }}/grafana/dashboards/{{ item.dest }}"
     mode: "0644"
+  loop:
+    - { src: logs-dashboard.json, dest: logs.json }
+    - { src: metrics-dashboard.json, dest: metrics.json }
   notify: restart monitoring stack
 
 - name: Create .env file for Grafana secrets
