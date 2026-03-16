@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py /app/app.py
 
 # Document the port (default app port)
-EXPOSE 5000
+EXPOSE 8005
 
 # Switch to non-root user
 USER app

@@ -1,0 +1,114 @@
+services:
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    command: -config.file=/etc/loki/config.yml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    networks: [logging]
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      app: "loki"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3100/ready >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    ports:
+      - "9080:9080"
+    networks: [logging]
+    depends_on: [loki]
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      app: "promtail"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    networks: [logging]
+    depends_on: [loki]
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+      app: "grafana"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  app-python:
+    image: akakii98/devops-info-python:latest
+    container_name: app-python
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8005"
+    ports:
+      - "8005:8005"
+    networks: [logging]
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+networks:
+  logging:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:
