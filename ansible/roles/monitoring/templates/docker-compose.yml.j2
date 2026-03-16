@@ -63,6 +63,8 @@ services:
       - "{{ grafana_port }}:3000"
     volumes:
       - grafana-data:/var/lib/grafana
+      - {{ monitoring_dir }}/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - {{ monitoring_dir }}/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_SECURITY_ADMIN_USER={{ grafana_admin_user }}
@@ -90,6 +92,64 @@ services:
       logging: "promtail"
       app: "grafana"
 
+  prometheus:
+    image: prom/prometheus:v{{ prometheus_version }}
+    container_name: prometheus
+    ports:
+      - "{{ prometheus_port }}:9090"
+    volumes:
+      - {{ monitoring_dir }}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time={{ prometheus_retention_days }}d'
+      - '--storage.tsdb.retention.size={{ prometheus_retention_size }}'
+    networks:
+      - logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ prometheus_cpu_limit }}"
+          memory: {{ prometheus_memory_limit }}
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+
+  app-python:
+    image: devops-info-service:latest
+    container_name: app-python
+    ports:
+      - "{{ app_python_port }}:8000"
+    networks:
+      - logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ app_cpu_limit }}"
+          memory: {{ app_memory_limit }}
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+
 networks:
   logging:
     driver: bridge
@@ -97,3 +157,4 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:

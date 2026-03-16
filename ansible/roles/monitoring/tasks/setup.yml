@@ -8,6 +8,9 @@
     - "{{ monitoring_dir }}"
     - "{{ monitoring_dir }}/loki"
     - "{{ monitoring_dir }}/promtail"
+    - "{{ monitoring_dir }}/prometheus"
+    - "{{ monitoring_dir }}/grafana/provisioning/datasources"
+    - "{{ monitoring_dir }}/grafana/provisioning/dashboards"
 
 - name: Template Loki configuration
   ansible.builtin.template:
@@ -19,6 +22,30 @@
   ansible.builtin.template:
     src: promtail-config.yml.j2
     dest: "{{ monitoring_dir }}/promtail/config.yml"
+    mode: "0644"
+
+- name: Template Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_dir }}/prometheus/prometheus.yml"
+    mode: "0644"
+
+- name: Copy Grafana datasources provisioning
+  ansible.builtin.template:
+    src: grafana-datasources.yml.j2
+    dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/datasources.yml"
+    mode: "0644"
+
+- name: Copy Grafana dashboards provider config
+  ansible.builtin.copy:
+    src: grafana-dashboards-provider.yml
+    dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
+
+- name: Copy Grafana app dashboard JSON
+  ansible.builtin.copy:
+    src: grafana-app-dashboard.json
+    dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/app-dashboard.json"
     mode: "0644"
 
 - name: Template Docker Compose file
