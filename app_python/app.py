@@ -12,10 +12,26 @@ from datetime import datetime, timezone
 import uvicorn
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 from pythonjsonlogger import jsonlogger
 from starlette.exceptions import HTTPException
 
 app = FastAPI()
+
+# Initialize Prometheus instrumentation
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=False,
+    should_respect_env_var=False,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics"],
+    env_var_name="ENABLE_METRICS",
+    inprogress_name="http_requests_in_progress",
+    inprogress_labels=True,
+)
+
+# Instrument the app
+instrumentator.instrument(app).expose(app, endpoint="/metrics")
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -258,11 +274,12 @@ if __name__ == "__main__":
     )
 
     # Disable uvicorn access logs to keep only JSON logs
+    # Disable reload in production to avoid metric registration conflicts
     uvicorn.run(
         "app:app",
         host=HOST,
         port=PORT,
-        reload=True,
+        reload=DEBUG,  # Only reload in debug mode
         log_config=None,  # Disable default logging
         access_log=False  # Disable access logs
     )

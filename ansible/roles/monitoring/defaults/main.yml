@@ -1,18 +1,27 @@
 ---
 # Monitoring role default variables
+# Directory paths
+monitoring_dir: "{{ ansible_env.HOME }}/monitoring"
+
 
 # Service versions
 loki_version: "3.0.0"
 promtail_version: "3.0.0"
 grafana_version: "12.3.1"
+prometheus_version: "3.9.0"
 
 # Ports
 loki_port: 3100
 grafana_port: 3000
 promtail_port: 9080
+prometheus_port: 9090
 
 # Retention
 log_retention_period: "168h"  # 7 days
+prometheus_retention_time: "15d"
+prometheus_retention_size: "10GB"
+prometheus_scrape_interval: "15s"
+prometheus_evaluation_interval: "15s"
 
 # Resource limits
 loki_cpu_limit: "1.0"
@@ -30,6 +39,11 @@ grafana_memory_limit: "1G"
 grafana_cpu_reservation: "0.5"
 grafana_memory_reservation: "512M"
 
+prometheus_cpu_limit: "1.0"
+prometheus_memory_limit: "1G"
+prometheus_cpu_reservation: "0.5"
+prometheus_memory_reservation: "512M"
+
 # Grafana settings
 grafana_admin_password: "admin123"
 grafana_anonymous_enabled: false
@@ -37,8 +51,19 @@ grafana_anonymous_enabled: false
 # Loki schema version
 loki_schema_version: "v13"
 
-# Monitoring directory
-monitoring_dir: "/opt/monitoring"
-
 # Docker Compose version
 docker_compose_version: "3.8"
+
+# Prometheus scrape targets
+prometheus_targets:
+  - job: "prometheus"
+    targets: ["localhost:9090"]
+  - job: "loki"
+    targets: ["loki:3100"]
+    path: "/metrics"
+  - job: "grafana"
+    targets: ["grafana:3000"]
+    path: "/metrics"
+  - job: "app"
+    targets: ["app-python:8000"]
+    path: "/metrics"

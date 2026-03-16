@@ -1,0 +1,60 @@
+---
+# Grafana dashboard provisioning tasks
+
+- name: Create Grafana provisioning directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ monitoring_dir }}/grafana/provisioning"
+    - "{{ monitoring_dir }}/grafana/provisioning/dashboards"
+    - "{{ monitoring_dir }}/grafana/provisioning/datasources"
+
+- name: Provision Grafana dashboards
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/"
+    mode: '0644'
+  loop:
+    - grafana-app-dashboard.json
+    - grafana-logs-dashboard.json
+  notify: Restart monitoring stack
+
+- name: Create dashboard provisioning config
+  ansible.builtin.copy:
+    content: |
+      apiVersion: 1
+      providers:
+        - name: 'Default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          updateIntervalSeconds: 10
+          allowUiUpdates: true
+          options:
+            path: /var/lib/grafana/dashboards
+    dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: '0644'
+  notify: Restart monitoring stack
+
+- name: Create datasources provisioning config
+  ansible.builtin.copy:
+    content: |
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus:9090
+          isDefault: true
+          editable: true
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki:3100
+          editable: true
+    dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/datasources.yml"
+    mode: '0644'
+  notify: Restart monitoring stack

@@ -1,0 +1,17 @@
+global:
+  scrape_interval: {{ prometheus_scrape_interval }}
+  evaluation_interval: {{ prometheus_evaluation_interval }}
+
+# Storage retention is configured via command-line flags:
+# --storage.tsdb.retention.time={{ prometheus_retention_time }}
+# --storage.tsdb.retention.size={{ prometheus_retention_size }}
+
+scrape_configs:
+{% for target in prometheus_targets %}
+  - job_name: '{{ target.job }}'
+    static_configs:
+      - targets: {{ target.targets }}
+{% if target.path is defined %}
+    metrics_path: '{{ target.path }}'
+{% endif %}
+{% endfor %}

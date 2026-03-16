@@ -2,11 +2,11 @@
 # Deployment tasks for monitoring stack
 
 - name: Deploy monitoring stack with Docker Compose
-  community.docker.docker_compose_v2:
-    project_src: "{{ monitoring_dir }}"
-    state: present
-    pull: always
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ monitoring_dir }}"
   register: monitoring_deploy
+  changed_when: "'Creating' in monitoring_deploy.stdout or 'Starting' in monitoring_deploy.stdout or 'Recreating' in monitoring_deploy.stdout"
 
 - name: Wait for Loki to be ready
   ansible.builtin.uri:

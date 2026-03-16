@@ -63,6 +63,9 @@ services:
       - "{{ grafana_port }}:{{ grafana_port }}"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/var/lib/grafana/dashboards
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED={{ grafana_anonymous_enabled | lower }}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
@@ -89,6 +92,70 @@ services:
           cpus: '{{ grafana_cpu_reservation }}'
           memory: {{ grafana_memory_reservation }}
 
+  prometheus:
+    image: prom/prometheus:v{{ prometheus_version }}
+    container_name: prometheus
+    ports:
+      - "{{ prometheus_port }}:{{ prometheus_port }}"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time={{ prometheus_retention_time }}'
+      - '--storage.tsdb.retention.size={{ prometheus_retention_size }}'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    depends_on:
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ prometheus_port }}/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '{{ prometheus_cpu_limit }}'
+          memory: {{ prometheus_memory_limit }}
+        reservations:
+          cpus: '{{ prometheus_cpu_reservation }}'
+          memory: {{ prometheus_memory_reservation }}
+
+  app-python:
+    build:
+      context: ../app_python
+      dockerfile: Dockerfile
+    container_name: app-python
+    ports:
+      - "8000:8000"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
 networks:
   logging:
     driver: bridge
@@ -96,3 +163,4 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:

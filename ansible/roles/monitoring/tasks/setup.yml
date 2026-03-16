@@ -10,6 +10,7 @@
     - "{{ monitoring_dir }}"
     - "{{ monitoring_dir }}/loki"
     - "{{ monitoring_dir }}/promtail"
+    - "{{ monitoring_dir }}/prometheus"
     - "{{ monitoring_dir }}/docs"
 
 - name: Template Loki configuration
@@ -26,6 +27,13 @@
     mode: '0644'
   notify: Restart monitoring stack
 
+- name: Template Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_dir }}/prometheus/prometheus.yml"
+    mode: '0644'
+  notify: Restart monitoring stack
+
 - name: Template Docker Compose file
   ansible.builtin.template:
     src: docker-compose.yml.j2
@@ -39,3 +47,9 @@
     dest: "{{ monitoring_dir }}/.env"
     mode: '0600'
   no_log: true
+
+- name: Include Grafana provisioning tasks
+  ansible.builtin.include_tasks: grafana.yml
+  tags:
+    - grafana
+    - dashboards

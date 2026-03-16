@@ -5,3 +5,5 @@ flake8==7.3.0
 httpx==0.28.1
 pytest-cov==7.0.0
 python-json-logger==3.3.0
+prometheus-client==0.23.1
+prometheus-fastapi-instrumentator==7.0.0

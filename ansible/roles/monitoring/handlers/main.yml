@@ -2,6 +2,7 @@
 # Handlers for monitoring role
 
 - name: Restart monitoring stack
-  community.docker.docker_compose_v2:
-    project_src: "{{ monitoring_dir }}"
-    state: restarted
+  ansible.builtin.command:
+    cmd: docker compose restart
+    chdir: "{{ monitoring_dir }}"
+  changed_when: true
