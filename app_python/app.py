@@ -4,16 +4,52 @@ import platform
 import logging
 import socket
 import uvicorn
+import sys
+from pythonjsonlogger import jsonlogger
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+
+class DefaultFieldsFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, "service"):
+            record.service = os.getenv("SERVICE_NAME", "devops-info-service")
+        if not hasattr(record, "version"):
+            record.version = os.getenv("SERVICE_VERSION", "1.0.0")
+        if not hasattr(record, "hostname"):
+            record.hostname = socket.gethostname()
+
+        for key in ("method", "path", "status_code", "client_ip", "duration_ms"):
+            if not hasattr(record, key):
+                setattr(record, key, None)
+
+        return True
+
+
+def setup_json_logging() -> None:
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = jsonlogger.JsonFormatter(
+        "%(asctime)s %(levelname)s %(name)s %(message)s "
+        "%(service)s %(version)s %(hostname)s "
+        "%(method)s %(path)s %(status_code)s %(client_ip)s %(duration_ms)s"
+    )
+    handler.setFormatter(formatter)
+    handler.addFilter(DefaultFieldsFilter())
+
+    root = logging.getLogger()
+    root.handlers = [handler]
+    root.setLevel(logging.INFO)
+
+    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        log = logging.getLogger(name)
+        log.handlers = [handler]
+        log.propagate = False
+        log.setLevel(logging.INFO)
+
+setup_json_logging()
 logger = logging.getLogger(__name__)
 
 logger.info('Application starting...')
@@ -36,6 +72,49 @@ app = FastAPI(
     version=SERVICE_VERSION,
     description=SERVICE_DESCRIPTION,
 )
+
+
+@app.middleware("http")
+async def access_log_middleware(request: Request, call_next):
+    start = time.perf_counter()
+    client_ip = request.client.host if request.client else "unknown"
+
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    except Exception:
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        logger.exception(
+            "unhandled_exception",
+            extra={
+                "service": SERVICE_NAME,
+                "version": SERVICE_VERSION,
+                "hostname": socket.gethostname(),
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": 500,
+                "client_ip": client_ip,
+                "duration_ms": duration_ms,
+            },
+        )
+        raise
+    finally:
+        if "status_code" in locals():
+            duration_ms = int((time.perf_counter() - start) * 1000)
+            logger.info(
+                "http_request",
+                extra={
+                    "service": SERVICE_NAME,
+                    "version": SERVICE_VERSION,
+                    "hostname": socket.gethostname(),
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status_code": status_code,
+                    "client_ip": client_ip,
+                    "duration_ms": duration_ms,
+                },
+            )
 
 
 def get_uptime_seconds():
@@ -90,10 +169,6 @@ async def root(request: Request):
     Main endpoint that returns service, system, and runtime information.
     """
     up = get_uptime_seconds()
-    logger.info(
-        f"Received request: {request.method} \
-            {request.url.path} from {request.client.host}"
-    )
 
     return {
         "service": {
@@ -137,25 +212,11 @@ async def health(request: Request):
     """
     up = get_uptime_seconds()
 
-    logger.info(
-        f"Received health check request: \
-            {request.method} {request.url.path} \
-                 from {request.client.host}"
-    )
     return {
         "status": "healthy",
         "timestamp": iso_utc_now(),
         "uptime_seconds": up['seconds'],
     }
-
-
-@app.exception_handler(404)
-async def not_found_exception(request: Request, exc: HTTPException):
-    logger.error(f"404 Error: {exc.detail} for {request.url.path}")
-    return JSONResponse(
-        status_code=404,
-        content={"message": "Endpoint not found", "error": str(exc)},
-    )
 
 
 @app.exception_handler(500)
@@ -167,6 +228,27 @@ async def internal_server_error(request: Request, exc: HTTPException):
     )
 
 
+@app.exception_handler(404)
+async def not_found_exception(request: Request, exc: HTTPException):
+    logger.warning(
+        "not_found",
+        extra={
+            "timestamp": iso_utc_now(),
+            "level": "WARNING",
+            "service": SERVICE_NAME,
+            "version": SERVICE_VERSION,
+            "hostname": socket.gethostname(),
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": 404,
+            "client_ip": request.client.host if request.client else "unknown",
+        },
+    )
+    return JSONResponse(
+        status_code=404,
+        content={"message": "Endpoint not found", "error": str(exc)},
+    )
+
+
 if __name__ == "__main__":
-    logger.info(f"Starting server on {HOST}:{PORT} with DEBUG={DEBUG}")
     uvicorn.run("app:app", host=HOST, port=PORT, reload=DEBUG)
