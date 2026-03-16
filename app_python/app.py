@@ -8,8 +8,9 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 # Configuration
 HOST = os.getenv('HOST', '0.0.0.0')
@@ -45,6 +46,33 @@ logger.propagate = False
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
+
+# HTTP metrics — track every request by method, endpoint, and status code
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status_code']
+)
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint', 'status_code']
+)
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
+
+# App-specific: counts calls to the system info endpoint (the main business action)
+devops_info_requests_total = Counter(
+    'devops_info_requests_total',
+    'Total calls to the system info endpoint'
+)
+# App-specific: measures how long it takes to collect system information
+devops_info_system_collection_seconds = Histogram(
+    'devops_info_system_collection_seconds',
+    'Time in seconds spent collecting system information'
+)
 
 # Pydantic models
 class ServiceInfo(BaseModel):
@@ -97,19 +125,25 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Middleware for request/response logging
+# Middleware for request/response logging and metrics recording
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     client_ip = request.client.host if request.client else "unknown"
     method = request.method
     path = str(request.url.path)
-    
+
+    http_requests_in_progress.inc()
     start_time = time.time()
     response = await call_next(request)
     process_time = time.time() - start_time
-    
+    http_requests_in_progress.dec()
+
+    status_code = str(response.status_code)
+    http_requests_total.labels(method=method, endpoint=path, status_code=status_code).inc()
+    http_request_duration_seconds.labels(method=method, endpoint=path, status_code=status_code).observe(process_time)
+
     log_record = logger.makeRecord(
-        logger.name, logging.INFO, "", 0, 
+        logger.name, logging.INFO, "", 0,
         f"{method} {path} {response.status_code}",
         (), None
     )
@@ -118,7 +152,7 @@ async def log_requests(request: Request, call_next):
     log_record.status_code = response.status_code
     log_record.client_ip = client_ip
     logger.handle(log_record)
-    
+
     return response
 
 # Helper functions
@@ -137,14 +171,15 @@ def get_uptime() -> Dict[str, Any]:
 
 def get_system_info() -> SystemInfo:
     """Collect system information"""
-    return SystemInfo(
-        hostname=socket.gethostname(),
-        platform=platform.system(),
-        platform_version=platform.version(),
-        architecture=platform.machine(),
-        cpu_count=os.cpu_count() or 0,
-        python_version=platform.python_version()
-    )
+    with devops_info_system_collection_seconds.time():
+        return SystemInfo(
+            hostname=socket.gethostname(),
+            platform=platform.system(),
+            platform_version=platform.version(),
+            architecture=platform.machine(),
+            cpu_count=os.cpu_count() or 0,
+            python_version=platform.python_version()
+        )
 
 def get_service_info() -> ServiceInfo:
     """Get service metadata"""
@@ -195,6 +230,7 @@ async def root(request: Request):
     """
     Main endpoint - comprehensive service and system information
     """
+    devops_info_requests_total.inc()
     response = MainResponse(
         service=get_service_info(),
         system=get_system_info(),
@@ -202,7 +238,6 @@ async def root(request: Request):
         request=get_request_info(request),
         endpoints=get_endpoints()
     )
-    
     return response
 
 @app.get("/health", response_model=HealthResponse)
@@ -216,6 +251,13 @@ async def health():
         timestamp=datetime.now(timezone.utc).isoformat(),
         uptime_seconds=uptime['seconds']
     )
+
+@app.get("/metrics")
+async def metrics():
+    """
+    Prometheus metrics endpoint
+    """
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 # Error handlers
 @app.exception_handler(404)
