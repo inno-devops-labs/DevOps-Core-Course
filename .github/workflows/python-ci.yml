@@ -5,18 +5,7 @@ on:
     branches:
       - main
       - master
-      - lab3
-      - lab03
-      - lab4
-      - lab04
-      - lab5
-      - lab05
-      - lab6
-      - lab06
-      - lab7
-      - lab07
-      - lab8
-      - lab08
+      - "lab*"
     paths:
       - "app_python/**"
       - "monitoring/**"
@@ -66,7 +55,6 @@ jobs:
   docker-build-push:
     needs: test-lint
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
