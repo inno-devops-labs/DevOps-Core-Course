@@ -198,10 +198,25 @@ http_requests_total{endpoint="/",method="GET",status="200"} 5.0
 http_requests_in_progress 0.0
 ```
 
-Screenshots to add:
-- `screenshots/metrics-endpoint.png` — `/metrics` output in browser/curl
-- `screenshots/prometheus-targets.png` — all targets UP
-- `screenshots/grafana-dashboard.png` — dashboard with live data
+### App metrics endpoint (`/metrics`)
+
+![metrics](screenshots/lab8-metrics.png)
+
+### All Prometheus targets UP
+
+![targets](screenshots/lab8-targets.png)
+
+### PromQL query result
+
+![query](screenshots/lab8-query.png)
+
+### Grafana dashboard with all panels
+
+![dashboard](screenshots/lab8-dashboard.png)
+
+### All services healthy
+
+![docker ps](screenshots/lab8-docker-ps.png)
 
 ---
 
