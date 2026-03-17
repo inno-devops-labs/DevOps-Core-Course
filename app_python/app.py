@@ -9,6 +9,7 @@ import logging
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
+from pythonjsonlogger import jsonlogger
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -17,26 +18,39 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 SERVICE_NAME = "devops-info-service"
 SERVICE_VERSION = "1.0.0"
-SERVICE_DESCRIPTION = "DevOps course info szervice"
+SERVICE_DESCRIPTION = "DevOps course info service"
 FRAMEWORK = "Flask"
 
-# App & Logging
+# App
 app = Flask(__name__)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+# ✅ JSON Logging setup
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+logHandler = logging.StreamHandler()
+
+formatter = jsonlogger.JsonFormatter(
+    "%(asctime)s %(levelname)s %(message)s %(method)s %(path)s %(status)s %(ip)s"
 )
-logger = logging.getLogger(__name__)
+
+logHandler.setFormatter(formatter)
+logger.addHandler(logHandler)
 
 START_TIME = datetime.now(timezone.utc)
 
-logger.info("Application starting...")
-
+logger.info(
+    "Application starting",
+    extra={
+        "method": None,
+        "path": None,
+        "status": None,
+        "ip": None,
+    },
+)
 
 # Helper functions
 def get_uptime():
-    """Calculate application uptime."""
     delta = datetime.now(timezone.utc) - START_TIME
     seconds = int(delta.total_seconds())
     hours = seconds // 3600
@@ -49,7 +63,6 @@ def get_uptime():
 
 
 def get_system_info():
-    """Collect system information."""
     return {
         "hostname": socket.gethostname(),
         "platform": platform.system(),
@@ -60,12 +73,37 @@ def get_system_info():
     }
 
 
+# ✅ Request logging
+@app.before_request
+def log_request():
+    logger.info(
+        "Request received",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "status": None,
+            "ip": request.remote_addr,
+        },
+    )
+
+
+@app.after_request
+def log_response(response):
+    logger.info(
+        "Response sent",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "status": response.status_code,
+            "ip": request.remote_addr,
+        },
+    )
+    return response
+
+
 # Routes
 @app.route("/", methods=["GET"])
 def index():
-    """Main endpoint with service and system information."""
-    logger.debug("Handling main endpoint request")
-
     uptime = get_uptime()
 
     response = {
@@ -88,18 +126,6 @@ def index():
             "method": request.method,
             "path": request.path,
         },
-        "endpoints": [
-            {
-                "path": "/",
-                "method": "GET",
-                "description": "Service information",
-            },
-            {
-                "path": "/health",
-                "method": "GET",
-                "description": "Health check",
-            },
-        ],
     }
 
     return jsonify(response)
@@ -107,7 +133,6 @@ def index():
 
 @app.route("/health", methods=["GET"])
 def health():
-    """Health check endpoint."""
     uptime = get_uptime()
 
     return jsonify(
@@ -122,6 +147,15 @@ def health():
 # Error Handlers
 @app.errorhandler(404)
 def not_found(error):
+    logger.error(
+        "404 error",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "status": 404,
+            "ip": request.remote_addr,
+        },
+    )
     return jsonify(
         {
             "error": "Not Found",
@@ -132,6 +166,15 @@ def not_found(error):
 
 @app.errorhandler(500)
 def internal_error(error):
+    logger.error(
+        "500 error",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "status": 500,
+            "ip": request.remote_addr,
+        },
+    )
     return jsonify(
         {
             "error": "Internal Server Error",

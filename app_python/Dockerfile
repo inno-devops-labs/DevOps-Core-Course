@@ -1,5 +1,5 @@
 # 1. Base image (specific version, slim)
-FROM python:3.13-slim
+FROM python:3.11-slim
 
 # 2. Environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -19,7 +19,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 7. Copy application source code
-COPY app.py .
+COPY . .
 
 # 8. Switch to non-root user
 USER appuser
