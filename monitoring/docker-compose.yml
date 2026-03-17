@@ -64,7 +64,10 @@ services:
       retries: 10
 
   app:
-    image: darriyan0/app_python:latest
+    build:
+      context: ../app_python
+      dockerfile: Dockerfile
+    image: darriyan0/app_python:lab08
     container_name: python-app
     platform: linux/amd64
     ports:
@@ -75,7 +78,51 @@ services:
       logging: "promtail"
       app: "devops-python"
     depends_on:
-      - loki
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: 
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    depends_on:
+      app:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
 networks:
   logging:
@@ -84,3 +131,4 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
