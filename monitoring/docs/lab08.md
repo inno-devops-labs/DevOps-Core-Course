@@ -18,7 +18,7 @@ The goal of this lab was to:
 ## 2. Project Structure
 
 ```text
-DevOps-Core-Course-lab08/
+lab08/
 ├── app_python/
 │   ├── app.py
 │   ├── requirements.txt
