@@ -66,23 +66,7 @@ jobs:
   docker-build-push:
     needs: test-lint
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (
-        github.ref_name == 'main' ||
-        github.ref_name == 'master' ||
-        github.ref_name == 'lab3' ||
-        github.ref_name == 'lab03' ||
-        github.ref_name == 'lab4' ||
-        github.ref_name == 'lab04' ||
-        github.ref_name == 'lab5' ||
-        github.ref_name == 'lab05' ||
-        github.ref_name == 'lab6' ||
-        github.ref_name == 'lab06' ||
-        github.ref_name == 'lab7' ||
-        github.ref_name == 'lab07'
-        github.ref_name == 'lab8' ||
-        github.ref_name == 'lab08'
-      )
-
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
