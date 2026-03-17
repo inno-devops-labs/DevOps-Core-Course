@@ -1,5 +1,5 @@
 # Docker Compose for Loki Stack with Application Integration
-# Lab 7 - Observability & Logging
+# Lab 7 & 8 - Observability, Logging & Metrics
 
 services:
   # ===========================================
@@ -67,6 +67,42 @@ services:
     restart: unless-stopped
 
   # ===========================================
+  # PROMETHEUS - Metrics Aggregation
+  # ===========================================
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: unless-stopped
+
+  # ===========================================
   # GRAFANA - Visualization & Dashboards
   # ===========================================
   grafana:
@@ -90,6 +126,8 @@ services:
       - logging
     depends_on:
       loki:
+        condition: service_healthy
+      prometheus:
         condition: service_healthy
     labels:
       logging: "promtail"
@@ -130,12 +168,6 @@ services:
     labels:
       logging: "promtail"
       app: "devops-python"
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
     deploy:
       resources:
         limits:
@@ -160,4 +192,6 @@ volumes:
   loki-data:
     driver: local
   grafana-data:
+    driver: local
+  prometheus-data:
     driver: local
