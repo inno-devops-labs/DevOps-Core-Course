@@ -6,10 +6,12 @@ import os
 import socket
 import platform
 import logging
+import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 from pythonjsonlogger import jsonlogger
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -24,7 +26,41 @@ FRAMEWORK = "Flask"
 # App
 app = Flask(__name__)
 
-# ✅ JSON Logging setup
+# =====================
+# PROMETHEUS METRICS
+# =====================
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration',
+    ['method', 'endpoint']
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
+
+# Example business metrics
+endpoint_calls = Counter(
+    'devops_info_endpoint_calls',
+    'Endpoint calls',
+    ['endpoint']
+)
+
+system_info_duration = Histogram(
+    'devops_info_system_collection_seconds',
+    'System info collection time'
+)
+
+# =====================
+# LOGGING
+# =====================
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -49,7 +85,9 @@ logger.info(
     },
 )
 
-# Helper functions
+# =====================
+# HELPERS
+# =====================
 def get_uptime():
     delta = datetime.now(timezone.utc) - START_TIME
     seconds = int(delta.total_seconds())
@@ -63,19 +101,24 @@ def get_uptime():
 
 
 def get_system_info():
-    return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "platform_version": platform.version(),
-        "architecture": platform.machine(),
-        "cpu_count": os.cpu_count(),
-        "python_version": platform.python_version(),
-    }
+    with system_info_duration.time():
+        return {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "platform_version": platform.version(),
+            "architecture": platform.machine(),
+            "cpu_count": os.cpu_count(),
+            "python_version": platform.python_version(),
+        }
 
-
-# ✅ Request logging
+# =====================
+# REQUEST LOGGING + METRICS
+# =====================
 @app.before_request
-def log_request():
+def before_request():
+    g.start_time = time.time()
+    http_requests_in_progress.inc()
+
     logger.info(
         "Request received",
         extra={
@@ -88,7 +131,22 @@ def log_request():
 
 
 @app.after_request
-def log_response(response):
+def after_request(response):
+    duration = time.time() - g.start_time
+
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=request.path,
+        status=str(response.status_code)
+    ).inc()
+
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=request.path
+    ).observe(duration)
+
+    http_requests_in_progress.dec()
+
     logger.info(
         "Response sent",
         extra={
@@ -98,12 +156,16 @@ def log_response(response):
             "ip": request.remote_addr,
         },
     )
+
     return response
 
-
-# Routes
+# =====================
+# ROUTES
+# =====================
 @app.route("/", methods=["GET"])
 def index():
+    endpoint_calls.labels(endpoint="/").inc()
+
     uptime = get_uptime()
 
     response = {
@@ -133,6 +195,8 @@ def index():
 
 @app.route("/health", methods=["GET"])
 def health():
+    endpoint_calls.labels(endpoint="/health").inc()
+
     uptime = get_uptime()
 
     return jsonify(
@@ -144,7 +208,13 @@ def health():
     )
 
 
-# Error Handlers
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    return generate_latest(), 200, {'Content-Type': 'text/plain'}
+
+# =====================
+# ERROR HANDLERS
+# =====================
 @app.errorhandler(404)
 def not_found(error):
     logger.error(
@@ -183,6 +253,8 @@ def internal_error(error):
     ), 500
 
 
-# Entry point
+# =====================
+# ENTRY POINT
+# =====================
 if __name__ == "__main__":
     app.run(host=HOST, port=PORT, debug=DEBUG)

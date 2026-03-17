@@ -66,6 +66,10 @@ services:
     container_name: monitoring-app-python-1
     ports:
       - "8000:8080"
+    environment:
+      - PORT=8080
+    networks:
+      - logging
     labels:
       logging: "promtail"
       app: "devops-python"
@@ -74,10 +78,36 @@ services:
         limits:
           cpus: '0.5'
           memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8080/health\")' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    networks:
+      - logging
+    depends_on:
+      - app-python
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      retries: 5
 
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
   logging:
