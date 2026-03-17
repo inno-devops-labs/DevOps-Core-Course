@@ -5,11 +5,14 @@ import fastapi
 import platform
 import socket
 from datetime import datetime, timezone
-from fastapi import Request
+from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import logging
 import sys
+
+# --- Импорты для Prometheus ---
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 
 # JSON Logging Formatter for structured logging
@@ -27,29 +30,25 @@ class JSONFormatter(logging.Formatter):
             "line": record.lineno,
         }
 
-        # Add exception info if present
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
 
-        # Add extra fields if present
         if hasattr(record, "extra_data"):
             log_data.update(record.extra_data)
 
         return json.dumps(log_data)
 
 
-# Configure logging based on LOG_FORMAT environment variable
+# Configure logging
 LOG_FORMAT = os.getenv("LOG_FORMAT", "text").lower()
 
 if LOG_FORMAT == "json":
-    # JSON format for production/monitoring
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JSONFormatter())
     logging.root.handlers = []
     logging.root.addHandler(handler)
     logging.root.setLevel(logging.INFO)
 else:
-    # Human-readable format for development
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -62,6 +61,41 @@ START_TIME = time.time()
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8080))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+
+# --- Определение метрик Prometheus ---
+
+# 1. Rate & Errors (Counter)
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"]
+)
+
+# 2. Duration (Histogram)
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"]
+)
+
+# 3. Active Requests (Gauge)
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed"
+)
+
+# 4. App-specific metrics (Бизнес-метрики)
+endpoint_calls = Counter(
+    "devops_info_endpoint_calls_total", 
+    "Total calls to specific application endpoints", 
+    ["endpoint"]
+)
+
+system_info_duration = Histogram(
+    "devops_info_system_collection_seconds", 
+    "Time spent collecting system metadata"
+)
 
 
 def get_uptime_human(seconds: int) -> str:
@@ -102,6 +136,7 @@ def get_metadata(request: Request):
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
 
@@ -109,7 +144,35 @@ def get_metadata(request: Request):
 app = fastapi.FastAPI()
 
 
-# Helper function for structured request logging
+# --- Middleware для автоматического сбора метрик HTTP ---
+@app.middleware("http")
+async def prometheus_metrics_middleware(request: Request, call_next):
+    method = request.method
+    path = request.url.path
+    
+    # Увеличиваем Gauge активных запросов
+    http_requests_in_progress.inc()
+    start_time = time.time()
+    
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+    except Exception as e:
+        status_code = 500
+        raise e
+    finally:
+        # Считаем длительность и уменьшаем Gauge
+        duration = time.time() - start_time
+        http_requests_in_progress.dec()
+        
+        # Не логируем метрики для самого эндпоинта /metrics, чтобы не создавать шум (опционально)
+        if path != "/metrics":
+            http_requests_total.labels(method=method, endpoint=path, status_code=status_code).inc()
+            http_request_duration_seconds.labels(method=method, endpoint=path).observe(duration)
+            
+    return response
+
+
 def log_request(request: Request, message: str, level: str = "INFO", **extra):
     """Log request with contextual information"""
     log_data = {
@@ -120,7 +183,6 @@ def log_request(request: Request, message: str, level: str = "INFO", **extra):
         **extra,
     }
 
-    # Create log record with extra data
     record = logging.LogRecord(
         name=logger.name,
         level=getattr(logging, level),
@@ -146,14 +208,30 @@ async def startup_event():
     )
 
 
+# --- Эндпоинты ---
+
+@app.get("/metrics")
+def metrics():
+    """Endpoint for Prometheus scraping"""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 @app.get("/")
 def get_info(request: Request):
+    # Обновляем кастомную метрику
+    endpoint_calls.labels(endpoint="/").inc()
+    
+    # Замеряем время выполнения конкретно функции сборки метаданных
+    with system_info_duration.time():
+        metadata = get_metadata(request)
+        
     log_request(request, "Info endpoint requested", status_code=200)
-    return get_metadata(request)
+    return metadata
 
 
 @app.get("/health")
 def health_check(request: Request):
+    endpoint_calls.labels(endpoint="/health").inc()
     log_request(request, "Health check requested", status_code=200)
     return get_health()
 
@@ -199,13 +277,11 @@ if __name__ == "__main__":
 
     logger.info(f"Starting server at http://{HOST}:{PORT}, debug={DEBUG}")
 
-    # Disable uvicorn's access logging (we log requests ourselves)
-    # This keeps only our JSON logs clean
     uvicorn.run(
         app,
         host=HOST,
         port=PORT,
         reload=DEBUG,
-        access_log=False,  # Disable uvicorn access logs
-        log_level="warning",  # Only show warnings/errors from uvicorn
+        access_log=False,
+        log_level="warning",
     )
