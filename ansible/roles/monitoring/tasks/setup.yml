@@ -9,6 +9,10 @@
     - "{{ monitoring_compose_dir }}"
     - "{{ monitoring_compose_dir }}/loki"
     - "{{ monitoring_compose_dir }}/promtail"
+    - "{{ monitoring_compose_dir }}/prometheus"
+    - "{{ monitoring_compose_dir }}/grafana/provisioning/datasources"
+    - "{{ monitoring_compose_dir }}/grafana/provisioning/dashboards"
+    - "{{ monitoring_compose_dir }}/grafana/dashboards"
 
 - name: Template Loki configuration
   become: true
@@ -25,6 +29,40 @@
     dest: "{{ monitoring_compose_dir }}/promtail/config.yml"
     mode: "0644"
   register: monitoring_promtail_config
+
+- name: Template Prometheus configuration
+  become: true
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_compose_dir }}/prometheus/prometheus.yml"
+    mode: "0644"
+  register: monitoring_prometheus_config
+
+- name: Template Grafana datasources provisioning
+  become: true
+  ansible.builtin.template:
+    src: grafana-datasources.yml.j2
+    dest: "{{ monitoring_compose_dir }}/grafana/provisioning/datasources/datasources.yml"
+    mode: "0644"
+  register: monitoring_grafana_datasources
+
+- name: Template Grafana dashboards provisioning
+  become: true
+  ansible.builtin.template:
+    src: grafana-dashboards-provisioning.yml.j2
+    dest: "{{ monitoring_compose_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
+  register: monitoring_grafana_dashboards_prov
+
+- name: Copy Grafana dashboard files
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ monitoring_compose_dir }}/grafana/dashboards/"
+    mode: "0644"
+  loop:
+    - grafana-app-dashboard.json
+  register: monitoring_grafana_dashboards
 
 - name: Template Docker Compose file
   become: true

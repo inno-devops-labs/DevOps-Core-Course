@@ -1,7 +1,7 @@
 """Unit tests for DevOps Info Service."""
 import json
 import pytest
-from app import app, get_system_info, get_uptime
+from app import app, get_system_info, get_uptime, http_requests_total
 
 
 @pytest.fixture
@@ -107,11 +107,12 @@ class TestMainEndpoint:
         assert 'endpoints' in data
         endpoints = data['endpoints']
         assert isinstance(endpoints, list)
-        assert len(endpoints) == 2
+        assert len(endpoints) == 3
 
         paths = [e['path'] for e in endpoints]
         assert '/' in paths
         assert '/health' in paths
+        assert '/metrics' in paths
 
     def test_all_top_level_keys(self, client):
         """GET / response has exactly the expected top-level keys."""
@@ -245,3 +246,40 @@ class TestHelperFunctions:
         """Uptime human string contains 'minute'."""
         uptime = get_uptime()
         assert 'minute' in uptime['human']
+
+
+class TestMetricsEndpoint:
+    """Tests for GET /metrics endpoint."""
+
+    def test_metrics_status_code(self, client):
+        """GET /metrics returns 200."""
+        response = client.get('/metrics')
+        assert response.status_code == 200
+
+    def test_metrics_content_type(self, client):
+        """GET /metrics returns Prometheus text format."""
+        response = client.get('/metrics')
+        assert 'text/plain' in response.content_type or 'text/plain' in response.content_type
+
+    def test_metrics_contains_http_requests_total(self, client):
+        """Metrics output includes http_requests_total counter."""
+        client.get('/')
+        response = client.get('/metrics')
+        assert b'http_requests_total' in response.data
+
+    def test_metrics_contains_histogram(self, client):
+        """Metrics output includes http_request_duration_seconds histogram."""
+        client.get('/')
+        response = client.get('/metrics')
+        assert b'http_request_duration_seconds' in response.data
+
+    def test_metrics_contains_gauge(self, client):
+        """Metrics output includes http_requests_in_progress gauge."""
+        response = client.get('/metrics')
+        assert b'http_requests_in_progress' in response.data
+
+    def test_metrics_contains_business_counter(self, client):
+        """Metrics output includes business-level endpoint call counter."""
+        client.get('/')
+        response = client.get('/metrics')
+        assert b'devops_info_endpoint_calls_total' in response.data

@@ -3,15 +3,34 @@
 loki_version: "3.0.0"
 promtail_version: "3.0.0"
 grafana_version: "12.3.1"
+prometheus_version: "3.9.0"
 
 # Ports
 loki_port: 3100
 promtail_port: 9080
 grafana_port: 3000
+prometheus_port: 9090
 
 # Retention
 loki_retention_period: "168h"
 loki_schema_version: "v13"
+prometheus_retention_days: 15
+prometheus_retention_size: "10GB"
+prometheus_scrape_interval: "15s"
+
+# Prometheus scrape targets
+prometheus_targets:
+  - job: "prometheus"
+    targets: ["localhost:9090"]
+  - job: "app"
+    targets: ["app-python:8080"]
+    path: "/metrics"
+  - job: "loki"
+    targets: ["loki:3100"]
+    path: "/metrics"
+  - job: "grafana"
+    targets: ["grafana:3000"]
+    path: "/metrics"
 
 # Resource limits
 loki_memory_limit: "1G"
@@ -19,12 +38,15 @@ loki_cpu_limit: "1.0"
 promtail_memory_limit: "512M"
 promtail_cpu_limit: "0.5"
 grafana_memory_limit: "512M"
-grafana_cpu_limit: "1.0"
+grafana_cpu_limit: "0.5"
+prometheus_memory_limit: "1G"
+prometheus_cpu_limit: "1.0"
+app_memory_limit: "256M"
+app_cpu_limit: "0.5"
 
 # Grafana credentials
 # grafana_admin_user and grafana_admin_password must be provided
 # via Ansible Vault (inventory/group_vars/all.yml) or extra vars.
-# Example: ansible-vault edit inventory/group_vars/all.yml
 grafana_admin_user: "admin"
 grafana_admin_password: "{{ vault_grafana_admin_password }}"
 
