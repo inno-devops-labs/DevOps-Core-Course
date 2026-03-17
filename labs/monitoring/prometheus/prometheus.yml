@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s      # Как часто забирать метрики (согласно Task 2.3)
+  evaluation_interval: 15s  # Как часто вычислять правила (alerts/recording rules)
+
+scrape_configs:
+  # 1. Скрейпинг самого себя (Prometheus тоже отдает метрики о своем состоянии)
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 2. Твое Python-приложение (Task 1 & 2.3)
+  - job_name: 'app'
+    metrics_path: '/metrics' # Путь, который мы добавили в FastAPI
+    static_configs:
+      # Используем имя сервиса из docker-compose и его внутренний порт
+      - targets: ['app-python:8080']
+
+  # 3. Loki (Task 2.3)
+  - job_name: 'loki'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['loki:3100']
+
+  # 4. Grafana (Task 2.3)
+  - job_name: 'grafana'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['grafana:3000']
