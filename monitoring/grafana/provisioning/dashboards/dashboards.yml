@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: lab08
+    orgId: 1
+    folder: Lab 8
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

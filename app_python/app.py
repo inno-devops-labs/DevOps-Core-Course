@@ -11,7 +11,14 @@ import socket
 import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, g, request
+from flask import Flask, Response, jsonify, g, request
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
@@ -75,6 +82,42 @@ logger.propagate = False
 
 app = Flask(__name__)
 
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+
+external_api_calls_total = Counter(
+    "external_api_calls_total",
+    "Total calls made to external API",
+    ["service_name"],
+)
+
+cache_items = Gauge(
+    "cache_items",
+    "Current number of items in the application cache",
+)
+
+db_query_duration_seconds = Histogram(
+    "db_query_duration_seconds",
+    "Database query duration in seconds",
+    ["query_type"],
+)
+
+_CACHE_SIZE = 3
+
 
 def get_uptime():
     delta = datetime.now(timezone.utc) - START_TIME
@@ -88,19 +131,29 @@ def get_uptime():
 
 
 def get_system_info():
-    return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "platform_version": platform.version(),
-        "architecture": platform.machine(),
-        "cpu_count": os.cpu_count(),
-        "python_version": platform.python_version(),
-    }
+    external_api_calls_total.labels("hostname_resolver").inc()
+    with db_query_duration_seconds.labels("system_info").time():
+        return {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "platform_version": platform.version(),
+            "architecture": platform.machine(),
+            "cpu_count": os.cpu_count(),
+            "python_version": platform.python_version(),
+        }
+
+
+def _should_track_request() -> bool:
+    return request.endpoint != "metrics"
 
 
 @app.before_request
 def log_request():
+    if not _should_track_request():
+        return
+
     g.request_start_time = time.perf_counter()
+    http_requests_in_progress.inc()
     logger.info(
         "request_started",
         extra={
@@ -115,10 +168,25 @@ def log_request():
 
 @app.after_request
 def log_response(response):
+    if not _should_track_request():
+        return response
+
     start_time = getattr(g, "request_start_time", None)
     duration_ms = None
     if start_time is not None:
-        duration_ms = (time.perf_counter() - start_time) * 1000
+        duration = time.perf_counter() - start_time
+        duration_ms = duration * 1000
+        http_request_duration_seconds.labels(
+            request.method,
+            request.path,
+        ).observe(duration)
+
+    http_requests_total.labels(
+        request.method,
+        request.path,
+        str(response.status_code),
+    ).inc()
+    http_requests_in_progress.dec()
 
     logger.info(
         "request_completed",
@@ -135,9 +203,15 @@ def log_response(response):
     return response
 
 
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
 @app.route("/", methods=["GET"])
 def index():
     uptime = get_uptime()
+    cache_items.set(_CACHE_SIZE)
 
     response = {
         "service": {

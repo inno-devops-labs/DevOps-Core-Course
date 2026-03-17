@@ -9,6 +9,16 @@ services:
       - loki-data:/loki
     networks:
       - logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
 
   promtail:
     image: grafana/promtail:3.0.0
@@ -22,7 +32,22 @@ services:
     networks:
       - logging
     depends_on:
-      - loki
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'bash -c ''exec 3<>/dev/tcp/127.0.0.1/9080 && printf "GET /ready HTTP/1.0\r\n\r\n" >&3 && read -r line <&3 && echo "$$line" | grep -q "200"''',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
   grafana:
     image: grafana/grafana:12.3.1
@@ -34,12 +59,56 @@ services:
       - GF_SECURITY_ALLOW_EMBEDDING=true
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
     networks:
       - logging
     depends_on:
-      - loki
+      loki:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=10GB
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    depends_on:
+      app-python:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
 
   app-python:
+    build:
+      context: ../app_python
+      dockerfile: Dockerfile
     image: danielambda/devops-app:latest
     ports:
       - 8000:8000
@@ -52,13 +121,24 @@ services:
       logging: "promtail"
       app: "devops-python"
     depends_on:
-      - loki
+      loki:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
   logging:
     driver: bridge
-
