@@ -2,9 +2,11 @@ import logging
 import os
 import platform
 import socket
+import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, Response, g, jsonify, request
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,6 +21,34 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 app = Flask(__name__)
 START_TIME = datetime.now(timezone.utc)
 
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+
+devops_info_endpoint_calls = Counter(
+    "devops_info_endpoint_calls",
+    "Endpoint calls for devops info service",
+    ["endpoint"],
+)
+
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "System info collection time in seconds",
+)
+
 
 def _uptime_seconds() -> int:
     return int((datetime.now(timezone.utc) - START_TIME).total_seconds())
@@ -31,7 +61,8 @@ def _uptime_human(seconds: int) -> str:
 
 
 def get_system_info() -> dict:
-    return {
+    start = time.time()
+    result = {
         "hostname": socket.gethostname(),
         "platform": platform.system(),
         "platform_version": platform.version(),
@@ -39,6 +70,8 @@ def get_system_info() -> dict:
         "cpu_count": os.cpu_count() or 0,
         "python_version": platform.python_version(),
     }
+    devops_info_system_collection_seconds.observe(time.time() - start)
+    return result
 
 
 def get_request_info() -> dict:
@@ -57,12 +90,41 @@ def list_endpoints() -> list:
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
+        {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
     ]
+
+
+@app.before_request
+def before_request_metrics():
+    g.start_time = time.time()
+    http_requests_in_progress.inc()
+
+
+@app.after_request
+def after_request_metrics(response):
+    endpoint = request.path
+    status_code = str(response.status_code)
+
+    if endpoint != "/metrics":
+        http_requests_total.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_code=status_code,
+        ).inc()
+
+        http_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=endpoint,
+        ).observe(time.time() - g.start_time)
+
+    http_requests_in_progress.dec()
+    return response
 
 
 @app.get("/")
 def index():
     logger.info("Request: %s %s", request.method, request.path)
+    devops_info_endpoint_calls.labels(endpoint="/").inc()
 
     uptime_sec = _uptime_seconds()
     payload = {
@@ -88,6 +150,7 @@ def index():
 @app.get("/health")
 def health():
     logger.info("Request: %s %s", request.method, request.path)
+    devops_info_endpoint_calls.labels(endpoint="/health").inc()
 
     return (
         jsonify(
@@ -99,6 +162,12 @@ def health():
         ),
         200,
     )
+
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), mimetype="text/plain; version=0.0.4; charset=utf-8")
+
 
 @app.errorhandler(404)
 def not_found(_err):
