@@ -2,6 +2,8 @@
 Unit tests for DevOps Info Service.
 Tests all endpoints, response structure, and error handling.
 """
+import re
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -12,6 +14,19 @@ from app import app, START_TIME, SERVICE_INFO, ENDPOINTS, get_uptime, get_system
 def client():
     """Create a test client for the FastAPI application."""
     return TestClient(app)
+
+
+def assert_metric_line_with_labels(metrics_text, metric_name, labels):
+    """Assert that one metric line contains the expected labels regardless of order."""
+    metric_pattern = re.compile(rf"^{re.escape(metric_name)}\{{.*\}}", re.MULTILINE)
+
+    for match in metric_pattern.finditer(metrics_text):
+        line = match.group(0)
+        if all(f'{key}="{value}"' in line for key, value in labels.items()):
+            return
+
+    label_summary = ", ".join(f'{key}="{value}"' for key, value in labels.items())
+    raise AssertionError(f"Metric {metric_name} with labels {{{label_summary}}} not found")
 
 
 # ---------------------------------------------------------------------------
@@ -192,11 +207,31 @@ class TestMetricsEndpoint:
         client.get("/missing")
 
         metrics_text = client.get("/metrics").text
-        assert 'http_requests_total{method="GET",endpoint="/",status_code="200"}' in metrics_text
-        assert 'http_requests_total{method="GET",endpoint="/health",status_code="200"}' in metrics_text
-        assert 'http_requests_total{method="GET",endpoint="/unknown",status_code="404"}' in metrics_text
-        assert 'devops_info_endpoint_calls_total{endpoint="/"}' in metrics_text
-        assert 'devops_info_endpoint_calls_total{endpoint="/health"}' in metrics_text
+        assert_metric_line_with_labels(
+            metrics_text,
+            "http_requests_total",
+            {"method": "GET", "endpoint": "/", "status_code": "200"},
+        )
+        assert_metric_line_with_labels(
+            metrics_text,
+            "http_requests_total",
+            {"method": "GET", "endpoint": "/health", "status_code": "200"},
+        )
+        assert_metric_line_with_labels(
+            metrics_text,
+            "http_requests_total",
+            {"method": "GET", "endpoint": "/unknown", "status_code": "404"},
+        )
+        assert_metric_line_with_labels(
+            metrics_text,
+            "devops_info_endpoint_calls_total",
+            {"endpoint": "/"},
+        )
+        assert_metric_line_with_labels(
+            metrics_text,
+            "devops_info_endpoint_calls_total",
+            {"endpoint": "/health"},
+        )
 
 
 # ---------------------------------------------------------------------------
