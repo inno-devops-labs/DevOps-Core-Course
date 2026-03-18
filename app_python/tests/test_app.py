@@ -76,6 +76,7 @@ def test_index_success_response_structure(client):
     assert isinstance(endpoints, list)
     assert any(ep["path"] == "/" for ep in endpoints)
     assert any(ep["path"] == "/health" for ep in endpoints)
+    assert any(ep["path"] == "/metrics" for ep in endpoints)
 
 
 def test_index_error_method_not_allowed(client):
@@ -94,6 +95,28 @@ def test_health_success_response_structure(client):
     assert data["status"] == "healthy"
     assert isinstance(data["uptime_seconds"], int)
     assert_iso8601(data["timestamp"])
+
+
+def test_metrics_endpoint_exposes_prometheus_metrics(client):
+    # Generate a little traffic first so counters have values
+    client.get("/")
+    client.get("/health")
+
+    response = client.get("/metrics")
+    assert response.status_code == 200
+
+    payload = response.data.decode()
+    assert "# HELP http_requests_total" in payload
+    assert "# TYPE http_requests_total counter" in payload
+    assert "# HELP http_request_duration_seconds" in payload
+    assert "# TYPE http_request_duration_seconds histogram" in payload
+    assert "# HELP http_requests_in_progress" in payload
+    assert "# TYPE http_requests_in_progress gauge" in payload
+    assert (
+        "http_requests_total{endpoint=\"/\",method=\"GET\","
+        "status_code=\"200\"}"
+        in payload
+    )
 
 
 def test_not_found_error_handler_returns_json(client):

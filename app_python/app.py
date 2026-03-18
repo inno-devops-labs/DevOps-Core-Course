@@ -8,8 +8,16 @@ import socket
 import platform
 import logging
 import sys
+from time import perf_counter
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 
 def format_timestamp(timestamp: datetime | None = None) -> str:
@@ -94,6 +102,43 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 # Application start time
 START_TIME = datetime.now(timezone.utc)
 
+# Known endpoints are exposed as-is; unknown paths are grouped to keep
+# label values low-cardinality.
+KNOWN_ENDPOINTS = {'/', '/health', '/metrics', '/boom'}
+
+# RED metrics for HTTP traffic.
+HTTP_REQUESTS_TOTAL = Counter(
+    'http_requests_total',
+    'Total HTTP requests processed',
+    ['method', 'endpoint', 'status_code'],
+)
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint', 'status_code'],
+)
+HTTP_REQUESTS_IN_PROGRESS = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed',
+    ['method', 'endpoint'],
+)
+
+# Application-specific business metrics.
+ENDPOINT_CALLS_TOTAL = Counter(
+    'devops_info_endpoint_calls_total',
+    'Total calls to service endpoints',
+    ['endpoint'],
+)
+SYSTEM_INFO_COLLECTION_SECONDS = Histogram(
+    'devops_info_system_info_collection_seconds',
+    'Time spent collecting system information',
+)
+
+
+def normalize_endpoint(path: str) -> str:
+    """Normalize unknown paths so label values do not explode."""
+    return path if path in KNOWN_ENDPOINTS else '/other'
+
 
 def get_uptime():
     """Calculate application uptime."""
@@ -110,14 +155,15 @@ def get_uptime():
 
 def get_system_info():
     """Collect system information."""
-    return {
-        'hostname': socket.gethostname(),
-        'platform': platform.system(),
-        'platform_version': platform.platform(),
-        'architecture': platform.machine(),
-        'cpu_count': os.cpu_count() or 0,
-        'python_version': platform.python_version()
-    }
+    with SYSTEM_INFO_COLLECTION_SECONDS.time():
+        return {
+            'hostname': socket.gethostname(),
+            'platform': platform.system(),
+            'platform_version': platform.platform(),
+            'architecture': platform.machine(),
+            'cpu_count': os.cpu_count() or 0,
+            'python_version': platform.python_version(),
+        }
 
 
 def get_service_info():
@@ -168,7 +214,13 @@ def get_client_ip() -> str:
 @app.before_request
 def log_request_started():
     """Log incoming HTTP requests before handlers execute."""
-    request.start_time = datetime.now(timezone.utc)
+    request.start_time = perf_counter()
+    request.metric_endpoint = normalize_endpoint(request.path)
+    if request.path != '/metrics':
+        HTTP_REQUESTS_IN_PROGRESS.labels(
+            method=request.method,
+            endpoint=request.metric_endpoint,
+        ).inc()
     logger.info(
         'request_started',
         extra={
@@ -183,10 +235,14 @@ def log_request_started():
 @app.after_request
 def log_request_completed(response):
     """Log request completion status and execution time."""
-    start_time = getattr(request, 'start_time', datetime.now(timezone.utc))
-    duration_ms = int(
-        (datetime.now(timezone.utc) - start_time).total_seconds() * 1000,
+    start_time = getattr(request, 'start_time', perf_counter())
+    endpoint = getattr(
+        request,
+        'metric_endpoint',
+        normalize_endpoint(request.path),
     )
+    duration_seconds = perf_counter() - start_time
+    duration_ms = int(duration_seconds * 1000)
 
     level = logging.INFO
     if response.status_code >= 500:
@@ -205,12 +261,30 @@ def log_request_completed(response):
             'duration_ms': duration_ms,
         },
     )
+
+    if request.path != '/metrics':
+        status_code = str(response.status_code)
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_code=status_code,
+        ).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_code=status_code,
+        ).observe(duration_seconds)
+        HTTP_REQUESTS_IN_PROGRESS.labels(
+            method=request.method,
+            endpoint=endpoint,
+        ).dec()
     return response
 
 
 @app.route('/')
 def index():
     """Main endpoint - service and system information."""
+    ENDPOINT_CALLS_TOTAL.labels(endpoint='/').inc()
     response = {
         'service': get_service_info(),
         'system': get_system_info(),
@@ -227,6 +301,11 @@ def index():
                 'method': 'GET',
                 'description': 'Health check',
             },
+            {
+                'path': '/metrics',
+                'method': 'GET',
+                'description': 'Prometheus metrics endpoint',
+            },
         ],
     }
 
@@ -236,6 +315,7 @@ def index():
 @app.route('/health')
 def health():
     """Health check endpoint for monitoring."""
+    ENDPOINT_CALLS_TOTAL.labels(endpoint='/health').inc()
     uptime = get_uptime()
     timestamp = format_timestamp()
     return jsonify(
@@ -286,7 +366,14 @@ def internal_error(error):
 
 @app.route('/boom')
 def boom():
+    ENDPOINT_CALLS_TOTAL.labels(endpoint='/boom').inc()
     raise RuntimeError("synthetic lab error")
+
+
+@app.route('/metrics')
+def metrics() -> Response:
+    """Expose Prometheus metrics for scraping."""
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 if __name__ == '__main__':
