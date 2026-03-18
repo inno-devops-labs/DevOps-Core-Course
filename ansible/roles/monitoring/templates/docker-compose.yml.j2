@@ -55,6 +55,38 @@ services:
           cpus: '0.25'
           memory: 128M
 
+  prometheus:
+    image: prom/prometheus:v{{ monitoring_prometheus_version }}
+    container_name: prometheus
+    ports:
+      - "{{ monitoring_prometheus_port }}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time={{ monitoring_prometheus_retention_days }}d'
+      - '--storage.tsdb.retention.size={{ monitoring_prometheus_retention_size }}'
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '{{ monitoring_prometheus_cpu_limit }}'
+          memory: {{ monitoring_prometheus_memory_limit }}
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
   grafana:
     image: grafana/grafana:{{ monitoring_grafana_version }}
     container_name: grafana
@@ -62,6 +94,7 @@ services:
       - "{{ monitoring_grafana_port }}:3000"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_SECURITY_ADMIN_USER={{ monitoring_grafana_admin_user }}
@@ -74,6 +107,8 @@ services:
       app: "grafana"
     depends_on:
       loki:
+        condition: service_healthy
+      prometheus:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
@@ -100,6 +135,12 @@ services:
     labels:
       logging: "promtail"
       app: "devops-python"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:{{ monitoring_app_internal_port }}/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -116,3 +157,4 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:

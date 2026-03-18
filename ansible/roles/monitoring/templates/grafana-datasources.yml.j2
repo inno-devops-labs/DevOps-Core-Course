@@ -1,0 +1,18 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:{{ monitoring_prometheus_port }}
+    uid: prometheus
+    isDefault: true
+    editable: false
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:{{ monitoring_loki_port }}
+    uid: loki
+    isDefault: false
+    editable: false

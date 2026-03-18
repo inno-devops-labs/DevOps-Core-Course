@@ -6,6 +6,8 @@
     - "grafana/loki:{{ monitoring_loki_version }}"
     - "grafana/promtail:{{ monitoring_promtail_version }}"
     - "grafana/grafana:{{ monitoring_grafana_version }}"
+    - "prom/prometheus:v{{ monitoring_prometheus_version }}"
+    - "{{ monitoring_app_image }}:{{ monitoring_app_tag }}"
   register: monitoring_pull_result
   changed_when: "'Downloaded newer image' in item"
 
@@ -25,6 +27,16 @@
   delay: 5
   until: loki_health.status == 200
 
+- name: Wait for Prometheus to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ monitoring_prometheus_port }}/-/healthy"
+    method: GET
+    status_code: 200
+  register: prometheus_health
+  retries: 12
+  delay: 5
+  until: prometheus_health.status == 200
+
 - name: Wait for Grafana to be ready
   ansible.builtin.uri:
     url: "http://localhost:{{ monitoring_grafana_port }}/api/health"
@@ -35,25 +47,6 @@
   delay: 5
   until: grafana_health.status == 200
 
-- name: Configure Loki data source in Grafana
-  ansible.builtin.uri:
-    url: "http://localhost:{{ monitoring_grafana_port }}/api/datasources"
-    method: POST
-    user: "{{ monitoring_grafana_admin_user }}"
-    password: "{{ monitoring_grafana_admin_password }}"
-    force_basic_auth: true
-    body_format: json
-    body:
-      name: Loki
-      type: loki
-      url: "http://loki:{{ monitoring_loki_port }}"
-      access: proxy
-      isDefault: true
-    status_code:
-      - 200
-      - 409
-  register: datasource_result
-
-- name: Display datasource configuration result
+- name: Display deployment status
   ansible.builtin.debug:
-    msg: "Loki datasource configured (HTTP {{ datasource_result.status }})"
+    msg: "Monitoring stack deployed — Loki, Prometheus, Grafana, and app are running"

@@ -7,8 +7,15 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from prometheus_client import (
+    Counter,
+    Histogram,
+    Gauge,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+)
 
 
 class JSONFormatter(logging.Formatter):
@@ -48,6 +55,44 @@ DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 START_TIME = datetime.now(timezone.utc)
 
+# ---------------------------------------------------------------------------
+# Prometheus metrics (RED method: Rate, Errors, Duration)
+# ---------------------------------------------------------------------------
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+
+devops_info_endpoint_calls = Counter(
+    "devops_info_endpoint_calls",
+    "Endpoint calls by endpoint name",
+    ["endpoint"],
+)
+
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time spent collecting system information",
+)
+
+_KNOWN_ENDPOINTS = frozenset({"/", "/health", "/metrics"})
+
+
+def _normalize_endpoint(path: str) -> str:
+    """Keep cardinality low by grouping unknown paths."""
+    return path if path in _KNOWN_ENDPOINTS else "other"
+
 
 def get_uptime():
     delta = datetime.now(timezone.utc) - START_TIME
@@ -86,8 +131,28 @@ app = FastAPI(
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.time()
-    response = await call_next(request)
-    duration_ms = round((time.time() - start) * 1000, 2)
+    endpoint = _normalize_endpoint(request.url.path)
+
+    http_requests_in_progress.inc()
+    try:
+        response = await call_next(request)
+    finally:
+        http_requests_in_progress.dec()
+
+    duration = time.time() - start
+
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status=str(response.status_code),
+    ).inc()
+
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=endpoint,
+    ).observe(duration)
+
+    duration_ms = round(duration * 1000, 2)
     logger.info(
         "%s %s %s",
         request.method,
@@ -106,6 +171,11 @@ async def log_requests(request: Request, call_next):
 
 @app.get("/")
 async def root(request: Request):
+    devops_info_endpoint_calls.labels(endpoint="/").inc()
+
+    with devops_info_system_collection_seconds.time():
+        system = get_system_info()
+
     uptime = get_uptime()
     return {
         "service": {
@@ -114,7 +184,7 @@ async def root(request: Request):
             "description": "DevOps course info service",
             "framework": "FastAPI",
         },
-        "system": get_system_info(),
+        "system": system,
         "runtime": {
             "uptime_seconds": uptime["seconds"],
             "uptime_human": uptime["human"],
@@ -130,18 +200,26 @@ async def root(request: Request):
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
 
 
 @app.get("/health")
 async def health():
+    devops_info_endpoint_calls.labels(endpoint="/health").inc()
     uptime = get_uptime()
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime["seconds"],
     }
+
+
+@app.get("/metrics")
+async def metrics():
+    devops_info_endpoint_calls.labels(endpoint="/metrics").inc()
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.exception_handler(404)
