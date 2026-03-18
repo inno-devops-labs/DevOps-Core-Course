@@ -1,7 +1,0 @@
----
-- name: restart application container
-  community.docker.docker_container:
-    name: "{{ app_container_name }}"
-    state: started
-    restart: true
-  when: app_container_info.exists | default(false)

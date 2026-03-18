@@ -1,0 +1,7 @@
+---
+# Docker must be available before docker_compose_v2 can start the application stack.
+dependencies:
+  - role: docker
+    tags:
+      - docker
+      - web_app

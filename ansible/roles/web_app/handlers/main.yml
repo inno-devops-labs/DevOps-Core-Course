@@ -1,0 +1,8 @@
+---
+- name: restart web application
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    state: present
+    recreate: always
+    pull: never
+  become: true

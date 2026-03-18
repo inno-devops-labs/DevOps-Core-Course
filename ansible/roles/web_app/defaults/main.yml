@@ -1,0 +1,26 @@
+---
+# Application configuration
+app_name: "devops-lab2"
+app_port: 5000
+app_internal_port: "{{ app_container_port | default(5000) }}"
+app_healthcheck_path: "/health"
+app_wait_timeout: 90
+app_restart_policy: "unless-stopped"
+
+# Docker image configuration
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_tag: "{{ docker_image_tag | default('latest') }}"
+
+# Compose configuration
+docker_compose_version: "3.8"
+compose_project_dir: "/opt/{{ app_name }}"
+web_app_compose_pull_policy: "always"
+web_app_compose_recreate: "auto"
+web_app_remove_image: false
+
+# Deployment safety controls
+web_app_wipe: false
+
+# Environment variables passed to the application container.
+app_env:
+  PORT: "{{ app_internal_port | string }}"

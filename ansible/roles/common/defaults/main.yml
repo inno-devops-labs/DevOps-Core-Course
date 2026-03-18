@@ -13,3 +13,5 @@ common_packages:
   - unzip
 
 common_timezone: "UTC"
+common_manage_user: true
+common_user_name: "{{ ansible_user | default('ubuntu') }}"

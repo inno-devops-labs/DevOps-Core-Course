@@ -8,8 +8,11 @@ dockerhub_password: "your-dockerhub-access-token"
 
 app_name: "devops-lab2"
 docker_image: "{{ dockerhub_username }}/{{ app_name }}"
-docker_image_tag: "latest"
+docker_tag: "latest"
 
-app_port: 5000
-app_container_port: 5000
-app_container_name: "{{ app_name }}"
+app_port: 5000                 # Host port
+app_internal_port: 5000        # Container port
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Wipe safety switch (used with --tags web_app_wipe)
+web_app_wipe: false
