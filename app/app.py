@@ -3,10 +3,13 @@ import json
 import time
 from datetime import datetime, timezone
 from flask import Flask, request, jsonify
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 app = Flask(__name__)
 
-
+# ──────────────────────────────────────────────
+# JSON Logger (Lab 7)
+# ──────────────────────────────────────────────
 class JSONFormatter(logging.Formatter):
     def format(self, record):
         log_record = {
@@ -29,24 +32,69 @@ class JSONFormatter(logging.Formatter):
             log_record["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_record)
 
-
 handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
-
 logger = logging.getLogger("devops-python")
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 logger.propagate = False
 
+# ──────────────────────────────────────────────
+# Prometheus Metrics (Task 1)
+# ──────────────────────────────────────────────
+
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total number of HTTP requests',
+    ['method', 'endpoint', 'status_code']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint'],
+    buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0]
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'Number of HTTP requests currently being processed'
+)
+
+endpoint_calls_total = Counter(
+    'devops_info_endpoint_calls_total',
+    'Total calls per endpoint',
+    ['endpoint']
+)
 
 @app.before_request
 def before_request():
     request.start_time = time.time()
-
+    http_requests_in_progress.inc()
 
 @app.after_request
 def after_request(response):
-    duration_ms = round((time.time() - request.start_time) * 1000, 2)
+    duration = time.time() - request.start_time
+    duration_ms = round(duration * 1000, 2)
+
+    endpoint = request.path
+    if endpoint not in ['/', '/health', '/metrics', '/error']:
+        endpoint = '/other'
+
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status_code=str(response.status_code)
+    ).inc()
+
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=endpoint
+    ).observe(duration)
+
+    http_requests_in_progress.dec()
+
+    # JSON лог (Lab 7)
     logger.info(
         "HTTP request",
         extra={
@@ -59,19 +107,26 @@ def after_request(response):
     )
     return response
 
+# ──────────────────────────────────────────────
+# Routes
+# ──────────────────────────────────────────────
 
-@app.route("/")
+@app.route('/')
 def index():
+    endpoint_calls_total.labels(endpoint='/').inc()
     return jsonify({"status": "ok", "message": "Hello from DevOps Python App!"})
 
-
-@app.route("/health")
+@app.route('/health')
 def health():
-    return jsonify({"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()})
+    endpoint_calls_total.labels(endpoint='/health').inc()
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
 
-
-@app.route("/error")
+@app.route('/error')
 def error():
+    endpoint_calls_total.labels(endpoint='/error').inc()
     try:
         raise ValueError("This is a test error for logging demonstration")
     except ValueError as e:
@@ -82,6 +137,9 @@ def error():
         })
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/metrics')
+def metrics():
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 
 if __name__ == "__main__":
     logger.info("Application starting up", extra={"port": 8000})
