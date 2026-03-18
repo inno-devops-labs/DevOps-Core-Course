@@ -1,5 +1,6 @@
 fastapi==0.128.0
 uvicorn[standard]==0.40.0
+prometheus-client==0.23.1
 
 # Testing dependencies
 pytest==8.3.4

@@ -8,7 +8,11 @@ from datetime import datetime, timezone
 
 import uvicorn
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CollectorRegistry, Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+
+# Use custom registry to avoid conflicts with uvicorn/other libs that may register metrics
+METRICS_REGISTRY = CollectorRegistry()
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
@@ -77,30 +81,95 @@ root_logger.addHandler(stream_handler)
 
 logger = logging.getLogger(__name__)
 
+# Prometheus metrics (RED method: Rate, Errors, Duration)
+# Use METRICS_REGISTRY to avoid conflicts with default registry (uvicorn/other libs)
+http_requests_total = Counter(
+    "devops_http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+    registry=METRICS_REGISTRY,
+)
+
+http_request_duration_seconds = Histogram(
+    "devops_http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+    registry=METRICS_REGISTRY,
+)
+
+http_requests_in_progress = Gauge(
+    "devops_http_requests_in_progress",
+    "HTTP requests currently being processed",
+    registry=METRICS_REGISTRY,
+)
+
+# Application-specific metrics
+devops_info_endpoint_calls = Counter(
+    "devops_info_endpoint_calls",
+    "Endpoint calls for DevOps info service",
+    ["endpoint"],
+    registry=METRICS_REGISTRY,
+)
+
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "System info collection time in seconds",
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0),
+    registry=METRICS_REGISTRY,
+)
+
+
+def _normalize_endpoint(path: str) -> str:
+    """Normalize endpoint for low cardinality (avoid user IDs etc.)."""
+    if path == "/":
+        return "/"
+    if path in ("/health", "/metrics"):
+        return path
+    return path
+
+
 app = FastAPI(title="DevOps Info Service")
 START_TIME = datetime.now(timezone.utc)
 
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """Log each HTTP request and response in JSON format."""
+    """Log each HTTP request and response in JSON format; record Prometheus metrics."""
     start_time = time.time()
+    endpoint = _normalize_endpoint(request.url.path)
+    http_requests_in_progress.inc()
+
     try:
         response = await call_next(request)
+        status = str(response.status_code)
     except Exception:
-        duration_ms = (time.time() - start_time) * 1000
+        duration_s = time.time() - start_time
+        status = "500"
+        http_requests_total.labels(method=request.method, endpoint=endpoint, status=status).inc()
+        http_request_duration_seconds.labels(method=request.method, endpoint=endpoint).observe(duration_s)
+        http_requests_in_progress.dec()
         logger.exception(
             "Request failed",
             extra={
                 "method": request.method,
                 "path": request.url.path,
                 "client_ip": request.client.host if request.client else None,
-                "duration_ms": round(duration_ms, 2),
+                "duration_ms": round(duration_s * 1000, 2),
             },
         )
         raise
 
-    duration_ms = (time.time() - start_time) * 1000
+    duration_s = time.time() - start_time
+    http_requests_total.labels(method=request.method, endpoint=endpoint, status=status).inc()
+    http_request_duration_seconds.labels(method=request.method, endpoint=endpoint).observe(duration_s)
+    http_requests_in_progress.dec()
+
+    if endpoint in ("/", "/health"):
+        devops_info_endpoint_calls.labels(endpoint=endpoint).inc()
+        devops_info_system_collection_seconds.observe(duration_s)
+
+    duration_ms = duration_s * 1000
     logger.info(
         "Request handled",
         extra={
@@ -164,6 +233,7 @@ async def read_root(request: Request):
             "endpoints": [
                 {"path": "/", "method": "GET", "description": "Service information"},
                 {"path": "/health", "method": "GET", "description": "Health check"},
+                {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
             ],
         }
     except Exception as e:
@@ -182,6 +252,16 @@ async def health():
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": runtime["uptime_seconds"],
     }
+
+
+@app.get("/metrics", tags=["Monitoring"])
+async def metrics():
+    """Prometheus metrics endpoint for scraping."""
+    return Response(
+        content=generate_latest(METRICS_REGISTRY),
+        media_type=CONTENT_TYPE_LATEST,
+    )
+
 
 @app.exception_handler(404)
 async def custom_404_handler(request: Request, exc):
