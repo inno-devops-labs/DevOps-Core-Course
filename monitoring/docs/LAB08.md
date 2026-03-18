@@ -302,133 +302,181 @@ Three named Docker volumes ensure data survives container restarts:
 
 ## 7. Testing Results
 
-### Screenshots (what/where/how)
-
-Create a folder (already exists in repo from Lab 7):
-
-- `monitoring/docs/evidence/`
-
-Save **all new Lab 8 screenshots** into that folder and then reference them in the sections below.
-
-#### Required screenshots checklist (Lab 8)
-
-1. **`/metrics` output**
-   - **What to capture**: Browser or terminal output showing `http_requests_total`, `http_request_duration_seconds_*`, `http_requests_in_progress`, and `devops_info_*` metrics.
-   - **Where to get it**:
-     - **Terminal (recommended)**: `curl http://localhost:8000/metrics | head -80`
-     - Or open in browser: `http://localhost:8000/metrics`
-   - **Save as**: `monitoring/docs/evidence/lab08-metrics-endpoint.png`
-   - **Insert here**: under **“Metrics Endpoint”** section.
-
-2. **Prometheus Targets page (all UP)**
-   - **What to capture**: Prometheus UI `/targets` page with jobs `prometheus`, `app`, `loki`, `grafana` in **green UP**.
-   - **Where to get it**:
-     - Browser: `http://localhost:9090/targets`
-   - **Save as**: `monitoring/docs/evidence/lab08-prometheus-targets.png`
-   - **Insert here**: under **“Prometheus Targets”** section.
-
-3. **Prometheus PromQL query result**
-   - **What to capture**: Prometheus UI showing a successful query result (for example `up` or `sum(rate(http_requests_total[5m]))`).
-   - **Where to get it**:
-     - Browser: `http://localhost:9090` → “Graph” → enter query
-   - **Save as**: `monitoring/docs/evidence/lab08-prometheus-query-up.png`
-   - **Insert here**: under **“Prometheus Targets”** or a new subsection “Prometheus Query Evidence”.
-
-4. **Grafana dashboard with 6+ panels working**
-   - **What to capture**: Grafana dashboard “Application Metrics” showing live graphs (request rate, p95, heatmap, etc.).
-   - **Where to get it**:
-     - Browser: `http://localhost:3000` → open dashboard “Application Metrics”
-   - **Save as**: `monitoring/docs/evidence/lab08-grafana-app-dashboard.png`
-   - **Insert here**: under **“Grafana Dashboards”** section.
-
-5. **`docker compose ps` showing healthy**
-   - **What to capture**: terminal output where all services are **Up (healthy)**.
-   - **Where to get it**:
-     - Terminal: `cd monitoring && docker compose ps`
-   - **Save as**: `monitoring/docs/evidence/lab08-docker-compose-ps.png`
-   - **Insert here**: under **“Container Health”** section.
-
-> If you are collecting evidence on the remote server via SSH, replace `localhost` with SSH port-forwarding (see “How to run / how to access” below).
-
 ### Metrics Endpoint
 
 After starting the application, `curl http://localhost:8000/metrics` returns:
 
-**Screenshot placeholder:** `monitoring/docs/evidence/lab08-metrics-endpoint.png`  
-**How to get it (terminal):**
-
-```bash
-cd monitoring
-docker compose up -d
-curl http://localhost:8000/metrics | head -80
 ```
-
-```
+# HELP python_gc_objects_collected_total Objects collected during gc
+# TYPE python_gc_objects_collected_total counter
+python_gc_objects_collected_total{generation="0"} 496.0
+python_gc_objects_collected_total{generation="1"} 6.0
+python_gc_objects_collected_total{generation="2"} 0.0
+# HELP python_gc_objects_uncollectable_total Uncollectable objects found during GC
+# TYPE python_gc_objects_uncollectable_total counter
+python_gc_objects_uncollectable_total{generation="0"} 0.0
+python_gc_objects_uncollectable_total{generation="1"} 0.0
+python_gc_objects_uncollectable_total{generation="2"} 0.0
+# HELP python_gc_collections_total Number of times this generation was collected
+# TYPE python_gc_collections_total counter
+python_gc_collections_total{generation="0"} 40.0
+python_gc_collections_total{generation="1"} 3.0
+python_gc_collections_total{generation="2"} 0.0
+# HELP python_info Python platform information
+# TYPE python_info gauge
+python_info{implementation="CPython",major="3",minor="13",patchlevel="12",version="3.13.12"} 1.0
+# HELP process_virtual_memory_bytes Virtual memory size in bytes.
+# TYPE process_virtual_memory_bytes gauge
+process_virtual_memory_bytes 1.67948288e+08
+# HELP process_resident_memory_bytes Resident memory size in bytes.
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes 5.6721408e+07
+# HELP process_start_time_seconds Start time of the process since unix epoch in seconds.
+# TYPE process_start_time_seconds gauge
+process_start_time_seconds 1.77386208959e+09
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 4.37
+# HELP process_open_fds Number of open file descriptors.
+# TYPE process_open_fds gauge
+process_open_fds 16.0
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+process_max_fds 1.048576e+06
 # HELP http_requests_total Total HTTP requests
 # TYPE http_requests_total counter
-http_requests_total{method="GET",endpoint="/",status="200"} 5.0
-http_requests_total{method="GET",endpoint="/health",status="200"} 12.0
-
+http_requests_total{endpoint="/health",method="GET",status="200"} 75.0
+http_requests_total{endpoint="/metrics",method="GET",status="200"} 56.0
+http_requests_total{endpoint="/",method="GET",status="200"} 1.0
+# HELP http_requests_created Total HTTP requests
+# TYPE http_requests_created gauge
+http_requests_created{endpoint="/health",method="GET",status="200"} 1.7738620964624329e+09
+http_requests_created{endpoint="/metrics",method="GET",status="200"} 1.7738621044538028e+09
+http_requests_created{endpoint="/",method="GET",status="200"} 1.7738624351268284e+09
 # HELP http_request_duration_seconds HTTP request duration in seconds
 # TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{le="0.005",method="GET",endpoint="/"} 4.0
-...
-
+http_request_duration_seconds_bucket{endpoint="/health",le="0.005",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="0.01",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="0.025",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="0.05",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="0.075",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="0.1",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="0.25",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="0.5",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="0.75",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="1.0",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="2.5",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="5.0",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="7.5",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="10.0",method="GET"} 75.0
+http_request_duration_seconds_bucket{endpoint="/health",le="+Inf",method="GET"} 75.0
+http_request_duration_seconds_count{endpoint="/health",method="GET"} 75.0
+http_request_duration_seconds_sum{endpoint="/health",method="GET"} 0.044797420501708984
+http_request_duration_seconds_bucket{endpoint="/metrics",le="0.005",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="0.01",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="0.025",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="0.05",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="0.075",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="0.1",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="0.25",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="0.5",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="0.75",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="1.0",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="2.5",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="5.0",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="7.5",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="10.0",method="GET"} 56.0
+http_request_duration_seconds_bucket{endpoint="/metrics",le="+Inf",method="GET"} 56.0
+http_request_duration_seconds_count{endpoint="/metrics",method="GET"} 56.0
+http_request_duration_seconds_sum{endpoint="/metrics",method="GET"} 0.13316011428833008
+http_request_duration_seconds_bucket{endpoint="/",le="0.005",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="0.01",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="0.025",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="0.05",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="0.075",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="0.1",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="0.25",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="0.5",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="0.75",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="1.0",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="2.5",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="5.0",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="7.5",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="10.0",method="GET"} 1.0
+http_request_duration_seconds_bucket{endpoint="/",le="+Inf",method="GET"} 1.0
+http_request_duration_seconds_count{endpoint="/",method="GET"} 1.0
+http_request_duration_seconds_sum{endpoint="/",method="GET"} 0.0011036396026611328
+# HELP http_request_duration_seconds_created HTTP request duration in seconds
+# TYPE http_request_duration_seconds_created gauge
+http_request_duration_seconds_created{endpoint="/health",method="GET"} 1.7738620964624693e+09
+http_request_duration_seconds_created{endpoint="/metrics",method="GET"} 1.7738621044538283e+09
+http_request_duration_seconds_created{endpoint="/",method="GET"} 1.773862435126861e+09
 # HELP http_requests_in_progress HTTP requests currently being processed
 # TYPE http_requests_in_progress gauge
-http_requests_in_progress 0.0
-
-# HELP devops_info_endpoint_calls Endpoint calls by endpoint name
-# TYPE devops_info_endpoint_calls counter
-devops_info_endpoint_calls{endpoint="/"} 5.0
-devops_info_endpoint_calls{endpoint="/health"} 12.0
+http_requests_in_progress 1.0
+# HELP devops_info_endpoint_calls_total Endpoint calls by endpoint name
+# TYPE devops_info_endpoint_calls_total counter
+devops_info_endpoint_calls_total{endpoint="/health"} 75.0
+devops_info_endpoint_calls_total{endpoint="/metrics"} 57.0
+devops_info_endpoint_calls_total{endpoint="/"} 1.0
+# HELP devops_info_endpoint_calls_created Endpoint calls by endpoint name
+# TYPE devops_info_endpoint_calls_created gauge
+devops_info_endpoint_calls_created{endpoint="/health"} 1.7738620964620905e+09
+devops_info_endpoint_calls_created{endpoint="/metrics"} 1.7738621044523425e+09
+devops_info_endpoint_calls_created{endpoint="/"} 1.7738624351261952e+09
+# HELP devops_info_system_collection_seconds Time spent collecting system information
+# TYPE devops_info_system_collection_seconds histogram
+devops_info_system_collection_seconds_bucket{le="0.005"} 1.0
+devops_info_system_collection_seconds_bucket{le="0.01"} 1.0
+devops_info_system_collection_seconds_bucket{le="0.025"} 1.0
+devops_info_system_collection_seconds_bucket{le="0.05"} 1.0
+devops_info_system_collection_seconds_bucket{le="0.075"} 1.0
+devops_info_system_collection_seconds_bucket{le="0.1"} 1.0
+devops_info_system_collection_seconds_bucket{le="0.25"} 1.0
+devops_info_system_collection_seconds_bucket{le="0.5"} 1.0
+devops_info_system_collection_seconds_bucket{le="0.75"} 1.0
+devops_info_system_collection_seconds_bucket{le="1.0"} 1.0
+devops_info_system_collection_seconds_bucket{le="2.5"} 1.0
+devops_info_system_collection_seconds_bucket{le="5.0"} 1.0
+devops_info_system_collection_seconds_bucket{le="7.5"} 1.0
+devops_info_system_collection_seconds_bucket{le="10.0"} 1.0
+devops_info_system_collection_seconds_bucket{le="+Inf"} 1.0
+devops_info_system_collection_seconds_count 1.0
+devops_info_system_collection_seconds_sum 0.00013108199982525548
+# HELP devops_info_system_collection_seconds_created Time spent collecting system information
+# TYPE devops_info_system_collection_seconds_created gauge
+devops_info_system_collection_seconds_created 1.7738620939787703e+09
 ```
 
 ### Prometheus Targets
 
 All four scrape targets show **UP** status on `http://localhost:9090/targets`:
 
-**Screenshot placeholder:** `monitoring/docs/evidence/lab08-prometheus-targets.png`  
-**How to get it (UI):** open `http://localhost:9090/targets`
-
 - `prometheus` — UP
-- `app` — UP
+- `app` — UPs
 - `loki` — UP
 - `grafana` — UP
 
-### Prometheus Query Evidence
 
-**Screenshot placeholder:** `monitoring/docs/evidence/lab08-prometheus-query-up.png`  
-**How to get it (UI):** open `http://localhost:9090` → query `up` (or `sum(rate(http_requests_total[5m]))`)
-
+![Prometheus Targets](evidence/targets.png)
 ### Grafana Dashboards
 
 - Prometheus and Loki data sources auto-provisioned and connected
 - Application Metrics dashboard auto-provisioned with 7 panels showing live data
 - All panels rendering correctly with real-time metrics from the application
 
-**Screenshot placeholder:** `monitoring/docs/evidence/lab08-grafana-app-dashboard.png`  
-**How to get it (UI):** open `http://localhost:3000` → dashboards → “Application Metrics”
-
+![Prometheus Targets](evidence/grafana_dashboard.png)
 ### Container Health
 
 `docker compose ps` shows all services in **healthy** state:
 
-**Screenshot placeholder:** `monitoring/docs/evidence/lab08-docker-compose-ps.png`  
-**How to get it (terminal):**
-
-```bash
-cd monitoring
-docker compose ps
 ```
-
-```
-NAME         SERVICE       STATUS                 PORTS
-app-python   app-python    Up (healthy)           0.0.0.0:8000->5000/tcp
-grafana      grafana       Up (healthy)           0.0.0.0:3000->3000/tcp
-loki         loki          Up (healthy)           0.0.0.0:3100->3100/tcp
-prometheus   prometheus    Up (healthy)           0.0.0.0:9090->9090/tcp
-promtail     promtail      Up                     0.0.0.0:9080->9080/tcp
+NAME         IMAGE                    COMMAND                  SERVICE      CREATED         STATUS                   PORTS
+app-python   monitoring-app-python    "uvicorn app:app --h…"   app-python   8 minutes ago   Up 8 minutes (healthy)   0.0.0.0:8000->5000/tcp, [::]:8000->5000/tcp
+grafana      grafana/grafana:12.3.1   "/run.sh"                grafana      8 minutes ago   Up 8 minutes (healthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+loki         grafana/loki:3.0.0       "/usr/bin/loki -conf…"   loki         8 minutes ago   Up 8 minutes (healthy)   0.0.0.0:3100->3100/tcp, [::]:3100->3100/tcp
+prometheus   prom/prometheus:v3.9.0   "/bin/prometheus --c…"   prometheus   8 minutes ago   Up 8 minutes (healthy)   0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp
+promtail     grafana/promtail:3.0.0   "/usr/bin/promtail -…"   promtail     8 minutes ago   Up 8 minutes             0.0.0.0:9080->9080/tcp, [::]:9080->9080/tcp
 ```
 
 ---
