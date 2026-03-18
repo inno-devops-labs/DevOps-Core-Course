@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 import os
 import platform
 import socket
@@ -9,6 +9,9 @@ import json
 import time
 import uuid
 from contextlib import asynccontextmanager
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+import asyncio
+
 
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
@@ -38,6 +41,77 @@ logger.propagate = False
 
 app = FastAPI()
 start_time = datetime.now()
+
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration',
+    ['method', 'endpoint']
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
+
+# Application-specific metrics
+
+uptime_seconds = Gauge(
+    'app_uptime_seconds',
+    'Application uptime in seconds'
+)
+
+endpoint_response_size_bytes = Histogram(
+    'endpoint_response_size_bytes',
+    'Response payload size in bytes',
+    ['endpoint']
+)
+
+
+@app.middleware("http")
+async def dispatch(request, call_next):
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
+    http_requests_in_progress.inc()
+
+    start_time = time.time()
+    status_code = 500
+    response = None
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+    except Exception as e:
+        status_code = 500
+        http_requests_in_progress.dec()
+        raise
+    finally:
+        duration = time.time() - start_time
+
+        http_requests_total.labels(
+            method=request.method,
+            endpoint=request.url.path,
+            status=status_code
+        ).inc()
+
+        http_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=request.url.path
+        ).observe(duration)
+
+        if response and hasattr(response, 'body'):
+            response_size = len(response.body)
+            endpoint_response_size_bytes.labels(
+                endpoint=request.url.path).observe(response_size)
+
+        http_requests_in_progress.dec()
+
+    return response
 
 
 @app.middleware("http")
@@ -88,9 +162,25 @@ async def lifespan(app: FastAPI):
     logger.info("Application starting up", extra={
                 "extra_info": {"config": startup_config}})
 
+    async def update_uptime():
+        while True:
+            uptime_seconds.set(get_uptime()['seconds'])
+            await asyncio.sleep(5)  # Update every 5 seconds
+
+    uptime_task = asyncio.create_task(update_uptime())
+
     yield
 
     logger.info("Application shutting down")
+    uptime_task.cancel()
+
+
+@app.get('/metrics')
+def metrics():
+    return Response(
+        generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
 
 
 @app.get("/")

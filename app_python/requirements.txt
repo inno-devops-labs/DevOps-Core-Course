@@ -48,3 +48,4 @@ flake8==7.3.0
 mccabe==0.7.0
 pycodestyle==2.14.0
 pyflakes==3.4.0
+prometheus-client==0.23.1
