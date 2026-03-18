@@ -15,8 +15,10 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -ldflags='-s -w' -o /out/devops-info-service ./
 
-# Final stage: minimal runtime image
-FROM scratch
+# Final stage: minimal runtime image with healthcheck tools
+FROM alpine:3.20
+
+RUN adduser -D -u 1000 app && apk add --no-cache wget ca-certificates
 
 # Copy binary from builder stage
 COPY --from=builder /out/devops-info-service /usr/local/bin/devops-info-service

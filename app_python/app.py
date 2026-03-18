@@ -3,6 +3,7 @@ import socket
 import platform
 import logging
 import json
+import time
 from datetime import datetime, timezone
 from typing import Dict, Any
 
@@ -11,6 +12,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -144,7 +146,74 @@ def get_request_info(request: Request) -> Dict[str, Any]:
 ENDPOINTS = [
     {"path": "/", "method": "GET", "description": "Service information"},
     {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
 ]
+
+# Prometheus metrics
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+    ["method", "endpoint"],
+)
+
+# Application-specific metrics
+endpoint_calls = Counter(
+    "devops_info_endpoint_calls_total",
+    "DevOps info service endpoint calls",
+    ["endpoint"],
+)
+
+system_info_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "System info collection time in seconds",
+)
+
+
+def _get_endpoint_label(request: Request) -> str:
+    route = request.scope.get("route")
+    if route and hasattr(route, "path"):
+        return route.path
+    return request.url.path
+
+
+class MetricsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        method = request.method
+        endpoint = _get_endpoint_label(request)
+        start = time.perf_counter()
+        http_requests_in_progress.labels(method=method, endpoint=endpoint).inc()
+
+        status_code = 500
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+            return response
+        except StarletteHTTPException as exc:
+            status_code = exc.status_code
+            raise
+        except RequestValidationError:
+            status_code = 400
+            raise
+        finally:
+            duration = time.perf_counter() - start
+            http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
+            http_requests_total.labels(method=method, endpoint=endpoint, status_code=str(status_code)).inc()
+            http_requests_in_progress.labels(method=method, endpoint=endpoint).dec()
+
+
+app.add_middleware(MetricsMiddleware)
 
 
 @app.get("/", summary="Service and system information")
@@ -152,7 +221,9 @@ async def index(request: Request):
     """Main endpoint returning comprehensive info about service & runtime."""
 
     logger.info("Index endpoint accessed", extra={"endpoint": "/", "method": "GET"})
-    system = get_system_info()
+    endpoint_calls.labels(endpoint="/").inc()
+    with system_info_collection_seconds.time():
+        system = get_system_info()
     uptime = get_uptime()
 
     response = {
@@ -180,6 +251,7 @@ async def health(request: Request):
     """Simple health endpoint (used for liveness/readiness)."""
 
     logger.info("Health check endpoint accessed", extra={"endpoint": "/health", "method": "GET"})
+    endpoint_calls.labels(endpoint="/health").inc()
     uptime = get_uptime()
     payload = {
         "status": "healthy",
@@ -187,6 +259,12 @@ async def health(request: Request):
         "uptime_seconds": uptime["seconds"],
     }
     return JSONResponse(content=payload)
+
+
+@app.get("/metrics", summary="Prometheus metrics")
+async def metrics():
+    payload = generate_latest()
+    return Response(content=payload, media_type=CONTENT_TYPE_LATEST)
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -210,4 +288,4 @@ async def generic_exception_handler(request: Request, exc: Exception):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app:app", host=HOST, port=PORT, reload=DEBUG)
+    uvicorn.run(app, host=HOST, port=PORT, reload=DEBUG)
