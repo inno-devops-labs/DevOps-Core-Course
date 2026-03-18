@@ -1,6 +1,7 @@
 name: Ansible Deployment
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, master, lab06 ]
     paths:
@@ -49,6 +50,12 @@ jobs:
   deploy:
     name: Deploy Application
     needs: lint
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' &&
+       secrets.SSH_PRIVATE_KEY != '' &&
+       secrets.VM_HOST != '' &&
+       secrets.VM_USER != '')
     runs-on: ubuntu-latest
     defaults:
       run:
