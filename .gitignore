@@ -60,7 +60,6 @@ pulumi/Pulumi.*.yaml
 *.pem
 *.key
 *.p12
-*.json
 credentials
 
 # Lab-specific local artifacts

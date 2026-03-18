@@ -2,8 +2,10 @@ import logging
 import os
 import platform
 import socket
+import time
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 APP_NAME = "devops-info-service"
 APP_VERSION = "1.0.0"
@@ -15,6 +17,35 @@ PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 START_TIME = datetime.now(timezone.utc)
+
+# Metrics (RED method + app-specific)
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+
+devops_info_endpoint_calls = Counter(
+    "devops_info_endpoint_calls",
+    "DevOps info service endpoint calls",
+    ["endpoint"],
+)
+
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time to collect system info in seconds",
+)
 
 
 def iso_utc_z(dt: datetime) -> str:
@@ -43,14 +74,18 @@ def get_client_ip() -> str:
 
 
 def get_system_info() -> dict:
-    return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "platform_version": platform.platform(),
-        "architecture": platform.machine(),
-        "cpu_count": os.cpu_count() or 0,
-        "python_version": platform.python_version(),
-    }
+    start = time.perf_counter()
+    try:
+        return {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "platform_version": platform.platform(),
+            "architecture": platform.machine(),
+            "cpu_count": os.cpu_count() or 0,
+            "python_version": platform.python_version(),
+        }
+    finally:
+        devops_info_system_collection_seconds.observe(time.perf_counter() - start)
 
 
 def get_runtime_info() -> dict:
@@ -92,9 +127,38 @@ def create_app() -> Flask:
     @app.before_request
     def log_request() -> None:
         logger.debug("Request: %s %s", request.method, request.path)
+        request._prom_start_time = time.perf_counter()  # type: ignore[attr-defined]
+        http_requests_in_progress.inc()
+
+    @app.after_request
+    def record_metrics(response):
+        try:
+            endpoint = (
+                request.url_rule.rule  # type: ignore[union-attr]
+                if request.url_rule is not None
+                else request.path
+            )
+            method = request.method
+            status_code = str(response.status_code)
+            http_requests_total.labels(
+                method=method,
+                endpoint=endpoint,
+                status_code=status_code,
+            ).inc()
+
+            start = getattr(request, "_prom_start_time", None)
+            if isinstance(start, (int, float)):
+                http_request_duration_seconds.labels(
+                    method=method,
+                    endpoint=endpoint,
+                ).observe(time.perf_counter() - start)
+        finally:
+            http_requests_in_progress.dec()
+        return response
 
     @app.get("/")
     def index():
+        devops_info_endpoint_calls.labels(endpoint="/").inc()
         payload = {
             "service": {
                 "name": APP_NAME,
@@ -111,6 +175,7 @@ def create_app() -> Flask:
 
     @app.get("/health")
     def health():
+        devops_info_endpoint_calls.labels(endpoint="/health").inc()
         uptime = get_uptime()
         return jsonify(
             {
@@ -119,6 +184,16 @@ def create_app() -> Flask:
                 "uptime_seconds": uptime["seconds"],
             }
         )
+
+    @app.get("/boom")
+    def boom():
+        devops_info_endpoint_calls.labels(endpoint="/boom").inc()
+        raise RuntimeError("Intentional error for monitoring demo")
+
+    @app.get("/metrics")
+    def metrics():
+        devops_info_endpoint_calls.labels(endpoint="/metrics").inc()
+        return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
     @app.errorhandler(404)
     def not_found(_error):

@@ -1,4 +1,35 @@
 services:
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=10GB"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
   loki:
     image: grafana/loki:3.0.0
     command: ["-config.file=/etc/loki/config.yml"]
@@ -46,7 +77,7 @@ services:
       loki:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9080/ready || exit 1"]
+      test: ["CMD", "/usr/bin/promtail", "-version"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -88,8 +119,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 1G
+          cpus: "0.5"
+          memory: 512M
         reservations:
           cpus: "0.5"
           memory: 512M
@@ -111,11 +142,25 @@ services:
     depends_on:
       promtail:
         condition: service_started
+      prometheus:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2).read(); print('ok')"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
         reservations:
           cpus: "0.25"
           memory: 256M
@@ -140,7 +185,7 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
         reservations:
           cpus: "0.25"
           memory: 256M
@@ -153,4 +198,5 @@ volumes:
   loki-data:
   grafana-data:
   promtail-positions:
+  prometheus-data:
 
