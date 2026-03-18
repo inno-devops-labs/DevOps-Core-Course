@@ -96,6 +96,7 @@ I also added workflow badge in `README.md`.
 
 ### Screenshot
 ![Lab06 Ansible result](../../screenshots/lab06_ans.png)
+![Lab06 Ansible lint](../../screenshots/lint_ans.png)
 
 ## 7. Simple Research Answers
 
