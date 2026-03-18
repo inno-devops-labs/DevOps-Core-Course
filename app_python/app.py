@@ -11,9 +11,12 @@ import socket
 import platform
 import logging
 import json
+import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
+
+from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 # ------------------------------------------------------------------------------
 # Application setup
@@ -64,6 +67,46 @@ def get_uptime():
     return seconds, f"{hours} hours, {minutes} minutes"
 
 
+def _normalize_endpoint_label():
+    rule = getattr(request, "url_rule", None)
+    if rule and getattr(rule, "rule", None):
+        return rule.rule
+    return request.path
+
+
+# ------------------------------------------------------------------------------
+# Prometheus metrics
+# ------------------------------------------------------------------------------
+
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+
+devops_info_endpoint_calls = Counter(
+    "devops_info_endpoint_calls",
+    "DevOps Info Service endpoint calls",
+    ["endpoint"],
+)
+
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time spent collecting system info in seconds",
+)
+
+
 def get_system_info():
     """
     Collect system information.
@@ -71,14 +114,63 @@ def get_system_info():
     Returns:
         dict: system information
     """
-    return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "platform_version": platform.release(),
-        "architecture": platform.machine(),
-        "cpu_count": os.cpu_count(),
-        "python_version": platform.python_version(),
-    }
+    start = time.perf_counter()
+    try:
+        return {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "platform_version": platform.release(),
+            "architecture": platform.machine(),
+            "cpu_count": os.cpu_count(),
+            "python_version": platform.python_version(),
+        }
+    finally:
+        devops_info_system_collection_seconds.observe(time.perf_counter() - start)
+
+
+# ------------------------------------------------------------------------------
+# Request instrumentation
+# ------------------------------------------------------------------------------
+
+@app.before_request
+def _metrics_before_request():
+    g._metrics_start = time.perf_counter()
+    g._metrics_endpoint = _normalize_endpoint_label()
+
+    if request.path != "/metrics":
+        http_requests_in_progress.inc()
+
+
+@app.after_request
+def _metrics_after_request(response):
+    endpoint = getattr(g, "_metrics_endpoint", _normalize_endpoint_label())
+
+    if request.path != "/metrics":
+        duration = time.perf_counter() - getattr(g, "_metrics_start", time.perf_counter())
+        http_requests_total.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_code=str(response.status_code),
+        ).inc()
+        http_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=endpoint,
+        ).observe(duration)
+        http_requests_in_progress.dec()
+
+    return response
+
+
+@app.teardown_request
+def _metrics_teardown_request(error):
+    if request.path == "/metrics":
+        return
+
+    if error is not None:
+        try:
+            http_requests_in_progress.dec()
+        except ValueError:
+            pass
 
 # ------------------------------------------------------------------------------
 # Routes
@@ -102,6 +194,7 @@ def index():
     }))
 
     uptime_seconds, uptime_human = get_uptime()
+    devops_info_endpoint_calls.labels(endpoint="/").inc()
 
     response = {
         "service": {
@@ -138,6 +231,7 @@ def health():
     Health check endpoint.
     """
     uptime_seconds, _ = get_uptime()
+    devops_info_endpoint_calls.labels(endpoint="/health").inc()
 
     logger.info(json.dumps({
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -156,6 +250,11 @@ def health():
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime_seconds,
     })
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 # ------------------------------------------------------------------------------
 # Error handlers
