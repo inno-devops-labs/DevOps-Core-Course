@@ -10,7 +10,7 @@ The logging stack consists of three main components:
 
 All components are deployed using Docker Compose on a single VM. The application produce structured JSON logs, which are collected by Promtail (via Docker socket) and sent to Loki. Grafana connects to Loki as a data source and provides a dashboard for log exploration.
 
-![Architecture Diagram](screenshots/architecture.png)
+![Architecture Diagram](screenshots/architecture-07.png)
 
 
 ## 2. Setup Guide

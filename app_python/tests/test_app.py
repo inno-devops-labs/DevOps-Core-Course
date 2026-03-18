@@ -168,3 +168,42 @@ def test_health_response_structure(client):
     except ValueError:
         timestamp_valid = False
     assert timestamp_valid
+
+
+def test_metrics_endpoint(client):
+    """Metrics endpoint exposes Prometheus metrics in text format."""
+    client.get("/")
+    client.get("/health")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.mimetype == "text/plain"
+
+    metrics_output = response.get_data(as_text=True)
+    metric_lines = metrics_output.splitlines()
+
+    assert "http_requests_total" in metrics_output
+    assert any(
+        line.startswith("http_requests_total{")
+        and 'endpoint="/"' in line
+        and 'method="GET"' in line
+        and 'status_code="200"' in line
+        for line in metric_lines
+    )
+    assert any(
+        line.startswith("http_requests_total{")
+        and 'endpoint="/health"' in line
+        and 'method="GET"' in line
+        and 'status_code="200"' in line
+        for line in metric_lines
+    )
+    assert "http_request_duration_seconds_bucket" in metrics_output
+    assert any(
+        line.startswith("http_requests_in_progress{")
+        and 'endpoint="/metrics"' in line
+        and 'method="GET"' in line
+        for line in metric_lines
+    )
+    assert "devops_info_endpoint_calls_total" in metrics_output
+    assert "devops_info_system_info_collection_seconds_bucket" in metrics_output
