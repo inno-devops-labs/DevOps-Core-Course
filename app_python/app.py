@@ -8,10 +8,12 @@ import json
 import socket
 import platform
 import logging
+from time import perf_counter
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 
 STANDARD_LOG_RECORD_FIELDS = {
@@ -76,8 +78,36 @@ SERVICE_INFO = {
 # Available endpoints
 ENDPOINTS = [
     {'path': '/', 'method': 'GET', 'description': 'Service information'},
-    {'path': '/health', 'method': 'GET', 'description': 'Health check'}
+    {'path': '/health', 'method': 'GET', 'description': 'Health check'},
+    {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'}
 ]
+
+IGNORED_METRIC_PATHS = {'/metrics'}
+
+HTTP_REQUESTS_TOTAL = Counter(
+    'http_requests_total',
+    'Total HTTP requests processed by the application',
+    ['method', 'endpoint', 'status_code']
+)
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint', 'status_code']
+)
+HTTP_REQUESTS_IN_PROGRESS = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed',
+    ['method', 'endpoint']
+)
+DEVOPS_INFO_ENDPOINT_CALLS_TOTAL = Counter(
+    'devops_info_endpoint_calls_total',
+    'Application endpoint calls',
+    ['endpoint']
+)
+DEVOPS_INFO_SYSTEM_INFO_COLLECTION_SECONDS = Histogram(
+    'devops_info_system_info_collection_seconds',
+    'Time spent collecting system information'
+)
 
 app = FastAPI(
     title="DevOps Info Service",
@@ -88,6 +118,51 @@ app = FastAPI(
 logger.info("DevOps Info Service starting up", extra={
     "host": HOST, "port": PORT, "debug": DEBUG
 })
+
+
+def normalize_endpoint(request: Request):
+    """Normalize endpoint labels to avoid high-cardinality metrics."""
+    route = request.scope.get('route')
+    route_path = getattr(route, 'path', None)
+    if route_path:
+        return route_path
+
+    if request.url.path in {'/', '/health', '/metrics'}:
+        return request.url.path
+
+    return '/unknown'
+
+
+@app.middleware("http")
+async def collect_http_metrics(request: Request, call_next):
+    """Collect RED metrics for HTTP requests."""
+    endpoint = normalize_endpoint(request)
+    if endpoint in IGNORED_METRIC_PATHS:
+        return await call_next(request)
+
+    method = request.method
+    in_progress = HTTP_REQUESTS_IN_PROGRESS.labels(method=method, endpoint=endpoint)
+    in_progress.inc()
+    start_time = perf_counter()
+    status_code = '500'
+
+    try:
+        response = await call_next(request)
+        status_code = str(response.status_code)
+        return response
+    finally:
+        duration = perf_counter() - start_time
+        HTTP_REQUESTS_TOTAL.labels(
+            method=method,
+            endpoint=endpoint,
+            status_code=status_code,
+        ).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(
+            method=method,
+            endpoint=endpoint,
+            status_code=status_code,
+        ).observe(duration)
+        in_progress.dec()
 
 
 @app.middleware("http")
@@ -152,14 +227,15 @@ def get_uptime():
 
 def get_system_info():
     """Collect system information."""
-    return {
-        'hostname': socket.gethostname(),
-        'platform': platform.system(),
-        'platform_version': platform.platform(),
-        'architecture': platform.machine(),
-        'cpu_count': os.cpu_count(),
-        'python_version': platform.python_version()
-    }
+    with DEVOPS_INFO_SYSTEM_INFO_COLLECTION_SECONDS.time():
+        return {
+            'hostname': socket.gethostname(),
+            'platform': platform.system(),
+            'platform_version': platform.platform(),
+            'architecture': platform.machine(),
+            'cpu_count': os.cpu_count(),
+            'python_version': platform.python_version()
+        }
 
 
 def get_runtime_info():
@@ -187,6 +263,7 @@ def get_request_info(request: Request):
 @app.get('/')
 async def index(request: Request):
     """Main endpoint - service and system information."""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/').inc()
     return {
         'service': SERVICE_INFO,
         'system': get_system_info(),
@@ -200,6 +277,7 @@ async def index(request: Request):
 async def health():
     """Health check endpoint for monitoring."""
     logger.debug('Health check requested')
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/health').inc()
 
     uptime = get_uptime()
     return {
@@ -207,6 +285,15 @@ async def health():
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'uptime_seconds': uptime['seconds']
     }
+
+
+@app.get('/metrics')
+async def metrics():
+    """Expose Prometheus metrics for scraping."""
+    return Response(
+        content=generate_latest(),
+        headers={'Content-Type': CONTENT_TYPE_LATEST},
+    )
 
 
 @app.exception_handler(404)

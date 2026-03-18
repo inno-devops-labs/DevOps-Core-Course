@@ -1,0 +1,143 @@
+---
+- name: Deploy monitoring stack
+  block:
+    - name: Log in to Docker Hub
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+      no_log: true
+
+    - name: Create monitoring directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ monitoring_dir }}"
+        - "{{ monitoring_dir }}/loki"
+        - "{{ monitoring_dir }}/promtail"
+        - "{{ monitoring_dir }}/prometheus"
+        - "{{ monitoring_dir }}/grafana"
+        - "{{ monitoring_dir }}/grafana/provisioning"
+        - "{{ monitoring_dir }}/grafana/provisioning/datasources"
+        - "{{ monitoring_dir }}/grafana/provisioning/dashboards"
+        - "{{ monitoring_dir }}/grafana/dashboards"
+
+    - name: Template monitoring configuration files
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "0644"
+      loop:
+        - src: docker-compose.yml.j2
+          dest: "{{ monitoring_dir }}/docker-compose.yml"
+        - src: loki-config.yml.j2
+          dest: "{{ monitoring_dir }}/loki/config.yml"
+        - src: promtail-config.yml.j2
+          dest: "{{ monitoring_dir }}/promtail/config.yml"
+        - src: prometheus.yml.j2
+          dest: "{{ monitoring_dir }}/prometheus/prometheus.yml"
+        - src: grafana-datasource-loki.yml.j2
+          dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/loki.yml"
+        - src: grafana-datasource-prometheus.yml.j2
+          dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/prometheus.yml"
+        - src: grafana-dashboard-provider.yml.j2
+          dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/dashboard.yml"
+      register: monitoring_templates
+
+    - name: Copy Grafana dashboards
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ monitoring_dir }}/grafana/dashboards/{{ item.dest }}"
+        mode: "0644"
+      loop:
+        - src: grafana-app-dashboard.json
+          dest: grafana-app-dashboard.json
+        - src: grafana-logs-dashboard.json
+          dest: grafana-logs-dashboard.json
+      register: dashboard_files
+
+    - name: Pull monitoring images
+      ansible.builtin.command:
+        cmd: docker compose pull
+        chdir: "{{ monitoring_dir }}"
+      register: monitoring_pull
+      changed_when: "'Pull complete' in monitoring_pull.stdout or 'Downloaded newer image' in monitoring_pull.stderr"
+
+    - name: Start monitoring stack
+      ansible.builtin.command:
+        cmd: docker compose up -d --remove-orphans
+        chdir: "{{ monitoring_dir }}"
+      register: monitoring_up
+      changed_when: >
+        'Creating' in monitoring_up.stderr or
+        'Starting' in monitoring_up.stderr or
+        monitoring_templates.changed or
+        dashboard_files.changed
+
+    - name: Wait for application port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ monitoring_python_port }}"
+        delay: 5
+        timeout: 90
+
+    - name: Wait for Prometheus port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ prometheus_port }}"
+        delay: 5
+        timeout: 90
+
+    - name: Wait for Grafana port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 3000
+        delay: 5
+        timeout: 90
+
+    - name: Verify Loki readiness
+      ansible.builtin.uri:
+        url: http://localhost:3100/ready
+        return_content: true
+        status_code: 200
+
+    - name: Verify Prometheus readiness
+      ansible.builtin.uri:
+        url: "http://localhost:{{ prometheus_port }}/-/healthy"
+        return_content: true
+        status_code: 200
+
+    - name: Verify Grafana readiness
+      ansible.builtin.uri:
+        url: http://localhost:3000/api/health
+        return_content: true
+        status_code: 200
+
+    - name: Verify application metrics endpoint
+      ansible.builtin.uri:
+        url: "http://localhost:{{ monitoring_python_port }}/metrics"
+        return_content: true
+        status_code: 200
+      register: app_metrics
+
+    - name: Confirm HTTP metrics are present
+      ansible.builtin.assert:
+        that:
+          - "'http_requests_total' in app_metrics.content"
+          - "'http_request_duration_seconds' in app_metrics.content"
+        fail_msg: "Prometheus metrics were not exposed by the Python application."
+
+  rescue:
+    - name: Display deployment failure
+      ansible.builtin.debug:
+        msg: "Monitoring deployment failed. Check logs with: docker compose -f {{ monitoring_dir }}/docker-compose.yml logs"
+
+    - name: Fail monitoring deployment
+      ansible.builtin.fail:
+        msg: "Monitoring stack deployment failed"
+
+  become: true
+  tags:
+    - monitoring
+    - compose

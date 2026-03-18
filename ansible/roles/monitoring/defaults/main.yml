@@ -1,0 +1,43 @@
+---
+# monitoring role defaults
+
+monitoring_dir: /opt/monitoring
+
+# Service versions
+loki_version: "3.0.0"
+promtail_version: "3.0.0"
+grafana_version: "12.3.1"
+prometheus_version: "3.9.0"
+
+# Grafana credentials
+grafana_admin_user: admin
+grafana_admin_password: admin
+
+# Prometheus configuration
+prometheus_port: 9090
+prometheus_retention_days: 15
+prometheus_retention_size: "10GB"
+prometheus_scrape_interval: "15s"
+prometheus_targets:
+  - job: "prometheus"
+    targets: ["localhost:9090"]
+  - job: "loki"
+    targets: ["loki:3100"]
+    path: "/metrics"
+  - job: "grafana"
+    targets: ["grafana:3000"]
+    path: "/metrics"
+  - job: "app"
+    targets: ["app-python:8000"]
+    path: "/metrics"
+
+# Application images
+monitoring_python_image: "{{ dockerhub_username }}/devops-info-service"
+monitoring_python_tag: latest
+monitoring_python_port: 8000
+monitoring_python_internal_port: 8000
+
+monitoring_go_image: "{{ dockerhub_username }}/devops-info-service-go"
+monitoring_go_tag: latest
+monitoring_go_port: 8001
+monitoring_go_internal_port: 8080

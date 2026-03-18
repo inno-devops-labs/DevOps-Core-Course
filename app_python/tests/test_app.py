@@ -160,6 +160,45 @@ class TestHealthEndpoint:
         datetime.fromisoformat(ts)
 
 
+class TestMetricsEndpoint:
+    """Tests for the Prometheus metrics endpoint GET /metrics."""
+
+    def test_status_code(self, client):
+        """GET /metrics should return 200 OK."""
+        assert client.get("/metrics").status_code == 200
+
+    def test_response_is_prometheus_text(self, client):
+        """GET /metrics should return Prometheus text exposition format."""
+        response = client.get("/metrics")
+        assert response.headers["content-type"].startswith("text/plain")
+
+    def test_expected_metric_series_exist(self, client):
+        """Metrics output must include HTTP and app-specific metrics."""
+        client.get("/")
+        client.get("/health")
+        client.get("/missing")
+
+        metrics_text = client.get("/metrics").text
+        assert "http_requests_total" in metrics_text
+        assert "http_request_duration_seconds" in metrics_text
+        assert "http_requests_in_progress" in metrics_text
+        assert "devops_info_endpoint_calls_total" in metrics_text
+        assert "devops_info_system_info_collection_seconds" in metrics_text
+
+    def test_metrics_include_expected_labels(self, client):
+        """Metrics should expose normalized labels for successful and 404 requests."""
+        client.get("/")
+        client.get("/health")
+        client.get("/missing")
+
+        metrics_text = client.get("/metrics").text
+        assert 'http_requests_total{method="GET",endpoint="/",status_code="200"}' in metrics_text
+        assert 'http_requests_total{method="GET",endpoint="/health",status_code="200"}' in metrics_text
+        assert 'http_requests_total{method="GET",endpoint="/unknown",status_code="404"}' in metrics_text
+        assert 'devops_info_endpoint_calls_total{endpoint="/"}' in metrics_text
+        assert 'devops_info_endpoint_calls_total{endpoint="/health"}' in metrics_text
+
+
 # ---------------------------------------------------------------------------
 # Error handling tests
 # ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
+---
 services:
   loki:
-    image: grafana/loki:3.0.0
+    image: grafana/loki:{{ loki_version }}
     ports:
       - "3100:3100"
     volumes:
@@ -23,12 +24,9 @@ services:
         limits:
           cpus: "1.0"
           memory: 1G
-        reservations:
-          cpus: "0.25"
-          memory: 256M
 
   promtail:
-    image: grafana/promtail:3.0.0
+    image: grafana/promtail:{{ promtail_version }}
     ports:
       - "9080:9080"
     volumes:
@@ -55,22 +53,55 @@ services:
         limits:
           cpus: "0.5"
           memory: 512M
-        reservations:
-          cpus: "0.1"
-          memory: 128M
+
+  app-python:
+    image: {{ monitoring_python_image }}:{{ monitoring_python_tag }}
+    ports:
+      - "{{ monitoring_python_port }}:{{ monitoring_python_internal_port }}"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:{{ monitoring_python_internal_port }}/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  app-go:
+    image: {{ monitoring_go_image }}:{{ monitoring_go_tag }}
+    ports:
+      - "{{ monitoring_go_port }}:{{ monitoring_go_internal_port }}"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-go"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
 
   prometheus:
-    image: prom/prometheus:v3.9.0
+    image: prom/prometheus:v{{ prometheus_version }}
     ports:
-      - "9090:9090"
+      - "{{ prometheus_port }}:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
-      - --storage.tsdb.retention.time=15d
-      - --storage.tsdb.retention.size=10GB
+      - --storage.tsdb.retention.time={{ prometheus_retention_days }}d
+      - --storage.tsdb.retention.size={{ prometheus_retention_size }}
     networks:
       - logging
     depends_on:
@@ -92,12 +123,9 @@ services:
         limits:
           cpus: "1.0"
           memory: 1G
-        reservations:
-          cpus: "0.25"
-          memory: 256M
 
   grafana:
-    image: grafana/grafana:12.3.1
+    image: grafana/grafana:{{ grafana_version }}
     ports:
       - "3000:3000"
     volumes:
@@ -106,8 +134,8 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=false
-      - GF_SECURITY_ADMIN_USER=${GF_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER={{ grafana_admin_user }}
+      - GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
       - GF_METRICS_ENABLED=true
     networks:
       - logging
@@ -130,61 +158,6 @@ services:
         limits:
           cpus: "0.5"
           memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
-
-  app-python:
-    build:
-      context: ../app_python
-    image: ravwvil/devops-info-service:latest
-    ports:
-      - "8000:8000"
-    networks:
-      - logging
-    labels:
-      logging: "promtail"
-      app: "devops-python"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
-        reservations:
-          cpus: "0.1"
-          memory: 128M
-
-  app-go:
-    build:
-      context: ../app_go
-    image: ravwvil/devops-info-service-go:latest
-    ports:
-      - "8001:8080"
-    networks:
-      - logging
-    labels:
-      logging: "promtail"
-      app: "devops-go"
-    healthcheck:
-      test: ["CMD", "/devops-info-service", "healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
-        reservations:
-          cpus: "0.1"
-          memory: 128M
 
 volumes:
   loki-data:

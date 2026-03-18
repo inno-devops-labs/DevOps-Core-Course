@@ -230,7 +230,32 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func runHealthcheck() int {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%s/health", port))
+	if err != nil {
+		log.Printf("Healthcheck request failed: %v", err)
+		return 1
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Healthcheck returned unexpected status: %d", resp.StatusCode)
+		return 1
+	}
+
+	return 0
+}
+
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		os.Exit(runHealthcheck())
+	}
+
 	// Get port from environment variable or use default
 	port := os.Getenv("PORT")
 	if port == "" {
