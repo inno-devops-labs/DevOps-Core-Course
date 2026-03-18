@@ -10,13 +10,11 @@
       register: deploy_local_group_vars
       delegate_to: localhost
       become: false
-      run_once: true
 
     - name: Load local vaulted variables when available
       ansible.builtin.include_vars:
         file: "{{ playbook_dir }}/../group_vars/all.yml"
       when: deploy_local_group_vars.stat.exists
-      run_once: true
 
   roles:
     - role: web_app

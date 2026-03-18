@@ -1,3 +1,6 @@
 ---
-- import_playbook: provision.yml
-- import_playbook: deploy.yml
+- name: Run Provision Playbook
+  import_playbook: provision.yml
+
+- name: Run Deploy Playbook
+  import_playbook: deploy.yml

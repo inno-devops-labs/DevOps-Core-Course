@@ -21,9 +21,12 @@
     - name: Set timezone
       ansible.builtin.command: "timedatectl set-timezone {{ common_timezone }}"
       when: common_current_timezone.stdout != common_timezone
+      changed_when: true
   rescue:
     - name: Recover apt metadata after failed package preparation
-      ansible.builtin.command: apt-get update --fix-missing
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
       changed_when: false
 
     - name: Retry apt cache update after recovery

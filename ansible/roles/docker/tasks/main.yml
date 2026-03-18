@@ -24,7 +24,7 @@
         url: "{{ docker_gpg_key_url }}"
         dest: "{{ docker_apt_keyring_file }}"
         mode: "0644"
-      notify: restart docker
+      notify: Restart docker
 
     - name: Add Docker apt repository
       ansible.builtin.apt_repository:
@@ -35,7 +35,7 @@
           {{ docker_apt_release }} stable
         state: present
         filename: docker
-      notify: restart docker
+      notify: Restart docker
 
     - name: Install Docker packages
       ansible.builtin.apt:
@@ -43,7 +43,7 @@
         state: present
         update_cache: true
         lock_timeout: 600
-      notify: restart docker
+      notify: Restart docker
   rescue:
     - name: Wait before retrying Docker apt metadata updates
       ansible.builtin.pause:
