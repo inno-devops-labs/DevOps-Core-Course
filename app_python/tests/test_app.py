@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import logging
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -58,6 +60,7 @@ def test_index_success_structure(client):
     paths_methods = {(item.get("path"), item.get("method")) for item in endpoints}
     assert ("/", "GET") in paths_methods
     assert ("/health", "GET") in paths_methods
+    assert ("/metrics", "GET") in paths_methods
 
 
 def test_health_success(client):
@@ -68,6 +71,21 @@ def test_health_success(client):
     assert data["status"] == "healthy"
     assert isinstance(data.get("uptime_seconds"), int)
     datetime.fromisoformat(data["timestamp"].replace("Z", "+00:00"))
+
+
+def test_metrics_endpoint_exposes_prometheus_metrics(client):
+    client.get("/")
+    client.get("/health")
+
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+
+    assert "http_requests_total" in body
+    assert "http_request_duration_seconds" in body
+    assert "http_requests_in_progress" in body
+    assert "devops_info_endpoint_calls_total" in body
+    assert "devops_info_system_collection_seconds" in body
 
 
 def test_not_found(client):
@@ -100,3 +118,61 @@ def test_internal_server_error(monkeypatch):
         "error": "Internal Server Error",
         "message": "An unexpected error occurred",
     }
+
+
+def test_json_formatter_outputs_valid_json():
+    formatter = app.JSONFormatter()
+    record = logging.LogRecord(
+        name="test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="hello",
+        args=(),
+        exc_info=None,
+    )
+    record.method = "GET"
+    record.path = "/health"
+    record.status_code = 200
+    record.client_ip = "127.0.0.1"
+
+    payload = json.loads(formatter.format(record))
+    assert payload["level"] == "INFO"
+    assert payload["message"] == "hello"
+    assert payload["method"] == "GET"
+    assert payload["path"] == "/health"
+    assert payload["status_code"] == 200
+    assert payload["client_ip"] == "127.0.0.1"
+    datetime.fromisoformat(payload["timestamp"].replace("Z", "+00:00"))
+
+
+def test_setup_logging_emits_startup_event(capsys):
+    app.setup_logging()
+    captured = capsys.readouterr()
+    lines = [line for line in captured.err.splitlines() if line.strip()]
+    assert lines
+
+    payload = json.loads(lines[-1])
+    assert payload["message"] == "application_startup"
+    assert payload["event"] == "startup"
+    assert payload["app"] == app.APP_NAME
+    assert payload["version"] == app.APP_VERSION
+
+
+def test_request_completion_log_contains_status_and_path(client, capsys):
+    app.setup_logging()
+    response = client.get("/health")
+    assert response.status_code == 200
+
+    captured = capsys.readouterr()
+    lines = [line for line in captured.err.splitlines() if line.strip()]
+    assert lines
+    parsed = [json.loads(line) for line in lines]
+    completion_logs = [line for line in parsed if line.get("event") == "request_completed"]
+    assert completion_logs
+
+    last = completion_logs[-1]
+    assert last["method"] == "GET"
+    assert last["path"] == "/health"
+    assert last["status_code"] == 200
+    assert "client_ip" in last

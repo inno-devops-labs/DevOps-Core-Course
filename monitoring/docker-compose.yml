@@ -1,4 +1,36 @@
 services:
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: monitoring-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=10GB"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
   loki:
     image: grafana/loki:3.0.0
     container_name: monitoring-loki
@@ -74,6 +106,7 @@ services:
       GF_SECURITY_ALLOW_EMBEDDING: "false"
       GF_SERVER_DOMAIN: "localhost"
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_METRICS_ENABLED: "true"
     ports:
       - "3000:3000"
     volumes:
@@ -89,6 +122,8 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+      prometheus:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
       interval: 15s
@@ -98,8 +133,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 1G
+          cpus: "0.50"
+          memory: 512M
         reservations:
           cpus: "0.25"
           memory: 256M
@@ -107,7 +142,7 @@ services:
   app-python:
     build:
       context: ../app_python
-    image: devops-info-service:lab07
+    image: devops-info-service:lab08
     container_name: app-python
     environment:
       HOST: "0.0.0.0"
@@ -123,8 +158,10 @@ services:
     depends_on:
       promtail:
         condition: service_healthy
+      prometheus:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -133,12 +170,13 @@ services:
       resources:
         limits:
           cpus: "0.50"
-          memory: 512M
+          memory: 256M
         reservations:
           cpus: "0.10"
           memory: 128M
 
 volumes:
+  prometheus-data:
   loki-data:
   grafana-data:
   promtail-positions:

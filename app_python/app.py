@@ -4,14 +4,17 @@ Provides system and runtime information with health checks.
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import platform
 import socket
+from time import perf_counter
 from datetime import datetime, timezone
 from typing import Dict, List, Any
 
-from flask import Flask, jsonify, request
+from flask import Flask, Response, g, jsonify, request
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 APP_NAME = "devops-info-service"
 APP_VERSION = "1.0.0"
@@ -28,15 +31,85 @@ START_TIME = datetime.now(timezone.utc)
 
 app = Flask(__name__)
 
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+devops_info_endpoint_calls = Counter(
+    "devops_info_endpoint_calls_total",
+    "Application endpoint calls",
+    ["endpoint"],
+)
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "System info collection duration in seconds",
+)
+
+
+class JSONFormatter(logging.Formatter):
+    """Render log records as single-line JSON objects."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload: Dict[str, Any] = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "logger": record.name,
+        }
+
+        for field in (
+            "method",
+            "path",
+            "status_code",
+            "client_ip",
+            "host",
+            "port",
+            "debug",
+            "app",
+            "version",
+            "event",
+        ):
+            if hasattr(record, field):
+                payload[field] = getattr(record, field)
+
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(payload, ensure_ascii=True)
+
 
 def setup_logging() -> None:
-    """Configure basic application logging."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-    )
+    """Configure JSON structured logging."""
+    root = logging.getLogger()
+    root.handlers.clear()
+    root.setLevel(logging.INFO)
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(JSONFormatter())
+    root.addHandler(handler)
+
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
-    logging.info("Application starting...")
+    logging.info(
+        "application_startup",
+        extra={
+            "event": "startup",
+            "app": APP_NAME,
+            "version": APP_VERSION,
+            "host": HOST,
+            "port": PORT,
+            "debug": DEBUG,
+        },
+    )
 
 
 def get_system_info() -> Dict[str, Any]:
@@ -93,13 +166,72 @@ def get_endpoints() -> List[Dict[str, str]]:
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
+        {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
     ]
+
+
+def get_metrics_endpoint_label() -> str:
+    """Normalize endpoint labels to keep cardinality low."""
+    if request.path in {"/", "/health", "/metrics"}:
+        return request.path
+    if request.url_rule and request.url_rule.rule:
+        return request.url_rule.rule
+    return "unknown"
 
 
 @app.before_request
 def log_request() -> None:
-    """Log incoming requests at INFO level."""
-    logging.info("%s %s from %s", request.method, request.path, request.remote_addr)
+    """Log incoming requests with context for observability."""
+    g.request_start_time = perf_counter()
+    g.metrics_endpoint = get_metrics_endpoint_label()
+    http_requests_in_progress.inc()
+    devops_info_endpoint_calls.labels(endpoint=g.metrics_endpoint).inc()
+
+    request_info = get_request_info()
+    logging.info(
+        "http_request_started",
+        extra={
+            "event": "request_started",
+            "method": request_info["method"],
+            "path": request_info["path"],
+            "client_ip": request_info["client_ip"],
+            "app": APP_NAME,
+            "version": APP_VERSION,
+        },
+    )
+
+
+@app.after_request
+def log_response(response):  # type: ignore[no-untyped-def]
+    """Log response metadata, including status code."""
+    endpoint = getattr(g, "metrics_endpoint", get_metrics_endpoint_label())
+    request_start_time = getattr(g, "request_start_time", None)
+
+    if request_start_time is not None:
+        http_request_duration_seconds.labels(method=request.method, endpoint=endpoint).observe(
+            max(0.0, perf_counter() - request_start_time)
+        )
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status_code=str(response.status_code),
+    ).inc()
+    http_requests_in_progress.dec()
+
+    request_info = get_request_info()
+    logging.info(
+        "http_request_completed",
+        extra={
+            "event": "request_completed",
+            "method": request_info["method"],
+            "path": request_info["path"],
+            "status_code": response.status_code,
+            "client_ip": request_info["client_ip"],
+            "app": APP_NAME,
+            "version": APP_VERSION,
+        },
+    )
+    return response
 
 
 @app.route("/", methods=["GET"])
@@ -136,6 +268,12 @@ def health() -> Any:
     )
 
 
+@app.route("/metrics", methods=["GET"])
+def metrics() -> Response:
+    """Prometheus metrics endpoint."""
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
 @app.errorhandler(404)
 def not_found(error):  # type: ignore[override]
     return jsonify({"error": "Not Found", "message": "Endpoint does not exist"}), 404
@@ -143,7 +281,18 @@ def not_found(error):  # type: ignore[override]
 
 @app.errorhandler(500)
 def internal_error(error):  # type: ignore[override]
-    logging.exception("Unhandled exception: %s", error)
+    request_info = get_request_info()
+    logging.exception(
+        "unhandled_exception",
+        extra={
+            "event": "error",
+            "method": request_info["method"],
+            "path": request_info["path"],
+            "client_ip": request_info["client_ip"],
+            "app": APP_NAME,
+            "version": APP_VERSION,
+        },
+    )
     return (
         jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}),
         500,
@@ -152,7 +301,7 @@ def internal_error(error):  # type: ignore[override]
 
 def main() -> None:
     setup_logging()
-    app.run(host=HOST, port=PORT, debug=DEBUG)
+    app.run(host=HOST, port=PORT, debug=DEBUG, use_reloader=False)
 
 
 if __name__ == "__main__":

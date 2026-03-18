@@ -11,3 +11,6 @@ venv.bak/
 
 # OS
 .DS_Store
+
+# Monitoring secrets
+monitoring/.env
