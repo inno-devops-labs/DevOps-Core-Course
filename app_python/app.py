@@ -1,13 +1,16 @@
 import os
 import sys
 import socket
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 import platform
 
 import logging
 from pythonjsonlogger import jsonlogger
 
 from datetime import datetime, timezone
+
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+import time
 
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
@@ -26,6 +29,67 @@ logger.addHandler(logHandler)
 logging.getLogger("werkzeug").disabled = True
 
 START_TIME = datetime.now(timezone.utc)
+
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration',
+    ['method', 'endpoint']
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests in progress'
+)
+
+
+@app.route('/metrics')
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
+@app.before_request
+def before_request():
+    request.start_time = time.time()
+    http_requests_in_progress.inc()
+
+
+@app.after_request
+def after_request(response):
+    if request.path == "/metrics":
+         return response
+         
+    duration = time.time() - request.start_time
+
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=request.path,
+        status=response.status_code
+    ).inc()
+
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=request.path
+    ).observe(duration)
+
+    http_requests_in_progress.dec()
+
+    logger.info(
+        "request_finished",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "client_ip": request.remote_addr,
+            "status_code": response.status_code,
+        }
+    )
+
+    return response
 
 def get_uptime():
     delta = datetime.now(timezone.utc) - START_TIME
@@ -76,7 +140,7 @@ def get_response():
 
 @app.before_request
 def log_request():
-    request.start_time = datetime.now(timezone.utc)
+    request.log_start_time = datetime.now(timezone.utc)
     logger.info(
         "request_started",
         extra={
@@ -85,20 +149,6 @@ def log_request():
             "client_ip": request.remote_addr,
         }
     )
-
-
-@app.after_request
-def log_response(response):
-    logger.info(
-        "request_finished",
-        extra={
-            "method": request.method,
-            "path": request.path,
-            "client_ip": request.remote_addr,
-            "status_code": response.status_code,
-        }
-    )
-    return response
 
 
 @app.route('/health')
