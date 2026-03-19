@@ -1,15 +1,23 @@
 import json
 import logging
 import sys
+import time
 from datetime import datetime
 
 import uvicorn
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 from config import HOST, PORT
 from routes.root import router as root_router
 from routes.health import router as health_router
+from metrics import (
+    http_requests_total,
+    http_request_duration_seconds,
+    http_requests_in_progress,
+    devops_info_endpoint_calls
+)
 
 
 class JSONFormatter(logging.Formatter):
@@ -54,9 +62,35 @@ app.include_router(root_router)
 app.include_router(health_router)
 
 
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
+async def log_and_metrics_middleware(request: Request, call_next):
+    # Skip metrics for /metrics endpoint to avoid recursion
+    if request.url.path == "/metrics":
+        return await call_next(request)
+    
     client_ip = request.client.host if request.client else "unknown"
+    start_time = time.time()
+    
+    # Normalize endpoint names
+    endpoint = request.url.path
+    if endpoint == "/":
+        endpoint = "/"
+    elif endpoint == "/health":
+        endpoint = "/health"
+    else:
+        endpoint = "other"
+    
+    # Increment in-progress requests
+    http_requests_in_progress.inc()
+    
+    # Track application-specific metrics
+    devops_info_endpoint_calls.labels(endpoint=endpoint).inc()
 
     logger.info(
         "Incoming request",
@@ -67,19 +101,40 @@ async def log_requests(request: Request, call_next):
         },
     )
 
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+        
+        # Calculate duration
+        duration = time.time() - start_time
+        
+        # Record metrics
+        http_requests_total.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status=str(response.status_code)
+        ).inc()
+        
+        http_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=endpoint
+        ).observe(duration)
 
-    logger.info(
-        "Request completed",
-        extra={
-            "method": request.method,
-            "path": request.url.path,
-            "status_code": response.status_code,
-            "client_ip": client_ip,
-        },
-    )
+        logger.info(
+            "Request completed",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "client_ip": client_ip,
+                "duration": duration,
+            },
+        )
 
-    return response
+        return response
+    
+    finally:
+        # Decrement in-progress requests
+        http_requests_in_progress.dec()
 
 
 @app.exception_handler(404)

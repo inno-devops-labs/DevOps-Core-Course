@@ -1,6 +1,7 @@
 import os
 import socket
 import platform
+import time
 from datetime import datetime, timezone
 
 from fastapi import Request
@@ -25,7 +26,9 @@ def get_service_info() -> ServiceInfo:
 
 
 def get_system_info() -> SystemInfo:
-    return SystemInfo(
+    start_time = time.time()
+    
+    result = SystemInfo(
         hostname=socket.gethostname(),
         platform=platform.system(),
         platform_version=platform.platform(),
@@ -33,6 +36,17 @@ def get_system_info() -> SystemInfo:
         cpu_count=os.cpu_count() or 0,
         python_version=platform.python_version(),
     )
+    
+    # Record collection time if metrics are available
+    try:
+        from metrics import system_info_collection_duration
+        duration = time.time() - start_time
+        system_info_collection_duration.observe(duration)
+    except (ImportError, AttributeError):
+        # Metrics not available, skip recording
+        pass
+        
+    return result
 
 
 def get_runtime_info() -> RuntimeInfo:
