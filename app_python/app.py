@@ -6,10 +6,43 @@ import json
 import socket
 import platform
 import logging
+import time
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g, Response
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 app = Flask(__name__)
+
+# Prometheus metrics
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status_code']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint', 'status_code']
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently in progress',
+    ['method', 'endpoint']
+)
+
+# Application-specific metrics
+endpoint_calls = Counter(
+    'devops_info_endpoint_calls_total',
+    'Total endpoint calls in devops info service',
+    ['endpoint']
+)
+
+system_info_duration = Histogram(
+    'devops_info_system_collection_seconds',
+    'Time spent collecting system information'
+)
 
 # Configuration
 HOST = os.getenv('HOST', '0.0.0.0')
@@ -70,8 +103,18 @@ def get_system_info():
     }
 
 
+def get_endpoint_label():
+    if request.url_rule and request.url_rule.rule:
+        return request.url_rule.rule
+    return request.path or 'unknown'
+
+
 @app.before_request
 def log_request_start():
+    g.request_start_time = time.perf_counter()
+    g.endpoint_label = get_endpoint_label()
+    http_requests_in_progress.labels(method=request.method, endpoint=g.endpoint_label).inc()
+
     logger.info('Request received', extra={
         'method': request.method,
         'path': request.path,
@@ -81,6 +124,23 @@ def log_request_start():
 
 @app.after_request
 def log_request_end(response):
+    endpoint_label = getattr(g, 'endpoint_label', get_endpoint_label())
+    request_start_time = getattr(g, 'request_start_time', time.perf_counter())
+    duration = max(0.0, time.perf_counter() - request_start_time)
+    status_code = str(response.status_code)
+
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=endpoint_label,
+        status_code=status_code
+    ).inc()
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=endpoint_label,
+        status_code=status_code
+    ).observe(duration)
+    http_requests_in_progress.labels(method=request.method, endpoint=endpoint_label).dec()
+
     logger.info('Request completed', extra={
         'method': request.method,
         'path': request.path,
@@ -92,8 +152,11 @@ def log_request_end(response):
 
 @app.route('/')
 def index():
+    endpoint_calls.labels(endpoint='/').inc()
     uptime = get_uptime()
     now = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+    with system_info_duration.time():
+        system = get_system_info()
 
     info = {
         'service': {
@@ -102,7 +165,7 @@ def index():
             'description': 'DevOps course info service',
             'framework': 'Flask'
         },
-        'system': get_system_info(),
+        'system': system,
         'runtime': {
             'uptime_seconds': uptime['seconds'],
             'uptime_human': uptime['human'],
@@ -117,7 +180,8 @@ def index():
         },
         'endpoints': [
             {'path': '/', 'method': 'GET', 'description': 'Service information'},
-            {'path': '/health', 'method': 'GET', 'description': 'Health check'}
+            {'path': '/health', 'method': 'GET', 'description': 'Health check'},
+            {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'}
         ]
     }
 
@@ -126,6 +190,7 @@ def index():
 
 @app.route('/health')
 def health():
+    endpoint_calls.labels(endpoint='/health').inc()
     uptime = get_uptime()
     now = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
     return jsonify({
@@ -133,6 +198,12 @@ def health():
         'timestamp': now,
         'uptime_seconds': uptime['seconds']
     }), 200
+
+
+@app.route('/metrics')
+def metrics():
+    endpoint_calls.labels(endpoint='/metrics').inc()
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.errorhandler(404)

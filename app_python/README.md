@@ -81,6 +81,17 @@ For detailed implementation documentation, see [LAB02.md](docs/LAB02.md)
 |----------|--------|-------------|
 | `/` | GET | Service and system information (JSON) |
 | `/health` | GET | Health check — returns status 200 if healthy |
+| `/metrics` | GET | Prometheus metrics endpoint |
+
+## Metrics (Prometheus)
+
+The service now exports Prometheus-compatible metrics for monitoring:
+
+- `http_requests_total{method, endpoint, status_code}` — total number of HTTP requests
+- `http_request_duration_seconds{method, endpoint, status_code}` — request duration histogram
+- `http_requests_in_progress{method, endpoint}` — currently active requests gauge
+- `devops_info_endpoint_calls_total{endpoint}` — app-specific endpoint call counter
+- `devops_info_system_collection_seconds` — system info collection duration histogram
 
 ## Configuration
 
