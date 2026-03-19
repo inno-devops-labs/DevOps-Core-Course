@@ -72,10 +72,11 @@ class TestIndexEndpoint:
         data = client.get("/").get_json()
         assert "endpoints" in data
         assert isinstance(data["endpoints"], list)
-        assert len(data["endpoints"]) >= 2
+        assert len(data["endpoints"]) >= 3
         paths = [ep["path"] for ep in data["endpoints"]]
         assert "/" in paths
         assert "/health" in paths
+        assert "/metrics" in paths
 
     def test_index_user_agent_forwarded(self, client):
         """Custom User-Agent header should appear in response."""
@@ -115,6 +116,32 @@ class TestHealthEndpoint:
         assert "uptime_seconds" in data
         assert isinstance(data["uptime_seconds"], (int, float))
         assert data["uptime_seconds"] >= 0
+
+
+class TestMetricsEndpoint:
+    """Tests for GET /metrics endpoint."""
+
+    def test_metrics_status_code(self, client):
+        """GET /metrics should return 200."""
+        response = client.get("/metrics")
+        assert response.status_code == 200
+
+    def test_metrics_contains_http_requests(self, client):
+        """Metrics should contain http_requests_total after a request."""
+        client.get("/")
+        response = client.get("/metrics")
+        assert b"http_requests_total" in response.data
+
+    def test_metrics_contains_request_duration(self, client):
+        """Metrics should contain http_request_duration_seconds."""
+        client.get("/")
+        response = client.get("/metrics")
+        assert b"http_request_duration_seconds" in response.data
+
+    def test_metrics_contains_in_progress(self, client):
+        """Metrics should contain http_requests_in_progress."""
+        response = client.get("/metrics")
+        assert b"http_requests_in_progress" in response.data
 
 
 class TestErrorHandlers:

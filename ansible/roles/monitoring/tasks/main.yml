@@ -12,6 +12,10 @@
         - "{{ monitoring_compose_dir }}"
         - "{{ monitoring_compose_dir }}/loki"
         - "{{ monitoring_compose_dir }}/promtail"
+        - "{{ monitoring_compose_dir }}/prometheus"
+        - "{{ monitoring_compose_dir }}/grafana/provisioning/datasources"
+        - "{{ monitoring_compose_dir }}/grafana/provisioning/dashboards"
+        - "{{ monitoring_compose_dir }}/grafana/dashboards"
 
     - name: Template Loki configuration
       ansible.builtin.template:
@@ -23,6 +27,30 @@
       ansible.builtin.template:
         src: promtail-config.yml.j2
         dest: "{{ monitoring_compose_dir }}/promtail/config.yml"
+        mode: "0644"
+
+    - name: Template Prometheus configuration
+      ansible.builtin.template:
+        src: prometheus.yml.j2
+        dest: "{{ monitoring_compose_dir }}/prometheus/prometheus.yml"
+        mode: "0644"
+
+    - name: Template Grafana datasources provisioning
+      ansible.builtin.template:
+        src: datasources.yml.j2
+        dest: "{{ monitoring_compose_dir }}/grafana/provisioning/datasources/datasources.yml"
+        mode: "0644"
+
+    - name: Template Grafana dashboards provisioning
+      ansible.builtin.template:
+        src: dashboards-provisioning.yml.j2
+        dest: "{{ monitoring_compose_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+        mode: "0644"
+
+    - name: Copy Grafana dashboard JSON files
+      ansible.builtin.copy:
+        src: dashboards/
+        dest: "{{ monitoring_compose_dir }}/grafana/dashboards/"
         mode: "0644"
 
     - name: Template Docker Compose file
@@ -59,6 +87,16 @@
       delay: 5
       until: monitoring_loki_ready.status == 200
 
+    - name: Wait for Prometheus to be ready
+      ansible.builtin.uri:
+        url: "http://localhost:{{ monitoring_prometheus_port }}/-/healthy"
+        method: GET
+        status_code: 200
+      register: monitoring_prometheus_ready
+      retries: 10
+      delay: 5
+      until: monitoring_prometheus_ready.status == 200
+
     - name: Wait for Grafana to be ready
       ansible.builtin.uri:
         url: "http://localhost:{{ monitoring_grafana_port }}/api/health"
@@ -69,18 +107,21 @@
       delay: 5
       until: monitoring_grafana_ready.status == 200
 
-    - name: Configure Loki data source in Grafana
+- name: Validate monitoring stack
+  tags:
+    - monitoring_validate
+  block:
+    - name: Verify Prometheus targets
       ansible.builtin.uri:
-        url: "http://localhost:{{ monitoring_grafana_port }}/api/datasources"
-        method: POST
-        user: admin
-        password: "{{ monitoring_grafana_admin_password }}"
-        force_basic_auth: true
-        body_format: json
-        body:
-          name: Loki
-          type: loki
-          url: "http://loki:{{ monitoring_loki_port }}"
-          access: proxy
-          isDefault: true
-        status_code: [200, 409]
+        url: "http://localhost:{{ monitoring_prometheus_port }}/api/v1/targets"
+        method: GET
+        status_code: 200
+      register: monitoring_targets
+
+    - name: Print monitoring status
+      ansible.builtin.debug:
+        msg: >-
+          Monitoring stack deployed successfully.
+          Prometheus: http://localhost:{{ monitoring_prometheus_port }},
+          Grafana: http://localhost:{{ monitoring_grafana_port }},
+          Loki: http://localhost:{{ monitoring_loki_port }}

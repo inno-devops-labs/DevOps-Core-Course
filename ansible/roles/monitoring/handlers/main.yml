@@ -1,0 +1,7 @@
+---
+- name: Restart monitoring stack
+  ansible.builtin.command:
+    cmd: docker compose restart
+    chdir: "{{ monitoring_compose_dir }}"
+  register: monitoring_restart_result
+  changed_when: monitoring_restart_result.rc == 0
