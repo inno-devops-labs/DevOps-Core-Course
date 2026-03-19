@@ -59,8 +59,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
+          cpus: '0.5'
+          memory: 512M
         reservations:
           cpus: '0.2'
           memory: 512M
@@ -70,6 +70,30 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app-python:
     build:
@@ -82,6 +106,11 @@ services:
     labels:
       logging: "promtail"
       app: "pythonapp"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -94,6 +123,7 @@ services:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
   logging:

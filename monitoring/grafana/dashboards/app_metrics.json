@@ -1,0 +1,166 @@
+{
+  "title": "App Metrics",
+  "uid": "app_metrics",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[5m])) by (endpoint)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Error Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~'5..'}[5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Request Duration p95",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Request Duration Heatmap",
+      "type": "heatmap",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_seconds_bucket[5m])) by (le)",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "calculate": false
+      },
+      "color": {
+        "mode": "scheme"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Active Requests",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "http_requests_in_progress",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Status Code Distribution",
+      "type": "piechart",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(http_requests_total[5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Uptime",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 16
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "targets": [
+        {
+          "expr": "up{job='app'}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "timezone": "browser",
+  "refresh": "5s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  }
+}
