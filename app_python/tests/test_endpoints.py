@@ -32,7 +32,9 @@ def test_root_ok_structure(client):
     assert data["request"]["path"] == "/"
     assert data["request"]["method"] == "GET"
     assert data["request"]["user_agent"] == "pytest"
-    assert any(endpoint["path"] == "/metrics" for endpoint in data["endpoints"])
+    assert any(
+        endpoint["path"] == "/metrics" for endpoint in data["endpoints"]
+    )
 
 
 def test_health_ok(client):
