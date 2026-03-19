@@ -1,6 +1,14 @@
 ---
 # Deploy monitoring stack with Docker Compose v2 (Lab 7)
-- name: Deploy Loki stack with Docker Compose
+- name: Log in to Docker Hub (for pulling app images)
+  community.docker.docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+    registry: https://index.docker.io/v1/
+  no_log: true
+  when: dockerhub_password is defined
+
+- name: Deploy monitoring stack with Docker Compose
   community.docker.docker_compose_v2:
     project_src: "{{ monitoring_project_dir }}"
     state: present
@@ -27,6 +35,16 @@
   retries: 15
   delay: 3
 
+- name: Wait for Prometheus to be ready
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ prometheus_port }}/-/healthy"
+    status_code: 200
+    timeout: 5
+  register: prometheus_ready
+  until: prometheus_ready.status is defined and prometheus_ready.status == 200
+  retries: 15
+  delay: 3
+
 - name: Display monitoring stack status
   ansible.builtin.debug:
-    msg: "Loki stack deployed. Loki http://{{ ansible_default_ipv4.address }}:{{ loki_port }}, Grafana http://{{ ansible_default_ipv4.address }}:{{ grafana_port }}"
+    msg: "Monitoring stack deployed. Loki http://{{ ansible_default_ipv4.address }}:{{ loki_port }}, Prometheus http://{{ ansible_default_ipv4.address }}:{{ prometheus_port }}, Grafana http://{{ ansible_default_ipv4.address }}:{{ grafana_port }}"

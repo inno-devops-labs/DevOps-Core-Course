@@ -1,0 +1,12 @@
+# Grafana datasource provisioning - Prometheus (Lab 8 bonus)
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:{{ prometheus_port }}
+    isDefault: true
+    editable: false
+

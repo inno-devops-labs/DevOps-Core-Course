@@ -30,12 +30,12 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     main.go
 
 # =============================================================================
-# Stage 2: Runtime - Minimal production image
+# Stage 2: Runtime - Production image with healthcheck tooling
 # =============================================================================
-FROM scratch
+FROM alpine:3.20
 
-# Import CA certificates from builder (for HTTPS if needed)
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# Minimal tooling for healthchecks (wget + shell).
+RUN apk --no-cache add ca-certificates busybox-extras
 
 # Copy the binary from builder stage
 COPY --from=builder /build/devops-info-service /devops-info-service

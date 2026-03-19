@@ -1,0 +1,20 @@
+---
+# Grafana dashboard provisioning (Lab 8 bonus)
+- name: Copy Grafana dashboards provider file
+  ansible.builtin.copy:
+    src: dashboards.yml
+    dest: "{{ monitoring_dashboards_path }}/dashboards.yml"
+    mode: "0644"
+
+- name: Copy Grafana metrics dashboard JSON
+  ansible.builtin.copy:
+    src: grafana-app-dashboard.json
+    dest: "{{ monitoring_dashboards_path }}/grafana-app-dashboard.json"
+    mode: "0644"
+
+- name: Copy Grafana logs dashboard JSON
+  ansible.builtin.copy:
+    src: grafana-logs-dashboard.json
+    dest: "{{ monitoring_dashboards_path }}/grafana-logs-dashboard.json"
+    mode: "0644"
+

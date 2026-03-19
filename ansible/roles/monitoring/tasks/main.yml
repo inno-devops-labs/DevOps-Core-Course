@@ -6,6 +6,12 @@
     - monitoring
     - monitoring_setup
 
+- name: Include Grafana dashboard provisioning tasks (Lab 8 bonus)
+  ansible.builtin.include_tasks: grafana.yml
+  tags:
+    - monitoring
+    - monitoring_grafana_provision
+
 - name: Include deploy tasks (docker compose, wait)
   ansible.builtin.include_tasks: deploy.yml
   tags:

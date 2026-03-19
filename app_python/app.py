@@ -8,10 +8,18 @@ import os
 import socket
 import platform
 import logging
+import time
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request, g
+from flask import Flask, jsonify, request, g, Response
 
 from pythonjsonlogger import jsonlogger
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 def setup_logging():
     """Configure JSON logging for Loki/observability (timestamp, level, message + extra)."""
@@ -31,6 +39,48 @@ def setup_logging():
 logger = setup_logging()
 
 app = Flask(__name__)
+
+# -----------------------------
+# Prometheus metrics (Lab 8)
+# -----------------------------
+
+def normalize_endpoint(path: str) -> str:
+    """Normalize request paths to keep Prometheus label cardinality low."""
+    if path == "/":
+        return "/"
+    if path == "/health":
+        return "/health"
+    if path == "/metrics":
+        return "/metrics"
+    return "other"
+
+
+# HTTP RED metrics (skip /metrics itself to avoid self-scraping noise).
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration",
+    ["method", "endpoint"],
+)
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+
+# Task 1.4: application-specific metrics.
+devops_info_endpoint_calls_total = Counter(
+    "devops_info_endpoint_calls_total",
+    "DevOps Info Service endpoint calls",
+    ["endpoint"],
+)
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "System info collection time",
+)
 
 # Configuration from environment variables
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -99,6 +149,15 @@ def get_endpoints():
 def before_request():
     """Log incoming request."""
     g.start_time = datetime.now(timezone.utc)
+
+    # Metrics for Prometheus (include /metrics itself to follow Lab 8 requirements).
+    g.metrics_enabled = True
+    if g.metrics_enabled:
+        http_requests_in_progress.inc()
+        g.normalized_endpoint = normalize_endpoint(request.path)
+        devops_info_endpoint_calls_total.labels(
+            endpoint=g.normalized_endpoint
+        ).inc()
     logger.info(
         "Request started",
         extra={
@@ -115,6 +174,23 @@ def after_request(response):
     duration_ms = 0
     if hasattr(g, "start_time"):
         duration_ms = int((datetime.now(timezone.utc) - g.start_time).total_seconds() * 1000)
+
+    if getattr(g, "metrics_enabled", False):
+        duration_s = max(duration_ms / 1000.0, 0.0)
+        endpoint = getattr(g, "normalized_endpoint", normalize_endpoint(request.path))
+        status_code = str(response.status_code)
+
+        http_requests_total.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_code=status_code,
+        ).inc()
+        http_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=endpoint,
+        ).observe(duration_s)
+
+        http_requests_in_progress.dec()
     logger.info(
         "Request completed",
         extra={
@@ -132,9 +208,12 @@ def after_request(response):
 def index():
     """Main endpoint - service and system information."""
     uptime = get_uptime()
+    t0 = time.perf_counter()
+    system = get_system_info()
+    devops_info_system_collection_seconds.observe(time.perf_counter() - t0)
     response = {
         "service": get_service_info(),
-        "system": get_system_info(),
+        "system": system,
         "runtime": {
             "uptime_seconds": uptime["seconds"],
             "uptime_human": uptime["human"],
@@ -158,6 +237,12 @@ def health():
             "uptime_seconds": uptime["seconds"],
         }
     )
+
+
+@app.route("/metrics")
+def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.errorhandler(404)

@@ -24,6 +24,10 @@ monitoring_loki_config_path: "{{ monitoring_project_dir }}/loki/config.yml"
 monitoring_promtail_config_path: "{{ monitoring_project_dir }}/promtail/config.yml"
 monitoring_datasources_path: "{{ monitoring_project_dir }}/grafana/datasources"
 
+# Local build contexts for app containers (Lab 8 bonus)
+monitoring_app_python_path: "{{ monitoring_project_dir }}/app_python"
+monitoring_app_go_path: "{{ monitoring_project_dir }}/app_go"
+
 # Resource limits (production-ready)
 loki_memory_limit: "1G"
 loki_cpu_limit: "1.0"
@@ -32,6 +36,48 @@ promtail_cpu_limit: "0.5"
 grafana_memory_limit: "512M"
 grafana_cpu_limit: "0.5"
 
+# Prometheus (Lab 8 bonus)
+prometheus_image: prom/prometheus
+prometheus_version: "v3.9.0"
+prometheus_port: 9090
+
+# Scrape & retention
+prometheus_scrape_interval: "15s"
+prometheus_retention_days: 15
+prometheus_retention_size: "10GB"
+
+# Prometheus scrape targets (inside the Docker network)
+# Override if your application container has different name/port.
+prometheus_targets:
+  - job: "prometheus"
+    targets: ["localhost:9090"]
+  - job: "loki"
+    targets: ["loki:3100"]
+  - job: "grafana"
+    targets: ["grafana:3000"]
+  - job: "app"
+    targets: ["app-python:8000"]
+    path: "/metrics"
+
+# Paths on target host
+monitoring_prometheus_config_path: "{{ monitoring_project_dir }}/prometheus/prometheus.yml"
+monitoring_dashboards_path: "{{ monitoring_project_dir }}/grafana/provisioning/dashboards"
+
+# Application containers (used for Prometheus scraping and Grafana app dashboard)
+# Keep image names aligned with monitoring/docker-compose.yml defaults.
+dockerhub_username: "pavorkmert"
+app_python_image: "{{ dockerhub_username }}/devops-info-service:latest"
+app_python_port: 8000
+app_python_memory_limit: "256M"
+app_python_cpu_limit: "0.5"
+
+app_go_image: "{{ dockerhub_username }}/devops-info-service-go:latest"
+app_go_port_host: 8001
+app_go_port_container: 8080
+app_go_memory_limit: "256M"
+app_go_cpu_limit: "0.5"
+
 # Grafana: set via vault or extra vars in production
 grafana_admin_user: admin
-# grafana_admin_password: set in group_vars or vault
+# Default Grafana admin password (override in group_vars/vault if needed).
+grafana_admin_password: "admin"

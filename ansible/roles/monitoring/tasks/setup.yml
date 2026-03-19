@@ -18,11 +18,71 @@
     state: directory
     mode: "0755"
 
+- name: Create Prometheus config directory
+  ansible.builtin.file:
+    path: "{{ monitoring_project_dir }}/prometheus"
+    state: directory
+    mode: "0755"
+
 - name: Create Grafana datasources directory
   ansible.builtin.file:
     path: "{{ monitoring_datasources_path }}"
     state: directory
     mode: "0755"
+
+- name: Create Grafana dashboards provisioning directory
+  ansible.builtin.file:
+    path: "{{ monitoring_dashboards_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Create app-python build context directory (Lab 8 bonus)
+  ansible.builtin.file:
+    path: "{{ monitoring_app_python_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Copy app-python Dockerfile (Lab 8 bonus)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app_python/Dockerfile"
+    dest: "{{ monitoring_app_python_path }}/Dockerfile"
+    mode: "0644"
+
+- name: Copy app-python requirements.txt (Lab 8 bonus)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app_python/requirements.txt"
+    dest: "{{ monitoring_app_python_path }}/requirements.txt"
+    mode: "0644"
+
+- name: Copy app-python app.py (Lab 8 bonus)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app_python/app.py"
+    dest: "{{ monitoring_app_python_path }}/app.py"
+    mode: "0644"
+
+- name: Create app-go build context directory (Lab 8 bonus)
+  ansible.builtin.file:
+    path: "{{ monitoring_app_go_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Copy app-go Dockerfile (Lab 8 bonus)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app_go/Dockerfile"
+    dest: "{{ monitoring_app_go_path }}/Dockerfile"
+    mode: "0644"
+
+- name: Copy app-go go.mod (Lab 8 bonus)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app_go/go.mod"
+    dest: "{{ monitoring_app_go_path }}/go.mod"
+    mode: "0644"
+
+- name: Copy app-go main.go (Lab 8 bonus)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../app_go/main.go"
+    dest: "{{ monitoring_app_go_path }}/main.go"
+    mode: "0644"
 
 - name: Template Loki config
   ansible.builtin.template:
@@ -40,6 +100,18 @@
   ansible.builtin.template:
     src: datasource-loki.yml.j2
     dest: "{{ monitoring_datasources_path }}/datasource-loki.yml"
+    mode: "0644"
+
+- name: Template Grafana Prometheus datasource provisioning
+  ansible.builtin.template:
+    src: datasource-prometheus.yml.j2
+    dest: "{{ monitoring_datasources_path }}/datasource-prometheus.yml"
+    mode: "0644"
+
+- name: Template Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_prometheus_config_path }}"
     mode: "0644"
 
 - name: Template docker-compose for monitoring stack

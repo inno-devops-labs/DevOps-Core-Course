@@ -1,4 +1,4 @@
-# Loki + Promtail + Grafana - Ansible templated (Lab 7)
+# Loki + Promtail + Prometheus + Grafana - Ansible templated (Lab 8 bonus)
 services:
   loki:
     image: {{ loki_image }}:{{ loki_version }}
@@ -47,6 +47,46 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:9080/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  prometheus:
+    image: {{ prometheus_image }}:{{ prometheus_version }}
+    container_name: prometheus
+    ports:
+      - "{{ prometheus_port }}:9090"
+    volumes:
+      - {{ monitoring_project_dir }}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time={{ prometheus_retention_days }}d"
+      - "--storage.tsdb.retention.size={{ prometheus_retention_size }}"
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      loki:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
 
   grafana:
     image: {{ grafana_image }}:{{ grafana_version }}
@@ -63,6 +103,7 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - {{ monitoring_project_dir }}/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - {{ monitoring_dashboards_path }}:/etc/grafana/provisioning/dashboards:ro
     networks:
       - logging
     deploy:
@@ -83,6 +124,66 @@ services:
       loki:
         condition: service_healthy
 
+  app-python:
+    build:
+      context: {{ monitoring_app_python_path }}
+      dockerfile: Dockerfile
+    container_name: app-python
+    ports:
+      - "{{ app_python_port }}:8000"
+    environment:
+      - PORT=8000
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ app_python_cpu_limit }}"
+          memory: {{ app_python_memory_limit }}
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+    depends_on:
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app-go:
+    build:
+      context: {{ monitoring_app_go_path }}
+      dockerfile: Dockerfile
+    container_name: app-go
+    ports:
+      - "{{ app_go_port_host }}:8080"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-go"
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ app_go_cpu_limit }}"
+          memory: {{ app_go_memory_limit }}
+        reservations:
+          cpus: "0.1"
+          memory: 128M
+    depends_on:
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 networks:
   logging:
     driver: bridge
@@ -90,3 +191,4 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
