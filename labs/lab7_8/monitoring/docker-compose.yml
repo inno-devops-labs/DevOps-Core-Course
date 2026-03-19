@@ -88,9 +88,9 @@ services:
     container_name: app-python
     environment:
       HOST: "0.0.0.0"
-      PORT: "8005"
+      PORT: "8000"
     ports:
-      - "8005:8005"
+      - "8005:8000"
     networks: [logging]
     labels:
       logging: "promtail"
@@ -105,6 +105,35 @@ services:
           cpus: "0.25"
           memory: 256M
 
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=10GB"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks: [logging]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
 networks:
   logging:
     driver: bridge
@@ -112,3 +141,4 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:

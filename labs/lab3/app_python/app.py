@@ -1,7 +1,18 @@
 """
 DevOps Info Service
-Lab 03 — DevOps Core Course
+Labs 3/7/8 — DevOps Core Course
+
+Features:
+- Flask API endpoints: /, /health, /metrics
+- JSON structured logging to stdout (for Loki/Promtail)
+- Prometheus metrics (RED):
+  - Counter: http_requests_total{method,endpoint,status_code}
+  - Histogram: http_request_duration_seconds{method,endpoint}
+  - Gauge: http_requests_in_progress
+- Low-cardinality endpoint label via normalize_endpoint()
 """
+
+from __future__ import annotations
 
 import json
 import logging
@@ -9,17 +20,25 @@ import os
 import platform
 import socket
 import sys
+import time
 from datetime import UTC, datetime
 from typing import Any
 
 from flask import Flask, g, jsonify, request
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 from werkzeug.exceptions import HTTPException
 
 # -----------------------------------------------------------------------------
 # Configuration
 # -----------------------------------------------------------------------------
 HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", "8005"))  # Lab 7 expects port 8000, but vs code use this too :(
+PORT = int(os.getenv("PORT", "8005"))
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 START_TIME = datetime.now(UTC)
@@ -46,11 +65,31 @@ class JSONFormatter(logging.Formatter):
 logger = logging.getLogger("devops-info-service")
 logger.setLevel(logging.INFO)
 
-handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(JSONFormatter())
+_handler = logging.StreamHandler(sys.stdout)
+_handler.setFormatter(JSONFormatter())
 
-logger.handlers = [handler]
+logger.handlers = [_handler]
 logger.propagate = False
+
+# -----------------------------------------------------------------------------
+# Prometheus metrics (RED)
+# -----------------------------------------------------------------------------
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
 
 # -----------------------------------------------------------------------------
 # App
@@ -85,6 +124,20 @@ def get_client_ip() -> str:
     return request.remote_addr or "unknown"
 
 
+def normalize_endpoint(path: str) -> str:
+    """
+    Keep endpoint label low-cardinality:
+    - known endpoints: '/', '/health', '/metrics'
+    - everything else -> '/other'
+    """
+    if path in ("/", "/health", "/metrics"):
+        return path
+    return "/other"
+
+
+# -----------------------------------------------------------------------------
+# Request logging hooks (JSON logs)
+# -----------------------------------------------------------------------------
 @app.before_request
 def log_request_start() -> None:
     g.client_ip = get_client_ip()
@@ -113,6 +166,37 @@ def log_request_finish(response):
     return response
 
 
+# -----------------------------------------------------------------------------
+# Prometheus metrics hooks
+# -----------------------------------------------------------------------------
+@app.before_request
+def metrics_before() -> None:
+    g._start_time = time.perf_counter()
+    http_requests_in_progress.inc()
+
+
+@app.after_request
+def metrics_after(resp):
+    try:
+        duration = time.perf_counter() - getattr(g, "_start_time", time.perf_counter())
+        endpoint = normalize_endpoint(request.path)
+
+        http_requests_total.labels(
+            request.method, endpoint, str(resp.status_code)
+        ).inc()
+
+        http_request_duration_seconds.labels(
+            request.method, endpoint
+        ).observe(duration)
+    finally:
+        http_requests_in_progress.dec()
+
+    return resp
+
+
+# -----------------------------------------------------------------------------
+# Routes
+# -----------------------------------------------------------------------------
 @app.route("/", methods=["GET"])
 def index():
     uptime = get_uptime()
@@ -140,6 +224,7 @@ def index():
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
 
@@ -158,11 +243,16 @@ def health():
     )
 
 
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
+
+
 # -----------------------------------------------------------------------------
 # Error Handlers (JSON + logging)
 # -----------------------------------------------------------------------------
 @app.errorhandler(404)
-def not_found(error):
+def not_found(_error):
     logger.warning(
         "http_error",
         extra={
@@ -204,6 +294,9 @@ def handle_exception(error):
     return jsonify({"error": "Internal Server Error", "message": "Unexpected error"}), 500
 
 
+# -----------------------------------------------------------------------------
+# Entrypoint
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
     logger.info("startup")
     app.run(host=HOST, port=PORT, debug=DEBUG)
