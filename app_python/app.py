@@ -11,16 +11,45 @@ from datetime import datetime, timezone
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from pythonjsonlogger import jsonlogger
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+
+class CustomJsonFormatter(jsonlogger.JsonFormatter):
+    """Custom JSON formatter for structured logging."""
+
+    def add_fields(self, log_record: dict, record: logging.LogRecord, message_dict: dict) -> None:
+        super().add_fields(log_record, record, message_dict)
+        log_record['timestamp'] = datetime.now(timezone.utc).isoformat()
+        log_record['level'] = record.levelname
+        log_record['logger'] = record.name
+
+
+def setup_logging() -> logging.Logger:
+    """Configure JSON structured logging."""
+    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+
+    handler = logging.StreamHandler()
+    formatter = CustomJsonFormatter(
+        '%(timestamp)s %(level)s %(name)s %(message)s'
+    )
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger()
+    logger.setLevel(getattr(logging, log_level))
+    logger.addHandler(handler)
+
+    # Remove default handlers
+    for hdlr in logger.handlers[:-1]:
+        logger.removeHandler(hdlr)
+
+    return logging.getLogger(__name__)
+
+
+# Configure JSON logging
+logger = setup_logging()
 
 # Configuration
 HOST = os.getenv('HOST', '0.0.0.0')
@@ -33,12 +62,27 @@ START_TIME = datetime.now(timezone.utc)
 async def lifespan(app: FastAPI):
     """Manage application lifespan events."""
     # Startup
-    logger.info(f'DevOps Info Service starting on {HOST}:{PORT}')
-    logger.info(f'Python version: {platform.python_version()}')
+    logger.info(
+        'Application starting',
+        extra={
+            'event': 'startup',
+            'host': HOST,
+            'port': PORT,
+            'python_version': platform.python_version(),
+            'debug': DEBUG
+        }
+    )
     yield
     # Shutdown
     uptime = get_uptime()
-    logger.info(f'DevOps Info Service shutting down (uptime: {uptime["human"]})')
+    logger.info(
+        'Application shutting down',
+        extra={
+            'event': 'shutdown',
+            'uptime_seconds': uptime['seconds'],
+            'uptime_human': uptime['human']
+        }
+    )
 
 
 app = FastAPI(
@@ -47,6 +91,55 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+
+# Request logging middleware
+@app.middleware('http')
+async def log_requests(request: Request, call_next) -> Response:
+    """Log all HTTP requests with timing and status."""
+    start_time = datetime.now(timezone.utc)
+
+    # Get client IP - handle proxies
+    client_ip = request.client.host if request.client else 'unknown'
+    forwarded_for = request.headers.get('X-Forwarded-For')
+    if forwarded_for:
+        client_ip = forwarded_for.split(',')[0].strip()
+
+    # Log request
+    logger.info(
+        'HTTP request started',
+        extra={
+            'event': 'request_start',
+            'method': request.method,
+            'path': request.url.path,
+            'query': str(request.query_params),
+            'client_ip': client_ip,
+            'user_agent': request.headers.get('user-agent', 'unknown')
+        }
+    )
+
+    # Process request
+    response = await call_next(request)
+
+    # Calculate duration
+    duration_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+
+    # Log response
+    log_level = logging.WARNING if response.status_code >= 400 else logging.INFO
+    logger.log(
+        log_level,
+        'HTTP request completed',
+        extra={
+            'event': 'request_end',
+            'method': request.method,
+            'path': request.url.path,
+            'status_code': response.status_code,
+            'duration_ms': round(duration_ms, 2),
+            'client_ip': client_ip
+        }
+    )
+
+    return response
 
 
 # Pydantic models for response structure
@@ -202,7 +295,15 @@ async def health() -> HealthResponse:
 @app.exception_handler(404)
 async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle 404 Not Found errors."""
-    logger.warning(f'Not found: {request.method} {request.url.path}')
+    logger.warning(
+        'Not found error',
+        extra={
+            'event': 'error_404',
+            'method': request.method,
+            'path': request.url.path,
+            'client_ip': request.client.host if request.client else 'unknown'
+        }
+    )
     return JSONResponse(
         status_code=404,
         content={'error': 'Not Found', 'message': 'Endpoint does not exist'}
@@ -212,7 +313,16 @@ async def not_found_handler(request: Request, exc: Exception) -> JSONResponse:
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle 500 Internal Server errors."""
-    logger.error(f'Internal error: {exc}', exc_info=True)
+    logger.error(
+        'Internal server error',
+        extra={
+            'event': 'error_500',
+            'method': request.method,
+            'path': request.url.path,
+            'error': str(exc)
+        },
+        exc_info=True
+    )
     return JSONResponse(
         status_code=500,
         content={'error': 'Internal Server Error', 'message': 'An unexpected error occurred'}
