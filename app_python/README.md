@@ -42,6 +42,15 @@ HOST=127.0.0.1 PORT=3000 DEBUG=true python app.py
 - `GET /health` – Health check
   - Returns basic health status, timestamp, and uptime in seconds
 
+- `GET /metrics` – Prometheus metrics endpoint
+  - Exposes RED metrics:
+    - `http_requests_total{method,endpoint,status_code}`
+    - `http_request_duration_seconds{method,endpoint,status_code}`
+    - `http_requests_in_progress{method,endpoint}`
+  - Exposes app-specific metrics:
+    - `devops_info_endpoint_calls{endpoint}`
+    - `devops_info_system_collection_seconds`
+
 ## Configuration
 
 Configuration is done via environment variables:

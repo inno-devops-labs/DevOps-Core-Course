@@ -16,6 +16,9 @@ scrape_configs:
     pipeline_stages:
       - docker: {}
     relabel_configs:
+      - source_labels: ["__meta_docker_container_label_logging"]
+        regex: promtail
+        action: keep
       - source_labels: ["__meta_docker_container_name"]
         regex: "/(.*)"
         target_label: container

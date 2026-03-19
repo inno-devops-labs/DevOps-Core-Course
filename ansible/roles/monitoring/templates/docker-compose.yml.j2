@@ -1,28 +1,61 @@
 name: {{ monitoring_compose_project_name }}
 
 services:
+  app-python:
+    image: "{{ monitoring_app_image }}:{{ monitoring_app_tag }}"
+    container_name: app-python
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "{{ monitoring_app_internal_port }}"
+      DEBUG: "False"
+    ports:
+      - "{{ monitoring_app_port }}:{{ monitoring_app_internal_port }}"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-info-service"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:{{ monitoring_app_internal_port }}/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    restart: unless-stopped
+
   loki:
     image: {{ monitoring_loki_image }}
-    container_name: devops-loki
+    container_name: loki
     command: -config.file=/etc/loki/config.yml
     ports:
       - "{{ monitoring_loki_port }}:{{ monitoring_loki_port }}"
     volumes:
       - ./loki/config.yml:/etc/loki/config.yml:ro
       - loki-data:/loki
+    networks:
+      - logging
     labels:
       logging: "promtail"
-      app: "devops-loki"
+      app: "loki"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:{{ monitoring_loki_port }}/ready >/dev/null 2>&1 || curl -fsS http://localhost:{{ monitoring_loki_port }}/ready >/dev/null 2>&1"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 20s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    restart: unless-stopped
 
   promtail:
     image: {{ monitoring_promtail_image }}
-    container_name: devops-promtail
+    container_name: promtail
     command: -config.file=/etc/promtail/config.yml
     ports:
       - "{{ monitoring_promtail_port }}:{{ monitoring_promtail_port }}"
@@ -32,36 +65,92 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+    networks:
+      - logging
     labels:
       logging: "promtail"
-      app: "devops-promtail"
+      app: "promtail"
+    healthcheck:
+      test: ["CMD-SHELL", "grep -qi ':{{ '%x' % (monitoring_promtail_port | int) }}' /proc/net/tcp /proc/net/tcp6"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    restart: unless-stopped
+
+  prometheus:
+    image: "prom/prometheus:v{{ prometheus_version }}"
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time={{ prometheus_retention_days }}d"
+      - "--storage.tsdb.retention.size={{ prometheus_retention_size }}"
+    ports:
+      - "{{ prometheus_port }}:{{ prometheus_port }}"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ prometheus_port }}/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    restart: unless-stopped
 
   grafana:
     image: {{ monitoring_grafana_image }}
-    container_name: devops-grafana
+    container_name: grafana
     ports:
       - "{{ monitoring_grafana_port }}:{{ monitoring_grafana_port }}"
     environment:
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_SECURITY_ADMIN_USER: "{{ monitoring_grafana_admin_user }}"
       GF_SECURITY_ADMIN_PASSWORD: "{{ monitoring_grafana_admin_password }}"
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_METRICS_ENABLED: "true"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       loki:
         condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    networks:
+      - logging
     labels:
       logging: "promtail"
-      app: "devops-grafana"
+      app: "grafana"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:{{ monitoring_grafana_port }}/api/health >/dev/null 2>&1 || curl -fsS http://localhost:{{ monitoring_grafana_port }}/api/health >/dev/null 2>&1"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    restart: unless-stopped
 
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
+
+networks:
+  logging:
+    driver: bridge
