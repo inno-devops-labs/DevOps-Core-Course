@@ -25,7 +25,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "{{ monitoring_grafana_datasource_uid }}"
+        "uid": "{{ monitoring_grafana_loki_datasource_uid }}"
       },
       "gridPos": {
         "h": 9,
@@ -48,7 +48,7 @@
         {
           "datasource": {
             "type": "loki",
-            "uid": "{{ monitoring_grafana_datasource_uid }}"
+            "uid": "{{ monitoring_grafana_loki_datasource_uid }}"
           },
           "editorMode": "code",
           "expr": "{app=~\"devops-.*\"}",
@@ -62,7 +62,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "{{ monitoring_grafana_datasource_uid }}"
+        "uid": "{{ monitoring_grafana_loki_datasource_uid }}"
       },
       "fieldConfig": {
         "defaults": {
@@ -140,7 +140,7 @@
         {
           "datasource": {
             "type": "loki",
-            "uid": "{{ monitoring_grafana_datasource_uid }}"
+            "uid": "{{ monitoring_grafana_loki_datasource_uid }}"
           },
           "editorMode": "code",
           "expr": "sum by (app) (rate({app=~\"devops-.*\"}[1m]))",
@@ -154,7 +154,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "{{ monitoring_grafana_datasource_uid }}"
+        "uid": "{{ monitoring_grafana_loki_datasource_uid }}"
       },
       "gridPos": {
         "h": 8,
@@ -177,7 +177,7 @@
         {
           "datasource": {
             "type": "loki",
-            "uid": "{{ monitoring_grafana_datasource_uid }}"
+            "uid": "{{ monitoring_grafana_loki_datasource_uid }}"
           },
           "editorMode": "code",
           "expr": "{app=~\"devops-.*\"} | json | level=\"ERROR\"",
@@ -191,7 +191,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "{{ monitoring_grafana_datasource_uid }}"
+        "uid": "{{ monitoring_grafana_loki_datasource_uid }}"
       },
       "fieldConfig": {
         "defaults": {
@@ -250,7 +250,7 @@
         {
           "datasource": {
             "type": "loki",
-            "uid": "{{ monitoring_grafana_datasource_uid }}"
+            "uid": "{{ monitoring_grafana_loki_datasource_uid }}"
           },
           "editorMode": "code",
           "expr": "sum by (level) (count_over_time({app=~\"devops-.*\"} | json [5m]))",
@@ -281,7 +281,7 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "Lab07 - Observability & Logging",
-  "uid": "{{ monitoring_grafana_dashboard_uid }}",
+  "uid": "{{ monitoring_grafana_logs_dashboard_uid }}",
   "version": 1,
   "weekStart": ""
 }

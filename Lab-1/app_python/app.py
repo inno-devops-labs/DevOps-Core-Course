@@ -9,10 +9,42 @@ import time
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, request
+from flask import Flask, Response, g, jsonify, request
 from flask_swagger_ui import get_swaggerui_blueprint
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 app = Flask(__name__)
+
+TRACKED_ENDPOINTS = {'/', '/health', '/metrics', '/swagger.json'}
+
+HTTP_REQUESTS_TOTAL = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status_code']
+)
+
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint']
+)
+
+HTTP_REQUESTS_IN_PROGRESS = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed',
+    ['method', 'endpoint', 'status_code']
+)
+
+DEVOPS_INFO_ENDPOINT_CALLS_TOTAL = Counter(
+    'devops_info_endpoint_calls_total',
+    'Total endpoint calls for DevOps info service',
+    ['endpoint']
+)
+
+DEVOPS_INFO_SYSTEM_COLLECTION_SECONDS = Histogram(
+    'devops_info_system_collection_seconds',
+    'System info collection duration in seconds'
+)
 
 
 class JSONFormatter(logging.Formatter):
@@ -75,6 +107,17 @@ def get_client_ip() -> str:
     if ',' in client_ip:
         return client_ip.split(',')[0].strip()
     return client_ip
+
+
+def normalize_endpoint() -> str:
+    url_rule = getattr(request, 'url_rule', None)
+    endpoint = url_rule.rule if url_rule and url_rule.rule else request.path
+
+    if endpoint.startswith('/docs'):
+        return '/docs'
+    if endpoint in TRACKED_ENDPOINTS:
+        return endpoint
+    return '/other'
 
 
 # conf
@@ -168,7 +211,8 @@ def get_endpoints() -> list[dict]:
     """return a list of available endpoints"""
     return [
         {'path': '/', 'method': 'GET', 'description': 'Service information'},
-        {'path': '/health', 'method': 'GET', 'description': 'Health check'}
+        {'path': '/health', 'method': 'GET', 'description': 'Health check'},
+        {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'},
     ]
 
 
@@ -200,6 +244,16 @@ OPENAPI_SPEC = {
                     }
                 }
             }
+        },
+        '/metrics': {
+            'get': {
+                'summary': 'Prometheus metrics',
+                'responses': {
+                    '200': {
+                        'description': 'Prometheus text exposition format'
+                    }
+                }
+            }
         }
     }
 }
@@ -208,6 +262,14 @@ OPENAPI_SPEC = {
 @app.before_request
 def log_request() -> None:
     g.request_started_at = time.perf_counter()
+    g.normalized_endpoint = normalize_endpoint()
+
+    HTTP_REQUESTS_IN_PROGRESS.labels(
+        method=request.method,
+        endpoint=g.normalized_endpoint,
+        status_code='in_progress',
+    ).inc()
+
     logger.info(
         'Incoming request',
         extra={
@@ -223,9 +285,32 @@ def log_request() -> None:
 @app.after_request
 def log_response(response):
     started_at = getattr(g, 'request_started_at', None)
+    duration_seconds = None
     duration_ms = None
     if started_at is not None:
-        duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+        duration_seconds = time.perf_counter() - started_at
+        duration_ms = round(duration_seconds * 1000, 2)
+
+    endpoint = getattr(g, 'normalized_endpoint', normalize_endpoint())
+    status_code = str(response.status_code)
+
+    HTTP_REQUESTS_TOTAL.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status_code=status_code,
+    ).inc()
+
+    if duration_seconds is not None:
+        HTTP_REQUEST_DURATION_SECONDS.labels(
+            method=request.method,
+            endpoint=endpoint,
+        ).observe(duration_seconds)
+
+    HTTP_REQUESTS_IN_PROGRESS.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status_code='in_progress',
+    ).dec()
 
     log_extra: dict[str, object] = {
         'event': 'request_end',
@@ -248,10 +333,15 @@ def log_response(response):
 @app.route('/')
 def index():
     """main endpoint"""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/').inc()
+
     uptime = get_uptime()
+    with DEVOPS_INFO_SYSTEM_COLLECTION_SECONDS.time():
+        system_info = get_system_info()
+
     payload = {
         'service': get_service_info(),
-        'system': get_system_info(),
+        'system': system_info,
         'runtime': {
             'uptime_seconds': uptime['seconds'],
             'uptime_human': uptime['human'],
@@ -267,6 +357,7 @@ def index():
 @app.route('/health')
 def health():
     """health check endpoint"""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/health').inc()
     uptime = get_uptime()
     return jsonify({
         'status': 'healthy',
@@ -275,8 +366,15 @@ def health():
     })
 
 
+@app.route('/metrics')
+def metrics():
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/metrics').inc()
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
 @app.route('/swagger.json')
 def swagger_json():
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/swagger.json').inc()
     return jsonify(OPENAPI_SPEC)
 
 

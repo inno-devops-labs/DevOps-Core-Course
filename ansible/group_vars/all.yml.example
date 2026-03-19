@@ -17,8 +17,10 @@ compose_project_dir: "/opt/{{ app_name }}"
 # Wipe safety switch (used with --tags web_app_wipe)
 web_app_wipe: false
 
-# Monitoring role (Lab07 bonus)
+# Monitoring role (Lab07-Lab08 bonus)
 monitoring_grafana_admin_user: "admin"
 monitoring_grafana_admin_password: "replace-with-strong-password"
 # monitoring_project_dir: "/opt/monitoring"
 # monitoring_app_enabled: true
+# monitoring_prometheus_retention_time: "15d"
+# monitoring_prometheus_retention_size: "10GB"

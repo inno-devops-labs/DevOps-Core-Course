@@ -44,3 +44,4 @@ __pycache__/
 # Monitoring
 monitoring/.env
 !monitoring/grafana/dashboards/lab07-logs-dashboard.json
+!monitoring/grafana/dashboards/lab08-metrics-dashboard.json

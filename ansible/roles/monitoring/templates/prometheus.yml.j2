@@ -1,0 +1,16 @@
+global:
+  scrape_interval: {{ monitoring_prometheus_scrape_interval }}
+  evaluation_interval: {{ monitoring_prometheus_evaluation_interval }}
+
+scrape_configs:
+{% for target in monitoring_prometheus_targets %}
+  - job_name: '{{ target.job }}'
+{% if target.path is defined %}
+    metrics_path: '{{ target.path }}'
+{% endif %}
+    static_configs:
+      - targets:
+{% for endpoint in target.targets %}
+          - "{{ endpoint }}"
+{% endfor %}
+{% endfor %}

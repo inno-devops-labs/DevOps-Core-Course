@@ -72,3 +72,21 @@ def test_internal_server_error_returns_500_json(client, monkeypatch):
         "error": "Internal Server Error",
         "message": "An unexpected error occurred",
     }
+
+
+def test_metrics_endpoint_exposes_prometheus_metrics(client):
+    # Generate some traffic to populate metric series.
+    client.get("/")
+    client.get("/health")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.content_type.startswith("text/plain")
+
+    body = response.get_data(as_text=True)
+    assert "http_requests_total" in body
+    assert "http_request_duration_seconds_bucket" in body
+    assert "http_requests_in_progress" in body
+    assert "devops_info_endpoint_calls_total" in body
+    assert "devops_info_system_collection_seconds_bucket" in body

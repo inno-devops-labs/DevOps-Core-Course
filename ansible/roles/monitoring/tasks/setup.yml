@@ -3,7 +3,7 @@
   ansible.builtin.assert:
     that:
       - monitoring_grafana_admin_password | length >= 12
-      - monitoring_grafana_admin_password != "ChangeMe_Lab07_Replace"
+      - monitoring_grafana_admin_password != "ChangeMe_Lab08_Replace"
     fail_msg: >-
       Set monitoring_grafana_admin_password to a strong secret
       (recommended via ansible-vault in group_vars/all.yml).
@@ -17,6 +17,7 @@
     - "{{ monitoring_project_dir }}"
     - "{{ monitoring_project_dir }}/loki"
     - "{{ monitoring_project_dir }}/promtail"
+    - "{{ monitoring_project_dir }}/prometheus"
     - "{{ monitoring_project_dir }}/grafana"
     - "{{ monitoring_project_dir }}/grafana/provisioning"
     - "{{ monitoring_project_dir }}/grafana/provisioning/datasources"
@@ -41,10 +42,16 @@
     dest: "{{ monitoring_project_dir }}/promtail/config.yml"
     mode: "0644"
 
-- name: Render Grafana datasource provisioning
+- name: Render Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_project_dir }}/prometheus/prometheus.yml"
+    mode: "0644"
+
+- name: Render Grafana datasources provisioning
   ansible.builtin.template:
     src: grafana-datasource.yml.j2
-    dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/loki.yml"
+    dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/datasources.yml"
     mode: "0644"
 
 - name: Render Grafana dashboard provider
@@ -53,10 +60,16 @@
     dest: "{{ monitoring_project_dir }}/grafana/provisioning/dashboards/dashboard-provider.yml"
     mode: "0644"
 
-- name: Render Grafana dashboard
+- name: Render logs dashboard
   ansible.builtin.template:
     src: lab07-logs-dashboard.json.j2
     dest: "{{ monitoring_project_dir }}/grafana/dashboards/lab07-logs-dashboard.json"
+    mode: "0644"
+
+- name: Render metrics dashboard
+  ansible.builtin.template:
+    src: lab08-metrics-dashboard.json.j2
+    dest: "{{ monitoring_project_dir }}/grafana/dashboards/lab08-metrics-dashboard.json"
     mode: "0644"
 
 - name: Render monitoring environment file

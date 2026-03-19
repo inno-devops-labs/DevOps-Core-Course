@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   loki:
     image: grafana/loki:{{ monitoring_loki_version }}
@@ -67,47 +65,7 @@ services:
           cpus: "{{ monitoring_resources.promtail.reservations.cpus }}"
           memory: "{{ monitoring_resources.promtail.reservations.memory }}"
 
-  grafana:
-    image: grafana/grafana:{{ monitoring_grafana_version }}
-    container_name: grafana
-    ports:
-      - "{{ monitoring_grafana_port }}:3000"
-    env_file:
-      - ./.env
-    environment:
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER}"
-      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD}"
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-    networks:
-      - logging
-    labels:
-      logging: "promtail"
-      app: "devops-grafana"
-    restart: unless-stopped
-    depends_on:
-      - loki
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    deploy:
-      resources:
-        limits:
-          cpus: "{{ monitoring_resources.grafana.limits.cpus }}"
-          memory: "{{ monitoring_resources.grafana.limits.memory }}"
-        reservations:
-          cpus: "{{ monitoring_resources.grafana.reservations.cpus }}"
-          memory: "{{ monitoring_resources.grafana.reservations.memory }}"
 {% if monitoring_app_enabled | bool %}
-
   {{ monitoring_app_name }}:
     image: "{{ monitoring_app_image }}:{{ monitoring_app_tag }}"
     container_name: "{{ monitoring_app_name }}"
@@ -140,9 +98,92 @@ services:
           memory: "{{ monitoring_resources.app.reservations.memory }}"
 {% endif %}
 
+  prometheus:
+    image: prom/prometheus:{{ monitoring_prometheus_version }}
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time={{ monitoring_prometheus_retention_time }}"
+      - "--storage.tsdb.retention.size={{ monitoring_prometheus_retention_size }}"
+      - "--web.enable-lifecycle"
+    ports:
+      - "{{ monitoring_prometheus_port }}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-prometheus"
+    restart: unless-stopped
+{% if monitoring_app_enabled | bool %}
+    depends_on:
+      - {{ monitoring_app_name }}
+      - loki
+{% endif %}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_resources.prometheus.limits.cpus }}"
+          memory: "{{ monitoring_resources.prometheus.limits.memory }}"
+        reservations:
+          cpus: "{{ monitoring_resources.prometheus.reservations.cpus }}"
+          memory: "{{ monitoring_resources.prometheus.reservations.memory }}"
+
+  grafana:
+    image: grafana/grafana:{{ monitoring_grafana_version }}
+    container_name: grafana
+    ports:
+      - "{{ monitoring_grafana_port }}:3000"
+    env_file:
+      - ./.env
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_METRICS_ENABLED: "true"
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD}"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-grafana"
+    restart: unless-stopped
+    depends_on:
+      - loki
+      - prometheus
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_resources.grafana.limits.cpus }}"
+          memory: "{{ monitoring_resources.grafana.limits.memory }}"
+        reservations:
+          cpus: "{{ monitoring_resources.grafana.reservations.cpus }}"
+          memory: "{{ monitoring_resources.grafana.reservations.memory }}"
+
 volumes:
   loki-data:
   promtail-positions:
+  prometheus-data:
   grafana-data:
 
 networks:

@@ -86,7 +86,7 @@ curl http://localhost:8000/health
   - compose service to `service`
 
 ### Grafana provisioning
-- Data source provisioned from `monitoring/grafana/provisioning/datasources/loki.yml`.
+- Data source provisioned from `monitoring/grafana/provisioning/datasources/datasources.yml`.
 - Dashboard provider points to `monitoring/grafana/dashboards/`.
 - Dashboard is preloaded from `lab07-logs-dashboard.json`.
 - Anonymous access is disabled; login is required.

@@ -6,11 +6,13 @@ monitoring_project_dir: /opt/monitoring
 monitoring_loki_version: "3.0.0"
 monitoring_promtail_version: "3.0.0"
 monitoring_grafana_version: "12.3.1"
+monitoring_prometheus_version: "v3.9.0"
 
 # Ports
 monitoring_loki_port: 3100
 monitoring_promtail_port: 9080
 monitoring_grafana_port: 3000
+monitoring_prometheus_port: 9090
 monitoring_app_host_port: 8000
 monitoring_app_container_port: 5000
 
@@ -19,17 +21,45 @@ monitoring_loki_schema_from: "2024-01-01"
 monitoring_loki_schema_version: "v13"
 monitoring_loki_retention_period: "168h"
 
+# Prometheus settings
+monitoring_prometheus_retention_time: "15d"
+monitoring_prometheus_retention_size: "10GB"
+monitoring_prometheus_scrape_interval: "15s"
+monitoring_prometheus_evaluation_interval: "15s"
+monitoring_prometheus_targets:
+  - job: "prometheus"
+    targets:
+      - "localhost:9090"
+  - job: "app"
+    targets:
+      - "{{ monitoring_app_name }}:{{ monitoring_app_container_port }}"
+    path: "/metrics"
+  - job: "loki"
+    targets:
+      - "loki:3100"
+    path: "/metrics"
+  - job: "grafana"
+    targets:
+      - "grafana:3000"
+    path: "/metrics"
+  - job: "promtail"
+    targets:
+      - "promtail:9080"
+    path: "/metrics"
+
 # App integration
 monitoring_app_enabled: true
 monitoring_app_name: "devops-python"
 monitoring_app_image: "{{ dockerhub_username | default('linktur') }}/devops-lab2"
 monitoring_app_tag: "{{ docker_image_tag | default('latest') }}"
 
-# Grafana security
+# Grafana security and provisioning
 monitoring_grafana_admin_user: "admin"
-monitoring_grafana_admin_password: "ChangeMe_Lab07_Replace"
-monitoring_grafana_datasource_uid: "loki"
-monitoring_grafana_dashboard_uid: "lab07-logs"
+monitoring_grafana_admin_password: "ChangeMe_Lab08_Replace"
+monitoring_grafana_loki_datasource_uid: "loki"
+monitoring_grafana_prometheus_datasource_uid: "prometheus"
+monitoring_grafana_logs_dashboard_uid: "lab07-logs"
+monitoring_grafana_metrics_dashboard_uid: "lab08-metrics"
 
 # Compose behavior
 monitoring_compose_pull_policy: "always"
@@ -48,21 +78,28 @@ monitoring_resources:
   promtail:
     limits:
       cpus: "0.5"
-      memory: "512M"
+      memory: "256M"
     reservations:
       cpus: "0.10"
       memory: "128M"
-  grafana:
+  prometheus:
     limits:
       cpus: "1.0"
       memory: "1G"
     reservations:
       cpus: "0.25"
       memory: "256M"
-  app:
+  grafana:
     limits:
       cpus: "0.5"
       memory: "512M"
+    reservations:
+      cpus: "0.25"
+      memory: "256M"
+  app:
+    limits:
+      cpus: "0.5"
+      memory: "256M"
     reservations:
       cpus: "0.10"
       memory: "128M"

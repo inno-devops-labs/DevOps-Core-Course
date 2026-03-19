@@ -25,6 +25,13 @@
     delay: 2
     timeout: "{{ monitoring_wait_timeout }}"
 
+- name: Wait for Prometheus port
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: "{{ monitoring_prometheus_port }}"
+    delay: 2
+    timeout: "{{ monitoring_wait_timeout }}"
+
 - name: Wait for Grafana port
   ansible.builtin.wait_for:
     host: "127.0.0.1"
@@ -50,6 +57,16 @@
   delay: 3
   until: monitoring_loki_ready.status == 200
 
+- name: Verify Prometheus healthy endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_prometheus_port }}/-/healthy"
+    method: GET
+    status_code: 200
+  register: monitoring_prometheus_ready
+  retries: 20
+  delay: 3
+  until: monitoring_prometheus_ready.status == 200
+
 - name: Verify Grafana health endpoint
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/health"
@@ -64,7 +81,7 @@
   ansible.builtin.uri:
     url: >-
       http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources/uid/{{
-      monitoring_grafana_datasource_uid }}
+      monitoring_grafana_loki_datasource_uid }}
     method: GET
     user: "{{ monitoring_grafana_admin_user }}"
     password: "{{ monitoring_grafana_admin_password }}"
@@ -74,3 +91,18 @@
   retries: 20
   delay: 3
   until: monitoring_loki_datasource.status == 200
+
+- name: Verify Prometheus datasource in Grafana
+  ansible.builtin.uri:
+    url: >-
+      http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources/uid/{{
+      monitoring_grafana_prometheus_datasource_uid }}
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: monitoring_prometheus_datasource
+  retries: 20
+  delay: 3
+  until: monitoring_prometheus_datasource.status == 200
