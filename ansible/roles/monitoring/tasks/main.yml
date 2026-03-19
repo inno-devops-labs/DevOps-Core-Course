@@ -1,5 +1,5 @@
 ---
-- name: Deploy Loki monitoring stack
+- name: Deploy observability stack
   tags:
     - monitoring_deploy
   block:
@@ -10,11 +10,14 @@
         mode: "0755"
       loop:
         - "{{ monitoring_project_dir }}"
+        - "{{ monitoring_project_dir }}/prometheus"
         - "{{ monitoring_project_dir }}/loki"
         - "{{ monitoring_project_dir }}/promtail"
         - "{{ monitoring_project_dir }}/grafana"
         - "{{ monitoring_project_dir }}/grafana/provisioning"
         - "{{ monitoring_project_dir }}/grafana/provisioning/datasources"
+        - "{{ monitoring_project_dir }}/grafana/provisioning/dashboards"
+        - "{{ monitoring_project_dir }}/grafana/provisioning/dashboards/json"
 
     - name: Render Loki configuration
       ansible.builtin.template:
@@ -28,11 +31,39 @@
         dest: "{{ monitoring_project_dir }}/promtail/config.yml"
         mode: "0644"
 
+    - name: Render Prometheus configuration
+      ansible.builtin.template:
+        src: prometheus.yml.j2
+        dest: "{{ monitoring_project_dir }}/prometheus/prometheus.yml"
+        mode: "0644"
+
     - name: Render Grafana datasource provisioning
       ansible.builtin.template:
         src: grafana-datasource.yml.j2
-        dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/loki.yml"
+        dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/datasources.yml"
         mode: "0644"
+
+    - name: Remove legacy Loki-only datasource file
+      ansible.builtin.file:
+        path: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/loki.yml"
+        state: absent
+
+    - name: Render Grafana dashboard provider
+      ansible.builtin.template:
+        src: grafana-dashboard-provider.yml.j2
+        dest: "{{ monitoring_project_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+        mode: "0644"
+
+    - name: Provision Grafana dashboards
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ monitoring_project_dir }}/grafana/provisioning/dashboards/json/{{ item.dest }}"
+        mode: "0644"
+      loop:
+        - src: grafana-app-dashboard.json
+          dest: app-metrics-dashboard.json
+        - src: grafana-logs-dashboard.json
+          dest: logs-dashboard.json
 
     - name: Render monitoring docker-compose file
       ansible.builtin.template:
@@ -61,6 +92,16 @@
       delay: 5
       until: monitoring_loki_ready.status == 200
 
+    - name: Wait for Prometheus health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ prometheus_port }}/-/healthy"
+        status_code: 200
+        timeout: 10
+      register: monitoring_prometheus_health
+      retries: 12
+      delay: 5
+      until: monitoring_prometheus_health.status == 200
+
     - name: Wait for Grafana health endpoint
       ansible.builtin.uri:
         url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/health"
@@ -70,6 +111,16 @@
       retries: 12
       delay: 5
       until: monitoring_grafana_health.status == 200
+
+    - name: Verify application health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ monitoring_app_port }}/health"
+        status_code: 200
+        timeout: 10
+      register: monitoring_app_health
+      retries: 12
+      delay: 5
+      until: monitoring_app_health.status == 200
 
   rescue:
     - name: Show monitoring deployment diagnostics
