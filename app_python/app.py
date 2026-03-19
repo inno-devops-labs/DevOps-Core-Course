@@ -14,9 +14,13 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
-import time
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from pythonjsonlogger import jsonlogger
+
+from prometheus_client import (
+    Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+)
 
 # Define metrics
 http_requests = Counter(
@@ -40,9 +44,6 @@ devops_info_system_collection_seconds = Histogram(
     "devops_info_system_collection_seconds",
     "System info collection time"
 )
-from starlette.middleware.base import BaseHTTPMiddleware
-
-from pythonjsonlogger import jsonlogger
 
 
 logHandler = logging.StreamHandler()
@@ -68,13 +69,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.middleware("http")
 async def metrics_middleware(request: Request, call_next):
     method = request.method
     endpoint = request.url.path
     if endpoint == "/metrics":
         return await call_next(request)
-        
+
     http_requests_in_progress.inc()
     start_time = time.time()
     try:
@@ -86,8 +88,10 @@ async def metrics_middleware(request: Request, call_next):
         raise e
     finally:
         duration = time.time() - start_time
-        http_requests.labels(method=method, endpoint=endpoint, status=status).inc()
-        http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
+        http_requests.labels(
+            method=method, endpoint=endpoint, status=status).inc()
+        http_request_duration_seconds.labels(
+            method=method, endpoint=endpoint).observe(duration)
         http_requests_in_progress.dec()
 
 
@@ -205,13 +209,19 @@ def get_endpoints_list() -> list:
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
-        {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"}
+        {
+            "path": "/metrics",
+            "method": "GET",
+            "description": "Prometheus metrics"
+        }
     ]
+
 
 @app.get("/metrics")
 async def metrics():
     """Expose Prometheus metrics."""
     return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 @app.get("/", response_model=Dict[str, Any])
 async def get_service_information(request: Request) -> Dict[str, Any]:
