@@ -1,6 +1,35 @@
 version: '3.8'
 
 services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command: --config.file=/etc/prometheus/prometheus.yml
+    networks:
+      - logs-network
+    restart: unless-stopped
+    healthcheck:
+      test: [
+          "CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost:9090/targets; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost:9090/targets; else exit 0; fi"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+          
   loki:
     image: grafana/loki:3.0.0
     container_name: loki
@@ -129,6 +158,7 @@ services:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
   promtail-positions:
 
 networks:
