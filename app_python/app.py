@@ -13,7 +13,8 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, Gauge
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
