@@ -163,3 +163,38 @@ class TestErrorHandlers:
         data = json.loads(response.data)
 
         assert data['path'] == '/some/invalid/path'
+
+
+class TestMetricsEndpoint:
+    """Tests for GET /metrics endpoint."""
+
+    def test_metrics_returns_200(self, client):
+        """Test that metrics endpoint returns HTTP 200."""
+        response = client.get('/metrics')
+        assert response.status_code == 200
+
+    def test_metrics_returns_prometheus_format(self, client):
+        """Test that metrics endpoint returns Prometheus text format."""
+        response = client.get('/metrics')
+        assert 'text/plain' in response.content_type or \
+               'text/plain' in response.content_type
+
+    def test_metrics_contains_custom_metrics(self, client):
+        """Test that response contains custom application metrics."""
+        response = client.get('/metrics')
+        data = response.data.decode('utf-8')
+        assert 'http_requests_total' in data
+        assert 'http_request_duration_seconds' in data
+        assert 'http_requests_in_progress' in data
+        assert 'endpoint_calls_total' in data
+        assert 'system_info_duration_seconds' in data
+
+    def test_metrics_counter_increments(self, client):
+        """Test that request counter increments after requests."""
+        client.get('/')
+        client.get('/health')
+        response = client.get('/metrics')
+        data = response.data.decode('utf-8')
+        assert 'http_requests_total{' in data
+        assert 'endpoint="/"' in data
+        assert 'endpoint="/health"' in data

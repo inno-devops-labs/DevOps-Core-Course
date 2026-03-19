@@ -8,6 +8,7 @@
     - "{{ monitoring_compose_dir }}"
     - "{{ monitoring_compose_dir }}/loki"
     - "{{ monitoring_compose_dir }}/promtail"
+    - "{{ monitoring_compose_dir }}/prometheus"
     - "{{ monitoring_compose_dir }}/grafana/provisioning/datasources"
     - "{{ monitoring_compose_dir }}/grafana/provisioning/dashboards"
 
@@ -25,10 +26,38 @@
     mode: "0644"
   notify: Restart monitoring stack
 
-- name: Template Grafana datasource
+- name: Template Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_compose_dir }}/prometheus/prometheus.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Template Grafana Loki datasource
   ansible.builtin.template:
     src: grafana-datasource.yml.j2
     dest: "{{ monitoring_compose_dir }}/grafana/provisioning/datasources/loki.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Template Grafana Prometheus datasource
+  ansible.builtin.template:
+    src: grafana-datasource-prometheus.yml.j2
+    dest: "{{ monitoring_compose_dir }}/grafana/provisioning/datasources/prometheus.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Template Grafana dashboard provider
+  ansible.builtin.template:
+    src: grafana-dashboard-provider.yml.j2
+    dest: "{{ monitoring_compose_dir }}/grafana/provisioning/dashboards/default.yml"
+    mode: "0644"
+  notify: Restart monitoring stack
+
+- name: Copy Prometheus metrics dashboard
+  ansible.builtin.copy:
+    src: prometheus-metrics.json
+    dest: "{{ monitoring_compose_dir }}/grafana/provisioning/dashboards/prometheus-metrics.json"
     mode: "0644"
   notify: Restart monitoring stack
 

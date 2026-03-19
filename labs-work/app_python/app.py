@@ -3,9 +3,17 @@ import logging
 import os
 import platform
 import socket
+import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 app = Flask(__name__)
 
@@ -14,6 +22,30 @@ PORT = int(os.getenv('PORT', 5173))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 START_TIME = datetime.now(timezone.utc)
+
+HTTP_REQUESTS_TOTAL = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status'],
+)
+HTTP_REQUEST_DURATION = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint'],
+)
+HTTP_REQUESTS_IN_PROGRESS = Gauge(
+    'http_requests_in_progress',
+    'Number of HTTP requests currently in progress',
+)
+ENDPOINT_CALLS_TOTAL = Counter(
+    'endpoint_calls_total',
+    'Total calls per application endpoint',
+    ['endpoint'],
+)
+SYSTEM_INFO_DURATION = Histogram(
+    'system_info_duration_seconds',
+    'Duration of system info collection',
+)
 
 
 class JSONFormatter(logging.Formatter):
@@ -91,8 +123,15 @@ def get_request_info():
 def get_endpoints_list():
     return [
         {'path': '/', 'method': 'GET', 'description': 'Service information'},
-        {'path': '/health', 'method': 'GET', 'description': 'Health check'}
+        {'path': '/health', 'method': 'GET', 'description': 'Health check'},
+        {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'},
     ]
+
+
+@app.before_request
+def before_request_metrics():
+    request._start_time = time.monotonic()
+    HTTP_REQUESTS_IN_PROGRESS.inc()
 
 
 @app.after_request
@@ -106,16 +145,39 @@ def log_request(response):
             'client_ip': request.remote_addr,
         },
     )
+
+    HTTP_REQUESTS_IN_PROGRESS.dec()
+    if request.path != '/metrics':
+        duration = time.monotonic() - request._start_time
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            endpoint=request.path,
+            status=response.status_code,
+        ).inc()
+        HTTP_REQUEST_DURATION.labels(
+            method=request.method,
+            endpoint=request.path,
+        ).observe(duration)
+        ENDPOINT_CALLS_TOTAL.labels(endpoint=request.path).inc()
+
     return response
+
+
+@app.route('/metrics')
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.route('/')
 def index():
     uptime = get_uptime()
 
+    with SYSTEM_INFO_DURATION.time():
+        system_info = get_system_info()
+
     response = {
         'service': get_service_info(),
-        'system': get_system_info(),
+        'system': system_info,
         'runtime': {
             'uptime_seconds': uptime['seconds'],
             'uptime_human': uptime['human'],

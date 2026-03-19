@@ -44,6 +44,35 @@ services:
           cpus: "{{ monitoring_promtail_cpus }}"
     restart: {{ monitoring_restart_policy }}
 
+  prometheus:
+    image: prom/prometheus:{{ monitoring_prometheus_version }}
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time={{ monitoring_prometheus_retention_time }}"
+      - "--storage.tsdb.retention.size={{ monitoring_prometheus_retention_size }}"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+    ports:
+      - "{{ monitoring_prometheus_port }}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: {{ monitoring_prometheus_memory }}
+          cpus: "{{ monitoring_prometheus_cpus }}"
+    restart: {{ monitoring_restart_policy }}
+
   grafana:
     image: grafana/grafana:{{ monitoring_grafana_version }}
     container_name: grafana
@@ -60,6 +89,8 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=false
     depends_on:
       loki:
+        condition: service_healthy
+      prometheus:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:3000/api/health || exit 1"]
@@ -85,6 +116,11 @@ services:
     labels:
       logging: "promtail"
       app: "devops-python"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:{{ monitoring_app_python_port }}/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
@@ -112,6 +148,7 @@ services:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
   loki:

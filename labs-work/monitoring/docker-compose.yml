@@ -18,8 +18,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
-          cpus: "0.5"
+          memory: 1G
+          cpus: "1"
     restart: unless-stopped
 
   promtail:
@@ -44,6 +44,35 @@ services:
           cpus: "0.25"
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=10GB"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:12.3.1
     container_name: grafana
@@ -61,6 +90,8 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+      prometheus:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:3000/api/health || exit 1"]
       interval: 15s
@@ -69,7 +100,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
           cpus: "0.5"
     restart: unless-stopped
 
@@ -86,11 +117,16 @@ services:
     labels:
       logging: "promtail"
       app: "devops-python"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --output-document=- http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
-          memory: 128M
-          cpus: "0.25"
+          memory: 256M
+          cpus: "0.5"
     restart: unless-stopped
 
   app-go:
@@ -106,13 +142,14 @@ services:
     deploy:
       resources:
         limits:
-          memory: 64M
-          cpus: "0.25"
+          memory: 256M
+          cpus: "0.5"
     restart: unless-stopped
 
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
   loki:

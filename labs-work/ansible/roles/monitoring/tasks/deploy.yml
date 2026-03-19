@@ -16,11 +16,27 @@
         delay: 5
         timeout: 60
 
+    - name: Wait for Prometheus port
+      ansible.builtin.wait_for:
+        port: "{{ monitoring_prometheus_port }}"
+        delay: 5
+        timeout: 60
+
     - name: Wait for Grafana port
       ansible.builtin.wait_for:
         port: "{{ monitoring_grafana_port }}"
         delay: 5
         timeout: 60
+
+    - name: Prometheus health check
+      ansible.builtin.uri:
+        url: "http://localhost:{{ monitoring_prometheus_port }}/-/healthy"
+        return_content: true
+        status_code: 200
+      register: prometheus_health
+      retries: 5
+      delay: 5
+      until: prometheus_health.status == 200
 
     - name: Loki health check
       ansible.builtin.uri:

@@ -71,6 +71,27 @@ resource "yandex_vpc_security_group" "devops" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description    = "Allow Prometheus"
+    protocol       = "TCP"
+    port           = 9090
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description    = "Allow Python app"
+    protocol       = "TCP"
+    port           = 8000
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description    = "Allow Go app"
+    protocol       = "TCP"
+    port           = 8001
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     description    = "Allow all outbound traffic"
     protocol       = "ANY"
