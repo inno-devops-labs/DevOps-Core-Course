@@ -175,13 +175,14 @@ curl -s http://localhost:9090/api/v1/query?query=up
 
 Store screenshots in `monitoring/docs/screenshots/` with names:
 
-- `metrics-endpoint.png` (browser/curl output of `/metrics`)
-- `prometheus-targets-up.png` (`http://localhost:9090/targets` all UP)
-- `promql-up-query.png` (`up` query result)
-- `grafana-app-dashboard1.png` (custom dashboard with 6+ panels)
-- `grafana-app-dashboard2.png` (custom dashboard with 6+ panels)
-- `compose-healthy.png` (`docker compose ps` healthy services)
-- `persistence-proof.png` (dashboard exists after restart)
+- `./screenshots/metrics-endpoint.png` (browser/curl output of `/metrics`)
+- `./screenshots/prometheus-targets-up.png` (`http://localhost:9090/targets` all UP)
+- `./screenshots/promql-up-query.png` (`up` query result)
+- `./screenshots/grafana-app-dashboard1.png` (custom dashboard with 6+ panels)
+- `./screenshots/grafana-app-dashboard2.png` (custom dashboard with 6+ panels)
+- `./screenshots/compose-healthyyyy.png` (`docker compose ps` healthy services)
+- `./screenshots/persistence-proof.png` (dashboard exists after restart)
+- `./screenshots/afteerrestart.png`
 
 ## 8. Challenges & Solutions
 
