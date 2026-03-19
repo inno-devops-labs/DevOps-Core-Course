@@ -80,7 +80,22 @@ class DevOpsInfoServiceTests(unittest.TestCase):
         self.assertEqual(data["error"], "Not Found")
         self.assertIn("message", data)
 
+    def test_metrics_endpoint_exposes_prometheus_metrics(self):
+        # Generate a few requests so metrics have data points.
+        self.client.get("/")
+        self.client.get("/health")
+
+        resp = self.client.get("/metrics")
+        self.assertEqual(resp.status_code, 200)
+
+        body = resp.get_data(as_text=True)
+        self.assertIn("# HELP http_requests_total", body)
+        self.assertIn("# TYPE http_requests_total counter", body)
+        self.assertIn("http_request_duration_seconds", body)
+        self.assertIn("http_requests_in_progress", body)
+        self.assertIn("devops_info_endpoint_calls_total", body)
+        self.assertIn("devops_info_system_collection_seconds", body)
+
 
 if __name__ == "__main__":
     unittest.main()
-

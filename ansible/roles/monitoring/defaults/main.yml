@@ -1,12 +1,47 @@
 ---
+# Project paths and naming
 monitoring_project_dir: /opt/monitoring
-monitoring_loki_image: grafana/loki:3.0.0
-monitoring_promtail_image: grafana/promtail:3.0.0
-monitoring_grafana_image: grafana/grafana:12.3.1
+monitoring_compose_project_name: devops-monitoring
+
+# Images and versions
+loki_version: "3.0.0"
+promtail_version: "3.0.0"
+grafana_version: "12.3.1"
+prometheus_version: "3.9.0"
+monitoring_loki_image: "grafana/loki:{{ loki_version }}"
+monitoring_promtail_image: "grafana/promtail:{{ promtail_version }}"
+monitoring_grafana_image: "grafana/grafana:{{ grafana_version }}"
+
+# App image (reuse web app naming conventions when available)
+monitoring_app_image: "{{ web_app_docker_image | default((dockerhub_username | default('your_dockerhub_username')) ~ '/devops-info-service') }}"
+monitoring_app_tag: "{{ web_app_docker_tag | default(docker_tag | default('latest')) }}"
+
+# Ports
 monitoring_loki_port: 3100
 monitoring_promtail_port: 9080
 monitoring_grafana_port: 3000
+prometheus_port: 9090
+monitoring_app_port: 8000
+monitoring_app_internal_port: 8000
+
+# Retention and scrape behavior
 monitoring_retention_period: 168h
+prometheus_retention_days: 15
+prometheus_retention_size: "10GB"
+prometheus_scrape_interval: "15s"
+
+# Grafana auth
 monitoring_grafana_admin_user: admin
 monitoring_grafana_admin_password: change-me-in-vault
-monitoring_compose_project_name: devops-monitoring
+
+# Scrape targets for prometheus.yml.j2 template
+prometheus_targets:
+  - job: "prometheus"
+    targets: ["localhost:9090"]
+  - job: "loki"
+    targets: ["loki:3100"]
+  - job: "grafana"
+    targets: ["grafana:3000"]
+  - job: "app"
+    targets: ["app-python:8000"]
+    path: "/metrics"
