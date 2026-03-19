@@ -12,6 +12,7 @@ secrets.auto.tfvars
 
 Pulumi.*.yaml
 venv/
+.venv/
 __pycache__/
 
 # Ansible

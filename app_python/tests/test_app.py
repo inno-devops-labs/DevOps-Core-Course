@@ -12,7 +12,7 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         path: str,
         headers: dict[str, str] | None = None,
         client: tuple[str, int] = ("127.0.0.1", 12345),
-    ) -> tuple[int, dict, dict[str, str]]:
+    ) -> tuple[int, dict | str, dict[str, str]]:
         status_code: int | None = None
         response_headers: dict[str, str] = {}
         response_body = bytearray()
@@ -51,7 +51,9 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         await app(scope, receive, send)
 
         assert status_code is not None
-        payload = json.loads(response_body.decode("utf-8")) if response_body else {}
+        raw_body = response_body.decode("utf-8") if response_body else ""
+        content_type = response_headers.get("content-type", "")
+        payload = json.loads(raw_body) if raw_body and "application/json" in content_type else raw_body
         return status_code, payload, response_headers
 
     async def test_root_returns_expected_structure(self) -> None:
@@ -84,7 +86,7 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(request_info["user_agent"], str)
 
         endpoints = {(item["path"], item["method"]) for item in payload["endpoints"]}
-        self.assertEqual(endpoints, {("/", "GET"), ("/health", "GET")})
+        self.assertEqual(endpoints, {("/", "GET"), ("/health", "GET"), ("/metrics", "GET")})
 
     async def test_root_uses_forwarded_for_header(self) -> None:
         status, payload, _ = await self._asgi_request(
@@ -135,3 +137,22 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(status, 405)
         self.assertEqual(payload["detail"], "Method Not Allowed")
+
+    async def test_metrics_endpoint_exposes_prometheus_metrics(self) -> None:
+        await self._asgi_request("GET", "/")
+        await self._asgi_request("GET", "/health")
+        await self._asgi_request("GET", "/does-not-exist")
+        status, payload, headers = await self._asgi_request("GET", "/metrics")
+
+        self.assertEqual(status, 200)
+        self.assertIn("text/plain", headers.get("content-type", ""))
+        self.assertIsInstance(payload, str)
+        self.assertIn("# HELP http_requests_total Total HTTP requests handled by the service.", payload)
+        self.assertIn("# TYPE http_request_duration_seconds histogram", payload)
+        self.assertIn("# TYPE http_requests_in_progress gauge", payload)
+        self.assertIn('http_requests_total{endpoint="/",method="GET",status_code="200"}', payload)
+        self.assertIn('http_requests_total{endpoint="/health",method="GET",status_code="200"}', payload)
+        self.assertIn('http_requests_total{endpoint="unmatched",method="GET",status_code="404"}', payload)
+        self.assertIn('devops_info_endpoint_calls_total{endpoint="/"}', payload)
+        self.assertIn('devops_info_endpoint_calls_total{endpoint="/health"}', payload)
+        self.assertIn("devops_info_system_info_collection_seconds_bucket", payload)
