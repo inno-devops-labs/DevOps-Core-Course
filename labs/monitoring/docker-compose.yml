@@ -1,9 +1,13 @@
 networks:
   loki:
     driver: bridge
-
+    
 volumes:
   grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  loki-data:
     driver: local
 
 services:
@@ -75,6 +79,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_SECURITY_ALLOW_EMBEDDING=false
+      - GF_METRICS_ENABLED=true
     networks:
       - loki
     restart: unless-stopped
@@ -83,8 +88,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
+          cpus: '0.5'
+          memory: 512M
         reservations:
           cpus: '0.5'
           memory: 512M
@@ -115,14 +120,41 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
           cpus: '0.5'
-          memory: 512M
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M   
     healthcheck:
         test: ["CMD-SHELL", "python -c 'import urllib.request; resp = urllib.request.urlopen(\"http://localhost:8000/health\"); exit(0) if resp.status == 200 else exit(1)' || exit 1"]
         interval: 10s
         timeout: 5s
         retries: 5
         start_period: 15s
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    networks:
+      - loki
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

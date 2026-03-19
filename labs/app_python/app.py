@@ -11,10 +11,74 @@ import argparse
 import json
 from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
+from prometheus_client import CONTENT_TYPE_LATEST
+from starlette.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 
 app = FastAPI()
+
+# Prometheus
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status_code']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint']
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'Number of HTTP requests currently being processed'
+)
+
+# Application specific
+endpoint_calls = Counter(
+    'devops_info_endpoint_calls',
+    'Number of calls per endpoint',
+    ['endpoint']
+)
+
+system_info_duration = Histogram(
+    'devops_info_system_collection_seconds',
+    'Time taken to collect system info'
+)
+
+
+class MetricsMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        http_requests_in_progress.inc()
+
+        start_time = time.time()
+
+        route = request.scope.get("route")
+        endpoint = route.path if route else request.url.path
+
+        try:
+            response = await call_next(request)
+        finally:
+            http_requests_in_progress.dec()
+
+        duration = time.time() - start_time
+        http_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=endpoint
+        ).observe(duration)
+
+        http_requests_total.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_code=response.status_code
+        ).inc()
+
+        endpoint_calls.labels(endpoint=endpoint).inc()
+
+        return response
 
 
 # JSON Logging setup
@@ -74,7 +138,7 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
         )
         return response
 
-
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(RequestLogMiddleware)
 
 
@@ -91,15 +155,16 @@ def get_service_info():
 
 def get_system_info():
     """Returns system info"""
-    logging.info("System info")
-    return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "platform_version": platform.version(),
-        "architecture": platform.architecture(),
-        "cpu_count": os.cpu_count(),
-        "python_version": platform.python_version()
-    }
+    with system_info_duration.time():
+        logging.info("System info")
+        return {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "platform_version": platform.version(),
+            "architecture": platform.architecture(),
+            "cpu_count": os.cpu_count(),
+            "python_version": platform.python_version()
+        }
 
 
 def get_runtime_info():
@@ -159,6 +224,15 @@ def get_status(request: Request):
         "request": get_request_info(request),
         "endpoints": get_all_endpoints()
     }
+
+
+@app.get("/metrics")
+def get_metrics():
+    """Expose Prometheus metrics"""
+    return Response(
+        content=generate_latest(REGISTRY),
+        media_type=CONTENT_TYPE_LATEST
+    )
 
 
 @app.on_event("startup")
