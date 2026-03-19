@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+    command: -config.file=/etc/loki/config.yml -config.expand-env=true
+    networks:
+      - logs-network
+    restart: unless-stopped
+    healthcheck:
+      test: [
+          "CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost:3100/ready; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost:3100/ready; else exit 0; fi"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    depends_on:
+      - loki
+    networks:
+      - logs-network
+    restart: unless-stopped
+    healthcheck:
+      test: [
+          "CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost:3000/api/health; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost:3000/api/health; else exit 0; fi"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - logs-network
+    restart: unless-stopped
+    healthcheck:
+      test: [
+          "CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost:9080/ready; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost:9080/ready; else exit 0; fi"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+          
+
+  app-python:
+    build:
+      context: ../app_python
+      dockerfile: Dockerfile
+    container_name: devops-info-app
+    ports:
+      - "5000:5000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5000
+    networks:
+      - logs-network
+    restart: unless-stopped
+    healthcheck:
+      test: [
+          "CMD-SHELL", "if command -v curl >/dev/null 2>&1; then curl -f http://localhost:5000/health; elif command -v wget >/dev/null 2>&1; then wget -qO- http://localhost:5000/health; else exit 0; fi"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+
+volumes:
+  loki-data:
+  grafana-data:
+  promtail-positions:
+
+networks:
+  logs-network:
+    driver: bridge
