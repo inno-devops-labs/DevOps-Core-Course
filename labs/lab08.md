@@ -96,7 +96,7 @@ pip install prometheus-client
 - Track request duration (histogram)
 - Track active requests (gauge)
 - Use labels: `method`, `endpoint`, `status_code`
-
+/
 <details>
 <summary>💡 Implementation Guidance</summary>
 
