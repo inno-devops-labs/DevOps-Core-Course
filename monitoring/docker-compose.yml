@@ -1,0 +1,161 @@
+name: devops-monitoring
+
+services:
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: devops-loki
+    command: -config.file=/etc/loki/config.yml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-loki"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3100/ready >/dev/null 2>&1 || curl -fsS http://localhost:3100/ready >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: devops-promtail
+    command: -config.file=/etc/promtail/config.yml
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - logging
+    depends_on:
+      loki:
+        condition: service_healthy
+    labels:
+      logging: "promtail"
+      app: "devops-promtail"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: devops-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-change-me-in-dot-env}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - logging
+    depends_on:
+      loki:
+        condition: service_healthy
+    labels:
+      logging: "promtail"
+      app: "devops-grafana"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health >/dev/null 2>&1 || curl -fsS http://localhost:3000/api/health >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  devops-python:
+    build:
+      context: ../app_python
+    image: devops-python:lab07
+    container_name: devops-python
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      DEBUG: "false"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/health >/dev/null 2>&1 || curl -fsS http://localhost:8000/health >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+
+  devops-go:
+    build:
+      context: ../app_go
+    image: devops-go:lab07
+    container_name: devops-go
+    ports:
+      - "8001:8001"
+    environment:
+      PORT: "8001"
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-go"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8001/health >/dev/null 2>&1 || curl -fsS http://localhost:8001/health >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+
+networks:
+  logging:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:

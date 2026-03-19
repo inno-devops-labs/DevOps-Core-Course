@@ -1,0 +1,77 @@
+---
+- name: Deploy Loki monitoring stack
+  tags:
+    - monitoring_deploy
+  block:
+    - name: Create monitoring directory tree
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ monitoring_project_dir }}"
+        - "{{ monitoring_project_dir }}/loki"
+        - "{{ monitoring_project_dir }}/promtail"
+        - "{{ monitoring_project_dir }}/grafana"
+        - "{{ monitoring_project_dir }}/grafana/provisioning"
+        - "{{ monitoring_project_dir }}/grafana/provisioning/datasources"
+
+    - name: Render Loki configuration
+      ansible.builtin.template:
+        src: loki-config.yml.j2
+        dest: "{{ monitoring_project_dir }}/loki/config.yml"
+        mode: "0644"
+
+    - name: Render Promtail configuration
+      ansible.builtin.template:
+        src: promtail-config.yml.j2
+        dest: "{{ monitoring_project_dir }}/promtail/config.yml"
+        mode: "0644"
+
+    - name: Render Grafana datasource provisioning
+      ansible.builtin.template:
+        src: grafana-datasource.yml.j2
+        dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/loki.yml"
+        mode: "0644"
+
+    - name: Render monitoring docker-compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ monitoring_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Deploy monitoring stack with Docker Compose v2
+      community.docker.docker_compose_v2:
+        project_src: "{{ monitoring_project_dir }}"
+        files:
+          - docker-compose.yml
+        pull: always
+        remove_orphans: true
+        recreate: auto
+        state: present
+      register: monitoring_compose_result
+
+    - name: Wait for Loki readiness endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ monitoring_loki_port }}/ready"
+        status_code: 200
+        timeout: 10
+      register: monitoring_loki_ready
+      retries: 10
+      delay: 5
+      until: monitoring_loki_ready.status == 200
+
+    - name: Wait for Grafana health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/health"
+        status_code: 200
+        timeout: 10
+      register: monitoring_grafana_health
+      retries: 12
+      delay: 5
+      until: monitoring_grafana_health.status == 200
+
+  rescue:
+    - name: Show monitoring deployment diagnostics
+      ansible.builtin.debug:
+        var: monitoring_compose_result

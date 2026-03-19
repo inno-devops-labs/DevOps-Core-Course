@@ -54,6 +54,25 @@ Configuration is done via environment variables:
 
 All configuration is read in `app.py` at startup, so restart the application after changing environment variables.
 
+## Structured Logging (Lab 7)
+
+The service writes JSON logs to `stdout` for centralized log collection (Loki/Promtail).
+
+Example:
+
+```json
+{"timestamp":"2026-03-12T20:45:10.123456+00:00","level":"INFO","logger":"devops-info-service","message":"HTTP request handled","method":"GET","path":"/health","status_code":200,"client_ip":"127.0.0.1","duration_ms":1.11}
+```
+
+Each request log includes:
+
+- `method`
+- `path`
+- `status_code`
+- `client_ip`
+- `duration_ms`
+- `user_agent`
+
 ## Docker
 
 How to use the containerized application (patterns):
@@ -66,4 +85,3 @@ How to use the containerized application (patterns):
 Notes:
 - The container exposes port `5002` by default (see `app.py`).
 - The image runs as a non-root user for improved security.
-

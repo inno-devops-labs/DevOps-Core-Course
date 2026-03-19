@@ -1,0 +1,4 @@
+---
+# Docker Engine and Compose plugin are required for monitoring stack deployment.
+dependencies:
+  - role: docker
