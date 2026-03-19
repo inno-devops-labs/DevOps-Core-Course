@@ -2,13 +2,42 @@
 # Loki 3.0 + Promtail 3.0 + Grafana 12.3
 
 services:
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro,z
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=10GB"
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   loki:
     image: grafana/loki:3.0.0
     container_name: loki
     ports:
       - "3100:3100"
     volumes:
-      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - ./loki/config.yml:/etc/loki/config.yml:ro,z
       - loki-data:/loki
     command: -config.file=/etc/loki/config.yml
     networks:
@@ -32,9 +61,9 @@ services:
     image: grafana/promtail:3.0.0
     container_name: promtail
     volumes:
-      - ./promtail/config.yml:/etc/promtail/config.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro,z
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro,z
+      - /var/run/docker.sock:/var/run/docker.sock:ro,z
     command: -config.file=/etc/promtail/config.yml
     networks:
       - logging
@@ -46,6 +75,12 @@ services:
         reservations:
           cpus: '0.1'
           memory: 128M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9080/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   grafana:
     image: grafana/grafana:12.3.1
@@ -63,8 +98,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
+          cpus: '0.5'
+          memory: 512M
         reservations:
           cpus: '0.25'
           memory: 256M
@@ -89,15 +124,22 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
+          memory: 256M
         reservations:
           cpus: '0.1'
           memory: 128M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 networks:
   logging:
     driver: bridge
 
 volumes:
+  prometheus-data:
   loki-data:
   grafana-data:

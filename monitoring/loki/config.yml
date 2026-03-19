@@ -29,9 +29,16 @@ storage_config:
     directory: /loki/chunks
 
 limits_config:
-  retention_period: 168h  # 7 days
+  retention_period: 168h  
+  retention_stream:
+    - selector: '{app="devops-python"}'
+      priority: 1
+      period: 168h
 
 compactor:
   working_directory: /loki/compactor
   compaction_interval: 5m
   retention_enabled: true
+  delete_request_store: filesystem 
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150

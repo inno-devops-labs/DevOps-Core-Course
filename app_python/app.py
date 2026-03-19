@@ -7,13 +7,22 @@ and its runtime environment.
 
 import os
 import platform
+import re
 import socket
+import time
 from datetime import datetime, timezone
 from typing import Dict, Any
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.exceptions import RequestValidationError
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # Application start time for uptime calculation
@@ -26,6 +35,44 @@ app = FastAPI(
     version="1.0.0",
 )
 
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+    ["method", "endpoint"],
+)
+endpoint_calls = Counter(
+    "devops_info_endpoint_calls_total",
+    "Total endpoint calls for business paths",
+    ["endpoint"],
+)
+system_info_duration = Histogram(
+    "devops_info_system_collection_seconds",
+    "System information collection duration in seconds",
+)
+
+
+def normalize_endpoint(path: str) -> str:
+    """Normalize path labels to keep metric cardinality bounded."""
+    if path in {"/", "/health", "/metrics"}:
+        return path
+    normalized = re.sub(r"/[0-9]+", "/{id}", path)
+    normalized = re.sub(
+        r"/[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,36}",
+        "/{id}",
+        normalized,
+    )
+    return normalized
+
 
 def get_system_info() -> Dict[str, Any]:
     """
@@ -34,14 +81,18 @@ def get_system_info() -> Dict[str, Any]:
     Returns:
         Dictionary containing system information
     """
-    return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "platform_version": platform.platform(),
-        "architecture": platform.machine(),
-        "cpu_count": os.cpu_count() or 0,
-        "python_version": platform.python_version(),
-    }
+    start = time.perf_counter()
+    try:
+        return {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "platform_version": platform.platform(),
+            "architecture": platform.machine(),
+            "cpu_count": os.cpu_count() or 0,
+            "python_version": platform.python_version(),
+        }
+    finally:
+        system_info_duration.observe(time.perf_counter() - start)
 
 
 def get_uptime() -> Dict[str, Any]:
@@ -61,6 +112,29 @@ def get_uptime() -> Dict[str, Any]:
     }
 
 
+@app.middleware("http")
+async def record_metrics(request: Request, call_next):
+    """Collect RED metrics for every request."""
+    method = request.method
+    endpoint = normalize_endpoint(request.url.path)
+    start = time.perf_counter()
+    status_code = "500"
+    http_requests_in_progress.labels(method=method, endpoint=endpoint).inc()
+    try:
+        response = await call_next(request)
+        status_code = str(response.status_code)
+        return response
+    finally:
+        duration = time.perf_counter() - start
+        http_requests_total.labels(
+            method=method, endpoint=endpoint, status_code=status_code
+        ).inc()
+        http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(
+            duration
+        )
+        http_requests_in_progress.labels(method=method, endpoint=endpoint).dec()
+
+
 @app.get("/")
 async def root(request: Request) -> Dict[str, Any]:
     """
@@ -69,6 +143,7 @@ async def root(request: Request) -> Dict[str, Any]:
     Returns:
         JSON response with service, system, runtime, request, and endpoints info
     """
+    endpoint_calls.labels(endpoint="/").inc()
     uptime = get_uptime()
     system_info = get_system_info()
 
@@ -114,6 +189,7 @@ async def root(request: Request) -> Dict[str, Any]:
                 "description": "Alternative API documentation",
             },
             {"path": "/openapi.json", "method": "GET", "description": "OpenAPI schema"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
 
@@ -126,12 +202,19 @@ async def health() -> Dict[str, Any]:
     Returns:
         JSON response with health status, timestamp, and uptime
     """
+    endpoint_calls.labels(endpoint="/health").inc()
     uptime = get_uptime()
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "uptime_seconds": uptime["seconds"],
     }
+
+
+@app.get("/metrics")
+async def metrics() -> Response:
+    endpoint_calls.labels(endpoint="/metrics").inc()
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.exception_handler(StarletteHTTPException)
