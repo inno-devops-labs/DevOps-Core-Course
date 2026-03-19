@@ -22,9 +22,6 @@ services:
         limits:
           cpus: "1.0"
           memory: 1G
-        reservations:
-          cpus: "0.5"
-          memory: 512M
 
   promtail:
     image: grafana/promtail:3.0.0
@@ -42,9 +39,6 @@ services:
         limits:
           cpus: "0.5"
           memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
 
   grafana:
     image: grafana/grafana:12.3.1
@@ -52,11 +46,13 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_AUTH_ANONYMOUS_ENABLED=false
     networks:
       - logging
     depends_on:
       - loki
+      - prometheus
+    volumes:
+      - grafana-data:/var/lib/grafana
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
       interval: 10s
@@ -65,29 +61,54 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 1G
-        reservations:
           cpus: "0.5"
           memory: 512M
 
-  devops-python:
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=10GB"
+    networks:
+      - logging
+    depends_on:
+      - app-python
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+  app-python:
     build: ../app_python
-    container_name: devops-python
+    container_name: app-python
     ports:
       - "5000:5000"
     labels:
       logging: "promtail"
-      app: "devops-python"
+      app: "app-python"
     networks:
       - logging
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
           memory: 256M
 
 networks:
@@ -95,3 +116,5 @@ networks:
 
 volumes:
   loki-data:
+  prometheus-data:
+  grafana-data:
