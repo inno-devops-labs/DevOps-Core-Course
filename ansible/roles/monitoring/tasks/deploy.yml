@@ -14,6 +14,15 @@
   retries: 30
   delay: 5
 
+- name: Wait for Prometheus to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ prometheus_port }}/-/healthy"
+    status_code: 200
+  register: prometheus_ready
+  until: prometheus_ready.status == 200
+  retries: 30
+  delay: 5
+
 - name: Wait for Grafana to be ready
   ansible.builtin.uri:
     url: "http://localhost:{{ grafana_port }}/api/health"

@@ -5,5 +5,14 @@ datasources:
     type: loki
     access: proxy
     url: http://loki:{{ loki_port }}
+    uid: loki
+    isDefault: false
+    editable: true
+
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:{{ prometheus_port }}
+    uid: prometheus
     isDefault: true
     editable: true

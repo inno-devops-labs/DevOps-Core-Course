@@ -1,5 +1,5 @@
 ---
-- name: Deploy monitoring stack (Loki + Promtail + Grafana)
+- name: Deploy monitoring stack (Loki + Promtail + Prometheus + Grafana)
   hosts: webservers
   become: true
   roles:

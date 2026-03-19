@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from utils import APP_START_TIME
+from metrics import endpoint_calls
 from routes.health_check.schemas import HealthResponse
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class HealthCheckService:
 
     async def health_check(self) -> HealthResponse:
         logger.info("Health check called")
+        endpoint_calls.labels(endpoint="/health").inc()
         return HealthResponse(
             status="healthy",
             timestamp=datetime.now(tz=timezone.utc),

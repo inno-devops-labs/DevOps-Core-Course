@@ -62,6 +62,8 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/provisioning/dashboards/grafana-app-logs.json:/var/lib/grafana/dashboards/grafana-app-logs.json:ro
+      - ./grafana/provisioning/dashboards/grafana-app-metrics.json:/var/lib/grafana/dashboards/grafana-app-metrics.json:ro
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_SECURITY_ADMIN_PASSWORD={{ grafana_admin_password }}
@@ -93,6 +95,41 @@ services:
           cpus: "{{ resource_limits.grafana.cpus_reservation }}"
           memory: {{ resource_limits.grafana.memory_reservation }}
 
+  prometheus:
+    image: prom/prometheus:v{{ prometheus_version }}
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time={{ prometheus_retention_days }}d"
+      - "--storage.tsdb.retention.size={{ prometheus_retention_size }}"
+    ports:
+      - "{{ prometheus_port }}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ resource_limits.prometheus.cpus }}"
+          memory: {{ resource_limits.prometheus.memory }}
+        reservations:
+          cpus: "{{ resource_limits.prometheus.cpus_reservation }}"
+          memory: {{ resource_limits.prometheus.memory_reservation }}
+
 networks:
   logging:
     driver: bridge
@@ -100,3 +137,4 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:

@@ -9,6 +9,7 @@ from fastapi import Request, Depends
 from fastapi.routing import APIRoute
 
 from utils import APP_START_TIME
+from metrics import endpoint_calls, system_info_duration
 from routes.root.schemas import (
     InfoResponse,
     EndpointInfo,
@@ -99,14 +100,17 @@ class SysInfoService:
     async def get_info(self) -> InfoResponse:
         try:
             logger.info("Starting run main func")
+            endpoint_calls.labels(endpoint="/").inc()
 
-            return InfoResponse(
-                service=self._get_service_info(),
-                system=self._get_system_info(),
-                runtime=self._get_runtime_info(),
-                request=self._get_request_info(),
-                endpoints=self._get_endpoints(),
-            )
+            with system_info_duration.time():
+                result = InfoResponse(
+                    service=self._get_service_info(),
+                    system=self._get_system_info(),
+                    runtime=self._get_runtime_info(),
+                    request=self._get_request_info(),
+                    endpoints=self._get_endpoints(),
+                )
+            return result
         except Exception as e:
             logger.exception(e)
             raise

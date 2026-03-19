@@ -1,0 +1,18 @@
+global:
+  scrape_interval: {{ prometheus_scrape_interval }}
+  evaluation_interval: {{ prometheus_scrape_interval }}
+
+storage:
+  tsdb:
+    retention_time: {{ prometheus_retention_days }}d
+    retention_size: {{ prometheus_retention_size }}
+
+scrape_configs:
+{% for target in prometheus_targets %}
+  - job_name: '{{ target.job }}'
+    static_configs:
+      - targets: {{ target.targets }}
+{% if target.path is defined %}
+    metrics_path: '{{ target.path }}'
+{% endif %}
+{% endfor %}

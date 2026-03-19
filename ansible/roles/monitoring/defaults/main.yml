@@ -4,13 +4,32 @@ monitoring_dir: /opt/monitoring
 loki_version: "3.0.0"
 promtail_version: "3.0.0"
 grafana_version: "12.3.1"
+prometheus_version: "3.9.0"
 
 loki_port: 3100
 grafana_port: 3000
 promtail_port: 9080
+prometheus_port: 9090
 
 loki_retention_period: "168h"
 loki_schema_version: "v13"
+
+prometheus_retention_days: 15
+prometheus_retention_size: "10GB"
+prometheus_scrape_interval: "15s"
+
+prometheus_targets:
+  - job: "prometheus"
+    targets: ["localhost:9090"]
+  - job: "app"
+    targets: ["app-python:5000"]
+    path: "/metrics"
+  - job: "loki"
+    targets: ["loki:3100"]
+    path: "/metrics"
+  - job: "grafana"
+    targets: ["grafana:3000"]
+    path: "/metrics"
 
 grafana_admin_password: "securepassword123"
 
@@ -26,7 +45,17 @@ resource_limits:
     cpus_reservation: "0.25"
     memory_reservation: "256M"
   grafana:
+    cpus: "0.5"
+    memory: "512M"
+    cpus_reservation: "0.25"
+    memory_reservation: "256M"
+  prometheus:
     cpus: "1.0"
     memory: "1G"
     cpus_reservation: "0.5"
     memory_reservation: "512M"
+  app:
+    cpus: "0.5"
+    memory: "256M"
+    cpus_reservation: "0.25"
+    memory_reservation: "128M"
