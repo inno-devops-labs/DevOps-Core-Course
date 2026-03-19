@@ -3,3 +3,4 @@ uvicorn[standard]==0.32.0
 pydantic==2.10.0
 starlette==0.37.2
 typing-extensions==4.12.2
+prometheus-client==0.23.1
