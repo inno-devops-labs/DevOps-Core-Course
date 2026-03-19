@@ -40,3 +40,7 @@ ansible/group_vars/all.yml
 ansible/group_vars/*.bak
 ansible/inventory/*.pyc
 __pycache__/
+
+# Monitoring
+monitoring/.env
+!monitoring/grafana/dashboards/lab07-logs-dashboard.json

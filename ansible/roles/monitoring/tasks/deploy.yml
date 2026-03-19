@@ -1,0 +1,76 @@
+---
+- name: Log in to Docker Hub when credentials are available
+  community.docker.docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+  no_log: true
+  when:
+    - dockerhub_username is defined
+    - dockerhub_password is defined
+    - dockerhub_username | length > 0
+    - dockerhub_password | length > 0
+
+- name: Start monitoring stack with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_project_dir }}"
+    pull: "{{ monitoring_compose_pull_policy }}"
+    recreate: "{{ monitoring_compose_recreate }}"
+    state: present
+  register: monitoring_compose_result
+
+- name: Wait for Loki port
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: "{{ monitoring_loki_port }}"
+    delay: 2
+    timeout: "{{ monitoring_wait_timeout }}"
+
+- name: Wait for Grafana port
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: "{{ monitoring_grafana_port }}"
+    delay: 2
+    timeout: "{{ monitoring_wait_timeout }}"
+
+- name: Wait for application port when enabled
+  ansible.builtin.wait_for:
+    host: "127.0.0.1"
+    port: "{{ monitoring_app_host_port }}"
+    delay: 2
+    timeout: "{{ monitoring_wait_timeout }}"
+  when: monitoring_app_enabled | bool
+
+- name: Verify Loki readiness endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_loki_port }}/ready"
+    method: GET
+    status_code: 200
+  register: monitoring_loki_ready
+  retries: 20
+  delay: 3
+  until: monitoring_loki_ready.status == 200
+
+- name: Verify Grafana health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/health"
+    method: GET
+    status_code: 200
+  register: monitoring_grafana_health
+  retries: 20
+  delay: 3
+  until: monitoring_grafana_health.status == 200
+
+- name: Verify Loki datasource in Grafana
+  ansible.builtin.uri:
+    url: >-
+      http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources/uid/{{
+      monitoring_grafana_datasource_uid }}
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: monitoring_loki_datasource
+  retries: 20
+  delay: 3
+  until: monitoring_loki_datasource.status == 200

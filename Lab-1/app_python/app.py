@@ -1,16 +1,81 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import platform
 import socket
+import time
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, g, jsonify, request
 from flask_swagger_ui import get_swaggerui_blueprint
 
 app = Flask(__name__)
+
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict[str, object] = {
+            'timestamp': datetime.fromtimestamp(
+                record.created,
+                timezone.utc
+            ).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+        }
+
+        extra_fields = (
+            'event',
+            'method',
+            'path',
+            'status_code',
+            'client_ip',
+            'user_agent',
+            'duration_ms',
+            'host',
+            'port',
+            'debug',
+        )
+
+        for field in extra_fields:
+            if hasattr(record, field):
+                payload[field] = getattr(record, field)
+
+        if record.exc_info:
+            payload['exception'] = self.formatException(record.exc_info)
+
+        return json.dumps(payload, ensure_ascii=True)
+
+
+def configure_logging() -> logging.Logger:
+    handler = logging.StreamHandler()
+    handler.setFormatter(JSONFormatter())
+
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+    root_logger.setLevel(logging.INFO)
+
+    # Route Flask internals through the same root logger.
+    app.logger.handlers.clear()
+    app.logger.propagate = True
+
+    return logging.getLogger('devops-info-service')
+
+
+def _iso_utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+
+
+def get_client_ip() -> str:
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '')
+    if ',' in client_ip:
+        return client_ip.split(',')[0].strip()
+    return client_ip
+
 
 # conf
 load_dotenv()
@@ -21,13 +86,17 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 # start time
 START_TIME = datetime.now(timezone.utc)
 
-# Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+# logging
+logger = configure_logging()
+logger.info(
+    'Application starting',
+    extra={
+        'event': 'startup',
+        'host': HOST,
+        'port': PORT,
+        'debug': DEBUG,
+    }
 )
-logger = logging.getLogger(__name__)
-logger.info('Application starting...')
 
 # swagger info
 SWAGGER_URL = '/docs'
@@ -39,10 +108,6 @@ swaggerui_blueprint = get_swaggerui_blueprint(
     config={'app_name': 'DevOps Info Service'}
 )
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
-
-
-def _iso_utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
 
 def get_uptime() -> dict:
@@ -81,12 +146,8 @@ def get_system_info() -> dict:
 
 
 def get_request_info() -> dict:
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '')
-    if ',' in client_ip:
-        client_ip = client_ip.split(',')[0].strip()
-
     return {
-        'client_ip': client_ip,
+        'client_ip': get_client_ip(),
         'user_agent': request.headers.get('User-Agent', ''),
         'method': request.method,
         'path': request.path
@@ -110,7 +171,8 @@ def get_endpoints() -> list[dict]:
         {'path': '/health', 'method': 'GET', 'description': 'Health check'}
     ]
 
-#API
+
+# API
 OPENAPI_SPEC = {
     'openapi': '3.0.3',
     'info': {
@@ -145,7 +207,42 @@ OPENAPI_SPEC = {
 
 @app.before_request
 def log_request() -> None:
-    logger.debug('Request: %s %s', request.method, request.path)
+    g.request_started_at = time.perf_counter()
+    logger.info(
+        'Incoming request',
+        extra={
+            'event': 'request_start',
+            'method': request.method,
+            'path': request.path,
+            'client_ip': get_client_ip(),
+            'user_agent': request.headers.get('User-Agent', ''),
+        }
+    )
+
+
+@app.after_request
+def log_response(response):
+    started_at = getattr(g, 'request_started_at', None)
+    duration_ms = None
+    if started_at is not None:
+        duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+
+    log_extra: dict[str, object] = {
+        'event': 'request_end',
+        'method': request.method,
+        'path': request.path,
+        'status_code': response.status_code,
+        'client_ip': get_client_ip(),
+    }
+    if duration_ms is not None:
+        log_extra['duration_ms'] = duration_ms
+
+    logger.log(
+        logging.ERROR if response.status_code >= 500 else logging.INFO,
+        'Request completed',
+        extra=log_extra
+    )
+    return response
 
 
 @app.route('/')
@@ -185,6 +282,16 @@ def swagger_json():
 
 @app.errorhandler(404)
 def not_found(error):
+    logger.warning(
+        'Endpoint not found',
+        extra={
+            'event': 'http_404',
+            'method': request.method,
+            'path': request.path,
+            'client_ip': get_client_ip(),
+            'status_code': 404,
+        }
+    )
     return jsonify({
         'error': 'Not Found',
         'message': 'Endpoint does not exist'
@@ -193,6 +300,27 @@ def not_found(error):
 
 @app.errorhandler(500)
 def internal_error(error):
+    original_error = getattr(error, 'original_exception', None)
+    extra = {
+        'event': 'http_500',
+        'method': request.method,
+        'path': request.path,
+        'client_ip': get_client_ip(),
+        'status_code': 500,
+    }
+
+    if original_error is not None:
+        logger.exception(
+            'Unhandled application exception',
+            exc_info=(type(original_error), original_error, original_error.__traceback__),
+            extra=extra
+        )
+    else:
+        logger.error(
+            'Internal server error',
+            extra=extra
+        )
+
     return jsonify({
         'error': 'Internal Server Error',
         'message': 'An unexpected error occurred'
