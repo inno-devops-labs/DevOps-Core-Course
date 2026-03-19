@@ -2,46 +2,40 @@ import os
 import socket
 import platform
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Dict, Any
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pythonjsonlogger import jsonlogger  # <-- new import
+from pythonjsonlogger import jsonlogger
 
-# Application configuration
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
+
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-# --- Configure JSON logging ---
 logHandler = logging.StreamHandler()
 formatter = jsonlogger.JsonFormatter(
     fmt='%(asctime)s %(levelname)s %(name)s %(message)s',
     datefmt='%Y-%m-%dT%H:%M:%S%z'
 )
 logHandler.setFormatter(formatter)
-
-# Get the root logger and add the handler
 root_logger = logging.getLogger()
 root_logger.addHandler(logHandler)
 root_logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
-
-# Create a logger for this module
 logger = logging.getLogger(__name__)
 
-# --- Application start time ---
 START_TIME = datetime.now(timezone.utc)
 
-# --- Create FastAPI application ---
 app = FastAPI(
     title="DevOps Info Service",
     version="1.0.0",
     description="DevOps course information service",
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -50,27 +44,63 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Middleware to log each request ---
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    # Process the request and get response
-    response = await call_next(request)
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
 
-    # Log request details
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint'],
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10)
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'Number of HTTP requests currently being processed'
+)
+
+endpoint_calls = Counter(
+    'devops_info_endpoint_calls_total',
+    'Total calls per endpoint',
+    ['endpoint']
+)
+
+@app.middleware("http")
+async def monitor_requests(request: Request, call_next):
+    method = request.method
+    endpoint = request.url.path
+
+    http_requests_in_progress.inc()
+    start_time = time.time()
+
+    try:
+        response = await call_next(request)
+        status = str(response.status_code)
+    except Exception as e:
+        status = "500"
+        raise e
+    finally:
+        http_requests_in_progress.dec()
+        duration = time.time() - start_time
+        http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
+        http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
+        endpoint_calls.labels(endpoint=endpoint).inc()
+
     logger.info(
         "HTTP Request",
         extra={
-            "method": request.method,
-            "path": request.url.path,
+            "method": method,
+            "path": endpoint,
             "client_ip": request.client.host if request.client else None,
             "status_code": response.status_code,
         }
     )
     return response
 
-# --- Helper functions (unchanged) ---
 def get_system_info() -> Dict[str, Any]:
-    """Collect and return system information."""
     return {
         "hostname": socket.gethostname(),
         "platform": platform.system(),
@@ -81,7 +111,6 @@ def get_system_info() -> Dict[str, Any]:
     }
 
 def get_uptime() -> Dict[str, Any]:
-    """Calculate application uptime."""
     delta = datetime.now(timezone.utc) - START_TIME
     seconds = int(delta.total_seconds())
     hours = seconds // 3600
@@ -92,7 +121,6 @@ def get_uptime() -> Dict[str, Any]:
     }
 
 def get_request_info(request: Request) -> Dict[str, Any]:
-    """Extract request information (used in root endpoint)."""
     client_ip = request.client.host if request.client else "127.0.0.1"
     user_agent = request.headers.get("user-agent", "Unknown")
     return {
@@ -102,13 +130,8 @@ def get_request_info(request: Request) -> Dict[str, Any]:
         "path": request.url.path,
     }
 
-# --- Endpoints ---
 @app.get("/", response_model=Dict[str, Any])
 async def root(request: Request) -> Dict[str, Any]:
-    """
-    Main endpoint returning comprehensive service and system information.
-    """
-    # This log will be in JSON (the middleware already logs the request)
     logger.debug("Root endpoint processing")
     return {
         "service": {
@@ -128,23 +151,25 @@ async def root(request: Request) -> Dict[str, Any]:
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
 
 @app.get("/health", response_model=Dict[str, Any])
 async def health() -> Dict[str, Any]:
-    """
-    Health check endpoint for monitoring and Kubernetes probes.
-    """
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": get_uptime()["seconds"],
     }
 
+@app.get("/metrics")
+async def metrics():
+    """Expose Prometheus metrics."""
+    return Response(content=generate_latest(REGISTRY), media_type="text/plain")
+
 @app.exception_handler(404)
 async def not_found(request: Request, exc):
-    """Handle 404 errors."""
     logger.warning("404 Not Found", extra={"path": request.url.path})
     return JSONResponse(
         status_code=404,
@@ -156,7 +181,6 @@ async def not_found(request: Request, exc):
 
 @app.exception_handler(500)
 async def internal_error(request: Request, exc):
-    """Handle 500 errors."""
     logger.error("Internal server error", exc_info=True, extra={"path": request.url.path})
     return JSONResponse(
         status_code=500,
@@ -167,9 +191,8 @@ async def internal_error(request: Request, exc):
     )
 
 def main():
-    """Application entry point."""
     logger.info("Starting DevOps Info Service", extra={"host": HOST, "port": PORT})
-    logger.info(f"Debug mode: {DEBUG}")  # simple string, but JSON formatter will include it as message
+    logger.info(f"Debug mode: {DEBUG}")
 
     import uvicorn
     uvicorn.run(

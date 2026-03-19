@@ -5,6 +5,7 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 services:
   loki:
@@ -63,8 +64,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin        # change in production
-      - GF_AUTH_ANONYMOUS_ENABLED=false         # disable anonymous access
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=false
     volumes:
       - grafana-data:/var/lib/grafana
     networks:
@@ -82,6 +83,33 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '0.5'
+          memory: 512M
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    networks:
+      - logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
           cpus: '1.0'
           memory: 1G
         reservations:
@@ -89,7 +117,7 @@ services:
           memory: 512M
 
   app-python:
-    image: acecution/devops-info-service:json-logging
+    image: acecution/devops-info-service:metrics 
     container_name: app-python
     ports:
       - "8000:8000"
@@ -99,6 +127,12 @@ services:
       logging: "promtail"
       app: "devops-python"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
