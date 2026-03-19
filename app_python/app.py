@@ -12,10 +12,18 @@ import platform
 import socket
 import json
 import sys
+import time
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from flask import Flask, jsonify, request, g
+from flask import Flask, Response, jsonify, request, g
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 APP_NAME = "devops-info-service"
 APP_VERSION = "1.0.0"
@@ -100,6 +108,38 @@ def configure_logging() -> logging.Logger:
 app = Flask(__name__)
 logger = configure_logging()
 
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests handled by the Flask app",
+    ["method", "endpoint", "status_code"],
+)
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint", "status_code"],
+)
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+    ["method", "endpoint"],
+)
+devops_info_endpoint_calls_total = Counter(
+    "devops_info_endpoint_calls_total",
+    "Number of calls to application endpoints",
+    ["endpoint"],
+)
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time spent collecting system information",
+)
+
+
+def normalize_endpoint() -> str:
+    """Return a low-cardinality endpoint label for metrics."""
+    if request.url_rule and request.url_rule.rule:
+        return request.url_rule.rule
+    return request.path or "unknown"
+
 
 def get_uptime() -> Dict[str, Any]:
     """Return uptime in seconds and a human-friendly format."""
@@ -137,6 +177,13 @@ def get_client_ip() -> str:
 @app.before_request
 def log_request() -> None:
     g.request_start = datetime.now(timezone.utc)
+    g.request_start_perf = time.perf_counter()
+    g.metrics_endpoint = normalize_endpoint()
+    g.request_gauge = http_requests_in_progress.labels(
+        method=request.method,
+        endpoint=g.metrics_endpoint,
+    )
+    g.request_gauge.inc()
     logger.info(
         "request_received",
         extra={
@@ -154,6 +201,22 @@ def log_response(response):
     start_time = getattr(g, "request_start", datetime.now(timezone.utc))
     temp = datetime.now(timezone.utc) - start_time
     duration_ms = int(temp.total_seconds() * 1000)
+    endpoint = getattr(g, "metrics_endpoint", normalize_endpoint())
+    start_perf = getattr(g, "request_start_perf", time.perf_counter())
+    duration_seconds = max(time.perf_counter() - start_perf, 0.0)
+    status_code = str(response.status_code)
+
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status_code=status_code,
+    ).inc()
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status_code=status_code,
+    ).observe(duration_seconds)
+
     logger.info(
         "response_sent",
         extra={
@@ -169,10 +232,21 @@ def log_response(response):
     return response
 
 
+@app.teardown_request
+def track_request_teardown(_error) -> None:
+    request_gauge = getattr(g, "request_gauge", None)
+    if request_gauge is not None:
+        request_gauge.dec()
+        g.request_gauge = None
+
+
 @app.route("/", methods=["GET"])
 def index():
     """Main endpoint - service and system information."""
+    devops_info_endpoint_calls_total.labels(endpoint="/").inc()
     uptime = get_uptime()
+    with devops_info_system_collection_seconds.time():
+        system_info = get_system_info()
 
     payload = {
         "service": {
@@ -181,7 +255,7 @@ def index():
             "description": APP_DESCRIPTION,
             "framework": APP_FRAMEWORK,
         },
-        "system": get_system_info(),
+        "system": system_info,
         "runtime": {
             "uptime_seconds": uptime["seconds"],
             "uptime_human": uptime["human"],
@@ -205,6 +279,11 @@ def index():
                 "method": "GET",
                 "description": "Health check",
             },
+            {
+                "path": "/metrics",
+                "method": "GET",
+                "description": "Prometheus metrics",
+            },
         ],
     }
 
@@ -214,6 +293,7 @@ def index():
 @app.route("/health", methods=["GET"])
 def health():
     """Health check endpoint - used for probes and monitoring."""
+    devops_info_endpoint_calls_total.labels(endpoint="/health").inc()
     uptime = get_uptime()
     return (
         jsonify(
@@ -225,6 +305,13 @@ def health():
         ),
         200,
     )
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics() -> Response:
+    """Prometheus metrics endpoint."""
+    devops_info_endpoint_calls_total.labels(endpoint="/metrics").inc()
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.errorhandler(404)

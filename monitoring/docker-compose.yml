@@ -1,4 +1,32 @@
 services:
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=10GB"
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
   loki:
     image: grafana/loki:3.0.0
     command: -config.file=/etc/loki/config.yml
@@ -54,11 +82,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 512M
+          cpus: "0.5"
+          memory: 256M
         reservations:
           cpus: "0.25"
-          memory: 256M
+          memory: 128M
 
   grafana:
     image: grafana/grafana:12.3.1
@@ -71,11 +99,15 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:?set in .env}
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_SECURITY_ALLOW_EMBEDDING=${GF_SECURITY_ALLOW_EMBEDDING:-false}
+      - GF_METRICS_ENABLED=true
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks:
       - logging
     depends_on:
+      - prometheus
       - loki
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
@@ -86,11 +118,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 1G
-        reservations:
           cpus: "0.5"
           memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
   app-python:
     image: egrapa/devops-core-course-lab2:latest
@@ -116,17 +148,18 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 512M
+          cpus: "0.5"
+          memory: 256M
         reservations:
           cpus: "0.25"
-          memory: 256M
+          memory: 128M
 
 networks:
   logging:
     driver: bridge
 
 volumes:
+  prometheus-data:
   loki-data:
   grafana-data:
   promtail-positions:
