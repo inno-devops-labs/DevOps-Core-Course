@@ -4,9 +4,12 @@ app_name: devops-python
 docker_image: "{{ dockerhub_username | default('ellilin') }}/devops-info-python"
 docker_tag: latest
 app_port: 5000
-app_internal_port: 5000
+app_internal_port: 8000
 compose_project_dir: "/opt/{{ app_name }}"
-app_env_vars: {}
+app_env_vars:
+  HOST: "0.0.0.0"
+  PORT: "8000"
+  DEBUG: "false"
 app_restart_policy: unless-stopped
 app_health_check_retries: 5
 app_health_check_delay: 5

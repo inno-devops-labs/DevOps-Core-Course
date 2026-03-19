@@ -9,6 +9,7 @@
     - "grafana/loki:{{ loki_version }}"
     - "grafana/promtail:{{ promtail_version }}"
     - "grafana/grafana:{{ grafana_version }}"
+    - "prom/prometheus:v{{ prometheus_version }}"
   become: true
 
 - name: Deploy monitoring stack with Docker Compose v2
@@ -28,34 +29,23 @@
   delay: 5
   become: false
 
+- name: Wait for Prometheus to be ready
+  ansible.builtin.uri:
+    url: "http://localhost:{{ prometheus_port }}/-/healthy"
+    status_code: 200
+    timeout: 30
+  retries: 10
+  delay: 5
+  become: false
+
 - name: Wait for Grafana to be ready
   ansible.builtin.uri:
     url: "http://localhost:{{ grafana_port }}/api/health"
     status_code: 200
     timeout: 30
-    retries: 10
-    delay: 5
+  retries: 10
+  delay: 5
   become: false
-
-- name: Configure Loki datasource in Grafana
-  ansible.builtin.uri:
-    url: "http://localhost:{{ grafana_port }}/api/datasources"
-    method: POST
-    body_format: json
-    body:
-      name: "Loki"
-      type: "loki"
-      url: "http://loki:{{ loki_port }}"
-      access: "proxy"
-      isDefault: true
-    status_code:
-      - 200
-    headers:
-      Content-Type: application/json
-      Authorization: "Basic {{ (grafana_admin_user + ':' + grafana_admin_password) | b64encode }}"
-  become: false
-  register: datasource_result
-  changed_when: datasource_result.status == 200
 
 - name: Create documentation directory
   ansible.builtin.file:
@@ -71,7 +61,5 @@
     mode: '0644'
   loop:
     - "{{ playbook_dir }}/../monitoring/docs/LAB07.md"
-    - "{{ playbook_dir }}/../monitoring/docs/loki-dashboard.json"
-  when: lookup('env', 'ANSIBLE_PLAYBOOK_DIR') is defined
-  delegate_to: localhost
-  run_once: true
+    - "{{ playbook_dir }}/../monitoring/docs/LAB08.md"
+  become: true

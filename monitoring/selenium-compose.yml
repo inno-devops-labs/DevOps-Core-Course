@@ -1,0 +1,24 @@
+services:
+  selenium:
+    image: selenium/standalone-chromium:latest
+    shm_size: 2gb
+    environment:
+      - SE_NODE_MAX_SESSIONS=1
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+    networks:
+      - monitoring
+
+  runner:
+    image: python:3.13-slim
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+    depends_on:
+      - selenium
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    external: true
+    name: monitoring_logging

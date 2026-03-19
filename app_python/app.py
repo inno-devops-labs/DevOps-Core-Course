@@ -12,16 +12,44 @@ import sys
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 app = Flask(__name__)
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", 5000))
+PORT = int(os.getenv("PORT", 8000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
+
+HTTP_REQUESTS_TOTAL = Counter(
+    "http_requests_total",
+    "Total HTTP requests processed by the Flask application",
+    ["method", "endpoint", "status_code"],
+)
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+)
+HTTP_REQUESTS_IN_PROGRESS = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+    ["method", "endpoint"],
+)
+DEVOPS_INFO_ENDPOINT_CALLS_TOTAL = Counter(
+    "devops_info_endpoint_calls_total",
+    "Number of application endpoint calls",
+    ["endpoint"],
+)
+DEVOPS_INFO_SYSTEM_COLLECTION_SECONDS = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time spent collecting system information",
+    buckets=(0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1),
+)
 
 
 class JSONFormatter(logging.Formatter):
@@ -82,16 +110,51 @@ def setup_logging():
 logger = setup_logging()
 
 
+def get_endpoint_label():
+    """Return a normalized endpoint label for metrics."""
+    if request.url_rule and request.url_rule.rule:
+        return request.url_rule.rule
+    return request.path or "unknown"
+
+
+def should_track_metrics():
+    """Exclude Prometheus scrapes from RED metrics to avoid self-observation noise."""
+    return request.path != "/metrics"
+
+
 @app.before_request
 def log_request():
     """Log incoming requests."""
     request.start_time = datetime.now(timezone.utc)
+    request.metrics_enabled = should_track_metrics()
+    request.endpoint_label = get_endpoint_label()
+    if request.metrics_enabled:
+        HTTP_REQUESTS_IN_PROGRESS.labels(
+            method=request.method,
+            endpoint=request.endpoint_label,
+        ).inc()
 
 
 @app.after_request
 def log_response(response):
     """Log response information."""
     duration_ms = (datetime.now(timezone.utc) - request.start_time).total_seconds() * 1000
+    endpoint_label = getattr(request, "endpoint_label", get_endpoint_label())
+
+    if getattr(request, "metrics_enabled", False):
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            endpoint=endpoint_label,
+            status_code=str(response.status_code),
+        ).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(
+            method=request.method,
+            endpoint=endpoint_label,
+        ).observe(duration_ms / 1000)
+        HTTP_REQUESTS_IN_PROGRESS.labels(
+            method=request.method,
+            endpoint=endpoint_label,
+        ).dec()
 
     log_record = logger.makeRecord(
         logger.name,
@@ -134,14 +197,15 @@ def get_uptime():
 
 def get_system_info():
     """Collect system information."""
-    return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "platform_version": platform.version(),
-        "architecture": platform.machine(),
-        "cpu_count": os.cpu_count() or 1,
-        "python_version": platform.python_version(),
-    }
+    with DEVOPS_INFO_SYSTEM_COLLECTION_SECONDS.time():
+        return {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "platform_version": platform.version(),
+            "architecture": platform.machine(),
+            "cpu_count": os.cpu_count() or 1,
+            "python_version": platform.python_version(),
+        }
 
 
 def get_request_info():
@@ -157,6 +221,7 @@ def get_request_info():
 @app.route("/")
 def index():
     """Main endpoint - service and system information."""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/").inc()
     uptime = get_uptime()
     now = datetime.now(timezone.utc)
 
@@ -178,6 +243,7 @@ def index():
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
 
@@ -188,6 +254,7 @@ def index():
 @app.route("/health")
 def health():
     """Health check endpoint."""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/health").inc()
     uptime = get_uptime()
     return jsonify(
         {
@@ -196,6 +263,12 @@ def health():
             "uptime_seconds": uptime["seconds"],
         }
     )
+
+
+@app.route("/metrics")
+def metrics():
+    """Prometheus metrics endpoint."""
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 
 @app.errorhandler(404)

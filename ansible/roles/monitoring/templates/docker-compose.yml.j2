@@ -30,6 +30,48 @@ services:
           cpus: {{ loki_cpu_reservation }}
           memory: {{ loki_memory_reservation }}
 
+  prometheus:
+    image: prom/prometheus:v{{ prometheus_version }}
+    container_name: prometheus
+    ports:
+      - "{{ prometheus_port }}:{{ prometheus_port }}"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time={{ prometheus_retention_days }}d
+      - --storage.tsdb.retention.size={{ prometheus_retention_size }}
+{% if prometheus_extra_hosts %}
+    extra_hosts:
+{% for host in prometheus_extra_hosts %}
+      - "{{ host }}"
+{% endfor %}
+{% endif %}
+    networks:
+      - logging
+    depends_on:
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ prometheus_port }}/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: {{ prometheus_cpu_limit }}
+          memory: {{ prometheus_memory_limit }}
+        reservations:
+          cpus: {{ prometheus_cpu_reservation }}
+          memory: {{ prometheus_memory_reservation }}
+
   promtail:
     image: grafana/promtail:{{ promtail_version }}
     container_name: promtail
@@ -43,6 +85,12 @@ services:
       - logging
     depends_on:
       - loki
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9080'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     logging:
       driver: "json-file"
       options:
@@ -64,6 +112,8 @@ services:
       - "{{ grafana_port }}:{{ grafana_port }}"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks:
       - logging
     depends_on:
@@ -82,6 +132,7 @@ services:
       - GF_INSTALL_PLUGINS=
       - GF_SERVER_ROOT_URL=http://localhost:{{ grafana_port }}
       - GF_SECURITY_ALLOW_EMBEDDING=false
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     logging:
       driver: "json-file"
       options:
@@ -102,6 +153,8 @@ networks:
 
 volumes:
   loki-data:
+    driver: local
+  prometheus-data:
     driver: local
   grafana-data:
     driver: local

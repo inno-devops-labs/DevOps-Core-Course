@@ -31,16 +31,16 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # Expose port (documentation only, actual mapping done at runtime)
-EXPOSE 5000
+EXPOSE 8000
 
 # Set default environment variables
 ENV HOST=0.0.0.0 \
-    PORT=5000 \
+    PORT=8000 \
     DEBUG=False
 
 # Health check to verify container is running
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # Run the application
 CMD ["python", "app.py"]

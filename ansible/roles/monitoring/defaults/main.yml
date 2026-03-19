@@ -4,9 +4,33 @@
 loki_version: "3.0.0"
 promtail_version: "3.0.0"
 grafana_version: "12.3.1"
+prometheus_version: "3.9.0"
 
 loki_port: 3100
 grafana_port: 3000
+prometheus_port: 9090
+prometheus_scrape_interval: "15s"
+prometheus_retention_days: 15
+prometheus_retention_size: "10GB"
+prometheus_extra_hosts:
+  - "host.docker.internal:host-gateway"
+
+prometheus_targets:
+  - job: "prometheus"
+    targets:
+      - "localhost:9090"
+  - job: "loki"
+    targets:
+      - "loki:3100"
+    path: "/metrics"
+  - job: "grafana"
+    targets:
+      - "grafana:3000"
+    path: "/metrics"
+  - job: "app"
+    targets:
+      - "host.docker.internal:5000"
+    path: "/metrics"
 
 # Retention period in hours (7 days = 168 hours)
 loki_retention_period: 168h
@@ -24,8 +48,13 @@ promtail_cpu_reservation: 0.25
 
 grafana_memory_limit: 1G
 grafana_memory_reservation: 512M
-grafana_cpu_limit: 1.0
-grafana_cpu_reservation: 0.5
+grafana_cpu_limit: 0.5
+grafana_cpu_reservation: 0.25
+
+prometheus_memory_limit: 1G
+prometheus_memory_reservation: 512M
+prometheus_cpu_limit: 1.0
+prometheus_cpu_reservation: 0.5
 
 # Grafana authentication
 grafana_admin_user: admin
@@ -33,3 +62,5 @@ grafana_admin_password: "{{ vault_grafana_admin_password | default('admin') }}"
 
 # Paths
 monitoring_dir: "{{ ansible_user_home }}/monitoring"
+grafana_dashboards_dir: "{{ monitoring_dir }}/grafana/dashboards"
+grafana_provisioning_dir: "{{ monitoring_dir }}/grafana/provisioning"

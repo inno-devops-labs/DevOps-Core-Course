@@ -179,6 +179,37 @@ class TestHealthEndpoint:
         assert data["uptime_seconds"] >= 0
 
 
+class TestMetricsEndpoint:
+    """Tests for the /metrics endpoint and instrumentation."""
+
+    def test_metrics_endpoint_returns_200(self, client):
+        """Test that metrics endpoint returns HTTP 200."""
+        response = client.get("/metrics")
+        assert response.status_code == 200
+
+    def test_metrics_endpoint_returns_prometheus_format(self, client):
+        """Test that metrics endpoint uses Prometheus text format."""
+        response = client.get("/metrics")
+        assert response.content_type.startswith("text/plain")
+        body = response.get_data(as_text=True)
+        assert "# HELP http_requests_total" in body
+        assert "# TYPE http_request_duration_seconds histogram" in body
+        assert "# TYPE http_requests_in_progress gauge" in body
+
+    def test_metrics_count_application_requests(self, client):
+        """Test that application requests are exported in metrics."""
+        client.get("/")
+        client.get("/health")
+
+        response = client.get("/metrics")
+        body = response.get_data(as_text=True)
+
+        assert 'http_requests_total{endpoint="/",method="GET",status_code="200"}' in body
+        assert 'http_requests_total{endpoint="/health",method="GET",status_code="200"}' in body
+        assert 'devops_info_endpoint_calls_total{endpoint="/"}' in body
+        assert 'devops_info_endpoint_calls_total{endpoint="/health"}' in body
+
+
 class TestErrorHandling:
     """Tests for error handling."""
 

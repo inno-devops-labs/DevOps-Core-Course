@@ -15,7 +15,13 @@
     mode: '0755'
   loop:
     - loki
+    - prometheus
     - promtail
+    - grafana
+    - grafana/dashboards
+    - grafana/provisioning
+    - grafana/provisioning/datasources
+    - grafana/provisioning/dashboards
     - docs
   become: true
 
@@ -33,6 +39,45 @@
     src: promtail-config.yml.j2
     dest: "{{ monitoring_dir }}/promtail/config.yml"
     mode: '0644'
+  become: true
+  notify:
+    - Restart monitoring stack
+
+- name: Template Prometheus configuration
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_dir }}/prometheus/prometheus.yml"
+    mode: '0644'
+  become: true
+  notify:
+    - Restart monitoring stack
+
+- name: Template Grafana datasources provisioning
+  ansible.builtin.template:
+    src: grafana-datasources.yml.j2
+    dest: "{{ monitoring_dir }}/grafana/provisioning/datasources/datasources.yml"
+    mode: '0644'
+  become: true
+  notify:
+    - Restart monitoring stack
+
+- name: Template Grafana dashboards provisioning
+  ansible.builtin.template:
+    src: grafana-dashboards.yml.j2
+    dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: '0644'
+  become: true
+  notify:
+    - Restart monitoring stack
+
+- name: Copy Grafana dashboard definitions
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ monitoring_dir }}/grafana/dashboards/{{ item | basename }}"
+    mode: '0644'
+  loop:
+    - "{{ playbook_dir }}/../monitoring/grafana/dashboards/devops-app-metrics-dashboard.json"
+    - "{{ playbook_dir }}/../monitoring/grafana/dashboards/devops-logs-dashboard.json"
   become: true
   notify:
     - Restart monitoring stack
