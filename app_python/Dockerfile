@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 RUN chown -R app:app /app
 
-EXPOSE 5000
+EXPOSE 8000
 
 USER app
 

@@ -1,0 +1,14 @@
+# Retention: use Prometheus flags (see docker-compose), not storage: here (Prometheus 3.9).
+global:
+  scrape_interval: {{ monitoring_prometheus_scrape_interval }}
+  evaluation_interval: 15s
+
+scrape_configs:
+{% for target in monitoring_prometheus_targets %}
+  - job_name: '{{ target.job }}'
+    static_configs:
+      - targets: {{ target.targets }}
+    {% if target.path is defined %}
+    metrics_path: '{{ target.path }}'
+    {% endif %}
+{% endfor %}

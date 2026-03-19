@@ -2,11 +2,35 @@ import logging
 import os
 import platform
 import socket
+import time
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
 
 app = Flask(__name__)
+
+# Prometheus metrics
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration',
+    ['method', 'endpoint']
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
+
+# App-specific metrics
+endpoint_calls = Counter('devops_info_endpoint_calls', 'Endpoint calls', ['endpoint'])
+system_info_duration = Histogram('devops_info_system_collection_seconds', 'System info collection time')
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
@@ -69,11 +93,51 @@ def get_endpoints():
 @app.before_request
 def log_request():
     logger.debug("Request: %s %s", request.method, request.path)
+    # Track in-progress requests and timing for Prometheus
+    http_requests_in_progress.inc()
+    request.start_time = time.time()
+    request._metrics_reported = False
+
+
+@app.after_request
+def instrument_request(response):
+    # Record metrics for successful request paths
+    _record_metrics(response.status_code)
+    return response
+
+
+@app.teardown_request
+def teardown_request(exc):
+    # Ensure metrics are recorded even if an exception occurs
+    if not getattr(request, "_metrics_reported", False):
+        status_code = 500 if exc else 200
+        _record_metrics(status_code)
+
+
+def _record_metrics(status_code: int):
+    if getattr(request, "_metrics_reported", False):
+        return
+
+    http_requests_in_progress.dec()
+
+    duration = time.time() - getattr(request, "start_time", time.time())
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=request.path
+    ).observe(duration)
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=request.path,
+        status=str(status_code)
+    ).inc()
+    request._metrics_reported = True
 
 
 # routes
 @app.get("/")
 def index():
+    endpoint_calls.labels(endpoint="/").inc()
+    start_time = time.time()
     uptime_seconds = get_uptime_seconds()
     payload = {
         "service": {
@@ -104,11 +168,13 @@ def index():
         },
         "endpoints": get_endpoints(),
     }
+    system_info_duration.observe(time.time() - start_time)
     return jsonify(payload), 200
 
 
 @app.get("/health")
 def health():
+    endpoint_calls.labels(endpoint="/health").inc()
     return (
         jsonify(
             {
@@ -119,6 +185,11 @@ def health():
         ),
         200,
     )
+
+
+@app.get("/metrics")
+def metrics():
+    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
 # error handling

@@ -1,5 +1,5 @@
 ---
-- name: Deploy monitoring with Docker Compose v2 (Loki, Promtail, Grafana only)
+- name: Deploy monitoring with Docker Compose v2 (Loki, Promtail, Grafana, Prometheus, apps)
   community.docker.docker_compose_v2:
     project_src: "{{ monitoring_dir }}"
     state: present
@@ -31,3 +31,13 @@
   retries: 12
   delay: 5
   until: loki_ready.status == 200
+
+- name: Wait for Prometheus healthy
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_prometheus_port }}/-/healthy"
+    method: GET
+    status_code: 200
+  register: prom_healthy
+  retries: 12
+  delay: 5
+  until: prom_healthy.status == 200

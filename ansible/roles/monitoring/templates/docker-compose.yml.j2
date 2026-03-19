@@ -4,6 +4,7 @@ networks:
 
 volumes:
   grafana-data:
+  prometheus-data:
 
 services:
   loki:
@@ -70,6 +71,8 @@ services:
       GF_SECURITY_ALLOW_EMBEDDING: "true"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     networks:
       - logging
     depends_on:
@@ -88,3 +91,86 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  prometheus:
+    image: {{ monitoring_prometheus_image }}
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time={{ monitoring_prometheus_retention_days }}d'
+      - '--storage.tsdb.retention.size={{ monitoring_prometheus_retention_size }}'
+    ports:
+      - "{{ monitoring_prometheus_port }}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  app-python:
+    image: {{ monitoring_python_image }}
+    container_name: devops-python
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-python"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app-bonus:
+    image: {{ monitoring_go_image }}
+    container_name: devops-go
+    ports:
+      - "8001:8080"
+    environment:
+      - PORT=8080
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "devops-go"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

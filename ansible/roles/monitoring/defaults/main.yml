@@ -5,20 +5,42 @@ monitoring_dir: "/opt/monitoring"
 monitoring_loki_version: "3.0.0"
 monitoring_promtail_version: "3.0.0"
 monitoring_grafana_version: "12.3.1"
+monitoring_prometheus_version: "3.9.0"
 
 monitoring_loki_image: "grafana/loki:{{ monitoring_loki_version }}"
 monitoring_promtail_image: "grafana/promtail:{{ monitoring_promtail_version }}"
 monitoring_grafana_image: "grafana/grafana:{{ monitoring_grafana_version }}"
+# Prometheus images use a `v` prefix in tags (e.g. v3.9.0).
+monitoring_prometheus_image: "prom/prometheus:v{{ monitoring_prometheus_version }}"
 
 monitoring_loki_host_port: 3101
 monitoring_loki_internal_port: 3100
 monitoring_promtail_host_port: 9081
 monitoring_promtail_internal_port: 9080
 monitoring_grafana_port: 3000
+monitoring_prometheus_port: 9090
 
 monitoring_loki_retention: "168h"
 monitoring_loki_path_prefix: "/tmp/loki"
 monitoring_loki_schema_from: "2024-01-01"
+
+monitoring_prometheus_retention_days: 15
+monitoring_prometheus_retention_size: "10GB"
+monitoring_prometheus_scrape_interval: "15s"
+
+# Scrape targets
+monitoring_prometheus_targets:
+  - job: "prometheus"
+    targets: ["localhost:9090"]
+  - job: "loki"
+    targets: ["loki:3100"]
+    path: "/metrics"
+  - job: "grafana"
+    targets: ["grafana:3000"]
+    path: "/metrics"
+  - job: "app"
+    targets: ["app-python:8000"]
+    path: "/metrics"
 
 # Set dockerhub_username in vault (group_vars) like Lab 6; default is placeholder
 monitoring_dockerhub_username: "{{ dockerhub_username | default('your_username') }}"

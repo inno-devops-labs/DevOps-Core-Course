@@ -22,7 +22,34 @@
       name: Loki
       type: loki
       access: proxy
-      url: "http://loki:{{ monitoring_loki_internal_port }}"
-      isDefault: true
+      url: "http://loki:3100"
+      isDefault: false
     status_code: [200, 409]
   when: ds_check.status == 404
+
+- name: Check if Prometheus datasource exists in Grafana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources/name/Prometheus"
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: [200, 404]
+  register: prom_ds_check
+
+- name: Create Prometheus data source in Grafana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources"
+    method: POST
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: Prometheus
+      type: prometheus
+      access: proxy
+      url: "http://prometheus:9090"
+      isDefault: false
+    status_code: [200, 409]
+  when: prom_ds_check.status == 404
