@@ -95,13 +95,14 @@ class TestIndexEndpoint:
         assert "user_agent" in request_info
 
     def test_index_endpoints_list(self, client):
-        """Endpoints list should contain / and /health."""
+        """Endpoints list should contain the public HTTP endpoints."""
         response = client.get("/")
         data = response.get_json()
         endpoints = {ep["path"] for ep in data["endpoints"]}
 
         assert "/" in endpoints
         assert "/health" in endpoints
+        assert "/metrics" in endpoints
 
 
 class TestHealthEndpoint:
@@ -155,3 +156,51 @@ class TestErrorHandling:
         assert data["error"] == "Not Found"
         assert data["status_code"] == 404
         assert "message" in data
+
+
+class TestMetricsEndpoint:
+    """Tests for GET /metrics endpoint and Prometheus instrumentation."""
+
+    def test_metrics_returns_200(self, client):
+        """Metrics endpoint should return 200 OK."""
+        response = client.get("/metrics")
+        assert response.status_code == 200
+
+    def test_metrics_returns_prometheus_content_type(self, client):
+        """Metrics endpoint should return Prometheus text exposition format."""
+        response = client.get("/metrics")
+        assert response.content_type.startswith("text/plain")
+
+    def test_metrics_expose_expected_metric_names(self, client):
+        """Metrics output should include the custom application metrics."""
+        response = client.get("/metrics")
+        payload = response.get_data(as_text=True)
+
+        assert "http_requests_total" in payload
+        assert "http_request_duration_seconds" in payload
+        assert "http_requests_in_progress" in payload
+        assert "devops_info_endpoint_calls_total" in payload
+        assert "devops_info_system_collection_seconds" in payload
+
+    def test_metrics_capture_application_requests(self, client):
+        """Request metrics should include normalized endpoint labels."""
+        client.get("/")
+        client.get("/health")
+        client.get("/nonexistent")
+
+        response = client.get("/metrics")
+        payload = response.get_data(as_text=True)
+
+        assert re.search(
+            r'http_requests_total\{endpoint="/",method="GET",status_code="200"\} \d+\.?\d*',
+            payload
+        )
+        assert re.search(
+            r'http_requests_total\{endpoint="/health",method="GET",status_code="200"\} \d+\.?\d*',
+            payload
+        )
+        assert re.search(
+            r'http_requests_total\{endpoint="unmatched",method="GET",status_code="404"\} \d+\.?\d*',
+            payload
+        )
+        assert 'endpoint="/metrics"' not in payload

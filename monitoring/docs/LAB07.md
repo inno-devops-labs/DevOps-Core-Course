@@ -170,9 +170,9 @@ Implemented hardening:
 - Loki retention set to 7 days
 
 Promtail note:
-- the container image does not ship `wget` or `curl`, so its Docker healthcheck validates the Promtail binary plus config file
-- actual runtime readiness is still verified externally through `http://localhost:9080/targets`
-- the healthcheck uses Promtail's built-in `-check-syntax` flag to avoid binding to the already running HTTP port
+- the container image does not ship `wget` or `curl`
+- the Docker healthcheck now uses `bash` + `/dev/tcp` to query the live Promtail endpoint at `http://127.0.0.1:9080/targets`
+- the same `/targets` runtime endpoint is also used externally during local validation and in the Ansible bonus checks
 
 ## Testing
 

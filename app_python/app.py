@@ -12,7 +12,14 @@ import sys
 import time
 from datetime import UTC, datetime
 
-from flask import Flask, g, jsonify, request
+from flask import Flask, Response, g, jsonify, request
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 app = Flask(__name__)
 
@@ -25,6 +32,52 @@ SERVICE_NAME = 'devops-info-service'
 
 # Application start time for uptime calculation
 START_TIME = datetime.now(UTC)
+
+REQUEST_DURATION_BUCKETS = (
+    0.001,
+    0.005,
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    1.0,
+    2.5,
+    5.0,
+    10.0,
+)
+
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests processed by the Flask application.',
+    ['method', 'endpoint', 'status_code']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds.',
+    ['method', 'endpoint'],
+    buckets=REQUEST_DURATION_BUCKETS
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed.',
+    ['method', 'endpoint']
+)
+
+devops_info_endpoint_calls_total = Counter(
+    'devops_info_endpoint_calls_total',
+    'Application endpoint calls grouped by logical endpoint.',
+    ['endpoint']
+)
+
+devops_info_system_collection_seconds = Histogram(
+    'devops_info_system_collection_seconds',
+    'Time spent collecting system information for the root endpoint.',
+    buckets=REQUEST_DURATION_BUCKETS
+)
 
 
 class JSONFormatter(logging.Formatter):
@@ -85,7 +138,8 @@ configure_logging()
 
 def get_system_info():
     """Collect comprehensive system information."""
-    return {
+    started_at = time.perf_counter()
+    system_info = {
         'hostname': socket.gethostname(),
         'platform': platform.system(),
         'platform_version': platform.version(),
@@ -93,6 +147,8 @@ def get_system_info():
         'cpu_count': os.cpu_count(),
         'python_version': platform.python_version()
     }
+    devops_info_system_collection_seconds.observe(time.perf_counter() - started_at)
+    return system_info
 
 
 def get_uptime():
@@ -144,24 +200,64 @@ def get_endpoints_list():
             'path': '/health',
             'method': 'GET',
             'description': 'Health check endpoint'
+        },
+        {
+            'path': '/metrics',
+            'method': 'GET',
+            'description': 'Prometheus metrics endpoint'
         }
     ]
 
 
+def get_request_endpoint_label(req):
+    """Return a normalized endpoint label for Prometheus metrics."""
+    if req.url_rule and req.url_rule.rule:
+        return req.url_rule.rule
+    return 'unmatched'
+
+
+def should_track_request_metrics(req):
+    """Skip self-observation for the metrics endpoint to avoid scrape noise."""
+    return get_request_endpoint_label(req) != '/metrics'
+
+
 @app.before_request
 def before_request_logging():
-    """Store request timing for structured access logs."""
+    """Store request timing and request state for logging and metrics."""
     g.request_started_at = time.perf_counter()
+    g.metrics_tracked = False
+
+    if not should_track_request_metrics(request):
+        return
+
+    g.metrics_method = request.method
+    g.metrics_endpoint = get_request_endpoint_label(request)
+    http_requests_in_progress.labels(
+        method=g.metrics_method,
+        endpoint=g.metrics_endpoint
+    ).inc()
+    g.metrics_tracked = True
 
 
 @app.after_request
 def after_request_logging(response):
-    """Emit a structured access log for every request."""
-    duration_ms = round(
-        (time.perf_counter() - getattr(g, 'request_started_at', time.perf_counter()))
-        * 1000,
-        2
-    )
+    """Emit metrics and a structured access log for every request."""
+    started_at = getattr(g, 'request_started_at', time.perf_counter())
+    duration_seconds = time.perf_counter() - started_at
+    duration_ms = round(duration_seconds * 1000, 2)
+
+    if getattr(g, 'metrics_tracked', False):
+        method = getattr(g, 'metrics_method', request.method)
+        endpoint = getattr(g, 'metrics_endpoint', get_request_endpoint_label(request))
+        http_requests_total.labels(
+            method=method,
+            endpoint=endpoint,
+            status_code=str(response.status_code)
+        ).inc()
+        http_request_duration_seconds.labels(
+            method=method,
+            endpoint=endpoint
+        ).observe(duration_seconds)
 
     level = logging.INFO
     if response.status_code >= 500:
@@ -183,6 +279,19 @@ def after_request_logging(response):
     return response
 
 
+@app.teardown_request
+def teardown_request_metrics(exception):
+    """Ensure in-progress request gauges are decremented after every request."""
+    if not getattr(g, 'metrics_tracked', False):
+        return
+
+    http_requests_in_progress.labels(
+        method=g.metrics_method,
+        endpoint=g.metrics_endpoint
+    ).dec()
+    g.metrics_tracked = False
+
+
 @app.route('/')
 def index():
     """
@@ -191,6 +300,7 @@ def index():
     Returns:
         JSON response with service, system, runtime, and request information.
     """
+    devops_info_endpoint_calls_total.labels(endpoint='/').inc()
     response = {
         'service': {
             'name': 'devops-info-service',
@@ -215,6 +325,7 @@ def health():
     Returns:
         JSON response with health status and uptime.
     """
+    devops_info_endpoint_calls_total.labels(endpoint='/health').inc()
     response = {
         'status': 'healthy',
         'timestamp': datetime.now(UTC).isoformat(),
@@ -222,6 +333,12 @@ def health():
     }
 
     return jsonify(response), 200
+
+
+@app.route('/metrics')
+def metrics():
+    """Expose Prometheus metrics for scraping."""
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.errorhandler(404)
@@ -262,7 +379,7 @@ if __name__ == '__main__':
         port=PORT,
         debug=DEBUG,
         started_at=START_TIME.isoformat(),
-        endpoints=['/', '/health']
+        endpoints=['/', '/health', '/metrics']
     )
 
     app.run(host=HOST, port=PORT, debug=DEBUG)

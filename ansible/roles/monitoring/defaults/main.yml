@@ -9,20 +9,27 @@ monitoring_registry_reauthorize: false
 monitoring_loki_version: 3.0.0
 monitoring_promtail_version: 3.0.0
 monitoring_grafana_version: 12.3.1
+monitoring_prometheus_version: v3.9.0
 
 monitoring_loki_port: 3100
 monitoring_promtail_port: 9080
 monitoring_grafana_port: 3000
+monitoring_prometheus_port: 9090
 monitoring_retention_period: 168h
 monitoring_schema_version: v13
 monitoring_network_name: monitoring-net
 monitoring_dashboard_title: Lab 07 - Application Logs
+monitoring_metrics_dashboard_title: Lab 08 - Metrics Overview
+monitoring_prometheus_retention_time: 15d
+monitoring_prometheus_retention_size: 10GB
+monitoring_prometheus_scrape_interval: 15s
 
 monitoring_grafana_admin_user: admin
 monitoring_grafana_admin_password: change-me-now
 monitoring_grafana_anonymous_enabled: false
 monitoring_grafana_anonymous_org_role: Admin
 monitoring_grafana_allow_embedding: false
+monitoring_grafana_metrics_enabled: true
 
 monitoring_python_app_enabled: true
 monitoring_python_app_name: devops-python
@@ -38,6 +45,23 @@ monitoring_bonus_app_tag: latest
 monitoring_bonus_app_port: 8001
 monitoring_bonus_app_internal_port: 8080
 
+monitoring_prometheus_targets:
+  - job_name: prometheus
+    targets:
+      - localhost:9090
+  - job_name: app
+    metrics_path: /metrics
+    targets:
+      - "app-python:{{ monitoring_python_app_internal_port }}"
+  - job_name: loki
+    metrics_path: /metrics
+    targets:
+      - loki:3100
+  - job_name: grafana
+    metrics_path: /metrics
+    targets:
+      - grafana:3000
+
 monitoring_resources:
   loki:
     limit_cpus: "1.0"
@@ -50,17 +74,22 @@ monitoring_resources:
     reservation_cpus: "0.10"
     reservation_memory: 128M
   grafana:
+    limit_cpus: "0.5"
+    limit_memory: 512M
+    reservation_cpus: "0.10"
+    reservation_memory: 128M
+  prometheus:
     limit_cpus: "1.0"
     limit_memory: 1G
     reservation_cpus: "0.25"
     reservation_memory: 256M
   python_app:
     limit_cpus: "0.5"
-    limit_memory: 512M
+    limit_memory: 256M
     reservation_cpus: "0.10"
-    reservation_memory: 128M
+    reservation_memory: 64M
   bonus_app:
     limit_cpus: "0.5"
-    limit_memory: 512M
+    limit_memory: 256M
     reservation_cpus: "0.10"
-    reservation_memory: 128M
+    reservation_memory: 64M

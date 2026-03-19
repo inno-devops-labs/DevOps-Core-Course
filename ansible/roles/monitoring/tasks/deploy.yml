@@ -44,6 +44,8 @@
       enabled: true
     - port: "{{ monitoring_grafana_port }}"
       enabled: true
+    - port: "{{ monitoring_prometheus_port }}"
+      enabled: true
     - port: "{{ monitoring_python_app_port }}"
       enabled: "{{ monitoring_python_app_enabled | bool }}"
     - port: "{{ monitoring_bonus_app_port }}"
@@ -85,6 +87,78 @@
   until: monitoring_grafana_health.status == 200
   when: not ansible_check_mode
 
+- name: Probe Grafana admin credentials
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/user"
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code:
+      - 200
+      - 401
+  register: monitoring_grafana_admin_probe
+  retries: 10
+  delay: 3
+  until: monitoring_grafana_admin_probe.status in [200, 401]
+  when: not ansible_check_mode
+
+- name: Reset persisted Grafana admin password when probe returns 401
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - grafana
+      - grafana
+      - cli
+      - admin
+      - reset-admin-password
+      - --user-id
+      - "1"
+      - "{{ monitoring_grafana_admin_password }}"
+  register: monitoring_grafana_password_reset
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - monitoring_grafana_admin_probe.status == 401
+
+- name: Verify Grafana admin credentials after optional reset
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/user"
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: monitoring_grafana_admin_verify
+  retries: 10
+  delay: 3
+  until: monitoring_grafana_admin_verify.status == 200
+  when: not ansible_check_mode
+
+- name: Verify Prometheus health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_prometheus_port }}/-/healthy"
+    method: GET
+    status_code: 200
+  register: monitoring_prometheus_health
+  retries: 10
+  delay: 3
+  until: monitoring_prometheus_health.status == 200
+  when: not ansible_check_mode
+
+- name: Verify Prometheus query API
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_prometheus_port }}/api/v1/query?query=up"
+    method: GET
+    status_code: 200
+    return_content: true
+  register: monitoring_prometheus_query
+  retries: 10
+  delay: 3
+  until: monitoring_prometheus_query.status == 200
+  when: not ansible_check_mode
+
 - name: Verify Python application health endpoint
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ monitoring_python_app_port }}/health"
@@ -123,4 +197,18 @@
   retries: 10
   delay: 3
   until: monitoring_grafana_datasource.status == 200
+  when: not ansible_check_mode
+
+- name: Verify Prometheus datasource is provisioned in Grafana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources/uid/prometheus"
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: 200
+  register: monitoring_grafana_prometheus_datasource
+  retries: 10
+  delay: 3
+  until: monitoring_grafana_prometheus_datasource.status == 200
   when: not ansible_check_mode

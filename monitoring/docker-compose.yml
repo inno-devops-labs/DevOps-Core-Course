@@ -49,7 +49,11 @@ services:
       loki:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "/usr/bin/promtail", "-config.file=/etc/promtail/config.yml", "-check-syntax"]
+      test:
+        [
+          "CMD-SHELL",
+          "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/9080 && printf \"GET /targets HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && IFS= read -r line <&3 && [[ \"$$line\" == *\"200\"* ]]'"
+        ]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -75,6 +79,7 @@ services:
       GF_SECURITY_ALLOW_EMBEDDING: "${GF_SECURITY_ALLOW_EMBEDDING:-false}"
       GF_SECURITY_ADMIN_USER: "${GF_SECURITY_ADMIN_USER:-admin}"
       GF_SECURITY_ADMIN_PASSWORD: "${GF_SECURITY_ADMIN_PASSWORD:-change-me-now}"
+      GF_METRICS_ENABLED: "${GF_METRICS_ENABLED:-true}"
     labels:
       logging: "promtail"
       app: "grafana"
@@ -97,6 +102,47 @@ services:
     deploy:
       resources:
         limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=10GB"
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    depends_on:
+      loki:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+      app-python:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
           cpus: "1.0"
           memory: 1G
         reservations:
@@ -106,7 +152,7 @@ services:
   app-python:
     build:
       context: ../app_python
-    image: "${PYTHON_APP_IMAGE:-devops-info-service:lab07}"
+    image: "${PYTHON_APP_IMAGE:-devops-info-service:lab08}"
     container_name: devops-python
     restart: unless-stopped
     ports:
@@ -137,15 +183,15 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
         reservations:
           cpus: "0.10"
-          memory: 128M
+          memory: 64M
 
   app-go:
     build:
       context: ../app_go
-    image: "${BONUS_APP_IMAGE:-devops-info-service-go:lab07}"
+    image: "${BONUS_APP_IMAGE:-devops-info-service-go:lab08}"
     container_name: devops-go
     restart: unless-stopped
     ports:
@@ -169,10 +215,10 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
         reservations:
           cpus: "0.10"
-          memory: 128M
+          memory: 64M
 
 networks:
   logging:
@@ -182,3 +228,4 @@ volumes:
   loki-data:
   promtail-data:
   grafana-data:
+  prometheus-data:

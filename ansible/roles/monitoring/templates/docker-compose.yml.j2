@@ -49,7 +49,11 @@ services:
       loki:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "/usr/bin/promtail", "-config.file=/etc/promtail/config.yml", "-check-syntax"]
+      test:
+        [
+          "CMD-SHELL",
+          "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/9080 && printf \"GET /targets HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && IFS= read -r line <&3 && [[ \"$$line\" == *\"200\"* ]]'"
+        ]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -75,6 +79,7 @@ services:
       GF_SECURITY_ALLOW_EMBEDDING: "{{ monitoring_grafana_allow_embedding | string | lower }}"
       GF_SECURITY_ADMIN_USER: "{{ monitoring_grafana_admin_user }}"
       GF_SECURITY_ADMIN_PASSWORD: "{{ monitoring_grafana_admin_password }}"
+      GF_METRICS_ENABLED: "{{ monitoring_grafana_metrics_enabled | string | lower }}"
     labels:
       logging: "promtail"
       app: "grafana"
@@ -102,6 +107,49 @@ services:
         reservations:
           cpus: "{{ monitoring_resources.grafana.reservation_cpus }}"
           memory: "{{ monitoring_resources.grafana.reservation_memory }}"
+
+  prometheus:
+    image: prom/prometheus:{{ monitoring_prometheus_version }}
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time={{ monitoring_prometheus_retention_time }}
+      - --storage.tsdb.retention.size={{ monitoring_prometheus_retention_size }}
+    restart: unless-stopped
+    ports:
+      - "{{ monitoring_prometheus_port }}:9090"
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    depends_on:
+      loki:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
+{% if monitoring_python_app_enabled %}
+      app-python:
+        condition: service_healthy
+{% endif %}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_resources.prometheus.limit_cpus }}"
+          memory: "{{ monitoring_resources.prometheus.limit_memory }}"
+        reservations:
+          cpus: "{{ monitoring_resources.prometheus.reservation_cpus }}"
+          memory: "{{ monitoring_resources.prometheus.reservation_memory }}"
 
 {% if monitoring_python_app_enabled %}
   app-python:
@@ -182,3 +230,4 @@ volumes:
   loki-data:
   promtail-data:
   grafana-data:
+  prometheus-data:
