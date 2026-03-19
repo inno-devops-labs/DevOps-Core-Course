@@ -4,6 +4,16 @@
     state: present
   register: monitoring_compose_result
 
+- name: Wait for Prometheus to be ready
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ prometheus_http_port }}/-/ready"
+    status_code: 200
+  register: prometheus_ready
+  retries: 12
+  delay: 5
+  until: (prometheus_ready.status | default(0)) == 200
+
+
 - name: Wait for Loki to be ready
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ loki_http_port }}/ready"

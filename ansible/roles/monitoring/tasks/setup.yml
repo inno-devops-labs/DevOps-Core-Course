@@ -7,6 +7,10 @@
     - "{{ monitoring_project_dir }}"
     - "{{ monitoring_project_dir }}/loki"
     - "{{ monitoring_project_dir }}/promtail"
+    - "{{ monitoring_project_dir }}/prometheus"
+    - "{{ monitoring_project_dir }}/grafana/provisioning/datasources"
+    - "{{ monitoring_project_dir }}/grafana/provisioning/dashboards"
+    - "{{ monitoring_project_dir }}/grafana/provisioning/dashboards-json"
 
 - name: Template Loki config
   ansible.builtin.template:
@@ -19,6 +23,33 @@
     src: promtail-config.yml.j2
     dest: "{{ monitoring_project_dir }}/promtail/config.yml"
     mode: "0644"
+
+- name: Template Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_project_dir }}/prometheus/prometheus.yml"
+    mode: "0644"
+
+- name: Install Grafana datasources provisioning
+  ansible.builtin.copy:
+    src: grafana-datasources.yml
+    dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/datasources.yml"
+    mode: "0644"
+
+- name: Install Grafana dashboards provisioning
+  ansible.builtin.copy:
+    src: grafana-dashboards.yml
+    dest: "{{ monitoring_project_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+    mode: "0644"
+
+- name: Install Grafana dashboards JSON
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ monitoring_project_dir }}/grafana/provisioning/dashboards-json/{{ item }}"
+    mode: "0644"
+  loop:
+    - grafana-app-metrics-dashboard.json
+    - grafana-loki-overview-dashboard.json
 
 - name: Template docker-compose for monitoring stack
   ansible.builtin.template:

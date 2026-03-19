@@ -7,6 +7,7 @@ import time
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from pythonjsonlogger import jsonlogger
 
 
@@ -40,11 +41,29 @@ except ValueError as e:
 app = Flask(__name__)
 start_time = time.time()
 
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+
 
 @app.before_request
 def log_request_start():
     """Log incoming request (context for JSON logs)."""
     request.start_time = time.time()
+    http_requests_in_progress.inc()
     logger.info(
         "Request started",
         extra={
@@ -58,7 +77,25 @@ def log_request_start():
 @app.after_request
 def log_request_end(response):
     """Log response status and duration."""
-    duration_ms = (time.time() - getattr(request, "start_time", time.time())) * 1000
+    endpoint = (
+        request.url_rule.rule
+        if getattr(request, "url_rule", None) is not None
+        else request.path
+    )
+    duration_seconds = time.time() - getattr(request, "start_time", time.time())
+    duration_ms = duration_seconds * 1000
+
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status_code=str(response.status_code),
+    ).inc()
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=endpoint,
+    ).observe(duration_seconds)
+    http_requests_in_progress.dec()
+
     logger.info(
         "Request completed",
         extra={
@@ -70,6 +107,11 @@ def log_request_end(response):
         },
     )
     return response
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 
 def format_uptime(seconds):

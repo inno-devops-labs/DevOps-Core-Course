@@ -2,9 +2,29 @@ monitoring_project_dir: /opt/monitoring
 loki_version: "3.0.0"
 promtail_version: "3.0.0"
 grafana_version: "12.3.1"
+prometheus_version: "v3.10.0"
 loki_http_port: 3100
 grafana_http_port: 3000
 promtail_http_port: 9080
+prometheus_http_port: 9090
 loki_retention_hours: 168  # 7 days
 dockerhub_username_for_monitoring: "{{ dockerhub_username | default('your-dockerhub-username') }}"
 grafana_admin_password: "{{ vault_grafana_admin_password | default('admin') }}"
+# Prometheus config
+prometheus_retention_time: "15d"
+prometheus_retention_size: "10GB"
+prometheus_scrape_interval: "15s"
+
+prometheus_targets:
+  - job: "prometheus"
+    targets: ["localhost:9090"]
+  - job: "loki"
+    targets: ["loki:3100"]
+    path: "/metrics"
+  - job: "grafana"
+    targets: ["grafana:3000"]
+    path: "/metrics"
+  - job: "app"
+    targets: ["app-python:5001"]
+    path: "/metrics"
+

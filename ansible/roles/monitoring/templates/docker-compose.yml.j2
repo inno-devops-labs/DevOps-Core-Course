@@ -1,4 +1,31 @@
 services:
+  prometheus:
+    image: prom/prometheus:{{ prometheus_version }}
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time={{ prometheus_retention_time }}'
+      - '--storage.tsdb.retention.size={{ prometheus_retention_size }}'
+    ports:
+      - "{{ prometheus_http_port }}:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
   loki:
     image: grafana/loki:{{ loki_version }}
     container_name: loki
@@ -64,6 +91,9 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/dashboards-json:/var/lib/grafana/dashboards:ro
     networks:
       - logging
     restart: unless-stopped
@@ -90,6 +120,12 @@ services:
       logging: "promtail"
       app: "devops-python"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   app-go:
     image: {{ dockerhub_username_for_monitoring }}/devops-info-service-go:latest
@@ -110,3 +146,4 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
