@@ -4,12 +4,17 @@ DevOps Info Service
 Main application module
 """
 import os
+import time
 import socket
 import platform
 import logging
 import json
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
+from prometheus_client import (
+    Counter, Histogram, Gauge,
+    generate_latest, CONTENT_TYPE_LATEST
+)
 
 
 # Custom JSON formatter for structured logging
@@ -58,17 +63,120 @@ START_TIME = datetime.now(timezone.utc)
 
 app = Flask(__name__)
 
+# ---------------------------------------------------------------------------
+# Prometheus metrics
+# ---------------------------------------------------------------------------
+
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint'],
+    buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0]
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
+
+# App-specific: count calls per logical endpoint
+devops_endpoint_calls = Counter(
+    'devops_info_endpoint_calls_total',
+    'Total calls per application endpoint',
+    ['endpoint']
+)
+
+# App-specific: track system info collection duration
+system_info_duration = Histogram(
+    'devops_info_system_collection_seconds',
+    'Time spent collecting system information'
+)
+
+
+def _normalize_endpoint(path: str) -> str:
+    """Collapse dynamic path segments to keep cardinality low."""
+    if path == '/':
+        return '/'
+    if path.startswith('/health'):
+        return '/health'
+    if path.startswith('/metrics'):
+        return '/metrics'
+    return '/other'
+
+
+# ---------------------------------------------------------------------------
+# Request lifecycle hooks
+# ---------------------------------------------------------------------------
+
+@app.before_request
+def before_request():
+    """Record request start time and increment in-progress gauge."""
+    request.start_time = time.monotonic()
+    http_requests_in_progress.inc()
+    logger.info(
+        "Request started",
+        extra={
+            "event": "request_started",
+            "method": request.method,
+            "path": request.path,
+            "remote_addr": request.remote_addr,
+            "user_agent": request.headers.get('User-Agent', 'unknown')
+        }
+    )
+
+
+@app.after_request
+def after_request(response):
+    """Record metrics and log response after each request."""
+    duration = time.monotonic() - request.start_time
+    endpoint = _normalize_endpoint(request.path)
+
+    http_requests_in_progress.dec()
+    http_requests_total.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status=str(response.status_code)
+    ).inc()
+    http_request_duration_seconds.labels(
+        method=request.method,
+        endpoint=endpoint
+    ).observe(duration)
+
+    logger.info(
+        "Request completed",
+        extra={
+            "event": "request_completed",
+            "method": request.method,
+            "path": request.path,
+            "status_code": response.status_code,
+            "duration_ms": duration * 1000,
+            "remote_addr": request.remote_addr
+        }
+    )
+    return response
+
+
+# ---------------------------------------------------------------------------
+# Helper functions
+# ---------------------------------------------------------------------------
 
 def get_system_info():
     """Collect system information."""
-    return {
-        'hostname': socket.gethostname(),
-        'platform': platform.system(),
-        'platform_version': platform.release(),
-        'architecture': platform.machine(),
-        'cpu_count': os.cpu_count() or 0,
-        'python_version': platform.python_version()
-    }
+    with system_info_duration.time():
+        return {
+            'hostname': socket.gethostname(),
+            'platform': platform.system(),
+            'platform_version': platform.release(),
+            'architecture': platform.machine(),
+            'cpu_count': os.cpu_count() or 0,
+            'python_version': platform.python_version()
+        }
 
 
 def get_uptime():
@@ -83,43 +191,20 @@ def get_uptime():
     }
 
 
-@app.before_request
-def log_request():
-    """Log incoming request details."""
-    request.start_time = datetime.now(timezone.utc)
-    logger.info(
-        "Request started",
-        extra={
-            "event": "request_started",
-            "method": request.method,
-            "path": request.path,
-            "remote_addr": request.remote_addr,
-            "user_agent": request.headers.get('User-Agent', 'unknown')
-        }
-    )
+# ---------------------------------------------------------------------------
+# Routes
+# ---------------------------------------------------------------------------
 
-
-@app.after_request
-def log_response(response):
-    """Log response details."""
-    duration = datetime.now(timezone.utc) - request.start_time
-    logger.info(
-        "Request completed",
-        extra={
-            "event": "request_completed",
-            "method": request.method,
-            "path": request.path,
-            "status_code": response.status_code,
-            "duration_ms": duration.total_seconds() * 1000,
-            "remote_addr": request.remote_addr
-        }
-    )
-    return response
+@app.route('/metrics')
+def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.route('/')
 def index():
     """Main endpoint - service and system information."""
+    devops_endpoint_calls.labels(endpoint='/').inc()
     return jsonify({
         "service": {
             "name": "devops-info-service",
@@ -141,16 +226,9 @@ def index():
             "path": request.path
         },
         "endpoints": [
-            {
-                "path": "/",
-                "method": "GET",
-                "description": "Service information"
-            },
-            {
-                "path": "/health",
-                "method": "GET",
-                "description": "Health check"
-            }
+            {"path": "/", "method": "GET", "description": "Service information"},
+            {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"}
         ]
     })
 
@@ -158,6 +236,7 @@ def index():
 @app.route('/health')
 def health():
     """Health check endpoint for monitoring."""
+    devops_endpoint_calls.labels(endpoint='/health').inc()
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now(timezone.utc).isoformat(),
