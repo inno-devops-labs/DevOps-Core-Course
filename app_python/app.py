@@ -4,10 +4,27 @@ import os
 import platform
 import socket
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
+import time
+
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration',
+    ['method', 'endpoint']
+)
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
 
 APP_NAME = "devops-info-service"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 APP_DESCRIPTION = "DevOps course info service"
 FRAMEWORK = "Flask"
 
@@ -113,6 +130,10 @@ def create_app() -> Flask:
 
     logger.info("Application starting up", extra={"req_context": {"version": APP_VERSION, "host": HOST, "port": PORT}})
 
+    @app.before_request
+    def before_request():
+        http_requests_in_progress.inc()
+        request.start_time = time.time()
     @app.after_request
     def log_response(response):
         context = {
@@ -122,6 +143,14 @@ def create_app() -> Flask:
             "client_ip": get_client_ip()
         }
 
+        duration = time.time() - getattr(request, "start_time", 0)
+        http_request_duration_seconds.labels(method=request.method, endpoint=request.path).observe(duration)
+        http_requests_total.labels(method=request.method, endpoint=request.path, status=str(response.status_code)).inc()
+
+        duration = time.time() - getattr(request, "start_time", 0)
+        http_request_duration_seconds.labels(method=request.method, endpoint=request.path).observe(duration)
+        http_requests_total.labels(method=request.method, endpoint=request.path, status=str(response.status_code)).inc()
+
         if response.status_code >= 500:
             logger.error(f"HTTP Request Server Error", extra={"req_context": context})
         elif response.status_code >= 400:
@@ -129,6 +158,8 @@ def create_app() -> Flask:
         else:
             logger.info(f"HTTP Request Processed", extra={"req_context": context})
 
+
+        http_requests_in_progress.dec()
         return response
 
     @app.get("/")
@@ -157,6 +188,10 @@ def create_app() -> Flask:
                 "uptime_seconds": uptime["seconds"],
             }
         )
+
+    @app.route("/metrics")
+    def metrics():
+        return Response(generate_latest(), mimetype="text/plain")
 
     @app.errorhandler(404)
     def not_found(_error):

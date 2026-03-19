@@ -46,16 +46,6 @@ services:
         depends_on:
             - loki
         restart: unless-stopped
-        healthcheck:
-            test:
-                [
-                    "CMD-SHELL",
-                    "wget --no-verbose --tries=1 --spider http://localhost:9080/ready || exit 1",
-                ]
-            interval: 10s
-            timeout: 5s
-            retries: 10
-            start_period: 10s
         deploy:
             resources:
                 limits:
@@ -111,6 +101,16 @@ services:
         networks:
             - monitoring
         restart: unless-stopped
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    'python3 -c ''import http.client; conn = http.client.HTTPConnection("localhost", 5000); conn.request("GET", "/health"); res = conn.getresponse(); exit(0) if res.status == 200 else exit(1)''',
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 15s
         deploy:
             resources:
                 limits:
@@ -120,9 +120,44 @@ services:
                     cpus: "0.25"
                     memory: 256M
 
+    prometheus:
+        image: prom/prometheus:v2.55.0
+        container_name: prometheus
+        ports:
+            - "9090:9090"
+        volumes:
+            - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+            - prometheus-data:/prometheus
+        networks:
+            - monitoring
+        restart: unless-stopped
+        command:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.retention.time=15d"
+            - "--storage.tsdb.retention.size=10GB"
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "wget --no-verbose --tries=1 --spider http://localhost:9090/-/ready || exit 1",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        deploy:
+            resources:
+                limits:
+                    cpus: "1.0"
+                    memory: 2G
+                reservations:
+                    cpus: "0.5"
+                    memory: 512M
+
 networks:
     monitoring:
+        driver: bridge
 
 volumes:
     loki-data:
     grafana-data:
+    prometheus-data:
