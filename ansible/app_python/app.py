@@ -1,9 +1,15 @@
 import os
 import logging
+import platform
+import socket
 from datetime import datetime, timezone
 
-from flask import Flask, request, jsonify
+import time
+from functools import wraps
+
+from flask import Flask, request, jsonify, Response
 from pythonjsonlogger import jsonlogger
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 # ----------------------
 # JSON Logging Setup
@@ -27,6 +33,51 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 START_TIME = datetime.now(timezone.utc)
 
+# Define metrics
+http_requests_total = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+http_request_duration_seconds = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration',
+    ['method', 'endpoint']
+)
+
+http_requests_in_progress = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
+
+
+def track_metrics(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        http_requests_in_progress.inc()
+        start_time = time.time()
+
+        try:
+            response = func(*args, **kwargs)
+            status = getattr(response, "status_code", 200)
+        except Exception:
+            status = 500
+            raise
+        finally:
+            duration = time.time() - start_time
+            endpoint = request.path
+            method = request.method
+
+            http_requests_total.labels(method=method, endpoint=endpoint, status=str(status)).inc()
+            http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
+
+            http_requests_in_progress.dec()
+
+        return response
+
+    return wrapper
+
 
 def get_uptime():
     delta = datetime.now(timezone.utc) - START_TIME
@@ -48,6 +99,7 @@ def get_system_info():
 
 
 @app.route("/health", methods=["GET"])
+@track_metrics
 def health():
     uptime = get_uptime()
     return jsonify(
@@ -59,7 +111,13 @@ def health():
     )
 
 
+@app.route('/metrics')
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
 @app.route("/", methods=["GET"])
+@track_metrics
 def default_route():
     logger.info(f"Request: {request.method} {request.path}")
     uptime = get_uptime()
