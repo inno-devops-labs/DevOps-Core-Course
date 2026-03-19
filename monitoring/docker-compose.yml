@@ -46,8 +46,7 @@ services:
       logging: "promtail"
       app: "promtail"
     depends_on:
-      loki:
-        condition: service_healthy
+      - loki
     restart: unless-stopped
     deploy:
       resources:
@@ -57,7 +56,6 @@ services:
         reservations:
           cpus: "0.10"
           memory: 128M
-
 
   grafana:
     image: grafana/grafana:12.3.1
@@ -71,6 +69,7 @@ services:
       GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER}"
       GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD}"
       GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_METRICS_ENABLED: "true"
     volumes:
       - grafana-data:/var/lib/grafana
     networks:
@@ -79,8 +78,8 @@ services:
       logging: "promtail"
       app: "grafana"
     depends_on:
-      loki:
-        condition: service_healthy
+      - loki
+      - prometheus
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
@@ -91,12 +90,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 1G
+          cpus: "0.5"
+          memory: 512M
         reservations:
           cpus: "0.25"
           memory: 256M
-    
 
   app-python:
     build:
@@ -111,14 +109,56 @@ services:
       logging: "promtail"
       app: "devops-python"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     deploy:
       resources:
         limits:
           cpus: "0.5"
-          memory: 512M
+          memory: 256M
         reservations:
           cpus: "0.10"
           memory: 128M
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    depends_on:
+      - app-python
+      - loki
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
 networks:
   logging:
@@ -128,4 +168,4 @@ volumes:
   loki-data:
   grafana-data:
   promtail-positions:
-  
+  prometheus-data:
