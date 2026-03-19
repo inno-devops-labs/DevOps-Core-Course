@@ -48,7 +48,7 @@ monitoring_app_cpu_limit: "0.5"
 
 # Grafana credentials
 monitoring_grafana_admin_user: admin
-monitoring_grafana_admin_password: admin
+monitoring_grafana_admin_password: supersecretpassword123
 
 # Application image
 monitoring_app_image: "elinanotelina/devops-info-service"

@@ -3,14 +3,14 @@
 ## 1. Architecture
 
 ```
-┌─────────────┐        ┌──────────────┐        ┌──────────────┐
-│  app-python  │◄─scrape─│  Prometheus  │        │   Grafana    │
-│  :5000       │        │  :9090       │◄─query──│  :3000       │
-│  /metrics    │        │              │        │              │
-└─────────────┘        └──────────────┘        └──────────────┘
-                              │                       │
-                        scrape│                 query  │
-                              ▼                       ▼
+┌──────────────┐         ┌──────────────┐         ┌──────────────┐
+│  app-python  │◄─scrape─│  Prometheus  │         │   Grafana    │
+│  :5000       │         │  :9090       │◄─query──│  :3000       │
+│  /metrics    │         │              │         │              │
+└──────────────┘         └──────────────┘         └──────────────┘
+                              │                        │
+                       scrape │                  query │
+                              ▼                        ▼
                        ┌──────────────┐        ┌──────────────┐
                        │    Loki      │        │  Dashboards  │
                        │   :3100      │        │  (metrics +  │
@@ -67,6 +67,7 @@ Business metrics (`devops_info_endpoint_calls`, `devops_info_system_collection_s
 
 Endpoint labels are normalized to a fixed set (`/`, `/health`, `/metrics`, `other`) to prevent cardinality explosion from arbitrary paths (e.g., 404 scans).
 
+**Note**: The label `status` is used instead of `status_code` for brevity, while preserving the same semantic meaning.
 ### Implementation
 
 Metrics are collected via a FastAPI middleware that wraps every request:
@@ -135,6 +136,8 @@ scrape_configs:
 | `loki` | `loki:3100` | 3100 | `/metrics` | Log aggregator metrics |
 | `grafana` | `grafana:3000` | 3000 | `/metrics` | Dashboard service metrics |
 
+**Note**: Prometheus scrapes the application via the internal Docker network using the container port (5000),
+while port 8000 is mapped to the host for external access (0.0.0.0:8000 -> 5000).
 ### Retention Policy
 
 Configured via command-line flags on the Prometheus container:
@@ -144,6 +147,8 @@ Configured via command-line flags on the Prometheus container:
 
 Whichever limit is hit first triggers data deletion. This balances query depth with disk usage.
 
+### PromQL query
+![Prometheus general](evidence/prom.png)
 ---
 
 ## 4. Dashboard Walkthrough
@@ -202,13 +207,13 @@ sum(rate(http_requests_total[5m]))
 
 Returns the aggregate requests per second over the last 5 minutes.
 
-### 2. Error rate as a percentage
+### 2. Error query
 
 ```promql
-sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) * 100
+sum(rate(http_requests_total{status=~"5.."}[5m]))
 ```
-
-Calculates the fraction of requests resulting in server errors.
+![Prometheus](evidence/prometheus.png)
+Calculates requests resulting in server errors.
 
 ### 3. 95th percentile latency per endpoint
 
@@ -218,13 +223,13 @@ histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by 
 
 Shows the p95 latency broken down by endpoint.
 
-### 4. Services that are currently down
+### 4. Services that are currently up
 
 ```promql
-up == 0
+up == 1
 ```
-
-Returns any scrape target that Prometheus cannot reach.
+![Prometheus2](evidence/prom2.png)
+Returns any scrape target that Prometheus can reach.
 
 ### 5. CPU usage of the Python application process
 
@@ -479,6 +484,12 @@ prometheus   prom/prometheus:v3.9.0   "/bin/prometheus --c…"   prometheus   8 
 promtail     grafana/promtail:3.0.0   "/usr/bin/promtail -…"   promtail     8 minutes ago   Up 8 minutes             0.0.0.0:9080->9080/tcp, [::]:9080->9080/tcp
 ```
 
+
+### Data persistence evidence:
+#### Restart sequence:
+![Prometheus](evidence/persistent.png)
+#### Dashboards after restart:
+![Prometheus](evidence/grafana_persistent.png)
 ---
 
 ## 8. Metrics vs Logs — When to Use Each
@@ -514,13 +525,8 @@ promtail     grafana/promtail:3.0.0   "/usr/bin/promtail -…"   promtail     8 
 test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
 ```
 
-### Challenge 3: Grafana Datasource Provisioning
 
-**Problem:** Manually configuring data sources after each deployment is error-prone and not reproducible.
-
-**Solution:** Used Grafana's file-based provisioning to auto-configure both Prometheus and Loki data sources on startup via YAML files mounted into `/etc/grafana/provisioning/`.
-
-### Challenge 4: Prometheus Retention Tuning
+### Challenge 3: Prometheus Retention Tuning
 
 **Problem:** Unbounded retention can fill disk; too-short retention loses historical data for trend analysis.
 
@@ -568,6 +574,172 @@ roles/monitoring/
 | `monitoring_prometheus_scrape_interval` | `15s` | Scrape frequency |
 | `monitoring_prometheus_targets` | (list) | Scrape target definitions |
 
+### Evidence (Bonus):
+Ansible playbook execution (first run):
+```
+adelina@Ubuntu25:~/DevOps-Core-Course/ansible$ ansible-playbook playbooks/deploy-monitoring.yml
+
+PLAY [Deploy monitoring stack] *************************************************
+[WARNING]: Found group_vars that is not a directory, skipping:
+/home/adelina/DevOps-Core-Course/ansible/inventory/group_vars
+
+TASK [Gathering Facts] *********************************************************
+ok: [aws-vm]
+
+TASK [docker : Install prerequisites for Docker repository] ********************
+ok: [aws-vm]
+
+TASK [docker : Create keyrings directory] **************************************
+ok: [aws-vm]
+
+TASK [docker : Add Docker GPG key] *********************************************
+ok: [aws-vm]
+
+TASK [docker : Add Docker repository] ******************************************
+ok: [aws-vm]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [aws-vm]
+
+TASK [docker : Ensure Docker service is enabled and started] *******************
+ok: [aws-vm]
+
+TASK [docker : Add user to docker group] ***************************************
+ok: [aws-vm]
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [aws-vm]
+
+TASK [monitoring : Setup monitoring directory structure and configs] ***********
+included: /home/adelina/DevOps-Core-Course/ansible/roles/monitoring/tasks/setup.yml for aws-vm
+
+TASK [monitoring : Create monitoring directories] ******************************
+ok: [aws-vm] => (item=/opt/monitoring)
+ok: [aws-vm] => (item=/opt/monitoring/loki)
+ok: [aws-vm] => (item=/opt/monitoring/promtail)
+
+TASK [monitoring : Template docker-compose file] *******************************
+changed: [aws-vm]
+
+TASK [monitoring : Template Loki configuration] ********************************
+ok: [aws-vm]
+
+TASK [monitoring : Template Promtail configuration] ****************************
+ok: [aws-vm]
+
+TASK [monitoring : Deploy monitoring stack] ************************************
+included: /home/adelina/DevOps-Core-Course/ansible/roles/monitoring/tasks/deploy.yml for aws-vm
+
+TASK [monitoring : Pull monitoring Docker images] ******************************
+ok: [aws-vm] => (item=grafana/loki:3.0.0)
+ok: [aws-vm] => (item=grafana/promtail:3.0.0)
+ok: [aws-vm] => (item=grafana/grafana:12.3.1)
+
+TASK [monitoring : Deploy monitoring stack with docker compose] ****************
+changed: [aws-vm]
+
+TASK [monitoring : Wait for Loki to be ready] **********************************
+ok: [aws-vm]
+
+TASK [monitoring : Wait for Grafana to be ready] *******************************
+ok: [aws-vm]
+
+TASK [monitoring : Configure Loki data source in Grafana] **********************
+ok: [aws-vm]
+
+TASK [monitoring : Display datasource configuration result] ********************
+ok: [aws-vm] => {
+    "msg": "Loki datasource configured (HTTP 409)"
+}
+
+PLAY RECAP *********************************************************************
+aws-vm                     : ok=21   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+adelina@Ubuntu25:~/DevOps-Core-Course/ansible$ 
+```
+Idempotency: ansible playbook execution (second run):
+```
+adelina@Ubuntu25:~/DevOps-Core-Course/ansible$ ansible-playbook playbooks/deploy-monitoring.yml
+
+PLAY [Deploy monitoring stack] *************************************************
+[WARNING]: Found group_vars that is not a directory, skipping:
+/home/adelina/DevOps-Core-Course/ansible/inventory/group_vars
+
+TASK [Gathering Facts] *********************************************************
+ok: [aws-vm]
+
+TASK [docker : Install prerequisites for Docker repository] ********************
+ok: [aws-vm]
+
+TASK [docker : Create keyrings directory] **************************************
+ok: [aws-vm]
+
+TASK [docker : Add Docker GPG key] *********************************************
+ok: [aws-vm]
+
+TASK [docker : Add Docker repository] ******************************************
+ok: [aws-vm]
+
+TASK [docker : Install Docker packages] ****************************************
+ok: [aws-vm]
+
+TASK [docker : Ensure Docker service is enabled and started] *******************
+ok: [aws-vm]
+
+TASK [docker : Add user to docker group] ***************************************
+ok: [aws-vm]
+
+TASK [docker : Install python3-docker for Ansible docker modules] **************
+ok: [aws-vm]
+
+TASK [monitoring : Setup monitoring directory structure and configs] ***********
+included: /home/adelina/DevOps-Core-Course/ansible/roles/monitoring/tasks/setup.yml for aws-vm
+
+TASK [monitoring : Create monitoring directories] ******************************
+ok: [aws-vm] => (item=/opt/monitoring)
+ok: [aws-vm] => (item=/opt/monitoring/loki)
+ok: [aws-vm] => (item=/opt/monitoring/promtail)
+
+TASK [monitoring : Template docker-compose file] *******************************
+ok: [aws-vm]
+
+TASK [monitoring : Template Loki configuration] ********************************
+ok: [aws-vm]
+
+TASK [monitoring : Template Promtail configuration] ****************************
+ok: [aws-vm]
+
+TASK [monitoring : Deploy monitoring stack] ************************************
+included: /home/adelina/DevOps-Core-Course/ansible/roles/monitoring/tasks/deploy.yml for aws-vm
+
+TASK [monitoring : Pull monitoring Docker images] ******************************
+ok: [aws-vm] => (item=grafana/loki:3.0.0)
+ok: [aws-vm] => (item=grafana/promtail:3.0.0)
+ok: [aws-vm] => (item=grafana/grafana:12.3.1)
+
+TASK [monitoring : Deploy monitoring stack with docker compose] ****************
+ok: [aws-vm]
+
+TASK [monitoring : Wait for Loki to be ready] **********************************
+ok: [aws-vm]
+
+TASK [monitoring : Wait for Grafana to be ready] *******************************
+ok: [aws-vm]
+
+TASK [monitoring : Configure Loki data source in Grafana] **********************
+ok: [aws-vm]
+
+TASK [monitoring : Display datasource configuration result] ********************
+ok: [aws-vm] => {
+    "msg": "Loki datasource configured (HTTP 409)"
+}
+
+PLAY RECAP *********************************************************************
+aws-vm                     : ok=21   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+adelina@Ubuntu25:~/DevOps-Core-Course/ansible$ 
+
+```
 ### Idempotency
 
 The playbook is fully idempotent:
