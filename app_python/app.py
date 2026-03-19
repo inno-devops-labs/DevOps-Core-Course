@@ -103,7 +103,8 @@ def index():
         },
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
-            {"path": "/health", "method": "GET", "description": "Health check"}
+            {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/raise-error", "method": "GET", "description": "Endpoint that raises an error for testing"}
         ]
     }
     return jsonify(data)
