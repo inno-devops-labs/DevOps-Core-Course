@@ -17,8 +17,10 @@
       loop:
         - "{{ monitoring_project_dir }}"
         - "{{ monitoring_project_dir }}/loki"
+        - "{{ monitoring_project_dir }}/prometheus"
         - "{{ monitoring_project_dir }}/promtail"
         - "{{ monitoring_project_dir }}/grafana/provisioning/datasources"
+        - "{{ monitoring_project_dir }}/grafana/provisioning/dashboards"
 
     - name: Template Loki configuration
       ansible.builtin.template:
@@ -36,13 +38,38 @@
         group: "{{ docker_user }}"
         mode: "0644"
 
-    - name: Template Grafana datasource provisioning
+    - name: Template Prometheus configuration
       ansible.builtin.template:
-        src: grafana-datasource.yml.j2
-        dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/loki.yml"
+        src: prometheus.yml.j2
+        dest: "{{ monitoring_project_dir }}/prometheus/prometheus.yml"
         owner: "{{ docker_user }}"
         group: "{{ docker_user }}"
         mode: "0644"
+
+    - name: Template Grafana datasource provisioning
+      ansible.builtin.template:
+        src: grafana-datasources.yml.j2
+        dest: "{{ monitoring_project_dir }}/grafana/provisioning/datasources/datasources.yml"
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
+        mode: "0644"
+
+    - name: Template Grafana dashboard provider
+      ansible.builtin.template:
+        src: grafana-dashboard-provider.yml.j2
+        dest: "{{ monitoring_project_dir }}/grafana/provisioning/dashboards/dashboard-provider.yml"
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
+        mode: "0644"
+
+    - name: Copy Grafana dashboards
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ monitoring_project_dir }}/grafana/provisioning/dashboards/{{ item.dest }}"
+        owner: "{{ docker_user }}"
+        group: "{{ docker_user }}"
+        mode: "0644"
+      loop: "{{ monitoring_dashboards }}"
 
     - name: Template Docker Compose file
       ansible.builtin.template:

@@ -19,6 +19,7 @@ services:
     deploy:
       resources:
         limits:
+          cpus: "{{ monitoring_loki_cpu_limit }}"
           memory: {{ monitoring_loki_memory_limit }}
     restart: unless-stopped
 
@@ -37,10 +38,49 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ monitoring_promtail_port }}/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
+          cpus: "{{ monitoring_promtail_cpu_limit }}"
           memory: {{ monitoring_promtail_memory_limit }}
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:{{ monitoring_prometheus_version }}
+    container_name: prometheus
+    ports:
+      - "{{ monitoring_prometheus_port }}:{{ monitoring_prometheus_port }}"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time={{ monitoring_prometheus_retention_days }}d
+      - --storage.tsdb.retention.size={{ monitoring_prometheus_retention_size }}
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    depends_on:
+      app-python:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ monitoring_prometheus_port }}/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_prometheus_cpu_limit }}"
+          memory: {{ monitoring_prometheus_memory_limit }}
     restart: unless-stopped
 
   grafana:
@@ -57,6 +97,7 @@ services:
       - GF_SECURITY_ADMIN_USER={{ monitoring_grafana_admin_user }}
       - GF_SECURITY_ADMIN_PASSWORD={{ monitoring_grafana_admin_password }}
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_METRICS_ENABLED=true
       - GF_LOG_MODE=console
     networks:
       - logging
@@ -71,23 +112,36 @@ services:
     deploy:
       resources:
         limits:
+          cpus: "{{ monitoring_grafana_cpu_limit }}"
           memory: {{ monitoring_grafana_memory_limit }}
     restart: unless-stopped
 
   app-python:
-    image: 112005/devops-lab3-python:latest
+    image: {{ monitoring_app_image }}
     container_name: app-python
     ports:
-      - "8000:8080"
+      - "{{ monitoring_app_port }}:{{ monitoring_app_internal_port }}"
     networks:
       - logging
     labels:
       logging: "promtail"
       app: "devops-python"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:{{ monitoring_app_internal_port }}/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_app_cpu_limit }}"
+          memory: {{ monitoring_app_memory_limit }}
     restart: unless-stopped
 
 volumes:
   loki-data:
+  prometheus-data:
   grafana-data:
 
 networks:

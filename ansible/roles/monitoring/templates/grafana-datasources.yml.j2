@@ -1,0 +1,23 @@
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:{{ monitoring_loki_port }}
+    isDefault: {{ 'true' if (monitoring_grafana_default_datasource | lower) == 'loki' else 'false' }}
+    jsonData:
+      maxLines: 1000
+
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:{{ monitoring_prometheus_port }}
+    isDefault: {{ 'true' if (monitoring_grafana_default_datasource | lower) == 'prometheus' else 'false' }}
+    jsonData:
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 3.9.0
+      httpMethod: POST

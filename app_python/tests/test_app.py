@@ -79,3 +79,19 @@ def test_internal_error_returns_json(monkeypatch):
 
     assert data["error"] == "Internal Server Error"
     assert "message" in data
+
+
+def test_metrics_endpoint_exposes_prometheus_text_format():
+    app.config.update({"TESTING": True})
+    with app.test_client() as client:
+        client.get("/")
+        client.get("/health")
+        response = client.get("/metrics")
+
+    assert response.status_code == 200
+    body = response.data.decode("utf-8")
+    assert "# HELP http_requests_total" in body
+    assert "# TYPE http_requests_total counter" in body
+    assert "http_requests_total{" in body
+    assert "http_request_duration_seconds_bucket{" in body
+    assert "http_requests_in_progress{" in body

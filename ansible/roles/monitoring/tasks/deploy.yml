@@ -33,6 +33,16 @@
       delay: 5
       until: monitoring_grafana_ready.status == 200
 
+    - name: Wait for Prometheus to be ready
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ monitoring_prometheus_port }}/-/healthy"
+        method: GET
+        status_code: 200
+      register: monitoring_prometheus_ready
+      retries: 12
+      delay: 5
+      until: monitoring_prometheus_ready.status == 200
+
   rescue:
     - name: Log monitoring stack deployment failure
       ansible.builtin.debug:
