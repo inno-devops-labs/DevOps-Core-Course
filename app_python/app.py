@@ -6,6 +6,7 @@ import json
 import time
 from datetime import datetime, timezone
 from flask import Flask, g, jsonify, request
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 app = Flask(__name__)
 
@@ -19,6 +20,31 @@ SERVICE_DESCRIPTION = "DevOps course info service"
 SERVICE_FRAMEWORK = "Flask"
 
 START_TIME = datetime.now(timezone.utc)
+
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint", "status_code"],
+)
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+    ["method", "endpoint"],
+)
+devops_info_endpoint_calls_total = Counter(
+    "devops_info_endpoint_calls_total",
+    "Total calls to application endpoints",
+    ["endpoint"],
+)
+devops_info_system_collection_seconds = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time spent collecting system information",
+)
 
 
 class JsonFormatter(logging.Formatter):
@@ -127,6 +153,7 @@ def get_endpoints():
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
+        {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
     ]
 
 
@@ -145,15 +172,35 @@ def build_request_context(status_code=None):
     return context
 
 
+def get_endpoint_label():
+    if request.url_rule is not None and request.url_rule.rule:
+        return request.url_rule.rule
+    return request.path or "unknown"
+
+
 @app.before_request
 def before_request():
     g.request_started_at = time.perf_counter()
+    g.metrics_endpoint = get_endpoint_label()
+    g.metrics_method = request.method
+    g.metrics_gauge_incremented = True
+    http_requests_in_progress.labels(method=g.metrics_method, endpoint=g.metrics_endpoint).inc()
     logger.info("request_started", extra=build_request_context())
 
 
 @app.after_request
 def after_request(response):
     context = build_request_context(response.status_code)
+    endpoint = getattr(g, "metrics_endpoint", get_endpoint_label())
+    method = getattr(g, "metrics_method", request.method)
+    status_code = str(response.status_code)
+    duration_seconds = max(time.perf_counter() - g.request_started_at, 0.0)
+    http_requests_total.labels(method=method, endpoint=endpoint, status_code=status_code).inc()
+    http_request_duration_seconds.labels(
+        method=method,
+        endpoint=endpoint,
+        status_code=status_code,
+    ).observe(duration_seconds)
     if response.status_code >= 500:
         logger.error("request_finished", extra=context)
     elif response.status_code >= 400:
@@ -163,11 +210,25 @@ def after_request(response):
     return response
 
 
+@app.teardown_request
+def teardown_request(error):
+    if getattr(g, "metrics_gauge_incremented", False):
+        http_requests_in_progress.labels(
+            method=getattr(g, "metrics_method", request.method),
+            endpoint=getattr(g, "metrics_endpoint", get_endpoint_label()),
+        ).dec()
+        g.metrics_gauge_incremented = False
+
+
 @app.route("/")
 def index():
+    devops_info_endpoint_calls_total.labels(endpoint="/").inc()
+    start_time = time.perf_counter()
+    system_info = get_system_info()
+    devops_info_system_collection_seconds.observe(max(time.perf_counter() - start_time, 0.0))
     response = {
         "service": get_service_info(),
-        "system": get_system_info(),
+        "system": system_info,
         "runtime": get_runtime_info(),
         "request": get_request_info(request),
         "endpoints": get_endpoints(),
@@ -177,12 +238,19 @@ def index():
 
 @app.route("/health")
 def health():
+    devops_info_endpoint_calls_total.labels(endpoint="/health").inc()
     response = {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": get_uptime()["seconds"],
     }
     return jsonify(response)
+
+
+@app.route("/metrics")
+def metrics():
+    devops_info_endpoint_calls_total.labels(endpoint="/metrics").inc()
+    return app.response_class(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.errorhandler(404)

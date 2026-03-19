@@ -1,0 +1,16 @@
+---
+- name: Deploy observability stack
+  hosts: webservers
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+  roles:
+    - role: common
+      tags:
+        - common
+    - role: docker
+      tags:
+        - docker
+    - role: monitoring
+      tags:
+        - monitoring

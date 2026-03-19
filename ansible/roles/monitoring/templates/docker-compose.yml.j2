@@ -1,22 +1,24 @@
+version: "3.8"
+
 services:
   prometheus:
-    image: prom/prometheus:v3.9.0
+    image: prom/prometheus:v{{ prometheus_version }}
     command:
       - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.retention.time=15d
-      - --storage.tsdb.retention.size=10GB
+      - --storage.tsdb.retention.time={{ prometheus_retention_days }}d
+      - --storage.tsdb.retention.size={{ prometheus_retention_size }}
     ports:
-      - "9090:9090"
+      - "{{ prometheus_port }}:{{ prometheus_port }}"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     networks:
-      - logging
+      - {{ monitoring_network_name }}
     labels:
       logging: "promtail"
       app: "prometheus"
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ prometheus_port }}/-/healthy || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -31,20 +33,20 @@ services:
           memory: 256M
 
   loki:
-    image: grafana/loki:3.0.0
+    image: grafana/loki:{{ loki_version }}
     command: -config.file=/etc/loki/config.yml
     ports:
-      - "3100:3100"
+      - "{{ loki_port }}:{{ loki_port }}"
     volumes:
       - ./loki/config.yml:/etc/loki/config.yml:ro
       - loki-data:/loki
     networks:
-      - logging
+      - {{ monitoring_network_name }}
     labels:
       logging: "promtail"
       app: "loki"
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ loki_port }}/ready || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -59,10 +61,10 @@ services:
           memory: 256M
 
   promtail:
-    image: grafana/promtail:3.0.0
+    image: grafana/promtail:{{ promtail_version }}
     command: -config.file=/etc/promtail/config.yml
     ports:
-      - "9080:9080"
+      - "{{ promtail_port }}:{{ promtail_port }}"
     volumes:
       - ./promtail/config.yml:/etc/promtail/config.yml:ro
       - promtail-data:/var/lib/promtail
@@ -71,7 +73,7 @@ services:
       loki:
         condition: service_healthy
     networks:
-      - logging
+      - {{ monitoring_network_name }}
     labels:
       logging: "promtail"
       app: "promtail"
@@ -79,7 +81,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/9080 && printf \"GET /ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"Ready\" <&3'",
+          "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/{{ promtail_port }} && printf \"GET /ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \"Ready\" <&3'",
         ]
       interval: 10s
       timeout: 5s
@@ -95,14 +97,14 @@ services:
           memory: 128M
 
   grafana:
-    image: grafana/grafana:12.3.1
+    image: grafana/grafana:{{ grafana_version }}
     ports:
-      - "${GRAFANA_HOST_PORT:-3000}:3000"
+      - "{{ grafana_host_port }}:{{ grafana_port }}"
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_AUTH_DISABLE_LOGIN_FORM: "false"
-      GF_SECURITY_ADMIN_USER: "admin"
-      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD}"
+      GF_SECURITY_ADMIN_USER: "{{ monitoring_grafana_admin_user }}"
+      GF_SECURITY_ADMIN_PASSWORD: "{{ monitoring_grafana_admin_password }}"
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_METRICS_ENABLED: "true"
     volumes:
@@ -115,12 +117,12 @@ services:
       prometheus:
         condition: service_healthy
     networks:
-      - logging
+      - {{ monitoring_network_name }}
     labels:
       logging: "promtail"
       app: "grafana"
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ grafana_port }}/api/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -135,16 +137,16 @@ services:
           memory: 128M
 
   app-python:
-    build:
-      context: ../app_python
+    image: {{ monitoring_python_image }}
+    pull_policy: always
     environment:
       HOST: "0.0.0.0"
-      PORT: "8000"
+      PORT: "{{ monitoring_python_port }}"
       DEBUG: "false"
     ports:
-      - "8000:8000"
+      - "{{ monitoring_python_port }}:{{ monitoring_python_port }}"
     networks:
-      - logging
+      - {{ monitoring_network_name }}
     labels:
       logging: "promtail"
       app: "devops-python"
@@ -154,7 +156,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:{{ monitoring_python_port }}/health', timeout=3)",
         ]
       interval: 10s
       timeout: 5s
@@ -169,17 +171,18 @@ services:
           cpus: "0.1"
           memory: 64M
 
+{% if monitoring_enable_rust_app %}
   app-rust:
-    build:
-      context: ../app_rust
+    image: {{ monitoring_rust_image }}
+    pull_policy: always
     environment:
       HOST: "0.0.0.0"
-      PORT: "8001"
+      PORT: "{{ monitoring_rust_port }}"
       RUST_LOG: "info"
     ports:
-      - "8001:8001"
+      - "{{ monitoring_rust_port }}:{{ monitoring_rust_port }}"
     networks:
-      - logging
+      - {{ monitoring_network_name }}
     labels:
       logging: "promtail"
       app: "devops-rust"
@@ -197,6 +200,7 @@ services:
         reservations:
           cpus: "0.1"
           memory: 64M
+{% endif %}
 
 volumes:
   prometheus-data:
@@ -205,4 +209,4 @@ volumes:
   grafana-data:
 
 networks:
-  logging:
+  {{ monitoring_network_name }}:

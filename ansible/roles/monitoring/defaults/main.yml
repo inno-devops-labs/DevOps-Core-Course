@@ -1,0 +1,52 @@
+---
+dockerhub_username: hikariatama
+dockerhub_login_enabled: false
+
+monitoring_dir: /opt/monitoring
+monitoring_compose_file_path: "{{ monitoring_dir }}/docker-compose.yml"
+monitoring_network_name: logging
+monitoring_wait_delay: 2
+monitoring_wait_timeout: 120
+
+loki_version: 3.0.0
+promtail_version: 3.0.0
+grafana_version: 12.3.1
+prometheus_version: 3.9.0
+
+loki_port: 3100
+promtail_port: 9080
+grafana_port: 3000
+grafana_host_port: 3000
+prometheus_port: 9090
+
+monitoring_grafana_admin_user: admin
+monitoring_grafana_admin_password: change-me-lab8
+
+monitoring_python_image_repository: "{{ dockerhub_username }}/devops-info-service-python"
+monitoring_python_image_tag: latest
+monitoring_python_image: "{{ monitoring_python_image_repository }}:{{ monitoring_python_image_tag }}"
+monitoring_python_port: 8000
+
+monitoring_enable_rust_app: true
+monitoring_rust_image_repository: "{{ dockerhub_username }}/devops-info-service-rust"
+monitoring_rust_image_tag: latest
+monitoring_rust_image: "{{ monitoring_rust_image_repository }}:{{ monitoring_rust_image_tag }}"
+monitoring_rust_port: 8001
+
+prometheus_retention_days: 15
+prometheus_retention_size: 10GB
+prometheus_scrape_interval: 15s
+prometheus_targets:
+  - job: prometheus
+    targets:
+      - "localhost:{{ prometheus_port }}"
+  - job: app
+    targets:
+      - "app-python:{{ monitoring_python_port }}"
+    path: /metrics
+  - job: loki
+    targets:
+      - "loki:{{ loki_port }}"
+  - job: grafana
+    targets:
+      - "grafana:{{ grafana_port }}"
