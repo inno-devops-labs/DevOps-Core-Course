@@ -10,6 +10,7 @@ on:
       - "app_python/**"
       - "monitoring/**"
       - "ansible/**"
+      - "k8s/**"
       - "playbooks/**"
       - ".github/workflows/python-ci.yml"
   pull_request:
@@ -17,6 +18,7 @@ on:
       - "app_python/**"
       - "monitoring/**"
       - "ansible/**"
+      - "k8s/**"
       - "playbooks/**"
       - ".github/workflows/python-ci.yml"
 
