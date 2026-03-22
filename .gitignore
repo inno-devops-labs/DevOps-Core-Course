@@ -18,6 +18,10 @@ pulumi/.pulumi/
 credentials
 service-account-key.json
 
+# TLS certificates
+tls.crt
+tls.key
+
 # OS
 .DS_Store
 Thumbs.db
