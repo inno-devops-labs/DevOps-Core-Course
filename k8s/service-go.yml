@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-info-go-service
+  labels:
+    app: devops-info-go
+spec:
+  type: ClusterIP
+  selector:
+    app: devops-info-go
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
