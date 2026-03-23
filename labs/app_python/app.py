@@ -11,8 +11,8 @@ import argparse
 import json
 from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
-from prometheus_client import CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, Gauge, generate_latest
+from prometheus_client import REGISTRY, CONTENT_TYPE_LATEST
 from starlette.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
@@ -138,6 +138,7 @@ class RequestLogMiddleware(BaseHTTPMiddleware):
         )
         return response
 
+
 app.add_middleware(MetricsMiddleware)
 app.add_middleware(RequestLogMiddleware)
 
@@ -208,6 +209,17 @@ def get_health():
     logging.info("Health status")
     return {
         "status": "healthy",
+        "timestamp": get_runtime_info()["current_time"],
+        "uptime_seconds": get_runtime_info()["uptime_seconds"]
+    }
+
+
+@app.get("/ready")
+def get_health():
+    """Returns ready status"""
+    logging.info("Ready status")
+    return {
+        "status": "ready",
         "timestamp": get_runtime_info()["current_time"],
         "uptime_seconds": get_runtime_info()["uptime_seconds"]
     }
