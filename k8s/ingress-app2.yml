@@ -1,0 +1,74 @@
+---
+# Second application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app2
+  labels:
+    app: app2
+    component: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: app2
+        component: web
+    spec:
+      containers:
+        - name: app2
+          image: nginx:alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+---
+# Second application Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2-svc
+  labels:
+    app: app2
+    component: web
+spec:
+  type: ClusterIP
+  selector:
+    app: app2
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
