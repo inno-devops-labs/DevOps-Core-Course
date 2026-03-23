@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devops-lab09
+  labels:
+    app.kubernetes.io/part-of: devops-core-course
+    app.kubernetes.io/managed-by: kubectl

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-python-v2-service
+  namespace: devops-lab09
+  labels:
+    app: devops-python-v2
+spec:
+  type: ClusterIP
+  selector:
+    app: devops-python-v2
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080
