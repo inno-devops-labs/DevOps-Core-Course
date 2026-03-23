@@ -215,7 +215,7 @@ def get_health():
 
 
 @app.get("/ready")
-def get_health():
+def get_ready():
     """Returns ready status"""
     logging.info("Ready status")
     return {
