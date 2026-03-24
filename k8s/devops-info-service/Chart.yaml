@@ -1,0 +1,14 @@
+apiVersion: v2
+name: devops-info-service
+description: Helm chart for the devops-info-service FastAPI Python application
+type: application
+version: 0.1.0
+appVersion: "lab08"
+keywords:
+  - python
+  - fastapi
+  - devops
+maintainers:
+  - name: Nikita Maksimenko
+sources:
+  - https://hub.docker.com/r/nexonm22/devops-info-service

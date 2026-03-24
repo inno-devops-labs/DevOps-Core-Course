@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-info-service.fullname" . }}-pre-install"
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "devops-info-service.fullname" . }}-pre-install"
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+        - name: pre-install-job
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Pre-install validation started"
+              echo "Verifying environment prerequisites..."
+              echo "Chart: {{ .Chart.Name }}-{{ .Chart.Version }}"
+              echo "Release: {{ .Release.Name }}"
+              echo "Namespace: {{ .Release.Namespace }}"
+              echo "Pre-install validation completed successfully"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true

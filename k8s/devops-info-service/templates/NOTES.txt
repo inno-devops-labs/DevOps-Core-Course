@@ -1,0 +1,16 @@
+Release {{ .Release.Name }} deployed successfully.
+
+Application: {{ include "devops-info-service.fullname" . }}
+Namespace:   {{ .Release.Namespace }}
+Chart:       {{ .Chart.Name }}-{{ .Chart.Version }}
+Image:       {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+Replicas:    {{ .Values.replicaCount }}
+
+Service type: {{ .Values.service.type }}
+{{- if eq .Values.service.type "NodePort" }}
+Access via:   http://<node-ip>:{{ .Values.service.nodePort }}
+{{- else if eq .Values.service.type "LoadBalancer" }}
+Access via:   kubectl get svc {{ include "devops-info-service.fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+{{- end }}
+
+Health endpoint: /health
