@@ -1,2 +1,4 @@
 test
 .DS_Store
+k8s/tls.key
+k8s/tls.crt

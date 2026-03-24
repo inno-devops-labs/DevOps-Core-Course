@@ -105,6 +105,8 @@ def _normalize_endpoint(path: str) -> str:
         return '/'
     if path.startswith('/health'):
         return '/health'
+    if path.startswith('/ready'):
+        return '/ready'
     if path.startswith('/metrics'):
         return '/metrics'
     return '/other'
@@ -228,6 +230,7 @@ def index():
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/ready", "method": "GET", "description": "Readiness probe"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"}
         ]
     })
@@ -241,6 +244,16 @@ def health():
         'status': 'healthy',
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'uptime_seconds': get_uptime()['seconds']
+    })
+
+
+@app.route('/ready')
+def ready():
+    """Readiness probe endpoint for Kubernetes."""
+    devops_endpoint_calls.labels(endpoint='/ready').inc()
+    return jsonify({
+        'status': 'ready',
+        'timestamp': datetime.now(timezone.utc).isoformat()
     })
 
 
