@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-info-service-java
+  labels:
+    app: devops-info-service-java
+spec:
+  type: ClusterIP
+  selector:
+    app: devops-info-service-java
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
