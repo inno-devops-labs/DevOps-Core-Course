@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-app-service
+spec:
+  type: NodePort
+  selector:
+    app: devops-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      nodePort: 30080
