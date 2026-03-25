@@ -52,7 +52,7 @@ def test_main_endpoint(client):
     # Service structure test
     assert "service" in data
     assert data["service"]["name"] == "devops-info-service"
-    assert data["service"]["version"] == "1.0.0"
+    assert data["service"]["version"] == "2.0.0"
     assert data["service"]["framework"] == "Flask"
 
     # System structure test

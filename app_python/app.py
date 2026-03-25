@@ -156,7 +156,7 @@ def index():
     response = {
         "service": {
             "name": "devops-info-service",
-            "version": "1.0.0",
+            "version": "2.0.0",
             "description": "DevOps course info service",
             "framework": "Flask",
         },

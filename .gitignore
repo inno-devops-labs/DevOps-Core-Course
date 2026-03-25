@@ -4,3 +4,5 @@ test
 ansible/inventory/*.pyc
 __pycache__/
 .env
+*.crt
+*.key
