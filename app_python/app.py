@@ -63,7 +63,7 @@ system_info_duration = Histogram(
 
 def normalize_endpoint(path: str) -> str:
     """Normalize path labels to keep metric cardinality bounded."""
-    if path in {"/", "/health", "/metrics"}:
+    if path in {"/", "/health", "/ready", "/metrics"}:
         return path
     normalized = re.sub(r"/[0-9]+", "/{id}", path)
     normalized = re.sub(
@@ -178,6 +178,7 @@ async def root(request: Request) -> Dict[str, Any]:
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/ready", "method": "GET", "description": "Readiness probe"},
             {
                 "path": "/docs",
                 "method": "GET",
@@ -209,6 +210,13 @@ async def health() -> Dict[str, Any]:
         "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "uptime_seconds": uptime["seconds"],
     }
+
+
+@app.get("/ready")
+async def ready() -> Dict[str, str]:
+    """Lightweight readiness for Kubernetes (traffic only when OK)."""
+    endpoint_calls.labels(endpoint="/ready").inc()
+    return {"status": "ready"}
 
 
 @app.get("/metrics")
