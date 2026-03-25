@@ -1,0 +1,13 @@
+# Docker Hub image (multi-arch: amd64 + arm64). Build/push: app_python/scripts/build-push-multiarch.sh
+# Bonus Ingress: kubectl apply -f k8s/app2.yml -f k8s/ingress.yml (after TLS secret and ingress controller)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yml
+  - service.yml
+
+images:
+  - name: devops-info-service
+    newName: mclavrushka/devops-info-service
+    newTag: latest
