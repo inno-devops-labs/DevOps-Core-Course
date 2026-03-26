@@ -3,8 +3,7 @@ kind: Ingress
 metadata:
   name: devops-info-ingress
   annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   tls:
@@ -15,15 +14,15 @@ spec:
     - host: local.example.com
       http:
         paths:
-          - path: /app1(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /app1
+            pathType: Prefix
             backend:
               service:
                 name: devops-info-service
                 port:
                   number: 80
-          - path: /app2(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /app2
+            pathType: Prefix
             backend:
               service:
                 name: devops-info-app2-service
