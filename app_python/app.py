@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timezone
 from pythonjsonlogger import jsonlogger
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
 
 ### Configuration
@@ -125,6 +125,27 @@ def health():
 @app.route("/metrics", methods=["GET"])
 def metrics():
     return generate_latest(), 200, {"Content-Type": "text/plain"}
+
+@app.route("/ready", methods=["GET"])
+def readiness():
+    is_ready = True
+    ready_details = {
+        "status": "ready" if is_ready else "not ready",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "checks": {
+            "app": "running",
+            "dependencies": {
+                "database": "not_configured",
+                "cache": "not_configured"
+            }
+        }
+    }
+
+    if not is_ready:
+        return jsonify(ready_details), 503
+
+    return jsonify(ready_details), 200
+
 
 ### Error Handlers
 @app.errorhandler(404)
