@@ -1,0 +1,7 @@
+{{ .Chart.Name }} has been deployed!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+Access via port-forward:
+  kubectl port-forward svc/{{ include "go-app.fullname" . }} 8080:{{ .Values.service.port }}

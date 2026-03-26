@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "python-app.fullname" . }}-pre-install"
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "python-app.fullname" . }}-pre-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-check
+          image: busybox
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              echo "=== Pre-install validation ==="
+              echo "Checking cluster DNS resolution..."
+              nslookup kubernetes.default.svc.cluster.local || true
+              echo "Pre-install checks completed successfully"

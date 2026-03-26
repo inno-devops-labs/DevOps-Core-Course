@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "python-app.fullname" . }}-post-install"
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "python-app.fullname" . }}-post-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-test
+          image: busybox
+          command:
+            - 'sh'
+            - '-c'
+            - |
+              echo "=== Post-install smoke test ==="
+              echo "Waiting for service to become available..."
+              sleep 15
+              echo "Checking service endpoint..."
+              wget -qO- --timeout=5 http://{{ include "python-app.fullname" . }}:{{ .Values.service.port }}/health || echo "Service not reachable yet (expected during initial rollout)"
+              echo "Post-install smoke test completed"

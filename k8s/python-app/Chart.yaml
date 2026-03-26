@@ -1,0 +1,18 @@
+apiVersion: v2
+name: python-app
+description: Helm chart for the DevOps Python application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - python
+  - flask
+  - devops
+maintainers:
+  - name: Karina Siniatullina
+sources:
+  - https://github.com/karishka1222/DevOps-Core-Course
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: "file://../common-lib"

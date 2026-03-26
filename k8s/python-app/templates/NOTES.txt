@@ -1,0 +1,15 @@
+{{ .Chart.Name }} has been deployed!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+{{- if eq .Values.service.type "NodePort" }}
+Access via NodePort:
+  minikube service {{ include "python-app.fullname" . }} --url
+{{- else if eq .Values.service.type "LoadBalancer" }}
+Access via LoadBalancer (wait for external IP):
+  kubectl get svc {{ include "python-app.fullname" . }} -w
+{{- else }}
+Access via port-forward:
+  kubectl port-forward svc/{{ include "python-app.fullname" . }} 8080:{{ .Values.service.port }}
+{{- end }}
