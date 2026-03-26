@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-app-deployment
+  labels:
+    app: devops-info-service
+    component: web
+    managed-by: kubectl
+spec:
+  replicas: 5
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: devops-app-deployment
+    labels:
+      app: devops-info-service
+      component: web
+      managed-by: kubectl
+  spec:
+    replicas: 5
+    revisionHistoryLimit: 5
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    selector:
+      matchLabels:
+        app: devops-info-service
+    template:
+      metadata:
+        labels:
+          app: devops-info-service
+          component: web
+      spec:
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+        containers:
+          - name: devops-app
+            image: netotveto/devops-app:1.0.0
+            imagePullPolicy: IfNotPresent
+            ports:
+              - name: http
+                containerPort: 5000
+                protocol: TCP
+            env:
+              - name: PORT
+                value: "5000"
+              - name: APP_VERSION
+                value: "v2"
+            resources:
+              requests:
+                cpu: "100m"
+                memory: "128Mi"
+              limits:
+                cpu: "200m"
+                memory: "256Mi"
+            livenessProbe:
+              httpGet:
+                path: /health
+                port: http
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              timeoutSeconds: 2
+              failureThreshold: 3
+            readinessProbe:
+              httpGet:
+                path: /health
+                port: http
+              initialDelaySeconds: 5
+              periodSeconds: 5
+              timeoutSeconds: 2
+              failureThreshold: 3
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
