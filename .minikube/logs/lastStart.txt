@@ -1,0 +1,27 @@
+Log file created at: 2026/03/26 11:19:09
+Running on machine: MacBook-Pro-Ilya-Linh
+Binary: Built with gc go1.25.5 for darwin/arm64
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+I0326 11:19:09.561758   38386 out.go:360] Setting OutFile to fd 1 ...
+I0326 11:19:09.561861   38386 out.go:408] TERM=dumb,COLORTERM=, which probably does not support color
+I0326 11:19:09.561863   38386 out.go:374] Setting ErrFile to fd 2...
+I0326 11:19:09.561864   38386 out.go:408] TERM=dumb,COLORTERM=, which probably does not support color
+I0326 11:19:09.561924   38386 root.go:338] Updating PATH: /Users/linh/Innopolis/DevOps-Core-Course/.minikube/bin
+W0326 11:19:09.561960   38386 root.go:314] Error reading config file at /Users/linh/Innopolis/DevOps-Core-Course/.minikube/config/config.json: open /Users/linh/Innopolis/DevOps-Core-Course/.minikube/config/config.json: no such file or directory
+I0326 11:19:09.563227   38386 out.go:368] Setting JSON to false
+W0326 11:19:09.569060   38386 start.go:136] gopshost.Info returned error: getting boot time: operation not permitted
+W0326 11:19:09.569069   38386 start.go:142] gopshost.Virtualization returned error: not implemented yet
+I0326 11:19:09.573542   38386 out.go:179] * [lab09] minikube v1.38.1 on darwin (arm64)
+W0326 11:19:09.581611   38386 preload.go:371] Failed to list preload files: open /Users/linh/Innopolis/DevOps-Core-Course/.minikube/cache/preloaded-tarball: no such file or directory
+I0326 11:19:09.581630   38386 out.go:179]   - MINIKUBE_HOME=/Users/linh/Innopolis/DevOps-Core-Course/.minikube
+I0326 11:19:09.581626   38386 notify.go:220] Checking for updates...
+I0326 11:19:09.585690   38386 driver.go:422] Setting default libvirt URI to qemu:///system
+I0326 11:19:09.589648   38386 out.go:179] * Using the parallels driver based on user configuration
+I0326 11:19:09.596422   38386 start.go:310] selected driver: parallels
+I0326 11:19:09.596430   38386 start.go:935] validating driver "parallels" against <nil>
+I0326 11:19:09.596434   38386 start.go:946] status for parallels: {Installed:false Healthy:false Running:false NeedsImprovement:false Error:exec: "prlctl": executable file not found in $PATH Reason: Fix:Install Parallels Desktop for Mac Doc:https://minikube.sigs.k8s.io/docs/drivers/parallels/ Version:}
+I0326 11:19:09.599529   38386 out.go:203] 
+W0326 11:19:09.601681   38386 out.go:285] * Exiting due to PROVIDER_PARALLELS_NOT_FOUND: The 'parallels' provider was not found: exec: "prlctl": executable file not found in $PATH
+W0326 11:19:09.601694   38386 out.go:285] * Suggestion: Install Parallels Desktop for Mac
+W0326 11:19:09.601723   38386 out.go:285] * Documentation: https://minikube.sigs.k8s.io/docs/drivers/parallels/
+I0326 11:19:09.605622   38386 out.go:203] 
