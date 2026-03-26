@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-python
+  labels:
+    app: devops-python
+    version: "1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: devops-python
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: devops-python
+        version: "1.0.0"
+    spec:
+      containers:
+        - name: devops-python
+          image: mirana18/devops-info-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5001
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+          env:
+            - name: PORT
+              value: "5001"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: DEBUG
+              value: "False"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
