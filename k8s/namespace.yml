@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devops-lab9
+  labels:
+    app.kubernetes.io/part-of: devops-lab9
+    app.kubernetes.io/managed-by: kubectl
