@@ -15,7 +15,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, ge
 
 app = Flask(__name__)
 
-TRACKED_ENDPOINTS = {'/', '/health', '/metrics', '/swagger.json'}
+TRACKED_ENDPOINTS = {'/', '/health', '/ready', '/metrics', '/swagger.json'}
 
 HTTP_REQUESTS_TOTAL = Counter(
     'http_requests_total',
@@ -212,6 +212,7 @@ def get_endpoints() -> list[dict]:
     return [
         {'path': '/', 'method': 'GET', 'description': 'Service information'},
         {'path': '/health', 'method': 'GET', 'description': 'Health check'},
+        {'path': '/ready', 'method': 'GET', 'description': 'Readiness check'},
         {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'},
     ]
 
@@ -241,6 +242,16 @@ OPENAPI_SPEC = {
                 'responses': {
                     '200': {
                         'description': 'Health status'
+                    }
+                }
+            }
+        },
+        '/ready': {
+            'get': {
+                'summary': 'Readiness check',
+                'responses': {
+                    '200': {
+                        'description': 'Readiness status'
                     }
                 }
             }
@@ -363,6 +374,16 @@ def health():
         'status': 'healthy',
         'timestamp': _iso_utc_now(),
         'uptime_seconds': uptime['seconds']
+    })
+
+
+@app.route('/ready')
+def ready():
+    """readiness check endpoint"""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/ready').inc()
+    return jsonify({
+        'status': 'ready',
+        'timestamp': _iso_utc_now(),
     })
 
 

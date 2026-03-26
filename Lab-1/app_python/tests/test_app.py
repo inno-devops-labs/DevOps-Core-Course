@@ -47,6 +47,17 @@ def test_health_returns_healthy_status(client):
     assert payload["uptime_seconds"] >= 0
 
 
+def test_ready_returns_ready_status(client):
+    response = client.get("/ready")
+
+    assert response.status_code == 200
+    payload = response.get_json()
+
+    assert payload["status"] == "ready"
+    assert isinstance(payload["timestamp"], str)
+    assert payload["timestamp"].endswith("Z")
+
+
 def test_not_found_returns_404_json(client):
     response = client.get("/missing")
 
