@@ -1,0 +1,69 @@
+NAME                                     READY   STATUS    RESTARTS   AGE
+pod/devops-python-app-785c657474-8nj5k   1/1     Running   0          2m48s
+pod/devops-python-app-785c657474-9wj4l   1/1     Running   0          2m48s
+pod/devops-python-app-785c657474-pdbnq   1/1     Running   0          4m34s
+pod/devops-python-app-785c657474-smkqr   1/1     Running   0          4m34s
+pod/devops-python-app-785c657474-vgmbq   1/1     Running   0          4m34s
+
+NAME                                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/devops-python-app-service   NodePort    10.96.163.248   <none>        80:30080/TCP   4m34s
+service/kubernetes                  ClusterIP   10.96.0.1       <none>        443/TCP        5m43s
+
+NAME                                READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/devops-python-app   5/5     5            5           4m34s
+
+NAME                                           DESIRED   CURRENT   READY   AGE
+replicaset.apps/devops-python-app-785c657474   5         5         5       4m34s
+Name:                   devops-python-app
+Namespace:              default
+CreationTimestamp:      Thu, 26 Mar 2026 19:59:41 +0300
+Labels:                 app=devops-python-app
+                        version=v1.0.0
+Annotations:            deployment.kubernetes.io/change-cause: Demo rolling update
+                        deployment.kubernetes.io/revision: 1
+Selector:               app=devops-python-app
+Replicas:               5 desired | 5 updated | 5 total | 5 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  0 max unavailable, 1 max surge
+Pod Template:
+  Labels:  app=devops-python-app
+           version=v1.0.0
+  Containers:
+   devops-python-app:
+    Image:      4hellboy4/devops-info-service:latest
+    Port:       8000/TCP (http)
+    Host Port:  0/TCP (http)
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Liveness:   http-get http://:8000/health delay=10s timeout=5s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:8000/health delay=5s timeout=3s period=5s #success=1 #failure=3
+    Environment:
+      HOST:        0.0.0.0
+      PORT:        8000
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Progressing    True    NewReplicaSetAvailable
+  Available      True    MinimumReplicasAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   devops-python-app-785c657474 (5/5 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  4m34s  deployment-controller  Scaled up replica set devops-python-app-785c657474 from 0 to 3
+  Normal  ScalingReplicaSet  2m48s  deployment-controller  Scaled up replica set devops-python-app-785c657474 from 3 to 5
+NAME                                 READY   STATUS    RESTARTS   AGE     IP           NODE                  NOMINATED NODE   READINESS GATES
+devops-python-app-785c657474-8nj5k   1/1     Running   0          2m48s   10.244.0.9   lab09-control-plane   <none>           <none>
+devops-python-app-785c657474-9wj4l   1/1     Running   0          2m48s   10.244.0.8   lab09-control-plane   <none>           <none>
+devops-python-app-785c657474-pdbnq   1/1     Running   0          4m34s   10.244.0.6   lab09-control-plane   <none>           <none>
+devops-python-app-785c657474-smkqr   1/1     Running   0          4m34s   10.244.0.5   lab09-control-plane   <none>           <none>
+devops-python-app-785c657474-vgmbq   1/1     Running   0          4m34s   10.244.0.7   lab09-control-plane   <none>           <none>
