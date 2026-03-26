@@ -112,6 +112,7 @@ def get_endpoints() -> list[dict]:
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
+        {"path": "/ready", "method": "GET", "description": "Readiness check"},
     ]
 
 
@@ -186,6 +187,15 @@ def create_app() -> Flask:
                 "status": "healthy",
                 "timestamp": iso_utc_z(datetime.now(timezone.utc)),
                 "uptime_seconds": uptime["seconds"],
+            }
+        )
+
+    @app.get("/ready")
+    def ready():
+        return jsonify(
+            {
+                "status": "ready",
+                "timestamp": iso_utc_z(datetime.now(timezone.utc)),
             }
         )
 

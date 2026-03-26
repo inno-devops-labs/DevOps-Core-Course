@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: devops-app
+    labels:
+        app: devops-app
+        version: v1
+        environment: production
+spec:
+    replicas: 3
+    strategy:
+        type: RollingUpdate
+        rollingUpdate:
+            maxUnavailable: 1
+            maxSurge: 1
+    selector:
+        matchLabels:
+            app: devops-app
+    template:
+        metadata:
+            labels:
+                app: devops-app
+                version: v1
+                environment: production
+        spec:
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                fsGroup: 1000
+            containers:
+                - name: devops-app
+                  image: saddogsec/devops-info-service:latest
+                  imagePullPolicy: Always
+                  ports:
+                      - containerPort: 8000
+                        name: http
+                        protocol: TCP
+                  env:
+                      - name: APP_ENV
+                        value: "production"
+                      - name: LOG_LEVEL
+                        value: "info"
+                      - name: PORT
+                        value: "8000"
+                  resources:
+                      requests:
+                          cpu: 100m
+                          memory: 128Mi
+                      limits:
+                          cpu: 500m
+                          memory: 512Mi
+                  livenessProbe:
+                      httpGet:
+                          path: /health
+                          port: 8000
+                      initialDelaySeconds: 30
+                      periodSeconds: 10
+                      timeoutSeconds: 5
+                      failureThreshold: 3
+                      successThreshold: 1
+                  readinessProbe:
+                      httpGet:
+                          path: /ready
+                          port: 8000
+                      initialDelaySeconds: 5
+                      periodSeconds: 5
+                      timeoutSeconds: 3
+                      failureThreshold: 5
