@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-info-service-alt
+  namespace: devops-lab9
+  labels:
+    app.kubernetes.io/name: devops-info-service-alt
+    app.kubernetes.io/part-of: devops-core-course
+    app.kubernetes.io/component: web
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-info-service-alt
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: devops-info-service-alt
+        app.kubernetes.io/part-of: devops-core-course
+        app.kubernetes.io/component: web
+    spec:
+      containers:
+        - name: app
+          image: devops-info-service:lab9-v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5000
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "5000"
+            - name: SERVICE_NAME
+              value: "devops-info-service-alt"
+            - name: SERVICE_VERSION
+              value: "1.0.0-alt"
+            - name: SERVICE_DESCRIPTION
+              value: "Alternate DevOps course info service behind Ingress"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2

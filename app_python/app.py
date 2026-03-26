@@ -120,10 +120,10 @@ def get_system_info():
 def get_service_info():
     """Return service metadata."""
     return {
-        "name": "devops-info-service",
-        "version": "1.0.0",
-        "description": "DevOps course info service",
-        "framework": "Flask",
+        "name": os.getenv("SERVICE_NAME", "devops-info-service"),
+        "version": os.getenv("SERVICE_VERSION", "1.0.0"),
+        "description": os.getenv("SERVICE_DESCRIPTION", "DevOps course info service"),
+        "framework": os.getenv("SERVICE_FRAMEWORK", "Flask"),
     }
 
 
