@@ -5,8 +5,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN groupadd --system app && \
-    useradd --system --gid app --create-home appuser
+RUN groupadd --system --gid 10001 app && \
+    useradd --system --uid 10001 --gid app --create-home appuser
 
 COPY requirements.txt .
 
@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY app.py .
 
-USER appuser
+USER 10001:10001
 
 EXPOSE 5000
 

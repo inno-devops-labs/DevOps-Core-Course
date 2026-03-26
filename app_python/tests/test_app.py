@@ -67,6 +67,7 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(service["name"], "devops-info-service")
         self.assertEqual(service["framework"], "FastAPI")
         self.assertIsInstance(service["version"], str)
+        self.assertEqual(service["variant"], "primary")
 
         system = payload["system"]
         self.assertIsInstance(system["hostname"], str)
@@ -86,7 +87,7 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(request_info["user_agent"], str)
 
         endpoints = {(item["path"], item["method"]) for item in payload["endpoints"]}
-        self.assertEqual(endpoints, {("/", "GET"), ("/health", "GET"), ("/metrics", "GET")})
+        self.assertEqual(endpoints, {("/", "GET"), ("/health", "GET"), ("/ready", "GET"), ("/metrics", "GET")})
 
     async def test_root_uses_forwarded_for_header(self) -> None:
         status, payload, _ = await self._asgi_request(
@@ -122,8 +123,18 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status, 200)
         self.assertIn("application/json", headers.get("content-type", ""))
         self.assertEqual(payload["status"], "healthy")
+        self.assertEqual(payload["service"], "devops-info-service")
         self.assertIsInstance(payload["uptime_seconds"], int)
         self.assertGreaterEqual(payload["uptime_seconds"], 0)
+        datetime.fromisoformat(payload["timestamp"])
+
+    async def test_ready_returns_expected_payload(self) -> None:
+        status, payload, headers = await self._asgi_request("GET", "/ready")
+
+        self.assertEqual(status, 200)
+        self.assertIn("application/json", headers.get("content-type", ""))
+        self.assertEqual(payload["status"], "ready")
+        self.assertEqual(payload["service"], "devops-info-service")
         datetime.fromisoformat(payload["timestamp"])
 
     async def test_unknown_endpoint_returns_404(self) -> None:
@@ -141,6 +152,7 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
     async def test_metrics_endpoint_exposes_prometheus_metrics(self) -> None:
         await self._asgi_request("GET", "/")
         await self._asgi_request("GET", "/health")
+        await self._asgi_request("GET", "/ready")
         await self._asgi_request("GET", "/does-not-exist")
         status, payload, headers = await self._asgi_request("GET", "/metrics")
 
@@ -152,7 +164,9 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         self.assertIn("# TYPE http_requests_in_progress gauge", payload)
         self.assertIn('http_requests_total{endpoint="/",method="GET",status_code="200"}', payload)
         self.assertIn('http_requests_total{endpoint="/health",method="GET",status_code="200"}', payload)
+        self.assertIn('http_requests_total{endpoint="/ready",method="GET",status_code="200"}', payload)
         self.assertIn('http_requests_total{endpoint="unmatched",method="GET",status_code="404"}', payload)
         self.assertIn('devops_info_endpoint_calls_total{endpoint="/"}', payload)
         self.assertIn('devops_info_endpoint_calls_total{endpoint="/health"}', payload)
+        self.assertIn('devops_info_endpoint_calls_total{endpoint="/ready"}', payload)
         self.assertIn("devops_info_system_info_collection_seconds_bucket", payload)

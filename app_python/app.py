@@ -15,7 +15,11 @@ from fastapi import FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 APP_START = datetime.now(timezone.utc)
-KNOWN_ENDPOINTS = frozenset({"/", "/health", "/metrics"})
+SERVICE_NAME = os.getenv("SERVICE_NAME", "devops-info-service")
+SERVICE_VERSION = os.getenv("SERVICE_VERSION", "1.0.0")
+SERVICE_DESCRIPTION = os.getenv("SERVICE_DESCRIPTION", "DevOps course info service")
+SERVICE_VARIANT = os.getenv("SERVICE_VARIANT", "primary")
+KNOWN_ENDPOINTS = frozenset({"/", "/health", "/ready", "/metrics"})
 
 HTTP_REQUESTS_TOTAL = Counter(
     "http_requests_total",
@@ -52,7 +56,7 @@ class JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
-            "service": "devops-info-service",
+            "service": SERVICE_NAME,
         }
 
         for field in (
@@ -96,7 +100,7 @@ def configure_logging() -> logging.Logger:
 
 logger = configure_logging()
 
-app = FastAPI(title="DevOps Info Service", version="1.0.0")
+app = FastAPI(title=SERVICE_NAME, version=SERVICE_VERSION)
 
 
 def get_uptime() -> dict[str, str | int]:
@@ -117,6 +121,17 @@ def get_metric_endpoint(request: Request) -> str:
     if request.url.path in KNOWN_ENDPOINTS:
         return request.url.path
     return "unmatched"
+
+
+def get_service_metadata() -> dict[str, str]:
+    """Return service metadata that can be customized per deployment."""
+    return {
+        "name": SERVICE_NAME,
+        "version": SERVICE_VERSION,
+        "description": SERVICE_DESCRIPTION,
+        "framework": "FastAPI",
+        "variant": SERVICE_VARIANT,
+    }
 
 
 @app.middleware("http")
@@ -207,12 +222,7 @@ async def index(request: Request):
         now = datetime.now(timezone.utc)
         uptime = get_uptime()
         return {
-            "service": {
-                "name": "devops-info-service",
-                "version": "1.0.0",
-                "description": "DevOps course info service",
-                "framework": "FastAPI",
-            },
+            "service": get_service_metadata(),
             "system": {
                 "hostname": socket.gethostname(),
                 "platform": platform.system(),
@@ -238,20 +248,32 @@ async def index(request: Request):
             },
             "endpoints": [
                 {"path": "/", "method": "GET", "description": "Service information"},
-                {"path": "/health", "method": "GET", "description": "Health check"},
+                {"path": "/health", "method": "GET", "description": "Liveness probe"},
+                {"path": "/ready", "method": "GET", "description": "Readiness probe"},
                 {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
             ],
         }
 
 
-@app.get("/health", summary="Health check")
+@app.get("/health", summary="Liveness check")
 async def health():
     DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/health").inc()
     uptime = get_uptime()
     return {
         "status": "healthy",
+        "service": SERVICE_NAME,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime["seconds"],
+    }
+
+
+@app.get("/ready", summary="Readiness check")
+async def ready():
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/ready").inc()
+    return {
+        "status": "ready",
+        "service": SERVICE_NAME,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -270,6 +292,8 @@ def main():
         "application_starting",
         extra={
             "event": "startup",
+            "service": SERVICE_NAME,
+            "version": SERVICE_VERSION,
             "host": host,
             "port": port,
             "debug": debug,

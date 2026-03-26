@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-info-alt
+  namespace: devops-lab09
+  labels:
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/instance: secondary
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: devops-lab09
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  minReadySeconds: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-info
+      app.kubernetes.io/instance: secondary
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: devops-info
+        app.kubernetes.io/instance: secondary
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: devops-lab09
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: devops-info-alt
+          image: devops-info-service:lab09
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "5000"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: SERVICE_NAME
+              value: "devops-info-alt"
+            - name: SERVICE_VERSION
+              value: "1.1.0"
+            - name: SERVICE_DESCRIPTION
+              value: "Secondary variant exposed through ingress"
+            - name: SERVICE_VARIANT
+              value: "secondary"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL

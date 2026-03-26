@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-info-alt-service
+  namespace: devops-lab09
+  labels:
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/instance: secondary
+    app.kubernetes.io/component: service
+    app.kubernetes.io/part-of: devops-lab09
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/instance: secondary
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http

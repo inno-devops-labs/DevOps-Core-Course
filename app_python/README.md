@@ -15,6 +15,13 @@ This project delivers a Python-based web service that reports detailed system an
 1. Install dependencies: `python3 -m pip install -r requirements.txt`.
 2. Run the app: `python3 app.py` (defaults to host `0.0.0.0` and port `5000`).
 3. Override configuration with env vars: `HOST=127.0.0.1 PORT=8080 DEBUG=true python3 app.py` (reload follows `DEBUG`).
+4. Optional deployment metadata can be overridden with env vars such as `SERVICE_NAME`, `SERVICE_VERSION`, `SERVICE_DESCRIPTION`, and `SERVICE_VARIANT`.
+
+Available endpoints:
+- `GET /` - service and system information
+- `GET /health` - liveness probe
+- `GET /ready` - readiness probe
+- `GET /metrics` - Prometheus metrics
 
 ## Testing (Lab 3 Task 1)
 - Framework: `unittest` (Python standard library)
@@ -36,3 +43,4 @@ Current test scope:
 - Build image: `docker build -t <user>/<repo>:<tag> .`
 - Run container: `docker run -d -p 5000:5000 --name devops-info -e HOST=0.0.0.0 -e PORT=5000 <user>/<repo>:<tag>`
 - Pull from Hub: `docker pull <user>/<repo>:<tag>`
+- The image runs as a fixed non-root UID/GID (`10001:10001`) to stay compatible with Kubernetes `runAsNonRoot` policies.
