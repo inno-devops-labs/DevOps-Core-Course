@@ -149,7 +149,7 @@ def get_normalized_endpoint() -> str:
     """Map routes to low-cardinality labels for Prometheus metrics."""
     if request.url_rule is not None and request.url_rule.rule:
         return request.url_rule.rule
-    if request.path in {"/", "/health", "/metrics"}:
+    if request.path in {"/", "/health", "/ready", "/metrics"}:
         return request.path
     return "/unknown"
 
@@ -227,6 +227,11 @@ def index():
                 "description": "Health check",
             },
             {
+                "path": "/ready",
+                "method": "GET",
+                "description": "Readiness check",
+            },
+            {
                 "path": "/metrics",
                 "method": "GET",
                 "description": "Prometheus metrics",
@@ -244,6 +249,19 @@ def health():
     uptime = get_uptime()
     payload = {
         "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "uptime_seconds": uptime["seconds"],
+    }
+    return jsonify(payload), 200
+
+
+@app.route("/ready", methods=["GET"])
+def ready():
+    """Readiness check endpoint."""
+    DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/ready").inc()
+    uptime = get_uptime()
+    payload = {
+        "status": "ready",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime["seconds"],
     }
