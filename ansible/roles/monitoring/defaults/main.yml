@@ -10,8 +10,7 @@ monitoring_prometheus_version: "3.9.0"
 monitoring_loki_image: "grafana/loki:{{ monitoring_loki_version }}"
 monitoring_promtail_image: "grafana/promtail:{{ monitoring_promtail_version }}"
 monitoring_grafana_image: "grafana/grafana:{{ monitoring_grafana_version }}"
-# Prometheus images use a `v` prefix in tags (e.g. v3.9.0).
-monitoring_prometheus_image: "prom/prometheus:v{{ monitoring_prometheus_version }}"
+monitoring_prometheus_image: "prom/prometheus:{{ monitoring_prometheus_version }}"
 
 monitoring_loki_host_port: 3101
 monitoring_loki_internal_port: 3100

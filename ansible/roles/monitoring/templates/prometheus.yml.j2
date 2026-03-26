@@ -1,7 +1,11 @@
-# Retention: use Prometheus flags (see docker-compose), not storage: here (Prometheus 3.9).
 global:
   scrape_interval: {{ monitoring_prometheus_scrape_interval }}
   evaluation_interval: 15s
+
+storage:
+  tsdb:
+    retention_time: {{ monitoring_prometheus_retention_days }}d
+    retention_size: {{ monitoring_prometheus_retention_size }}
 
 scrape_configs:
 {% for target in monitoring_prometheus_targets %}

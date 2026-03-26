@@ -16,14 +16,15 @@ Grafana (3000) → queries Prometheus, shows dashboards
 - **Metrics:** Counter (requests), Gauge (in-progress), Histogram (duration)
 - **Labels:** method, endpoint, status for HTTP metrics
 - **Storage:** Prometheus TSDB with 15d retention, 10GB limit
+- **Provisioning (bonus):** Grafana auto-loads data sources + dashboards from `monitoring/grafana/`
 
 ---
 
 ## 2. Setup Guide
 
-**Prerequisites:** Docker + Docker Compose v2
+**Prerequisites:** Docker + Docker Compose v2; images `devops-info-python:lab03` and `devops-info-go:lab03` (or set `DOCKERHUB_USERNAME`).
 
-To build the app images locally:
+To avoid Docker Hub pull issues, you can build the app images locally:
 
 ```bash
 docker build -t devops-info-python:lab03 ../app_python
@@ -46,19 +47,26 @@ docker build -t devops-info-go:lab03 ../app_go
    curl http://127.0.0.1:3000/api/health
    curl http://127.0.0.1:8000/metrics | head -n 30
    ```
-3. Prometheus: `http://localhost:9090`. Check targets at `/targets`.
-4. Grafana: `http://localhost:3000`.
+3. Open Prometheus: `http://localhost:9090`. Check targets at `/targets` (all should be **UP**).
+4. Open Grafana: `http://localhost:3000` (admin/admin by default).
+   - Data sources are auto-provisioned from `monitoring/grafana/provisioning/datasources/datasources.yml`.
+   - Dashboards are auto-provisioned from `monitoring/grafana/provisioning/dashboards/dashboards.yml`.
+5. In **Explore** (Prometheus), run query `up` to see all targets.
 
 **Evidence (Task 1-2):** Metrics from app at `/metrics`, targets UP in Prometheus.
 
-![Metrics endpoint output](screenshots/lab08/metrics-endpoint.png)
-![Prometheus targets](screenshots/lab08/prometheus-targets.png)
-![Grafana](screenshots/lab08/grafana.png)
-![Prometheus targets](screenshots/lab08/prom-up.png)
+![Metrics endpoint output](screenshots/metrics-endpoint.png)
+![Prometheus targets](screenshots/prometheus-targets.png)
 
 ---
 
 ## 3. Application Instrumentation
+
+The Python app uses `prometheus_client` (already in `app_python/requirements.txt`). Install dependencies locally before running the app:
+
+```bash
+python -m pip install -r app_python/requirements.txt
+```
 
 Python app updated with **prometheus_client**:
 
@@ -68,6 +76,10 @@ Python app updated with **prometheus_client**:
 - **App metrics:** `devops_info_endpoint_calls` (counter), `devops_info_system_collection_seconds` (histogram)
 
 Instrumentation in `@app.before_request` (start timer, inc gauge), `@app.after_request` (dec gauge, observe duration, inc counter).
+
+**Evidence (Task 1):** Code snippets and `/metrics` output.
+
+![Metrics code](screenshots/metrics-code.png)
 
 ---
 
@@ -82,19 +94,26 @@ Key points:
 
 **Retention:** 15d time, 10GB size.
 
+**Evidence (Task 2):** Config file and targets page.
+
 ---
 
 ## 5. Grafana Dashboards
 
 Data source: **Prometheus** with URL `http://prometheus:9090`.
 
-Panels:
+Dashboard JSON (export/provision):
+- `monitoring/grafana/dashboards/app-metrics-dashboard.json`
+- `monitoring/grafana/dashboards/logs-dashboard.json` (from Lab 7, used for bonus provisioning)
+
+Panels (6+):
 
 | Panel | Type | Query |
 |-------|------|-------|
 | Request Rate | Time series | `sum(rate(http_requests_total[5m])) by (endpoint)` |
 | Error Rate | Time series | `sum(rate(http_requests_total{status=~"5.."}[5m]))` |
 | Request Duration p95 | Time series | `histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))` |
+| Request Duration Heatmap | Heatmap | `rate(http_request_duration_seconds_bucket[5m])` |
 | Active Requests | Gauge | `http_requests_in_progress` |
 | Status Code Distribution | Pie | `sum by (status) (rate(http_requests_total[5m]))` |
 | Uptime | Stat | `up{job="app"}` |
@@ -103,7 +122,7 @@ Panels:
 
 **Evidence (Task 3):** Screenshot of dashboard with all panels.
 
-![Application dashboard](screenshots/lab08/app-dashboard.png)
+![Application dashboard](screenshots/app-dashboard.png)
 
 ---
 
@@ -116,7 +135,7 @@ Panels:
 
 **Evidence (Task 4):** `docker compose ps` healthy, persistence test.
 
-![Docker healthy](screenshots/lab08/docker-compose-ps.png)
+![Docker healthy](screenshots/docker-ps-healthy.png)
 
 ---
 
@@ -131,22 +150,20 @@ Panels:
 
 **Evidence:** Screenshots of queries in Grafana Explore.
 
-![PromQL examples](screenshots/lab08/pq-1.png)
-![PromQL examples](screenshots/lab08/pq-2.png)
-![PromQL examples](screenshots/lab08/pq-3.png)
-![PromQL examples](screenshots/lab08/pq-4.png)
-![PromQL examples](screenshots/lab08/pq-5.png)
-![PromQL examples](screenshots/lab08/pq-6.png)
+![PromQL examples](screenshots/promql-examples.png)
 
 ---
 
 ## 8. Testing
 
-**RED:** Rate >0, errors=0, duration <1s.
+**Generate metrics:**
+```bash
+for i in $(seq 1 20); do curl -s http://127.0.0.1:8000/ > /dev/null; curl -s http://127.0.0.1:8000/health > /dev/null; done
+```
 
-**Evidence:** 
-![Testing](screenshots/lab08/testing.png)
+**Verify RED:** Check rate >0, errors=0, duration <1s.
 
+**Evidence:** Dashboard with live data.
 
 ---
 
@@ -168,7 +185,7 @@ Panels:
 
 **Tasks:** templates Prometheus config; provisions Grafana (data sources + dashboards); waits for Prometheus healthy; idempotent API creation for data sources.
 
-**Run WSL:**
+**Run (WSL):**
 ```bash
 cd DevOps-Core-Course/ansible
 ansible-playbook -i inventory/hosts.ini playbooks/deploy-monitoring.yml --ask-vault-pass
@@ -176,9 +193,77 @@ ansible-playbook -i inventory/hosts.ini playbooks/deploy-monitoring.yml --ask-va
 
 **Idempotency:** Second run shows changed=0.
 
-**Evidence:**
+**Evidence:** Ansible output, Grafana with both data sources.
 
-![Ansible run 1](screenshots/lab08/ansible-run1.png)
-![Ansible run 2](screenshots/lab08/ansible-run2.png)
+![Ansible run](screenshots/ansible-run.png)
+![Grafana data sources](screenshots/grafana-datasources.png)
 
 ---
+
+## 10. Evidence collection commands (Git Bash / WSL)
+
+Run from repo root unless noted.
+
+### 10.1 Start stack + health
+
+```bash
+cd DevOps-Core-Course/monitoring
+docker compose up -d
+docker compose ps
+docker compose logs --tail=50 prometheus
+```
+
+Screenshots:
+- `screenshots/docker-ps-healthy.png` (compose ps showing healthy)
+
+### 10.2 App metrics endpoint (Task 1)
+
+```bash
+curl -s http://127.0.0.1:8000/metrics | head -n 60
+```
+
+Screenshots:
+- `screenshots/metrics-endpoint.png` (show HELP/TYPE + a few series)
+
+### 10.3 Prometheus targets + query (Task 2)
+
+Open:
+- `http://localhost:9090/targets` (screenshot all UP)
+- `http://localhost:9090/graph?g0.expr=up` (screenshot query result)
+
+Screenshots:
+- `screenshots/prometheus-targets.png`
+- `screenshots/prometheus-up-query.png`
+
+### 10.4 Grafana dashboards + PromQL evidence (Task 3)
+
+Open Grafana:
+- `http://localhost:3000` (login admin/admin)
+- Dashboards should be in folder **DevOps Course**
+
+Screenshots:
+- `screenshots/app-dashboard.png` (6+ panels with live data)
+- `screenshots/promql-examples.png` (Explore → Prometheus, run 3–5 queries)
+
+### 10.5 Persistence test (Task 4)
+
+```bash
+docker compose down
+docker compose up -d
+docker compose ps
+```
+
+Screenshot:
+- re-check the same dashboards still exist (after restart)
+
+### 10.6 Bonus: Ansible evidence (WSL)
+
+```bash
+cd DevOps-Core-Course/ansible
+ansible-playbook -i inventory/hosts.ini playbooks/deploy-monitoring.yml --ask-vault-pass
+ansible-playbook -i inventory/hosts.ini playbooks/deploy-monitoring.yml --ask-vault-pass
+```
+
+Screenshots:
+- First run output (changed > 0)
+- Second run output (mostly changed = 0)
