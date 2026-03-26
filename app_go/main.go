@@ -43,8 +43,12 @@ type RuntimeInfo struct {
 
 func main() {
 	http.HandleFunc("/health", handleHealth)
+	http.HandleFunc("/app2/health", handleHealth)
 	http.HandleFunc("/", handleInfo)
 	http.HandleFunc("/info", handleInfo)
+	http.HandleFunc("/app2", handleInfo)
+	http.HandleFunc("/app2/", handleInfo)
+	http.HandleFunc("/app2/info", handleInfo)
 
 	port := os.Getenv("PORT")
 	if port == "" {

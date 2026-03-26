@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-info-service-go
+  namespace: devops-lab09
+  labels:
+    app.kubernetes.io/name: devops-info-service-go
+    app.kubernetes.io/part-of: devops-core-course
+spec:
+  selector:
+    app.kubernetes.io/name: devops-info-service-go
+    app.kubernetes.io/component: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

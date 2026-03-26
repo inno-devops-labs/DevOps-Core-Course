@@ -57,6 +57,10 @@ logger = logging.getLogger(__name__)
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+SERVICE_NAME = os.getenv('SERVICE_NAME', 'devops-info-service')
+SERVICE_VERSION = os.getenv('SERVICE_VERSION', '1.0.0')
+SERVICE_DESCRIPTION = os.getenv('SERVICE_DESCRIPTION', 'DevOps course info service')
+SERVICE_FRAMEWORK = os.getenv('SERVICE_FRAMEWORK', 'FastAPI')
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
@@ -117,15 +121,17 @@ async def request_log_middleware(request: Request, call_next):
 
 
 @app.get("/")
+@app.get("/app1")
+@app.get("/app1/")
 async def get_user_info(request: Request):
     """Main endpoint - service and system information."""
     uptime = get_uptime()
     return {
         "service": {
-            "name": "devops-info-service",
-            "version": "1.0.0",
-            "description": "DevOps course info service",
-            "framework": "FastAPI"
+            "name": SERVICE_NAME,
+            "version": SERVICE_VERSION,
+            "description": SERVICE_DESCRIPTION,
+            "framework": SERVICE_FRAMEWORK
         },
         "system": {
             "hostname": socket.gethostname(),
@@ -151,11 +157,22 @@ async def get_user_info(request: Request):
 
 
 @app.get("/health")
+@app.get("/app1/health")
 def health():
     return {
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": get_uptime()["seconds"],
+    }
+
+
+@app.get("/ready")
+@app.get("/app1/ready")
+def ready():
+    return {
+        "status": "ready",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "service": SERVICE_NAME,
     }
 
 

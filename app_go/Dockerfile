@@ -19,10 +19,14 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates
+RUN addgroup -g 10001 -S app && adduser -S -D -H -u 10001 -G app app
 
-WORKDIR /root/
+WORKDIR /app
 
 COPY --from=builder /app/main .
+RUN chown app:app /app/main && chmod 755 /app/main
+
+USER 10001:10001
 
 EXPOSE 8080
 
