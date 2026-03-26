@@ -113,100 +113,36 @@ Key configuration choices:
 
 Run the commands below on your machine after starting a local cluster, then paste the real output into this section if your instructor requires raw evidence.
 
-### Cluster setup evidence
+### Part 1
 
 ```bash
 kubectl cluster-info
 kubectl get nodes -o wide
 kubectl get namespaces
-```
-
-Screenshot links:
-
-- [Cluster info](./screenshots/01-cluster-info&deployment.png)
-- [Some info](./screenshots/getpods.png)
-
-### Deployment evidence
-
-```bash
 kubectl apply -f k8s/deployment.yml
 kubectl apply -f k8s/service.yml
 kubectl get all
 kubectl get pods,svc -o wide
 kubectl describe deployment devops-info
-```
-
-Screenshot links:
-
-- [kubectl get all](./screenshots/04-kubectl-get-all.png)
-- [kubectl get pods,svc -o wide](./screenshots/05-kubectl-get-pods-svc-wide.png)
-- [kubectl describe deployment devops-info](./screenshots/06-describe-deployment.png)
-
-### Connectivity evidence
-
-For `kind`:
-
-```bash
 kubectl port-forward service/devops-info-service 8080:80
 curl -s http://127.0.0.1:8080/ | jq
 curl -s http://127.0.0.1:8080/health | jq
 ```
 
-For `minikube`:
-
-```bash
-minikube service devops-info-service --url
-curl -s http://$(minikube service devops-info-service --url)/health
-```
-
 Screenshot links:
+- ![Cluster info](./screenshots/01-cluster-info&deployment.png)
+- ![Some info](./screenshots/getpods.png)
+- ![deployment info](./screenshots/deploymentinfo.png)
+- ![rolling](./screenshots/rolling.png)
+- ![checking endpoints](./screenshots/endpointss.png)
 
-- [Service connectivity (port-forward or minikube url + curl)](./screenshots/07-service-connectivity-curl.png)
+Bonus task
+- ![deploy bonus task](./screenshots/deploy_bonus_task.png)
+- ![describe ingress](./screenshots/describe_ingress.png)
+- ![check endpoints](./screenshots/checking_endpoints.png)
 
-Expected deployed state:
 
-- `1` Deployment
-- `1` Service
-- `3` running Pods initially
-- Service endpoints pointing to the Pod IPs on port `5002`
 
-## Operations Performed
-
-### Initial deployment
-
-```bash
-kubectl apply -f k8s/deployment.yml
-kubectl apply -f k8s/service.yml
-kubectl rollout status deployment/devops-info
-kubectl get deployments
-kubectl get pods
-kubectl get services
-```
-
-### Scaling demonstration
-
-Imperative scaling:
-
-```bash
-kubectl scale deployment/devops-info --replicas=5
-kubectl rollout status deployment/devops-info
-kubectl get pods -l app=devops-info
-```
-
-Screenshot links:
-
-- [Scale to 5 replicas](./screenshots/08-scale-to-5-replicas.png)
-- [Pods after scaling](./screenshots/09-pods-after-scaling.png)
-
-Declarative scaling:
-
-1. Change `replicas` in `k8s/deployment.yml` from `3` to `5`.
-2. Re-apply the manifest:
-
-```bash
-kubectl apply -f k8s/deployment.yml
-kubectl rollout status deployment/devops-info
-```
 
 ### Rolling update demonstration
 
