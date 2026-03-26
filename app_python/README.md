@@ -42,6 +42,9 @@ HOST=127.0.0.1 PORT=3000 DEBUG=true python app.py
 - `GET /health` – Health check
   - Returns basic health status, timestamp, and uptime in seconds
 
+- `GET /ready` – Readiness check
+  - Returns readiness status, timestamp, and uptime in seconds
+
 - `GET /metrics` – Prometheus metrics endpoint
   - Exposes RED metrics:
     - `http_requests_total{method,endpoint,status_code}`

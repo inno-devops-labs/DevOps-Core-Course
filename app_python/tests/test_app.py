@@ -60,6 +60,7 @@ class DevOpsInfoServiceTests(unittest.TestCase):
         paths = {e.get("path") for e in endpoints if isinstance(e, dict)}
         self.assertIn("/", paths)
         self.assertIn("/health", paths)
+        self.assertIn("/ready", paths)
 
     def test_health_endpoint_returns_expected_payload(self):
         resp = self.client.get("/health")
@@ -68,6 +69,16 @@ class DevOpsInfoServiceTests(unittest.TestCase):
 
         data = resp.get_json()
         self.assertEqual(data["status"], "healthy")
+        self.assertIsInstance(data["timestamp"], str)
+        self.assertGreaterEqual(int(data["uptime_seconds"]), 0)
+
+    def test_ready_endpoint_returns_expected_payload(self):
+        resp = self.client.get("/ready")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.is_json)
+
+        data = resp.get_json()
+        self.assertEqual(data["status"], "ready")
         self.assertIsInstance(data["timestamp"], str)
         self.assertGreaterEqual(int(data["uptime_seconds"]), 0)
 
@@ -84,6 +95,7 @@ class DevOpsInfoServiceTests(unittest.TestCase):
         # Generate a few requests so metrics have data points.
         self.client.get("/")
         self.client.get("/health")
+        self.client.get("/ready")
 
         resp = self.client.get("/metrics")
         self.assertEqual(resp.status_code, 200)
