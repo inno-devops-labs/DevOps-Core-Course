@@ -1,0 +1,16 @@
+DevOps Info Go Service has been deployed!
+
+Release: {{ .Release.Name }}
+Chart:   {{ .Chart.Name }}-{{ .Chart.Version }}
+App:     {{ .Chart.AppVersion }}
+
+{{- if eq .Values.service.type "ClusterIP" }}
+
+Access the application via port-forward:
+  kubectl port-forward svc/{{ include "common.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.targetPort }}
+{{- else if eq .Values.service.type "NodePort" }}
+
+Access the application via NodePort:
+  export NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+  echo http://$NODE_IP:{{ .Values.service.nodePort }}
+{{- end }}

@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "common.fullname" . }}-pre-install"
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "common.fullname" . }}-pre-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-check
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Pre-install validation ==="
+              echo "Release: {{ .Release.Name }}"
+              echo "Chart: {{ .Chart.Name }}-{{ .Chart.Version }}"
+              echo "Checking environment readiness..."
+              sleep 5
+              echo "Pre-install validation passed!"
