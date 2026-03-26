@@ -136,15 +136,13 @@ Screenshot links:
 - ![rolling](./screenshots/rolling.png)
 - ![checking endpoints](./screenshots/endpointss.png)
 
-Bonus task
-- ![deploy bonus task](./screenshots/deploy_bonus_task.png)
-- ![describe ingress](./screenshots/describe_ingress.png)
-- ![check endpoints](./screenshots/checking_endpoints.png)
-
 
 
 
 ### Rolling update demonstration
+
+
+- ![Rolling back](./screenshots/rollback.png)
 
 This manifest includes `APP_REVISION=v1`. To trigger a rolling update without rebuilding the image:
 
@@ -160,13 +158,14 @@ kubectl rollout status deployment/devops-info
 kubectl rollout history deployment/devops-info
 ```
 
-Screenshot links:
-
-- [Rolling back](./screenshots/rollback.png)
-
 Because the Deployment strategy uses `maxUnavailable: 0`, Kubernetes should keep existing ready Pods serving while new Pods start.
 
 ## Bonus Task — Ingress with TLS
+
+Bonus task
+- ![deploy bonus task](./screenshots/deploy_bonus_task.png)
+- ![describe ingress](./screenshots/describe_ingress.png)
+- ![check endpoints](./screenshots/checking_endpoints.png)
 
 ### Bonus architecture
 
