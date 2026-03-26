@@ -110,6 +110,11 @@ def health():
         }
     )
 
+# k8s
+@app.route('/ready')
+def ready():
+    return 'OK', 200
+
 
 @app.route('/metrics')
 def metrics():
