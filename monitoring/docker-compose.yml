@@ -55,6 +55,37 @@ services:
       logging: "promtail"
       app: "promtail"
 
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=10GB
+      - --web.enable-lifecycle
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   grafana:
     image: grafana/grafana:12.3.1
     container_name: grafana
@@ -69,10 +100,13 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: "${GF_SECURITY_ADMIN_PASSWORD:-admin}"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
     networks:
       - logging
     depends_on:
       loki:
+        condition: service_healthy
+      prometheus:
         condition: service_healthy
     deploy:
       resources:
@@ -93,6 +127,9 @@ services:
       app: "grafana"
 
   app-python:
+    build:
+      context: ../app_python
+      dockerfile: Dockerfile
     image: jambulancia/devops-info-service:latest
     container_name: devops-python
     ports:
@@ -114,6 +151,12 @@ services:
         limits:
           cpus: "0.5"
           memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     labels:
       logging: "promtail"
       app: "devops-python"
@@ -121,6 +164,7 @@ services:
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
   logging:

@@ -7,9 +7,17 @@ import logging
 import os
 import platform
 import socket
+import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, g, jsonify, request
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 USE_JSON_LOGGING = os.getenv("LOG_FORMAT", "").lower() == "json"
 
@@ -40,6 +48,41 @@ else:
     )
     logger = logging.getLogger(__name__)
 
+# Prometheus metrics (RED method: Rate, Errors, Duration)
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status"],
+)
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+)
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+endpoint_calls = Counter(
+    "devops_info_endpoint_calls",
+    "Endpoint calls by endpoint",
+    ["endpoint"],
+)
+system_info_duration = Histogram(
+    "devops_info_system_collection_seconds",
+    "System info collection duration in seconds",
+    buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5),
+)
+
+
+def _normalize_endpoint(path: str) -> str:
+    """Normalize path for low-cardinality metrics."""
+    if path in ("/", "/health", "/metrics"):
+        return path
+    return "other"
+
+
 # Startup log
 logger.info(
     "Application starting",
@@ -49,7 +92,9 @@ logger.info(
 
 @app.before_request
 def log_request():
-    """Log incoming request (extra fields for JSON logging)."""
+    """Log incoming request and record metrics start time."""
+    g._request_start = time.perf_counter()
+    http_requests_in_progress.inc()
     if USE_JSON_LOGGING:
         logger.info(
             "Request received",
@@ -65,7 +110,24 @@ def log_request():
 
 @app.after_request
 def log_response(response):
-    """Log response status after request."""
+    """Log response status and record Prometheus metrics."""
+    try:
+        if hasattr(g, "_request_start"):
+            duration = time.perf_counter() - g._request_start
+            endpoint = _normalize_endpoint(request.path)
+            http_requests_total.labels(
+                method=request.method,
+                endpoint=endpoint,
+                status=str(response.status_code),
+            ).inc()
+            http_request_duration_seconds.labels(
+                method=request.method,
+                endpoint=endpoint,
+            ).observe(duration)
+            endpoint_calls.labels(endpoint=endpoint).inc()
+    finally:
+        http_requests_in_progress.dec()
+
     if USE_JSON_LOGGING:
         logger.info(
             "Response sent",
@@ -123,6 +185,10 @@ def index():
 
     uptime_info = get_uptime()
 
+    # Track system info collection duration
+    with system_info_duration.time():
+        system_info = get_system_info()
+
     response = {
         "service": {
             "name": "devops-info-service",
@@ -130,7 +196,7 @@ def index():
             "description": "DevOps course info service",
             "framework": "Flask",
         },
-        "system": get_system_info(),
+        "system": system_info,
         "runtime": {
             "uptime_seconds": uptime_info["uptime_seconds"],
             "uptime_human": uptime_info["uptime_human"],
@@ -139,21 +205,20 @@ def index():
         },
         "request": get_request_info(),
         "endpoints": [
-            {
-                "path": "/",
-                "method": "GET",
-                "description": "Service information",
-            },
-            {
-                "path": "/health",
-                "method": "GET",
-                "description": "Health check",
-            },
+            {"path": "/", "method": "GET", "description": "Service information"},
+            {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
 
     logger.debug("Response payload for / endpoint generated")
     return jsonify(response)
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    """Prometheus metrics endpoint."""
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 
 @app.route("/health", methods=["GET"])
