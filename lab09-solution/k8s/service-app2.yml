@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2-nginx-service
+  namespace: lab09
+  labels:
+    app: app2-nginx
+spec:
+  type: ClusterIP
+  selector:
+    app: app2-nginx
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: http
