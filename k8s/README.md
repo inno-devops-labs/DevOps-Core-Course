@@ -155,18 +155,6 @@ This manifest includes `APP_REVISION=v1`. To trigger a rolling update without re
 kubectl apply -f k8s/deployment.yml
 kubectl rollout status deployment/devops-info
 kubectl rollout history deployment/devops-info
-```
-
-Screenshot links:
-
-- [Rolling update status](./screenshots/10-rolling-update-status.png)
-- [Rollout history](./screenshots/11-rollout-history.png)
-
-Because the Deployment strategy uses `maxUnavailable: 0`, Kubernetes should keep existing ready Pods serving while new Pods start.
-
-### Rollback demonstration
-
-```bash
 kubectl rollout undo deployment/devops-info
 kubectl rollout status deployment/devops-info
 kubectl rollout history deployment/devops-info
@@ -174,7 +162,9 @@ kubectl rollout history deployment/devops-info
 
 Screenshot links:
 
-- [Rollback execution and status](./screenshots/12-rollback-status.png)
+- [Rolling back](./screenshots/rollback.png)
+
+Because the Deployment strategy uses `maxUnavailable: 0`, Kubernetes should keep existing ready Pods serving while new Pods start.
 
 ## Bonus Task — Ingress with TLS
 
@@ -251,15 +241,6 @@ Expected result:
 - `/app1` responds from service `devops-info-service`
 - `/app2` responds from service `devops-info-app2-service`
 - HTTPS works with the self-signed cert (`-k`)
-
-Bonus screenshot links:
-
-- [Second app deployment and service](./screenshots/13-bonus-app2-resources.png)
-- [Ingress controller ready](./screenshots/14-ingress-controller-ready.png)
-- [TLS secret created](./screenshots/15-tls-secret.png)
-- [Ingress resources](./screenshots/16-ingress-get-describe.png)
-- [Routing check /app1 and /app2](./screenshots/17-routing-app1-app2.png)
-- [HTTPS check with TLS](./screenshots/18-https-routing.png)
 
 Ingress benefits over NodePort:
 

@@ -53,7 +53,7 @@ spec:
             - name: APP_ENV
               value: "kubernetes"
             - name: APP_REVISION
-              value: "v1"
+              value: "v2"
           resources:
             requests:
               cpu: 100m
