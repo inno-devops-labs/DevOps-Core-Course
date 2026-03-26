@@ -14,10 +14,10 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-SERVICE_NAME = "devops-info-service"
-SERVICE_VERSION = "1.0.0"
-SERVICE_DESCRIPTION = "DevOps course info service"
-SERVICE_FRAMEWORK = "Flask"
+SERVICE_NAME = os.getenv("SERVICE_NAME", "devops-info-service")
+SERVICE_VERSION = os.getenv("SERVICE_VERSION", "1.0.0")
+SERVICE_DESCRIPTION = os.getenv("SERVICE_DESCRIPTION", "DevOps course info service")
+SERVICE_FRAMEWORK = os.getenv("SERVICE_FRAMEWORK", "Flask")
 
 START_TIME = datetime.now(timezone.utc)
 

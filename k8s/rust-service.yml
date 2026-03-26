@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-info-service-rust
+  namespace: lab9
+  labels:
+    app: devops-info-service-rust
+    lab: "9"
+spec:
+  selector:
+    app: devops-info-service-rust
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
