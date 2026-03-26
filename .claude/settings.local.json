@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:9080/targets | head -100)",
+      "Bash(curl -s \"http://localhost:3100/loki/api/v1/labels\" 2>&1)",
+      "Bash(curl -s \"http://localhost:3100/loki/api/v1/label/app/values\")",
+      "Bash(curl -s -G \"http://localhost:3100/loki/api/v1/query_range\" --data-urlencode 'query={app=~\"devops-.*\"}' --data-urlencode 'limit=5' | python -m json.tool 2>/dev/null | head -50)",
+      "Bash(cd C:/Users/kve10/PycharmProjects/DevOps-Core-Course/monitoring && docker compose logs grafana --tail 30 2>&1)",
+      "Bash(cd C:/Users/kve10/PycharmProjects/DevOps-Core-Course/monitoring && docker compose down -v 2>&1)",
+      "Bash(cd C:/Users/kve10/PycharmProjects/DevOps-Core-Course/monitoring && docker compose up -d 2>&1)",
+      "Bash(cd C:/Users/kve10/PycharmProjects/DevOps-Core-Course/monitoring && docker compose ps 2>&1)",
+      "Bash(curl -s http://localhost:3100/loki/api/v1/labels 2>&1)",
+      "Bash(cd C:/Users/kve10/PycharmProjects/DevOps-Core-Course/monitoring && docker compose restart grafana 2>&1)",
+      "Bash(cd C:/Users/kve10/PycharmProjects/DevOps-Core-Course/monitoring && docker compose ps grafana 2>&1)",
+      "Bash(find:*)",
+      "Bash(cd:*)"
+    ]
+  }
+}
