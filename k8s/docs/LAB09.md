@@ -25,6 +25,10 @@ Resource strategy:
 - Python app: requests `100m/128Mi`, limits `300m/256Mi`
 - Go app: requests `100m/64Mi`, limits `300m/128Mi`
 
+Evidence:
+
+![cluster info](screenshots/cluster-info.png)
+
 ---
 
 ## 2. Manifest Files
@@ -65,10 +69,9 @@ curl -s http://127.0.0.1:8080/health
 
 Screenshots placeholders:
 
-![kubectl get all](screenshots/lab09-kubectl-get-all.png)
-![pods and services](screenshots/lab09-pods-services.png)
-![describe deployment](screenshots/lab09-describe-deployment.png)
-![service response](screenshots/lab09-service-response.png)
+![deployment applied](screenshots/deploy-1.png)
+![deployment running](screenshots/deploy-2.png)
+![service endpoints](screenshots/endpoints.png)
 
 ---
 
@@ -92,6 +95,10 @@ kubectl rollout status deployment/devops-info-python
 kubectl get pods -l app=devops-info-python
 ```
 
+Evidence:
+
+![scaling](screenshots/scaling.png)
+
 ### Rolling update demonstration
 
 ```bash
@@ -101,6 +108,10 @@ kubectl rollout status deployment/devops-info-python
 kubectl rollout history deployment/devops-info-python
 ```
 
+Evidence:
+
+![rollout](screenshots/rollout.png)
+
 ### Rollback demonstration
 
 ```bash
@@ -108,6 +119,10 @@ kubectl rollout undo deployment/devops-info-python
 kubectl rollout status deployment/devops-info-python
 kubectl rollout history deployment/devops-info-python
 ```
+
+Evidence:
+
+![rollback](screenshots/rollback.png)
 
 ### Service access
 
@@ -144,10 +159,23 @@ curl -s http://127.0.0.1:8080/health
 
 - **Port mismatch risk:** Python app defaults to port 5000 while Dockerfile exposes 8000; fixed by setting `PORT=5000` in manifest and matching Service/Probes.
 - **Ingress path routing:** app endpoints are rooted at `/`, so regex rewrite is used for `/app1` and `/app2`.
+- **Rolling update image tag:** if a tag does not exist in the registry, Pods will fail with `ErrImagePull/ImagePullBackOff`.
+- **Ingress access from WSL:** `minikube ip` may not be reachable on 80/443 from WSL (connection timeout). Reliable evidence can be collected with port-forward to `ingress-nginx-controller` and `Host: local.devops.lab` header.
 - **Debugging approach:** `kubectl describe`, `kubectl logs`, `kubectl get events --sort-by=.metadata.creationTimestamp`.
 
 What I learned:
 - Declarative manifests are easy to re-apply and version.
 - Probes and rollout strategy are key for safer updates.
 - Ingress gives cleaner routing than many NodePort services.
+
+---
+
+## 7. Bonus — Ingress with TLS (Evidence)
+
+Screenshots:
+
+![second app deployed](screenshots/deploy-second-app.png)
+![ingress controller](screenshots/ingress-controller.png)
+![tls certificate](screenshots/tls-cert.png)
+![routing app1/app2](screenshots/routing.png)
 
