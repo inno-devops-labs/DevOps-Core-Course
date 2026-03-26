@@ -29,6 +29,8 @@ Cloudflare Workers is a serverless edge platform for running code close to users
 
 **Important:** This lab does not deploy your Docker image from Lab 2. Cloudflare Workers is a serverless runtime, not a Docker host. You will build a Workers-native API that preserves similar operational concerns: routes, health checks, configuration, state, logs, deployments, and public access.
 
+> **Regional connectivity note:** In some countries and networks, including Russia, Cloudflare services may be partially restricted. If commands such as `npx wrangler whoami` or `npx wrangler deploy` fail with vague network errors, the problem may be your network path rather than your code. If you use a VPN, prefer full-tunnel or global-routing mode. Proxy or split-tunnel setups can allow Node.js and Wrangler traffic to bypass the VPN and still hit the restricted network.
+
 **Tech Stack:** Cloudflare Workers | Wrangler | TypeScript | Workers KV | `workers.dev`
 
 ---
