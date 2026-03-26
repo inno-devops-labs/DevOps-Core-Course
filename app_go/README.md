@@ -118,7 +118,8 @@ curl http://localhost:8080/
   },
   "endpoints": [
     {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"}
+    {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/ready", "method": "GET", "description": "Readiness check"}
   ]
 }
 ```
@@ -138,6 +139,23 @@ curl http://localhost:8080/health
   "status": "healthy",
   "timestamp": "2026-01-28T14:30:00.000000000Z",
   "uptime_seconds": 120
+}
+```
+
+### `GET /ready` - Readiness Check
+
+Simple readiness endpoint for orchestrators such as Kubernetes.
+
+**Request:**
+```bash
+curl http://localhost:8080/ready
+```
+
+**Response:**
+```json
+{
+  "status": "ready",
+  "timestamp": "2026-01-28T14:30:05.000000000Z"
 }
 ```
 

@@ -96,6 +96,38 @@ func TestHealthHandler_JSON(t *testing.T) {
 	}
 }
 
+// TestReadinessHandler_StatusCode checks that GET /ready returns 200.
+func TestReadinessHandler_StatusCode(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+	w := httptest.NewRecorder()
+
+	readinessHandler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
+	}
+}
+
+// TestReadinessHandler_JSON checks the readiness response fields.
+func TestReadinessHandler_JSON(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+	w := httptest.NewRecorder()
+
+	readinessHandler(w, req)
+
+	var result map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatalf("failed to decode readiness response: %v", err)
+	}
+
+	if result["status"] != "ready" {
+		t.Errorf("expected status 'ready', got %q", result["status"])
+	}
+	if result["timestamp"] == "" {
+		t.Error("timestamp should not be empty")
+	}
+}
+
 // TestNotFound checks that unknown paths return 404.
 func TestNotFound(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/nonexistent", nil)
@@ -144,6 +176,7 @@ func TestContentType(t *testing.T) {
 	}{
 		{"main", "/", mainHandler},
 		{"health", "/health", healthHandler},
+		{"ready", "/ready", readinessHandler},
 	}
 
 	for _, tc := range tests {

@@ -78,6 +78,7 @@ var startTime = time.Now()
 var endpoints = []Endpoint{
 	{Path: "/", Method: "GET", Description: "Service information"},
 	{Path: "/health", Method: "GET", Description: "Health check"},
+	{Path: "/ready", Method: "GET", Description: "Readiness check"},
 }
 
 // getUptime calculates the application uptime
@@ -213,6 +214,21 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// readinessHandler handles the readiness endpoint
+func readinessHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Readiness check from %s", getClientIP(r))
+
+	resp := map[string]string{
+		"status":    "ready",
+		"timestamp": time.Now().UTC().Format(time.RFC3339Nano),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("Error encoding JSON: %v", err)
+	}
+}
+
 // notFoundHandler handles 404 errors
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("404 Not Found: %s", r.URL.Path)
@@ -271,6 +287,7 @@ func main() {
 	// Set up routes
 	http.HandleFunc("/", mainHandler)
 	http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/ready", readinessHandler)
 
 	addr := fmt.Sprintf("%s:%s", host, port)
 	log.Printf("Starting DevOps Info Service (Go) on %s", addr)

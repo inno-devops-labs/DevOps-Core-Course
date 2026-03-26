@@ -175,6 +175,24 @@ class TestHealthEndpoint:
         datetime.fromisoformat(ts)
 
 
+class TestReadinessEndpoint:
+    """Tests for the readiness endpoint GET /ready."""
+
+    def test_status_code(self, client):
+        """GET /ready should return 200 OK."""
+        assert client.get("/ready").status_code == 200
+
+    def test_ready_status(self, client):
+        """Readiness status must be 'ready'."""
+        assert client.get("/ready").json()["status"] == "ready"
+
+    def test_required_fields(self, client):
+        """Readiness response must contain status and timestamp."""
+        data = client.get("/ready").json()
+        for field in ("status", "timestamp"):
+            assert field in data
+
+
 class TestMetricsEndpoint:
     """Tests for the Prometheus metrics endpoint GET /metrics."""
 
@@ -191,6 +209,7 @@ class TestMetricsEndpoint:
         """Metrics output must include HTTP and app-specific metrics."""
         client.get("/")
         client.get("/health")
+        client.get("/ready")
         client.get("/missing")
 
         metrics_text = client.get("/metrics").text
@@ -204,6 +223,7 @@ class TestMetricsEndpoint:
         """Metrics should expose normalized labels for successful and 404 requests."""
         client.get("/")
         client.get("/health")
+        client.get("/ready")
         client.get("/missing")
 
         metrics_text = client.get("/metrics").text
@@ -220,6 +240,11 @@ class TestMetricsEndpoint:
         assert_metric_line_with_labels(
             metrics_text,
             "http_requests_total",
+            {"method": "GET", "endpoint": "/ready", "status_code": "200"},
+        )
+        assert_metric_line_with_labels(
+            metrics_text,
+            "http_requests_total",
             {"method": "GET", "endpoint": "/unknown", "status_code": "404"},
         )
         assert_metric_line_with_labels(
@@ -231,6 +256,11 @@ class TestMetricsEndpoint:
             metrics_text,
             "devops_info_endpoint_calls_total",
             {"endpoint": "/health"},
+        )
+        assert_metric_line_with_labels(
+            metrics_text,
+            "devops_info_endpoint_calls_total",
+            {"endpoint": "/ready"},
         )
 
 

@@ -79,6 +79,7 @@ SERVICE_INFO = {
 ENDPOINTS = [
     {'path': '/', 'method': 'GET', 'description': 'Service information'},
     {'path': '/health', 'method': 'GET', 'description': 'Health check'},
+    {'path': '/ready', 'method': 'GET', 'description': 'Readiness check'},
     {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'}
 ]
 
@@ -128,6 +129,9 @@ def normalize_endpoint(request: Request):
         return route_path
 
     if request.url.path in {'/', '/health', '/metrics'}:
+        return request.url.path
+
+    if request.url.path == '/ready':
         return request.url.path
 
     return '/unknown'
@@ -284,6 +288,16 @@ async def health():
         'status': 'healthy',
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'uptime_seconds': uptime['seconds']
+    }
+
+
+@app.get('/ready')
+async def ready():
+    """Readiness endpoint for orchestrators."""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/ready').inc()
+    return {
+        'status': 'ready',
+        'timestamp': datetime.now(timezone.utc).isoformat(),
     }
 
 

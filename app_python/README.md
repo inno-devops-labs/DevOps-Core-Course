@@ -42,6 +42,8 @@ pytest tests/ -v --cov=. --cov-report=term
 |----------|--------|-------------|
 | `/` | GET | Service and system information |
 | `/health` | GET | Health check |
+| `/ready` | GET | Readiness check |
+| `/metrics` | GET | Prometheus metrics |
 | `/docs` | GET | Swagger UI documentation |
 
 ## Configuration

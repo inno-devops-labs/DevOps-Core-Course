@@ -26,3 +26,8 @@ __pycache__/
 *.pem
 *.key
 .env
+
+# ===== Local Kubernetes Lab Artifacts =====
+.tools/
+k8s/lab09-kubeconfig
+k8s/certs/
