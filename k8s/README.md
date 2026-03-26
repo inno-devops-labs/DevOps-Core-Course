@@ -39,11 +39,11 @@ Key choices:
 ## Deployment Evidence
 
 ### Cluster objects
-![[./img/ods.png]]
+![](./img/pods.png)
 
 ### Detailed pods + services
 
-![[./img/etailed.png]]
+![](./img/detailed.png)
 
 ### Deployment description
 ```
@@ -127,10 +127,10 @@ tetsiks-8lkwr   IPv4          5000    10.244.0.41,10.244.0.42,10.244.0.43 + 2 mo
 ```
 
 ### Curl tests
-![[./img/curl.png]]
+![](./img/curl.png)
 
 ### Scaling to 5 pods
-![[./img/scale.png]]
+![](./img/scale.png)
 ```
 kubectl scale deployment testiks --replicas=5
 kubectl rollout restart deployment/testiks
@@ -139,7 +139,7 @@ kubectl get pods
 ```
 
 ### Rollback
-![[./img/ollback.png]]
+![](./img/rollback.png)
 
 ## 5. Production Considerations
 **Health checks:** **Liveness** probes call **`/health`** so Kubernetes restarts the container if the HTTP server stops responding while the process is still running. **Readiness** probes call **`/ready`** so traffic is only sent to Pods that report ready, which avoids routing to Pods that are still starting or temporarily overloaded.
