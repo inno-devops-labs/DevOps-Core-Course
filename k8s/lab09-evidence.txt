@@ -1,0 +1,195 @@
+### Cluster setup
+Switched to context "kind-lab09".
+Kubernetes control plane is running at https://127.0.0.1:56810
+CoreDNS is running at https://127.0.0.1:56810/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+NAME                  STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION     CONTAINER-RUNTIME
+lab09-control-plane   Ready    control-plane   62s   v1.32.2   172.19.0.2    <none>        Debian GNU/Linux 12 (bookworm)   6.10.14-linuxkit   containerd://2.0.3
+NAME                 STATUS   AGE
+default              Active   62s
+kube-node-lease      Active   61s
+kube-public          Active   62s
+kube-system          Active   62s
+local-path-storage   Active   58s
+
+### Load image
+Image: "devops_lab02:cilc" with ID "sha256:b86c5ae1ce020382ed0ac799291915a5697192a1b1d02fb5ac6f7312e83f5357" not yet present on node "lab09-control-plane", loading...
+Image: "devops_lab02:v2" with ID "sha256:b86c5ae1ce020382ed0ac799291915a5697192a1b1d02fb5ac6f7312e83f5357" not yet present on node "lab09-control-plane", loading...
+
+### Apply manifests
+deployment.apps/devops-info-app created
+service/devops-info-service created
+Waiting for deployment "devops-info-app" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "devops-info-app" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "devops-info-app" rollout to finish: 2 of 3 updated replicas are available...
+deployment "devops-info-app" successfully rolled out
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE
+devops-info-app   3/3     3            3           7s
+NAME                               READY   STATUS    RESTARTS   AGE   IP           NODE                  NOMINATED NODE   READINESS GATES
+devops-info-app-79679fc787-drwdp   1/1     Running   0          7s    10.244.0.5   lab09-control-plane   <none>           <none>
+devops-info-app-79679fc787-m9wfw   1/1     Running   0          7s    10.244.0.7   lab09-control-plane   <none>           <none>
+devops-info-app-79679fc787-q7tvt   1/1     Running   0          7s    10.244.0.6   lab09-control-plane   <none>           <none>
+NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+devops-info-service   NodePort    10.96.12.118   <none>        80:30080/TCP   7s
+kubernetes            ClusterIP   10.96.0.1      <none>        443/TCP        71s
+NAME                  ENDPOINTS                                         AGE
+devops-info-service   10.244.0.5:8080,10.244.0.6:8080,10.244.0.7:8080   7s
+
+### Service connectivity via port-forward
+{"status":"healthy","timestamp":"2026-03-26T17:55:37.461569+00:00","uptime_seconds":7}
+
+{"endpoints":[{"description":"Service information","method":"GET","path":"/"},{"description":"Health check","method":"GET","path":"/health"},{"description":"Prometheus metrics","method":"GET","path":"/metrics"}],"request
+
+### Scaling to 5 replicas
+deployment.apps/devops-info-app scaled
+Waiting for deployment "devops-info-app" rollout to finish: 3 of 5 updated replicas are available...
+Waiting for deployment "devops-info-app" rollout to finish: 4 of 5 updated replicas are available...
+deployment "devops-info-app" successfully rolled out
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE
+devops-info-app   5/5     5            5           40s
+NAME                               READY   STATUS    RESTARTS   AGE
+devops-info-app-79679fc787-drwdp   1/1     Running   0          40s
+devops-info-app-79679fc787-glv77   1/1     Running   0          9s
+devops-info-app-79679fc787-l6hf2   1/1     Running   0          9s
+devops-info-app-79679fc787-m9wfw   1/1     Running   0          40s
+devops-info-app-79679fc787-q7tvt   1/1     Running   0          40s
+
+### Rolling update to v2 with availability check
+deployment.apps/devops-info-app configured
+Waiting for deployment "devops-info-app" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 0 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 2 out of 3 new replicas have been updated...
+availability_check ok=40 fail=0
+Waiting for deployment "devops-info-app" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "devops-info-app" rollout to finish: 1 old replicas are pending termination...
+deployment "devops-info-app" successfully rolled out
+deployment.apps/devops-info-app 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+NAME                         DESIRED   CURRENT   READY   AGE
+devops-info-app-5d4bbd7474   3         3         3       22s
+devops-info-app-79679fc787   0         0         0       64s
+
+### Rollback to previous revision
+deployment.apps/devops-info-app rolled back
+Waiting for deployment "devops-info-app" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 1 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 2 out of 3 new replicas have been updated...
+Waiting for deployment "devops-info-app" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "devops-info-app" rollout to finish: 1 old replicas are pending termination...
+deployment "devops-info-app" successfully rolled out
+deployment.apps/devops-info-app 
+REVISION  CHANGE-CAUSE
+2         <none>
+3         <none>
+
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS    IMAGES              SELECTOR
+devops-info-app   3/3     3            3           85s   devops-info   devops_lab02:cilc   app=devops-info
+
+### Final deployment evidence
+NAME                                   READY   STATUS        RESTARTS   AGE
+pod/devops-info-app-5d4bbd7474-hh4nh   1/1     Terminating   0          35s
+pod/devops-info-app-5d4bbd7474-mmq9x   1/1     Terminating   0          50s
+pod/devops-info-app-5d4bbd7474-qpdx5   1/1     Terminating   0          42s
+pod/devops-info-app-79679fc787-drwdp   1/1     Terminating   0          92s
+pod/devops-info-app-79679fc787-msptg   1/1     Running       0          14s
+pod/devops-info-app-79679fc787-nrlgs   1/1     Running       0          28s
+pod/devops-info-app-79679fc787-pfcnc   1/1     Running       0          21s
+
+NAME                          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+service/devops-info-service   NodePort    10.96.12.118   <none>        80:30080/TCP   92s
+service/kubernetes            ClusterIP   10.96.0.1      <none>        443/TCP        2m36s
+
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/devops-info-app   3/3     3            3           92s
+
+NAME                                         DESIRED   CURRENT   READY   AGE
+replicaset.apps/devops-info-app-5d4bbd7474   0         0         0       50s
+replicaset.apps/devops-info-app-79679fc787   3         3         3       92s
+
+NAME                                   READY   STATUS        RESTARTS   AGE   IP            NODE                  NOMINATED NODE   READINESS GATES
+pod/devops-info-app-5d4bbd7474-hh4nh   1/1     Terminating   0          35s   10.244.0.12   lab09-control-plane   <none>           <none>
+pod/devops-info-app-5d4bbd7474-mmq9x   1/1     Terminating   0          50s   10.244.0.10   lab09-control-plane   <none>           <none>
+pod/devops-info-app-5d4bbd7474-qpdx5   1/1     Terminating   0          42s   10.244.0.11   lab09-control-plane   <none>           <none>
+pod/devops-info-app-79679fc787-drwdp   1/1     Terminating   0          92s   10.244.0.5    lab09-control-plane   <none>           <none>
+pod/devops-info-app-79679fc787-msptg   1/1     Running       0          14s   10.244.0.15   lab09-control-plane   <none>           <none>
+pod/devops-info-app-79679fc787-nrlgs   1/1     Running       0          28s   10.244.0.13   lab09-control-plane   <none>           <none>
+pod/devops-info-app-79679fc787-pfcnc   1/1     Running       0          21s   10.244.0.14   lab09-control-plane   <none>           <none>
+
+NAME                          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+service/devops-info-service   NodePort    10.96.12.118   <none>        80:30080/TCP   92s     app=devops-info
+service/kubernetes            ClusterIP   10.96.0.1      <none>        443/TCP        2m36s   <none>
+
+Name:                   devops-info-app
+Namespace:              default
+CreationTimestamp:      Thu, 26 Mar 2026 20:55:27 +0300
+Labels:                 app=devops-info
+                        component=web
+Annotations:            deployment.kubernetes.io/revision: 3
+Selector:               app=devops-info
+Replicas:               3 desired | 3 updated | 3 total | 3 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  0 max unavailable, 1 max surge
+Pod Template:
+  Labels:  app=devops-info
+           component=web
+  Containers:
+   devops-info:
+    Image:      devops_lab02:cilc
+    Port:       8080/TCP
+    Host Port:  0/TCP
+    Limits:
+      cpu:     250m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Liveness:   http-get http://:http/health delay=15s timeout=3s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:http/health delay=5s timeout=2s period=5s #success=1 #failure=3
+    Environment:
+      HOST:        0.0.0.0
+      PORT:        8080
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  devops-info-app-5d4bbd7474 (0/0 replicas created)
+NewReplicaSet:   devops-info-app-79679fc787 (3/3 replicas created)
+Events:
+  Type    Reason             Age               From                   Message
+  ----    ------             ----              ----                   -------
+  Normal  ScalingReplicaSet  92s               deployment-controller  Scaled up replica set devops-info-app-79679fc787 from 0 to 3
+  Normal  ScalingReplicaSet  61s               deployment-controller  Scaled up replica set devops-info-app-79679fc787 from 3 to 5
+  Normal  ScalingReplicaSet  50s               deployment-controller  Scaled down replica set devops-info-app-79679fc787 from 5 to 3
+  Normal  ScalingReplicaSet  50s               deployment-controller  Scaled up replica set devops-info-app-5d4bbd7474 from 0 to 1
+  Normal  ScalingReplicaSet  42s               deployment-controller  Scaled down replica set devops-info-app-79679fc787 from 3 to 2
+  Normal  ScalingReplicaSet  42s               deployment-controller  Scaled up replica set devops-info-app-5d4bbd7474 from 1 to 2
+  Normal  ScalingReplicaSet  35s               deployment-controller  Scaled down replica set devops-info-app-79679fc787 from 2 to 1
+  Normal  ScalingReplicaSet  35s               deployment-controller  Scaled up replica set devops-info-app-5d4bbd7474 from 2 to 3
+  Normal  ScalingReplicaSet  28s               deployment-controller  Scaled down replica set devops-info-app-79679fc787 from 1 to 0
+  Normal  ScalingReplicaSet  7s (x6 over 28s)  deployment-controller  (combined from similar events): Scaled down replica set devops-info-app-5d4bbd7474 from 1 to 0
+
+### Stable state after rollback
+NAME                               READY   STATUS    RESTARTS   AGE   IP            NODE                  NOMINATED NODE   READINESS GATES
+devops-info-app-79679fc787-msptg   1/1     Running   0          53s   10.244.0.15   lab09-control-plane   <none>           <none>
+devops-info-app-79679fc787-nrlgs   1/1     Running   0          67s   10.244.0.13   lab09-control-plane   <none>           <none>
+devops-info-app-79679fc787-pfcnc   1/1     Running   0          60s   10.244.0.14   lab09-control-plane   <none>           <none>
+NAME                  TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+devops-info-service   NodePort   10.96.12.118   <none>        80:30080/TCP   2m11s   app=devops-info
