@@ -1,13 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: your-app-service
+  name: devops-app-py-service
+  labels:
+    app.kubernetes.io/name: devops-app-py
+    app.kubernetes.io/part-of: devops-core-s26
 spec:
   type: NodePort
   selector:
-    app: your-app  # Must match Deployment labels
+    app.kubernetes.io/name: devops-app-py
   ports:
-    - protocol: TCP
-      port: 80        # Service port
-      targetPort: 8000  # Container port
-      nodePort: 30080   # Optional: specific node port (30000-32767)
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 5000
+      nodePort: 30080

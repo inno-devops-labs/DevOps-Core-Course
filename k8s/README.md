@@ -116,3 +116,81 @@ Events:
 ```
 
 </details>
+
+## Task 3 - Service Configuration
+
+The Service uses type `NodePort` and targets the Deployment Pods with the `app.kubernetes.io/name=devops-app-py` label. It exposes service port `80` and forwards traffic to container port `5000` on a fixed NodePort, `30080`.
+
+For connectivity verification, I used `kubectl port-forward service/devops-app-py-service 8080:80`. I tested `minikube service ... --url` first, but in this Docker-driver setup the returned node IP was not directly reachable from the host, so port-forward was the practical local-access path.
+
+<details>
+<summary>Service verification output</summary>
+
+```text
+$ kubectl apply -f k8s/service.yml
+service/devops-app-py-service unchanged
+
+$ kubectl get services
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+devops-app-py-service   NodePort    10.110.168.128   <none>        80:30080/TCP   32s
+kubernetes              ClusterIP   10.96.0.1        <none>        443/TCP        80m
+
+$ kubectl describe service devops-app-py-service
+Name:                     devops-app-py-service
+Namespace:                default
+Labels:                   app.kubernetes.io/name=devops-app-py
+                          app.kubernetes.io/part-of=devops-core-s26
+Annotations:              <none>
+Selector:                 app.kubernetes.io/name=devops-app-py
+Type:                     NodePort
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.110.168.128
+IPs:                      10.110.168.128
+Port:                     http  80/TCP
+TargetPort:               5000/TCP
+NodePort:                 http  30080/TCP
+Endpoints:                10.244.0.12:5000,10.244.0.13:5000,10.244.0.14:5000
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Internal Traffic Policy:  Cluster
+Events:                   <none>
+
+$ kubectl get endpoints devops-app-py-service
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME                    ENDPOINTS                                            AGE
+devops-app-py-service   10.244.0.12:5000,10.244.0.13:5000,10.244.0.14:5000   32s
+
+$ kubectl port-forward service/devops-app-py-service 8080:80
+Forwarding from 127.0.0.1:8080 -> 5000
+Forwarding from [::1]:8080 -> 5000
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+
+$ curl -fsSL 127.0.0.1:8080 | jq .service.name
+"devops-info-service"
+
+$ curl -fsSL 127.0.0.1:8080/health | jq .status
+"healthy"
+
+$ curl -fsSL 127.0.0.1:8080/ready | jq .status
+"ready"
+
+$ curl -fsSL 127.0.0.1:8080/metrics | head -n 12
+# HELP http_requests_total Total HTTP requests handled by the service.
+# TYPE http_requests_total counter
+http_requests_total{endpoint="/ready",method="GET",status_code="200"} 180.0
+http_requests_total{endpoint="/health",method="GET",status_code="200"} 90.0
+http_requests_total{endpoint="/",method="GET",status_code="200"} 2.0
+http_requests_total{endpoint="/metrics",method="GET",status_code="200"} 1.0
+# HELP http_requests_created Total HTTP requests handled by the service.
+# TYPE http_requests_created gauge
+http_requests_created{endpoint="/ready",method="GET",status_code="200"} 1.7745777896655755e+09
+http_requests_created{endpoint="/health",method="GET",status_code="200"} 1.7745778018120363e+09
+http_requests_created{endpoint="/",method="GET",status_code="200"} 1.7745779956714542e+09
+http_requests_created{endpoint="/metrics",method="GET",status_code="200"} 1.7745779957933705e+09
+```
+
+</details>
