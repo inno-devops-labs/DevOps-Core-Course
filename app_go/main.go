@@ -9,14 +9,18 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
 	serviceName        = "devops-info-service"
-	serviceVersion     = "1.7.0"
+	serviceVersion     = "1.8.0"
 	serviceDescription = "DevOps course info service"
 	serviceFramework   = "Go net/http"
 	serviceLoggerName  = "devops_info_service"
@@ -65,7 +69,7 @@ type RootResponse struct {
 	Endpoints []EndpointInfo `json:"endpoints"`
 }
 
-type HealthResponse struct {
+type StatusResponse struct {
 	Status        string `json:"status"`
 	Timestamp     string `json:"timestamp"`
 	UptimeSeconds int64  `json:"uptime_seconds"`
@@ -76,12 +80,64 @@ var (
 	startTime = time.Now().UTC()
 	logMu     sync.Mutex
 	logOutput io.Writer = os.Stdout
+	// metricsRegistry only exposes service metrics, matching the Python app.
+	metricsRegistry   = prometheus.NewRegistry()
+	httpRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Total HTTP requests handled by the service.",
+		},
+		[]string{"method", "endpoint", "status_code"},
+	)
+	httpRequestDurationSeconds = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name: "http_request_duration_seconds",
+			Help: "HTTP request duration in seconds.",
+		},
+		[]string{"method", "endpoint", "status_code"},
+	)
+	httpRequestsInProgress = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "http_requests_in_progress",
+			Help: "HTTP requests currently being processed.",
+		},
+		[]string{"method", "endpoint"},
+	)
+	endpointCallsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "devops_info_endpoint_calls_total",
+			Help: "Total calls to application endpoints.",
+		},
+		[]string{"endpoint"},
+	)
+	systemInfoDurationSeconds = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name: "devops_info_system_info_duration_seconds",
+			Help: "Time spent collecting system information.",
+		},
+	)
+	metricsHTTPHandler = promhttp.HandlerFor(
+		metricsRegistry,
+		promhttp.HandlerOpts{},
+	)
 	// endpoints is a static list used to mirror the Python app output.
 	endpoints = []EndpointInfo{
 		{Path: "/", Method: http.MethodGet, Description: "Service information."},
-		{Path: "/health", Method: http.MethodGet, Description: "Health check endpoint."},
+		{Path: "/health", Method: http.MethodGet, Description: "Health check."},
+		{Path: "/ready", Method: http.MethodGet, Description: "Readiness check."},
+		{Path: "/metrics", Method: http.MethodGet, Description: "Prometheus metrics."},
 	}
 )
+
+func init() {
+	metricsRegistry.MustRegister(
+		httpRequestsTotal,
+		httpRequestDurationSeconds,
+		httpRequestsInProgress,
+		endpointCallsTotal,
+		systemInfoDurationSeconds,
+	)
+}
 
 type responseRecorder struct {
 	http.ResponseWriter
@@ -101,6 +157,9 @@ func getServiceInfo() ServiceInfo {
 
 // getSystemInfo returns host and runtime information.
 func getSystemInfo() SystemInfo {
+	startedAt := time.Now()
+	defer systemInfoDurationSeconds.Observe(time.Since(startedAt).Seconds())
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "unknown"
@@ -206,6 +265,19 @@ func listEndpoints() []EndpointInfo {
 	return endpoints
 }
 
+func normalizeEndpointLabel(path string) string {
+	switch path {
+	case "/", "/health", "/metrics", "/ready":
+		return path
+	default:
+		return "unmatched"
+	}
+}
+
+func recordEndpointCall(endpoint string) {
+	endpointCallsTotal.WithLabelValues(endpoint).Inc()
+}
+
 func newResponseRecorder(w http.ResponseWriter) *responseRecorder {
 	return &responseRecorder{
 		ResponseWriter: w,
@@ -263,6 +335,7 @@ func queryString(r *http.Request) string {
 
 // mainHandler serves GET /.
 func mainHandler(w http.ResponseWriter, r *http.Request) {
+	recordEndpointCall("/")
 	payload := RootResponse{
 		Service:   getServiceInfo(),
 		System:    getSystemInfo(),
@@ -276,8 +349,19 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 
 // healthHandler serves GET /health.
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	payload := HealthResponse{
-		Status:        "healthy",
+	recordEndpointCall("/health")
+	writeStatusResponse(w, "healthy")
+}
+
+// readinessHandler serves GET /ready.
+func readinessHandler(w http.ResponseWriter, r *http.Request) {
+	recordEndpointCall("/ready")
+	writeStatusResponse(w, "ready")
+}
+
+func writeStatusResponse(w http.ResponseWriter, status string) {
+	payload := StatusResponse{
+		Status:        status,
 		Timestamp:     time.Now().UTC().Format("2006-01-02T15:04:05.000000-07:00"),
 		UptimeSeconds: getUptime().Seconds,
 	}
@@ -285,8 +369,21 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, payload)
 }
 
+// metricsHandler serves GET /metrics.
+func metricsHandler(w http.ResponseWriter, r *http.Request) {
+	recordEndpointCall("/metrics")
+	metricsHTTPHandler.ServeHTTP(w, r)
+}
+
 // notFound returns a JSON 404.
 func notFound(w http.ResponseWriter, r *http.Request) {
+	emitLog("WARNING", serviceLoggerName, "request returned not found", map[string]any{
+		"client_ip":   clientIP(r),
+		"method":      r.Method,
+		"path":        r.URL.Path,
+		"status_code": http.StatusNotFound,
+		"user_agent":  r.Header.Get("User-Agent"),
+	})
 	writeJSON(w, http.StatusNotFound, map[string]string{
 		"error":   "Not Found",
 		"message": "Endpoint does not exist",
@@ -300,6 +397,10 @@ func router(w http.ResponseWriter, r *http.Request) {
 		mainHandler(w, r)
 	case r.URL.Path == "/health" && r.Method == http.MethodGet:
 		healthHandler(w, r)
+	case r.URL.Path == "/metrics" && r.Method == http.MethodGet:
+		metricsHandler(w, r)
+	case r.URL.Path == "/ready" && r.Method == http.MethodGet:
+		readinessHandler(w, r)
 	default:
 		notFound(w, r)
 	}
@@ -348,6 +449,27 @@ func requestLoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func metricsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		endpoint := normalizeEndpointLabel(r.URL.Path)
+		httpRequestsInProgress.WithLabelValues(r.Method, endpoint).Inc()
+		defer httpRequestsInProgress.WithLabelValues(r.Method, endpoint).Dec()
+
+		startedAt := time.Now()
+		recorder := newResponseRecorder(w)
+
+		next.ServeHTTP(recorder, r)
+
+		statusCode := strconv.Itoa(recorder.statusCode)
+		httpRequestsTotal.WithLabelValues(r.Method, endpoint, statusCode).Inc()
+		httpRequestDurationSeconds.WithLabelValues(
+			r.Method,
+			endpoint,
+			statusCode,
+		).Observe(time.Since(startedAt).Seconds())
+	})
+}
+
 // writeJSON serializes a payload with the given status code.
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
@@ -378,7 +500,9 @@ func main() {
 		"version": serviceVersion,
 	})
 
-	handler := requestLoggingMiddleware(recoverMiddleware(http.HandlerFunc(router)))
+	handler := requestLoggingMiddleware(
+		metricsMiddleware(recoverMiddleware(http.HandlerFunc(router))),
+	)
 	if err := http.ListenAndServe(addr, handler); err != nil {
 		emitLog("ERROR", serviceLoggerName, "server error", map[string]any{
 			"error": err.Error(),

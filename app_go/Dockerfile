@@ -1,9 +1,8 @@
 FROM golang:1.25-alpine AS build
 WORKDIR /app
-# Uncomment for dependency installation
-# COPY go.mod go.sum ./
-# RUN go mod download
-COPY go.mod *.go ./
+COPY go.mod go.sum ./
+RUN go mod download
+COPY *.go ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o devops-info-service.out
 
 FROM scratch
