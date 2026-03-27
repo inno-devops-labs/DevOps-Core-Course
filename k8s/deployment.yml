@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: devops-app-py
-          image: localt0aster/devops-app-py:1.8
+          image: localt0aster/devops-app-py:1.9-dev
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -44,7 +44,7 @@ spec:
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: http
             initialDelaySeconds: 5
             periodSeconds: 5
