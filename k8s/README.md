@@ -134,11 +134,11 @@ Key choices:
 
 `kubectl get all`
 
-![](/monitoring/docs/screenshots/k8s_all.png)
+![](/past_labs/monitoring/docs/screenshots/k8s_all.png)
 
 `kubectl get pods, svc`
 
-![](/monitoring/docs/screenshots/k8s_pods_svc.png)
+![](/past_labs/monitoring/docs/screenshots/k8s_pods_svc.png)
 
 `kubectl describe deployment <name>`
 
@@ -193,9 +193,9 @@ Events:
 
 **Screenshots:**
 
-![](/monitoring/docs/screenshots/port_forward.png)
-![](/monitoring/docs/screenshots/browser_clean.png)
-![](/monitoring/docs/screenshots/browser_health.png)
+![](/past_labs/monitoring/docs/screenshots/port_forward.png)
+![](/past_labs/monitoring/docs/screenshots/browser_clean.png)
+![](/past_labs/monitoring/docs/screenshots/browser_health.png)
 
 or with `minikube`
 
