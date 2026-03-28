@@ -1,0 +1,27 @@
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Chart Source
+      url: https://github.com/prometheus-community/helm-charts
+apiVersion: v2
+appVersion: v1.11.2
+description: A Helm chart for prometheus pushgateway
+home: https://github.com/prometheus/pushgateway
+keywords:
+- pushgateway
+- prometheus
+maintainers:
+- email: gianrubio@gmail.com
+  name: gianrubio
+  url: https://github.com/gianrubio
+- email: christian.staude@staffbase.com
+  name: cstaud
+  url: https://github.com/cstaud
+- email: rootsandtrees@posteo.de
+  name: zeritti
+  url: https://github.com/zeritti
+name: prometheus-pushgateway
+sources:
+- https://github.com/prometheus/pushgateway
+type: application
+version: 3.6.0

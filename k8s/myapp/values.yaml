@@ -1,0 +1,10 @@
+replicaCount: 2
+
+image:
+  repository: zsalavat/devops-info-service-python
+  tag: latest
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
