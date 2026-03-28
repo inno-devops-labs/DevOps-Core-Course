@@ -1,0 +1,64 @@
+replicaCount: 3
+
+image:
+  repository: devops-info-service
+  tag: "k8sfix"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+probes:
+  startup:
+    enabled: true
+    path: /health
+    port: 5000
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 24
+
+  readiness:
+    enabled: true
+    path: /health
+    port: 5000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 6
+
+  liveness:
+    enabled: true
+    path: /health
+    port: 5000
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 6
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+
+containerSecurityContext:
+  capabilities:
+    drop:
+      - ALL
+
+env:
+  - name: PYTHONUNBUFFERED
+    value: "1"

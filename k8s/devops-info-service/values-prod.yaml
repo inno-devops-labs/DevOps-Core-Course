@@ -1,0 +1,26 @@
+replicaCount: 3
+
+image:
+  tag: "1.0.0"
+
+service:
+  type: LoadBalancer
+  nodePort: null
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+probes:
+  startup:
+    failureThreshold: 24
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 5
+  liveness:
+    initialDelaySeconds: 20
+    periodSeconds: 10
