@@ -5,11 +5,15 @@ import logging
 import socket
 import uvicorn
 import sys
+import asyncio
 from pythonjsonlogger import jsonlogger
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
+
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from fastapi.responses import Response
 
 # Configure logging
 
@@ -74,47 +78,98 @@ app = FastAPI(
 )
 
 
+# RED metrics
+http_requests_total = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+
+http_request_duration_seconds = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+http_requests_in_progress = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+    ["method", "endpoint"],
+)
+
+# App-specific example metrics
+devops_endpoint_calls = Counter(
+    "devops_info_endpoint_calls",
+    "DevOps info service endpoint calls",
+    ["endpoint"],
+)
+
+system_info_duration = Histogram(
+    "devops_info_system_collection_seconds",
+    "Time spent collecting system info (seconds)",
+)
+
+
+def endpoint_label(request: Request) -> str:
+    route = request.scope.get("route")
+    if route and hasattr(route, "path"):
+        return route.path
+    return "unmatched"
+
+
 @app.middleware("http")
-async def access_log_middleware(request: Request, call_next):
-    start = time.perf_counter()
+async def telemetry_middleware(request: Request, call_next):
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
+    method = request.method
     client_ip = request.client.host if request.client else "unknown"
+
+    endpoint = request.url.path
+
+    start = time.perf_counter()
+    status = "500"
+
+    # active requests: +1 в начале
+    http_requests_in_progress.labels(method=method, endpoint=endpoint).inc()
 
     try:
         response = await call_next(request)
-        status_code = response.status_code
+        status = str(response.status_code)
         return response
-    except Exception:
-        duration_ms = int((time.perf_counter() - start) * 1000)
-        logger.exception(
-            "unhandled_exception",
+    finally:
+        duration = time.perf_counter() - start
+        duration_ms = int(duration * 1000)
+
+        # active requests: -1 в конце
+        http_requests_in_progress.labels(method=method, endpoint=endpoint).dec()
+
+        # counters / histograms
+        http_requests_total.labels(
+            method=method,
+            endpoint=endpoint,
+            status_code=status,
+        ).inc()
+
+        http_request_duration_seconds.labels(
+            method=method,
+            endpoint=endpoint,
+        ).observe(duration)
+
+        # logs
+        logger.info(
+            "http_request",
             extra={
                 "service": SERVICE_NAME,
                 "version": SERVICE_VERSION,
                 "hostname": socket.gethostname(),
-                "method": request.method,
-                "path": request.url.path,
-                "status_code": 500,
+                "method": method,
+                "path": endpoint,
+                "status_code": int(status),
                 "client_ip": client_ip,
                 "duration_ms": duration_ms,
             },
         )
-        raise
-    finally:
-        if "status_code" in locals():
-            duration_ms = int((time.perf_counter() - start) * 1000)
-            logger.info(
-                "http_request",
-                extra={
-                    "service": SERVICE_NAME,
-                    "version": SERVICE_VERSION,
-                    "hostname": socket.gethostname(),
-                    "method": request.method,
-                    "path": request.url.path,
-                    "status_code": status_code,
-                    "client_ip": client_ip,
-                    "duration_ms": duration_ms,
-                },
-            )
 
 
 def get_uptime_seconds():
@@ -162,12 +217,17 @@ def client_ip_from_request(request: Request) -> str:
         return request.client.host
     return "unknown"
 
-
 @app.get("/", response_class=JSONResponse)
 async def root(request: Request):
     """
     Main endpoint that returns service, system, and runtime information.
     """
+
+    devops_endpoint_calls.labels(endpoint="/").inc()
+
+    with system_info_duration.time():
+        sysinfo = system_info()
+
     up = get_uptime_seconds()
 
     return {
@@ -177,7 +237,7 @@ async def root(request: Request):
             "description": SERVICE_DESCRIPTION,
             "framework": FRAMEWORK,
         },
-        "system": system_info(),
+        "system": sysinfo,
         "runtime": {
             "uptime_seconds": up['seconds'],
             "uptime_human": up['human'],
@@ -219,6 +279,22 @@ async def health(request: Request):
     }
 
 
+@app.get("/debug/error")
+async def debug_error(code: int = 500):
+    if code not in (400, 404, 500):
+        raise HTTPException(status_code=400, detail="allowed: 400,404,500")
+    raise HTTPException(status_code=code, detail=f"Simulated {code}")
+
+
+@app.get("/debug/slow")
+async def debug_slow(seconds: float = 5.0):
+    await asyncio.sleep(seconds)
+    return {
+        "message": "Slow request finished",
+        "slept_seconds": seconds,
+    }
+    
+
 @app.exception_handler(500)
 async def internal_server_error(request: Request, exc: HTTPException):
     logger.error(f"500 Error: {str(exc)} for {request.url.path}")
@@ -250,5 +326,10 @@ async def not_found_exception(request: Request, exc: HTTPException):
     )
 
 
+@app.get("/metrics")
+async def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 if __name__ == "__main__":
-    uvicorn.run("app:app", host=HOST, port=PORT, reload=DEBUG)
+    uvicorn.run(app, host=HOST, port=PORT, reload=DEBUG)
