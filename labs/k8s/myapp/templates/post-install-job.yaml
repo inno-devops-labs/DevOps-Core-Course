@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "myapp.fullname" . }}-post-install"
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+  annotations:
+    # 1. Тип хука: запускаем ПОСЛЕ установки
+    "helm.sh/hook": post-install
+    # 2. Вес: ставим положительный
+    "helm.sh/hook-weight": "5"
+    # 3. Политика удаления: убираем за собой мусор
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+        - name: post-install-job
+          image: busybox
+          # Имитируем Smoke-тест или проверку живости
+          command: ['sh', '-c', 'echo "Running Smoke Tests..." && sleep 5 && echo "All tests passed!"']
+      restartPolicy: Never
