@@ -1,0 +1,31 @@
+# values.yaml
+replicaCount: 5
+
+image:
+  repository: reiterwurger/app
+  tag: "v1"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8080
+  nodePort: 30080
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+
+# Здоровье приложения (согласно требованиям, не комментируем, а настраиваем)
+livenessProbe:
+  path: /health
+  port: 8080
+  initialDelaySeconds: 8
+  periodSeconds: 5

@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "myapp.fullname" . }}-pre-install"
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+  annotations:
+    # 1. Тип хука: запускаем ДО установки
+    "helm.sh/hook": pre-install
+    # 2. Вес: чем меньше цифра, тем раньше запустится (если хуков несколько)
+    "helm.sh/hook-weight": "-5"
+    # 3. Политика удаления: удалить этот Job, как только он успешно отработает
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      containers:
+        - name: pre-install-job
+          image: busybox
+          # Имитируем полезную работу (например, миграцию БД)
+          command: ['sh', '-c', 'echo "Starting DB migrations..." && sleep 5 && echo "Done!"']
+      restartPolicy: Never
