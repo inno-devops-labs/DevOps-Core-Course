@@ -1,0 +1,31 @@
+{{- if .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "devops-info.postInstallHookName" . }}
+  labels:
+    {{- include "devops-info.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.postInstall.weight }}"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      name: {{ include "devops-info.postInstallHookName" . }}
+      labels:
+        {{- include "devops-info.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-check
+          image: {{ .Values.hooks.image }}
+          command:
+            - sh
+            - -c
+            - >-
+              echo "Running smoke check";
+              wget -qO- http://{{ include "devops-info.fullname" . }}:{{ .Values.service.port }}/health;
+              echo "Post-install smoke check completed"
+{{- end }}

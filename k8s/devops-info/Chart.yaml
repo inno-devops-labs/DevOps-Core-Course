@@ -1,0 +1,16 @@
+apiVersion: v2
+name: devops-info
+description: Helm chart for deploying the DevOps Info Flask app from Lab 09
+type: application
+version: 0.1.0
+appVersion: "cilc"
+keywords:
+  - flask
+  - python
+  - devops
+  - kubernetes
+home: https://github.com/igor
+sources:
+  - https://github.com/igor/DevOps-Core-Course
+maintainers:
+  - name: Igor

@@ -1,0 +1,15 @@
+1. Release name: {{ .Release.Name }}
+2. Namespace: {{ .Release.Namespace }}
+3. Service: {{ include "devops-info.fullname" . }}
+
+Access options:
+{{- if eq .Values.service.type "NodePort" }}
+- NodePort service detected. Run:
+  kubectl get svc {{ include "devops-info.fullname" . }} -n {{ .Release.Namespace }} -o wide
+{{- else if eq .Values.service.type "LoadBalancer" }}
+- LoadBalancer service detected. Run:
+  kubectl get svc {{ include "devops-info.fullname" . }} -n {{ .Release.Namespace }} -w
+{{- end }}
+
+Health check:
+kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
