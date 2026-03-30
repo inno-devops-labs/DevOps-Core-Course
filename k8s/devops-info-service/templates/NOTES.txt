@@ -1,0 +1,17 @@
+DevOps Info Service has been deployed.
+
+Release:    {{ .Release.Name }}
+Namespace:  {{ .Release.Namespace }}
+Replicas:   {{ .Values.replicaCount }}
+
+{{- if eq .Values.service.type "NodePort" }}
+
+Access the application via NodePort:
+  export NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+  curl http://$NODE_IP:{{ .Values.service.nodePort }}/health
+{{- else if eq .Values.service.type "LoadBalancer" }}
+
+Access the application via LoadBalancer:
+  export LB_IP=$(kubectl get svc {{ include "devops-info-service.fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  curl http://$LB_IP:{{ .Values.service.port }}/health
+{{- end }}

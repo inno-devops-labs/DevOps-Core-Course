@@ -1,0 +1,5 @@
+apiVersion: v2
+name: common-lib
+description: Shared library chart with common templates
+type: library
+version: 0.1.0

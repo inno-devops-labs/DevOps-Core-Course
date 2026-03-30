@@ -1,0 +1,11 @@
+apiVersion: v2
+name: devops-echo-service
+description: A simple echo service to demonstrate library chart usage
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: "file://../common-lib"
