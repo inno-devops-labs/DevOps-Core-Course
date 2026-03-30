@@ -1,0 +1,1 @@
+App2 nginx release "{{ .Release.Name }}" — Service {{ .Values.service.name }} :{{ .Values.service.port }} ({{ .Values.service.type }}).

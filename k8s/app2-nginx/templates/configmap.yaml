@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMapName }}
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+data:
+  index.html: |
+{{ .Values.html | nindent 4 }}

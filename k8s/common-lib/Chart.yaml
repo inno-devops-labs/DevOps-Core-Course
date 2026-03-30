@@ -1,0 +1,5 @@
+apiVersion: v2
+name: common-lib
+description: Shared named templates (labels, names) for DevOps course charts
+type: library
+version: 0.1.0

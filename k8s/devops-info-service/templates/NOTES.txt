@@ -1,0 +1,12 @@
+Release "{{ .Release.Name }}" installed in namespace "{{ .Release.Namespace }}".
+
+Service: {{ include "common-lib.fullname" . }} (type {{ .Values.service.type }})
+
+Quick checks:
+  kubectl get pods,svc -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if eq .Values.service.type "NodePort" }}
+  minikube service {{ include "common-lib.fullname" . }} -n {{ .Release.Namespace }}
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  kubectl get svc -n {{ .Release.Namespace }} {{ include "common-lib.fullname" . }} -w
+{{- end }}

@@ -1,0 +1,50 @@
+nameOverride: app2-nginx
+fullnameOverride: app2-nginx
+
+configMapName: app2-html
+
+replicaCount: 1
+
+image:
+  repository: nginx
+  tag: 1.27-alpine
+  pullPolicy: IfNotPresent
+
+service:
+  name: app2-service
+  type: ClusterIP
+  port: 80
+  targetPort: http
+
+container:
+  portName: http
+  port: 80
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 64Mi
+  requests:
+    cpu: 50m
+    memory: 32Mi
+
+html: |
+  <!DOCTYPE html>
+  <html lang="en">
+  <head><meta charset="utf-8"><title>App 2</title></head>
+  <body><h1>Second application (Lab 9 bonus)</h1><p>nginx + ConfigMap (Helm)</p></body>
+  </html>
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 2
+  periodSeconds: 5

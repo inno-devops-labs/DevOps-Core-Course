@@ -1,0 +1,8 @@
+apiVersion: v2
+name: app2-nginx
+version: 0.1.0
+dependencies:
+  - name: common-lib
+    repository: file://../common-lib
+    version: 0.1.0
+    digest: sha256:f3b6835081f0d08c20ca530177b71122a2ba4347bcf78cc2bd7b6c36ca00c0b3

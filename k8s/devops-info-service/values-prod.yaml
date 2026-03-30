@@ -1,0 +1,34 @@
+# Production: HA replicas, tighter resources, LoadBalancer-ready service type
+replicaCount: 3
+
+image:
+  tag: latest
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+service:
+  type: LoadBalancer
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 3

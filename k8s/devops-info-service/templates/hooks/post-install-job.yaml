@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common-lib.fullname" . }}-post-install
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": {{ .Values.hooks.postInstall.weight | quote }}
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 120
+  template:
+    metadata:
+      name: {{ include "common-lib.fullname" . }}-post-install
+      labels:
+        {{- include "common-lib.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install
+          image: {{ .Values.hooks.postInstall.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Post-install: validating workload for release {{ .Release.Name }}"
+              sleep 3
+              echo "Post-install validation passed"

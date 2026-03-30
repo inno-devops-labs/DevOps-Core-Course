@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common-lib.fullname" . }}-pre-install
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": {{ .Values.hooks.preInstall.weight | quote }}
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 120
+  template:
+    metadata:
+      name: {{ include "common-lib.fullname" . }}-pre-install
+      labels:
+        {{- include "common-lib.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install
+          image: {{ .Values.hooks.preInstall.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Pre-install: validating release {{ .Release.Name }} in {{ .Release.Namespace }}"
+              sleep 3
+              echo "Pre-install completed"
