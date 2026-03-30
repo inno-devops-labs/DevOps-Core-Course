@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  tag: "lab9"
+
+service:
+  type: NodePort
+
+env:
+  RELEASE_ID: "dev"
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "150m"
+    memory: "128Mi"
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 5

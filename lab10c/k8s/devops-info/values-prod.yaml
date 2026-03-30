@@ -1,0 +1,27 @@
+replicaCount: 3
+
+image:
+  tag: "lab9"
+
+service:
+  type: LoadBalancer
+  nodePort: null
+
+env:
+  RELEASE_ID: "prod"
+
+resources:
+  requests:
+    cpu: "150m"
+    memory: "192Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+livenessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+
+readinessProbe:
+  initialDelaySeconds: 8
+  periodSeconds: 5
