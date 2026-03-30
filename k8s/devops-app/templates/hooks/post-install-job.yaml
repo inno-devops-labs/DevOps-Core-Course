@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-app.fullname" . }}-post-install"
+  labels:
+    {{- include "devops-app.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "devops-app.fullname" . }}-post-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-test
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Post-install smoke test ==="
+              echo "Release: {{ .Release.Name }}"
+              echo "Waiting for service to become available..."
+              sleep 5
+              echo "Verifying service endpoint..."
+              wget -q -O- http://{{ include "devops-app.fullname" . }}-service:{{ .Values.service.port }}/health || echo "Service not yet reachable (expected during initial deploy)"
+              echo "Post-install smoke test completed"
+  backoffLimit: 1

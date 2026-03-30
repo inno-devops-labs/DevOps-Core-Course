@@ -1,0 +1,20 @@
+{{ .Chart.Name }} has been deployed!
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Replicas:  {{ .Values.replicaCount }}
+
+{{- if eq .Values.service.type "NodePort" }}
+
+Access via NodePort:
+  export NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+  curl http://$NODE_IP:{{ .Values.service.nodePort }}/
+
+{{- else if eq .Values.service.type "LoadBalancer" }}
+
+Access via LoadBalancer (wait for external IP):
+  kubectl get svc {{ include "devops-app.fullname" . }}-service -w
+
+{{- end }}
+
+Health check: curl http://<SERVICE_IP>/health

@@ -1,0 +1,16 @@
+apiVersion: v2
+name: devops-app2
+description: DevOps info service (second instance) Helm chart
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - python
+  - web
+  - devops
+maintainers:
+  - name: Egor Torshin
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: "file://../common-lib"
