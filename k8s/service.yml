@@ -1,4 +1,3 @@
-# Exposes devops-info-service Deployment via NodePort (local cluster access)
 apiVersion: v1
 kind: Service
 metadata:
@@ -14,5 +13,4 @@ spec:
       protocol: TCP
       port: 80
       targetPort: http
-      # Optional fixed port (30000–32767); omit to assign automatically
       nodePort: 30080

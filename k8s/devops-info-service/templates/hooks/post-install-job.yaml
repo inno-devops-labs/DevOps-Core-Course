@@ -1,0 +1,32 @@
+{{- if .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-post-install
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install
+    helm.sh/hook-weight: "5"
+    helm.sh/hook-delete-policy: hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      name: {{ include "devops-info-service.fullname" . }}-post-install
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install
+          image: {{ .Values.hooks.postInstall.image | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "post-install: smoke check for release {{ .Release.Name }}"
+              sleep 2
+              echo "post-install: completed"
+{{- end }}

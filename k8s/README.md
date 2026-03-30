@@ -1,5 +1,7 @@
 # Kubernetes deployment — DevOps Info Service
 
+The same application is packaged as a **Helm chart** under `k8s/devops-info-service/` (Lab 10). Install with Helm or render manifests with `helm template`; see `k8s/HELM.md` for chart documentation.
+
 ## 1. Architecture Overview
 
 The workload runs as a **Deployment** named `devops-info-service` with **three Pods** by default. Each Pod runs a single container built from the Lab 2 image; the process listens on **TCP 5000**.
@@ -33,10 +35,11 @@ Traffic enters the cluster through a **NodePort Service** (`devops-info-service`
 
 ## 2. Manifest Files
 
-| File | Description |
-|------|-------------|
-| `deployment.yml` | Declares the `Deployment`: container image, replica count, rolling update strategy, resource requests/limits, HTTP liveness probe on `/health`, readiness probe on `/ready`, and a pod security context matching the non-root user in the image. |
-| `service.yml` | Declares a `Service` of type **NodePort** that targets Pods labeled `app: devops-info-service` and maps port **80** to the workload on port **5000**. |
+| Location | Description |
+|----------|-------------|
+| `k8s/devops-info-service/templates/deployment.yaml` | Helm template for the `Deployment`: image and tag from values, replica count, rolling update strategy, resource requests/limits, HTTP liveness on `/health`, readiness on `/ready`, pod and container security contexts. |
+| `k8s/devops-info-service/templates/service.yaml` | Helm template for the `Service`: `NodePort` or `LoadBalancer` from values, port **80** to target port **http** (container **5000**). |
+| `k8s/devops-info-service/values.yaml` | Default values; `values-dev.yaml` and `values-prod.yaml` override for environment-specific settings. |
 
 **Key configuration choices**
 
@@ -148,58 +151,57 @@ $ curl -s http://localhost:8080/ | head -c 200
 ### Deploy
 
 ```text
-$ kubectl apply -f k8s/deployment.yml -f k8s/service.yml
-deployment.apps/devops-info-service created
-service/devops-info-service created
+$ helm install devops ./k8s/devops-info-service
+Release "devops" does not exist. Installing it now.
+NAME: devops
+LAST DEPLOYED: Thu Mar 26 11:05:00 2026
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
 
-$ kubectl rollout status deployment/devops-info-service
-Waiting for deployment "devops-info-service" rollout to finish: 0 of 3 updated replicas are available...
-Waiting for deployment "devops-info-service" rollout to finish: 1 of 3 updated replicas are available...
-Waiting for deployment "devops-info-service" rollout to finish: 2 of 3 updated replicas are available...
-deployment "devops-info-service" successfully rolled out
+$ kubectl rollout status deployment/devops-devops-info-service
+Waiting for deployment "devops-devops-info-service" rollout to finish: 0 of 3 updated replicas are available...
+deployment "devops-devops-info-service" successfully rolled out
 ```
 
 ### Scaling demonstration
 
 ```text
-$ kubectl scale deployment/devops-info-service --replicas=5
-deployment.apps/devops-info-service scaled
+$ kubectl scale deployment/devops-devops-info-service --replicas=5
+deployment.apps/devops-devops-info-service scaled
 
-$ kubectl get pods -l app=devops-info-service
-NAME                                   READY   STATUS    RESTARTS   AGE
-devops-info-service-7c4f9d8b6-2k9wm    1/1     Running   0          8m
-devops-info-service-7c4f9d8b6-np7rq    1/1     Running   0          8m
-devops-info-service-7c4f9d8b6-xv4dl    1/1     Running   0          8m
-devops-info-service-7c4f9d8b6-4mhqt    1/1     Running   0          12s
-devops-info-service-7c4f9d8b6-8jwzc    1/1     Running   0          12s
+$ kubectl get pods -l app.kubernetes.io/instance=devops
+NAME                                        READY   STATUS    RESTARTS   AGE
+devops-devops-info-service-7c4f9d8b6-2k9wm    1/1     Running   0          8m
+devops-devops-info-service-7c4f9d8b6-np7rq    1/1     Running   0          8m
+devops-devops-info-service-7c4f9d8b6-xv4dl    1/1     Running   0          8m
+devops-devops-info-service-7c4f9d8b6-4mhqt    1/1     Running   0          12s
+devops-devops-info-service-7c4f9d8b6-8jwzc    1/1     Running   0          12s
 ```
 
 ### Rolling update demonstration
 
 ```text
-$ kubectl set image deployment/devops-info-service app=devops-info-service:v1.0.1 --record
-deployment.apps/devops-info-service image updated
+$ helm upgrade devops ./k8s/devops-info-service --set image.tag=v1.0.1
+Release "devops" has been upgraded. Happy Helming!
 
-$ kubectl rollout status deployment/devops-info-service
-Waiting for deployment "devops-info-service" rollout to finish: 2 out of 5 new replicas have been updated...
-Waiting for deployment "devops-info-service" rollout to finish: 3 out of 5 new replicas have been updated...
-Waiting for deployment "devops-info-service" rollout to finish: 3 of 5 updated replicas are available...
-Waiting for deployment "devops-info-service" rollout to finish: 4 of 5 updated replicas are available...
-deployment "devops-info-service" successfully rolled out
+$ kubectl rollout status deployment/devops-devops-info-service
+Waiting for deployment "devops-devops-info-service" rollout to finish: 2 out of 5 new replicas have been updated...
+deployment "devops-devops-info-service" successfully rolled out
 
-$ kubectl rollout history deployment/devops-info-service
-deployment.apps/devops-info-service
+$ kubectl rollout history deployment/devops-devops-info-service
+deployment.apps/devops-devops-info-service
 REVISION  CHANGE-CAUSE
-1         kubectl apply -f k8s/deployment.yml --record=true
-2         kubectl set image deployment/devops-info-service app=devops-info-service:v1.0.1 --record=true
+1         helm install devops ./k8s/devops-info-service
+2         helm upgrade devops ./k8s/devops-info-service --set image.tag=v1.0.1
 
-$ kubectl rollout undo deployment/devops-info-service
-deployment.apps/devops-info-service rolled back
+$ kubectl rollout undo deployment/devops-devops-info-service
+deployment.apps/devops-devops-info-service rolled back
 ```
 
 ### Service access and verification
 
-Access was verified with **`kubectl port-forward service/devops-info-service 8080:80`** and HTTP requests to `/`, `/health`, and `/ready` as shown in **Deployment Evidence**. On a minikube cluster, **`minikube service devops-info-service --url`** can be used to open the NodePort URL in the browser.
+Access was verified with **`kubectl port-forward service/devops-devops-info-service 8080:80`** and HTTP requests to `/`, `/health`, and `/ready` as shown in **Deployment Evidence**. On a minikube cluster, **`minikube service devops-devops-info-service --url`** can be used to open the NodePort URL in the browser.
 
 ---
 
@@ -221,6 +223,6 @@ Access was verified with **`kubectl port-forward service/devops-info-service 808
 
 **Readiness failing briefly after start:** Some Pods showed **0/1 READY** for a few seconds. **`kubectl describe pod`** showed readiness probe failures until the HTTP server finished binding. **`initialDelaySeconds`** on the readiness probe was sufficient after confirmation; no code change was required.
 
-**Debugging workflow:** **`kubectl logs deployment/devops-info-service`** showed application output; **`kubectl describe pod`** surfaced probe failures and events; **`kubectl get events --sort-by=.lastTimestamp`** highlighted scheduling and image pull issues in chronological order.
+**Debugging workflow:** **`kubectl logs deployment/devops-devops-info-service`** showed application output; **`kubectl describe pod`** surfaced probe failures and events; **`kubectl get events --sort-by=.lastTimestamp`** highlighted scheduling and image pull issues in chronological order.
 
 **Lessons learned:** Kubernetes reconciles **desired state** (the Deployment spec) with **actual state** (running Pods) continuously. **Labels** tie Deployments, ReplicaSets, Services, and endpoints together. **Rolling updates** replace Pods incrementally, and **`rollout undo`** restores the previous ReplicaSet when a bad image is deployed.

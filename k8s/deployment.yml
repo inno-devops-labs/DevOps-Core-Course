@@ -21,7 +21,6 @@ spec:
         app: devops-info-service
         component: api
     spec:
-      # Enforce non-root; UID 1000 matches `appuser` in Dockerfile (python:3.11-slim)
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

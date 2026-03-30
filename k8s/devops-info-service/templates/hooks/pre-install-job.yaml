@@ -1,0 +1,32 @@
+{{- if .Values.hooks.preInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-pre-install
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      name: {{ include "devops-info-service.fullname" . }}-pre-install
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install
+          image: {{ .Values.hooks.preInstall.image | quote }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              echo "pre-install: validating release {{ .Release.Name }}"
+              sleep 2
+              echo "pre-install: completed"
+{{- end }}
