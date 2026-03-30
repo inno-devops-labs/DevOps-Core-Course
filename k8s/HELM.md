@@ -61,7 +61,7 @@ Helm is a package manager for Kubernetes. Instead of copying raw YAML files and 
 - upgrades, rollbacks, and uninstall operations are standardized
 - hooks allow small lifecycle actions during install and upgrade
 
-Official Helm documentation describes charts as packages of Kubernetes resources and explains chart structure, values, and templates. Hooks are documented as special resources executed during release lifecycle events. citeturn194483search2turn194483search1
+Official Helm documentation describes charts as packages of Kubernetes resources and explains chart structure, values, and templates. Hooks are documented as special resources executed during release lifecycle events. 
 
 ### Helm installation
 
@@ -81,11 +81,11 @@ helm search repo prometheus
 helm show chart prometheus-community/prometheus
 ```
 
-Helm’s official site documents installation and general usage, and the chart guide explains the standard chart structure. citeturn194483search0turn194483search2turn194483search8
+Helm’s official site documents installation and general usage, and the chart guide explains the standard chart structure. 
 
 ### Important note about Helm 4
 
-The lab text mentions Helm 4.x, while some Helm documentation pages still note that certain template guide pages are being updated for Helm 4. The values system and chart structure used in this lab remain the normal Helm chart pattern. citeturn194483search5turn194483search0
+The lab text mentions Helm 4.x, while some Helm documentation pages still note that certain template guide pages are being updated for Helm 4. The values system and chart structure used in this lab remain the normal Helm chart pattern. 
 
 ---
 
@@ -187,7 +187,7 @@ Configuration:
 - hook weight: `5`
 - delete policy: `before-hook-creation,hook-succeeded`
 
-Official Helm docs explain that hook ordering is controlled by `helm.sh/hook-weight`, and cleanup is controlled by `helm.sh/hook-delete-policy`. citeturn194483search1turn194483search16
+Official Helm docs explain that hook ordering is controlled by `helm.sh/hook-weight`, and cleanup is controlled by `helm.sh/hook-delete-policy`. 
 
 Why this policy is good here:
 
@@ -244,7 +244,7 @@ helm rollback python-app-dev 1
 helm uninstall python-app-dev
 ```
 
-Helm documentation notes that uninstall removes the release record unless `--keep-history` is used. citeturn194483search12
+Helm documentation notes that uninstall removes the release record unless `--keep-history` is used. 
 
 ---
 
@@ -322,7 +322,7 @@ kubectl describe job python-app-dev-post-install
 kubectl get pods
 ```
 
-If deletion policy works quickly, the Jobs may disappear after success. That is normal and is exactly what `hook-succeeded` is supposed to do. Helm docs explicitly note that hook resources are not automatically tracked like standard release resources, so delete policy matters. citeturn194483search1
+If deletion policy works quickly, the Jobs may disappear after success. That is normal and is exactly what `hook-succeeded` is supposed to do. Helm docs explicitly note that hook resources are not automatically tracked like standard release resources, so delete policy matters. 
 
 ### Application accessibility verification (Evidence)
 
