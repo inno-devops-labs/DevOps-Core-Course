@@ -1,0 +1,76 @@
+replicaCount: 3
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: python-app
+  tag: "latest"
+  pullPolicy: Never
+
+app:
+  name: python-app
+  version: lab09
+  description: DevOps course info service
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+rollingUpdate:
+  maxSurge: 1
+  maxUnavailable: 0
+
+podAnnotations: {}
+podLabels: {}
+
+hooks:
+  enabled: true
+  image:
+    repository: python-app
+    tag: "latest"
+    pullPolicy: Never
+  preInstall:
+    enabled: true
+    weight: -5
+    deletePolicy: before-hook-creation,hook-succeeded
+    command:
+      - sh
+      - -c
+      - echo '[pre-install] validating Helm release values' && sleep 3 && echo '[pre-install] validation completed'
+  postInstall:
+    enabled: true
+    weight: 5
+    deletePolicy: before-hook-creation,hook-succeeded
+    command:
+      - sh
+      - -c
+      - echo '[post-install] smoke test placeholder' && sleep 3 && echo '[post-install] installation looks good'
