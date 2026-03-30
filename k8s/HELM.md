@@ -230,7 +230,7 @@ helm install --dry-run --debug python-app-dev k8s/python-app -f k8s/python-app/v
 helm upgrade python-app-dev k8s/python-app -f k8s/python-app/values-prod.yaml
 ```
 
-The `helm upgrade` command updates an existing release to a new chart version or configuration. citeturn194483search20
+The `helm upgrade` command updates an existing release to a new chart version or configuration.
 
 ### Rollback release
 
