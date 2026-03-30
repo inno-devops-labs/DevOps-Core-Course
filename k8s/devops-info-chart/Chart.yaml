@@ -4,6 +4,7 @@ description: Helm chart for the DevOps Info Service (Python Flask app)
 type: application
 version: 0.1.0
 appVersion: "lab02"
+icon: https://helm.sh/img/helm.svg
 keywords:
   - python
   - flask

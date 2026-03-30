@@ -4,6 +4,7 @@ description: Helm chart for the DevOps Info Service v2 (http-echo app)
 type: application
 version: 0.1.0
 appVersion: "latest"
+icon: https://helm.sh/img/helm.svg
 keywords:
   - echo
   - http

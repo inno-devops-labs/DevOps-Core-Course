@@ -1,431 +1,393 @@
-# Helm Chart Documentation — DevOps Info Service
+# Helm Chart Documentation - Lab 10
 
-## Task 1 — Helm Fundamentals
+Date of validation: March 30, 2026
 
-### Installation
+## Chart Overview
 
-```bash
-# Install Helm (Windows via winget)
-winget install Helm.Helm
+### Repository structure
 
-# Verify installation
-helm version
-# version.BuildInfo{Version:"v4.x.x", ...}
-```
-
-### Exploring Public Charts
-
-```bash
-# Add Prometheus community repo
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-
-# Search for charts
-helm search repo prometheus
-
-# Inspect a chart
-helm show chart prometheus-community/prometheus
-```
-
-### Helm's Value Proposition
-
-| Without Helm | With Helm |
-|---|---|
-| Static YAML files per environment | Single chart + values overrides |
-| Manual resource tracking | `helm list` shows all releases |
-| No rollback mechanism | `helm rollback <release> <revision>` |
-| Duplicate labels/helpers | Shared library templates |
-| No dependency management | `Chart.yaml` dependencies |
-
----
-
-## Task 2 — Chart Structure
-
-### Directory Layout
-
-```
+```text
 k8s/
-├── devops-info-chart/          # Main application chart (Task 2–4)
-│   ├── Chart.yaml              # Chart metadata and dependencies
-│   ├── values.yaml             # Default configuration values
-│   ├── values-dev.yaml         # Dev environment overrides (Task 3)
-│   ├── values-prod.yaml        # Prod environment overrides (Task 3)
-│   ├── charts/
-│   │   └── common-lib/         # Embedded library chart dependency
-│   └── templates/
-│       ├── _helpers.tpl        # Chart-specific name/fullname helpers
-│       ├── deployment.yaml     # Deployment template
-│       ├── service.yaml        # Service template
-│       ├── NOTES.txt           # Post-install instructions
-│       └── hooks/
-│           ├── pre-install-job.yaml   # Pre-install validation job
-│           └── post-install-job.yaml  # Post-install smoke test job
-│
-├── app2-chart/                 # Second app chart (Bonus)
-│   ├── Chart.yaml
-│   ├── values.yaml
-│   ├── values-dev.yaml
-│   ├── charts/
-│   │   └── common-lib/         # Same embedded library
-│   └── templates/
-│       ├── _helpers.tpl
-│       ├── deployment.yaml
-│       ├── service.yaml
-│       └── NOTES.txt
-│
-└── common-lib/                 # Source of the library chart (Bonus)
-    ├── Chart.yaml
-    └── templates/
-        └── _helpers.tpl        # Shared: common.labels, common.selectorLabels,
-                                #         common.fullname, common.name, common.chart
+|-- devops-info-chart/           # Main app chart (Task 2-4)
+|   |-- Chart.yaml
+|   |-- values.yaml
+|   |-- values-dev.yaml
+|   |-- values-prod.yaml
+|   |-- charts/
+|   |   `-- common-lib/          # Embedded dependency
+|   `-- templates/
+|       |-- deployment.yaml
+|       |-- service.yaml
+|       |-- NOTES.txt
+|       `-- hooks/
+|           |-- pre-install-job.yaml
+|           `-- post-install-job.yaml
+|
+|-- app2-chart/                  # Second app chart (Bonus)
+|   |-- Chart.yaml
+|   |-- values.yaml
+|   |-- values-dev.yaml
+|   |-- charts/
+|   |   `-- common-lib/
+|   `-- templates/
+|       |-- deployment.yaml
+|       |-- service.yaml
+|       `-- NOTES.txt
+|
+`-- common-lib/                  # Library chart (Bonus)
+    |-- Chart.yaml
+    `-- templates/
+        `-- _helpers.tpl
 ```
 
-### Key Template Files
+### Key template files and purpose
 
-| File | Purpose |
+- `devops-info-chart/templates/deployment.yaml`: templated Deployment (image, replicas, resources, probes, strategy, env).
+- `devops-info-chart/templates/service.yaml`: templated Service (type/ports/conditional NodePort).
+- `devops-info-chart/templates/hooks/pre-install-job.yaml`: pre-install validation hook.
+- `devops-info-chart/templates/hooks/post-install-job.yaml`: post-install smoke-test hook.
+- `common-lib/templates/_helpers.tpl`: shared naming/labels helpers (`common.fullname`, `common.labels`, `common.selectorLabels`, etc.).
+
+### Values organization strategy
+
+`values.yaml` contains sane defaults; `values-dev.yaml` and `values-prod.yaml` override only environment-specific parts.
+
+- `replicaCount`
+- `image.repository`, `image.tag`, `image.pullPolicy`
+- `service.type`, `service.port`, `service.targetPort`, optional `service.nodePort`
+- `resources.requests/limits`
+- `livenessProbe` and `readinessProbe` (not commented out)
+- `strategy`
+
+## Helm Fundamentals (Task 1)
+
+### Helm 4 installation and version
+
+Global `helm` in PATH is not used for Lab 10 because this machine has Helm 3 there.
+Lab validation is done with local Helm 4 binary:
+
+`tools/helm4/windows-amd64/helm.exe`
+
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe version
+version.BuildInfo{Version:"v4.1.3", GitCommit:"c94d381b03be117e7e57908edbf642104e00eb8f", GitTreeState:"clean", GoVersion:"go1.25.8", KubeClientVersion:"v1.35"}
+```
+
+### Public chart exploration
+
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe repo add prometheus-community https://prometheus-community.github.io/helm-charts --repository-config .tmp/helm-repo/repositories.yaml --repository-cache .tmp/helm-repo/cache
+"prometheus-community" has been added to your repositories
+
+PS> & .\tools\helm4\windows-amd64\helm.exe repo update --repository-config .tmp/helm-repo/repositories.yaml --repository-cache .tmp/helm-repo/cache
+...Successfully got an update from the "prometheus-community" chart repository
+
+PS> & .\tools\helm4\windows-amd64\helm.exe search repo prometheus --repository-config .tmp/helm-repo/repositories.yaml --repository-cache .tmp/helm-repo/cache
+NAME                                           CHART VERSION  APP VERSION  DESCRIPTION
+prometheus-community/prometheus                28.14.1        v3.10.0      Prometheus is a monitoring system...
+...
+
+PS> & .\tools\helm4\windows-amd64\helm.exe show chart prometheus-community/prometheus --repository-config .tmp/helm-repo/repositories.yaml --repository-cache .tmp/helm-repo/cache
+apiVersion: v2
+appVersion: v3.10.0
+description: Prometheus is a monitoring system and time series database.
+...
+```
+
+### Helm value proposition (brief)
+
+- Reusable chart + environment overrides instead of many copied YAML manifests.
+- Release lifecycle commands (`install`, `upgrade`, `rollback`, `uninstall`).
+- Standardized packaging and dependency management.
+- Hooks for release lifecycle automation.
+
+## Configuration Guide
+
+### Important values
+
+| Value | Purpose |
 |---|---|
-| `Chart.yaml` | Chart name, version, appVersion, and dependency on `common-lib` |
-| `values.yaml` | Sensible production-like defaults |
-| `_helpers.tpl` | Chart-specific `fullname` and `name` helpers |
-| `deployment.yaml` | Templated Deployment using values + common-lib labels |
-| `service.yaml` | Templated Service with conditional NodePort |
-| `NOTES.txt` | Post-install instructions shown after `helm install` |
-| `hooks/pre-install-job.yaml` | Runs before deployment — validates configuration |
-| `hooks/post-install-job.yaml` | Runs after deployment — smoke tests |
+| `replicaCount` | Number of pods |
+| `image.repository` / `image.tag` | Container image selection |
+| `service.type` | `NodePort` in dev, `LoadBalancer` in prod |
+| `resources` | CPU/memory requests and limits |
+| `livenessProbe` / `readinessProbe` | Health checks |
+| `strategy` | RollingUpdate behavior |
 
-### Values Organization
+### Environment specific files
 
-```yaml
-replicaCount: 3           # Pod replica count
+- `values-dev.yaml`
+  - `replicaCount: 1`
+  - `service.type: NodePort`
+  - lighter resources
+  - faster probe settings
+- `values-prod.yaml`
+  - `replicaCount: 5`
+  - `service.type: LoadBalancer`
+  - higher resources
+  - stricter probe settings
 
-image:                    # Container image configuration
-  repository: ...
-  tag: ...
-  pullPolicy: ...
+### Example installation commands
 
-service:                  # Kubernetes Service configuration
-  type: NodePort | LoadBalancer | ClusterIP
-  port: 80
-  targetPort: 5000
-  nodePort: 30080         # Only used when type=NodePort
+```powershell
+# Dev install (Task 3 first step)
+& .\tools\helm4\windows-amd64\helm.exe install myrelease k8s/devops-info-chart -f k8s/devops-info-chart/values-dev.yaml --set service.nodePort=30091
 
-env: []                   # Environment variables as list of {name, value}
-
-resources:                # CPU and memory requests/limits
-  requests: ...
-  limits: ...
-
-livenessProbe:            # Liveness probe (httpGet on /health)
-readinessProbe:           # Readiness probe (httpGet on /health)
-strategy:                 # Rolling update strategy
+# Upgrade same release to prod values (Task 3 second step)
+& .\tools\helm4\windows-amd64\helm.exe upgrade myrelease k8s/devops-info-chart -f k8s/devops-info-chart/values-prod.yaml
 ```
 
----
+## Hook Implementation
 
-## Task 3 — Multi-Environment Support
+Implemented hooks:
 
-### Environment Differences
+- `pre-install` job (`helm.sh/hook-weight: "-5"`)
+- `post-install` job (`helm.sh/hook-weight: "5"`)
+- deletion policy: `hook-succeeded`
 
-| Configuration | Dev | Prod |
-|---|---|---|
-| Replicas | 1 | 5 |
-| Image tag | `latest` | `lab02` (pinned) |
-| CPU request | 50m | 200m |
-| Memory limit | 128Mi | 512Mi |
-| Service type | NodePort (30080) | LoadBalancer |
-| Liveness delay | 5s | 30s |
-| Readiness period | 10s | 3s |
-
-### Usage
-
-```bash
-# Development
-helm install dev-release k8s/devops-info-chart \
-  -f k8s/devops-info-chart/values-dev.yaml
-
-# Production
-helm install prod-release k8s/devops-info-chart \
-  -f k8s/devops-info-chart/values-prod.yaml
-
-# One-off override
-helm install myapp k8s/devops-info-chart --set replicaCount=10
-
-# Upgrade dev to use a new tag
-helm upgrade dev-release k8s/devops-info-chart \
-  -f k8s/devops-info-chart/values-dev.yaml \
-  --set image.tag=lab03
-```
-
-### Verification
-
-```
-$ helm install dev-release k8s/devops-info-chart \
-    -f k8s/devops-info-chart/values-dev.yaml --set service.nodePort=30091
-NAME: dev-release
-LAST DEPLOYED: Mon Mar  9 23:12:30 2026
-NAMESPACE: default
-STATUS: deployed
-REVISION: 1
-NOTES:
-Replicas: 1
-Image: vladimirzhidkov/devops-info-service:latest
-Get the application URL:
-  http://$(minikube ip):30091
-```
-
-```bash
-# Verify dev uses 1 replica vs myrelease's 3
-kubectl get deployment -l app.kubernetes.io/instance=dev-release
-# NAME                           READY   UP-TO-DATE   AVAILABLE
-# dev-release-devops-info-chart  1/1     1            1
-
-kubectl get deployment -l app.kubernetes.io/instance=myrelease
-# NAME                             READY   UP-TO-DATE   AVAILABLE
-# myrelease-devops-info-chart      3/3     3            3
-```
-
----
-
-## Task 4 — Chart Hooks
-
-### Hook Overview
-
-| Hook | Type | Weight | Delete Policy | Purpose |
-|---|---|---|---|---|
-| `pre-install-job` | `pre-install` | `-5` | `hook-succeeded` | Validate configuration before deploy |
-| `post-install-job` | `post-install` | `5` | `hook-succeeded` | Smoke test after deploy |
-
-### Execution Order
-
-```
-helm install
-    │
-    ├── 1. pre-install hook (weight -5)   ← validates image, replicas, service type
-    │       Job runs in cluster, exits 0
-    │       Job deleted automatically (hook-succeeded policy)
-    │
-    ├── 2. Main resources installed
-    │       Deployment, Service created and brought to Ready
-    │
-    └── 3. post-install hook (weight 5)   ← waits 10s, confirms app is ready
-            Job runs in cluster, exits 0
-            Job deleted automatically (hook-succeeded policy)
-```
-
-### Hook Annotations Explained
+### Hook annotations used
 
 ```yaml
 annotations:
-  "helm.sh/hook": pre-install        # When to run
-  "helm.sh/hook-weight": "-5"        # Execution order (lower = earlier)
-  "helm.sh/hook-delete-policy": hook-succeeded  # Cleanup policy
+  "helm.sh/hook": pre-install|post-install
+  "helm.sh/hook-weight": "-5"|"5"
+  "helm.sh/hook-delete-policy": hook-succeeded
 ```
 
-**Delete policies:**
-- `hook-succeeded` — delete after successful completion (keeps cluster clean)
-- `before-hook-creation` — delete previous hook before running new one
-- `hook-failed` — delete only on failure (useful for debugging)
+### Hook evidence
 
-### Testing Hooks
-
-```bash
-# Dry-run to see hook templates rendered
-helm install --dry-run --debug test-release k8s/devops-info-chart
-
-# Install and watch hooks
-helm install myrelease k8s/devops-info-chart
-kubectl get jobs -w
-
-# Check hook output
-kubectl describe job myrelease-devops-info-chart-pre-install
-kubectl logs job/myrelease-devops-info-chart-pre-install
-
-# Verify hooks were cleaned up (hook-succeeded)
-kubectl get jobs
-# Should show no hook jobs once they have completed
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe get hooks myrelease
+# Source: devops-info-chart/templates/hooks/post-install-job.yaml
+...
+"helm.sh/hook": post-install
+"helm.sh/hook-weight": "5"
+"helm.sh/hook-delete-policy": hook-succeeded
+...
+# Source: devops-info-chart/templates/hooks/pre-install-job.yaml
+...
+"helm.sh/hook": pre-install
+"helm.sh/hook-weight": "-5"
+"helm.sh/hook-delete-policy": hook-succeeded
 ```
 
----
-
-## Task 5 — Installation Evidence
-
-### helm lint
-
-```
-$ helm lint k8s/devops-info-chart
-==> Linting k8s/devops-info-chart
-[INFO] Chart.yaml: icon is recommended
-
-1 chart(s) linted, 0 chart(s) failed
-
-$ helm lint k8s/app2-chart
-==> Linting k8s/app2-chart
-[INFO] Chart.yaml: icon is recommended
-
-1 chart(s) linted, 0 chart(s) failed
-```
-
-### helm template (dry render)
-
-```bash
-helm template myrelease k8s/devops-info-chart --set service.nodePort=30090
-```
-
-### Install
-
-```
-$ helm install myrelease k8s/devops-info-chart --set service.nodePort=30090
-NAME: myrelease
-LAST DEPLOYED: Mon Mar  9 23:08:10 2026
-NAMESPACE: default
-STATUS: deployed
-REVISION: 1
-TEST SUITE: None
-NOTES:
-1. DevOps Info Service has been deployed!
-
-Release: myrelease
-Namespace: default
-Chart version: 0.1.0
-App version: lab02
-
-Replicas: 3
-Image: vladimirzhidkov/devops-info-service:lab02
-
-Get the application URL:
-  http://$(minikube ip):30090
-
-Health check endpoint: /health
-```
-
-### helm list
-
-```
-NAME          NAMESPACE  REVISION  UPDATED                            STATUS    CHART                    APP VERSION
-app2-release  default    1         2026-03-09 23:12:59 +0300 MSK      deployed  app2-chart-0.1.0         latest
-dev-release   default    1         2026-03-09 23:12:30 +0300 MSK      deployed  devops-info-chart-0.1.0  lab02
-myrelease     default    1         2026-03-09 23:08:10 +0300 MSK      deployed  devops-info-chart-0.1.0  lab02
-```
-
-### kubectl get all (myrelease)
-
-```
-NAME                                              READY   STATUS    RESTARTS   AGE
-pod/myrelease-devops-info-chart-99f6f7db6-d996k   1/1     Running   0          4m50s
-pod/myrelease-devops-info-chart-99f6f7db6-vxqkj   1/1     Running   0          4m50s
-pod/myrelease-devops-info-chart-99f6f7db6-w55d8   1/1     Running   0          4m50s
-
-NAME                                  TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
-service/myrelease-devops-info-chart   NodePort   10.107.234.12   <none>        80:30090/TCP   4m50s
-
-NAME                                          READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/myrelease-devops-info-chart   3/3     3            3           4m50s
-
-NAME                                                    DESIRED   CURRENT   READY   AGE
-replicaset.apps/myrelease-devops-info-chart-99f6f7db6   3         3         3       4m50s
-```
-
-### Hook Execution
-
-Хуки выполнились и были автоматически удалены согласно политике `hook-succeeded`:
-
-```
-$ kubectl get jobs
+```powershell
+PS> kubectl get jobs
 No resources found in default namespace.
 ```
 
-Хуки успешно отработали (pre-install провалидировал конфигурацию, post-install выполнил smoke test) и удалились — кластер чистый.
-
+```powershell
+PS> # Capture describe output during hook execution (before auto-delete):
+PS> & .\tools\helm4\windows-amd64\helm.exe install hookproof k8s/devops-info-chart -f k8s/devops-info-chart/values-dev.yaml --set service.nodePort=30093
+PS> kubectl describe job hookproof-devops-info-chart-pre-install
+Name:             hookproof-devops-info-chart-pre-install
+Namespace:        default
+Labels:           app.kubernetes.io/instance=hookproof
+                  app.kubernetes.io/name=devops-info-chart
+Annotations:      helm.sh/hook: pre-install
+                  helm.sh/hook-delete-policy: hook-succeeded
+                  helm.sh/hook-weight: -5
+Pods Statuses:    1 Active / 0 Succeeded / 0 Failed
+Containers:
+  pre-install-job:
+    Image:      busybox:1.36
+Events:
+  Type    Reason            Age   From            Message
+  Normal  SuccessfulCreate  4s    job-controller  Created pod: hookproof-devops-info-chart-pre-install-...
 ```
-$ helm history myrelease
-REVISION  UPDATED                    STATUS    CHART                    APP VERSION  DESCRIPTION
-1         Mon Mar  9 23:08:10 2026   deployed  devops-info-chart-0.1.0  lab02        Install complete
+
+This confirms hooks are created and executed, and `kubectl get jobs` confirms they are deleted afterward by `hook-succeeded`.
+
+## Installation Evidence
+
+### Cluster context and versions
+
+```powershell
+PS> kubectl config current-context
+minikube
+
+PS> kubectl version --output=yaml
+clientVersion.gitVersion: v1.29.2
+serverVersion.gitVersion: v1.35.1
 ```
 
----
+### Real release history and state (March 30, 2026)
+
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe install myrelease k8s/devops-info-chart -f k8s/devops-info-chart/values-dev.yaml --set service.nodePort=30091
+NAME: myrelease
+STATUS: deployed
+REVISION: 1
+Replicas: 1
+Image: vladimirzhidkov/devops-info-service:latest
+```
+
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe upgrade myrelease k8s/devops-info-chart -f k8s/devops-info-chart/values-prod.yaml
+Release "myrelease" has been upgraded.
+STATUS: deployed
+REVISION: 2
+Replicas: 5
+Image: vladimirzhidkov/devops-info-service:lab02
+```
+
+```powershell
+PS> kubectl get deployment myrelease-devops-info-chart -o jsonpath="{.spec.replicas} {.status.readyReplicas}"
+5 5
+
+PS> kubectl get svc myrelease-devops-info-chart -o jsonpath="{.spec.type} {.spec.ports[0].port} {.spec.ports[0].targetPort}"
+LoadBalancer 80 5000
+```
+
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe history myrelease
+REVISION  UPDATED                  STATUS      CHART                    APP VERSION  DESCRIPTION
+1         Mon Mar 30 17:49:14 2026 superseded  devops-info-chart-0.1.0 lab02        Install complete
+2         Mon Mar 30 17:51:36 2026 deployed    devops-info-chart-0.1.0 lab02        Upgrade complete
+```
+
+### helm list output (required)
+
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe list -A
+NAME         NAMESPACE  REVISION  UPDATED                               STATUS    CHART                    APP VERSION
+app2-release default    1         2026-03-30 17:54:17.3256667 +0300    deployed  app2-chart-0.1.0         latest
+myrelease    default    2         2026-03-30 17:51:36.1309087 +0300    deployed  devops-info-chart-0.1.0  lab02
+```
+
+### kubectl get all output (required)
+
+```powershell
+PS> kubectl get all -l app.kubernetes.io/instance=myrelease
+NAME                                               READY   STATUS    RESTARTS   AGE
+pod/myrelease-devops-info-chart-...                1/1     Running   0          ...
+pod/myrelease-devops-info-chart-...                1/1     Running   0          ...
+pod/myrelease-devops-info-chart-...                1/1     Running   0          ...
+pod/myrelease-devops-info-chart-...                1/1     Running   0          ...
+pod/myrelease-devops-info-chart-...                1/1     Running   0          ...
+
+NAME                                  TYPE           CLUSTER-IP       EXTERNAL-IP  PORT(S)        AGE
+service/myrelease-devops-info-chart   LoadBalancer   10.101.110.100   <pending>    80:30091/TCP   ...
+
+NAME                                          READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/myrelease-devops-info-chart   5/5     5            5           ...
+
+NAME                                                     DESIRED   CURRENT   READY   AGE
+replicaset.apps/myrelease-devops-info-chart-...          5         5         5       ...
+```
 
 ## Operations
 
 ### Install
 
-```bash
-# Default install
-helm install myrelease k8s/devops-info-chart
-
-# With environment values
-helm install myrelease k8s/devops-info-chart -f k8s/devops-info-chart/values-dev.yaml
-
-# With namespace
-helm install myrelease k8s/devops-info-chart --namespace myns --create-namespace
-
-# Dry-run first
-helm install --dry-run --debug myrelease k8s/devops-info-chart
+```powershell
+& .\tools\helm4\windows-amd64\helm.exe install myrelease k8s/devops-info-chart -f k8s/devops-info-chart/values-dev.yaml --set service.nodePort=30091
 ```
 
 ### Upgrade
 
-```bash
-# Upgrade release in-place
-helm upgrade myrelease k8s/devops-info-chart
-
-# Upgrade with new values
-helm upgrade myrelease k8s/devops-info-chart -f k8s/devops-info-chart/values-prod.yaml
-
-# Upgrade and install if not exists
-helm upgrade --install myrelease k8s/devops-info-chart
+```powershell
+& .\tools\helm4\windows-amd64\helm.exe upgrade myrelease k8s/devops-info-chart -f k8s/devops-info-chart/values-prod.yaml
 ```
 
 ### Rollback
 
-```bash
-# View release history
-helm history myrelease
-
-# Rollback to previous revision
-helm rollback myrelease
-
-# Rollback to specific revision
-helm rollback myrelease 1
+```powershell
+& .\tools\helm4\windows-amd64\helm.exe history myrelease
+& .\tools\helm4\windows-amd64\helm.exe rollback myrelease 1
 ```
 
 ### Uninstall
 
-```bash
-helm uninstall myrelease
-
-# Keep history
-helm uninstall myrelease --keep-history
+```powershell
+& .\tools\helm4\windows-amd64\helm.exe uninstall myrelease
+& .\tools\helm4\windows-amd64\helm.exe uninstall app2-release
 ```
 
----
+## Testing and Validation
 
-## Bonus — Library Charts
+### Lint and template checks
 
-### Problem: Template Duplication
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe lint k8s/devops-info-chart
+1 chart(s) linted, 0 chart(s) failed
 
-Without a library chart, `devops-info-chart` and `app2-chart` would each define
-their own `labels`, `selectorLabels`, `fullname`, and `name` templates — identical
-boilerplate copied in every chart's `_helpers.tpl`.
+PS> & .\tools\helm4\windows-amd64\helm.exe lint k8s/app2-chart
+1 chart(s) linted, 0 chart(s) failed
 
-### Solution: common-lib
+PS> & .\tools\helm4\windows-amd64\helm.exe template dev-check k8s/devops-info-chart -f k8s/devops-info-chart/values-dev.yaml
+# renders NodePort + replicas 1 + latest image
 
-`k8s/common-lib` is a **library chart** (`type: library` in `Chart.yaml`). Library
-charts cannot be installed directly; they only provide named templates for
-dependent charts to `include`.
+PS> & .\tools\helm4\windows-amd64\helm.exe template prod-check k8s/devops-info-chart -f k8s/devops-info-chart/values-prod.yaml
+# renders LoadBalancer + replicas 5 + lab02 image
+```
 
-**Shared templates exported by `common-lib`:**
+### Dry-run verification (cluster independent)
 
-| Template | Output |
-|---|---|
-| `common.name` | Chart name (respects `nameOverride`) |
-| `common.fullname` | `{release}-{chart}` (respects `fullnameOverride`) |
-| `common.chart` | `{chart}-{version}` for the `helm.sh/chart` label |
-| `common.labels` | Standard set of `app.kubernetes.io/*` labels |
-| `common.selectorLabels` | `app.kubernetes.io/name` + `app.kubernetes.io/instance` |
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe install --dry-run=client --debug test-release k8s/devops-info-chart --set service.nodePort=30090
+STATUS: pending-install
+DESCRIPTION: Dry run complete
+HOOKS:
+  pre-install and post-install jobs rendered with correct annotations
+MANIFEST:
+  service + deployment rendered with expected values
+```
 
-### Usage in Both Charts
+### Runtime rollout checks
 
-**Chart.yaml** declares the dependency:
+```powershell
+PS> kubectl rollout status deployment/myrelease-devops-info-chart --timeout=180s
+deployment "myrelease-devops-info-chart" successfully rolled out
+
+PS> kubectl rollout status deployment/app2-release-app2-chart --timeout=180s
+deployment "app2-release-app2-chart" successfully rolled out
+```
+
+### Application accessibility verification
+
+For Minikube, `LoadBalancer` external IP remains pending, so accessibility was verified via `kubectl port-forward`.
+
+```powershell
+PS> kubectl port-forward svc/myrelease-devops-info-chart 18080:80
+PS> Invoke-WebRequest http://127.0.0.1:18080/health -UseBasicParsing
+STATUSCODE=200
+{"status":"healthy","timestamp":"2026-03-30T15:20:49.934Z","uptime_seconds":1711}
+```
+
+```powershell
+PS> kubectl port-forward svc/app2-release-app2-chart 18081:80
+PS> Invoke-WebRequest http://127.0.0.1:18081/ -UseBasicParsing
+STATUSCODE=200
+Hello from App 2!
+```
+
+## Bonus - Library Chart
+
+### Library chart structure
+
+`k8s/common-lib/Chart.yaml`:
+
+```yaml
+apiVersion: v2
+name: common-lib
+type: library
+version: 0.1.0
+```
+
+### Shared templates implemented
+
+`k8s/common-lib/templates/_helpers.tpl` exports:
+
+- `common.name`
+- `common.fullname`
+- `common.chart`
+- `common.labels`
+- `common.selectorLabels`
+
+### Dependency usage in both app charts
+
+Both `devops-info-chart/Chart.yaml` and `app2-chart/Chart.yaml` include:
 
 ```yaml
 dependencies:
@@ -434,56 +396,37 @@ dependencies:
     repository: "file://../common-lib"
 ```
 
-**templates/deployment.yaml** uses library templates directly:
+Both charts call shared templates from `common-lib` in their Deployment/Service manifests.
 
-```yaml
-metadata:
-  name: {{ include "common.fullname" . }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-spec:
-  selector:
-    matchLabels:
-      {{- include "common.selectorLabels" . | nindent 6 }}
+### Dependency verification
+
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe dependency list k8s/devops-info-chart
+NAME       VERSION  REPOSITORY           STATUS
+common-lib 0.1.0    file://../common-lib unpacked
+
+PS> & .\tools\helm4\windows-amd64\helm.exe dependency list k8s/app2-chart
+NAME       VERSION  REPOSITORY           STATUS
+common-lib 0.1.0    file://../common-lib unpacked
 ```
 
-Both `devops-info-chart` and `app2-chart` use **identical** label generation
-logic via `common.labels` — no duplication.
+### Second app deployment evidence
 
-### Setting Up Dependencies
-
-The library is embedded in each chart's `charts/` directory so it works without
-running `helm dependency update`. To refresh from source:
-
-```bash
-helm dependency update k8s/devops-info-chart
-helm dependency update k8s/app2-chart
-```
-
-### Deploying Both Apps
-
-```
-$ helm install app2-release k8s/app2-chart --set service.nodePort=30092 --set service.type=NodePort
-NAME: app2-release
-LAST DEPLOYED: Mon Mar  9 23:12:59 2026
-NAMESPACE: default
+```powershell
+PS> & .\tools\helm4\windows-amd64\helm.exe install app2-release k8s/app2-chart -f k8s/app2-chart/values-dev.yaml
 STATUS: deployed
 REVISION: 1
-NOTES:
-Replicas: 2
+Replicas: 1
 Image: hashicorp/http-echo:latest
-Echo text: "Hello from App 2!"
 
-$ helm list
-NAME          NAMESPACE  REVISION  UPDATED                            STATUS    CHART                    APP VERSION
-app2-release  default    1         2026-03-09 23:12:59 +0300 MSK      deployed  app2-chart-0.1.0         latest
-dev-release   default    1         2026-03-09 23:12:30 +0300 MSK      deployed  devops-info-chart-0.1.0  lab02
-myrelease     default    1         2026-03-09 23:08:10 +0300 MSK      deployed  devops-info-chart-0.1.0  lab02
+PS> kubectl get deployment,svc,pods -l app.kubernetes.io/instance=app2-release -o wide
+deployment.apps/app2-release-app2-chart   1/1  1  1  ...
+service/app2-release-app2-chart           NodePort  ... 80:30081/TCP
+pod/app2-release-app2-chart-...           1/1 Running
 ```
 
-### Benefits of Library Charts
+### Benefits of this approach
 
-- **DRY** — label generation logic lives in one place; fix it once, affects all charts
-- **Consistency** — all apps produce identical `app.kubernetes.io/*` labels and naming
-- **Maintainability** — add a new standard label to `common-lib`, all apps inherit it
-- **Governance** — centralized label policy enforced via shared templates
+- DRY: common naming/labels logic is centralized in one chart.
+- Consistency: both apps render the same label schema.
+- Maintainability: update shared helpers once for all dependent charts.
