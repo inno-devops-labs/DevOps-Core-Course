@@ -1,0 +1,12 @@
+apiVersion: v2
+name: my-python-app
+description: Helm chart for my Python application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - python
+  - web
+maintainers:
+  - name: Daniel
+    email: daniel@example.com

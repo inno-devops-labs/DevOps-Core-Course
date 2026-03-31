@@ -1,0 +1,10 @@
+Your application has been deployed.
+
+Release name: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+To check status:
+  kubectl get all -l app.kubernetes.io/instance={{ .Release.Name }}
+
+To access the service:
+  kubectl get svc {{ include "my-python-app.fullname" . }}
