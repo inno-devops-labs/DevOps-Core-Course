@@ -1,0 +1,9 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+Service type: {{ .Values.service.type }}
+Service port: {{ .Values.service.port }}
+
+If you used NodePort, access the service via the node IP and the NodePort.
