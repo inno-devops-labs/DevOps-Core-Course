@@ -1,0 +1,31 @@
+{{- if .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "app-python.fullname" . }}-post-install"
+  labels:
+    {{- include "app-python.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.postInstall.weight }}"
+    "helm.sh/hook-delete-policy": "{{ .Values.hooks.postInstall.deletePolicy }}"
+spec:
+  template:
+    metadata:
+      name: "{{ include "app-python.fullname" . }}-post-install"
+      labels:
+        {{- include "app-python.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-job
+          image: {{ .Values.hooks.image }}
+          command:
+            - sh
+            - -c
+            - >
+              echo "Post-install validation started";
+              echo "Smoke test placeholder completed";
+              sleep 5;
+              echo "Post-install validation completed";
+{{- end }}

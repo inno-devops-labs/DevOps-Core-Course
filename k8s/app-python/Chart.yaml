@@ -1,0 +1,6 @@
+apiVersion: v2
+name: app-python
+description: Helm chart for the Flask DevOps Info Service
+type: application
+version: 0.1.0
+appVersion: "2026.03.16"

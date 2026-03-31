@@ -1,0 +1,31 @@
+{{- if .Values.hooks.preInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "app-python.fullname" . }}-pre-install"
+  labels:
+    {{- include "app-python.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.preInstall.weight }}"
+    "helm.sh/hook-delete-policy": "{{ .Values.hooks.preInstall.deletePolicy }}"
+spec:
+  template:
+    metadata:
+      name: "{{ include "app-python.fullname" . }}-pre-install"
+      labels:
+        {{- include "app-python.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-job
+          image: {{ .Values.hooks.image }}
+          command:
+            - sh
+            - -c
+            - >
+              echo "Pre-install validation started";
+              echo "Checking chart prerequisites";
+              sleep 5;
+              echo "Pre-install validation completed";
+{{- end }}

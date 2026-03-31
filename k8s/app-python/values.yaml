@@ -1,0 +1,81 @@
+replicaCount: 3
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: sergey173/app_python
+  tag: "2026.03.16"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+container:
+  port: 5000
+
+env:
+  host: "0.0.0.0"
+  port: "5000"
+  debug: "False"
+  releaseVersion: "v2"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+hooks:
+  image: busybox:1.36
+
+  preInstall:
+    enabled: true
+    weight: -5
+    deletePolicy: hook-succeeded
+
+  postInstall:
+    enabled: true
+    weight: 5
+    deletePolicy: hook-succeeded

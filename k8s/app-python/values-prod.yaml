@@ -1,0 +1,41 @@
+replicaCount: 3
+
+image:
+  tag: "2026.03.16"
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 5000
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+
+env:
+  debug: "False"
+  releaseVersion: "prod"
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 3
