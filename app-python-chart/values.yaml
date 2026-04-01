@@ -42,3 +42,7 @@ podLabels: {}
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+secret:
+  username: "placeholder-user"
+  password: "placeholder-password"
