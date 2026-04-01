@@ -1,0 +1,11 @@
+apiVersion: v2
+name: app-python-chart
+description: Helm chart for the DevOps Python application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - python
+  - flask
+  - kubernetes
+  - helm

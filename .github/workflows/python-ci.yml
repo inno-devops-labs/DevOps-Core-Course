@@ -12,6 +12,7 @@ on:
       - "ansible/**"
       - "k8s/**"
       - "playbooks/**"
+      - "app-python-chart/**"
       - ".github/workflows/python-ci.yml"
   pull_request:
     paths:
