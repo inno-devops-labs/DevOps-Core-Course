@@ -1,0 +1,128 @@
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$  helm lint k8s/info-service  
+==> Linting k8s/info-service
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$ helm install --dry-run --debug test-release k8s/info-service | grep -A 20 "hook"  
+level=WARN msg="--dry-run is deprecated and should be replaced with '--dry-run=client'"
+level=DEBUG msg="Original chart version" version=""
+level=DEBUG msg="Chart path" path=C:\DevOps-Core-Course\k8s\info-service
+level=DEBUG msg="number of dependencies in the chart" dependencies=0
+# Source: info-service/templates/hooks/post-install-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "test-release-info-service-post-install"
+  labels:
+    helm.sh/chart: info-service-0.1.0
+    app.kubernetes.io/name: info-service
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "test-release-info-service-post-install"
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: post-install-job
+        image: busybox
+        command: ['sh', '-c', 'echo Post-install validation && sleep 10 && echo Validation passed']
+---
+# Source: info-service/templates/hooks/pre-install-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "test-release-info-service-pre-install"
+  labels:
+    helm.sh/chart: info-service-0.1.0
+    app.kubernetes.io/name: info-service
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "test-release-info-service-pre-install"
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: pre-install-job
+        image: busybox
+        command: ['sh', '-c', 'echo Pre-install task running && sleep 10 && echo Pre-install completed']
+MANIFEST:
+---
+# Source: info-service/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-info-service
+  labels:
+    helm.sh/chart: info-service-0.1.0
+    app.kubernetes.io/name: info-service
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$ helm uninstall myapp-dev
+  helm uninstall myapp-prod
+release "myapp-dev" uninstalled
+release "myapp-prod" uninstalled
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$ helm install myrelease k8s/info-service
+NAME: myrelease
+LAST DEPLOYED: Wed Apr  1 12:28:43 2026
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+NOTES:
+INFO-SERVICE deployed successfully!
+
+Release: myrelease
+Chart:   info-service-0.1.0
+Access the application:
+  export NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:30080
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$  kubectl get jobs -w
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$  kubectl get jobs -w
+
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$ kubectl get pods -w
+NAME                                      READY   STATUS    RESTARTS   AGE
+myrelease-info-service-6f558bfccf-fvthd   1/1     Running   0          8m6s
+myrelease-info-service-6f558bfccf-jdxhs   1/1     Running   0          8m6s
+myrelease-info-service-6f558bfccf-ndrvh   1/1     Running   0          8m6s
+
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$   kubectl describe job myrelease-info-service-pre-install
+Error from server (NotFound): jobs.batch "myrelease-info-service-pre-install" not found
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$   kubectl logs job/myrelease-info-service-pre-install
+error: error from server (NotFound): jobs.batch "myrelease-info-service-pre-install" not found in namespace "default"
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$  kubectl get jobs
+No resources found in default namespace.
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$

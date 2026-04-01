@@ -1,0 +1,13 @@
+INFO-SERVICE deployed successfully!
+
+Release: {{ .Release.Name }}
+Chart:   {{ include "info-service.chart" . }}
+
+{{- if eq .Values.service.type "NodePort" }}
+Access the application:
+  export NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:{{ .Values.service.nodePort }}
+{{- else if eq .Values.service.type "LoadBalancer" }}
+Access the application (may take a few minutes for LoadBalancer IP):
+  kubectl get svc {{ include "info-service.fullname" . }} -w
+{{- end }}

@@ -1,0 +1,225 @@
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$  helm lint k8s/info-service
+==> Linting k8s/info-service
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$   helm template myrelease k8s/info-service
+---
+# Source: info-service/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: myrelease-info-service
+  labels:
+    helm.sh/chart: info-service-0.1.0
+    app.kubernetes.io/name: info-service
+    app.kubernetes.io/instance: myrelease
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: info-service
+    app.kubernetes.io/instance: myrelease
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 5000
+    nodePort: 30080
+---
+# Source: info-service/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myrelease-info-service
+  labels:
+    helm.sh/chart: info-service-0.1.0
+    app.kubernetes.io/name: info-service
+    app.kubernetes.io/instance: myrelease
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: info-service
+      app.kubernetes.io/instance: myrelease
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: info-service
+        app.kubernetes.io/instance: myrelease
+    spec:
+      containers:
+      - name: info-service
+        image: "roma3213/info_service:latest"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 3
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab09)
+$  helm install --dry-run --debug test-release k8s/info-service
+level=WARN msg="--dry-run is deprecated and should be replaced with '--dry-run=client'"
+level=DEBUG msg="Original chart version" version=""
+level=DEBUG msg="Chart path" path=C:\DevOps-Core-Course\k8s\info-service
+level=DEBUG msg="number of dependencies in the chart" dependencies=0
+NAME: test-release
+LAST DEPLOYED: Wed Apr  1 11:50:15 2026
+NAMESPACE: default
+STATUS: pending-install
+REVISION: 1
+DESCRIPTION: Dry run complete
+TEST SUITE: None
+USER-SUPPLIED VALUES:
+{}
+
+COMPUTED VALUES:
+image:
+  pullPolicy: IfNotPresent
+  repository: roma3213/info_service
+  tag: latest
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 3
+replicaCount: 3
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+service:
+  nodePort: 30080
+  port: 80
+  targetPort: 5000
+  type: NodePort
+strategy:
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+  type: RollingUpdate
+
+HOOKS:
+MANIFEST:
+---
+# Source: info-service/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-info-service
+  labels:
+    helm.sh/chart: info-service-0.1.0
+    app.kubernetes.io/name: info-service
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: info-service
+    app.kubernetes.io/instance: test-release
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 5000
+    nodePort: 30080
+---
+# Source: info-service/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-release-info-service
+  labels:
+    helm.sh/chart: info-service-0.1.0
+    app.kubernetes.io/name: info-service
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: info-service
+      app.kubernetes.io/instance: test-release
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: info-service
+        app.kubernetes.io/instance: test-release
+    spec:
+      containers:
+      - name: info-service
+        image: "roma3213/info_service:latest"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 3
+
+NOTES:
+INFO-SERVICE deployed successfully!
+
+Release: test-release
+Chart:   info-service-0.1.0
+Access the application:
+  export NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:30080

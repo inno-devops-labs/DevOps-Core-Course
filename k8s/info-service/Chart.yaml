@@ -1,0 +1,14 @@
+apiVersion: v2
+name: info-service
+description: A Helm chart for info_service FastAPI application
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - python
+  - fastapi
+  - web
+maintainers:
+  - name: TurikRoma
+sources:
+  - https://github.com/TurikRoma/DevOps-Core-Course
