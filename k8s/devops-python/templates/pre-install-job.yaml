@@ -1,0 +1,30 @@
+{{- if .Values.hooks.preInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-install
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.preInstall.weight }}"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-check
+          image: {{ .Values.hooks.image }}
+          command:
+            - sh
+            - -c
+            - |
+              test -n "{{ .Values.image.repository }}" && \
+              echo "Pre-install validation passed for {{ .Values.image.repository }}:{{ .Values.image.tag }}" && \
+              sleep 10
+{{- end }}

@@ -1,0 +1,30 @@
+{{- if .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-post-install
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.postInstall.weight }}"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-smoke-test
+          image: {{ .Values.hooks.image }}
+          command:
+            - sh
+            - -c
+            - |
+              wget -qO- http://{{ include "common.fullname" . }}:{{ .Values.service.port }}/health && \
+              echo "Post-install smoke test passed" && \
+              sleep 10
+{{- end }}

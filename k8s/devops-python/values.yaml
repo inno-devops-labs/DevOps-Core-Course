@@ -1,0 +1,55 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 3
+
+image:
+  repository: s3rap1s/devops-info-service
+  tag: "v2"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: null
+
+container:
+  port: 5000
+
+env:
+  - name: PORT
+    value: "5000"
+  - name: HOST
+    value: "0.0.0.0"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 15
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+hooks:
+  image: busybox:1.36.1
+  preInstall:
+    enabled: true
+    weight: -5
+  postInstall:
+    enabled: true
+    weight: 5

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: devops-python
+description: Helm chart for the DevOps Python information service
+type: application
+version: 0.1.0
+appVersion: "2.0.0"
+keywords:
+  - devops
+  - python
+  - flask
+  - kubernetes
+maintainers:
+  - name: Amirkhan Kurbanov
+sources:
+  - https://github.com/s3rap1s/DevOps-Core-Course
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: "file://../common-lib"
