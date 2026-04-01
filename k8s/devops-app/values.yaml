@@ -1,0 +1,30 @@
+replicaCount: 3
+
+image:
+  repository: ray326sq/devops-info-python
+  tag: "lab03"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8080
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+livenessProbe:
+  path: /health
+  initialDelaySeconds: 10
+  periodSeconds: 5
+
+readinessProbe:
+  path: /health
+  initialDelaySeconds: 5
+  periodSeconds: 3

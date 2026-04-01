@@ -1,0 +1,21 @@
+replicaCount: 3
+
+image:
+  tag: "lab03"
+
+service:
+  type: NodePort
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+livenessProbe:
+  initialDelaySeconds: 30
+
+readinessProbe:
+  initialDelaySeconds: 10
