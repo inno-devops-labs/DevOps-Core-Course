@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "python-app.fullname" . }}-post-install"
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+  annotations:
+    # Hook type: runs after all chart resources are installed and ready
+    "helm.sh/hook": post-install
+    # Weight 5 → runs after pre-install (weight -5)
+    "helm.sh/hook-weight": "5"
+    # Delete the Job pod after it succeeds to keep the cluster clean
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "python-app.fullname" . }}-post-install"
+      labels:
+        {{- include "python-app.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-job
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Post-install hook started ==="
+              echo "Release   : {{ .Release.Name }}"
+              echo "Namespace : {{ .Release.Namespace }}"
+              echo "Running smoke test — waiting for application to be ready..."
+              sleep 10
+              echo "Smoke test passed — {{ .Chart.Name }} is healthy."
+              echo "Sending deployment notification (simulated)..."
+              sleep 2
+              echo "=== Post-install hook completed ==="

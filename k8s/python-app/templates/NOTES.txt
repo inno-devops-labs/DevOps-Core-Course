@@ -1,0 +1,29 @@
+Thank you for installing {{ .Chart.Name }} v{{ .Chart.AppVersion }}!
+
+Release name : {{ .Release.Name }}
+Namespace    : {{ .Release.Namespace }}
+Replicas     : {{ .Values.replicaCount }}
+
+To access the application:
+
+{{- if eq .Values.service.type "NodePort" }}
+  minikube service {{ include "python-app.fullname" . }}-service --url
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  kubectl get svc {{ include "python-app.fullname" . }}-service -w
+  # Use the EXTERNAL-IP once it is assigned
+{{- end }}
+
+Health check endpoint: /health
+API info endpoint    : /
+
+To see all resources:
+  kubectl get all -l app.kubernetes.io/instance={{ .Release.Name }}
+
+To upgrade:
+  helm upgrade {{ .Release.Name }} ./k8s/python-app -f k8s/python-app/values-prod.yaml
+
+To rollback:
+  helm rollback {{ .Release.Name }} 1
+
+To uninstall:
+  helm uninstall {{ .Release.Name }}

@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "python-app.fullname" . }}-pre-install"
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+  annotations:
+    # Hook type: runs before any chart resources are created
+    "helm.sh/hook": pre-install
+    # Weight -5 → runs before post-install (weight 5); lower = earlier
+    "helm.sh/hook-weight": "-5"
+    # Delete the Job pod after it succeeds to keep the cluster clean
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "python-app.fullname" . }}-pre-install"
+      labels:
+        {{- include "python-app.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-job
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Pre-install hook started ==="
+              echo "Release   : {{ .Release.Name }}"
+              echo "Namespace : {{ .Release.Namespace }}"
+              echo "Chart     : {{ .Chart.Name }}-{{ .Chart.Version }}"
+              echo "Simulating database migration check..."
+              sleep 5
+              echo "Migration check passed — environment is ready."
+              echo "=== Pre-install hook completed ==="

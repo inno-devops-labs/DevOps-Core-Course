@@ -1,0 +1,61 @@
+# Default values for python-app.
+# All values can be overridden via -f values-*.yaml or --set flags.
+
+replicaCount: 3
+
+image:
+  repository: aliyasag/devops-info-service
+  tag: "latest"          # Defaults to Chart.appVersion when empty
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+# Security context for the Pod
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Rolling update strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Environment variables injected into the container
+env:
+  - name: ENV
+    value: "production"
+
+# Liveness probe — restarts the container if it stops responding
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  failureThreshold: 3
+
+# Readiness probe — removes the Pod from load balancing until ready
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 3
+  failureThreshold: 3
