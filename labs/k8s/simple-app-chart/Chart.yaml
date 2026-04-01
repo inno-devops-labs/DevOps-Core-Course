@@ -1,0 +1,6 @@
+apiVersion: v2
+name: simple-app
+description: Helm chart for simple-app
+type: application
+version: 0.1.0
+appVersion: "2026.03.09"
