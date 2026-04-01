@@ -4,9 +4,13 @@ import platform
 import socket
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 from flask import Flask, Response, g, jsonify, request
 from prometheus_client import Counter, Gauge, Histogram, generate_latest
+
+DATA_DIR = Path(os.getenv("DATA_DIR", str(Path(__file__).resolve().parent / "data")))
+DATA_FILE = DATA_DIR / "visits"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -60,6 +64,31 @@ def _uptime_human(seconds: int) -> str:
     return f"{hours} hour(s), {minutes} minute(s)"
 
 
+def _ensure_data_dir() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def read_visits() -> int:
+    _ensure_data_dir()
+    if not DATA_FILE.exists():
+        return 0
+    content = DATA_FILE.read_text(encoding="utf-8").strip()
+    if not content:
+        return 0
+    return int(content)
+
+
+def write_visits(count: int) -> None:
+    _ensure_data_dir()
+    DATA_FILE.write_text(str(count), encoding="utf-8")
+
+
+def increment_visits() -> int:
+    visits = read_visits() + 1
+    write_visits(visits)
+    return visits
+
+
 def get_system_info() -> dict:
     start = time.time()
     result = {
@@ -91,6 +120,7 @@ def list_endpoints() -> list:
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
         {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
+        {"path": "/visits", "method": "GET", "description": "Visits counter"},
     ]
 
 
@@ -126,6 +156,7 @@ def index():
     logger.info("Request: %s %s", request.method, request.path)
     devops_info_endpoint_calls.labels(endpoint="/").inc()
 
+    visits = increment_visits()
     uptime_sec = _uptime_seconds()
     payload = {
         "service": {
@@ -143,8 +174,16 @@ def index():
         },
         "request": get_request_info(),
         "endpoints": list_endpoints(),
+        "visits": visits,
     }
     return jsonify(payload), 200
+
+
+@app.get("/visits")
+def visits():
+    logger.info("Request: %s %s", request.method, request.path)
+    devops_info_endpoint_calls.labels(endpoint="/visits").inc()
+    return jsonify({"visits": read_visits()}), 200
 
 
 @app.get("/health")

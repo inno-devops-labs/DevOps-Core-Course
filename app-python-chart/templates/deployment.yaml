@@ -31,6 +31,8 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "app-python-chart.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "app-python-chart.fullname" . }}-env
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
@@ -41,6 +43,18 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: data-volume
+              mountPath: /data
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "app-python-chart.fullname" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "app-python-chart.fullname" . }}-data
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

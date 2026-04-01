@@ -46,3 +46,8 @@ affinity: {}
 secret:
   username: "placeholder-user"
   password: "placeholder-password"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
