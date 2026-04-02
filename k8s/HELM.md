@@ -16,10 +16,8 @@ my-python-app/
     ├── _helpers.tpl        # Template helper functions
     ├── deployment.yaml     # Deployment manifest template
     ├── service.yaml        # Service manifest template
-    ├── NOTES.txt           # Post-install notes
-    └── hooks/
-        ├── pre-install-job.yaml    # Pre-install hook
-        └── post-install-job.yaml   # Post-install hook
+    ├── pre-install-job.yaml    # Pre-install hook
+    └── post-install-job.yaml   # Post-install hook
 ```
 
 ### Key Template Files
@@ -94,7 +92,7 @@ This structure allows easy overriding at different levels while maintaining read
 ### Customizing for Different Environments
 
 #### Development Environment (`values-dev.yaml`)
-- **Replicas**: 1 (reduced for cost savings)
+- **Replicas**: 1 (reduced)
 - **Resources**: Lower limits (100m CPU, 128Mi memory)
 - **Service**: NodePort for local access
 - **Probes**: Shorter initial delays (5 seconds)
@@ -174,47 +172,59 @@ Both hooks use `hook-succeeded` deletion policy, which means:
 
 ## Installation Evidence
 
-### Helm List Output
-
+### Helm List 
 ```bash
-$ helm list
-NAME        NAMESPACE   REVISION    STATUS      CHART               APP VERSION
-myapp       default     1           deployed    my-python-app-0.1.0  1.0
+user@k8s-control:~$ helm list
+NAME     	NAMESPACE	REVISION	UPDATED                                	STATUS  	CHART              	APP VERSION
+myapp-dev	default  	1       	2026-04-02 16:54:57.662953454 +0000 UTC	deployed	my-python-app-0.1.0	1.0
 ```
 
-### Deployed Resources
-
+### Kubectl 
 ```bash
-$ kubectl get all
-NAME                                    READY   STATUS    RESTARTS   AGE
-pod/myapp-my-python-app-xxx-yyy        1/1     Running   0          2m
+user@k8s-control:~$ kubectl get all
+NAME                                         READY   STATUS    RESTARTS   AGE
+pod/myapp-dev-my-python-app-b7b4fb54-wwdhd   1/1     Running   0          16m
 
-NAME                       TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
-service/myapp-my-python-app   NodePort   10.96.xxx.xxx   <none>        80:30080/TCP   2m
+NAME                              TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes                ClusterIP   10.96.0.1      <none>        443/TCP        8d
+service/myapp-dev-my-python-app   NodePort    10.99.86.135   <none>        80:30080/TCP   16m
 
-NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/myapp-my-python-app   1/1     1            1           2m
+NAME                                      READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/myapp-dev-my-python-app   1/1     1            1           16m
 
-NAME                                          DESIRED   CURRENT   READY   AGE
-replicaset.apps/myapp-my-python-app-xxx   1         1         1       2m
+NAME                                               DESIRED   CURRENT   READY   AGE
+replicaset.apps/myapp-dev-my-python-app-b7b4fb54   1         1         1       16m
 ```
 
 ### Hook Execution
 
+As jobs killed on success, there's no jobs shown:
 ```bash
 $ kubectl get jobs
-NAME                           COMPLETIONS   DURATION   AGE
-myapp-my-python-app-pre-install    1/1           6s         3m
-myapp-my-python-app-post-install   1/1           6s         2m
-
-$ kubectl logs job/myapp-my-python-app-pre-install
-Pre-install task running
-Pre-install validation completed
-
-$ kubectl logs job/myapp-my-python-app-post-install
-Post-install validation running
-Application deployed successfully
+No resources found in default namespace.
 ```
+but we can use
+```bash
+kubectl get events --sort-by='.lastTimestamp'
+<...>
+12m         Normal    Pulled                    pod/myapp-dev-my-python-app-pre-install-cvw2n    Successfully pulled image "busybox:latest" in 1.192s (1.192s including waiting). Image size: 2222002 bytes.
+12m         Normal    Created                   pod/myapp-dev-my-python-app-pre-install-cvw2n    Created container: pre-install-job
+12m         Normal    Started                   pod/myapp-dev-my-python-app-pre-install-cvw2n    Started container pre-install-job
+12m         Normal    ScalingReplicaSet         deployment/myapp-dev-my-python-app               Scaled up replica set myapp-dev-my-python-app-b7b4fb54 to 1
+12m         Normal    SuccessfulCreate          job/myapp-dev-my-python-app-post-install         Created pod: myapp-dev-my-python-app-post-install-czwsp
+12m         Normal    Completed                 job/myapp-dev-my-python-app-pre-install          Job completed
+12m         Normal    SuccessfulCreate          replicaset/myapp-dev-my-python-app-b7b4fb54      Created pod: myapp-dev-my-python-app-b7b4fb54-wwdhd
+12m         Normal    Pulling                   pod/myapp-dev-my-python-app-b7b4fb54-wwdhd       Pulling image "saddogsec/devops-info-service:latest"
+12m         Normal    Pulling                   pod/myapp-dev-my-python-app-post-install-czwsp   Pulling image "busybox:latest"
+12m         Normal    Pulled                    pod/myapp-dev-my-python-app-post-install-czwsp   Successfully pulled image "busybox:latest" in 938ms (938ms including waiting). Image size: 2222002 bytes.
+12m         Normal    Created                   pod/myapp-dev-my-python-app-post-install-czwsp   Created container: post-install-job
+12m         Normal    Started                   pod/myapp-dev-my-python-app-post-install-czwsp   Started container post-install-job
+12m         Normal    Started                   pod/myapp-dev-my-python-app-b7b4fb54-wwdhd       Started container my-python-app
+12m         Normal    Created                   pod/myapp-dev-my-python-app-b7b4fb54-wwdhd       Created container: my-python-app
+12m         Normal    Pulled                    pod/myapp-dev-my-python-app-b7b4fb54-wwdhd       Successfully pulled image "saddogsec/devops-info-service:latest" in 1.018s (1.475s including waiting). Image size: 48577593 bytes.
+12m         Normal    Completed                 job/myapp-dev-my-python-app-post-install         Job completed
+```
+and see when and how job containers were spawned, killed
 
 ### Different Environment Deployments
 
@@ -239,8 +249,6 @@ LAST DEPLOYED: [timestamp]
 NAMESPACE: default
 STATUS: deployed
 REVISION: 1
-NOTES:
-Thank you for installing my-python-app!
 ...
 ```
 
@@ -339,8 +347,8 @@ helm get notes myapp
 ### Helm Lint Output
 
 ```bash
-$ helm lint ./my-python-app
-==> Linting ./my-python-app
+user@k8s-control:~/DevOps-Core-Course$ helm lint k8s/my-python-app/
+==> Linting k8s/my-python-app/
 [INFO] Chart.yaml: icon is recommended
 
 1 chart(s) linted, 0 chart(s) failed
@@ -349,35 +357,37 @@ $ helm lint ./my-python-app
 ### Helm Template Verification
 
 ```bash
-$ helm template myapp ./my-python-app
+user@k8s-control:~/DevOps-Core-Course$ helm template k8s/my-python-app/
 ---
 # Source: my-python-app/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: myapp-my-python-app
+  name: release-name-my-python-app
   labels:
     helm.sh/chart: my-python-app-0.1.0
     app.kubernetes.io/name: my-python-app
-    app.kubernetes.io/instance: myapp
+    app.kubernetes.io/instance: release-name
     app.kubernetes.io/version: "1.0"
     app.kubernetes.io/managed-by: Helm
-...
+    app: devops-app
+    environment: production
+    version: v1
+<...>
 ```
 
 ### Dry-Run Output
 
 ```bash
-$ helm install --dry-run --debug myapp ./my-python-app
-install.go:200: [debug] Original chart version: ""
-install.go:217: [debug] CHART PATH: /path/to/my-python-app
-
-NAME: myapp
-LAST DEPLOYED: [timestamp]
+user@k8s-control:~/DevOps-Core-Course$ helm install --dry-run myapp-dev k8s/my-python-app -f k8s/my-python-app/values-dev.yaml
+NAME: myapp-dev
+LAST DEPLOYED: Thu Apr  2 17:21:02 2026
 NAMESPACE: default
 STATUS: pending-install
 REVISION: 1
-...
+TEST SUITE: None
+HOOKS:
+---
 ```
 
 ### Application Accessibility Verification
@@ -387,46 +397,13 @@ REVISION: 1
 $ export NODE_PORT=$(kubectl get svc myapp-my-python-app -o jsonpath="{.spec.ports[0].nodePort}")
 $ export NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
 $ echo "Application URL: http://$NODE_IP:$NODE_PORT"
-Application URL: http://192.168.1.100:30080
+Application URL: http://192.168.56.11:30080
 
 # Test health endpoint
-$ curl http://192.168.1.100:30080/health
-{"status": "healthy"}
+$ curl http://192.168.56.11:30080/health
+{"status":"healthy","timestamp":"2026-04-02T17:33:20.909Z","uptime_seconds":2006}
 
 # Test readiness endpoint
-$ curl http://192.168.1.100:30080/ready
-{"status": "ready"}
+$ curl http://192.168.56.11:30080/ready
+{"status":"ready","timestamp":"2026-04-02T17:33:15.491Z"}
 ```
-
-### Verify Hooks Executed
-
-```bash
-# Check hook jobs
-$ kubectl get jobs
-NAME                               COMPLETIONS   DURATION   AGE
-myapp-my-python-app-pre-install    1/1           6s         5m
-myapp-my-python-app-post-install   1/1           6s         4m
-
-# Check hook logs
-$ kubectl logs job/myapp-my-python-app-pre-install
-Pre-install task running
-Pre-install validation completed
-
-$ kubectl logs job/myapp-my-python-app-post-install
-Post-install validation running
-Application deployed successfully
-```
-
----
-
-## Summary
-
-This Helm chart provides:
-
-1. **Templated Kubernetes Manifests**: Converts static manifests into reusable templates
-2. **Multi-Environment Support**: Separate values files for dev and prod environments
-3. **Lifecycle Hooks**: Pre and post-install hooks for validation and testing
-4. **Best Practices**: Follows Helm chart best practices with helpers, labels, and documentation
-5. **Configurability**: All aspects of the deployment can be customized via values
-
-The chart successfully packages the Python application for deployment across different environments while maintaining consistency and following Kubernetes best practices.
