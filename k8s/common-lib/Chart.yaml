@@ -1,0 +1,8 @@
+apiVersion: v2
+name: common-lib
+description: Common templates for all applications
+type: library
+version: 0.1.0
+maintainers:
+  - name: Mikhail Panteleev
+    email: m.panteleev@innopolis.universoty

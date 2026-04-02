@@ -1,0 +1,18 @@
+apiVersion: v2
+name: app-go
+description: My Go application Helm chart
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - go
+  - web
+maintainers:
+  - name: Mikhail Panteleev
+    email: m.panteleev@innopolis.universoty
+sources:
+  - https://github.com/Mikhail-Panteleev/DevOps-Core-Course
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: "file://../common-lib"
