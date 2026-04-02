@@ -1,0 +1,11 @@
+1. Get the application URL by running these commands:
+{{- if eq .Values.service.type "NodePort" }}
+  export NODE_PORT={{ .Values.service.nodePort }}
+  kubectl get nodes -o wide
+  curl http://<node-ip>:${NODE_PORT}/health
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  kubectl get svc {{ include "devops-info-service.fullname" . }} -w
+{{- else }}
+  kubectl port-forward svc/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+  curl http://127.0.0.1:8080/health
+{{- end }}

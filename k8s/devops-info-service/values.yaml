@@ -1,0 +1,104 @@
+nameOverride: ""
+fullnameOverride: ""
+component: api
+partOf: devops-core-course
+
+replicaCount: 3
+
+image:
+  repository: devops-info-service
+  tag: "lab09"
+  pullPolicy: IfNotPresent
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  enabled: true
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+containerPort: 5000
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5000"
+  - name: SERVICE_NAME
+    value: "devops-info-service"
+  - name: SERVICE_VERSION
+    value: "1.0.0"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+revisionHistoryLimit: 10
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+hooks:
+  enabled: true
+  image:
+    repository: devops-info-service
+    tag: "lab09"
+    pullPolicy: IfNotPresent
+  preInstall:
+    deletePolicy:
+      - before-hook-creation
+      - hook-succeeded
+    weight: -5
+    command:
+      - sh
+      - -c
+      - echo validating release values for devops-info-service && test -n "{{ .Release.Name }}" && echo pre-install validation completed
+  postInstall:
+    deletePolicy:
+      - before-hook-creation
+      - hook-succeeded
+    weight: 5
+    command:
+      - sh
+      - -c
+      - echo running smoke test metadata for {{ .Release.Name }} && echo post-install validation passed

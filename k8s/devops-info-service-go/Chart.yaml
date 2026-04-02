@@ -1,0 +1,18 @@
+apiVersion: v2
+name: devops-info-service-go
+description: Helm chart for the Go DevOps info service.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - golang
+  - devops
+  - kubernetes
+maintainers:
+  - name: DevOps Core Course
+sources:
+  - https://github.com/example/devops-core-course
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: "file://../common-lib"
