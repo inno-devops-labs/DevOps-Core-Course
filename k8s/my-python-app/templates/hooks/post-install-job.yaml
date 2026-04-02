@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "my-python-app.fullname" . }}-post-install"
+  labels:
+    {{- include "my-python-app.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: post-install-smoke-test
+        image: curlimages/curl:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "Running post-install smoke test for {{ .Release.Name }}"
+          SERVICE_NAME="{{ include "my-python-app.fullname" . }}"
+          NAMESPACE="{{ .Release.Namespace }}"
+          echo "Waiting for service to be ready..."
+          sleep 10
+          curl -f http://$SERVICE_NAME:{{ .Values.service.port }}/health || exit 1
+          echo "Smoke test passed"

@@ -1,0 +1,24 @@
+# values-prod.yaml
+replicaCount: 5
+
+image:
+  tag: "metrics"   # or pinned version
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+service:
+  type: LoadBalancer   # In real cloud, would get external IP
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 5
+
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 3

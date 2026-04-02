@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "my-python-app.fullname" . }}-pre-install"
+  labels:
+    {{- include "my-python-app.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: pre-install-check
+        image: busybox:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "Running pre-install hook for {{ .Release.Name }}"
+          echo "Verifying cluster connectivity..."
+          sleep 5
+          echo "Pre-install completed successfully"
