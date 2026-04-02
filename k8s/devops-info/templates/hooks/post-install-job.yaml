@@ -1,0 +1,43 @@
+{{- if and .Values.hookJobs.enabled .Values.hookJobs.postInstall.enabled .Values.service.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-post-install
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "{{ .Values.hookJobs.postInstall.weight }}"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: {{ .Values.hookJobs.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-smoke-test
+          image: {{ .Values.hookJobs.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Running smoke test against {{ include "devops-info.healthURL" . }}"
+              attempt=1
+              while [ "${attempt}" -le {{ .Values.hookJobs.postInstall.retries }} ]; do
+                if wget -qO- {{ include "devops-info.healthURL" . }}; then
+                  echo "Smoke test passed"
+                  echo "Keeping the hook job visible for {{ .Values.hookJobs.observationDelaySeconds }}s"
+                  sleep {{ .Values.hookJobs.observationDelaySeconds }}
+                  exit 0
+                fi
+                echo "Attempt ${attempt} failed; retrying in {{ .Values.hookJobs.postInstall.retrySleepSeconds }}s"
+                sleep {{ .Values.hookJobs.postInstall.retrySleepSeconds }}
+                attempt=$((attempt + 1))
+              done
+              echo "Smoke test failed"
+              exit 1
+{{- end }}

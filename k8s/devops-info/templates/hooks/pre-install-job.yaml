@@ -1,0 +1,32 @@
+{{- if and .Values.hookJobs.enabled .Values.hookJobs.preInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-install
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "{{ .Values.hookJobs.preInstall.weight }}"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: {{ .Values.hookJobs.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-check
+          image: {{ .Values.hookJobs.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Validating in-cluster DNS before installing {{ include "common.fullname" . }}"
+              nslookup kubernetes.default.svc.cluster.local
+              echo "Keeping the hook job visible for {{ .Values.hookJobs.observationDelaySeconds }}s"
+              sleep {{ .Values.hookJobs.observationDelaySeconds }}
+{{- end }}

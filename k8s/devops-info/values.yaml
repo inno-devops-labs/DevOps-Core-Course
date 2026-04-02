@@ -1,0 +1,122 @@
+nameOverride: ""
+fullnameOverride: ""
+
+global:
+  partOf: devops-core-course
+
+app:
+  label: devops-info
+  component: web
+
+replicaCount: 3
+revisionHistoryLimit: 5
+progressDeadlineSeconds: 600
+minReadySeconds: 5
+
+image:
+  repository: sofiakulagina/devops-info
+  tag: lab2
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+container:
+  port: 5002
+
+serviceAccount:
+  create: false
+  automount: true
+  annotations: {}
+  name: ""
+
+service:
+  enabled: true
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30082
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+terminationGracePeriodSeconds: 30
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5002"
+  - name: APP_ENV
+    value: helm
+  - name: APP_REVISION
+    value: v2
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  failureThreshold: 12
+  periodSeconds: 5
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+hookJobs:
+  enabled: true
+  image: busybox:1.36
+  ttlSecondsAfterFinished: 30
+  observationDelaySeconds: 10
+  preInstall:
+    enabled: true
+    weight: -5
+  postInstall:
+    enabled: true
+    weight: 5
+    path: /health
+    retries: 5
+    retrySleepSeconds: 5
