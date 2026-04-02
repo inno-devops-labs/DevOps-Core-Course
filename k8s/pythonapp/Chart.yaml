@@ -1,0 +1,11 @@
+apiVersion: v2
+name: pythonapp
+description: DevOps Python application Helm chart
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - python
+  - devops
+maintainers:
+  - name: Aidar Sarvartdinov

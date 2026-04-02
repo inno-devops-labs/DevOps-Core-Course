@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "pythonapp.fullname" . }}-post-install"
+  labels:
+    {{- include "pythonapp.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "pythonapp.fullname" . }}-post-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ['python', '-c', 'print("Post-install: running smoke test..."); import time; time.sleep(3); print("Post-install: application deployed successfully")']

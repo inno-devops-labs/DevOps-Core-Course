@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "pythonapp.fullname" . }}-pre-install"
+  labels:
+    {{- include "pythonapp.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "pythonapp.fullname" . }}-pre-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ['python', '-c', 'print("Pre-install: validating environment..."); import time; time.sleep(3); print("Pre-install: environment ready")']

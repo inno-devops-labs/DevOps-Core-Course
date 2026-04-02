@@ -1,0 +1,11 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+Access the application:
+{{- if eq .Values.service.type "NodePort" }}
+  minikube service {{ include "pythonapp.fullname" . }} --url
+{{- else }}
+  kubectl port-forward service/{{ include "pythonapp.fullname" . }} 8080:{{ .Values.service.port }}
+{{- end }}
