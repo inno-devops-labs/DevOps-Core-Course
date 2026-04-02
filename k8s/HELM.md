@@ -35,8 +35,8 @@ Key files:
 Values strategy:
 
 - `values.yaml`: defaults for all environments.
-- `values-dev.yaml`: development overrides (1 replica, lower resources, NodePort).
-- `values-prod.yaml`: production overrides (5 replicas, higher resources, LoadBalancer).
+- `values-dev.yaml`: development overrides.
+- `values-prod.yaml`: production overrides.
 
 ## 2. Configuration Guide
 
@@ -88,56 +88,123 @@ Execution order: `pre-install` (weight `-5`) -> chart resources -> `post-install
 
 ### 4.1 Helm Fundamentals (Task 1)
 
-Current environment output:
+Repository and public chart exploration:
 
 ```powershell
 PS> helm version
-helm : The term 'helm' is not recognized...
+version.BuildInfo{Version:"v4.1.3", GitCommit:"c94d381b03be117e7e57908edbf642104e00eb8f", GitTreeState:"clean", GoVersion:"go1.25.8", KubeClientVersion:"v1.35"}
+
+PS> helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+"prometheus-community" has been added to your repositories
+
+PS> helm repo update
+...Successfully got an update from the "prometheus-community" chart repository
+Update Complete. Happy Helming!
+
+PS> helm show chart prometheus-community/prometheus
+name: prometheus
+type: application
+version: 28.15.0
+appVersion: v3.11.0
 ```
 
-Kubernetes client is present:
-
-```powershell
-PS> kubectl version --client
-Client Version: v1.34.1
-Kustomize Version: v5.7.1
-```
-
-Commands to run locally after installing Helm 4.x:
-
-```bash
-helm version
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm show chart prometheus-community/prometheus
-```
-
-Helm value proposition summary:
+Helm value proposition:
 
 - Reusable package format for Kubernetes resources.
 - Environment customization through values files.
 - Versioned release lifecycle (install/upgrade/rollback/uninstall).
 - Hooks for pre/post lifecycle automation.
 
-### 4.2 Multi-Environment Deployment (Task 3)
+### 4.2 Chart Validation and Rendering (Task 2)
 
-```bash
-helm install devops-info-dev k8s/devops-info-service -f k8s/devops-info-service/values-dev.yaml
-helm upgrade devops-info-dev k8s/devops-info-service -f k8s/devops-info-service/values-prod.yaml
-helm get values devops-info-dev
-kubectl get deploy,svc,pods
+```powershell
+PS> helm lint k8s/devops-info-service
+==> Linting k8s/devops-info-service
+[INFO] Chart.yaml: icon is recommended
+1 chart(s) linted, 0 chart(s) failed
+
+PS> helm template devops-info k8s/devops-info-service
+# Rendered: Service, Deployment, pre-install Job hook, post-install Job hook
 ```
 
-### 4.3 Hook Verification (Task 4)
+Dry-run with debug:
 
-```bash
-helm lint k8s/devops-info-service
-helm install --dry-run --debug test-release k8s/devops-info-service
-helm install devops-info k8s/devops-info-service
-kubectl get jobs
-kubectl describe job devops-info-devops-info-service-pre-install
-kubectl describe job devops-info-devops-info-service-post-install
+```powershell
+PS> helm install --dry-run=client --debug test-release k8s/devops-info-service
+STATUS: pending-install
+DESCRIPTION: Dry run complete
+HOOKS: pre-install + post-install rendered
 ```
+
+### 4.3 Multi-Environment Deployment (Task 3)
+
+Deployment evidence (`helm list`):
+
+```powershell
+PS> helm list
+NAME            NAMESPACE  REVISION  STATUS    CHART                       APP VERSION
+devops-info     default    1         deployed  devops-info-service-0.1.0  1.0.0
+devops-info-dev default    2         deployed  devops-info-service-0.1.0  1.0.0
+```
+
+Cluster resources evidence:
+
+```powershell
+PS> kubectl get all
+deployment.apps/devops-info-dev-devops-info-service   5/5
+deployment.apps/devops-info-devops-info-service       3/3
+service/devops-info-dev-devops-info-service           LoadBalancer 80:31911/TCP
+service/devops-info-devops-info-service               NodePort     80:32071/TCP
+pods: all Running
+```
+
+Environment difference confirmed:
+
+- `devops-info-dev` uses production-scale settings after upgrade (`replicas=5`, `LoadBalancer` service).
+- `devops-info` keeps default settings (`replicas=3`, `NodePort` service).
+
+Applied values for `devops-info-dev`:
+
+```powershell
+PS> helm get values devops-info-dev
+USER-SUPPLIED VALUES:
+image:
+  tag: 1.0.0
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 5
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 3
+replicaCount: 5
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+service:
+  nodePort: null
+  type: LoadBalancer
+```
+
+### 4.4 Hooks Verification (Task 4)
+
+Hook deletion policy behavior:
+
+```powershell
+PS> kubectl get jobs
+No resources found in default namespace.
+
+PS> kubectl describe job devops-info-devops-info-service-pre-install
+Error from server (NotFound): jobs.batch "...-pre-install" not found
+
+PS> kubectl describe job devops-info-devops-info-service-post-install
+Error from server (NotFound): jobs.batch "...-post-install" not found
+```
+
+This is expected due `helm.sh/hook-delete-policy: hook-succeeded`.
 
 ## 5. Operations
 
@@ -168,28 +235,26 @@ helm uninstall devops-info
 
 ## 6. Testing and Validation
 
-Validation commands:
+Validation commands used:
 
 ```bash
 helm lint k8s/devops-info-service
 helm template devops-info k8s/devops-info-service
-helm install --dry-run --debug devops-info-dryrun k8s/devops-info-service
+helm install --dry-run=client --debug test-release k8s/devops-info-service
 ```
 
-Accessibility checks:
+Live deployment checks used:
 
 ```bash
-# NodePort
-kubectl get svc
-curl http://<node-ip>:<node-port>/health
-
-# Port-forward
-kubectl port-forward svc/devops-info-devops-info-service 8080:80
-curl http://127.0.0.1:8080/health
+helm list
+kubectl get all
+kubectl get jobs
 ```
 
-Current session constraints:
+Health endpoint verification (successful) via `port-forward`:
 
-- Helm CLI is not installed in this environment.
-- Active Kubernetes API server is not available from this session.
-- Commands above are provided as an executable runbook for local verification.
+```bash
+kubectl port-forward svc/devops-info-devops-info-service 8080:80
+curl.exe http://127.0.0.1:8080/health
+{"status":"healthy","timestamp":"2026-04-02T21:36:20.552Z","uptime_seconds":1593}
+```
