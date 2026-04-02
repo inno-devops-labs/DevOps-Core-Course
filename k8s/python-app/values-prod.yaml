@@ -1,0 +1,27 @@
+replicaCount: 3
+
+image:
+  tag: latest
+
+service:
+  type: LoadBalancer
+  nodePort: null
+
+resources:
+  requests:
+    cpu: 150m
+    memory: 192Mi
+  limits:
+    cpu: 300m
+    memory: 384Mi
+
+env:
+  RELEASE_TRACK: prod
+
+livenessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 5
+
+readinessProbe:
+  initialDelaySeconds: 8
+  periodSeconds: 4

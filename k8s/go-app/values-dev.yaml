@@ -1,0 +1,16 @@
+replicaCount: 1
+
+image:
+  tag: latest
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 150m
+    memory: 96Mi
+
+service:
+  type: NodePort
+  nodePort: 30081

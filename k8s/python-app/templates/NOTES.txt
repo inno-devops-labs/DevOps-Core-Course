@@ -1,0 +1,5 @@
+1. Get the application service:
+   kubectl get svc -n {{ .Release.Namespace }} {{ include "common.fullname" . }}
+
+2. If running on Minikube with a NodePort service:
+   minikube service -n {{ .Release.Namespace }} {{ include "common.fullname" . }} --url
