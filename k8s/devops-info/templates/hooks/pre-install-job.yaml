@@ -1,0 +1,35 @@
+{{- if .Values.hooks.preInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "common-lib.fullname" . }}-pre-install"
+  labels:
+    {{- include "devops-info.hookLabels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.preInstall.weight }}"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info.hookLabels" . | nindent 8 }}
+        job-purpose: "pre-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-validation
+          image: "{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              test -n "{{ .Values.image.repository }}"
+              test {{ .Values.service.port }} -gt 0
+              test {{ .Values.containerPort }} -gt 0
+              echo "Validated Helm values for {{ include "common-lib.fullname" . }}"
+              sleep 8
+{{- end }}

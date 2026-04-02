@@ -1,0 +1,101 @@
+nameOverride: ""
+fullnameOverride: ""
+
+partOf: devops-lab10
+
+replicaCount: 3
+revisionHistoryLimit: 5
+minReadySeconds: 5
+progressDeadlineSeconds: 60
+terminationGracePeriodSeconds: 30
+
+image:
+  repository: devops-info-service
+  tag: lab09
+  pullPolicy: IfNotPresent
+
+containerPort: 5000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: http
+  nodePort: null
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+securityContext:
+  pod:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  container:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+probes:
+  startup:
+    enabled: true
+    httpGet:
+      path: /health
+      port: http
+    failureThreshold: 30
+    periodSeconds: 2
+  liveness:
+    enabled: true
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    httpGet:
+      path: /ready
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+env:
+  HOST: "0.0.0.0"
+  PORT: "5000"
+  LOG_LEVEL: "INFO"
+  SERVICE_NAME: "devops-info-service"
+  SERVICE_VERSION: "1.0.0"
+  SERVICE_DESCRIPTION: "DevOps course info service packaged with Helm"
+  SERVICE_VARIANT: "primary"
+
+hooks:
+  image:
+    repository: busybox
+    tag: "1.36.1"
+    pullPolicy: IfNotPresent
+  preInstall:
+    enabled: true
+    weight: -5
+  postInstall:
+    enabled: true
+    weight: 5
+    smokeTest:
+      attempts: 30
+      sleepSeconds: 2

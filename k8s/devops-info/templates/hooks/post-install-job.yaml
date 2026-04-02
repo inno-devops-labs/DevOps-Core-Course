@@ -1,0 +1,42 @@
+{{- if .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "common-lib.fullname" . }}-post-install"
+  labels:
+    {{- include "devops-info.hookLabels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.postInstall.weight }}"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info.hookLabels" . | nindent 8 }}
+        job-purpose: "post-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-smoke
+          image: "{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              target="http://{{ include "common-lib.fullname" . }}:{{ .Values.service.port }}/health"
+              for attempt in $(seq 1 {{ .Values.hooks.postInstall.smokeTest.attempts }}); do
+                if wget -qO- "${target}" >/dev/null; then
+                  echo "Smoke test passed on attempt ${attempt}"
+                  sleep 5
+                  exit 0
+                fi
+                echo "Waiting for ${target} (${attempt}/{{ .Values.hooks.postInstall.smokeTest.attempts }})"
+                sleep {{ .Values.hooks.postInstall.smokeTest.sleepSeconds }}
+              done
+              echo "Smoke test failed for ${target}"
+              exit 1
+{{- end }}

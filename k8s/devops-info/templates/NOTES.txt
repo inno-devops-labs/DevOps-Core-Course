@@ -1,0 +1,14 @@
+1. Inspect the release:
+   helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+2. Check the workload:
+   kubectl get all -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+3. Access the service:
+{{- if eq .Values.service.type "NodePort" }}
+   export NODE_PORT=$(kubectl get svc {{ include "common-lib.fullname" . }} -n {{ .Release.Namespace }} -o jsonpath='{.spec.ports[0].nodePort}')
+   curl http://127.0.0.1:${NODE_PORT}/health
+{{- else }}
+   kubectl port-forward svc/{{ include "common-lib.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+   curl http://127.0.0.1:8080/health
+{{- end }}

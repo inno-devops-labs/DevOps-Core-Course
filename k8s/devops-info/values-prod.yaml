@@ -1,0 +1,25 @@
+replicaCount: 4
+
+service:
+  type: LoadBalancer
+  nodePort: null
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+env:
+  SERVICE_VERSION: "1.0.1"
+  SERVICE_DESCRIPTION: "Production deployment of the DevOps info service"
+
+probes:
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 5
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 3
