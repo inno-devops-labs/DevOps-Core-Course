@@ -1,0 +1,36 @@
+{{- if .Values.hooks.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-info-service.fullname" . }}-post-install"
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": {{ .Values.hooks.postInstall.weight | quote }}
+    "helm.sh/hook-delete-policy": {{ .Values.hooks.postInstall.deletePolicy | quote }}
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-smoke-test
+          image: {{ .Values.hooks.image }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Running post-install smoke test"
+              for i in $(seq 1 20); do
+                RESPONSE="$(wget -qO- http://{{ include "devops-info-service.fullname" . }}:{{ .Values.service.port }}{{ .Values.hooks.postInstall.smokeTestPath }})" && \
+                echo "$RESPONSE" | grep -q '"status":"healthy"' && \
+                echo "$RESPONSE" && sleep 8 && exit 0
+                sleep 2
+              done
+              echo "Smoke test failed"
+              exit 1
+{{- end }}
