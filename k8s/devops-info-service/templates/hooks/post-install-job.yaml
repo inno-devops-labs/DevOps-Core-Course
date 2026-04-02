@@ -1,0 +1,35 @@
+{{- if and .Values.hooks.enabled .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "devops-info-service.postInstallJobName" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.postInstall.weight }}"
+    "helm.sh/hook-delete-policy": "{{ .Values.hooks.postInstall.deletePolicy }}"
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: {{ .Values.hooks.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: hook
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      containers:
+        - name: post-install
+          image: "{{ default .Values.image.repository .Values.hooks.image.repository }}:{{ default .Values.image.tag .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Running smoke test for {{ include "devops-info-service.fullname" . }}"
+              python -c "import json, urllib.request; payload = json.load(urllib.request.urlopen('http://{{ include "devops-info-service.fullname" . }}:{{ .Values.service.port }}{{ .Values.hooks.postInstall.path }}', timeout=5)); assert payload.get('status') == 'healthy', payload; print(payload)"
+              sleep {{ .Values.hooks.postInstall.sleepSeconds }}
+              echo "Post-install smoke test completed"
+{{- end }}

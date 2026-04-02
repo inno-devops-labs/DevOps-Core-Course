@@ -1,0 +1,17 @@
+apiVersion: v2
+name: devops-info-service
+description: Helm chart for the DevOps Core Course Python information service
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - python
+  - fastapi
+  - devops
+  - kubernetes
+maintainers:
+  - name: rawil
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: file://../common-lib

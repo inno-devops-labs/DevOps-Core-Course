@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  tag: lab10-dev
+
+service:
+  type: NodePort
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+probes:
+  startup:
+    failureThreshold: 10
+    periodSeconds: 4
+  liveness:
+    periodSeconds: 15
+  readiness:
+    initialDelaySeconds: 2
+    periodSeconds: 4

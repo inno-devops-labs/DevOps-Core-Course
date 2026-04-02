@@ -1,0 +1,5 @@
+apiVersion: v2
+name: common-lib
+description: Shared helper templates for DevOps Core Course Helm charts
+type: library
+version: 0.1.0

@@ -1,0 +1,103 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 3
+revisionHistoryLimit: 5
+minReadySeconds: 5
+
+image:
+  repository: ravwvil/devops-info-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+container:
+  portName: http
+  port: 8000
+
+env:
+  host: "0.0.0.0"
+  extra: []
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30080
+  annotations: {}
+
+commonLabels:
+  app.kubernetes.io/component: api
+  app.kubernetes.io/part-of: devops-core-course
+
+podAnnotations: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+automountServiceAccountToken: false
+terminationGracePeriodSeconds: 30
+
+probes:
+  startup:
+    enabled: true
+    httpGet:
+      path: /health
+      port: http
+    failureThreshold: 12
+    periodSeconds: 5
+    timeoutSeconds: 2
+  liveness:
+    enabled: true
+    httpGet:
+      path: /health
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    httpGet:
+      path: /ready
+      port: http
+    initialDelaySeconds: 3
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+hooks:
+  enabled: true
+  image:
+    repository: ""
+    tag: ""
+    pullPolicy: IfNotPresent
+  ttlSecondsAfterFinished: 30
+  preInstall:
+    enabled: true
+    weight: -5
+    deletePolicy: before-hook-creation,hook-succeeded
+    sleepSeconds: 12
+  postInstall:
+    enabled: true
+    weight: 5
+    deletePolicy: before-hook-creation,hook-succeeded
+    sleepSeconds: 12
+    path: /health

@@ -1,0 +1,5 @@
+1. Release: {{ .Release.Name }}
+2. Namespace: {{ .Release.Namespace }}
+
+Port-forward locally:
+  kubectl port-forward svc/{{ include "devops-info-service-go.fullname" . }} 8081:{{ .Values.service.port }} -n {{ .Release.Namespace }}

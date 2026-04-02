@@ -1,0 +1,26 @@
+replicaCount: 3
+minReadySeconds: 10
+
+image:
+  tag: lab10-prod
+
+service:
+  type: LoadBalancer
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+probes:
+  startup:
+    failureThreshold: 18
+    periodSeconds: 5
+  liveness:
+    periodSeconds: 5
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 3

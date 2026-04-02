@@ -1,0 +1,36 @@
+{{- if and .Values.hooks.enabled .Values.hooks.preInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "devops-info-service.preInstallJobName" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.preInstall.weight }}"
+    "helm.sh/hook-delete-policy": "{{ .Values.hooks.preInstall.deletePolicy }}"
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: {{ .Values.hooks.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: hook
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      containers:
+        - name: pre-install
+          image: "{{ default .Values.image.repository .Values.hooks.image.repository }}:{{ default .Values.image.tag .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Validating chart values for {{ include "devops-info-service.fullname" . }}"
+              test {{ .Values.container.port }} -gt 0
+              test {{ .Values.service.port }} -gt 0
+              sleep {{ .Values.hooks.preInstall.sleepSeconds }}
+              echo "Pre-install validation completed"
+{{- end }}

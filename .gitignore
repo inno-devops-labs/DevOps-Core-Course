@@ -30,4 +30,5 @@ __pycache__/
 # ===== Local Kubernetes Lab Artifacts =====
 .tools/
 k8s/lab09-kubeconfig
+k8s/lab10-kubeconfig
 k8s/certs/

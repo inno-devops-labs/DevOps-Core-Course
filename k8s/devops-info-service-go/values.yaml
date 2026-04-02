@@ -1,0 +1,82 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 2
+revisionHistoryLimit: 3
+minReadySeconds: 0
+
+image:
+  repository: ravwvil/devops-info-service-go
+  tag: latest
+  pullPolicy: IfNotPresent
+
+container:
+  portName: http
+  port: 8080
+
+env:
+  host: "0.0.0.0"
+  extra: []
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: http
+  annotations: {}
+
+commonLabels:
+  app.kubernetes.io/component: api
+  app.kubernetes.io/part-of: devops-core-course
+
+podAnnotations: {}
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 150m
+    memory: 128Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+automountServiceAccountToken: false
+terminationGracePeriodSeconds: 30
+
+probes:
+  startup:
+    enabled: true
+    httpGet:
+      path: /health
+      port: http
+    failureThreshold: 12
+    periodSeconds: 5
+    timeoutSeconds: 2
+  liveness:
+    enabled: true
+    httpGet:
+      path: /health
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    httpGet:
+      path: /ready
+      port: http
+    initialDelaySeconds: 3
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
