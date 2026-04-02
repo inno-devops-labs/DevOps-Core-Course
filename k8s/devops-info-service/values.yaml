@@ -1,0 +1,60 @@
+# Default values for devops-info-service.
+# All values are overridable via -f or --set at install/upgrade time.
+
+replicaCount: 3
+
+image:
+  repository: plaffyyy9/devops-info-service
+  tag: "lab9"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5001
+  nodePort: 30080
+
+env:
+  HOST: "0.0.0.0"
+  PORT: "5001"
+  DEBUG: "false"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "100m"
+  limits:
+    memory: "128Mi"
+    cpu: "200m"
+
+# Rolling update strategy — zero downtime
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Liveness probe — restarts the container if Flask becomes unresponsive
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5001
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  failureThreshold: 3
+
+# Readiness probe — removes pod from Service until it passes
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 5001
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  failureThreshold: 3

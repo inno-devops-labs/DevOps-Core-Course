@@ -1,0 +1,47 @@
+# Production environment overrides.
+# Usage: helm install myapp-prod k8s/devops-info-service -f k8s/devops-info-service/values-prod.yaml
+#
+# Differences from defaults (values.yaml):
+#   - 5 replicas for high availability
+#   - pinned stable image tag (not latest)
+#   - higher resource limits to handle real traffic
+#   - LoadBalancer service type for external access
+#   - longer probe delays to accommodate slower prod startup
+#   - debug disabled
+
+replicaCount: 5
+
+image:
+  tag: "lab9"
+
+env:
+  DEBUG: "false"
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 5001
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "200m"
+  limits:
+    memory: "256Mi"
+    cpu: "500m"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5001
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 5001
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  failureThreshold: 3

@@ -1,0 +1,14 @@
+apiVersion: v2
+name: devops-info-service
+description: Helm chart for the DevOps Info Service — a Python Flask app exposing system/runtime info via REST endpoints.
+type: application
+version: 0.1.0
+appVersion: "lab9"
+keywords:
+  - python
+  - flask
+  - devops
+maintainers:
+  - name: plaffyyy
+sources:
+  - https://github.com/plaffyyy/DevOps-Core-Course

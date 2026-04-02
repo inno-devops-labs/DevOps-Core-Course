@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-info-service.fullname" . }}-pre-install"
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    # This job runs BEFORE any chart resources are created.
+    # Weight -5 ensures it runs before other pre-install hooks (lower = earlier).
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    # Delete the job pod after successful completion to keep the namespace clean.
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "devops-info-service.fullname" . }}-pre-install"
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-job
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Pre-install hook: environment validation ==="
+              echo "Checking required environment settings..."
+              echo "HOST: $HOST"
+              echo "PORT: $PORT"
+              echo "Release name: {{ .Release.Name }}"
+              echo "Image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              echo "Pre-install validation complete."
+          env:
+            - name: HOST
+              value: {{ .Values.env.HOST | quote }}
+            - name: PORT
+              value: {{ .Values.env.PORT | quote }}

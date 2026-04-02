@@ -1,0 +1,46 @@
+# Development environment overrides.
+# Usage: helm install myapp-dev k8s/devops-info-service -f k8s/devops-info-service/values-dev.yaml
+#
+# Differences from defaults (values.yaml):
+#   - 1 replica instead of 3 (save resources on local cluster)
+#   - latest tag for fast iteration
+#   - relaxed resource limits
+#   - faster probe intervals to shorten startup feedback loop
+
+replicaCount: 1
+
+image:
+  tag: "lab9"
+
+env:
+  DEBUG: "true"
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5001
+  nodePort: 30080
+
+resources:
+  requests:
+    memory: "32Mi"
+    cpu: "50m"
+  limits:
+    memory: "64Mi"
+    cpu: "100m"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5001
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 5001
+  initialDelaySeconds: 3
+  periodSeconds: 5
+  failureThreshold: 3

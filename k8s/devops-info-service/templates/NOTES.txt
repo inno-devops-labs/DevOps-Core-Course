@@ -1,0 +1,33 @@
+DevOps Info Service has been deployed!
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Image:     {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+Replicas:  {{ .Values.replicaCount }}
+
+{{- if contains "NodePort" .Values.service.type }}
+
+Access the application:
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "devops-info-service.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo "App URL: http://$NODE_IP:$NODE_PORT"
+
+Or via minikube tunnel / port-forward:
+  minikube service {{ include "devops-info-service.fullname" . }} --url
+
+{{- else if contains "LoadBalancer" .Values.service.type }}
+
+Waiting for LoadBalancer IP (may take a minute):
+  kubectl get svc --namespace {{ .Release.Namespace }} {{ include "devops-info-service.fullname" . }} -w
+
+{{- else }}
+
+Port-forward to access locally:
+  kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+  echo "App URL: http://localhost:8080"
+
+{{- end }}
+
+Health endpoints:
+  /health  — liveness check
+  /ready   — readiness check
