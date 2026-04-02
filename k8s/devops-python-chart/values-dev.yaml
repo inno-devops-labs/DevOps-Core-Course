@@ -1,0 +1,42 @@
+# Development environment overrides
+# Only values that differ from values.yaml are specified here
+
+replicaCount: 1
+
+image:
+  tag: "latest"
+  pullPolicy: Never
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+
+service:
+  type: NodePort
+  nodePort: 30080
+
+env:
+  debug: "True"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5001
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5001
+  initialDelaySeconds: 3
+  periodSeconds: 5
+  failureThreshold: 3
+
+ingress:
+  enabled: false

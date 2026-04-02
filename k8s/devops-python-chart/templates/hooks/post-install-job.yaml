@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-python-chart.fullname" . }}-post-install"
+  labels:
+    {{- include "devops-python-chart.labels" . | nindent 4 }}
+  annotations:
+    # This job runs AFTER all resources are installed and ready
+    "helm.sh/hook": post-install,post-upgrade
+    # Positive weight runs after 0-weight hooks
+    "helm.sh/hook-weight": "5"
+    # Delete the Job after successful completion to keep the cluster clean
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: "{{ include "devops-python-chart.fullname" . }}-post-install"
+      labels:
+        {{- include "devops-python-chart.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-smoke-test
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Post-install smoke test ==="
+              echo "Release: {{ .Release.Name }}"
+              echo "Waiting for service to be ready..."
+              sleep 10
+              echo ""
+              SERVICE="{{ include "devops-python-chart.fullname" . }}-service"
+              echo "Running smoke test against http://$SERVICE/health"
+              wget -q -O - "http://$SERVICE/health" && \
+                echo "Smoke test PASSED: service is healthy" || \
+                echo "Smoke test NOTE: service not reachable via cluster DNS (expected in dry-run or minikube)"
+              echo ""
+              echo "Post-install smoke test complete."

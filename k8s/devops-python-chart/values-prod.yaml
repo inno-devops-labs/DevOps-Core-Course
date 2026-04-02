@@ -1,0 +1,49 @@
+# Production environment overrides
+# Only values that differ from values.yaml are specified here
+# NOTE: If running dev and prod simultaneously in the same cluster,
+#       change nodePort to avoid conflicts (e.g., 30082)
+
+replicaCount: 3
+
+image:
+  tag: "1.0.0"         # pinned tag — never use "latest" in production
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+service:
+  type: LoadBalancer
+  # nodePort is not used with LoadBalancer type
+
+env:
+  debug: "False"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5001
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5001
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  failureThreshold: 3
+
+ingress:
+  enabled: true
+  className: nginx
+  host: devops.local
+  tls:
+    enabled: true
+    secretName: devops-tls-secret

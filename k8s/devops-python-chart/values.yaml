@@ -1,0 +1,62 @@
+# Number of pod replicas
+replicaCount: 3
+
+image:
+  repository: mirana18/devops-info-service
+  tag: "latest"
+  # Use Never for local minikube (images built inside minikube docker daemon)
+  # Use IfNotPresent or Always for remote registries
+  pullPolicy: Never
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5001
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+env:
+  port: "5001"
+  host: "0.0.0.0"
+  debug: "False"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5001
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5001
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  failureThreshold: 3
+
+ingress:
+  enabled: true
+  className: nginx
+  host: devops.local
+  tls:
+    enabled: true
+    secretName: devops-tls-secret
+  paths:
+    - path: /app1
+      pathType: Prefix
+
+rollingUpdate:
+  maxSurge: 1
+  maxUnavailable: 0

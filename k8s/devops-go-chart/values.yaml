@@ -1,0 +1,48 @@
+# Number of pod replicas
+replicaCount: 2
+
+image:
+  repository: mirana18/devops-info-service-go
+  tag: "latest"
+  # Use Never for local minikube (images built inside minikube docker daemon)
+  pullPolicy: Never
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8080
+  nodePort: 30081
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+
+env:
+  port: "8080"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  failureThreshold: 3
+
+rollingUpdate:
+  maxSurge: 1
+  maxUnavailable: 0

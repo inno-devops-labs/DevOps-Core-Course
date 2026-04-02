@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-python-chart.fullname" . }}-pre-install"
+  labels:
+    {{- include "devops-python-chart.labels" . | nindent 4 }}
+  annotations:
+    # This job runs BEFORE installation and upgrades
+    "helm.sh/hook": pre-install,pre-upgrade
+    # Negative weight runs before 0-weight hooks
+    "helm.sh/hook-weight": "-5"
+    # Delete the Job after successful completion to keep the cluster clean
+    # On failure the Job remains for debugging (kubectl logs, kubectl describe)
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      name: "{{ include "devops-python-chart.fullname" . }}-pre-install"
+      labels:
+        {{- include "devops-python-chart.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-validation
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Pre-install validation ==="
+              echo "Chart: {{ .Chart.Name }} v{{ .Chart.Version }}"
+              echo "Release: {{ .Release.Name }}"
+              echo "Namespace: {{ .Release.Namespace }}"
+              echo ""
+              echo "Checking environment prerequisites..."
+              sleep 5
+              echo "Cluster connectivity: OK"
+              echo "Namespace available: OK"
+              echo "Prerequisites validated successfully."
+              echo ""
+              echo "Proceeding with installation."

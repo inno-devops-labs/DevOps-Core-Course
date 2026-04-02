@@ -1,0 +1,18 @@
+apiVersion: v2
+name: devops-python-chart
+description: Helm chart for DevOps Core Course Python Flask info service
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - python
+  - flask
+  - devops
+maintainers:
+  - name: Arina Zimina
+sources:
+  - https://github.com/mirana18/devops-info-service
+dependencies:
+  - name: common-lib
+    version: "0.1.0"
+    repository: "file://../common-lib"
