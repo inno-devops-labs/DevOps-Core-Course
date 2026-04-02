@@ -1,0 +1,16 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Release name: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+App version: {{ .Chart.AppVersion }}
+
+Application is deployed with:
+  Replicas: {{ .Values.replicaCount }}
+  Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+  Service type: {{ .Values.service.type }}
+
+To access the application:
+{{- if eq .Values.service.type "ClusterIP" }}
+  kubectl port-forward svc/{{ include "common.fullname" . }} 8081:{{ .Values.service.port }}
+  echo "Application URL: http://localhost:8081"
+{{- end }}

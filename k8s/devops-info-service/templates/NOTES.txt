@@ -1,0 +1,26 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Release name: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+Application is deployed with:
+  Replicas: {{ .Values.replicaCount }}
+  Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+To access the application:
+{{- if eq .Values.service.type "NodePort" }}
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "devops-info-service.fullname" . }})
+  echo "Application URL: http://$NODE_IP:$NODE_PORT"
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "devops-info-service.fullname" . }} --template "{{"{{range (index .status.loadBalancer.ingress 0)}}{{.}}{{end}}"}}")
+  echo "Application URL: http://$SERVICE_IP:{{ .Values.service.port }}"
+{{- else }}
+  kubectl port-forward svc/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+  echo "Application URL: http://localhost:8080"
+{{- end }}
+
+Useful commands:
+  helm status {{ .Release.Name }}
+  helm get values {{ .Release.Name }}
+  kubectl get pods -l "app.kubernetes.io/name={{ include "devops-info-service.name" . }}"
