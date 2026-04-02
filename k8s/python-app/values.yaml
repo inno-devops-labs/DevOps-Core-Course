@@ -1,0 +1,69 @@
+replicaCount: 3
+
+nameOverride: ""
+fullnameOverride: ""
+
+revisionHistoryLimit: 10
+
+image:
+  repository: s1mphonia/devops-core-course-python-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  containerPort: 8000
+  nodePort: 30080
+
+env:
+  - name: APP_ENV
+    value: production
+  - name: PORT
+    value: "8000"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+hooks:
+  enabled: true
+  image:
+    repository: busybox
+    tag: "1.36.1"
+    pullPolicy: IfNotPresent
+  preInstall:
+    weight: -5
+    command:
+      - sh
+      - -c
+      - echo "Validating python-app release before install" && sleep 10 && echo "Pre-install validation complete"
+  postInstall:
+    weight: 5
+    command:
+      - sh
+      - -c
+      - echo "Running python-app smoke test" && sleep 10 && echo "Post-install smoke test complete"

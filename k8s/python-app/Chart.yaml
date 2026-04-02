@@ -1,0 +1,15 @@
+apiVersion: v2
+name: python-app
+description: Helm chart for the Lab 9 Python DevOps info service.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - python
+  - flask
+  - devops
+  - course
+maintainers:
+  - name: Philarmonia
+sources:
+  - https://github.com/ph1larmon1a/DevOps-Core-Course

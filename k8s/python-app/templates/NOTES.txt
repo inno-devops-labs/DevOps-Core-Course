@@ -1,0 +1,13 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Release name: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+The service is exposed as:
+  {{ include "python-app.fullname" . }} on port {{ .Values.service.port }}
+
+To inspect the rendered manifests:
+  helm get manifest {{ .Release.Name }}
+
+To inspect the applied values:
+  helm get values {{ .Release.Name }}
