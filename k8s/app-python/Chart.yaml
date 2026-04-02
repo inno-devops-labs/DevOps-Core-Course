@@ -1,0 +1,14 @@
+apiVersion: v2
+name: app-python
+description: Python DevOps Info Service Helm chart
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - python
+  - devops
+  - web
+maintainers:
+  - name: seryozha
+sources:
+  - https://github.com/seryozha/DevOps-Core-Course

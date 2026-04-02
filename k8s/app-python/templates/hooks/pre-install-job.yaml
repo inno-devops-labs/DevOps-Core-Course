@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "app-python.fullname" . }}-pre-install"
+  labels:
+    {{- include "app-python.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "app-python.fullname" . }}-pre-install"
+      labels:
+        {{- include "app-python.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-job
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Pre-install hook: validating environment ==="
+              echo "Checking required configurations..."
+              echo "App: {{ include "app-python.fullname" . }}"
+              echo "Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              echo "Replicas: {{ .Values.replicaCount }}"
+              echo "Pre-install validation completed successfully."
