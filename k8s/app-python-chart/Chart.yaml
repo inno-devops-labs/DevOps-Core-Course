@@ -1,0 +1,18 @@
+apiVersion: v2
+name: app-python-chart
+description: Helm chart for Lab 10 based on the Lab 9 Kubernetes deployment
+type: application
+version: 0.1.0
+appVersion: "latest"
+
+keywords:
+  - python
+  - flask
+  - kubernetes
+  - helm
+
+maintainers:
+  - name: Akakii
+
+sources:
+  - https://github.com/inno-devops-labs/DevOps-Core-Course
