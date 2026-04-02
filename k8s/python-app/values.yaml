@@ -1,0 +1,91 @@
+# Default values for python-app Helm chart.
+# Override these values using -f values-dev.yaml or -f values-prod.yaml
+
+# Number of pod replicas
+replicaCount: 3
+
+image:
+  repository: newspec/python_app
+  tag: "1.0"
+  pullPolicy: IfNotPresent
+
+# Optional: override the chart name
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
+  nodePort: 30080
+
+# Rolling update strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Container resource requests and limits
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+# Environment variables passed to the container
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "8000"
+  - name: DEBUG
+    value: "False"
+
+# Liveness probe configuration — NEVER comment this out
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Readiness probe configuration — NEVER comment this out
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+# Pod-level security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Container-level security context
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+# Container command override
+command:
+  - "uvicorn"
+  - "app:app"
+  - "--host"
+  - "0.0.0.0"
+  - "--port"
+  - "8000"
+
+# Container port
+containerPort: 8000

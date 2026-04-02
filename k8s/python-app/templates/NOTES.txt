@@ -1,0 +1,41 @@
+Thank you for installing {{ .Chart.Name }} v{{ .Chart.AppVersion }}!
+
+Release name: {{ .Release.Name }}
+Namespace:    {{ .Release.Namespace }}
+
+=== Access the Application ===
+
+{{- if eq .Values.service.type "NodePort" }}
+  Get the NodePort URL:
+    export NODE_PORT=$(kubectl get svc {{ include "python-app.fullname" . }}-svc -n {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}")
+    export NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
+    echo "Application URL: http://$NODE_IP:$NODE_PORT"
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  Wait for the LoadBalancer IP:
+    kubectl get svc {{ include "python-app.fullname" . }}-svc -n {{ .Release.Namespace }} -w
+    export LB_IP=$(kubectl get svc {{ include "python-app.fullname" . }}-svc -n {{ .Release.Namespace }} -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
+    echo "Application URL: http://$LB_IP:{{ .Values.service.port }}"
+{{- else }}
+  Port-forward to access locally:
+    kubectl port-forward svc/{{ include "python-app.fullname" . }}-svc {{ .Values.service.port }}:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+    echo "Application URL: http://localhost:{{ .Values.service.port }}"
+{{- end }}
+
+=== Health Check ===
+  curl http://<APP_URL>/health
+
+=== Useful Commands ===
+  # View pods
+  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
+
+  # View logs
+  kubectl logs -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
+
+  # Upgrade release
+  helm upgrade {{ .Release.Name }} k8s/python-app -f k8s/python-app/values-prod.yaml
+
+  # Rollback
+  helm rollback {{ .Release.Name }} 1
+
+  # Uninstall
+  helm uninstall {{ .Release.Name }}

@@ -1,0 +1,13 @@
+apiVersion: v2
+name: common-lib
+description: Shared Helm template library for all DevOps course applications
+# type: library means this chart cannot be installed directly — only used as a dependency
+type: library
+version: 0.1.0
+keywords:
+  - library
+  - common
+  - helpers
+maintainers:
+  - name: newspec
+    email: newspec@example.com

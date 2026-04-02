@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "python-app.fullname" . }}-pre-install"
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+  annotations:
+    # This job runs BEFORE any chart resources are installed
+    "helm.sh/hook": pre-install
+    # Lower weight = runs first; -5 ensures this runs before other pre-install hooks
+    "helm.sh/hook-weight": "-5"
+    # Delete the job pod after successful completion to keep the cluster clean
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  # Retry once on failure
+  backoffLimit: 1
+  template:
+    metadata:
+      name: "{{ include "python-app.fullname" . }}-pre-install"
+      labels:
+        {{- include "python-app.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: pre-install-hook
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-job
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Pre-install hook starting ==="
+              echo "Release: {{ .Release.Name }}"
+              echo "Namespace: {{ .Release.Namespace }}"
+              echo "Chart: {{ .Chart.Name }}-{{ .Chart.Version }}"
+              echo ""
+              echo "Simulating database migration check..."
+              sleep 5
+              echo "Schema version check: OK"
+              echo "Migration status: up-to-date"
+              echo ""
+              echo "Validating environment prerequisites..."
+              sleep 3
+              echo "Prerequisites check: PASSED"
+              echo ""
+              echo "=== Pre-install hook completed successfully ==="

@@ -1,0 +1,20 @@
+apiVersion: v2
+name: python-app
+description: DevOps Info Service — FastAPI Python application Helm chart
+type: application
+version: 0.1.0
+appVersion: "1.0"
+keywords:
+  - python
+  - fastapi
+  - devops
+  - web
+maintainers:
+  - name: newspec
+    email: newspec@example.com
+sources:
+  - https://github.com/newspec/DevOps-Core-Course
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: "file://../common-lib"
