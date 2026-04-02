@@ -1,8 +1,13 @@
 FROM python:3.14-slim
-RUN useradd --shell sh appuser
+
+ENV PYTHONUNBUFFERED=1
+
+RUN useradd --create-home --shell /bin/sh --uid 10001 appuser
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
+COPY app.py .
+COPY src ./src
+EXPOSE 5000
 USER appuser
 CMD ["python", "app.py"]
