@@ -1,0 +1,5 @@
+apiVersion: v2
+name: common-lib
+description: Common Helm templates shared across DevOps Info Service charts
+type: library
+version: 0.1.0
