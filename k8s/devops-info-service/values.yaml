@@ -1,0 +1,76 @@
+replicaCount: 3
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: linktur/devops-lab2
+  tag: "v1"
+  pullPolicy: IfNotPresent
+
+containerPort: 5000
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: null
+
+podAnnotations: {}
+podLabels: {}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+hookJob:
+  image: busybox:1.36
+  backoffLimit: 0
+
+hooks:
+  preInstall:
+    enabled: true
+    weight: -5
+    deletePolicy: hook-succeeded
+    command:
+      - sh
+      - -c
+      - echo "Pre-install validation started" && sleep 5 && echo "Pre-install validation passed"
+  postInstall:
+    enabled: true
+    weight: 5
+    deletePolicy: hook-succeeded
+    command:
+      - sh
+      - -c
+      - echo "Post-install smoke test started" && sleep 5 && echo "Post-install smoke test passed"
