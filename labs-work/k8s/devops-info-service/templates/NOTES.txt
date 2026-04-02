@@ -1,0 +1,20 @@
+DevOps Info Service has been deployed!
+
+Release: {{ .Release.Name }}
+Chart:   {{ include "devops-info-service.chart" . }}
+
+Service: {{ include "devops-info-service.fullname" . }}
+Type:    {{ .Values.service.type }}
+Port:    {{ .Values.service.port }}
+
+{{- if eq .Values.service.type "NodePort" }}
+
+Access via NodePort:
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "devops-info-service.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+
+Or use port-forward:
+  kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+  echo http://localhost:8080
+{{- end }}

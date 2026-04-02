@@ -1,0 +1,54 @@
+replicaCount: 3
+
+image:
+  repository: mashfeii/devops-info-service-go
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+containerPort: 8080
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "8080"
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8080
+
+resources:
+  requests:
+    memory: "32Mi"
+    cpu: "25m"
+  limits:
+    memory: "64Mi"
+    cpu: "50m"
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 3
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+nameOverride: ""
+fullnameOverride: ""
