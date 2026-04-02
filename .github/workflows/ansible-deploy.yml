@@ -30,9 +30,13 @@ jobs:
           ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
         run: |
           cd ansible
-          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
-          ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass ansible-lint playbooks/*.yml
-          rm /tmp/vault_pass
+          if [ -n "$ANSIBLE_VAULT_PASSWORD" ]; then
+            echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+            ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass ansible-lint playbooks/*.yml
+            rm /tmp/vault_pass
+          else
+            ansible-lint playbooks/*.yml
+          fi
 
   deploy:
     name: Deploy Application
