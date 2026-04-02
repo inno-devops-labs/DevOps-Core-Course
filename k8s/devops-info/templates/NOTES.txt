@@ -1,0 +1,19 @@
+1. Build the local dependency:
+   helm dependency build ./k8s/devops-info
+
+2. Install the chart:
+   helm install devops-info ./k8s/devops-info -f ./k8s/devops-info/values-dev.yaml
+
+3. Inspect the release:
+   helm list
+   kubectl get pods,svc
+
+4. Upgrade to production values:
+   helm upgrade devops-info ./k8s/devops-info -f ./k8s/devops-info/values-prod.yaml
+
+5. Access the service:
+{{- if eq .Values.service.type "NodePort" }}
+   kubectl get svc {{ include "common.fullname" . }}
+{{- else }}
+   kubectl port-forward service/{{ include "common.fullname" . }} 8080:{{ .Values.service.port }}
+{{- end }}
