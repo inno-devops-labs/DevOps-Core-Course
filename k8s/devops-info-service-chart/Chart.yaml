@@ -1,0 +1,18 @@
+apiVersion: v2
+name: devops-info-service
+description: A Helm chart for devops-info-service
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - python
+  - flask
+  - devops
+
+maintainers:
+  - name: Andrew Pavlov
+    email: and.pavlov@innopolis.university
+
+sources:
+  - https://github.com/chaleshka/DevOps-Core-Course

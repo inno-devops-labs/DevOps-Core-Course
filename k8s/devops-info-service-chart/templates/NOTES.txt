@@ -1,0 +1,96 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+Your application should expose:
+- GET /
+- GET /health
+
+Useful commands:
+	kubectl get pods -n {{ .Release.Namespace }}
+	kubectl get svc -n {{ .Release.Namespace }}
+
+{{- if eq .Values.service.type "NodePort" }}
+Service type is NodePort.
+
+Access options:
+1. Minikube:
+	 minikube service {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} --url
+
+2. Manual NodePort access:
+	 export NODE_PORT=$(kubectl get svc {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -o jsonpath='{.spec.ports[0].nodePort}')
+	 export NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+	 echo "http://${NODE_IP}:${NODE_PORT}/"
+	 curl -i "http://${NODE_IP}:${NODE_PORT}/health"
+{{- else if eq .Values.service.type "LoadBalancer" }}
+Service type is LoadBalancer.
+
+Wait for external IP:
+	kubectl get svc {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -w
+
+Then test:
+	export EXTERNAL_IP=$(kubectl get svc {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+	curl -i "http://${EXTERNAL_IP}:{{ .Values.service.port }}/health"
+{{- else }}
+Service type is ClusterIP.
+
+Use port-forward:
+	export POD_NAME=$(kubectl get pods -n {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "devops-info-service.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath='{.items[0].metadata.name}')
+	kubectl -n {{ .Release.Namespace }} port-forward ${POD_NAME} 5000:{{ .Values.service.targetPort }}
+
+In another terminal:
+	curl -i http://127.0.0.1:5000/health
+{{- end }}
+
+Troubleshooting:
+	kubectl describe deployment {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }}
+	kubectl logs -n {{ .Release.Namespace }} deployment/{{ include "devops-info-service.fullname" . }}
+
+
+
+Required Sections:
+
+Chart Overview
+
+Chart structure explanation
+Key template files and their purpose
+Values organization strategy
+
+
+Configuration Guide
+
+Important values and their purpose
+How to customize for different environments
+Example installations with different configurations
+
+
+Hook Implementation
+
+What hooks you implemented and why
+Hook execution order and weights
+Deletion policies explanation
+
+
+Installation Evidence
+
+helm list output
+kubectl get all showing deployed resources
+Hook execution output (kubectl get jobs, kubectl describe job)
+Different environment deployments (dev vs prod)
+
+
+Operations
+
+Installation commands used
+How to upgrade a release
+How to rollback
+How to uninstall
+
+
+Testing & Validation
+
+helm lint output
+helm template verification
+Dry-run output
+Application accessibility verification
