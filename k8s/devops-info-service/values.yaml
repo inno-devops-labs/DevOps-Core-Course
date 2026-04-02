@@ -1,0 +1,86 @@
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 3
+revisionHistoryLimit: 5
+image:
+  repository: devops-info-service-python
+  tag: lab10
+  pullPolicy: IfNotPresent
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  containerPort: 5000
+  nodePort: 30080
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+env:
+  port: "5000"
+  serviceName: devops-info-service
+  serviceVersion: "1.0.0"
+  serviceDescription: DevOps course info service
+  serviceFramework: Flask
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 10
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 3
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  runAsGroup: 999
+  runAsNonRoot: true
+  runAsUser: 999
+hooks:
+  image:
+    repository: busybox
+    tag: "1.37.0"
+    pullPolicy: IfNotPresent
+  preInstall:
+    enabled: true
+    weight: -5
+    deletePolicy:
+      - before-hook-creation
+      - hook-succeeded
+  postInstall:
+    enabled: true
+    weight: 5
+    deletePolicy:
+      - before-hook-creation
+      - hook-succeeded
+    path: /health
+    attempts: 30
+    delaySeconds: 2

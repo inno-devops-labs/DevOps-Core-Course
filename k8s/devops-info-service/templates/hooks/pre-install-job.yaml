@@ -1,0 +1,34 @@
+{{- if .Values.hooks.preInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common-lib.fullname" . }}-pre-install
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hooks
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-weight: "{{ .Values.hooks.preInstall.weight }}"
+    helm.sh/hook-delete-policy: {{ join "," .Values.hooks.preInstall.deletePolicy }}
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "common-lib.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: hooks
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-validation
+          image: "{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - sh
+            - -ec
+            - |
+              test -n "{{ .Values.image.repository }}"
+              test {{ .Values.service.port }} -gt 0
+              test {{ .Values.service.containerPort }} -gt 0
+              echo "validated {{ include "common-lib.fullname" . }}"
+{{- end }}

@@ -1,0 +1,41 @@
+{{- if .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common-lib.fullname" . }}-post-install
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+    app.kubernetes.io/component: hooks
+  annotations:
+    helm.sh/hook: post-install
+    helm.sh/hook-weight: "{{ .Values.hooks.postInstall.weight }}"
+    helm.sh/hook-delete-policy: {{ join "," .Values.hooks.postInstall.deletePolicy }}
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "common-lib.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: hooks
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-smoke-test
+          image: "{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - sh
+            - -ec
+            - |
+              url="http://{{ include "common-lib.fullname" . }}:{{ .Values.service.port }}{{ .Values.hooks.postInstall.path }}"
+              for attempt in $(seq 1 {{ .Values.hooks.postInstall.attempts }}); do
+                if wget -qO- "$url" >/dev/null 2>&1; then
+                  echo "smoke test passed on attempt $attempt"
+                  sleep 5
+                  exit 0
+                fi
+                sleep {{ .Values.hooks.postInstall.delaySeconds }}
+              done
+              echo "smoke test failed"
+              exit 1
+{{- end }}
