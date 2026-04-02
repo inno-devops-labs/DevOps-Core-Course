@@ -1,0 +1,14 @@
+apiVersion: v2
+name: devops-info
+description: Helm chart for the DevOps info Flask service from Lab 9.
+type: application
+version: 0.1.0
+appVersion: "lab2"
+keywords:
+  - python
+  - flask
+  - kubernetes
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: file://../common-lib
