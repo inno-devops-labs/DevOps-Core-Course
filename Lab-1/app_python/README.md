@@ -63,6 +63,7 @@ docker pull linktur/devops-lab2:v1
 ## API Endpoints
 - `GET /` - Service and system information
 - `GET /health` - Health check
+- `GET /ready` - Readiness check
 - `GET /swagger.json` - OpenAPI spec
 - `GET /docs` - Swagger UI
 

@@ -32,3 +32,16 @@ pulumi/venv/
 *.jks
 *.json
 credentials
+
+# Ansible
+*.retry
+.vault_pass
+ansible/group_vars/all.yml
+ansible/group_vars/*.bak
+ansible/inventory/*.pyc
+__pycache__/
+
+# Monitoring
+monitoring/.env
+!monitoring/grafana/dashboards/lab07-logs-dashboard.json
+!monitoring/grafana/dashboards/lab08-metrics-dashboard.json

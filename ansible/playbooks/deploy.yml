@@ -1,0 +1,22 @@
+---
+- name: Deploy application
+  hosts: webservers
+  become: true
+
+  pre_tasks:
+    - name: Check whether local group_vars/all.yml exists
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/../group_vars/all.yml"
+      register: deploy_local_group_vars
+      delegate_to: localhost
+      become: false
+
+    - name: Load local vaulted variables when available
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../group_vars/all.yml"
+      when: deploy_local_group_vars.stat.exists
+
+  roles:
+    - role: web_app
+      tags:
+        - web_app

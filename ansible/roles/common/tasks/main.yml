@@ -1,0 +1,59 @@
+---
+- name: Install common packages and configure timezone
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: "{{ common_apt_cache_valid_time }}"
+        lock_timeout: 600
+
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+        lock_timeout: 600
+
+    - name: Read current timezone
+      ansible.builtin.command: timedatectl show --property=Timezone --value
+      register: common_current_timezone
+      changed_when: false
+
+    - name: Set timezone
+      ansible.builtin.command: "timedatectl set-timezone {{ common_timezone }}"
+      when: common_current_timezone.stdout != common_timezone
+      changed_when: true
+  rescue:
+    - name: Recover apt metadata after failed package preparation
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
+      changed_when: false
+
+    - name: Retry apt cache update after recovery
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: "{{ common_apt_cache_valid_time }}"
+        lock_timeout: 600
+  always:
+    - name: Record common role completion marker
+      ansible.builtin.lineinfile:
+        path: /tmp/ansible-common-role.log
+        line: "common role completed"
+        create: true
+        mode: "0644"
+  become: true
+  tags:
+    - packages
+
+- name: Ensure automation user exists
+  block:
+    - name: Create or update managed user
+      ansible.builtin.user:
+        name: "{{ common_user_name }}"
+        state: present
+        create_home: true
+        shell: /bin/bash
+  when: common_manage_user | bool
+  become: true
+  tags:
+    - users

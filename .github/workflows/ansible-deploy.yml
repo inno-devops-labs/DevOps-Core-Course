@@ -1,0 +1,119 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - "ansible/**"
+      - "!ansible/docs/**"
+      - ".github/workflows/ansible-deploy.yml"
+  pull_request:
+    branches:
+      - master
+      - main
+    paths:
+      - "ansible/**"
+      - "!ansible/docs/**"
+      - ".github/workflows/ansible-deploy.yml"
+
+concurrency:
+  group: ansible-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Ansible toolchain
+        run: |
+          pip install ansible ansible-lint
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Run ansible-lint
+        working-directory: ansible
+        run: ansible-lint playbooks/*.yml
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Ansible toolchain
+        run: |
+          pip install ansible
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Configure SSH access
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Create runtime inventory
+        run: |
+          cat > /tmp/hosts.ini <<EOF
+          [webservers]
+          ci-target ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }} ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+          [webservers:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          EOF
+
+      - name: Deploy with Ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+        working-directory: ansible
+        run: |
+          set -e
+
+          VAULT_ARGS=""
+          if [ -f group_vars/all.yml ]; then
+            if [ -z "$ANSIBLE_VAULT_PASSWORD" ]; then
+              echo "group_vars/all.yml exists but ANSIBLE_VAULT_PASSWORD is empty"
+              exit 1
+            fi
+            echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+            VAULT_ARGS="--vault-password-file /tmp/vault_pass"
+          fi
+
+          ansible-playbook playbooks/deploy.yml \
+            -i /tmp/hosts.ini \
+            $VAULT_ARGS \
+            -e "dockerhub_username=$DOCKERHUB_USERNAME" \
+            -e "dockerhub_password=$DOCKERHUB_PASSWORD"
+
+          rm -f /tmp/vault_pass
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          curl -f "http://${{ secrets.VM_HOST }}:5000/" >/dev/null
+          curl -f "http://${{ secrets.VM_HOST }}:5000/health" >/dev/null

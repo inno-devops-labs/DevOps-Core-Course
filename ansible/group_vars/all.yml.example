@@ -1,0 +1,26 @@
+---
+# Copy this file to group_vars/all.yml and create it with:
+# ansible-vault create group_vars/all.yml
+#
+# Example content for encrypted file:
+dockerhub_username: "your-dockerhub-username"
+dockerhub_password: "your-dockerhub-access-token"
+
+app_name: "devops-lab2"
+docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+docker_tag: "latest"
+
+app_port: 5000                 # Host port
+app_internal_port: 5000        # Container port
+compose_project_dir: "/opt/{{ app_name }}"
+
+# Wipe safety switch (used with --tags web_app_wipe)
+web_app_wipe: false
+
+# Monitoring role (Lab07-Lab08 bonus)
+monitoring_grafana_admin_user: "admin"
+monitoring_grafana_admin_password: "replace-with-strong-password"
+# monitoring_project_dir: "/opt/monitoring"
+# monitoring_app_enabled: true
+# monitoring_prometheus_retention_time: "15d"
+# monitoring_prometheus_retention_size: "10GB"

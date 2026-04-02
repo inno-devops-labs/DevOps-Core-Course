@@ -1,0 +1,29 @@
+---
+docker_apt_cache_valid_time: 3600
+docker_user: "{{ ansible_user | default('ubuntu') }}"
+
+docker_prerequisite_packages:
+  - ca-certificates
+  - curl
+  - gnupg
+
+docker_apt_keyring_dir: /etc/apt/keyrings
+docker_apt_keyring_file: /etc/apt/keyrings/docker.asc
+docker_gpg_key_url: "https://download.docker.com/linux/{{ docker_repo_distribution }}/gpg"
+
+docker_repo_distribution: >-
+  {{ 'ubuntu' if ansible_distribution | lower == 'ubuntu' else 'debian' }}
+docker_apt_release: "{{ ansible_distribution_release }}"
+
+docker_architecture_map:
+  x86_64: amd64
+  aarch64: arm64
+  armv7l: armhf
+
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  - python3-docker

@@ -1,0 +1,6 @@
+---
+- name: Run Provision Playbook
+  import_playbook: provision.yml
+
+- name: Run Deploy Playbook
+  import_playbook: deploy.yml
