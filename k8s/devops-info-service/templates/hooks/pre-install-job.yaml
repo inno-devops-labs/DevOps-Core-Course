@@ -1,0 +1,40 @@
+{{- if .Values.hooks.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-info-service.fullname" . }}-pre-install"
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.preInstall.weight }}"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  ttlSecondsAfterFinished: {{ .Values.hooks.preInstall.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info-service.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-validation
+          image: "{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - python
+            - -c
+            - |
+              import sys
+              replica_count = int("{{ .Values.replicaCount }}")
+              image_repo = "{{ .Values.image.repository }}"
+              image_tag = "{{ .Values.image.tag }}"
+              print("Validating release {{ .Release.Name }}")
+              if replica_count < 1:
+                  raise SystemExit("replicaCount must be >= 1")
+              if not image_repo:
+                  raise SystemExit("image.repository must not be empty")
+              print(f"Replica count: {replica_count}")
+              print(f"Image: {image_repo}:{image_tag}")
+              print("Pre-install validation completed")
+{{- end }}
