@@ -1,0 +1,34 @@
+{{- if .Values.hooks.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-info-service.fullname" . }}-pre-install"
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": {{ .Values.hooks.preInstall.weight | quote }}
+    "helm.sh/hook-delete-policy": {{ .Values.hooks.preInstall.deletePolicy | quote }}
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-validation
+          image: {{ .Values.hooks.image }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Validating Helm values before install"
+              test {{ .Values.replicaCount }} -ge 1
+              test {{ .Values.containerPort }} -ge 1
+              echo "Replica count: {{ .Values.replicaCount }}"
+              echo "Container port: {{ .Values.containerPort }}"
+              sleep 8
+              echo "Pre-install validation completed successfully"
+{{- end }}

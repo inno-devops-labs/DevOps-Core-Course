@@ -1,0 +1,33 @@
+replicaCount: 1
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30081
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 3
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3

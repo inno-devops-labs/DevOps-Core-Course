@@ -1,0 +1,17 @@
+1. Check the release:
+  helm status {{ .Release.Name }}
+
+2. Inspect resources:
+  kubectl get deploy,svc,pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+3. Access the application:
+  {{- if eq .Values.service.type "NodePort" }}
+  minikube service {{ include "devops-info-service.fullname" . }} --url
+  {{- else if eq .Values.service.type "LoadBalancer" }}
+  kubectl get svc {{ include "devops-info-service.fullname" . }} -w
+  {{- else }}
+  kubectl port-forward service/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+  {{- end }}
+
+4. Verify the health endpoint:
+  curl http://127.0.0.1:8080/health
