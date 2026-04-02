@@ -1,0 +1,54 @@
+# Development environment values
+# Overrides for development environment
+
+replicaCount: 1
+
+image:
+  repository: saddogsec/devops-info-service
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
+  nodePort: 30080
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 5
+
+# Environment variables for development
+env:
+  APP_ENV: "development"
+  LOG_LEVEL: "debug"
+  PORT: "8000"
+
+# Labels for development
+labels:
+  app: devops-app
+  version: v1
+  environment: development
