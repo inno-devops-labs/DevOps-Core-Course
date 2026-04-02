@@ -1,0 +1,64 @@
+replicaCount: 5
+
+image:
+  repository: egorlazutkin/devops-info-service
+  tag: "lab2"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+containerPort: 5000
+
+env:
+  HOST: "0.0.0.0"
+  PORT: "5000"
+  DEBUG: "false"
+  RELEASE_VERSION: "lab9-v1"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+readinessProbe:
+  path: /health
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+livenessProbe:
+  path: /health
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+hooks:
+  enabled: true
+  image: busybox:1.36
+
+  preInstall:
+    weight: "-5"
+    command:
+      - sh
+      - -c
+      - |
+        echo "Pre-install validation started"
+        echo "Checking chart configuration..."
+        sleep 5
+        echo "Pre-install validation completed"
+
+  postInstall:
+    weight: "5"
+    command:
+      - sh
+      - -c
+      - |
+        echo "Post-install smoke test started"
+        echo "Checking application deployment..."
+        sleep 5
+        echo "Post-install smoke test completed"

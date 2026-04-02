@@ -1,0 +1,25 @@
+{{- if .Values.hooks.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-info-service.fullname" . }}-pre-install"
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.preInstall.weight }}"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ include "devops-info-service.name" . }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-job
+          image: "{{ .Values.hooks.image }}"
+          command:
+            {{- toYaml .Values.hooks.preInstall.command | nindent 12 }}
+  backoffLimit: 0
+{{- end }}

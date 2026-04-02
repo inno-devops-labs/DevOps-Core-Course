@@ -1,0 +1,13 @@
+1. The release {{ .Release.Name }} has been deployed.
+
+2. Check the application resources:
+   kubectl get all
+
+3. Check the service:
+   kubectl get svc {{ include "devops-info-service.fullname" . }}
+
+4. If using NodePort, access the app via:
+   http://<NODE_IP>:{{ .Values.service.nodePort }}
+
+5. Health endpoint:
+   http://<NODE_IP>:{{ .Values.service.nodePort }}/health
