@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-info.fullname" . }}-pre-install"
+  labels:
+    {{- include "devops-info.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-check
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - >
+              echo "Pre-install validation for release {{ .Release.Name }}";
+              sleep 3;
+              echo "Validation complete";

@@ -1,0 +1,48 @@
+replicaCount: 3
+
+image:
+  repository: devops-info-service-python
+  tag: lab2
+  pullPolicy: IfNotPresent
+
+env:
+  host: "0.0.0.0"
+  port: "5000"
+  debug: "false"
+
+containerPort: 5000
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+strategy:
+  maxSurge: 1
+  maxUnavailable: 0

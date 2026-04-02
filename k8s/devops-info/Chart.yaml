@@ -1,0 +1,10 @@
+apiVersion: v2
+name: devops-info
+description: Helm chart for devops-info Flask service
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - python
+  - flask
+  - devops
