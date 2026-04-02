@@ -22,3 +22,7 @@ This file re-exports common-lib helpers under local names.
 {{- define "devops-info-python.selectorLabels" -}}
 {{- include "common.selectorLabels" . }}
 {{- end }}
+
+{{- define "devops-info-python.envVars" -}}
+{{- include "common.envVars" . }}
+{{- end }}

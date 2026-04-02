@@ -20,7 +20,20 @@ spec:
     metadata:
       labels:
         {{- include "common.selectorLabels" . | nindent 8 }}
+      {{- with .Values.vault }}
+      {{- if .enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .role | quote }}
+        vault.hashicorp.com/agent-inject-secret-config: {{ .secretPath | quote }}
+        {{- if .template }}
+        vault.hashicorp.com/agent-inject-template-config: |
+          {{- .template | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
     spec:
+      serviceAccountName: {{ include "common.fullname" . }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -30,8 +43,11 @@ spec:
               protocol: TCP
           {{- if .Values.env }}
           env:
-            {{- toYaml .Values.env | nindent 12 }}
+            {{- include "common.envVars" . | nindent 12 }}
           {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ include "common.fullname" . }}-secret
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:

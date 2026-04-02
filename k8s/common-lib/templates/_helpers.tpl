@@ -45,3 +45,14 @@ Selector labels
 app.kubernetes.io/name: {{ include "common.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Common environment variables from .Values.env list.
+Renders env entries from values avoiding raw toYaml for DRY reuse.
+*/}}
+{{- define "common.envVars" -}}
+{{- range .Values.env }}
+- name: {{ .name }}
+  value: {{ .value | quote }}
+{{- end }}
+{{- end }}

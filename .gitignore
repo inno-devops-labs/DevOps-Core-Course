@@ -29,3 +29,6 @@ __pycache__/
 *.pyc
 *.pyo
 venv/
+
+# Local course secrets (do not commit)
+k8s/COURSE_CREDENTIALS.local.md

@@ -53,5 +53,20 @@ readinessProbe:
   timeoutSeconds: 2
   failureThreshold: 3
 
+secrets:
+  DB_USERNAME: "placeholder"
+  DB_PASSWORD: "placeholder"
+
+vault:
+  enabled: true
+  role: "devops-info"
+  secretPath: "secret/data/devops-info/config"
+  template: |
+    {{- with secret "secret/data/devops-info/config" -}}
+    DB_USERNAME={{ .Data.data.username }}
+    DB_PASSWORD={{ .Data.data.password }}
+    API_KEY={{ .Data.data.api_key }}
+    {{- end -}}
+
 nameOverride: ""
 fullnameOverride: ""

@@ -22,3 +22,7 @@ This file re-exports common-lib helpers under local names.
 {{- define "devops-info-go.selectorLabels" -}}
 {{- include "common.selectorLabels" . }}
 {{- end }}
+
+{{- define "devops-info-go.envVars" -}}
+{{- include "common.envVars" . }}
+{{- end }}
