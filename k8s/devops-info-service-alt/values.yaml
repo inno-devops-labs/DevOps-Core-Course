@@ -1,0 +1,78 @@
+nameOverride: ""
+fullnameOverride: ""
+
+partOf: devops-core-course
+component: web
+
+replicaCount: 2
+revisionHistoryLimit: 3
+
+image:
+  repository: devops-info-service-go
+  tag: lab10-go
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+podAnnotations: {}
+podLabels: {}
+
+containerPort: 8080
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "8080"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: http
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+probes:
+  liveness:
+    path: /health
+    port: http
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    path: /health
+    port: http
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+hooks:
+  enabled: true
+  deletePolicy: before-hook-creation,hook-succeeded
+  ttlSecondsAfterFinished: 30
+  backoffLimit: 0
+  image:
+    repository: busybox
+    tag: "1.36.1"
+    pullPolicy: IfNotPresent
+  preInstall:
+    enabled: true
+    weight: -5
+    message: "Validating bonus release configuration before install"
+  postInstall:
+    enabled: true
+    weight: 5
+    message: "Running bonus service smoke test after install"

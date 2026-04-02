@@ -1,0 +1,48 @@
+replicaCount: 1
+
+image:
+  tag: lab10-python
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5000"
+  - name: SERVICE_NAME
+    value: "devops-info-service-dev"
+  - name: SERVICE_VERSION
+    value: "1.0.0-dev"
+  - name: SERVICE_DESCRIPTION
+    value: "Development deployment of the Python DevOps Info Service"
+  - name: RELEASE_TRACK
+    value: "dev"
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30081
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+probes:
+  liveness:
+    path: /health
+    port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    path: /health
+    port: http
+    initialDelaySeconds: 3
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3

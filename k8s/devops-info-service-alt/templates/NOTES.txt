@@ -1,0 +1,5 @@
+1. Get the bonus release status:
+   helm status {{ .Release.Name }} --namespace {{ .Release.Namespace }}
+
+2. Inspect the bonus service:
+   kubectl get svc {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }}

@@ -1,0 +1,8 @@
+1. Get the release status:
+   helm status {{ .Release.Name }} --namespace {{ .Release.Namespace }}
+
+2. Inspect the application service:
+   kubectl get svc {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }}
+
+3. For NodePort access:
+   kubectl get svc {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }} -o wide

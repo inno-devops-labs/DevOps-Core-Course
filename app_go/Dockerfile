@@ -11,6 +11,9 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /build
 
+ARG TARGETOS=linux
+ARG TARGETARCH
+
 # Copy go module files first (layer caching)
 COPY go.mod .
 
@@ -24,7 +27,7 @@ COPY main.go .
 # CGO_ENABLED=0: Pure Go, no C dependencies
 # -ldflags="-s -w": Strip debug info for smaller binary
 # -o: Output binary name
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -ldflags="-s -w" \
     -o devops-info-service \
     main.go

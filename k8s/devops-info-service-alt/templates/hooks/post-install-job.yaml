@@ -1,0 +1,32 @@
+{{- if and .Values.hooks.enabled .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common-lib.fullname" . }}-post-install
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.postInstall.weight }}"
+    "helm.sh/hook-delete-policy": {{ .Values.hooks.deletePolicy | quote }}
+spec:
+  backoffLimit: {{ .Values.hooks.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.hooks.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "common-lib.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-smoke
+          image: "{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - >
+              echo "{{ .Values.hooks.postInstall.message }}";
+              sleep 5;
+              wget -qO- http://{{ include "common-lib.fullname" . }}:{{ .Values.service.port }}/health;
+{{- end }}

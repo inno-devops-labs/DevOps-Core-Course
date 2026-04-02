@@ -1,0 +1,34 @@
+{{- if and .Values.hooks.enabled .Values.hooks.preInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common-lib.fullname" . }}-pre-install
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "{{ .Values.hooks.preInstall.weight }}"
+    "helm.sh/hook-delete-policy": {{ .Values.hooks.deletePolicy | quote }}
+spec:
+  backoffLimit: {{ .Values.hooks.backoffLimit }}
+  ttlSecondsAfterFinished: {{ .Values.hooks.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "common-lib.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-check
+          image: "{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - >
+              echo "{{ .Values.hooks.preInstall.message }}";
+              echo "Release={{ .Release.Name }} Namespace={{ .Release.Namespace }}";
+              echo "Image={{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}";
+              echo "Replicas={{ .Values.replicaCount }} ServiceType={{ .Values.service.type }}";
+              sleep 5;
+{{- end }}
