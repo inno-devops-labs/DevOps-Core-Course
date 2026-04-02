@@ -1,0 +1,29 @@
+replicaCount: 3
+
+image:
+  tag: "1.0.0"
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 5000
+  nodePort: null
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+env:
+  RELEASE_VERSION: "prod"
+
+probes:
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 3
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 5

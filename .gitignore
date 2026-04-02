@@ -70,6 +70,7 @@ yarn-error.log*
 *.sublime-project
 *.sublime-workspace
 *.code-workspace
+.codex
 
 # OS files
 .DS_Store
