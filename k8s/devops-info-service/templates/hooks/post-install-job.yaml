@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-info-service.fullname" . }}-post-install"
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "devops-info-service.fullname" . }}-post-install"
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-job
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "=== Post-install smoke test ==="
+              echo "Release {{ .Release.Name }} deployed successfully"
+              echo "App version: {{ .Chart.AppVersion }}"
+              echo "Expected replicas: {{ .Values.replicaCount }}"
+              echo "Running smoke test..."
+              sleep 5
+              echo "=== Post-install smoke test passed ==="

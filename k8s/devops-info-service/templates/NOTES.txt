@@ -1,0 +1,22 @@
+DevOps Info Service has been deployed successfully!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Chart version: {{ .Chart.Version }}
+App version: {{ .Chart.AppVersion }}
+
+Service type: {{ .Values.service.type }}
+Replicas: {{ .Values.replicaCount }}
+
+{{- if eq .Values.service.type "NodePort" }}
+Access the application via NodePort:
+  kubectl port-forward service/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+  curl http://127.0.0.1:8080/health
+{{- else if eq .Values.service.type "LoadBalancer" }}
+Get the LoadBalancer IP:
+  kubectl get service {{ include "devops-info-service.fullname" . }} --watch
+{{- end }}
+
+Check deployment status:
+  kubectl get pods -l "app.kubernetes.io/instance={{ .Release.Name }}"
+  helm status {{ .Release.Name }}
