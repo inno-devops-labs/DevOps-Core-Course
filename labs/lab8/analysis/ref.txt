@@ -1,0 +1,1 @@
+Using digest ref: localhost:5000/juice-shop@sha256:b029fa83327aa8a3bbcaf161af6269c18c80134942437cb90794233502554e48
