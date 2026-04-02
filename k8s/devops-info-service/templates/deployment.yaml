@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+      containers:
+        - name: {{ include "devops-info-service.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: {{ .Values.service.portName }}
+              containerPort: {{ .Values.service.containerPort }}
+          env:
+            - name: HOST
+              value: {{ .Values.env.host | quote }}
+            - name: PORT
+              value: {{ .Values.env.port | quote }}
+            - name: SERVICE_NAME
+              value: {{ .Values.env.serviceName | quote }}
+            - name: SERVICE_VERSION
+              value: {{ .Values.env.serviceVersion | quote }}
+            - name: SERVICE_DESCRIPTION
+              value: {{ .Values.env.serviceDescription | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.env.logLevel | quote }}
+            - name: PYTHONDONTWRITEBYTECODE
+              value: {{ .Values.env.pythondontwritebytecode | quote }}
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.containerSecurityContext.allowPrivilegeEscalation }}
+            readOnlyRootFilesystem: {{ .Values.containerSecurityContext.readOnlyRootFilesystem }}
+            capabilities:
+              drop:
+                {{- range .Values.containerSecurityContext.capabilities.drop }}
+                - {{ . | quote }}
+                {{- end }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu | quote }}
+              memory: {{ .Values.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu | quote }}
+              memory: {{ .Values.resources.limits.memory | quote }}
+          readinessProbe:
+{{- toYaml .Values.probes.readiness | nindent 12 }}
+          livenessProbe:
+{{- toYaml .Values.probes.liveness | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+

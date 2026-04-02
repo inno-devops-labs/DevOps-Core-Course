@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-app-java.fullname" . }}
+  labels:
+    {{- include "devops-app-java.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "devops-app-java.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: {{ .Values.service.portName }}
+      protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      {{- if and (eq .Values.service.type "NodePort") (not (empty .Values.service.nodePort)) }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+

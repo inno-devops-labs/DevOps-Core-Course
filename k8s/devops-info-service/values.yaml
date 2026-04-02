@@ -1,0 +1,78 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 3
+
+image:
+  repository: gghost1/devops-lab-app-python
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  portName: http
+  targetPort: http
+  containerPort: 5000
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+# Security contexts based on the Lab 9 manifests.
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - "ALL"
+
+env:
+  host: "0.0.0.0"
+  port: 5000
+  serviceName: "devops-info-service"
+  serviceVersion: "latest"
+  serviceDescription: "DevOps course info service"
+  logLevel: "INFO"
+  pythondontwritebytecode: "1"
+
+probes:
+  readiness:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 3
+    periodSeconds: 3
+    timeoutSeconds: 2
+    failureThreshold: 3
+  liveness:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+hooks:
+  preInstall:
+    image: busybox
+    tag: "1.36"
+    pullPolicy: IfNotPresent
+    sleepSeconds: 2
+  postInstall:
+    image: busybox
+    tag: "1.36"
+    pullPolicy: IfNotPresent
+    sleepSeconds: 2
+

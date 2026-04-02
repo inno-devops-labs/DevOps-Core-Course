@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-info-service.fullname" . }}-pre-install"
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: "{{ include "devops-info-service.fullname" . }}-pre-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install
+          image: "{{ .Values.hooks.preInstall.image }}:{{ .Values.hooks.preInstall.tag }}"
+          imagePullPolicy: {{ .Values.hooks.preInstall.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Pre-install hook is running for {{ .Release.Name }}";
+              sleep {{ .Values.hooks.preInstall.sleepSeconds }};
+              echo "Pre-install hook completed";
+

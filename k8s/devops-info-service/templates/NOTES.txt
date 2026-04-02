@@ -1,0 +1,18 @@
+This chart deploys `devops-info-service` with a Kubernetes Deployment and Service.
+
+To check resources:
+  kubectl get pods -l app.kubernetes.io/name={{ include "devops-info-service.name" . }}
+  kubectl get svc -l app.kubernetes.io/name={{ include "devops-info-service.name" . }}
+
+Service access:
+{{- if eq .Values.service.type "NodePort" }}
+  NodePort: {{ .Values.service.nodePort }}
+  In Minikube you can use:
+    minikube service {{ include "devops-info-service.fullname" . }} --url
+{{- else }}
+  Service type is {{ .Values.service.type }}. If you are using Minikube, run:
+    minikube tunnel
+  Then access via the LoadBalancer IP/hostname:
+    kubectl get svc {{ include "devops-info-service.fullname" . }} -o wide
+{{- end }}
+

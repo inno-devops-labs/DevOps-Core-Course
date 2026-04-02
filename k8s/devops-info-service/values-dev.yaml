@@ -1,0 +1,35 @@
+replicaCount: 1
+
+image:
+  tag: "latest"
+
+resources:
+  requests:
+    cpu: "25m"
+    memory: "48Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+
+service:
+  type: NodePort
+  nodePort: 30082
+
+env:
+  serviceVersion: "latest"
+  serviceDescription: "Dev environment (NodePort)"
+
+probes:
+  readiness:
+    initialDelaySeconds: 2
+    periodSeconds: 3
+  liveness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+hooks:
+  preInstall:
+    sleepSeconds: 6
+  postInstall:
+    sleepSeconds: 6
+

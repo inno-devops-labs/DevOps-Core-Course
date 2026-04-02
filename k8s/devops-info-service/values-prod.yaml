@@ -1,0 +1,40 @@
+replicaCount: 3
+
+image:
+  tag: "1.0.0"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "300m"
+    memory: "384Mi"
+
+service:
+  type: LoadBalancer
+  # Helm template will omit nodePort unless service.type == NodePort.
+  nodePort: ""
+
+env:
+  serviceVersion: "1.0.0"
+  serviceDescription: "Production environment (LoadBalancer)"
+
+probes:
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 3
+    timeoutSeconds: 2
+    failureThreshold: 3
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+hooks:
+  preInstall:
+    sleepSeconds: 2
+  postInstall:
+    sleepSeconds: 2
+

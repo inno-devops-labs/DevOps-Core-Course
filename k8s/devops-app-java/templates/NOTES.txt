@@ -1,0 +1,18 @@
+This chart deploys `devops-app-java` with a Kubernetes Deployment and Service.
+
+To check resources:
+  kubectl get pods -l app.kubernetes.io/name={{ include "devops-app-java.name" . }}
+  kubectl get svc -l app.kubernetes.io/name={{ include "devops-app-java.name" . }}
+
+Service access:
+{{- if eq .Values.service.type "NodePort" }}
+  NodePort: {{ .Values.service.nodePort }}
+  In Minikube you can use:
+    minikube service {{ include "devops-app-java.fullname" . }} --url
+{{- else }}
+  Service type is {{ .Values.service.type }}. If you are using Minikube, run:
+    minikube tunnel
+  Then access via the LoadBalancer IP/hostname:
+    kubectl get svc {{ include "devops-app-java.fullname" . }} -o wide
+{{- end }}
+

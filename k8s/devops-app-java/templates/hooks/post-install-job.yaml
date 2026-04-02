@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-app-java.fullname" . }}-post-install"
+  labels:
+    {{- include "devops-app-java.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: "{{ include "devops-app-java.fullname" . }}-post-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install
+          image: "{{ .Values.hooks.postInstall.image }}:{{ .Values.hooks.postInstall.tag }}"
+          imagePullPolicy: {{ .Values.hooks.postInstall.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Post-install hook is running for {{ .Release.Name }}";
+              sleep {{ .Values.hooks.postInstall.sleepSeconds }};
+              echo "Post-install hook completed";
+
