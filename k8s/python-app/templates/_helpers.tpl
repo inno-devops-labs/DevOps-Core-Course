@@ -22,3 +22,10 @@ All naming and labeling logic is delegated to the shared library chart.
 {{- define "python-app.selectorLabels" -}}
 {{- include "common.selectorLabels" . }}
 {{- end }}
+
+{{- define "python-app.envVars" -}}
+{{- range .Values.env }}
+- name: {{ .name }}
+  value: {{ .value | quote }}
+{{- end }}
+{{- end }}

@@ -46,6 +46,15 @@ env:
   - name: PORT
     value: "5000"
 
+secrets:
+  username: "admin"
+  password: "changeme"
+
+vault:
+  enabled: false
+  role: "python-app"
+  secretPath: "secret/data/python-app/config"
+
 strategy:
   type: RollingUpdate
   rollingUpdate:
