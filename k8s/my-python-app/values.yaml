@@ -1,0 +1,50 @@
+# Default values for my-python-app
+replicaCount: 3
+
+image:
+  repository: acecution/devops-info-service
+  tag: "metrics"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
+  nodePort: 30080
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 3
+  timeoutSeconds: 2
+  successThreshold: 1
+  failureThreshold: 3
+
+env:
+  - name: PORT
+    value: "8000"
+  - name: HOST
+    value: "0.0.0.0"
