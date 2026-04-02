@@ -1,0 +1,41 @@
+{{- if .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-post-install
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.hooks.postInstall.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install
+          image: "{{ .Values.hooks.postInstall.image.repository }}:{{ .Values.hooks.postInstall.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.postInstall.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - >-
+              echo "[post-install] starting smoke test";
+              i=0;
+              until wget -qO- "http://{{ include "common.fullname" . }}:{{ .Values.service.port }}{{ .Values.readinessProbe.path }}" | grep -q healthy; do
+                i=$((i+1));
+                if [ "$i" -ge {{ .Values.hooks.postInstall.retries }} ]; then
+                  echo "[post-install] smoke test failed";
+                  exit 1;
+                fi;
+                sleep {{ .Values.hooks.postInstall.intervalSeconds }};
+              done;
+              echo "[post-install] smoke test passed";
+              sleep {{ .Values.hooks.postInstall.sleepSeconds }};
+{{- end }}
+

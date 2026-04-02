@@ -1,0 +1,6 @@
+apiVersion: v2
+name: common-lib
+description: Shared Helm helpers for the DevOps course application charts
+type: library
+version: 0.1.0
+

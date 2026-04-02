@@ -1,0 +1,92 @@
+replicaCount: 3
+
+nameOverride: ""
+fullnameOverride: ""
+
+commonLabels:
+  app.kubernetes.io/component: web
+  app.kubernetes.io/part-of: lab10
+
+image:
+  repository: pepegx/devops-info-service
+  tag: lab02
+  pullPolicy: IfNotPresent
+
+config:
+  host: 0.0.0.0
+  port: 3000
+  logLevel: INFO
+
+containerPort: 3000
+revisionHistoryLimit: 5
+minReadySeconds: 5
+terminationGracePeriodSeconds: 30
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+livenessProbe:
+  path: /health
+  port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  path: /health
+  port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 100
+  runAsGroup: 101
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+hooks:
+  preInstall:
+    enabled: true
+    image:
+      repository: busybox
+      tag: "1.36.1"
+      pullPolicy: IfNotPresent
+    sleepSeconds: 5
+    backoffLimit: 0
+  postInstall:
+    enabled: true
+    image:
+      repository: busybox
+      tag: "1.36.1"
+      pullPolicy: IfNotPresent
+    retries: 24
+    intervalSeconds: 5
+    sleepSeconds: 5
+    backoffLimit: 0

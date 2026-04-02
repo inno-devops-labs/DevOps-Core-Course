@@ -1,0 +1,25 @@
+replicaCount: 1
+
+config:
+  logLevel: DEBUG
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+service:
+  type: NodePort
+  # Keep dev deterministic, but avoid colliding with the original Lab 9 Service on 30080.
+  nodePort: 30081
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 5

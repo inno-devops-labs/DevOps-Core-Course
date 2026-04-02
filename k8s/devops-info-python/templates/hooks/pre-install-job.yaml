@@ -1,0 +1,35 @@
+{{- if .Values.hooks.preInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-install
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.hooks.preInstall.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "common.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install
+          image: "{{ .Values.hooks.preInstall.image.repository }}:{{ .Values.hooks.preInstall.image.tag }}"
+          imagePullPolicy: {{ .Values.hooks.preInstall.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - >-
+              echo "[pre-install] validating release {{ .Release.Name }}";
+              test -n "{{ .Values.image.repository }}";
+              test -n "{{ .Values.image.tag }}";
+              test "{{ .Values.config.port }}" = "{{ .Values.containerPort }}";
+              echo "[pre-install] configuration looks valid";
+              sleep {{ .Values.hooks.preInstall.sleepSeconds }};
+{{- end }}
+

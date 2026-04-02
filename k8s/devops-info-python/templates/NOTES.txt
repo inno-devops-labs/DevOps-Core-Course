@@ -1,0 +1,11 @@
+1. Check the rendered service:
+   kubectl get svc -n {{ .Release.Namespace }} {{ include "common.fullname" . }}
+
+2. Verify the application locally:
+   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "common.fullname" . }} 8080:{{ .Values.service.port }}
+   curl http://127.0.0.1:8080/
+   curl http://127.0.0.1:8080/health
+
+3. Inspect the release:
+   helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+

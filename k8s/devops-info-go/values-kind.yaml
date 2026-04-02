@@ -1,0 +1,4 @@
+image:
+  repository: devops-info-go
+  tag: lab02
+  pullPolicy: IfNotPresent
