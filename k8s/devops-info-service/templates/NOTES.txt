@@ -1,0 +1,16 @@
+devops-info-service deployed successfully!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Replicas: {{ .Values.replicaCount }}
+Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+{{- if eq .Values.service.type "NodePort" }}
+Access via NodePort:
+  kubectl port-forward service/{{ include "devops-info-service.fullname" . }} 8080:80
+  curl http://localhost:8080/health
+{{- else if eq .Values.service.type "ClusterIP" }}
+Access via port-forward:
+  kubectl port-forward service/{{ include "devops-info-service.fullname" . }} 8080:80
+  curl http://localhost:8080/health
+{{- end }}

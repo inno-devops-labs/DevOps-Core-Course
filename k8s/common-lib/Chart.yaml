@@ -1,0 +1,5 @@
+apiVersion: v2
+name: common-lib
+description: Shared template helpers for all devops-course applications
+type: library
+version: 0.1.0
