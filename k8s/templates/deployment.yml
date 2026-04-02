@@ -5,7 +5,7 @@ metadata:
   labels:
     app: python-app
 spec:
-  replicas: 3
+  replicas: {{ .Values.replicaCount }}       
   selector:
     matchLabels:
       app: python-app
@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: python-app
-        image: python-app:v2
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"   
         imagePullPolicy: Never
         ports:
         - containerPort: 5000

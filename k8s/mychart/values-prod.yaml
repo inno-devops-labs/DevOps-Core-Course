@@ -1,0 +1,25 @@
+replicaCount: 1
+
+image:
+  repository: myapp
+  tag: "latest"      
+  pullPolicy: Always
+
+service:
+  type: NodePort
+  port: 8080
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 5
