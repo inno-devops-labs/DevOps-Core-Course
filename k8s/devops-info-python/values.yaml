@@ -1,0 +1,75 @@
+# Keep resource names aligned with LAB09 so Ingress and docs stay consistent.
+fullnameOverride: devops-info-python
+nameOverride: ""
+
+replicaCount: 3
+
+image:
+  repository: olesianov/devops-info-python
+  tag: lab03
+  pullPolicy: IfNotPresent
+
+containerPort: 5000
+
+env:
+  - name: PORT
+    value: "5000"
+  - name: HOST
+    value: "0.0.0.0"
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 300m
+    memory: 256Mi
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+hooks:
+  preInstall:
+    image: busybox:1.36
+  postInstall:
+    image: busybox:1.36
+
+ingress:
+  enabled: false
+  className: nginx
+  host: local.devops.lab
+  tlsSecretName: devops-lab09-tls
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  paths:
+    app1: /app1(/|$)(.*)
+    app2: /app2(/|$)(.*)
+  backendGoService: devops-info-go-service

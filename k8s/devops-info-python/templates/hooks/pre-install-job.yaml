@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.fullname" . }}-pre-install
+  labels:
+    app: {{ include "common.legacyAppLabel" . }}
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        app: {{ include "common.legacyAppLabel" . }}
+        {{- include "common.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-job
+          image: {{ .Values.hooks.preInstall.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "pre-install: release={{ .Release.Name }} ns={{ .Release.Namespace }}"
+              sleep 5
+              echo "pre-install: ok"

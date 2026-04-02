@@ -1,0 +1,8 @@
+1. App: {{ include "common.fullname" . }}
+2. Service: {{ include "common.serviceName" . }} ({{ .Values.service.type }})
+{{- if eq .Values.service.type "NodePort" }}
+{{- if .Values.service.nodePort }}
+3. NodePort: {{ .Values.service.nodePort }}
+{{- end }}
+{{- end }}
+4. Health: http://<service>:{{ .Values.service.port }}/health (via port-forward or Ingress)
