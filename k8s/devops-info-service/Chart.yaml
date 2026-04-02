@@ -1,0 +1,12 @@
+apiVersion: v2
+name: devops-info-service
+description: helm chart
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - python
+  - flask
+  - devops
+maintainers:
+  - name: iu-capstone-ad

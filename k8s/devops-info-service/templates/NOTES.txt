@@ -1,0 +1,8 @@
+devops-info-service release {{ .Release.Name }}.
+service type: {{ .Values.service.type }}
+{{- if eq .Values.service.type "NodePort" }}
+Access: http://<node-ip>:{{ .Values.service.nodePort }}
+minikube: minikube service {{ include "devops-info-service.fullname" . }} --url
+{{- else if eq .Values.service.type "LoadBalancer" }}
+Access: kubectl get svc {{ include "devops-info-service.fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+{{- end }}
