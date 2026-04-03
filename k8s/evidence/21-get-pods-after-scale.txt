@@ -1,0 +1,6 @@
+NAME                             READY   STATUS    RESTARTS   AGE
+devops-python-7df6f66dc8-55rzb   1/1     Running   0          10s
+devops-python-7df6f66dc8-99fjl   1/1     Running   0          10s
+devops-python-7df6f66dc8-gqqbt   1/1     Running   0          84s
+devops-python-7df6f66dc8-qnpml   1/1     Running   0          78s
+devops-python-7df6f66dc8-xz8j2   1/1     Running   0          68s

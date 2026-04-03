@@ -1,0 +1,2 @@
+Flag --record has been deprecated, --record will be removed in the future
+deployment.apps/devops-python image updated

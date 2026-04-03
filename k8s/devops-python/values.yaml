@@ -1,0 +1,93 @@
+# Default values for devops-python.
+
+replicaCount: 3
+
+image:
+  repository: jambulancia/devops-info-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  enabled: true
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+containerPort: 5000
+
+env:
+  HOST: "0.0.0.0"
+  PORT: "5000"
+  LOG_FORMAT: "json"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+securityContext:
+  pod:
+    seccompProfile:
+      type: RuntimeDefault
+  container:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+probes:
+  startup:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 20
+  readiness:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+  liveness:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+strategy:
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+hooks:
+  enabled: true
+  preInstall:
+    image: busybox:1.36
+    command:
+      - sh
+      - -c
+      - "echo pre-install: basic validation && sleep 2 && echo pre-install: ok"
+    weight: -5
+  postInstall:
+    image: busybox:1.36
+    command:
+      - sh
+      - -c
+      - "echo post-install: smoke test placeholder && sleep 2 && echo post-install: ok"
+    weight: 5
+

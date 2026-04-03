@@ -1,0 +1,2 @@
+NAME            TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+devops-python   NodePort   10.96.208.162   <none>        80:30080/TCP   3m18s   app=devops-python

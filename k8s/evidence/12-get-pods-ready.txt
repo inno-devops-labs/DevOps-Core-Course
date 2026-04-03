@@ -1,0 +1,5 @@
+NAME                             READY   STATUS        RESTARTS   AGE     IP            NODE                        NOMINATED NODE   READINESS GATES
+devops-python-7df6f66dc8-gqqbt   1/1     Running       0          22s     10.244.0.8    devops-core-control-plane   <none>           <none>
+devops-python-7df6f66dc8-qnpml   1/1     Running       0          16s     10.244.0.9    devops-core-control-plane   <none>           <none>
+devops-python-7df6f66dc8-xz8j2   1/1     Running       0          6s      10.244.0.10   devops-core-control-plane   <none>           <none>
+devops-python-86879c794d-svr62   0/1     Terminating   0          2m52s   10.244.0.7    devops-core-control-plane   <none>           <none>

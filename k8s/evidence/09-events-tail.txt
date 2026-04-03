@@ -1,0 +1,28 @@
+LAST SEEN   TYPE      REASON                    OBJECT                                MESSAGE
+2m58s       Normal    Starting                  node/devops-core-control-plane        Starting kubelet.
+2m58s       Normal    NodeAllocatableEnforced   node/devops-core-control-plane        Updated Node Allocatable limit across pods
+2m57s       Normal    NodeHasSufficientMemory   node/devops-core-control-plane        Node devops-core-control-plane status is now: NodeHasSufficientMemory
+2m57s       Normal    NodeHasNoDiskPressure     node/devops-core-control-plane        Node devops-core-control-plane status is now: NodeHasNoDiskPressure
+2m57s       Normal    NodeHasSufficientPID      node/devops-core-control-plane        Node devops-core-control-plane status is now: NodeHasSufficientPID
+2m51s       Normal    RegisteredNode            node/devops-core-control-plane        Node devops-core-control-plane event: Registered Node devops-core-control-plane in Controller
+2m48s       Normal    Starting                  node/devops-core-control-plane        
+2m38s       Normal    NodeReady                 node/devops-core-control-plane        Node devops-core-control-plane status is now: NodeReady
+2m13s       Normal    Scheduled                 pod/devops-python-86879c794d-svr62    Successfully assigned default/devops-python-86879c794d-svr62 to devops-core-control-plane
+2m13s       Normal    SuccessfulCreate          replicaset/devops-python-86879c794d   Created pod: devops-python-86879c794d-d6jkn
+2m13s       Normal    ScalingReplicaSet         deployment/devops-python              Scaled up replica set devops-python-86879c794d from 0 to 3
+2m13s       Normal    SuccessfulCreate          replicaset/devops-python-86879c794d   Created pod: devops-python-86879c794d-knwvj
+2m13s       Normal    SuccessfulCreate          replicaset/devops-python-86879c794d   Created pod: devops-python-86879c794d-svr62
+2m13s       Normal    Scheduled                 pod/devops-python-86879c794d-knwvj    Successfully assigned default/devops-python-86879c794d-knwvj to devops-core-control-plane
+2m13s       Normal    Scheduled                 pod/devops-python-86879c794d-d6jkn    Successfully assigned default/devops-python-86879c794d-d6jkn to devops-core-control-plane
+2m12s       Normal    Pulling                   pod/devops-python-86879c794d-knwvj    Pulling image "jambulancia/devops-info-service:latest"
+2m12s       Normal    Pulling                   pod/devops-python-86879c794d-d6jkn    Pulling image "jambulancia/devops-info-service:latest"
+2m12s       Normal    Pulling                   pod/devops-python-86879c794d-svr62    Pulling image "jambulancia/devops-info-service:latest"
+2m6s        Normal    Pulled                    pod/devops-python-86879c794d-knwvj    Successfully pulled image "jambulancia/devops-info-service:latest" in 6.507s (6.507s including waiting). Image size: 44449395 bytes.
+11s         Warning   Failed                    pod/devops-python-86879c794d-knwvj    Error: container has runAsNonRoot and image has non-numeric user (appuser), cannot verify user is non-root (pod: "devops-python-86879c794d-knwvj_default(1ce96b4e-615e-4998-8af3-c298e795e54c)", container: app)
+11s         Normal    Pulled                    pod/devops-python-86879c794d-knwvj    Container image "jambulancia/devops-info-service:latest" already present on machine
+1s          Warning   Failed                    pod/devops-python-86879c794d-d6jkn    Error: container has runAsNonRoot and image has non-numeric user (appuser), cannot verify user is non-root (pod: "devops-python-86879c794d-d6jkn_default(03ba6b68-2af9-4e0d-9ab0-ccd581a9e880)", container: app)
+2m5s        Normal    Pulled                    pod/devops-python-86879c794d-d6jkn    Successfully pulled image "jambulancia/devops-info-service:latest" in 1.186s (7.693s including waiting). Image size: 44449395 bytes.
+6s          Warning   Failed                    pod/devops-python-86879c794d-svr62    Error: container has runAsNonRoot and image has non-numeric user (appuser), cannot verify user is non-root (pod: "devops-python-86879c794d-svr62_default(59c75935-3327-4d2f-b98a-7d60f20780cc)", container: app)
+2m4s        Normal    Pulled                    pod/devops-python-86879c794d-svr62    Successfully pulled image "jambulancia/devops-info-service:latest" in 1.256s (8.918s including waiting). Image size: 44449395 bytes.
+1s          Normal    Pulled                    pod/devops-python-86879c794d-d6jkn    Container image "jambulancia/devops-info-service:latest" already present on machine
+6s          Normal    Pulled                    pod/devops-python-86879c794d-svr62    Container image "jambulancia/devops-info-service:latest" already present on machine

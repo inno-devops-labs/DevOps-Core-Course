@@ -1,0 +1,20 @@
+1) Get the application URL:
+
+{{- if eq .Values.service.type "NodePort" }}
+  export NODE_PORT={{ .Values.service.nodePort }}
+  echo "NodePort: ${NODE_PORT}"
+
+Minikube:
+  minikube service {{ include "devops-python.fullname" . }} --url
+
+Generic (port-forward):
+  kubectl port-forward service/{{ include "devops-python.fullname" . }} 8080:{{ .Values.service.port }}
+  curl http://localhost:8080/health
+{{- else }}
+  kubectl get svc {{ include "devops-python.fullname" . }} -o wide
+{{- end }}
+
+2) Useful Helm commands:
+  helm get manifest {{ .Release.Name }}
+  helm get values {{ .Release.Name }}
+  helm history {{ .Release.Name }}

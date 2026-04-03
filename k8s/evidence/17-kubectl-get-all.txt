@@ -1,0 +1,15 @@
+NAME                                 READY   STATUS    RESTARTS   AGE
+pod/devops-python-7df6f66dc8-gqqbt   1/1     Running   0          67s
+pod/devops-python-7df6f66dc8-qnpml   1/1     Running   0          61s
+pod/devops-python-7df6f66dc8-xz8j2   1/1     Running   0          51s
+
+NAME                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/devops-python   NodePort    10.96.208.162   <none>        80:30080/TCP   3m37s
+service/kubernetes      ClusterIP   10.96.0.1       <none>        443/TCP        4m22s
+
+NAME                            READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/devops-python   3/3     3            3           3m37s
+
+NAME                                       DESIRED   CURRENT   READY   AGE
+replicaset.apps/devops-python-7df6f66dc8   3         3         3       67s
+replicaset.apps/devops-python-86879c794d   0         0         0       3m37s

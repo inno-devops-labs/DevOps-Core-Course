@@ -1,0 +1,6 @@
+NAME                 STATUS   AGE
+default              Active   40s
+kube-node-lease      Active   39s
+kube-public          Active   40s
+kube-system          Active   40s
+local-path-storage   Active   36s

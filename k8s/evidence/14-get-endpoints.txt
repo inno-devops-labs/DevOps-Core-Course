@@ -1,0 +1,2 @@
+NAME            ENDPOINTS                                          AGE
+devops-python   10.244.0.10:5000,10.244.0.8:5000,10.244.0.9:5000   3m18s

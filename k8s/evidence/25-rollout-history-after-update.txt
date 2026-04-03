@@ -1,0 +1,5 @@
+deployment.apps/devops-python 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         kubectl set image deployment/devops-python app=jambulancia/devops-info-service:latest --record=true
+

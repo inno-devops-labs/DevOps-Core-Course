@@ -1,0 +1,2 @@
+deployment.apps/devops-python created
+service/devops-python created

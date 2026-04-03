@@ -1,0 +1,53 @@
+Name:                   devops-python
+Namespace:              default
+CreationTimestamp:      Fri, 03 Apr 2026 13:27:44 +0300
+Labels:                 app=devops-python
+                        lab=09
+Annotations:            deployment.kubernetes.io/revision: 2
+Selector:               app=devops-python
+Replicas:               3 desired | 3 updated | 3 total | 3 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  0 max unavailable, 1 max surge
+Pod Template:
+  Labels:  app=devops-python
+           lab=09
+  Containers:
+   app:
+    Image:      jambulancia/devops-info-service:latest
+    Port:       5000/TCP (http)
+    Host Port:  0/TCP (http)
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Liveness:   http-get http://:http/health delay=10s timeout=2s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:http/health delay=5s timeout=2s period=5s #success=1 #failure=3
+    Startup:    http-get http://:http/health delay=0s timeout=2s period=5s #success=1 #failure=20
+    Environment:
+      HOST:        0.0.0.0
+      PORT:        5000
+      LOG_FORMAT:  json
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  devops-python-86879c794d (0/0 replicas created)
+NewReplicaSet:   devops-python-7df6f66dc8 (3/3 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  3m37s  deployment-controller  Scaled up replica set devops-python-86879c794d from 0 to 3
+  Normal  ScalingReplicaSet  67s    deployment-controller  Scaled up replica set devops-python-7df6f66dc8 from 0 to 1
+  Normal  ScalingReplicaSet  61s    deployment-controller  Scaled down replica set devops-python-86879c794d from 3 to 2
+  Normal  ScalingReplicaSet  61s    deployment-controller  Scaled up replica set devops-python-7df6f66dc8 from 1 to 2
+  Normal  ScalingReplicaSet  51s    deployment-controller  Scaled down replica set devops-python-86879c794d from 2 to 1
+  Normal  ScalingReplicaSet  51s    deployment-controller  Scaled up replica set devops-python-7df6f66dc8 from 2 to 3
+  Normal  ScalingReplicaSet  45s    deployment-controller  Scaled down replica set devops-python-86879c794d from 1 to 0

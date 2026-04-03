@@ -1,0 +1,22 @@
+# Development overrides (Task 3)
+replicaCount: 1
+
+image:
+  tag: latest
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+service:
+  type: NodePort
+
+probes:
+  liveness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+

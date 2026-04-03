@@ -1,0 +1,17 @@
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.5 Python/3.13.12
+Date: Fri, 03 Apr 2026 10:31:11 GMT
+Content-Type: application/json
+Content-Length: 88
+Connection: close
+
+{"status":"healthy","timestamp":"2026-04-03T10:31:11.555113+00:00","uptime_seconds":51}
+---
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.5 Python/3.13.12
+Date: Fri, 03 Apr 2026 10:31:11 GMT
+Content-Type: application/json
+Content-Length: 710
+Connection: close
+
+{"endpoints":[{"description":"Service information","method":"GET","path":"/"},{"description":"Health check","method":"GET","path":"/health"}],"request":{"client_ip":"127.0.0.1","method":"GET","path":"/","user_agent":"curl/8.12.1"},"runtime":{"current_time":"2026-04-03T10:31:11.568634+00:00","timezone":"UTC","uptime_human":"0 hours, 0 minutes","uptime_seconds":51},"service":{"description":"DevOps course info service","framework":"Flask","name":"devops-info-service","version":"1.0.0"},"system":{"architecture":"x86_64","cpu_count":22,"hostname":"devops-python-7df6f66dc8-gqqbt","platform":"Linux","platform_version":"#33-Ubuntu SMP PREEMPT_DYNAMIC Wed Sep 17 23:22:02 UTC 2025","python_version":"3.13.12"}}

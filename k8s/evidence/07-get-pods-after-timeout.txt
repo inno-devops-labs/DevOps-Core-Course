@@ -1,0 +1,4 @@
+NAME                             READY   STATUS                       RESTARTS   AGE    IP           NODE                        NOMINATED NODE   READINESS GATES
+devops-python-86879c794d-d6jkn   0/1     CreateContainerConfigError   0          2m9s   10.244.0.5   devops-core-control-plane   <none>           <none>
+devops-python-86879c794d-knwvj   0/1     CreateContainerConfigError   0          2m9s   10.244.0.6   devops-core-control-plane   <none>           <none>
+devops-python-86879c794d-svr62   0/1     CreateContainerConfigError   0          2m9s   10.244.0.7   devops-core-control-plane   <none>           <none>
