@@ -13,8 +13,11 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from pydantic import BaseModel
 from pythonjsonlogger import jsonlogger
+
+from metrics import REQUEST_COUNT, REQUEST_LATENCY, ACTIVE_REQUESTS
 
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
@@ -93,10 +96,10 @@ app = FastAPI(
 )
 
 
-# Request logging middleware
+# Request logging and metrics middleware
 @app.middleware('http')
 async def log_requests(request: Request, call_next) -> Response:
-    """Log all HTTP requests with timing and status."""
+    """Log all HTTP requests with timing and status, and track Prometheus metrics."""
     start_time = datetime.now(timezone.utc)
 
     # Get client IP - handle proxies
@@ -104,6 +107,14 @@ async def log_requests(request: Request, call_next) -> Response:
     forwarded_for = request.headers.get('X-Forwarded-For')
     if forwarded_for:
         client_ip = forwarded_for.split(',')[0].strip()
+
+    # Normalize endpoint for metrics (prevent high cardinality)
+    endpoint = request.url.path
+    if endpoint not in ('/', '/health', '/metrics'):
+        endpoint = '/other'
+
+    # Track active requests
+    ACTIVE_REQUESTS.labels(method=request.method, endpoint=endpoint).inc()
 
     # Log request
     logger.info(
@@ -118,28 +129,45 @@ async def log_requests(request: Request, call_next) -> Response:
         }
     )
 
-    # Process request
-    response = await call_next(request)
+    try:
+        # Process request
+        response = await call_next(request)
 
-    # Calculate duration
-    duration_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+        # Calculate duration
+        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
+        duration_ms = duration * 1000
 
-    # Log response
-    log_level = logging.WARNING if response.status_code >= 400 else logging.INFO
-    logger.log(
-        log_level,
-        'HTTP request completed',
-        extra={
-            'event': 'request_end',
-            'method': request.method,
-            'path': request.url.path,
-            'status_code': response.status_code,
-            'duration_ms': round(duration_ms, 2),
-            'client_ip': client_ip
-        }
-    )
+        # Record Prometheus metrics
+        REQUEST_COUNT.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_code=str(response.status_code)
+        ).inc()
 
-    return response
+        REQUEST_LATENCY.labels(
+            method=request.method,
+            endpoint=endpoint
+        ).observe(duration)
+
+        # Log response
+        log_level = logging.WARNING if response.status_code >= 400 else logging.INFO
+        logger.log(
+            log_level,
+            'HTTP request completed',
+            extra={
+                'event': 'request_end',
+                'method': request.method,
+                'path': request.url.path,
+                'status_code': response.status_code,
+                'duration_ms': round(duration_ms, 2),
+                'client_ip': client_ip
+            }
+        )
+
+        return response
+    finally:
+        # Decrement active requests
+        ACTIVE_REQUESTS.labels(method=request.method, endpoint=endpoint).dec()
 
 
 # Pydantic models for response structure
@@ -289,6 +317,18 @@ async def health() -> HealthResponse:
         status='healthy',
         timestamp=datetime.now(timezone.utc).isoformat(),
         uptime_seconds=uptime['seconds']
+    )
+
+
+@app.get('/metrics', include_in_schema=False)
+async def metrics() -> Response:
+    """
+    Prometheus metrics endpoint.
+    Exposes application metrics for scraping.
+    """
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
     )
 
 

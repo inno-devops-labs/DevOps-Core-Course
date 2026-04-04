@@ -17,7 +17,7 @@ COPY --chown=appuser:appuser requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-COPY --chown=appuser:appuser app.py .
+COPY --chown=appuser:appuser app.py metrics.py .
 
 USER appuser
 

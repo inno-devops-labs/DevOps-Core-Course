@@ -6,6 +6,9 @@ pydantic==2.10.3
 # Logging
 python-json-logger==3.2.1
 
+# Metrics
+prometheus-client==0.21.1
+
 # Testing
 pytest==8.3.3
 pytest-cov==6.0.0
