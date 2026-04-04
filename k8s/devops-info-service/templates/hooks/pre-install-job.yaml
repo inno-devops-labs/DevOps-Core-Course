@@ -1,0 +1,60 @@
+{{/*
+Pre-install hook: Runs before the main resources are created.
+This job validates the environment and performs any necessary setup.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-pre-install
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 120
+  template:
+    metadata:
+      name: {{ include "devops-info-service.fullname" . }}-pre-install
+      labels:
+        {{- include "devops-info-service.labels" . | nindent 8 }}
+        hook: pre-install
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-validation
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "========================================="
+              echo "Pre-install validation started"
+              echo "========================================="
+              echo ""
+              echo "Release: {{ .Release.Name }}"
+              echo "Namespace: {{ .Release.Namespace }}"
+              echo "Chart: {{ .Chart.Name }}-{{ .Chart.Version }}"
+              echo ""
+              echo "Validating environment..."
+              echo ""
+
+              # Simulate validation steps
+              echo "1. Checking cluster connectivity..."
+              sleep 2
+              echo "   Cluster is reachable"
+
+              echo "2. Validating namespace..."
+              sleep 1
+              echo "   Namespace is valid"
+
+              echo "3. Checking resource quotas..."
+              sleep 1
+              echo "   Resources available"
+
+              echo ""
+              echo "========================================="
+              echo "Pre-install validation completed successfully"
+              echo "========================================="

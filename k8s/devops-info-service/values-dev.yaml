@@ -1,0 +1,51 @@
+# Development environment values
+# Lower resources, single replica, latest image tag
+
+replicaCount: 1
+
+image:
+  repository: onemoreslacker/devops-info-service
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 3
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+env:
+  HOST: "0.0.0.0"
+  PORT: "5000"
+  DEBUG: "True"
+
+podLabels:
+  project: devops-course
+  lab: lab10
+  environment: development

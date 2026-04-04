@@ -1,0 +1,72 @@
+# Production environment values
+# Higher resources, multiple replicas, specific image tag
+
+replicaCount: 5
+
+image:
+  repository: onemoreslacker/devops-info-service
+  pullPolicy: IfNotPresent
+  tag: "v0"
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 5000
+  # nodePort is not used with LoadBalancer type
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 2
+
+env:
+  HOST: "0.0.0.0"
+  PORT: "5000"
+  DEBUG: "False"
+
+podLabels:
+  project: devops-course
+  lab: lab10
+  environment: production
+
+# Production-specific settings
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Pod anti-affinity for high availability
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - devops-info-service
+          topologyKey: kubernetes.io/hostname

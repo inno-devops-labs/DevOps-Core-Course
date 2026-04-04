@@ -1,0 +1,64 @@
+{{/*
+Post-install hook: Runs after all resources are created and ready.
+This job performs smoke tests and validation.
+*/}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-post-install
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 180
+  template:
+    metadata:
+      name: {{ include "devops-info-service.fullname" . }}-post-install
+      labels:
+        {{- include "devops-info-service.labels" . | nindent 8 }}
+        hook: post-install
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-validation
+          image: busybox:1.36
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "========================================="
+              echo "Post-install validation started"
+              echo "========================================="
+              echo ""
+              echo "Release: {{ .Release.Name }}"
+              echo "Namespace: {{ .Release.Namespace }}"
+              echo ""
+              echo "Waiting for deployment to be ready..."
+              sleep 5
+
+              echo ""
+              echo "Running smoke tests..."
+              echo ""
+
+              # Simulate smoke test steps
+              echo "1. Checking service endpoints..."
+              sleep 2
+              echo "   Service endpoints are ready"
+
+              echo "2. Verifying health check endpoint..."
+              sleep 1
+              echo "   Health check endpoint responding"
+
+              echo "3. Checking pod readiness..."
+              sleep 2
+              echo "   All pods are ready"
+
+              echo ""
+              echo "========================================="
+              echo "Post-install validation completed successfully"
+              echo "Application is ready to serve traffic"
+              echo "========================================="

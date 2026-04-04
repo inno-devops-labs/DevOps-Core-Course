@@ -1,0 +1,28 @@
+Your DevOps Info Service application has been deployed successfully!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+Access your application:
+
+{{- if eq .Values.service.type "NodePort" }}
+
+  # Get the service URL (minikube)
+  minikube service {{ include "devops-info-service.fullname" . }} --url
+
+  # Or use port-forward
+  kubectl port-forward service/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+
+{{- else }}
+
+  # Use port-forward to access locally
+  kubectl port-forward service/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+
+{{- end }}
+
+Check deployment status:
+  kubectl get pods -l app.kubernetes.io/name={{ include "devops-info-service.name" . }}
+  kubectl get services
+
+View logs:
+  kubectl logs -l app.kubernetes.io/name={{ include "devops-info-service.name" . }} -f
