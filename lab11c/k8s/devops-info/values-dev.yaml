@@ -1,0 +1,20 @@
+replicaCount: 1
+
+service:
+  type: NodePort
+  nodePort: 30080
+
+env:
+  RELEASE_ID: "dev"
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "128Mi"
+
+vault:
+  injector:
+    enabled: true

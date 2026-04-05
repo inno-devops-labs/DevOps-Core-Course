@@ -9,3 +9,6 @@ __pycache__/
 # Local lab 5 runtime artifacts
 lab5c/ansible/.vault_pass
 lab5c/ansible/*.retry
+
+# Lab 11 — local CLI binaries and cloned charts (not part of submission)
+lab11c/tools/

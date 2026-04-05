@@ -1,0 +1,20 @@
+replicaCount: 3
+
+service:
+  type: LoadBalancer
+  nodePort: null
+
+env:
+  RELEASE_ID: "prod"
+
+resources:
+  requests:
+    cpu: "150m"
+    memory: "192Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+vault:
+  injector:
+    enabled: true
