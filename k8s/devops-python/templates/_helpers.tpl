@@ -21,3 +21,18 @@
 {{- default "default" .Values.serviceAccount.name -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "devops-python.secretName" -}}
+{{- if .Values.secrets.name -}}
+{{- .Values.secrets.name -}}
+{{- else -}}
+{{- printf "%s-credentials" (include "devops-python.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "devops-python.envVars" -}}
+- name: APP_ENV
+  value: {{ .Values.app.environment | quote }}
+- name: LOG_LEVEL
+  value: {{ .Values.app.logLevel | quote }}
+{{- end -}}

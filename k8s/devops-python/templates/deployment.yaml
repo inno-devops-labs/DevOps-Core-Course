@@ -18,8 +18,25 @@ spec:
     metadata:
       labels:
         {{- include "devops-python.selectorLabels" . | nindent 8 }}
+      {{- if .Values.vault.enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/auth-path: {{ .Values.vault.authPath | quote }}
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.injectFileName }}: {{ .Values.vault.secretPath | quote }}
+        vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.injectTemplateFileName }}: {{ .Values.vault.secretPath | quote }}
+        {{- if .Values.vault.injectCommand }}
+        vault.hashicorp.com/agent-inject-command-{{ .Values.vault.injectTemplateFileName }}: {{ .Values.vault.injectCommand | quote }}
+        {{- end }}
+        vault.hashicorp.com/agent-inject-template-{{ .Values.vault.injectTemplateFileName }}: |
+          {{`{{- with secret "`}}{{ .Values.vault.secretPath }}{{`" -}}`}}
+          APP_USERNAME={{`{{ .Data.data.username }}`}}
+          APP_PASSWORD={{`{{ .Data.data.password }}`}}
+          {{`{{- end }}`}}
+      {{- end }}
     spec:
       serviceAccountName: {{ include "devops-python.serviceAccountName" . }}
+      automountServiceAccountToken: {{ ternary true (.Values.serviceAccount.automount | default false) .Values.vault.enabled }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -28,8 +45,14 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
-          {{- with .Values.env }}
+          {{- if .Values.secrets.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-python.secretName" . }}
+          {{- end }}
           env:
+            {{- include "devops-python.envVars" . | nindent 12 }}
+          {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
           livenessProbe:

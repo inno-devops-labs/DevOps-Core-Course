@@ -33,6 +33,25 @@ env:
   - name: PORT
     value: "8080"
 
+app:
+  environment: "dev"
+  logLevel: "info"
+
+secrets:
+  enabled: true
+  name: ""
+  username: "change-me-username"
+  password: "change-me-password"
+
+vault:
+  enabled: false
+  authPath: "kubernetes"
+  role: "devops-python-role"
+  secretPath: "secret/data/myapp/config"
+  injectFileName: "config"
+  injectTemplateFileName: "app-env"
+  injectCommand: ""
+
 livenessProbe:
   httpGet:
     path: /health
