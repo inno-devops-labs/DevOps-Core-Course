@@ -29,6 +29,8 @@ k8s/devops-info-service/
         └── post-install-job.yaml     # Post-install smoke test Job
 ```
 
+Lab 11 added `secrets.yaml`, `serviceaccount.yaml`, and `values-vault.yaml`; details are recorded at the end of this file.
+
 ### Template files
 
 **`_helpers.tpl`** defines five named templates:
@@ -745,3 +747,29 @@ Uninstalling a release removes all Kubernetes resources that were created by it.
 helm get values devops-info-service
 helm get manifest devops-info-service
 ```
+
+---
+
+## Lab 11 extension (Secrets and Vault wiring)
+
+Lab 11 extended the same chart with secret management and optional Vault Agent Injector integration while keeping probe fields fully value-driven as in Lab 10.
+
+### Chart additions
+
+The template tree gained `templates/secrets.yaml` (Opaque Secret with `stringData` keys `username` and `password`), `templates/serviceaccount.yaml`, and optional Vault annotations on the Pod template when `vaultInjector.enabled` was true. File `values-vault.yaml` turned on those annotations without changing the Lab 9 baseline sizing in `values.yaml`.
+
+Default credential literals in `values.yaml` were copied from Lab 9 identifiers only (`nexonm22` from `nexonm22/devops-info-service` and `devops-info-service` from the Deployment metadata name in `k8s/deployment.yml`), not from private material.
+
+The Deployment referenced the Helm Secret with `envFrom` and `secretRef`, and set `serviceAccountName` when a chart-managed ServiceAccount was created (required for the Vault Kubernetes auth role binding).
+
+### Lint after the Lab 11 edits
+
+```
+$ helm lint k8s/devops-info-service
+==> Linting k8s/devops-info-service
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+```
+
+Lab-specific command output and the security write-up were moved to `k8s/SECRETS.md` so this file stayed focused on Helm packaging evidence.

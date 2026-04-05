@@ -8,6 +8,26 @@ image:
 nameOverride: ""
 fullnameOverride: ""
 
+serviceAccount:
+  create: true
+  name: ""
+  automount: true
+
+credentialsSecret:
+  enabled: true
+  nameSuffix: credentials
+  stringData:
+    username: nexonm22
+    password: devops-info-service
+
+vaultInjector:
+  enabled: false
+  role: devops-info-service
+  secretPath: secret/data/devops-info-service/config
+  secretFileName: config
+
+podAnnotations: {}
+
 service:
   type: NodePort
   port: 80

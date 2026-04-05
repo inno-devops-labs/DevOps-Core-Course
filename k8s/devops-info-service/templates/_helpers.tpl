@@ -42,3 +42,21 @@ Selector labels
 app.kubernetes.io/name: {{ include "devops-info-service.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Service account name for the workload (Vault Kubernetes auth binds to this name).
+*/}}
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "devops-info-service.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Secret object name for application credentials (Helm-managed).
+*/}}
+{{- define "devops-info-service.credentialsSecretName" -}}
+{{- printf "%s-%s" (include "devops-info-service.fullname" .) .Values.credentialsSecret.nameSuffix | trunc 63 | trimSuffix "-" }}
+{{- end }}

@@ -18,7 +18,23 @@ spec:
     metadata:
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+      {{- if or .Values.podAnnotations .Values.vaultInjector.enabled }}
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.vaultInjector.enabled }}
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vaultInjector.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-{{ .Values.vaultInjector.secretFileName }}: {{ .Values.vaultInjector.secretPath | quote }}
+        {{- end }}
+      {{- end }}
     spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
+      {{- else if .Values.serviceAccount.name }}
+      serviceAccountName: {{ .Values.serviceAccount.name | quote }}
+      {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -29,6 +45,11 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
+          {{- if .Values.credentialsSecret.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info-service.credentialsSecretName" . }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:
