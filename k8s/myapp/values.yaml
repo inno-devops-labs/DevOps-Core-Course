@@ -1,5 +1,8 @@
 replicaCount: 2
 
+nameOverride: ""
+fullnameOverride: ""
+
 image:
   repository: zsalavat/devops-info-service-python
   tag: latest
@@ -7,4 +10,29 @@ image:
 service:
   type: NodePort
   port: 80
-  targetPort: 8000
+  targetPort: 5000
+  nodePort: 30080
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+
+secret:
+  username: "dev-user"
+  password: "dev-pass"
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "100m"
+  limits:
+    memory: "128Mi"
+    cpu: "200m"
+
+vault:
+  enabled: false
+  role: myapp
+  secretPath: secret/data/myapp/config
