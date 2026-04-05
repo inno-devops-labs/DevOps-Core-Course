@@ -15,7 +15,17 @@ spec:
         app: {{ include "devops-info-service.name" . }}
         project: devops-core-course
         tier: backend
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "devops-info-service"
+        vault.hashicorp.com/agent-inject-secret-config.txt: "secret/data/devops-info-service/config"
+        vault.hashicorp.com/agent-inject-template-config.txt: |
+          {{`{{- with secret "secret/data/devops-info-service/config" -}}
+          username={{ .Data.data.username }}
+          password={{ .Data.data.password }}
+          {{- end }}`}}
     spec:
+      serviceAccountName: devops-info-service
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -33,6 +43,10 @@ spec:
               value: {{ .Values.env.DEBUG | quote }}
             - name: RELEASE_VERSION
               value: {{ .Values.env.RELEASE_VERSION | quote }}
+
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info-service.fullname" . }}-secret
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

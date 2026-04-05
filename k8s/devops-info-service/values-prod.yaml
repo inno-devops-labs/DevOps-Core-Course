@@ -36,3 +36,7 @@ livenessProbe:
   path: /health
   initialDelaySeconds: 10
   periodSeconds: 10
+
+secret:
+  username: "user-prod"
+  password: "ProdPass12345"

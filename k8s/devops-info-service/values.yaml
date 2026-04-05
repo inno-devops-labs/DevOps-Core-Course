@@ -62,3 +62,7 @@ hooks:
         echo "Checking application deployment..."
         sleep 5
         echo "Post-install smoke test completed"
+
+secret:
+  username: "change-me"
+  password: "change-me"
