@@ -5,7 +5,7 @@ fullnameOverride: ""
 
 commonLabels:
   app.kubernetes.io/component: web
-  app.kubernetes.io/part-of: lab10
+  app.kubernetes.io/part-of: lab11
 
 image:
   repository: pepegx/devops-info-service
@@ -16,6 +16,33 @@ config:
   host: 0.0.0.0
   port: 3000
   logLevel: INFO
+
+podAnnotations: {}
+
+secret:
+  create: true
+  existingSecret: ""
+  name: ""
+  type: Opaque
+  username: change-me
+  password: change-me
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automountServiceAccountToken: false
+
+vault:
+  enabled: false
+  authPath: auth/kubernetes
+  role: devops-info-python
+  secretPath: secret/data/devops-info-python/config
+  secretVolumePath: /vault/secrets
+  fileName: app.env
+  filePermissions: "0400"
+  agentInjectCommand: ""
+  templateStaticSecretRenderInterval: 1m
 
 containerPort: 3000
 revisionHistoryLimit: 5

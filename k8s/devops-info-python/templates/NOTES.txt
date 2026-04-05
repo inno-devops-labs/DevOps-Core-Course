@@ -1,11 +1,29 @@
 1. Check the rendered service:
    kubectl get svc -n {{ .Release.Namespace }} {{ include "common.fullname" . }}
 
-2. Verify the application locally:
+2. Verify the Secret resource and pod wiring:
+   kubectl get secret -n {{ .Release.Namespace }} {{ include "devops-info-python.secretName" . }} -o yaml
+   kubectl describe pod -n {{ .Release.Namespace }} $(kubectl get pod -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }} -o jsonpath='{.items[0].metadata.name}') | sed -n '/^Containers:/,/^Conditions:/p'
+   # The sed filter skips the init-container block so you inspect the app container env only.
+
+3. Verify the application locally:
    kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "common.fullname" . }} 8080:{{ .Values.service.port }}
    curl http://127.0.0.1:8080/
    curl http://127.0.0.1:8080/health
 
-3. Inspect the release:
-   helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+4. Verify injected environment variables:
+   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
+     -c {{ include "common.name" . }} \
+     -- sh -lc "env | grep -E '^(APP_USERNAME|APP_PASSWORD|HOST|PORT|LOG_LEVEL)=' | sed 's/=.*$/=<redacted>/'"
 
+{{- if .Values.vault.enabled }}
+5. Verify Vault Agent injection:
+   ./k8s/scripts/bootstrap-lab11-vault.sh
+   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} -- ls -la {{ .Values.vault.secretVolumePath }}
+   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
+     -c {{ include "common.name" . }} \
+     -- sh -lc "sed 's/=.*$/=<redacted>/' {{ .Values.vault.secretVolumePath }}/{{ .Values.vault.fileName }}"
+{{- end }}
+
+6. Inspect the release:
+   helm status {{ .Release.Name }} -n {{ .Release.Namespace }}

@@ -29,7 +29,16 @@ spec:
               test -n "{{ .Values.image.repository }}";
               test -n "{{ .Values.image.tag }}";
               test "{{ .Values.config.port }}" = "{{ .Values.containerPort }}";
+              {{- if and .Values.secret.create (not .Values.secret.existingSecret) }}
+              test -n "{{ .Values.secret.username }}";
+              test -n "{{ .Values.secret.password }}";
+              {{- else }}
+              test -n "{{ include "devops-info-python.secretName" . }}";
+              {{- end }}
+              {{- if .Values.vault.enabled }}
+              test -n "{{ .Values.vault.role }}";
+              test -n "{{ .Values.vault.secretPath }}";
+              {{- end }}
               echo "[pre-install] configuration looks valid";
               sleep {{ .Values.hooks.preInstall.sleepSeconds }};
 {{- end }}
-

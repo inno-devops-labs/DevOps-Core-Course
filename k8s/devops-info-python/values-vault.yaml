@@ -1,0 +1,15 @@
+service:
+  nodePort: 30081
+
+secret:
+  username: lab11-k8s-user
+  password: lab11-k8s-password
+
+serviceAccount:
+  name: devops-info-python-vault
+  automountServiceAccountToken: true
+
+vault:
+  enabled: true
+  role: devops-info-python
+  secretPath: secret/data/devops-info-python/config

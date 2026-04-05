@@ -2,6 +2,8 @@
 
 Validated locally on April 2, 2026 against the existing `kind-devops-lab9` cluster (`Kubernetes v1.34.3`).
 
+Lab 11 extends the same Python chart with `Secret`, `ServiceAccount`, and Vault Agent Injector templates. Those additions are documented separately in [SECRETS.md](SECRETS.md), and the repeatable Vault dev-mode bootstrap helper lives at [scripts/bootstrap-lab11-vault.sh](scripts/bootstrap-lab11-vault.sh).
+
 ## Prerequisites
 
 The main Python chart defaults to the Lab 9 image and service behavior.
