@@ -45,3 +45,25 @@ Selector labels — must match between Deployment and Service
 app.kubernetes.io/name: {{ include "devops-info-service.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Name of the Helm-managed credentials Secret
+*/}}
+{{- define "devops-info-service.credentialsSecretName" -}}
+{{- if .Values.credentialsSecret.name }}
+{{- .Values.credentialsSecret.name }}
+{{- else }}
+{{- printf "%s-credentials" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Service account name
+*/}}
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.name }}
+{{- .Values.serviceAccount.name }}
+{{- else }}
+{{- include "devops-info-service.fullname" . }}
+{{- end }}
+{{- end }}

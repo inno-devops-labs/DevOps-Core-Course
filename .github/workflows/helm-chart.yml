@@ -1,0 +1,49 @@
+# Validates Helm charts under k8s/ — real proof on each PR that manifests render.
+name: Helm chart
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'lab**'
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/helm-chart.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+      - 'lab**'
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/helm-chart.yml'
+  workflow_dispatch:
+
+jobs:
+  lint-and-template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Lint chart
+        run: helm lint k8s/devops-info-service
+
+      - name: Template (default values)
+        run: helm template lab-ci k8s/devops-info-service --namespace default > /tmp/default.yaml && test -s /tmp/default.yaml
+
+      - name: Template (values overlays)
+        run: |
+          set -e
+          for f in values-dev.yaml values-prod.yaml values-vault.yaml; do
+            echo "== $f =="
+            helm template lab-ci k8s/devops-info-service \
+              -f "k8s/devops-info-service/$f" \
+              --namespace default > "/tmp/$f.yaml"
+            test -s "/tmp/$f.yaml"
+          done

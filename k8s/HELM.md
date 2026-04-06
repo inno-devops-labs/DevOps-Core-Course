@@ -37,6 +37,8 @@ The chart lives at `k8s/devops-info-service/` and packages the Lab 9 workload as
 | `resources` | CPU/memory requests and limits. |
 | `livenessProbe` / `readinessProbe` | HTTP paths **`/health`** and **`/ready`**; timings adjustable per environment. |
 | `hooks.preInstall` / `hooks.postInstall` | Enable flag and `image` for hook Jobs (BusyBox). |
+| `credentialsSecret` | Helm-rendered **Secret**; keys become env vars via `envFrom.secretRef` in the Deployment (Lab 11). |
+| `serviceAccount` / `vault.injector` | Optional **ServiceAccount** and **Vault Agent Injector** annotations (Lab 11); see `values-vault.yaml` and `k8s/SECRETS.md`. |
 
 **Customize per environment**
 

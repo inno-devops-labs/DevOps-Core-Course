@@ -1,0 +1,21 @@
+# Overlay for Lab 11 Task 3: dedicated ServiceAccount + Vault Agent injection annotations.
+# Install chart: helm upgrade --install devops ./k8s/devops-info-service -f k8s/devops-info-service/values-vault.yaml
+# Prerequisite: helm install vault hashicorp/vault --set server.dev.enabled=true --set injector.enabled=true
+
+replicaCount: 1
+
+serviceAccount:
+  create: true
+  automountServiceAccountToken: true
+
+credentialsSecret:
+  enabled: true
+  stringData:
+    username: from-helm-placeholder
+    password: from-helm-placeholder
+
+vault:
+  injector:
+    enabled: true
+    role: devops-info-service
+    secretPath: secret/data/devops-info/config

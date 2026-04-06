@@ -1,0 +1,10 @@
+# HashiCorp Vault — dev mode + Agent Injector (learning only; not for production)
+# helm repo add hashicorp https://helm.releases.hashicorp.com && helm repo update
+# helm install vault hashicorp/vault -f k8s/vault/values-helm-dev.yaml --namespace vault --create-namespace
+
+server:
+  dev:
+    enabled: true
+
+injector:
+  enabled: true

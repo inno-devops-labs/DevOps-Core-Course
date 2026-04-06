@@ -34,6 +34,30 @@ containerSecurityContext:
 env:
   PORT: "5000"
 
+# Helm-managed Secret (Task 2). Override with --set-file / external tooling; never commit real credentials.
+credentialsSecret:
+  enabled: true
+  # If empty, secret name is "<release>-<chart>-credentials"
+  name: ""
+  stringData:
+    username: changeme-user
+    password: changeme-password
+
+serviceAccount:
+  create: false
+  automountServiceAccountToken: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+
+# Vault Agent Injector (Task 3). Requires HashiCorp Vault + injector in cluster; use values-vault.yaml or enable here.
+vault:
+  injector:
+    enabled: false
+    role: devops-info-service
+    secretPath: secret/data/devops-info/config
+
 resources:
   limits:
     cpu: 500m
