@@ -22,3 +22,8 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 3
   periodSeconds: 5
+
+secrets:
+  data:
+    username: "change-me"
+    password: "change-me"

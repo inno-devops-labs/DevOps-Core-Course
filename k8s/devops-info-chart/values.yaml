@@ -35,6 +35,13 @@ env:
   - name: PYTHONPATH
     value: "/home/app"
 
+secrets:
+  enabled: true
+  nameOverride: ""
+  data:
+    username: "change-me"
+    password: "change-me"
+
 resources:
   requests:
     cpu: "100m"
@@ -86,3 +93,12 @@ hooks:
       - sh
       - -c
       - echo Post-install smoke test && sleep 5 && echo Post-install completed
+
+serviceAccount:
+  create: true
+  nameOverride: ""
+
+vault:
+  enabled: false
+  role: "devops-info-role"
+  agentInjectSecretPath: "secret/data/myapp/config"

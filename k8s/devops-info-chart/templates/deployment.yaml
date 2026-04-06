@@ -20,7 +20,14 @@ spec:
       labels:
         {{- include "devops-info.selectorLabels" . | nindent 8 }}
         tier: backend
+      {{- if .Values.vault.enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.agentInjectSecretPath | quote }}
+      {{- end }}
     spec:
+      serviceAccountName: {{ if or .Values.serviceAccount.create .Values.serviceAccount.nameOverride }}{{ include "devops-info.serviceAccountName" . }}{{ else }}default{{ end }}
       containers:
         - name: {{ .Values.container.name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -34,6 +41,11 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
               protocol: TCP
+          {{- if .Values.secrets.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info.secretName" . }}
+          {{- end }}
           env:
             {{- toYaml .Values.env | nindent 12 }}
           resources:

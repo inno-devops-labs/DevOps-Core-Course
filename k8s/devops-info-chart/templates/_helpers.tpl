@@ -41,3 +41,25 @@ helm.sh/chart: {{ include "devops-info.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
+
+{{/*
+Secret name.
+*/}}
+{{- define "devops-info.secretName" -}}
+{{- if .Values.secrets.nameOverride }}
+{{- .Values.secrets.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-secret" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Service account name.
+*/}}
+{{- define "devops-info.serviceAccountName" -}}
+{{- if .Values.serviceAccount.nameOverride }}
+{{- .Values.serviceAccount.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-sa" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
