@@ -1,4 +1,6 @@
-replicaCount: 3
+replicaCount: 1
+environment: prod
+logLevel: INFO
 
 image:
   tag: "1.0.0"
@@ -15,6 +17,11 @@ resources:
     cpu: "500m"
     memory: "512Mi"
 
+config:
+  features:
+    debugEndpoints: false
+    showVisitsInRoot: true
+
 probes:
   startup:
     failureThreshold: 24
@@ -24,3 +31,9 @@ probes:
   liveness:
     initialDelaySeconds: 20
     periodSeconds: 10
+
+secrets:
+  enabled: true
+  data:
+    APP_USERNAME: "prod-user"
+    APP_PASSWORD: "prod-password"
