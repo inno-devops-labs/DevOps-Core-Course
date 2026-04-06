@@ -1,5 +1,12 @@
 replicaCount: 3
 
+secret:
+  username: "changeme"
+  password: "changeme"
+
+appEnv: "production"
+logLevel: "INFO"
+
 image:
   repository: devops-info-service
   tag: "latest"
