@@ -44,3 +44,23 @@ readinessProbe:
 
 nameOverride: ""
 fullnameOverride: ""
+
+# Lab 11: Kubernetes Secrets (use placeholders; override at install time)
+secrets:
+  enabled: true
+  username: "changeme-user"
+  password: "changeme-password"
+  envFrom: true
+
+# Lab 11: HashiCorp Vault Agent Injector (enable after Vault is installed and configured)
+vault:
+  enabled: false
+  role: my-python-app
+  secretPath: secret/data/myapp/config
+  template:
+    enabled: false
+  serviceAccount:
+    create: true
+    name: ""
+
+podAnnotations: {}

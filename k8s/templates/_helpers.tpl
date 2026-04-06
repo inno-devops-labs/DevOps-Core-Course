@@ -26,3 +26,16 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "my-python-app.chart" -}}
 {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 {{- end -}}
+
+{{- define "my-python-app.serviceAccountName" -}}
+{{- if .Values.vault.serviceAccount.create -}}
+{{- default (include "my-python-app.fullname" .) .Values.vault.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.vault.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "my-python-app.containerEnv" -}}
+- name: PORT
+  value: "{{ .Values.service.targetPort }}"
+{{- end -}}
