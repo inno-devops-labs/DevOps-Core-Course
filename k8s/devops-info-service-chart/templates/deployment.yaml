@@ -16,6 +16,10 @@ spec:
       maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
   template:
     metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "devops-info-role"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
     spec:
@@ -34,6 +38,9 @@ spec:
             - name: {{ .name }}
               value: {{ .value | quote }}
             {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info-service.fullname" . }}-secret
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:

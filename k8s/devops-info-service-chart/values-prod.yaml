@@ -49,3 +49,7 @@ readinessProbe:
     port: 5000
   initialDelaySeconds: 10
   periodSeconds: 3
+
+secret:
+  appUsername: "chal"
+  appPassword: "password_for_DevOps"
