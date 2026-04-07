@@ -252,7 +252,7 @@ kubectl port-forward svc/monitoring-kube-prometheus-prometheus -n monitoring 909
 
 Congratulations on completing the core Kubernetes labs! You now have experience with the complete DevOps lifecycle from development to production monitoring.
 
-**Optional:** Labs 17-18 are exam alternatives covering Fly.io and 4EVERLAND.
+**Optional:** Labs 17-18 are exam alternatives covering Cloudflare Workers and Nix.
 
 ---
 
