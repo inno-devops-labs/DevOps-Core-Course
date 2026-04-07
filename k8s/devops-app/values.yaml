@@ -59,3 +59,22 @@ readinessProbe:
   periodSeconds: 3
   timeoutSeconds: 2
   failureThreshold: 3
+
+secrets:
+  USERNAME: "placeholder-user"
+  PASSWORD: "placeholder-pass"
+  DATABASE_URL: "postgresql://user:pass@localhost:5432/app"
+
+vault:
+  enabled: true
+  role: "devops-app"
+  secretPath: "secret/data/devops-app/config"
+  agentInjectTemplate: |
+    {{- with secret "secret/data/devops-app/config" -}}
+    DATABASE_URL={{ .Data.data.database_url }}
+    API_KEY={{ .Data.data.api_key }}
+    {{- end -}}
+
+serviceAccount:
+  create: true
+  name: "devops-app"
