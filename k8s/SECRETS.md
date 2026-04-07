@@ -121,7 +121,7 @@ type: Opaque
 stringData:
   username: {{ .Values.secrets.username | quote }}
   password: {{ .Values.secrets.password | quote }}
-  api-key: {{ .Values.secrets.apiKey | quote }}
+  api_key: {{ .Values.secrets.apiKey | quote }}
 ```
 
 ### values.yaml — Secrets Section
@@ -146,7 +146,7 @@ envFrom:
       name: <release-fullname>-secret
 ```
 
-This makes `username`, `password`, and `api-key` available as environment
+This makes `username`, `password`, and `api_key` available as environment
 variables inside the container without them appearing in `kubectl describe pod`
 output (values are redacted by the API).
 
@@ -164,14 +164,14 @@ helm upgrade --install devops-info ./k8s/devops-info-chart \
 ### Verifying Environment Variables in Pod
 
 ```bash
-kubectl exec -it <pod-name> -- env | grep -E "username|password|api.key"
+kubectl exec -it <pod-name> -- env | grep -E "username|password|api_key"
 ```
 
 **Output (example):**
 ```
 username=admin
 password=real-secret-value
-api-key=real-api-key
+api_key=real-api-key
 ```
 
 ### kubectl describe pod — Secrets Are Redacted
@@ -326,7 +326,7 @@ annotations:
   vault.hashicorp.com/role: "devops-info-role"
   vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
   vault.hashicorp.com/agent-inject-template-config: |
-    {{- with secret "secret/data/myapp/config" -}}
+    {{- with secret "secret/data/<vault.secretPath>" -}}
     USERNAME={{ .Data.data.username }}
     PASSWORD={{ .Data.data.password }}
     API_KEY={{ .Data.data.api_key }}
@@ -364,7 +364,7 @@ secrets into a `.env`-style file at `/vault/secrets/config`:
 
 ```yaml
 vault.hashicorp.com/agent-inject-template-config: |
-  {{- with secret "secret/data/myapp/config" -}}
+  {{- with secret "secret/data/<vault.secretPath>" -}}
   USERNAME={{ .Data.data.username }}
   PASSWORD={{ .Data.data.password }}
   API_KEY={{ .Data.data.api_key }}
