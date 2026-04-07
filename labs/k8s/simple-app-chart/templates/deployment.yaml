@@ -17,6 +17,10 @@ spec:
       maxUnavailable: {{ .Values.updateStrategy.rollingUpdate.maxUnavailable }}
   template:
     metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "myapp-role"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
       labels:
         app: {{ .Values.image.repository | replace "/" "-" | trunc 63 | trimSuffix "-" }}
         {{- include "simple-app.selectorLabels" . | nindent 8 }}
@@ -34,3 +38,6 @@ spec:
           {{- toYaml .Values.livenessProbe | nindent 10 }}
         readinessProbe:
           {{- toYaml .Values.readinessProbe | nindent 10 }}
+        envFrom:
+          - secretRef:
+              name: {{ include "simple-app.fullname" . }}-secret
