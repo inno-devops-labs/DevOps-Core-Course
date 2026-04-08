@@ -19,7 +19,22 @@ spec:
     metadata:
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+      {{- if .Values.vault.enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/auth-path: {{ .Values.vault.authPath | quote }}
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.injectFileName }}: {{ .Values.vault.secretPath | quote }}
+        vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.renderEnvFileName }}: {{ .Values.vault.secretPath | quote }}
+        vault.hashicorp.com/agent-inject-template-{{ .Values.vault.renderEnvFileName }}: |
+          {{`{{- with secret "`}}{{ .Values.vault.secretPath }}{{`" -}}`}}
+          APP_VAULT_USERNAME={{`{{ .Data.data.username }}`}}
+          APP_VAULT_PASSWORD={{`{{ .Data.data.password }}`}}
+          APP_VAULT_API_TOKEN={{`{{ .Data.data.api_token }}`}}
+          {{`{{- end -}}`}}
+      {{- end }}
     spec:
+      serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       securityContext:
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
         runAsUser: {{ .Values.securityContext.runAsUser }}
@@ -32,20 +47,10 @@ spec:
             - name: {{ .Values.service.portName }}
               containerPort: {{ .Values.service.containerPort }}
           env:
-            - name: HOST
-              value: {{ .Values.env.host | quote }}
-            - name: PORT
-              value: {{ .Values.env.port | quote }}
-            - name: SERVICE_NAME
-              value: {{ .Values.env.serviceName | quote }}
-            - name: SERVICE_VERSION
-              value: {{ .Values.env.serviceVersion | quote }}
-            - name: SERVICE_DESCRIPTION
-              value: {{ .Values.env.serviceDescription | quote }}
-            - name: LOG_LEVEL
-              value: {{ .Values.env.logLevel | quote }}
-            - name: PYTHONDONTWRITEBYTECODE
-              value: {{ .Values.env.pythondontwritebytecode | quote }}
+            {{- include "devops-info-service.commonEnv" . | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info-service.secretName" . }}
           securityContext:
             allowPrivilegeEscalation: {{ .Values.containerSecurityContext.allowPrivilegeEscalation }}
             readOnlyRootFilesystem: {{ .Values.containerSecurityContext.readOnlyRootFilesystem }}

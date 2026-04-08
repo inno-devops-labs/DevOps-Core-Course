@@ -76,3 +76,22 @@ hooks:
     pullPolicy: IfNotPresent
     sleepSeconds: 2
 
+secret:
+  create: true
+  name: ""
+  data:
+    username: "change-me-user"
+    password: "change-me-password"
+    apiToken: "change-me-token"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-info-service-role"
+  secretPath: "secret/data/devops-info-service/config"
+  injectFileName: "config"
+  renderEnvFileName: "app.env"
+  authPath: "auth/kubernetes"
