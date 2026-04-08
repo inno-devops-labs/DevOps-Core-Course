@@ -18,6 +18,10 @@ spec:
     {{- end }}
   template:
     metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "info-service"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/info-service/config"
       labels:
         {{- include "info-service.selectorLabels" . | nindent 8 }}
     spec:
@@ -25,6 +29,9 @@ spec:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        envFrom:
+        - secretRef:
+            name: {{ include "info-service.fullname" . }}-secret
         ports:
         - containerPort: {{ .Values.service.targetPort }}
         resources:

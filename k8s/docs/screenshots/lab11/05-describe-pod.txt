@@ -1,0 +1,205 @@
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab10)
+$ kubectl exec
+error: pod, type/name or --filename must be specified
+
+Admin@DESKTOP-5I9FNA3 MINGW64 /c/DevOps-Core-Course (lab10)
+$  kubectl describe pod
+Name:             info-service-info-service-6bc966f497-7nlc5
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Wed, 08 Apr 2026 21:50:45 +0300
+Labels:           app.kubernetes.io/instance=info-service
+                  app.kubernetes.io/name=info-service
+                  pod-template-hash=6bc966f497
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.59
+IPs:
+  IP:           10.244.0.59
+Controlled By:  ReplicaSet/info-service-info-service-6bc966f497
+Containers:
+  info-service:
+    Container ID:   docker://4c6cdb0a486330496b31de5d56756a5b51bfe5149ad93d99142febdf57dc4fa1
+    Image:          roma3213/info_service:latest
+    Image ID:       docker-pullable://roma3213/info_service@sha256:2b2f4730687018b5a517c59471d5fe877941d6505df80a60a8685e1f23d3a284
+    Port:           5000/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Wed, 08 Apr 2026 21:50:48 +0300
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Liveness:   http-get http://:5000/health delay=10s timeout=1s period=5s #success=1 #failure=3
+    Readiness:  http-get http://:5000/health delay=5s timeout=1s period=3s #success=1 #failure=3
+    Environment Variables from:
+      info-service-info-service-secret  Secret  Optional: false
+    Environment:                        <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-wx5tw (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       True
+  ContainersReady             True
+  PodScheduled                True
+Volumes:
+  kube-api-access-wx5tw:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                  From               Message
+  ----     ------     ----                 ----               -------
+  Normal   Scheduled  119s                 default-scheduler  Successfully assigned default/info-service-info-service-6bc966f497-7nlc5 to minikube
+  Normal   Pulled     117s                 kubelet            Container image "roma3213/info_service:latest" already present on machine and can be accessed by the pod
+  Normal   Created    117s                 kubelet            Container created
+  Normal   Started    117s                 kubelet            Container started
+  Warning  Unhealthy  109s (x2 over 112s)  kubelet            Readiness probe failed: Get "http://10.244.0.59:5000/health": dial tcp 10.244.0.59:5000: connect: connection refused
+
+
+Name:             info-service-info-service-6bc966f497-d4hqz
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Wed, 08 Apr 2026 21:50:46 +0300
+Labels:           app.kubernetes.io/instance=info-service
+                  app.kubernetes.io/name=info-service
+                  pod-template-hash=6bc966f497
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.56
+IPs:
+  IP:           10.244.0.56
+Controlled By:  ReplicaSet/info-service-info-service-6bc966f497
+Containers:
+  info-service:
+    Container ID:   docker://eb1e65fcc46e94c082360d7b9888b2209430143dacf44278c26d7d8ca9de2959
+    Image:          roma3213/info_service:latest
+    Image ID:       docker-pullable://roma3213/info_service@sha256:2b2f4730687018b5a517c59471d5fe877941d6505df80a60a8685e1f23d3a284
+    Port:           5000/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Wed, 08 Apr 2026 21:50:48 +0300
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Liveness:   http-get http://:5000/health delay=10s timeout=1s period=5s #success=1 #failure=3
+    Readiness:  http-get http://:5000/health delay=5s timeout=1s period=3s #success=1 #failure=3
+    Environment Variables from:
+      info-service-info-service-secret  Secret  Optional: false
+    Environment:                        <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-m6dk9 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       True
+  ContainersReady             True
+  PodScheduled                True
+Volumes:
+  kube-api-access-m6dk9:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                  From               Message
+  ----     ------     ----                 ----               -------
+  Normal   Scheduled  119s                 default-scheduler  Successfully assigned default/info-service-info-service-6bc966f497-d4hqz to minikube
+  Normal   Pulled     118s                 kubelet            Container image "roma3213/info_service:latest" already present on machine and can be accessed by the pod
+  Normal   Created    117s                 kubelet            Container created
+  Normal   Started    117s                 kubelet            Container started
+  Warning  Unhealthy  109s (x2 over 112s)  kubelet            Readiness probe failed: Get "http://10.244.0.56:5000/health": dial tcp 10.244.0.56:5000: connect: connection refused
+
+
+Name:             info-service-info-service-6bc966f497-jt4bw
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Wed, 08 Apr 2026 21:50:46 +0300
+Labels:           app.kubernetes.io/instance=info-service
+                  app.kubernetes.io/name=info-service
+                  pod-template-hash=6bc966f497
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.58
+IPs:
+  IP:           10.244.0.58
+Controlled By:  ReplicaSet/info-service-info-service-6bc966f497
+Containers:
+  info-service:
+    Container ID:   docker://1f93b9b4d3c36af6678345c584d482376c04fda57f22d230ec0cc480cb186975
+    Image:          roma3213/info_service:latest
+    Image ID:       docker-pullable://roma3213/info_service@sha256:2b2f4730687018b5a517c59471d5fe877941d6505df80a60a8685e1f23d3a284
+    Port:           5000/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Wed, 08 Apr 2026 21:50:48 +0300
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     200m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Liveness:   http-get http://:5000/health delay=10s timeout=1s period=5s #success=1 #failure=3
+    Readiness:  http-get http://:5000/health delay=5s timeout=1s period=3s #success=1 #failure=3
+    Environment Variables from:
+      info-service-info-service-secret  Secret  Optional: false
+    Environment:                        <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-2zjrn (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       True
+  ContainersReady             True
+  PodScheduled                True
+Volumes:
+  kube-api-access-2zjrn:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Burstable
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                  From               Message
+  ----     ------     ----                 ----               -------
+  Normal   Scheduled  118s                 default-scheduler  Successfully assigned default/info-service-info-service-6bc966f497-jt4bw to minikube
+  Normal   Pulled     117s                 kubelet            Container image "roma3213/info_service:latest" already present on machine and can be accessed by the pod
+  Normal   Created    117s                 kubelet            Container created
+  Normal   Started    117s                 kubelet            Container started
+  Warning  Unhealthy  109s (x2 over 112s)  kubelet            Readiness probe failed: Get "http://10.244.0.58:5000/health": dial tcp 10.244.0.58:5000: connect: connection refused

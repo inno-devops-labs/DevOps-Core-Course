@@ -11,6 +11,10 @@ service:
   targetPort: 5000
   nodePort: 30080
 
+secret:
+  username: "admin"
+  password: "changeme"
+
 resources:
   requests:
     memory: "128Mi"
