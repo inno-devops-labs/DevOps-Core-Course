@@ -1,0 +1,5 @@
+{{- with secret "secret/data/devops-info-service/config" -}}
+# Rendered by Vault Agent (bonus template); not Helm
+APP_USERNAME={{ .Data.data.username }}
+APP_PASSWORD={{ .Data.data.password }}
+{{- end -}}

@@ -5,6 +5,9 @@ fullnameOverride: devops-info-service
 podLabels:
   component: api
 
+# Optional annotations on the pod (e.g. Prometheus). Vault injector adds its own when vault.enabled.
+podAnnotations: {}
+
 replicaCount: 3
 
 image:
@@ -27,6 +30,26 @@ env:
     value: "0.0.0.0"
   - name: PORT
     value: "5000"
+
+# Lab 11: Kubernetes Secret (Helm-managed). Override at install: --set secrets.username=... --set secrets.password=...
+secrets:
+  enabled: true
+  username: "placeholder-user"
+  password: "placeholder-pass"
+
+# Dedicated ServiceAccount for pods (required for Vault Kubernetes auth role binding).
+serviceAccount:
+  create: true
+  name: ""
+
+# HashiCorp Vault Agent Injector (Lab 11 Task 3). Install Vault with injector, then enable and configure role/policy.
+vault:
+  enabled: false
+  role: devops-info-service
+  secretFileName: config
+  secretPath: secret/data/devops-info-service/config
+  # Bonus: render .env-style file via Vault Agent template (requires files/vault-agent-config.ctmpl).
+  bonusAgentTemplate: false
 
 resources:
   limits:
