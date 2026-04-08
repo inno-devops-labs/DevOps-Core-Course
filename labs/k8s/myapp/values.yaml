@@ -29,3 +29,8 @@ livenessProbe:
   port: 8080
   initialDelaySeconds: 8
   periodSeconds: 5
+
+appSecrets:
+  username: "helm_user"
+  password: "helm_password_placeholder"
+
