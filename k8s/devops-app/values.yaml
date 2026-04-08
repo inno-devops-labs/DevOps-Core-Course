@@ -1,3 +1,5 @@
+# Default values for devops-app.
+
 replicaCount: 3
 
 image:
@@ -28,3 +30,13 @@ readinessProbe:
   path: /health
   initialDelaySeconds: 5
   periodSeconds: 3
+
+secrets:
+  dbUsername: "admin"
+  dbPassword: "supersecret123"
+
+# Vault Configuration (оставляем для Task 3)
+vault:
+  enabled: true
+  role: "devops-app-role"
+  secretPath: "secret/data/devops-app/config"

@@ -13,18 +13,35 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: devops-app
+      {{- include "devops-app.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      # АННОТАЦИИ ДОЛЖНЫ БЫТЬ ТУТ!
+      annotations:
+        {{- if .Values.vault.enabled }}
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPath | quote }}
+        vault.hashicorp.com/agent-inject-template-config: |
+          {{ `{{- with secret ` }}"{{ .Values.vault.secretPath }}"{{ ` -}}
+          {{- range $k, $v := .Data.data }}
+          export {{ $k }}="{{ $v }}"
+          {{- end }}
+          {{- end }}` }}
+        {{- end }}
       labels:
-        app: devops-app
+        {{- include "devops-app.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: devops-app
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.targetPort }}
+          
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-app.fullname" . }}-credentials
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
