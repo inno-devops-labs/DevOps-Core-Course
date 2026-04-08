@@ -1,7 +1,11 @@
 replicaCount: 1
 
 image:
-  tag: lab10-dev
+  tag: "1.0.0"
+
+env:
+  appEnv: development
+  logLevel: debug
 
 service:
   type: NodePort

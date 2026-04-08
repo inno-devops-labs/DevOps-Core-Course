@@ -1,0 +1,10 @@
+vault:
+  enabled: true
+  role: devops-info-service
+  authPath: auth/kubernetes
+  secretPath: kv/data/devops-info-service/config
+  mountPath: /vault/secrets
+  fileName: app.env
+  injectCommand: "chmod 0640 /vault/secrets/app.env"
+  template:
+    staticSecretRenderInterval: 2m

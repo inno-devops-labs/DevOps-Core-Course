@@ -24,12 +24,21 @@ spec:
         {{- with .Values.commonLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- with .Values.podAnnotations }}
+      {{- if or (and .Values.secrets.enabled .Values.secrets.create) .Values.vault.enabled .Values.podAnnotations }}
       annotations:
+        {{- if and .Values.secrets.enabled .Values.secrets.create }}
+        checksum/secret: {{ toYaml .Values.secrets.data | sha256sum }}
+        {{- end }}
+        {{- if .Values.vault.enabled }}
+        {{- include "devops-info-service.vaultAnnotations" . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
     spec:
-      automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
+      serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
+      automountServiceAccountToken: {{ if .Values.vault.enabled }}true{{ else }}{{ .Values.automountServiceAccountToken }}{{ end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
@@ -38,16 +47,12 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: HOST
-              value: {{ .Values.env.host | quote }}
-            - name: PORT
-              value: {{ .Values.container.port | quote }}
-            {{- with .Values.env.extra }}
-            {{- range . }}
-            - name: {{ .name }}
-              value: {{ .value | quote }}
-            {{- end }}
-            {{- end }}
+            {{- include "devops-info-service.envVars" . | nindent 12 }}
+          {{- if .Values.secrets.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info-service.secretName" . }}
+          {{- end }}
           ports:
             - name: {{ .Values.container.portName }}
               containerPort: {{ .Values.container.port }}
