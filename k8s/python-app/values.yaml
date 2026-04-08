@@ -37,6 +37,11 @@ strategy:
     maxSurge: 1
     maxUnavailable: 0
 
+secret:
+  username: "placeholder-user"
+  password: "placeholder-password"
+  secretKey: "placeholder-secret-key"
+  
 # Environment variables injected into the container
 env:
   - name: ENV
@@ -59,3 +64,4 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 3
   failureThreshold: 3
+

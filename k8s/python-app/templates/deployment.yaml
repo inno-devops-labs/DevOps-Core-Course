@@ -18,6 +18,10 @@ spec:
     metadata:
       labels:
         {{- include "python-app.selectorLabels" . | nindent 8 }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "python-app-role"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
     spec:
       securityContext:
         runAsNonRoot: {{ .Values.podSecurityContext.runAsNonRoot }}
@@ -36,6 +40,14 @@ spec:
             limits:
               cpu: {{ .Values.resources.limits.cpu | quote }}
               memory: {{ .Values.resources.limits.memory | quote }}
+          envFrom:
+            - secretRef:
+                name: {{ include "python-app.fullname" . }}-secret
+          env:
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
           livenessProbe:
             httpGet:
               path: {{ .Values.livenessProbe.httpGet.path }}
@@ -50,8 +62,3 @@ spec:
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
-          env:
-            {{- range .Values.env }}
-            - name: {{ .name }}
-              value: {{ .value | quote }}
-            {{- end }}
