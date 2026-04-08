@@ -10,7 +10,7 @@ image:
 
 app:
   name: python-app
-  version: lab09
+  version: lab11
   description: DevOps course info service
 
 service:
@@ -51,6 +51,24 @@ rollingUpdate:
 
 podAnnotations: {}
 podLabels: {}
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+secrets:
+  create: true
+  name: ""
+  data:
+    APP_USERNAME: "change-me"
+    APP_PASSWORD: "change-me"
+
+vault:
+  enabled: false
+  role: python-app-role
+  secretPath: secret/data/myapp/config
+  secretFileName: config
 
 hooks:
   enabled: true

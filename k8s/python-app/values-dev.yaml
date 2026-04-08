@@ -5,7 +5,7 @@ image:
   pullPolicy: Never
 
 app:
-  version: lab10-dev
+  version: lab11-dev
 
 service:
   type: NodePort
@@ -20,6 +20,11 @@ resources:
   limits:
     cpu: 100m
     memory: 128Mi
+
+secrets:
+  data:
+    APP_USERNAME: "dev-user"
+    APP_PASSWORD: "dev-password"
 
 readinessProbe:
   initialDelaySeconds: 3

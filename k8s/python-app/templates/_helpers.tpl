@@ -35,3 +35,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/name: {{ include "python-app.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/* Service account name. */}}
+{{- define "python-app.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "python-app.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/* Secret name. */}}
+{{- define "python-app.secretName" -}}
+{{- default (printf "%s-secret" (include "python-app.fullname" .)) .Values.secrets.name }}
+{{- end }}

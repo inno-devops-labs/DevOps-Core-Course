@@ -1,0 +1,5 @@
+vault:
+  enabled: true
+  role: python-app-role
+  secretPath: secret/data/myapp/config
+  secretFileName: config
