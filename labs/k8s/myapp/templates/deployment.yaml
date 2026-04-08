@@ -16,6 +16,10 @@ spec:
       {{- include "myapp.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "myapp-role"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
       labels:
         {{- include "myapp.selectorLabels" . | nindent 8 }}
     spec:
@@ -27,8 +31,14 @@ spec:
           ports:
             - containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
-          
-          # Ресурсы подтягиваются единым блоком
+          envFrom:
+            - secretRef:
+                name: {{ include "myapp.fullname" . }}-secret
+
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           
