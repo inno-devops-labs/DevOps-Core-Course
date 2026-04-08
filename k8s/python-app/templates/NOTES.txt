@@ -11,3 +11,13 @@ To inspect the rendered manifests:
 
 To inspect the applied values:
   helm get values {{ .Release.Name }}
+
+{{- if .Values.secrets.enabled }}
+To inspect the managed Secret metadata:
+  kubectl get secret {{ include "python-app.secretName" . }} -o yaml
+{{- end }}
+
+{{- if .Values.vault.enabled }}
+Vault Agent injection is enabled.
+Injected files will be available under /vault/secrets/{{ .Values.vault.injectFileName }}
+{{- end }}

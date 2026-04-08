@@ -23,6 +23,23 @@ env:
   - name: PORT
     value: "8000"
 
+serviceAccount:
+  create: true
+  name: ""
+
+secrets:
+  enabled: true
+  name: ""
+  data:
+    username: change-me
+    password: change-me
+
+vault:
+  enabled: false
+  role: python-app
+  secretPath: secret/data/python-app/config
+  injectFileName: config
+
 resources:
   requests:
     cpu: 100m

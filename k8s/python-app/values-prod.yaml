@@ -13,6 +13,14 @@ env:
   - name: PORT
     value: "8000"
 
+secrets:
+  data:
+    username: prod-user
+    password: prod-password
+
+vault:
+  enabled: false
+
 resources:
   requests:
     cpu: 200m

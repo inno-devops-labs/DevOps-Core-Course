@@ -45,3 +45,21 @@ helm.sh/chart: {{ include "python-app.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
+
+{{/*
+Resolve the service account name used by the workload.
+*/}}
+{{- define "python-app.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "python-app.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve the managed secret name.
+*/}}
+{{- define "python-app.secretName" -}}
+{{- default (printf "%s-secret" (include "python-app.fullname" .)) .Values.secrets.name -}}
+{{- end -}}
