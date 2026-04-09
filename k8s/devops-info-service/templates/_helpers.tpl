@@ -47,3 +47,21 @@ Selector labels — must match Service selector and Deployment pod template.
 app.kubernetes.io/name: {{ include "devops-info-service.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+ServiceAccount name for Vault Kubernetes auth.
+*/}}
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.name }}
+{{- .Values.serviceAccount.name }}
+{{- else }}
+{{- printf "%s-sa" (include "devops-info-service.fullname" .) }}
+{{- end }}
+{{- end }}
+
+{{/*
+Name of the Helm-managed Secret holding app credentials.
+*/}}
+{{- define "devops-info-service.credentialsSecretName" -}}
+{{- printf "%s-credentials" (include "devops-info-service.fullname" .) }}
+{{- end }}

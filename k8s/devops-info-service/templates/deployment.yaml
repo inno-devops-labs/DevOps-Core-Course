@@ -16,9 +16,16 @@ spec:
       maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
   template:
     metadata:
-      {{- if and .Values.podAnnotations (not (empty .Values.podAnnotations)) }}
+      {{- if or .Values.vaultInjection.enabled (and .Values.podAnnotations (not (empty .Values.podAnnotations))) }}
       annotations:
-        {{- toYaml .Values.podAnnotations | nindent 8 }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.vaultInjection.enabled }}
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vaultInjection.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-{{ .Values.vaultInjection.secretAlias }}: {{ .Values.vaultInjection.secretPath | quote }}
+        {{- end }}
       {{- end }}
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
@@ -26,6 +33,9 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- if .Values.vaultInjection.enabled }}
+      serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
+      {{- end }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -38,6 +48,11 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
+          {{- if .Values.credentials.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info-service.credentialsSecretName" . }}
+          {{- end }}
           {{- with .Values.env }}
           env:
             {{- toYaml . | nindent 12 }}

@@ -8,6 +8,21 @@ image:
 nameOverride: ""
 fullnameOverride: ""
 
+credentials:
+  enabled: true
+  username: "lab-user"
+  password: "lab-password-placeholder"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vaultInjection:
+  enabled: false
+  role: devops-info-service
+  secretPath: secret/data/devops-info/config
+  secretAlias: config
+
 podAnnotations: {}
 
 podLabels: {}

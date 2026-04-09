@@ -1,0 +1,5 @@
+vaultInjection:
+  enabled: true
+
+credentials:
+  enabled: true
