@@ -1,3 +1,4 @@
+{{- $vaultAnnotations := include "devops-info-service.vaultAnnotations" . | trim }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,9 +16,14 @@ spec:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- if or .Values.podAnnotations $vaultAnnotations }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if $vaultAnnotations }}
+        {{- $vaultAnnotations | nindent 8 }}
+        {{- end }}
       {{- end }}
       labels:
         {{- include "devops-info-service.labels" . | nindent 8 }}
@@ -33,6 +39,8 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
       containers:
         - name: {{ include "devops-info-service.name" . }}
           securityContext:
@@ -43,8 +51,15 @@ spec:
             - name: http
               containerPort: {{ .Values.containerPort }}
               protocol: TCP
+          {{- if .Values.env }}
           env:
-            {{- toYaml .Values.env | nindent 12 }}
+            {{- include "devops-info-service.envVars" . | nindent 12 }}
+          {{- end }}
+          {{- if and .Values.secret.enabled .Values.secret.envFrom }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info-service.secretName" . }}
+          {{- end }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

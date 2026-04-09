@@ -50,3 +50,66 @@ app: {{ include "devops-info-service.name" . }}
 app.kubernetes.io/name: {{ include "devops-info-service.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Return the ServiceAccount name used by the workload.
+*/}}
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "devops-info-service.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Return the Secret name used by the workload.
+*/}}
+{{- define "devops-info-service.secretName" -}}
+{{- if .Values.secret.existingSecret }}
+{{- .Values.secret.existingSecret }}
+{{- else if .Values.secret.name }}
+{{- .Values.secret.name }}
+{{- else }}
+{{- printf "%s-secret" (include "devops-info-service.fullname" .) }}
+{{- end }}
+{{- end }}
+
+{{/*
+Render static environment variables.
+*/}}
+{{- define "devops-info-service.envVars" -}}
+{{- range .Values.env }}
+- name: {{ .name }}
+  value: {{ .value | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
+Render the Vault Agent template used for bonus env-style secret files.
+*/}}
+{{- define "devops-info-service.vaultAgentTemplate" -}}
+{{`{{- with secret "`}}{{ .Values.vault.secretPath }}{{`" -}}`}}
+APP_USERNAME={{`{{ .Data.data.username }}`}}
+APP_PASSWORD={{`{{ .Data.data.password }}`}}
+{{`{{- end -}}`}}
+{{- end }}
+
+{{/*
+Render Vault injector annotations when Vault integration is enabled.
+*/}}
+{{- define "devops-info-service.vaultAnnotations" -}}
+{{- if .Values.vault.enabled }}
+vault.hashicorp.com/agent-inject: "true"
+vault.hashicorp.com/auth-path: {{ printf "auth/%s" .Values.vault.authPath | quote }}
+vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPath | quote }}
+vault.hashicorp.com/agent-inject-file-config: {{ .Values.vault.injectFileName | quote }}
+vault.hashicorp.com/secret-volume-path-config: {{ .Values.vault.secretMountPath | quote }}
+vault.hashicorp.com/agent-pre-populate-only: {{ ternary "true" "false" .Values.vault.agentPrePopulateOnly | quote }}
+{{- if and .Values.vault.template.enabled (eq .Values.vault.template.format "env") }}
+vault.hashicorp.com/agent-inject-template-config: |
+{{ include "devops-info-service.vaultAgentTemplate" . | indent 2 }}
+{{- end }}
+{{- end }}
+{{- end }}
