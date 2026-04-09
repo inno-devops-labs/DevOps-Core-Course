@@ -62,3 +62,21 @@ Generate post-install hook job name
 {{- define "devops-info.postInstallHookName" -}}
 {{- printf "%s-post-install" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
+
+{{/*
+Service account name
+*/}}
+{{- define "devops-info.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default "devops-info-sa" .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Secret resource name
+*/}}
+{{- define "devops-info.secretName" -}}
+{{- default (printf "%s-secret" (include "devops-info.fullname" .)) .Values.secret.name }}
+{{- end }}

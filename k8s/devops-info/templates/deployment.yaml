@@ -14,9 +14,16 @@ spec:
       {{- include "devops-info.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
+      {{- if or .Values.podAnnotations .Values.vault.enabled }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.vault.enabled }}
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.secretFileName }}: {{ .Values.vault.secretPath | quote }}
+        {{- end }}
       {{- end }}
       labels:
         {{- include "devops-info.selectorLabels" . | nindent 8 }}
@@ -24,6 +31,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      serviceAccountName: {{ include "devops-info.serviceAccountName" . }}
       containers:
         - name: {{ include "devops-info.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -32,6 +40,11 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
               protocol: TCP
+          {{- if .Values.secret.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info.secretName" . }}
+          {{- end }}
           env:
             {{- toYaml .Values.container.env | nindent 12 }}
           {{- with .Values.livenessProbe }}

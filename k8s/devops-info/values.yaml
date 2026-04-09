@@ -27,6 +27,23 @@ deployment:
 podAnnotations: {}
 podLabels: {}
 
+serviceAccount:
+  create: true
+  name: devops-info-sa
+
+secret:
+  enabled: true
+  name: ""
+  data:
+    username: "change-me-username"
+    password: "change-me-password"
+
+vault:
+  enabled: false
+  role: "devops-info"
+  secretPath: "secret/data/myapp/config"
+  secretFileName: "config"
+
 service:
   type: NodePort
   port: 80
