@@ -35,6 +35,7 @@ credentials
 *.env
 .env.*
 secrets.*
+!k8s/devops-info/templates/secrets.yaml
 *.vault
 .vault_pass
 

@@ -13,6 +13,10 @@ fullnameOverride: ""
 podAnnotations: {}
 podLabels: {}
 
+serviceAccount:
+  create: true
+  name: ""
+
 service:
   type: NodePort
   port: 80
@@ -32,6 +36,19 @@ env:
   PORT: "5000"
   DEBUG: "false"
   RELEASE_VERSION: "v1"
+
+secrets:
+  create: true
+  name: ""
+  data:
+    APP_USERNAME: "change-me-username"
+    APP_PASSWORD: "change-me-password"
+
+vault:
+  enabled: false
+  role: "devops-info-role"
+  secretPath: "secret/data/myapp/config"
+  injectFileName: "config"
 
 probes:
   readiness:

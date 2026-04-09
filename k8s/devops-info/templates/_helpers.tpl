@@ -38,3 +38,25 @@ app.kubernetes.io/name: {{ include "devops-info.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app: {{ include "devops-info.name" . }}
 {{- end }}
+
+{{/* Create service account name. */}}
+{{- define "devops-info.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- if .Values.serviceAccount.name }}
+{{- .Values.serviceAccount.name }}
+{{- else }}
+{{- include "devops-info.fullname" . }}
+{{- end }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/* Create secret name. */}}
+{{- define "devops-info.secretName" -}}
+{{- if .Values.secrets.name }}
+{{- .Values.secrets.name }}
+{{- else }}
+{{- printf "%s-credentials" (include "devops-info.fullname" .) }}
+{{- end }}
+{{- end }}
