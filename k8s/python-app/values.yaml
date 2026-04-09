@@ -2,7 +2,7 @@ nameOverride: devops-info-python
 fullnameOverride: ""
 
 global:
-  partOf: devops-lab10
+  partOf: devops-lab11
 
 replicaCount: 3
 
@@ -25,6 +25,27 @@ env:
   PORT: "8000"
   DEBUG: "false"
   RELEASE_TRACK: stable
+
+secret:
+  create: true
+  name: ""
+  data:
+    APP_USERNAME: "placeholder-user"
+    APP_PASSWORD: "placeholder-password"
+    APP_API_KEY: "placeholder-api-key"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: python-app-role
+  authPath: auth/kubernetes
+  secretPath: secret/data/python-app/config
+  injectFileName: config
+  renderedFile: app.env
+  agentInjectCommand: 'sh -c "chmod 0440 /vault/secrets/app.env"'
 
 resources:
   requests:

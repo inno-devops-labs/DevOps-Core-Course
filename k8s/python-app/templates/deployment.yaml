@@ -16,7 +16,20 @@ spec:
     metadata:
       labels:
         {{- include "common.labels" . | nindent 8 }}
+      {{- if .Values.vault.enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/auth-type: "kubernetes"
+        vault.hashicorp.com/auth-path: {{ .Values.vault.authPath | quote }}
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.injectFileName }}: {{ .Values.vault.secretPath | quote }}
+        vault.hashicorp.com/agent-inject-file-{{ .Values.vault.injectFileName }}: {{ .Values.vault.renderedFile | quote }}
+        vault.hashicorp.com/agent-inject-template-{{ .Values.vault.injectFileName }}: |
+{{ include "python-app.vaultTemplate" . | indent 10 }}
+        vault.hashicorp.com/agent-inject-command-{{ .Values.vault.injectFileName }}: {{ .Values.vault.agentInjectCommand | quote }}
+      {{- end }}
     spec:
+      serviceAccountName: {{ include "python-app.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -27,10 +40,10 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
           env:
-            {{- range $name, $value := .Values.env }}
-            - name: {{ $name }}
-              value: {{ $value | quote }}
-            {{- end }}
+            {{- include "python-app.envVars" . | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ include "python-app.secretName" . }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:

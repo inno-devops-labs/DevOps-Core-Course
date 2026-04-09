@@ -18,6 +18,9 @@ resources:
 env:
   RELEASE_TRACK: dev
 
+vault:
+  enabled: true
+
 livenessProbe:
   initialDelaySeconds: 5
   periodSeconds: 10
