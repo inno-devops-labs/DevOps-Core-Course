@@ -28,3 +28,7 @@ probes:
     path: /health
     initialDelaySeconds: 5
     periodSeconds: 5
+
+secrets:
+  username: "admin"
+  password: "changeme"
