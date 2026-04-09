@@ -12,6 +12,7 @@ import os
 import platform
 import socket
 import sys
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -26,6 +27,11 @@ app = Flask(__name__)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DATA_DIR = os.getenv("DATA_DIR", "/data")
+VISITS_FILE = os.getenv("VISITS_FILE", os.path.join(DATA_DIR, "visits"))
+
+# Lock for safe counter updates within one application process
+VISITS_LOCK = threading.Lock()
 
 # Timestamp captured at startup (used to calculate uptime)
 START_TIME = datetime.now(timezone.utc)
@@ -122,6 +128,47 @@ werkzeug_logger.propagate = False
 
 
 # General functions of application
+def ensure_visits_file():
+    """Create visits counter file with default value if it does not exist."""
+
+    os.makedirs(DATA_DIR, exist_ok=True)
+    if not os.path.exists(VISITS_FILE):
+        with open(VISITS_FILE, "w", encoding="utf-8") as file:
+            file.write("0")
+
+
+def read_visits():
+    """Read current visits counter from file."""
+
+    ensure_visits_file()
+    with open(VISITS_FILE, "r", encoding="utf-8") as file:
+        raw_value = file.read().strip()
+
+    return int(raw_value) if raw_value else 0
+
+
+def write_visits(value):
+    """Write visits counter to file atomically."""
+
+    ensure_visits_file()
+    temp_file = f"{VISITS_FILE}.{os.getpid()}.{threading.get_ident()}.tmp"
+
+    with open(temp_file, "w", encoding="utf-8") as file:
+        file.write(str(value))
+
+    os.replace(temp_file, VISITS_FILE)
+
+
+def increment_visits():
+    """Increment visits counter and persist the new value."""
+
+    with VISITS_LOCK:
+        current_value = read_visits()
+        new_value = current_value + 1
+        write_visits(new_value)
+        return new_value
+
+
 def system_info():
     """Return basic host and Python runtime information."""
 
@@ -214,12 +261,24 @@ def endpoints_info():
 def index():
     """Root endpoint: returns service metadata and diagnostic information."""
 
+    increment_visits()
+
     payload = {
         "service": SERVICE,
         "system": system_info(),
         "runtime": runtime_info(),
         "request": request_info(),
         "endpoints": endpoints_info(),
+    }
+    return jsonify(payload)
+
+
+@app.get("/visits")
+def visits():
+    """Visits endpoint: returns the current persistent visits counter."""
+
+    payload = {
+        "visits": read_visits(),
     }
     return jsonify(payload)
 

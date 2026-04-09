@@ -1,0 +1,17 @@
+services:
+  app_python:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app_python
+    network_mode: bridge
+    ports:
+      - "5000:5000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5000"
+      DEBUG: "False"
+      DATA_DIR: "/data"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

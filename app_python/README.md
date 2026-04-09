@@ -240,3 +240,37 @@ flake8 app.py tests
 ```bash
 pytest -q
 ```
+
+### Docker Compose persistence test (Lab 12 Task 1)
+Use Docker Compose to verify that the visits counter survives container restarts.
+
+```bash
+cd app_python
+docker compose up -d --build
+curl http://localhost:5000/
+curl http://localhost:5000/visits
+docker compose restart
+curl http://localhost:5000/visits
+```
+
+Expected result:
+- each request to `GET /` increments the counter;
+- `GET /visits` returns the current value;
+- after `docker compose restart`, the counter value is preserved;
+- the value is stored in the host-mounted file `./data/visits`.
+
+### Local Testing:
+1. Install dependencies:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+```
+2. Lint:
+```bash
+flake8 app.py tests
+```
+3. Unit tests:
+```bash
+pytest -q

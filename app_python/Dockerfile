@@ -18,8 +18,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copying the app.py executable into the container
 COPY app.py .
 
+# Create application data directory for persistent files
+RUN mkdir -p /data
+
 # Granting ownership rights to the /app directory and all files in it to the user appuser
-RUN chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /app /data
 USER appuser
 
 # Defining the container port on which the application will run
