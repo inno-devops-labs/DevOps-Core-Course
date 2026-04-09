@@ -23,3 +23,24 @@ lives in common-lib and is reused here via define/include.
 {{- define "devops-info-service.selectorLabels" -}}
 {{ include "common.selectorLabels" . }}
 {{- end }}
+
+{{- define "devops-info-service.secretName" -}}
+{{- printf "%s-credentials" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.name }}
+{{- .Values.serviceAccount.name }}
+{{- else }}
+{{- include "devops-info-service.fullname" . }}
+{{- end }}
+{{- end }}
+
+{{/*
+Non-sensitive container env from values (DRY). Secret keys are injected via envFrom.
+*/}}
+{{- define "devops-info-service.envVars" -}}
+{{- if .Values.env }}
+{{- toYaml .Values.env }}
+{{- end }}
+{{- end }}

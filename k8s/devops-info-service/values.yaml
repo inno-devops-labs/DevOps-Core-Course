@@ -20,7 +20,37 @@ env:
   - name: PORT
     value: "8000"
   - name: APP_BUILD
-    value: "lab10-1"
+    value: "lab11-1"
+
+# Helm-managed Secret (placeholder values only — override at install time).
+secrets:
+  enabled: true
+  stringData:
+    username: "lab11-placeholder-user"
+    password: "lab11-placeholder-pass"
+
+# Dedicated ServiceAccount is created when create is true or when Vault injection is enabled (K8s auth binding).
+serviceAccount:
+  create: false
+  name: ""
+
+# Vault Agent Injector annotations (requires HashiCorp Vault Helm chart with injector + cluster configuration).
+vault:
+  enabled: false
+  role: devops-info-service
+  injectSecret:
+    name: config
+    path: secret/data/myapp/config
+  injectTemplate:
+    enabled: true
+    name: config
+    content: |
+      {{- with secret "secret/data/myapp/config" -}}
+      USERNAME={{ .Data.data.username }}
+      PASSWORD={{ .Data.data.password }}
+      API_KEY={{ .Data.data.api_key }}
+      {{- end }}
+  extraPodAnnotations: {}
 
 resources:
   requests:
