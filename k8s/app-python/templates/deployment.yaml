@@ -44,6 +44,11 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "app-python.fullname" . }}-secret
+          env:
+            {{- include "app-python.envVars" . | nindent 12 }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

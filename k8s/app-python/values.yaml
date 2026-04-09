@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 1
 
 image:
   repository: polinanime/devops-info-service
@@ -13,7 +13,15 @@ serviceAccount:
   create: false
   name: ""
 
-podAnnotations: {}
+podAnnotations:
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/role: "app-python"
+  vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
+  vault.hashicorp.com/agent-inject-template-config: |
+    {{- with secret "secret/data/myapp/config" -}}
+    USERNAME={{ .Data.data.username }}
+    PASSWORD={{ .Data.data.password }}
+    {{- end -}}
 podLabels: {}
 podSecurityContext: {}
 securityContext: {}
@@ -50,6 +58,10 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
+
+secrets:
+  serviceName: "devops-info-service"
+  apiKey: "changeme"
 
 nodeSelector: {}
 tolerations: []

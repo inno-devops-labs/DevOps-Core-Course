@@ -21,3 +21,10 @@
 {{- define "app-python.serviceAccountName" -}}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
+
+{{- define "app-python.envVars" -}}
+- name: APP_ENV
+  value: "production"
+- name: LOG_LEVEL
+  value: "info"
+{{- end }}
