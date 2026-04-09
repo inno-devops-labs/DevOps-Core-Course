@@ -41,3 +41,13 @@ Selector labels
 app.kubernetes.io/name: {{ include "my-python-app.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Named template for common environment variables (bonus)
+*/}}
+{{- define "my-python-app.envVars" -}}
+- name: APP_ENV
+  value: {{ .Values.environment | default "production" }}
+- name: LOG_LEVEL
+  value: {{ .Values.logLevel | default "info" }}
+{{- end }}

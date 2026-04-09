@@ -16,14 +16,16 @@ service:
   targetPort: 8000
   nodePort: 30080
 
+# Resource limits (CPU and memory)
 resources:
-  limits:
-    cpu: 200m
-    memory: 256Mi
   requests:
-    cpu: 100m
-    memory: 128Mi
+    memory: "64Mi"
+    cpu: "100m"
+  limits:
+    memory: "128Mi"
+    cpu: "200m"
 
+# Probes (health checks)
 livenessProbe:
   httpGet:
     path: /health
@@ -43,12 +45,20 @@ readinessProbe:
   successThreshold: 1
   failureThreshold: 3
 
+# Environment variables (non-secret)
 env:
   - name: PORT
     value: "8000"
   - name: HOST
     value: "0.0.0.0"
 
+# Secrets (use --set or external secret management for real values)
 secrets:
   username: placeholder-user
   password: placeholder-password
+
+# Vault integration (annotations will be added via --set or values)
+vault:
+  enabled: false
+  role: "devops-app"
+  secretPath: "secret/data/devops-app/config"
