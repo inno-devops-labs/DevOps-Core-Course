@@ -23,6 +23,15 @@ env:
   serviceVersion: "1.0.0"
   serviceDescription: DevOps course info service
   serviceFramework: Flask
+secret:
+  create: true
+  name: ""
+  data:
+    username: placeholder-user
+    password: placeholder-password
+serviceAccount:
+  create: true
+  name: ""
 startupProbe:
   httpGet:
     path: /health
@@ -64,6 +73,11 @@ containerSecurityContext:
   runAsGroup: 999
   runAsNonRoot: true
   runAsUser: 999
+vault:
+  enabled: false
+  role: devops-info-service
+  secretPath: apps/data/devops-info-service/config
+  agentInjectCommand: ""
 hooks:
   image:
     repository: busybox
