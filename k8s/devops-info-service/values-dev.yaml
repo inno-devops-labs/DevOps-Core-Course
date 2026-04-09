@@ -3,6 +3,15 @@ replicaCount: 1
 image:
   tag: "latest"
 
+app:
+  environment: "dev"
+  logLevel: "debug"
+
+secret:
+  data:
+    username: "dev-user"
+    password: "dev-password-placeholder"
+
 service:
   type: NodePort
 

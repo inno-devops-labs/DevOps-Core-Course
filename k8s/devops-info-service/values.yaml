@@ -19,6 +19,35 @@ service:
 podAnnotations: {}
 podLabels: {}
 
+app:
+  environment: "dev"
+  logLevel: "info"
+
+serviceAccount:
+  create: true
+  name: ""
+
+secret:
+  enabled: true
+  create: true
+  name: ""
+  data:
+    username: "change-me"
+    password: "change-me"
+
+vault:
+  enabled: false
+  role: "devops-info-role"
+  authPath: "auth/kubernetes"
+  secretPath: "secret/data/myapp/config"
+  injectFileName: "config"
+  injectCommand: ""
+  template: |
+    {{- with secret "secret/data/myapp/config" -}}
+    DATABASE_USERNAME={{ .Data.data.username }}
+    DATABASE_PASSWORD={{ .Data.data.password }}
+    {{- end }}
+
 resources:
   requests:
     cpu: 100m

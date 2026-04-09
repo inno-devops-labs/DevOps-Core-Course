@@ -45,3 +45,39 @@ helm.sh/chart: {{ include "devops-info-service.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
+
+{{/*
+Service account name.
+*/}}
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "devops-info-service.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Secret name.
+*/}}
+{{- define "devops-info-service.secretName" -}}
+{{- if .Values.secret.name -}}
+{{- .Values.secret.name -}}
+{{- else -}}
+{{- printf "%s-credentials" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Common environment variables.
+*/}}
+{{- define "devops-info-service.commonEnv" -}}
+- name: HOST
+  value: "0.0.0.0"
+- name: PORT
+  value: "{{ .Values.containerPort }}"
+- name: APP_ENV
+  value: {{ .Values.app.environment | quote }}
+- name: LOG_LEVEL
+  value: {{ .Values.app.logLevel | quote }}
+{{- end -}}
