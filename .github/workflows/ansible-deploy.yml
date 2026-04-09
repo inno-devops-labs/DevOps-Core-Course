@@ -1,0 +1,85 @@
+name: Ansible Deployment
+
+on:
+  push:
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+
+jobs:
+
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          cd ansible
+          if [ -n "$ANSIBLE_VAULT_PASSWORD" ]; then
+            echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+            ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass ansible-lint playbooks/*.yml
+            rm /tmp/vault_pass
+          else
+            ansible-lint playbooks/*.yml
+          fi
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Setup SSH
+        run: |
+          mkdir -p $HOME/.ssh
+          chmod 700 $HOME/.ssh
+
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > $HOME/.ssh/id_rsa
+          chmod 600 $HOME/.ssh/id_rsa
+
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> $HOME/.ssh/known_hosts 2>&1 || echo "ssh-keyscan failed - VM may be unreachable"
+          chmod 644 $HOME/.ssh/known_hosts
+
+          ls -la $HOME/.ssh
+          echo "SSH key fingerprint:"
+          ssh-keygen -lf $HOME/.ssh/id_rsa || echo "Invalid key format"
+
+      - name: Deploy with Ansible
+        run: |
+          cd ansible
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml \
+            -i inventory/hosts.ini \
+            --vault-password-file /tmp/vault_pass
+          rm /tmp/vault_pass
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          curl -f http://${{ secrets.VM_HOST }}:5000

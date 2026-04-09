@@ -1,0 +1,8 @@
+---
+profile: basic
+
+warn_list:
+  - internal-error
+
+exclude_paths:
+  - .cache/

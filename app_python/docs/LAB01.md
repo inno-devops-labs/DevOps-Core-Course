@@ -3,7 +3,7 @@
 I chose FastApi because it's simple, easy to create endpoints, and has automatic documentation.
 
 | Framework   | Pros                                                  | Cons                                        | Reason Not Chosen                 |
-|-------------| ----------------------------------------------------- | ------------------------------------------- | --------------------------------- |
+|-------------|-------------------------------------------------------|---------------------------------------------|-----------------------------------|
 | **FastAPI** | Async support, type safety, OpenAPI, high performance | Slight learning curve                       | **Chosen**                        |
 | Flask       | Simple, minimal                                       | No async by default, no built-in validation | Less suitable for structured APIs |
 | Django      | Full-featured, mature                                 | Heavy, overkill for small service           | Too complex for this task         |
@@ -12,46 +12,45 @@ I chose FastApi because it's simple, easy to create endpoints, and has automatic
 
 1. Environment-based Configuration
 
-    ```python
-    HOST = os.getenv("HOST", "0.0.0.0")
-    PORT = int(os.getenv("PORT", 5000))
-    DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-    ```
-    
-    it important because it enables configuration without code changes.
+ ```text
+ HOST = os.getenv("HOST", "0.0.0.0")
+ PORT = int(os.getenv("PORT", 5000))
+ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+ ```
+
+it important because it enables configuration without code changes.
 
 2. Separation of Concerns
 
-   ```python
-      class HealthCheckService:
-       async def get_info(self, request: Request) -> InfoResponse:
-           ...
-   
-   ```
-   
-   it important because it easier testing, cleaner routing layer
+```text
+   class HealthCheckService:
+      async def get_info(self, request: Request) -> InfoResponse:
+         pass
+```
+
+it important because it easier testing, cleaner routing layer
 
 3. Typed Responses with Pydantic
 
-   ```python
-   class InfoResponse(BaseModel):
-       service: ServiceInfo
-       system: SystemInfo
-       runtime: RuntimeInfo
-       request: RequestInfo
-       endpoints: list[EndpointInfo]
-   ```
-   
-   it important because guarantees response structure and improves readability
+```text
+class InfoResponse(BaseModel):
+    service: ServiceInfo
+    system: SystemInfo
+    runtime: RuntimeInfo
+    request: RequestInfo
+    endpoints: list[EndpointInfo]
+```
+
+it important because guarantees response structure and improves readability
 
 4. Logging
 
-   ```python
-   logger = logging.getLogger(__name__)
-   logger.info("Handling info request")
-   ```
-   
-   it important because it centralized observability and works seamlessly with Uvicorn
+```text
+logger = logging.getLogger(__name__)
+logger.info("Handling info request")
+```
+
+it important because it centralized observability and works seamlessly with Uvicorn
 
 ## API Documentation
 
@@ -111,7 +110,7 @@ I chose FastApi because it's simple, easy to create endpoints, and has automatic
      "uptime_seconds": 7390
    }
    ```
-   
+
 3. Testing Commands
 
    Using curl:
@@ -119,13 +118,13 @@ I chose FastApi because it's simple, easy to create endpoints, and has automatic
    curl http://localhost:5000/
    curl http://localhost:5000/health
    ```
-   
+
    or auto generated documentation:
-   
+
    ```bash
    http://localhost:5000/docs
    ```
-   
+
 ## Testing Evidence
 
 - Successful responses from `/` and `/health`

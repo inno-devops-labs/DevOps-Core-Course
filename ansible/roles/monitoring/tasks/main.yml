@@ -1,0 +1,6 @@
+---
+- name: Include setup tasks
+  ansible.builtin.include_tasks: setup.yml
+
+- name: Include deploy tasks
+  ansible.builtin.include_tasks: deploy.yml

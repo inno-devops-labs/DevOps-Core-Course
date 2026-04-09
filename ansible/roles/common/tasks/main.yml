@@ -1,0 +1,55 @@
+---
+- name: Install base packages
+  become: true
+  tags:
+    - packages
+    - common
+  block:
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - git
+          - vim
+        state: present
+
+  rescue:
+    - name: Fix missing packages and retry update
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
+      become: true
+
+  always:
+    - name: Log package block completion
+      ansible.builtin.copy:
+        content: "Package installation block completed\n"
+        dest: /tmp/common_packages.log
+        mode: "0644"
+
+- name: Manage system users
+  become: true
+  tags:
+    - users
+    - common
+  block:
+
+    - name: Ensure deploy user exists
+      ansible.builtin.user:
+        name: deploy
+        groups: sudo
+        append: true
+        state: present
+
+  always:
+    - name: Log user block completion
+      ansible.builtin.copy:
+        content: "User management block completed\n"
+        dest: /tmp/common_users.log
+        mode: "0644"

@@ -44,9 +44,3 @@ class InfoResponse(BaseModel):
     runtime: RuntimeInfo
     request: RequestInfo
     endpoints: list[EndpointInfo]
-
-
-class HealthResponse(BaseModel):
-    status: str
-    timestamp: datetime
-    uptime_seconds: int
