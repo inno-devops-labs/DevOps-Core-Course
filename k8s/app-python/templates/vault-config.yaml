@@ -1,0 +1,38 @@
+{{- if .Values.vault.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app-python.fullname" . }}-vault-config
+  labels:
+    {{- include "app-python.labels" . | nindent 4 }}
+data:
+  agent.hcl: |
+    exit_after_auth = true
+    pid_file = "/tmp/pidfile"
+
+    auto_auth {
+      method "kubernetes" {
+        mount_path = "auth/kubernetes"
+        config = {
+          role = "{{ .Values.vault.role }}"
+        }
+      }
+
+      sink "file" {
+        config = {
+          path = "/tmp/.vault-token"
+        }
+      }
+    }
+
+    template {
+      source      = "/vault/config/secret.tmpl"
+      destination = "/vault/secrets/config"
+    }
+  
+  secret.tmpl: |
+    {{`{{- with secret "secret/data/app-python/config" -}}
+    username={{ .Data.data.username }}
+    password={{ .Data.data.password }}
+    {{- end -}}`}}
+{{- end }}

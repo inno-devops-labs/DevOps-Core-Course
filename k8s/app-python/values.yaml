@@ -54,3 +54,12 @@ strategy:
 
 securityContext:
   allowPrivilegeEscalation: false
+
+secrets:
+  username: "placeholder-user"
+  password: "placeholder-password"
+
+vault:
+  enabled: false
+  role: "app-python"
+  secretPath: "secret/data/app-python/config"
