@@ -53,3 +53,17 @@ hooks:
   postInstall:
     enabled: true
     weight: 5
+
+secret:
+  create: true
+  username: "user"
+  password: "pass"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-python"
+  secretPath: "secret/data/myapp/config"

@@ -13,7 +13,14 @@ spec:
     metadata:
       labels:
         {{- include "common.selectorLabels" . | nindent 8 }}
+      {{- if .Values.vault.enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-config.txt: {{ .Values.vault.secretPath | quote }}
+      {{- end }}
     spec:
+      serviceAccountName: {{ default (include "common.fullname" .) .Values.serviceAccount.name }}
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -22,6 +29,9 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
               protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "common.fullname" . }}-secret
           env:
             {{- range .Values.env }}
             - name: {{ .name }}
