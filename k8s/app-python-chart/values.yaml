@@ -1,7 +1,7 @@
 replicaCount: 3
 
-nameOverride: ""
-fullnameOverride: ""
+nameOverride: "app-python"
+fullnameOverride: "app-python"
 
 image:
   repository: akakii98/devops-info-python
@@ -41,3 +41,20 @@ livenessProbe:
 env:
   - name: PORT
     value: "5000"
+
+secret:
+  create: true
+  name: ""
+  data:
+    username: "CHANGE_ME"
+    password: "CHANGE_ME"
+
+serviceAccount:
+  create: true
+  name: "app-python-vault-sa"
+
+vault:
+  enabled: false
+  role: "lab11-app"
+  secretPath: "lab11/data/myapp/config"
+  injectFileName: "config"

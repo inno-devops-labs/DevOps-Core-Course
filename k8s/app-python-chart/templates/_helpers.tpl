@@ -27,3 +27,26 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/name: {{ include "app-python-chart.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{- define "app-python-chart.secretName" -}}
+{{- if .Values.secret.name }}
+{{- .Values.secret.name }}
+{{- else }}
+{{- printf "%s-secret" (include "app-python-chart.fullname" .) }}
+{{- end }}
+{{- end }}
+
+{{- define "app-python-chart.serviceAccountName" -}}
+{{- if .Values.serviceAccount.name }}
+{{- .Values.serviceAccount.name }}
+{{- else }}
+{{- include "app-python-chart.fullname" . }}
+{{- end }}
+{{- end }}
+
+{{- define "app-python-chart.commonEnv" -}}
+{{- range .Values.env }}
+- name: {{ .name }}
+  value: {{ .value | quote }}
+{{- end }}
+{{- end }}
