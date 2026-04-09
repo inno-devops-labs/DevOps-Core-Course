@@ -1,0 +1,5 @@
+Go DevOps Info Service has been deployed!
+
+Release: {{ .Release.Name }}
+Chart:   {{ .Chart.Name }}-{{ .Chart.Version }}
+App:     {{ .Chart.AppVersion }}

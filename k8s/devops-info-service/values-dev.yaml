@@ -1,0 +1,35 @@
+replicaCount: 1
+
+image:
+  tag: "lab10"
+
+env:
+  appEnv: "dev"
+  logLevel: "debug"
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+
+service:
+  type: NodePort
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+secret:
+  data:
+    username: "replace-me-dev-user"
+    password: "replace-me-dev-password"
+
+vault:
+  enabled: false
