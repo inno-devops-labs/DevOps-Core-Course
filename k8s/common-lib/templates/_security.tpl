@@ -10,6 +10,15 @@ seccompProfile:
 {{- end -}}
 
 {{- define "common-lib.containerSecurityContext" -}}
+{{- if hasKey . "runAsNonRoot" }}
+runAsNonRoot: {{ .runAsNonRoot }}
+{{- end }}
+{{- if hasKey . "runAsUser" }}
+runAsUser: {{ .runAsUser }}
+{{- end }}
+{{- if hasKey . "runAsGroup" }}
+runAsGroup: {{ .runAsGroup }}
+{{- end }}
 allowPrivilegeEscalation: {{ .allowPrivilegeEscalation }}
 capabilities:
   drop:

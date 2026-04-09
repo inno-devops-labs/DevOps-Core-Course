@@ -1,7 +1,10 @@
 nameOverride: ""
 fullnameOverride: ""
 
-partOf: devops-lab10
+partOf: devops-lab11
+
+podLabels: {}
+podAnnotations: {}
 
 replicaCount: 3
 revisionHistoryLimit: 5
@@ -44,10 +47,19 @@ securityContext:
     seccompProfile:
       type: RuntimeDefault
   container:
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
     allowPrivilegeEscalation: false
     capabilities:
       drop:
         - ALL
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automountServiceAccountToken: true
 
 probes:
   startup:
@@ -84,6 +96,28 @@ env:
   SERVICE_VERSION: "1.0.0"
   SERVICE_DESCRIPTION: "DevOps course info service packaged with Helm"
   SERVICE_VARIANT: "primary"
+
+secret:
+  create: true
+  name: ""
+  type: Opaque
+  annotations: {}
+  data:
+    APP_USERNAME: "change-me"
+    APP_PASSWORD: "change-me"
+
+vault:
+  enabled: false
+  authType: kubernetes
+  authPath: auth/kubernetes
+  role: devops-info
+  secretPath: kv/data/devops-info/config
+  secretName: app-config
+  secretVolumePath: /vault/secrets
+  fileName: app.env
+  filePermissions: "0640"
+  runAsSameUser: true
+  command: ""
 
 hooks:
   image:

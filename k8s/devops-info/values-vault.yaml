@@ -1,0 +1,11 @@
+secret:
+  data:
+    APP_USERNAME: "native-dev-user"
+    APP_PASSWORD: "native-dev-password"
+
+vault:
+  enabled: true
+  role: devops-info
+  secretPath: kv/data/devops-info/config
+  secretName: app-config
+  fileName: app.env

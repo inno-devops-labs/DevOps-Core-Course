@@ -157,7 +157,7 @@ Never commit real secrets to Git! Use:
 - External secret management (next task)
 
 **Resources:**
-- [Managing Secrets with kubectl](https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-kubectl/)
+- [Managing Secrets with kubectl](https://kubernetes.io/docs/tasks/c3onfigmap-secret/managing-secret-using-kubectl/)
 - [Resource Management](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)
 
 </details>
