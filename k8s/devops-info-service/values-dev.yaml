@@ -1,5 +1,9 @@
 replicaCount: 1
 
+app:
+  environment: "dev"
+  logLevel: "debug"
+
 image:
   tag: "latest"
 
@@ -22,3 +26,8 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 3
   periodSeconds: 5
+
+secret:
+  data:
+    username: "dev-user"
+    password: "dev-password"

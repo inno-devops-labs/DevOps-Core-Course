@@ -34,15 +34,38 @@ service:
 
 containerPort: 5000
 
-env:
-  - name: HOST
-    value: "0.0.0.0"
-  - name: PORT
-    value: "5000"
-  - name: SERVICE_NAME
-    value: "devops-info-service"
-  - name: SERVICE_VERSION
-    value: "1.0.0"
+serviceAccount:
+  create: true
+  name: ""
+
+app:
+  environment: "dev"
+  logLevel: "info"
+  serviceName: "devops-info-service"
+  serviceVersion: "1.0.0"
+  host: "0.0.0.0"
+  port: "5000"
+
+secret:
+  enabled: true
+  name: ""
+  data:
+    username: "change-me-user"
+    password: "change-me-password"
+
+vault:
+  enabled: false
+  role: "devops-info-service"
+  secretPath: "secret/data/devops-info-service/config"
+  fileName: "config"
+  mountPath: "/vault/secrets"
+  renderedFileName: "app.env"
+  injectCommand: ""
+  templateKeys:
+    username: "username"
+    password: "password"
+
+extraEnv: []
 
 resources:
   requests:

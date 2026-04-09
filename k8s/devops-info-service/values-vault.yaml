@@ -1,0 +1,16 @@
+service:
+  type: ClusterIP
+  nodePort: null
+
+vault:
+  enabled: true
+  role: "devopsinfoservice"
+  secretPath: "secret/data/devops-info-service/config"
+  fileName: "config"
+  mountPath: "/vault/secrets"
+  renderedFileName: "app.env"
+
+secret:
+  data:
+    username: "vault-managed-user"
+    password: "vault-managed-password"

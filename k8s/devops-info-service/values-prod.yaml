@@ -1,5 +1,9 @@
 replicaCount: 3
 
+app:
+  environment: "prod"
+  logLevel: "warn"
+
 image:
   tag: "1.0.0"
 
@@ -22,3 +26,8 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 3
+
+secret:
+  data:
+    username: "prod-user"
+    password: "prod-password"
