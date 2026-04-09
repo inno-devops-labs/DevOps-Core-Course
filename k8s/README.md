@@ -19,7 +19,7 @@ These values are conservative for a lightweight Flask service and are appropriat
 
 ## Manifest Files
 
-[`k8s/deployment.yml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/deployment.yml)
+[`k8s/deployment.yml`](deployment.yml)
 
 - Creates 3 replicas of the application.
 - Uses the existing course image `egrapa/devops-core-course-lab2:latest`.
@@ -28,7 +28,7 @@ These values are conservative for a lightweight Flask service and are appropriat
 - Applies CPU and memory requests/limits.
 - Uses a rolling update strategy for zero-downtime updates.
 
-[`k8s/service.yml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/service.yml)
+[`k8s/service.yml`](service.yml)
 
 - Exposes the Deployment with a `NodePort` Service.
 - Maps service port `80` to container port `5000`.

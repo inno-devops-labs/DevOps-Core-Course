@@ -2,20 +2,20 @@
 
 ## Chart Overview
 
-The Lab 9 static manifests were converted into an application chart at [`k8s/devops-info-service`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service). The chart preserves the original deployment behavior by default: 3 replicas, `NodePort` exposure on port `30080`, `/health` readiness and liveness probes, and the same image and resource profile.
+The Lab 9 static manifests were converted into an application chart at [`k8s/devops-info-service`](devops-info-service). The chart preserves the original deployment behavior by default: 3 replicas, `NodePort` exposure on port `30080`, `/health` readiness and liveness probes, and the same image and resource profile.
 
 Chart structure:
 
-- [`Chart.yaml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/Chart.yaml) stores chart metadata, versioning, and repository/source information.
-- [`values.yaml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/values.yaml) contains the default configuration that mirrors Lab 9.
-- [`values-dev.yaml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/values-dev.yaml) reduces replicas/resources and keeps `NodePort` for local work.
-- [`values-prod.yaml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/values-prod.yaml) pins a production image tag, keeps 3 replicas, and switches the Service to `LoadBalancer`.
-- [`templates/_helpers.tpl`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/templates/_helpers.tpl) centralizes names and labels.
-- [`templates/deployment.yaml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/templates/deployment.yaml) renders the Deployment with templated image, replica count, env vars, resources, rollout strategy, and health probes.
-- [`templates/service.yaml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/templates/service.yaml) renders the Service and only emits `nodePort` when the Service type is `NodePort`.
-- [`templates/hooks/pre-install-job.yaml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/templates/hooks/pre-install-job.yaml) validates critical values before installation.
-- [`templates/hooks/post-install-job.yaml`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/templates/hooks/post-install-job.yaml) performs a simple `/health` smoke test after installation.
-- [`templates/NOTES.txt`](/home/egrapa/prog/tmp/DevOps-Core-Course/k8s/devops-info-service/templates/NOTES.txt) prints the correct access instructions based on Service type.
+- [`k8s/devops-info-service/Chart.yaml`](devops-info-service/Chart.yaml) stores chart metadata, versioning, and repository/source information.
+- [`k8s/devops-info-service/values.yaml`](devops-info-service/values.yaml) contains the default configuration that mirrors Lab 9.
+- [`k8s/devops-info-service/values-dev.yaml`](devops-info-service/values-dev.yaml) reduces replicas/resources and keeps `NodePort` for local work.
+- [`k8s/devops-info-service/values-prod.yaml`](devops-info-service/values-prod.yaml) pins a production image tag, keeps 3 replicas, and switches the Service to `LoadBalancer`.
+- [`k8s/devops-info-service/templates/_helpers.tpl`](devops-info-service/templates/_helpers.tpl) centralizes names and labels.
+- [`k8s/devops-info-service/templates/deployment.yaml`](devops-info-service/templates/deployment.yaml) renders the Deployment with templated image, replica count, env vars, resources, rollout strategy, and health probes.
+- [`k8s/devops-info-service/templates/service.yaml`](devops-info-service/templates/service.yaml) renders the Service and only emits `nodePort` when the Service type is `NodePort`.
+- [`k8s/devops-info-service/templates/hooks/pre-install-job.yaml`](devops-info-service/templates/hooks/pre-install-job.yaml) validates critical values before installation.
+- [`k8s/devops-info-service/templates/hooks/post-install-job.yaml`](devops-info-service/templates/hooks/post-install-job.yaml) performs a simple `/health` smoke test after installation.
+- [`k8s/devops-info-service/templates/NOTES.txt`](devops-info-service/templates/NOTES.txt) prints the correct access instructions based on Service type.
 
 Values organization strategy:
 
