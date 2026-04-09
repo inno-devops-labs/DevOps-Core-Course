@@ -47,3 +47,33 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/component: web
 app.kubernetes.io/part-of: devops-core-course
 {{- end -}}
+
+{{/*
+Service account name.
+*/}}
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "devops-info-service.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Secret name.
+*/}}
+{{- define "devops-info-service.secretName" -}}
+{{- default (printf "%s-secret" (include "devops-info-service.fullname" .)) .Values.secret.name -}}
+{{- end -}}
+
+{{/*
+Vault agent annotations.
+*/}}
+{{- define "devops-info-service.vaultAnnotations" -}}
+vault.hashicorp.com/agent-inject: "true"
+vault.hashicorp.com/auth-path: {{ .Values.vault.authPath | quote }}
+vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.injectFileName }}: {{ .Values.vault.secretPath | quote }}
+vault.hashicorp.com/agent-inject-template-{{ .Values.vault.injectFileName }}: |
+{{ .Values.vault.template | nindent 2 }}
+{{- end -}}

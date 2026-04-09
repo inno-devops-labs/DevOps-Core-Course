@@ -35,6 +35,32 @@ env:
   - name: DEBUG
     value: "False"
 
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+secret:
+  create: true
+  name: ""
+  type: Opaque
+  data:
+    username: "change-me"
+    password: "change-me-too"
+
+vault:
+  enabled: false
+  role: "devops-info-service"
+  secretPath: "secret/data/devops-info-service/config"
+  authPath: "auth/kubernetes"
+  injectFileName: "config.txt"
+  template: |
+    {{- with secret "secret/data/devops-info-service/config" -}}
+    APP_USERNAME={{ .Data.data.username }}
+    APP_PASSWORD={{ .Data.data.password }}
+    {{- end }}
+
 resources:
   requests:
     cpu: 100m
