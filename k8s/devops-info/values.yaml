@@ -9,6 +9,31 @@ env:
   host: "0.0.0.0"
   port: "5000"
   debug: "false"
+  appEnv: "dev"
+  logLevel: "info"
+
+secrets:
+  enabled: true
+  name: ""
+  data:
+    username: "change-me"
+    password: "change-me"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-info-role"
+  secretPath: "secret/data/myapp/config"
+  injectFileName: "config"
+  injectTemplate: |
+    {{- with secret "secret/data/myapp/config" -}}
+    APP_USERNAME={{ .Data.data.username }}
+    APP_PASSWORD={{ .Data.data.password }}
+    {{- end -}}
+  injectCommand: ""
 
 containerPort: 5000
 

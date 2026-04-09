@@ -60,3 +60,19 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Common environment variables for DRY templates.
+*/}}
+{{- define "devops-info.envVars" -}}
+- name: HOST
+  value: {{ .Values.env.host | quote }}
+- name: PORT
+  value: {{ .Values.env.port | quote }}
+- name: DEBUG
+  value: {{ .Values.env.debug | quote }}
+- name: APP_ENV
+  value: {{ .Values.env.appEnv | quote }}
+- name: LOG_LEVEL
+  value: {{ .Values.env.logLevel | quote }}
+{{- end }}
