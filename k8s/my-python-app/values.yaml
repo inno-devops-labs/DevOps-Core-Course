@@ -48,3 +48,7 @@ env:
     value: "8000"
   - name: HOST
     value: "0.0.0.0"
+
+secrets:
+  username: placeholder-user
+  password: placeholder-password
