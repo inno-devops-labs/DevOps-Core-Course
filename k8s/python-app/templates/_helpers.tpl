@@ -48,3 +48,20 @@ Selector labels — used in matchLabels and pod template labels.
 app.kubernetes.io/name: {{ include "python-app.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Common environment variables — DRY helper used in deployment.
+Renders the standard env var list from values.yaml.
+Usage: {{- include "python-app.commonEnvVars" . | nindent 12 }}
+*/}}
+{{- define "python-app.commonEnvVars" -}}
+{{- toYaml .Values.env }}
+{{- end }}
+
+{{/*
+Secret name — returns the full secret resource name.
+Usage: {{ include "python-app.secretName" . }}
+*/}}
+{{- define "python-app.secretName" -}}
+{{ include "python-app.fullname" . }}-secret
+{{- end }}

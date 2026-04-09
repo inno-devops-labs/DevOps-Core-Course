@@ -1,5 +1,13 @@
 # Default values for python-app Helm chart.
 # Override these values using -f values-dev.yaml or -f values-prod.yaml
+# IMPORTANT: Never commit real secrets to Git. Use --set or external secret managers.
+
+# Application secrets — use placeholder values here, override at deploy time
+secrets:
+  username: "app-user"
+  password: "changeme"
+  apiKey: "placeholder-api-key"
+  dbUrl: "postgresql://app-user:changeme@localhost:5432/appdb"
 
 # Number of pod replicas
 replicaCount: 3
@@ -89,3 +97,9 @@ command:
 
 # Container port
 containerPort: 8000
+
+# HashiCorp Vault Agent Injector configuration
+vault:
+  enabled: false
+  role: "python-app"
+  secretPath: "secret/data/python-app/config"
