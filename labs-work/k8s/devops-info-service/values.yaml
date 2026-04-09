@@ -13,6 +13,10 @@ env:
   - name: PORT
     value: "5173"
 
+secrets:
+  username: "admin"
+  password: "devops-secret-password"
+
 service:
   type: NodePort
   port: 80
@@ -52,3 +56,13 @@ readinessProbe:
 
 nameOverride: ""
 fullnameOverride: ""
+
+vault:
+  enabled: false
+  role: "devops-info-service"
+  secretPath: "secret/data/devops-info-service/config"
+  agentInjectTemplate: |
+    {{- with secret "secret/data/devops-info-service/config" -}}
+    USERNAME={{ .Data.data.username }}
+    PASSWORD={{ .Data.data.password }}
+    {{- end -}}
