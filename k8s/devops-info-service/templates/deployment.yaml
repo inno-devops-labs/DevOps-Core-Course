@@ -18,7 +18,20 @@ spec:
     metadata:
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+      {{- if .Values.vault.enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPath | quote }}
+        vault.hashicorp.com/agent-inject-template-config: |
+          {{ "{{" }}- with secret {{ .Values.vault.secretPath | quote }} -{{ "}}" }}
+          APP_USERNAME={{ "{{" }} .Data.data.username {{ "}}" }}
+          APP_PASSWORD={{ "{{" }} .Data.data.password {{ "}}" }}
+          DB_URL={{ "{{" }} .Data.data.db_url {{ "}}" }}
+          {{ "{{" }}- end -{{ "}}" }}
+      {{- end }}
     spec:
+      serviceAccountName: {{ include "devops-info-service.fullname" . }}-sa
       securityContext:
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
         runAsUser: {{ .Values.securityContext.runAsUser }}
@@ -32,12 +45,10 @@ spec:
             - containerPort: {{ .Values.service.targetPort }}
               name: http
           env:
-            - name: APP_HOST
-              value: {{ .Values.env.APP_HOST | quote }}
-            - name: APP_PORT
-              value: {{ .Values.env.APP_PORT | quote }}
-            - name: LOG_FORMAT
-              value: {{ .Values.env.LOG_FORMAT | quote }}
+            {{- include "devops-info-service.envVars" . | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info-service.fullname" . }}-secret
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu | quote }}

@@ -42,3 +42,16 @@ Selector labels used by the Deployment and Service to match pods.
 app.kubernetes.io/name: {{ include "devops-info-service.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Common environment variables shared across containers.
+Promotes DRY principle by centralising env var definitions.
+*/}}
+{{- define "devops-info-service.envVars" -}}
+- name: APP_HOST
+  value: {{ .Values.env.APP_HOST | quote }}
+- name: APP_PORT
+  value: {{ .Values.env.APP_PORT | quote }}
+- name: LOG_FORMAT
+  value: {{ .Values.env.LOG_FORMAT | quote }}
+{{- end }}
