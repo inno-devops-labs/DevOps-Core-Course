@@ -21,7 +21,10 @@ fullnameOverride: ""
 
 # This is for setting Kubernetes Annotations to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-podAnnotations: {}
+podAnnotations: 
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/role: "myapp-role"
+  vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
@@ -59,3 +62,7 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
+
+secrets:
+  username: "change-me"
+  password: "change-me"
