@@ -35,3 +35,37 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
+{{/*
+Secret resource name (Helm-managed or external)
+*/}}
+{{- define "devops-python.secretName" -}}
+{{- if .Values.secrets.existingSecretName -}}
+{{- .Values.secrets.existingSecretName -}}
+{{- else -}}
+{{- printf "%s-app-credentials" (include "devops-python.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Service account name
+*/}}
+{{- define "devops-python.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{- default (include "devops-python.fullname" .) .Values.serviceAccount.name -}}
+{{- else -}}
+{{- default "default" .Values.serviceAccount.name -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Non-secret container env (DRY) — Lab 11 bonus
+*/}}
+{{- define "devops-python.envVars" -}}
+- name: HOST
+  value: {{ .Values.env.HOST | quote }}
+- name: PORT
+  value: {{ .Values.env.PORT | quote }}
+- name: LOG_FORMAT
+  value: {{ .Values.env.LOG_FORMAT | quote }}
+{{- end -}}
+

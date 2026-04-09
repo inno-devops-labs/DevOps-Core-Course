@@ -160,3 +160,11 @@ kubectl get events --sort-by=.metadata.creationTimestamp
 
 Write what you hit (image pull, probes, port mismatch, etc.) and how you fixed it.
 
+---
+
+## Lab 11 — Secrets & Vault (Helm chart)
+
+The Helm chart under `k8s/devops-python/` supports Kubernetes Secrets (`templates/secrets.yaml`), a dedicated ServiceAccount for Vault Kubernetes auth, and optional Vault Agent Injector annotations.
+
+Documentation and commands: **`k8s/SECRETS.md`**.
+

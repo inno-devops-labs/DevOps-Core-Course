@@ -74,6 +74,30 @@ strategy:
     maxSurge: 1
     maxUnavailable: 0
 
+# Service account (required for Vault Kubernetes auth — Lab 11)
+serviceAccount:
+  create: true
+  name: ""
+
+# Helm-managed Secret — use placeholders; override at install with --set-file or -f
+secrets:
+  enabled: true
+  create: true
+  existingSecretName: ""
+  stringData:
+    username: "changeme-user"
+    password: "changeme-pass"
+
+# HashiCorp Vault Agent Injector (Lab 11 Task 3)
+# Install Vault: see k8s/SECRETS.md — enable after Vault + auth + role exist.
+vault:
+  role: devops-python
+  secretPath: secret/data/myapp/config
+  injector:
+    enabled: false
+    templateEnabled: false
+    extraAnnotations: {}
+
 hooks:
   enabled: true
   preInstall:

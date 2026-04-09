@@ -4,6 +4,8 @@ This lab converts the Lab 9 Kubernetes manifests into a reusable Helm chart with
 
 Chart location: `k8s/devops-python/`
 
+**Lab 11 (Secrets & Vault):** see `k8s/SECRETS.md` for Kubernetes Secrets, Helm `templates/secrets.yaml`, and optional HashiCorp Vault Agent injection.
+
 ---
 
 ## Task 1 — Helm Fundamentals (Evidence)
