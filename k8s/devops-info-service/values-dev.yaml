@@ -14,6 +14,11 @@ resources:
     cpu: 100m
     memory: 128Mi
 
+secret:
+  stringData:
+    APP_USERNAME: "dev-user"
+    APP_PASSWORD: "replace-me-in-dev"
+
 livenessProbe:
   httpGet:
     path: /health

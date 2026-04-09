@@ -9,6 +9,12 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
 podAnnotations: {}
 podLabels: {}
 
@@ -17,6 +23,29 @@ containerPort: 5000
 env:
   - name: PORT
     value: "5000"
+
+secret:
+  enabled: true
+  create: true
+  existingSecret: ""
+  name: ""
+  type: Opaque
+  envFrom: true
+  stringData:
+    APP_USERNAME: "change-me"
+    APP_PASSWORD: "change-me"
+
+vault:
+  enabled: false
+  role: "devops-info-service"
+  authPath: "kubernetes"
+  secretPath: "secret/data/devops-info-service/config"
+  injectFileName: "config.env"
+  secretMountPath: "/vault/secrets"
+  agentPrePopulateOnly: false
+  template:
+    enabled: true
+    format: "env"
 
 service:
   type: NodePort
