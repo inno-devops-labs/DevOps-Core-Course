@@ -60,3 +60,24 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Secret name
+*/}}
+{{- define "app-python.secretName" -}}
+{{- printf "%s-secret" (include "app-python.fullname" .) -}}
+{{- end }}
+
+{{/*
+Common env block
+*/}}
+{{- define "app-python.commonEnv" -}}
+- name: HOST
+  value: {{ .Values.env.host | quote }}
+- name: PORT
+  value: {{ .Values.env.port | quote }}
+- name: DEBUG
+  value: {{ .Values.env.debug | quote }}
+- name: RELEASE_VERSION
+  value: {{ .Values.env.releaseVersion | quote }}
+{{- end }}

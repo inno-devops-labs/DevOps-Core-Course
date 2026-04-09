@@ -79,3 +79,17 @@ hooks:
     enabled: true
     weight: 5
     deletePolicy: hook-succeeded
+
+secret:
+  data:
+    username: "change-me"
+    password: "change-me"
+
+serviceAccount:
+  create: true
+  name: "app-python-sa"
+
+vault:
+  enabled: false
+  role: "app-python"
+  secretPath: "secret/data/app-python/config"
