@@ -19,6 +19,10 @@ spec:
     metadata:
       labels:
         {{- include "devops-service.labels" . | nindent 8 }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "myapp-role"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
     spec:
       containers:
         - name: app
@@ -31,6 +35,9 @@ spec:
               value: "0.0.0.0"
             - name: PORT
               value: "{{ .Values.service.targetPort }}"
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-service.name" . }}-secret
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
@@ -47,3 +54,4 @@ spec:
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+  
