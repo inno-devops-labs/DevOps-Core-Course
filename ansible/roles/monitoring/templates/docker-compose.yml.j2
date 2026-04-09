@@ -28,6 +28,41 @@ services:
     networks:
       - logging
 
+  prometheus:
+    image: "prom/prometheus:v{{ monitoring_prometheus_version }}"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time={{ monitoring_prometheus_retention_days }}d
+      - --storage.tsdb.retention.size={{ monitoring_prometheus_retention_size }}
+    restart: unless-stopped
+    ports:
+      - "{{ monitoring_prometheus_port }}:{{ monitoring_prometheus_port }}"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      logging: "promtail"
+      app: "devops-prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ monitoring_prometheus_port }}/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ monitoring_prometheus_resources.limits.cpus }}"
+          memory: "{{ monitoring_prometheus_resources.limits.memory }}"
+        reservations:
+          cpus: "{{ monitoring_prometheus_resources.reservations.cpus }}"
+          memory: "{{ monitoring_prometheus_resources.reservations.memory }}"
+    networks:
+      - logging
+
   promtail:
     image: "grafana/promtail:{{ monitoring_promtail_version }}"
     command: -config.file=/etc/promtail/config.yml
@@ -45,6 +80,16 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/{{ monitoring_promtail_port }} && printf \"GET /ready HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q \"200\" <&3'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     deploy:
       resources:
         limits:
@@ -66,14 +111,19 @@ services:
       GF_SECURITY_ADMIN_USER: "{{ monitoring_grafana_admin_user }}"
       GF_SECURITY_ADMIN_PASSWORD: "{{ monitoring_grafana_admin_password }}"
       GF_SECURITY_ALLOW_EMBEDDING: "false"
+      GF_METRICS_ENABLED: "true"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     labels:
       logging: "promtail"
       app: "devops-grafana"
     depends_on:
       loki:
+        condition: service_healthy
+      prometheus:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:{{ monitoring_grafana_port }}/api/health || exit 1"]
@@ -97,6 +147,7 @@ networks:
     name: logging
 
 volumes:
+  prometheus-data:
   loki-data:
   grafana-data:
   promtail-positions:

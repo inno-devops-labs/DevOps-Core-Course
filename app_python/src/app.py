@@ -7,8 +7,10 @@ import os
 import socket
 import platform
 import logging
+from time import perf_counter
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request
+from flask import Flask, Response, g, jsonify, request
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -16,6 +18,32 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+
+HTTP_REQUESTS_TOTAL = Counter(
+    "http_requests_total",
+    "Total HTTP requests processed by the application",
+    ["method", "endpoint", "status_code"],
+)
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint", "status_code"],
+)
+HTTP_REQUESTS_IN_PROGRESS = Gauge(
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+    ["method", "endpoint"],
+)
+DEVOPS_INFO_ENDPOINT_CALLS_TOTAL = Counter(
+    "devops_info_endpoint_calls_total",
+    "Total application endpoint calls grouped by endpoint",
+    ["endpoint"],
+)
+DEVOPS_INFO_SYSTEM_INFO_COLLECTION_SECONDS = Histogram(
+    "devops_info_system_info_collection_seconds",
+    "Time spent collecting system information",
+)
 
 
 # Configuration
@@ -26,14 +54,73 @@ PORT = int(os.getenv("PORT", 5000))
 START_TIME = datetime.now(timezone.utc)
 
 
+def normalize_endpoint():
+    """Normalize endpoint labels to keep metric cardinality low."""
+    if request.url_rule and request.url_rule.rule:
+        return request.url_rule.rule
+    if request.path == "/metrics":
+        return "/metrics"
+    return "unmatched"
+
+
+@app.before_request
+def before_request_metrics():
+    endpoint = normalize_endpoint()
+    g.metrics_endpoint = endpoint
+    g.metrics_start_time = perf_counter()
+    g.metrics_tracked = endpoint != "/metrics"
+    g.metrics_gauge_decremented = False
+
+    if g.metrics_tracked:
+        HTTP_REQUESTS_IN_PROGRESS.labels(
+            method=request.method, endpoint=endpoint
+        ).inc()
+
+
+@app.after_request
+def after_request_metrics(response):
+    if g.get("metrics_tracked", False):
+        duration = perf_counter() - g.metrics_start_time
+        status_code = str(response.status_code)
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            endpoint=g.metrics_endpoint,
+            status_code=status_code,
+        ).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(
+            method=request.method,
+            endpoint=g.metrics_endpoint,
+            status_code=status_code,
+        ).observe(duration)
+        HTTP_REQUESTS_IN_PROGRESS.labels(
+            method=request.method, endpoint=g.metrics_endpoint
+        ).dec()
+        g.metrics_gauge_decremented = True
+
+    return response
+
+
+@app.teardown_request
+def teardown_request_metrics(error):
+    if g.get("metrics_tracked", False) and not g.get("metrics_gauge_decremented", False):
+        HTTP_REQUESTS_IN_PROGRESS.labels(
+            method=request.method, endpoint=g.metrics_endpoint
+        ).dec()
+        g.metrics_gauge_decremented = True
+
+
 def get_system_info():
     """Collect system information."""
-    return {
-        "hostname": socket.gethostname(),
-        "platform": platform.system(),
-        "architecture": platform.machine(),
-        "python_version": platform.python_version(),
-    }
+    start = perf_counter()
+    try:
+        return {
+            "hostname": socket.gethostname(),
+            "platform": platform.system(),
+            "architecture": platform.machine(),
+            "python_version": platform.python_version(),
+        }
+    finally:
+        DEVOPS_INFO_SYSTEM_INFO_COLLECTION_SECONDS.observe(perf_counter() - start)
 
 
 def get_request():
@@ -58,6 +145,7 @@ def get_service():
 def index():
     logger.debug(f"Request: {request.method} {request.path}")
     """Main endpoint - service and system information."""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/").inc()
     return {
         "service": get_service(),
         "system": get_system_info(),
@@ -66,6 +154,7 @@ def index():
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
 
@@ -90,6 +179,7 @@ def get_uptime():
 @app.route("/health")
 def health():
     logger.debug(f"Request: {request.method} {request.path}")
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/health").inc()
     return jsonify(
         {
             "status": "healthy",
@@ -97,6 +187,12 @@ def health():
             "uptime_seconds": get_uptime()["seconds"],
         }
     )
+
+
+@app.route("/metrics")
+def metrics():
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/metrics").inc()
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.errorhandler(404)

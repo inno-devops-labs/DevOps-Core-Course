@@ -17,15 +17,24 @@
       loop:
         - "{{ monitoring_compose_project_dir }}"
         - "{{ monitoring_compose_project_dir }}/loki"
+        - "{{ monitoring_compose_project_dir }}/prometheus"
         - "{{ monitoring_compose_project_dir }}/promtail"
         - "{{ monitoring_compose_project_dir }}/grafana"
+        - "{{ monitoring_compose_project_dir }}/grafana/dashboards"
         - "{{ monitoring_compose_project_dir }}/grafana/provisioning"
         - "{{ monitoring_compose_project_dir }}/grafana/provisioning/datasources"
+        - "{{ monitoring_compose_project_dir }}/grafana/provisioning/dashboards"
 
     - name: Render Loki configuration
       ansible.builtin.template:
         src: loki-config.yml.j2
         dest: "{{ monitoring_compose_project_dir }}/loki/config.yml"
+        mode: "0644"
+
+    - name: Render Prometheus configuration
+      ansible.builtin.template:
+        src: prometheus.yml.j2
+        dest: "{{ monitoring_compose_project_dir }}/prometheus/prometheus.yml"
         mode: "0644"
 
     - name: Render Promtail configuration
@@ -37,8 +46,23 @@
     - name: Render Grafana datasource provisioning
       ansible.builtin.template:
         src: grafana-datasource.yml.j2
-        dest: "{{ monitoring_compose_project_dir }}/grafana/provisioning/datasources/loki.yml"
+        dest: "{{ monitoring_compose_project_dir }}/grafana/provisioning/datasources/datasources.yml"
         mode: "0644"
+
+    - name: Render Grafana dashboard provisioning
+      ansible.builtin.template:
+        src: grafana-dashboards.yml.j2
+        dest: "{{ monitoring_compose_project_dir }}/grafana/provisioning/dashboards/dashboards.yml"
+        mode: "0644"
+
+    - name: Copy Grafana dashboard JSON files
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ monitoring_compose_project_dir }}/grafana/dashboards/{{ item }}"
+        mode: "0644"
+      loop:
+        - grafana-app-dashboard.json
+        - grafana-logs-dashboard.json
 
     - name: Render monitoring docker compose manifest
       ansible.builtin.template:
@@ -67,6 +91,13 @@
         delay: 2
         timeout: 120
 
+    - name: Wait for Prometheus HTTP port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ monitoring_prometheus_port }}"
+        delay: 2
+        timeout: 120
+
     - name: Wait for Grafana HTTP port
       ansible.builtin.wait_for:
         host: 127.0.0.1
@@ -88,6 +119,14 @@
         method: GET
         status_code: 200
       register: monitoring_promtail_ready
+      changed_when: false
+
+    - name: Verify Prometheus health endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ monitoring_prometheus_port }}/-/healthy"
+        method: GET
+        status_code: 200
+      register: monitoring_prometheus_ready
       changed_when: false
 
     - name: Verify Grafana health endpoint
