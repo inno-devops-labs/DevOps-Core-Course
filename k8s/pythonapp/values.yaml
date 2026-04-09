@@ -1,5 +1,9 @@
 replicaCount: 3
 
+secrets:
+  username: "placeholder-user"
+  password: "placeholder-password"
+
 image:
   repository: aidarsarvartdinov/pythonapp
   tag: "latest"

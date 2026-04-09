@@ -16,6 +16,10 @@ spec:
       maxUnavailable: 0
   template:
     metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "myapp"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
       labels:
         {{- include "pythonapp.selectorLabels" . | nindent 8 }}
     spec:
@@ -35,3 +39,6 @@ spec:
           env:
             {{- toYaml .Values.env | nindent 12 }}
           {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ include "pythonapp.fullname" . }}-secret
