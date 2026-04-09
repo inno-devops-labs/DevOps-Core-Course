@@ -1,4 +1,3 @@
-# Keep resource names aligned with LAB09 so Ingress and docs stay consistent.
 fullnameOverride: devops-info-python
 nameOverride: ""
 
@@ -11,11 +10,35 @@ image:
 
 containerPort: 5000
 
+app:
+  environment: dev
+  logLevel: info
+
 env:
   - name: PORT
     value: "5000"
   - name: HOST
     value: "0.0.0.0"
+
+extraEnv: []
+
+secrets:
+  enabled: true
+  username: "student"
+  password: "change-me"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-info-python"
+  secretPathConfig: "secret/data/myapp/config"
+  secretPathExtra: "secret/data/myapp/extra"
+  bonusTemplate:
+    enabled: false
+    injectCommand: ""
 
 strategy:
   type: RollingUpdate

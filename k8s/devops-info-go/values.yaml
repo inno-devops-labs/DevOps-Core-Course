@@ -10,11 +10,36 @@ image:
 
 containerPort: 8080
 
+app:
+  environment: dev
+  logLevel: info
+
 env:
   - name: PORT
     value: "8080"
   - name: HOST
     value: "0.0.0.0"
+
+extraEnv: []
+
+secrets:
+  enabled: true
+  username: "student"
+  password: "change-me"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-info-go"
+  # Vault KV v2 paths
+  secretPathConfig: "secret/data/myapp/config"
+  secretPathExtra: "secret/data/myapp/extra"
+  bonusTemplate:
+    enabled: false
+    injectCommand: ""
 
 strategy:
   type: RollingUpdate

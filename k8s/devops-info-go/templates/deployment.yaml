@@ -19,7 +19,31 @@ spec:
         app: {{ include "common.legacyAppLabel" . }}
         component: api
         {{- include "common.selectorLabels" . | nindent 8 }}
+      {{- if .Values.vault.enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPathConfig | quote }}
+        {{- if .Values.vault.bonusTemplate.enabled }}
+        vault.hashicorp.com/agent-inject-secret-app.env: {{ .Values.vault.secretPathConfig | quote }}
+        vault.hashicorp.com/agent-inject-template-app.env: |
+          {{ "{{" }}- with secret {{ .Values.vault.secretPathConfig | quote }} -{{ "}}" }}
+          USERNAME={{ "{{" }} .Data.data.username {{ "}}" }}
+          PASSWORD={{ "{{" }} .Data.data.password {{ "}}" }}
+          {{ "{{" }}- end -{{ "}}" }}
+
+          {{ "{{" }}- with secret {{ .Values.vault.secretPathExtra | quote }} -{{ "}}" }}
+          API_KEY={{ "{{" }} .Data.data.api_key {{ "}}" }}
+          {{ "{{" }}- end -{{ "}}" }}
+        {{- if .Values.vault.bonusTemplate.injectCommand }}
+        vault.hashicorp.com/agent-inject-command: {{ .Values.vault.bonusTemplate.injectCommand | quote }}
+        {{- end }}
+        {{- end }}
+      {{- end }}
     spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ .Values.serviceAccount.name | default (include "common.fullname" .) }}
+      {{- end }}
       containers:
         - name: {{ include "common.fullname" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -27,7 +51,13 @@ spec:
           ports:
             - containerPort: {{ .Values.containerPort }}
               name: http
+          {{- if .Values.secrets.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ include "common.fullname" . }}-credentials
+          {{- end }}
           env:
+            {{- include "devops-info-go.envVars" . | nindent 12 }}
             {{- toYaml .Values.env | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
