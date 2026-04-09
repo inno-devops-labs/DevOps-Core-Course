@@ -1,0 +1,55 @@
+image:
+  repository: nginx
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+replicaCount: 1
+
+env:
+  APP_COLOR: "blue"
+
+secrets:
+  username: "admin"
+  password: "supersecretpassword"
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "100m"
+  limits:
+    memory: "128Mi"
+    cpu: "200m"
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 3
+  periodSeconds: 3
+  timeoutSeconds: 1
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 3
+  periodSeconds: 3
+  timeoutSeconds: 1
+  failureThreshold: 3
+  successThreshold: 1
+
+strategy: {}
+
+labels: {}
+
+securityContext: {}
+
+imagePullSecrets: []
+

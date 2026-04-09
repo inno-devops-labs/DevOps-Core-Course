@@ -41,6 +41,11 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
+            {{- if .Values.secrets }}
+          envFrom:
+            - secretRef:
+                name: {{ include "my-python-app.fullname" . }}-credentials
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
