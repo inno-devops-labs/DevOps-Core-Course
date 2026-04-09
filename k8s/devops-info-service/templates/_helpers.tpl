@@ -43,3 +43,11 @@ Selector labels
 app.kubernetes.io/name: {{ include "devops-info-service.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Common environment variables — DRY helper to avoid duplication across templates.
+Usage: {{- include "devops-info-service.envVars" . | nindent 12 }}
+*/}}
+{{- define "devops-info-service.envVars" -}}
+{{- toYaml .Values.env }}
+{{- end }}

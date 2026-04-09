@@ -24,6 +24,11 @@ resources:
     cpu: 100m
     memory: 128Mi
 
+secrets:
+  username: "app-user"
+  password: "changeme"
+  secretKey: "dev-secret-key"
+
 env:
   - name: HOST
     value: "0.0.0.0"
