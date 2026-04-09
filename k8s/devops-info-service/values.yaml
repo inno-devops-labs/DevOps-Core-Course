@@ -22,6 +22,28 @@ env:
   PORT: "5001"
   DEBUG: "false"
 
+app:
+  environment: "dev"
+  logLevel: "info"
+
+secrets:
+  enabled: true
+  nameOverride: ""
+  data:
+    username: "change-me-username"
+    password: "change-me-password"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-info-role"
+  secretPath: "secret/data/myapp/config"
+  injectCommand: ""
+
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 1000

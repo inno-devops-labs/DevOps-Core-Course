@@ -50,3 +50,31 @@ Intentionally minimal so they never change after first deploy.
 app.kubernetes.io/name: {{ include "devops-info-service.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Resolve ServiceAccount name.
+*/}}
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "devops-info-service.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Resolve Secret name.
+*/}}
+{{- define "devops-info-service.secretName" -}}
+{{- default (printf "%s-secret" (include "devops-info-service.fullname" .)) .Values.secrets.nameOverride }}
+{{- end }}
+
+{{/*
+Common environment variables used across environments.
+*/}}
+{{- define "devops-info-service.commonEnv" -}}
+- name: APP_ENV
+  value: {{ .Values.app.environment | quote }}
+- name: LOG_LEVEL
+  value: {{ .Values.app.logLevel | quote }}
+{{- end }}

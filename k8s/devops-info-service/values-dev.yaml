@@ -15,6 +15,18 @@ image:
 env:
   DEBUG: "true"
 
+app:
+  environment: "dev"
+  logLevel: "debug"
+
+secrets:
+  data:
+    username: "dev-username"
+    password: "dev-password"
+
+vault:
+  enabled: false
+
 service:
   type: NodePort
   port: 80

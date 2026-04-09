@@ -17,6 +17,18 @@ image:
 env:
   DEBUG: "false"
 
+app:
+  environment: "prod"
+  logLevel: "warning"
+
+secrets:
+  data:
+    username: "prod-username"
+    password: "prod-password"
+
+vault:
+  enabled: false
+
 service:
   type: LoadBalancer
   port: 80
