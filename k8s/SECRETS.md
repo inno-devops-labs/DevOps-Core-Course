@@ -104,7 +104,15 @@ username=admin
 ## 3. Resource Management
 - **Requests:** The minimum resources guaranteed to the container. Used by the scheduler to place pods.
 - **Limits:** The maximum resources a container is allowed to consume. If a container hits its memory limit, it is OOMKilled.
-
+```yaml
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "100m"
+  limits:
+    memory: "128Mi"
+    cpu: "200m"
+```
 ---
 
 ## 4. Vault Integration
