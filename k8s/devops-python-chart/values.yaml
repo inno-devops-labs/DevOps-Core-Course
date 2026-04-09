@@ -60,3 +60,17 @@ ingress:
 rollingUpdate:
   maxSurge: 1
   maxUnavailable: 0
+
+# Secret values — use placeholders here, inject real values with --set at deploy time
+# NEVER commit real credentials to version control
+secret:
+  username: "placeholder-username"
+  password: "placeholder-password"
+
+# HashiCorp Vault Agent injection settings
+# Set vault.enabled=true after completing Vault setup (Task 3)
+vault:
+  enabled: false
+  role: "devops-python-role"
+  secretPath: "secret/data/myapp/config"
+  template: false  # set to true to enable bonus template annotation

@@ -49,3 +49,17 @@ Only app name and instance — never chart version or managed-by.
 app.kubernetes.io/name: {{ include "devops-python-chart.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{/*
+Common application environment variables.
+Centralises env var definitions — reference with:
+  {{- include "devops-python-chart.envVars" . | nindent 12 }}
+*/}}
+{{- define "devops-python-chart.envVars" -}}
+- name: PORT
+  value: {{ .Values.env.port | quote }}
+- name: HOST
+  value: {{ .Values.env.host | quote }}
+- name: DEBUG
+  value: {{ .Values.env.debug | quote }}
+{{- end }}
