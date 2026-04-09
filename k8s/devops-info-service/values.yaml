@@ -39,5 +39,17 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 3
 
+secret:
+  username: "change-me"
+  password: "change-me"
+
+appEnv: "production"
+logLevel: "info"
+
+vault:
+  enabled: false
+  role: "devops-info-service"
+  secretPath: "secret/data/myapp/config"
+
 nameOverride: ""
 fullnameOverride: ""

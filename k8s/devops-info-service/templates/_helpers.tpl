@@ -41,3 +41,10 @@ Selector labels.
 app.kubernetes.io/name: {{ include "devops-info-service.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{- define "devops-info-service.envVars" -}}
+- name: APP_ENV
+  value: {{ .Values.appEnv | default "production" | quote }}
+- name: LOG_LEVEL
+  value: {{ .Values.logLevel | default "info" | quote }}
+{{- end }}
