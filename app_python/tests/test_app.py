@@ -1,6 +1,7 @@
 # app_python/tests/test_app.py
 import re
 import pytest
+import app as app_module
 from app import app
 
 
@@ -19,14 +20,23 @@ if "__test_crash__" not in app.view_functions:
 
 
 @pytest.fixture()
-def client():
+def client(tmp_path, monkeypatch):
     """
     Flask test client (no real server).
     Important: disable exception propagation so errorhandler(500)
     returns JSON instead of raising.
     """
+
+    monkeypatch.setattr(app_module, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(
+        app_module,
+        "VISITS_FILE",
+        str(tmp_path / "visits"),
+    )
+
     app.config["TESTING"] = True
     app.config["PROPAGATE_EXCEPTIONS"] = False
+
     with app.test_client() as c:
         yield c
 
