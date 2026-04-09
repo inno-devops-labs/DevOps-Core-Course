@@ -3,18 +3,48 @@ monitoring_compose_project_dir: /opt/monitoring
 
 monitoring_loki_version: 3.0.0
 monitoring_promtail_version: 3.0.0
+monitoring_prometheus_version: 3.9.0
 monitoring_grafana_version: 12.3.1
 
 monitoring_loki_port: 3100
 monitoring_promtail_port: 9080
+monitoring_prometheus_port: 9090
 monitoring_grafana_port: 3000
 
 monitoring_loki_retention_period: 168h
 monitoring_loki_schema_version: v13
+monitoring_prometheus_retention_days: 15
+monitoring_prometheus_retention_size: 10GB
+monitoring_prometheus_scrape_interval: 15s
 
 monitoring_grafana_admin_user: admin
 monitoring_grafana_admin_password: change-me-now
 monitoring_grafana_anonymous_enabled: false
+
+monitoring_prometheus_targets:
+  - job: prometheus
+    targets:
+      - "localhost:9090"
+  - job: app
+    path: /metrics
+    targets:
+      - "host.docker.internal:5000"
+  - job: loki
+    path: /metrics
+    targets:
+      - "loki:3100"
+  - job: grafana
+    path: /metrics
+    targets:
+      - "grafana:3000"
+
+monitoring_prometheus_resources:
+  limits:
+    cpus: "1.0"
+    memory: 1G
+  reservations:
+    cpus: "0.25"
+    memory: 256M
 
 monitoring_loki_resources:
   limits:
@@ -26,19 +56,19 @@ monitoring_loki_resources:
 
 monitoring_promtail_resources:
   limits:
-    cpus: "1.0"
-    memory: 512M
+    cpus: "0.50"
+    memory: 256M
   reservations:
-    cpus: "0.25"
+    cpus: "0.10"
     memory: 128M
 
 monitoring_grafana_resources:
   limits:
-    cpus: "1.0"
-    memory: 1G
+    cpus: "0.50"
+    memory: 512M
   reservations:
-    cpus: "0.25"
-    memory: 256M
+    cpus: "0.10"
+    memory: 128M
 
 monitoring_deploy_no_log: true
 

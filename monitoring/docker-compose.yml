@@ -28,6 +28,39 @@ services:
     networks:
       - logging
 
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=10GB
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    labels:
+      logging: "promtail"
+      app: "devops-prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    networks:
+      - logging
+
   promtail:
     image: grafana/promtail:3.0.0
     command: -config.file=/etc/promtail/config.yml
@@ -45,13 +78,23 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -lc 'exec 3<>/dev/tcp/127.0.0.1/9080 && printf \"GET /ready HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q \"200\" <&3'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 512M
+          cpus: "0.50"
+          memory: 256M
         reservations:
-          cpus: "0.25"
+          cpus: "0.10"
           memory: 128M
     networks:
       - logging
@@ -66,14 +109,19 @@ services:
       GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
       GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}"
       GF_SECURITY_ALLOW_EMBEDDING: "false"
+      GF_METRICS_ENABLED: "true"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     labels:
       logging: "promtail"
       app: "devops-grafana"
     depends_on:
       loki:
+        condition: service_healthy
+      prometheus:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
@@ -84,11 +132,11 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 1G
+          cpus: "0.50"
+          memory: 512M
         reservations:
-          cpus: "0.25"
-          memory: 256M
+          cpus: "0.10"
+          memory: 128M
     networks:
       - logging
 
@@ -102,6 +150,12 @@ services:
     labels:
       logging: "promtail"
       app: "devops-python"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -124,6 +178,12 @@ services:
     labels:
       logging: "promtail"
       app: "devops-bonus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -140,6 +200,7 @@ networks:
     name: logging
 
 volumes:
+  prometheus-data:
   loki-data:
   grafana-data:
   promtail-positions:

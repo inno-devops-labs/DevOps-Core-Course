@@ -92,6 +92,7 @@ def test_index_endpoints_list(client):
     assert isinstance(endpoints, list)
     assert any(e["path"] == "/" for e in endpoints)
     assert any(e["path"] == "/health" for e in endpoints)
+    assert any(e["path"] == "/metrics" for e in endpoints)
 
 
 # ----------------------------
@@ -123,6 +124,32 @@ def test_health_timestamp_format(client):
     # ISO 8601 basic validation
     iso_regex = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
     assert re.match(iso_regex, timestamp)
+
+
+def test_metrics_success(client):
+    client.get("/")
+    client.get("/health")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.mimetype.startswith("text/plain")
+
+
+def test_metrics_contains_http_and_app_specific_metrics(client):
+    client.get("/")
+    client.get("/health")
+    client.get("/non-existent")
+
+    metrics_output = client.get("/metrics").get_data(as_text=True)
+
+    assert "http_requests_total" in metrics_output
+    assert "http_request_duration_seconds" in metrics_output
+    assert "http_requests_in_progress" in metrics_output
+    assert "devops_info_endpoint_calls_total" in metrics_output
+    assert "devops_info_system_info_collection_seconds" in metrics_output
+    assert 'endpoint="/"' in metrics_output
+    assert 'endpoint="/health"' in metrics_output
 
 
 # ----------------------------
