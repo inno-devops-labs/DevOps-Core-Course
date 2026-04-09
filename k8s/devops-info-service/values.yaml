@@ -67,7 +67,7 @@ serviceAccount:
 podAnnotations: {}
 podLabels:
   project: devops-course
-  lab: lab10
+  lab: lab11
 
 podSecurityContext: {}
 
@@ -88,3 +88,16 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# Secrets configuration
+secrets:
+  enabled: true
+  data:
+    username: "placeholder-user"
+    password: "placeholder-password"
+
+# Vault integration configuration
+vault:
+  enabled: false
+  role: "devops-info-service"
+  secretPath: "secret/data/devops-info/config"

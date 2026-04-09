@@ -60,3 +60,31 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Common environment variables from values
+*/}}
+{{- define "devops-info-service.envVars" -}}
+- name: HOST
+  value: {{ .Values.env.HOST | quote }}
+- name: PORT
+  value: {{ .Values.env.PORT | quote }}
+- name: DEBUG
+  value: {{ .Values.env.DEBUG | quote }}
+{{- end }}
+
+{{/*
+Secret environment variables
+*/}}
+{{- define "devops-info-service.secretEnvVars" -}}
+- name: APP_USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "devops-info-service.fullname" . }}-credentials
+      key: username
+- name: APP_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "devops-info-service.fullname" . }}-credentials
+      key: password
+{{- end }}
