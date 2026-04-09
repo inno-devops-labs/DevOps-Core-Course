@@ -37,3 +37,14 @@ Wraps the common library template.
 {{- define "devops-info-service.selectorLabels" -}}
 {{- include "common.selectorLabels" . -}}
 {{- end }}
+
+{{/*
+Common environment variables for the application.
+Demonstrates DRY principle via named templates.
+*/}}
+{{- define "devops-info-service.envVars" -}}
+{{- range .Values.env }}
+- name: {{ .name }}
+  value: {{ .value | quote }}
+{{- end }}
+{{- end }}
