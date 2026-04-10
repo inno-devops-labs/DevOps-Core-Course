@@ -16,6 +16,11 @@ imagePullSecrets: []
 podAnnotations: {}
 podLabels: {}
 
+serviceAccount:
+  create: true
+  automount: true
+  name: "devops-info-service"
+
 containerPort: 5000
 
 strategy:
@@ -37,6 +42,13 @@ env:
     value: "DevOps course info service deployed with Helm"
   - name: RELEASE_TRACK
     value: "stable"
+
+secrets:
+  enabled: true
+  name: ""
+  data:
+    APP_USERNAME: "change-me"
+    APP_PASSWORD: "change-me"
 
 service:
   type: NodePort
@@ -67,6 +79,16 @@ probes:
     periodSeconds: 5
     timeoutSeconds: 2
     failureThreshold: 3
+
+vault:
+  enabled: false
+  authPath: "auth/kubernetes"
+  role: "devops-info-service"
+  secretPath: "kvv2/data/devops-info-service/config"
+  injectFileName: "app.env"
+  secretVolumePath: "/vault/secrets"
+  staticSecretRenderInterval: ""
+  agentInjectCommand: ""
 
 hooks:
   enabled: true
