@@ -7,6 +7,7 @@ service:
   type: LoadBalancer
   port: 80
   targetPort: 5000
+  nodePort: 30082
 
 resources:
   requests:
