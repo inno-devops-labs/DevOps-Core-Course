@@ -12,6 +12,8 @@ from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTEN
 app = Flask(__name__)
 START_TIME = time.time()
 
+VISITS_FILE = os.environ.get("VISITS_FILE", "/data/visits")
+
 http_requests_total = Counter(
     'http_requests_total',
     'Total HTTP requests',
@@ -116,6 +118,8 @@ def metrics():
 @app.route("/")
 def index():
     endpoint_calls.labels(endpoint="/").inc()
+    visits = _read_visits() + 1
+    _write_visits(visits)
     start = time.time()
     uptime_seconds = time.time() - START_TIME
     minutes, seconds = divmod(int(uptime_seconds), 60)
@@ -158,12 +162,35 @@ def index():
             "method": request.method,
             "path": request.path,
         },
+        "visits": visits,
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
+            {"path": "/visits", "method": "GET", "description": "Visit counter"},
             {"path": "/health", "method": "GET", "description": "Health check"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     })
+
+
+def _read_visits():
+    try:
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def _write_visits(count):
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    with open(VISITS_FILE, "w") as f:
+        f.write(str(count))
+
+
+@app.route("/visits")
+def visits():
+    endpoint_calls.labels(endpoint="/visits").inc()
+    count = _read_visits()
+    return jsonify({"visits": count})
 
 
 @app.route("/health")

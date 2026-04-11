@@ -4,8 +4,16 @@ A Python Flask web application that reports system and runtime information.
 
 ## Endpoints
 
-- `GET /` — Service and system information (JSON)
+- `GET /` — Service and system information (JSON), increments visit counter
+- `GET /visits` — Returns current visit count
 - `GET /health` — Health check
+- `GET /metrics` — Prometheus metrics
+
+## Visit Counter
+
+The app tracks how many times the root endpoint `/` is accessed. The counter is stored in a file (default: `/data/visits`) so it survives container restarts.
+
+Set the file path with the `VISITS_FILE` environment variable.
 
 ## Run locally
 
@@ -14,11 +22,32 @@ pip install -r requirements.txt
 python app.py
 ```
 
+## Run with Docker Compose
+
+```bash
+docker compose up -d
+```
+
+The compose file mounts `./data` to `/data` inside the container, so the visits counter persists across restarts.
+
+To test persistence:
+```bash
+# Hit the root endpoint a few times
+curl http://localhost:8000/
+curl http://localhost:8000/visits
+
+# Restart the container
+docker compose restart
+
+# Counter should continue from last value
+curl http://localhost:8000/visits
+```
+
 ## Run with Docker
 
 ```bash
 docker build -t devops-info-service .
-docker run -p 8000:8000 devops-info-service
+docker run -p 8000:8000 -v $(pwd)/data:/data devops-info-service
 ```
 
 ## Logging
