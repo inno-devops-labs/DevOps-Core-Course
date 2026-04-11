@@ -1,0 +1,7 @@
+{
+  "appName": "devops-info-service",
+  "environment": "dev",
+  "featureFlags": {
+    "visitsCount": true
+  }
+}

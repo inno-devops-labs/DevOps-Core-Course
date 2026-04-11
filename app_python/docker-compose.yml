@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  devops-info-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: devops-info-service:local
+    container_name: devops-info-service
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: "5000"
+      HOST: "0.0.0.0"
+      DATA_DIR: "/data"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

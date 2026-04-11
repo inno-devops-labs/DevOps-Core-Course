@@ -4,7 +4,9 @@ import socket
 import logging
 import sys
 import json
+import tempfile
 import time
+import portalocker
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request, Response
 from json import JSONEncoder
@@ -14,6 +16,42 @@ from prometheus_client import Counter, Histogram, Gauge, generate_latest
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+DATA_DIR = os.getenv('DATA_DIR', 'data')
+VISITS_FILE = os.path.join(DATA_DIR, 'visits')
+VISITS_LOCK_FILE = os.path.join(DATA_DIR, "visits.lock")
+
+os.makedirs(DATA_DIR, exist_ok=True)
+
+def get_visits():
+    if not os.path.exists(VISITS_FILE):
+        return 0
+    
+    with open(VISITS_FILE, 'r') as f:
+        try:
+            return int(f.read())
+        except ValueError:
+            return 0
+
+def increment_visits():
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    with open(VISITS_LOCK_FILE, "a+") as lock_fp:
+        portalocker.lock(lock_fp, portalocker.LOCK_EX)
+
+        new_value = get_visits() + 1
+
+        fd, tmp_path = tempfile.mkstemp(dir=DATA_DIR, prefix="visits.", text=True)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as tf:
+                tf.write(str(new_value))
+                tf.flush()
+                os.fsync(tf.fileno())
+            os.replace(tmp_path, VISITS_FILE)
+        finally:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+    return new_value
 
 app = Flask(__name__)
 START_TIME = datetime.now(timezone.utc)
@@ -102,6 +140,7 @@ def log_request_info(response):
 
 @app.route("/")
 def index():
+    increment_visits()
     cur_time = datetime.now(timezone.utc)
     uptime = cur_time - START_TIME
     data = {
@@ -135,7 +174,8 @@ def index():
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
             {"path": "/raise-error", "method": "GET", "description": "Endpoint that raises an error for testing"},
-            {"path": "/metrics", "method": "GET", "description": "Metrics endpoint"}
+            {"path": "/metrics", "method": "GET", "description": "Metrics endpoint"},
+            {"path": "/visits", "method": "GET", "description": "Visits endpoint"}
         ]
     }
     return jsonify(data)
@@ -172,6 +212,11 @@ def not_found(error):
 def internal_error(error):
     logger.error('Internal server error', extra={'path': request.path, 'client_addr': request.remote_addr, 'error': str(error)})
     return jsonify({"error": "Internal Server Error", "message": "Unexpected error"}), 500
+
+
+@app.route('/visits')
+def visits():
+    return jsonify({"visits": get_visits()})
 
 
 if __name__ == "__main__":

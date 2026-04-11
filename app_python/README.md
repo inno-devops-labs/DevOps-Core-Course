@@ -44,6 +44,9 @@ python app.py
 |---------|------|--------------|
 | GET | `/` | Returns system and service information |
 | GET | `/health` | Returns health and uptime status |
+| GET | `/raise-error` | Endpoint that raises an error for testing |
+| GET | `/metrics` | Metrics endpoint |
+| GET | `/visits` | Visits endpoint |
 
 ## Configuration
 | Variable | Default | Description |
