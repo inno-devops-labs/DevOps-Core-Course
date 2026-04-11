@@ -4,7 +4,7 @@ image:
   tag: "2026.04.09"
 
 service:
-  type: LoadBalancer
+  type: NodePort
   port: 80
   targetPort: 5000
   nodePort: 30082
