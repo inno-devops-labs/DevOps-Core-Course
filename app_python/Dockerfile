@@ -24,8 +24,11 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages/ /usr/local/lib/pyth
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 COPY --from=builder /app .
 
+# Create writable data directory for persisted visits counter
+RUN mkdir -p /data
+
 # Change ownership of the directory
-RUN chown -R appuser:appgroup /home/appuser
+RUN chown -R appuser:appgroup /home/appuser /data
 
 # Switch to the non-root user
 USER appuser

@@ -37,6 +37,25 @@ app:
   environment: "dev"
   logLevel: "info"
 
+config:
+  enabled: true
+  mountPath: "/config"
+  file:
+    applicationName: "devops-info-service"
+    listenHost: "0.0.0.0"
+    listenPort: "8080"
+  env:
+    appName: "devops-info-service"
+    appMode: "kubernetes"
+    featureVisits: "true"
+    featureMetrics: "true"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: "/data"
+
 secrets:
   enabled: true
   name: ""
@@ -45,7 +64,7 @@ secrets:
 
 vault:
   enabled: false
-  authPath: "kubernetes"
+  authPath: "auth/kubernetes"
   role: "devops-python-role"
   secretPath: "secret/data/myapp/config"
   injectFileName: "config"

@@ -7,6 +7,8 @@ import socket
 import platform
 import logging
 import time
+import tempfile
+import threading
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request, g
 from pythonjsonlogger import jsonlogger
@@ -66,7 +68,7 @@ def normalize_endpoint(req):
     """Return low-cardinality route label for Prometheus metrics."""
     if req.url_rule and req.url_rule.rule:
         return req.url_rule.rule
-    if req.path in ["/", "/health", "/metrics"]:
+    if req.path in ["/", "/health", "/metrics", "/visits"]:
         return req.path
     return "unknown"
 
@@ -129,6 +131,8 @@ def log_response(response):
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+VISITS_FILE = os.getenv('VISITS_FILE', '/data/visits')
+VISITS_LOCK = threading.Lock()
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
@@ -140,6 +144,56 @@ SERVICE_INFO = {
     'description': 'DevOps course info service',
     'framework': 'Flask'
 }
+
+
+def read_visits_count():
+    """
+    Read visits counter from a file.
+
+    Returns:
+        int: current visits count
+    """
+    try:
+        with open(VISITS_FILE, 'r', encoding='utf-8') as f:
+            return int(f.read().strip() or "0")
+    except FileNotFoundError:
+        return 0
+    except (ValueError, OSError) as exc:
+        logger.warning("visits_read_failed", extra={"error": str(exc)})
+        return 0
+
+
+def write_visits_count(count):
+    """
+    Persist visits counter to a file using atomic replace.
+
+    Args:
+        count: current visits count
+    """
+    visits_dir = os.path.dirname(VISITS_FILE) or "."
+    os.makedirs(visits_dir, exist_ok=True)
+
+    fd, temp_path = tempfile.mkstemp(dir=visits_dir, prefix="visits-", text=True)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+            tmp.write(str(count))
+        os.replace(temp_path, VISITS_FILE)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+def increment_visits_count():
+    """
+    Increment and persist visits counter with thread-level locking.
+
+    Returns:
+        int: updated visits count
+    """
+    with VISITS_LOCK:
+        new_count = read_visits_count() + 1
+        write_visits_count(new_count)
+        return new_count
 
 
 def get_system_info():
@@ -208,6 +262,8 @@ def index():
     
     uptime_data = get_uptime()
     
+    visits_count = increment_visits_count()
+
     response = {
         'service': SERVICE_INFO,
         'system': get_system_info(),
@@ -218,6 +274,10 @@ def index():
             'timezone': 'UTC'
         },
         'request': get_request_info(request),
+        'visits': {
+            'count': visits_count,
+            'file': VISITS_FILE
+        },
         'endpoints': [
             {
                 'path': '/',
@@ -233,6 +293,11 @@ def index():
                 'path': '/metrics',
                 'method': 'GET',
                 'description': 'Prometheus metrics'
+            },
+            {
+                'path': '/visits',
+                'method': 'GET',
+                'description': 'Current visits counter'
             }
         ]
     }
@@ -261,6 +326,21 @@ def health():
 def metrics():
     """Prometheus scrape endpoint."""
     return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
+
+
+@app.route('/visits')
+def visits():
+    """
+    Current visits counter endpoint.
+
+    Returns:
+        JSON response with persisted visits count
+    """
+    return jsonify({
+        'visits': read_visits_count(),
+        'file': VISITS_FILE,
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    }), 200
 
 
 @app.errorhandler(404)

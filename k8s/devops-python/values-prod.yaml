@@ -19,6 +19,16 @@ app:
   environment: "prod"
   logLevel: "warn"
 
+config:
+  env:
+    appMode: "prod"
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""
+  mountPath: "/data"
+
 livenessProbe:
   initialDelaySeconds: 30
   periodSeconds: 5

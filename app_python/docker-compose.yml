@@ -1,0 +1,14 @@
+services:
+  devops-info-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-info-service
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8080"
+      VISITS_FILE: "/data/visits"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data

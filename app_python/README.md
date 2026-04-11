@@ -164,6 +164,24 @@ curl http://localhost:5000/health
 
 Metrics endpoint for monitoring.
 
+### `GET /visits`
+
+Returns current persisted visits counter.
+
+**Example Request:**
+```bash
+curl http://localhost:5000/visits
+```
+
+**Example Response:**
+```json
+{
+  "visits": 3,
+  "file": "/data/visits",
+  "timestamp": "2026-04-05T12:00:00.000000+00:00"
+}
+```
+
 ## Docker
 
 ### Building the Image
@@ -182,6 +200,18 @@ To run the container, use the following command, mapping the container's port 80
 docker run -p <local-port>:8080 <your-dockerhub-username>/<image-name>:<tag>
 ```
 
+### Running with Docker Compose (persistent visits)
+
+```bash
+docker compose up --build
+```
+
+This project includes `docker-compose.yml` with:
+- `VISITS_FILE=/data/visits`
+- volume mount `./data:/data`
+
+This keeps the visits counter across container restarts.
+
 ### Pulling from Docker Hub
 
 To pull the image from Docker Hub, use:
@@ -199,6 +229,7 @@ The application supports the following environment variables:
 | `HOST` | `0.0.0.0` | Server host address |
 | `PORT` | `5000` | Server port number |
 | `DEBUG` | `False` | Enable debug mode (true/false) |
+| `VISITS_FILE` | `/data/visits` | Path to persisted visits counter file |
 
 ## Project Structure
 
@@ -247,6 +278,14 @@ ruff check .
 3. **Test health endpoint:**
    ```bash
    curl http://localhost:5000/health
+   ```
+
+4. **Test visits endpoint and persistence:**
+   ```bash
+   curl http://localhost:5000/visits
+   curl http://localhost:5000/
+   curl http://localhost:5000/
+   curl http://localhost:5000/visits
    ```
 
 4. **Test with formatted output:**

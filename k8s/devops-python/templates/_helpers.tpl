@@ -36,3 +36,15 @@
 - name: LOG_LEVEL
   value: {{ .Values.app.logLevel | quote }}
 {{- end -}}
+
+{{- define "devops-python.configFileName" -}}
+{{- printf "%s-config" (include "devops-python.fullname" .) -}}
+{{- end -}}
+
+{{- define "devops-python.configEnvName" -}}
+{{- printf "%s-env" (include "devops-python.fullname" .) -}}
+{{- end -}}
+
+{{- define "devops-python.pvcName" -}}
+{{- printf "%s-data" (include "devops-python.fullname" .) -}}
+{{- end -}}

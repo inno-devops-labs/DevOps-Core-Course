@@ -19,6 +19,16 @@ app:
   environment: "dev"
   logLevel: "debug"
 
+config:
+  env:
+    appMode: "dev"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: "/data"
+
 livenessProbe:
   initialDelaySeconds: 5
   periodSeconds: 10

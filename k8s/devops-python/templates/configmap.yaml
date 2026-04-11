@@ -1,0 +1,24 @@
+{{- if .Values.config.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-python.configFileName" . }}
+  labels:
+    {{- include "devops-python.labels" . | nindent 4 }}
+data:
+  config.json: |-
+{{ tpl (.Files.Get "files/config.json") . | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-python.configEnvName" . }}
+  labels:
+    {{- include "devops-python.labels" . | nindent 4 }}
+data:
+  APP_NAME: {{ .Values.config.env.appName | quote }}
+  APP_MODE: {{ .Values.config.env.appMode | quote }}
+  FEATURE_VISITS: {{ .Values.config.env.featureVisits | quote }}
+  FEATURE_METRICS: {{ .Values.config.env.featureMetrics | quote }}
+  VISITS_FILE: {{ printf "%s/visits" .Values.persistence.mountPath | quote }}
+{{- end }}

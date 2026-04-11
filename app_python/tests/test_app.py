@@ -29,6 +29,28 @@ def test_index_returns_service_system_runtime_request():
 
     endpoints = data["endpoints"]
     assert any(endpoint["path"] == "/health" for endpoint in endpoints)
+    assert any(endpoint["path"] == "/visits" for endpoint in endpoints)
+
+
+def test_visits_counter_persists_to_file(tmp_path, monkeypatch):
+    visits_file = tmp_path / "visits"
+    monkeypatch.setattr(app_module, "VISITS_FILE", str(visits_file))
+
+    app.config.update({"TESTING": True})
+    with app.test_client() as client:
+        response = client.get("/visits")
+        assert response.status_code == 200
+        assert response.get_json()["visits"] == 0
+
+        client.get("/")
+        client.get("/")
+
+        response = client.get("/visits")
+        assert response.status_code == 200
+        assert response.get_json()["visits"] == 2
+
+    assert visits_file.exists()
+    assert visits_file.read_text(encoding="utf-8").strip() == "2"
 
 
 def test_health_returns_status_and_uptime():

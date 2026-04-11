@@ -18,8 +18,12 @@ spec:
     metadata:
       labels:
         {{- include "devops-python.selectorLabels" . | nindent 8 }}
-      {{- if .Values.vault.enabled }}
+      {{- if or .Values.vault.enabled .Values.config.enabled }}
       annotations:
+        {{- if .Values.config.enabled }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/auth-path: {{ .Values.vault.authPath | quote }}
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
@@ -33,6 +37,7 @@ spec:
           APP_USERNAME={{`{{ .Data.data.username }}`}}
           APP_PASSWORD={{`{{ .Data.data.password }}`}}
           {{`{{- end }}`}}
+        {{- end }}
       {{- end }}
     spec:
       serviceAccountName: {{ include "devops-python.serviceAccountName" . }}
@@ -45,15 +50,33 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
-          {{- if .Values.secrets.enabled }}
+          {{- if or .Values.config.enabled .Values.secrets.enabled }}
           envFrom:
+            {{- if .Values.config.enabled }}
+            - configMapRef:
+                name: {{ include "devops-python.configEnvName" . }}
+            {{- end }}
+            {{- if .Values.secrets.enabled }}
             - secretRef:
                 name: {{ include "devops-python.secretName" . }}
+            {{- end }}
           {{- end }}
           env:
             {{- include "devops-python.envVars" . | nindent 12 }}
           {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if or .Values.config.enabled .Values.persistence.enabled }}
+          volumeMounts:
+            {{- if .Values.config.enabled }}
+            - name: config-volume
+              mountPath: {{ .Values.config.mountPath | quote }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath | quote }}
+            {{- end }}
           {{- end }}
           livenessProbe:
             {{- toYaml $.Values.livenessProbe | nindent 12 }}
@@ -61,3 +84,16 @@ spec:
             {{- toYaml $.Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml $.Values.resources | nindent 12 }}
+      {{- if or .Values.config.enabled .Values.persistence.enabled }}
+      volumes:
+        {{- if .Values.config.enabled }}
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-python.configFileName" . }}
+        {{- end }}
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-python.pvcName" . }}
+        {{- end }}
+      {{- end }}

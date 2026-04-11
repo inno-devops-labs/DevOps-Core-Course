@@ -1,0 +1,14 @@
+{
+  "applicationName": "{{ .Values.config.file.applicationName }}",
+  "environment": "{{ .Values.app.environment }}",
+  "featureFlags": {
+    "visitsCounter": true,
+    "metricsEnabled": true
+  },
+  "settings": {
+    "logLevel": "{{ .Values.app.logLevel }}",
+    "listenHost": "{{ .Values.config.file.listenHost }}",
+    "listenPort": "{{ .Values.config.file.listenPort }}",
+    "visitsFile": "{{ .Values.persistence.mountPath }}/visits"
+  }
+}
