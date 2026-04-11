@@ -1,0 +1,12 @@
+{
+  "applicationName": "{{ .Values.configFile.appName }}",
+  "environment": "{{ .Values.configFile.environment }}",
+  "featureFlags": {
+    "visitsCounter": {{ .Values.configFile.featureFlags.visitsCounter }},
+    "diagnostics": {{ .Values.configFile.featureFlags.diagnostics }}
+  },
+  "settings": {
+    "metricsEnabled": {{ .Values.configFile.settings.metricsEnabled }},
+    "jsonLogs": {{ .Values.configFile.settings.jsonLogs }}
+  }
+}

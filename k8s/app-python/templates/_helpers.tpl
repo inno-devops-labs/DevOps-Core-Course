@@ -81,3 +81,24 @@ Common env block
 - name: RELEASE_VERSION
   value: {{ .Values.env.releaseVersion | quote }}
 {{- end }}
+
+{{/*
+File ConfigMap name
+*/}}
+{{- define "app-python.fileConfigMapName" -}}
+{{- printf "%s-config" (include "app-python.fullname" .) -}}
+{{- end }}
+
+{{/*
+Env ConfigMap name
+*/}}
+{{- define "app-python.envConfigMapName" -}}
+{{- printf "%s-env" (include "app-python.fullname" .) -}}
+{{- end }}
+
+{{/*
+PVC name
+*/}}
+{{- define "app-python.pvcName" -}}
+{{- printf "%s-data" (include "app-python.fullname" .) -}}
+{{- end }}

@@ -5,7 +5,7 @@ fullnameOverride: ""
 
 image:
   repository: sergey173/app_python
-  tag: "2026.03.16"
+  tag: "2026.04.09"
   pullPolicy: IfNotPresent
 
 service:
@@ -22,6 +22,18 @@ env:
   port: "5000"
   debug: "False"
   releaseVersion: "v2"
+  appEnv: "default"
+  logLevel: "INFO"
+
+configFile:
+  appName: "devops-info-service"
+  environment: "default"
+  featureFlags:
+    visitsCounter: true
+    diagnostics: true
+  settings:
+    metricsEnabled: true
+    jsonLogs: true
 
 podSecurityContext:
   runAsNonRoot: true
@@ -93,3 +105,8 @@ vault:
   enabled: false
   role: "app-python"
   secretPath: "secret/data/app-python/config"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
