@@ -1,0 +1,9 @@
+services:
+  devops-info:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      VISITS_FILE: /data/visits
+    volumes:
+      - ./data:/data

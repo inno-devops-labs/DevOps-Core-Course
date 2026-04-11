@@ -9,7 +9,7 @@ serviceAccount:
 
 image:
   repository: tsixphoenix/devops-info-python
-  tag: "lab9"
+  tag: "lab12"
   pullPolicy: IfNotPresent
 
 service:
@@ -21,13 +21,26 @@ service:
 env:
   HOST: "0.0.0.0"
   PORT: "5000"
-  RELEASE_ID: "lab11"
+  RELEASE_ID: "lab12"
 
-# Helm-managed Secret — lab defaults only; use helm --set or a secret manager in production
+visits:
+  file: "/data/visits"
+
+config:
+  appName: "devops-info-service"
+  environment: "development"
+  logLevel: "info"
+  injectEnv: true
+
 helmSecret:
+  enabled: false
+  username: "lab12-helm-demo-user"
+  password: "lab12-helm-demo-password"
+
+persistence:
   enabled: true
-  username: "lab11-helm-demo-user"
-  password: "lab11-helm-demo-password"
+  size: 100Mi
+  storageClass: ""
 
 resources:
   requests:
@@ -57,7 +70,6 @@ securityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: false
 
-# Vault Agent Injector (sidecar) — enable after Vault is configured
 vault:
   injector:
     enabled: false

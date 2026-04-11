@@ -1,0 +1,8 @@
+{
+  "appName": "devops-info-service",
+  "environment": "development",
+  "features": {
+    "metricsEnabled": true,
+    "verboseLogging": false
+  }
+}

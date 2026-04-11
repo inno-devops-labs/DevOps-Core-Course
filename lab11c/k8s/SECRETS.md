@@ -1,14 +1,10 @@
-# Lab 11 — Secrets and Vault
+# Lab 11 — secrets & Vault
 
-Required tasks only; bonus not done.
+Chart is under `lab11c/k8s/devops-info` (v0.2.0). Lab 10 hooks stay off in the default `values.yaml` so they don’t get in the way.
 
-Chart: `lab11c/k8s/devops-info` (v0.2.0). Hooks from Lab 10 stay off in default `values.yaml` so this lab stays about secrets.
+## kubectl secret
 
----
-
-## 1) Kubernetes Secrets
-
-**Create (imperative):**
+Create:
 
 ```bash
 kubectl create secret generic app-credentials \
@@ -16,122 +12,147 @@ kubectl create secret generic app-credentials \
   --from-literal=password=demo-pass
 ```
 
-**Inspect:**
+Inspect:
 
 ```bash
 kubectl get secret app-credentials -o yaml
 ```
 
-You get `data.username` and `data.password` as base64 blobs. That is encoding for transport/storage in the API object, not encryption.
-
-**Decode (PowerShell):**
+The `data.*` fields are base64 — that’s encoding for the API, not encryption. Decode in PowerShell (username `demo-user` → `ZGVtby11c2Vy`):
 
 ```powershell
-[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("<paste-value-here>"))
+[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String("ZGVtby11c2Vy"))
 ```
 
-**Security:** Secrets are not encrypted at rest in etcd unless you configure [encryption at rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/) (EncryptionConfiguration + KMS). RBAC still matters: anyone who can read the Secret object gets the values.
+Without [etcd encryption at rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/), secrets in etcd are only as safe as the cluster + RBAC. Anyone who can read the Secret object sees the values.
 
----
+## Helm secret
 
-## 2) Helm-managed Secret
+The chart has `templates/secrets.yaml` (when `helmSecret.enabled` is true), values in `values.yaml`, and the deployment uses `envFrom` + `secretRef`. The defaults in the repo are dummy creds (`lab11-helm-demo-user` / `lab11-helm-demo-password`) — fine for classwork; use `--set` or something proper in real use.
 
-**Layout:**
+Install:
 
-- `templates/secrets.yaml` — Secret when `helmSecret.enabled`; name via helper `devops-info.helmSecretName`; `stringData` for `username` / `password` from values.
-- `values.yaml` — `helmSecret.enabled` and placeholders `REPLACE_ME` (never commit real credentials).
-- `templates/deployment.yaml` — `envFrom` + `secretRef` pointing at that Secret so all keys become env vars.
+```bash
+helm upgrade --install app11 lab11c/k8s/devops-info \
+  -f lab11c/k8s/devops-info/values-prod.yaml
+```
 
-Install/upgrade with overrides (example):
+Override without editing files:
 
 ```bash
 helm upgrade --install app11 lab11c/k8s/devops-info \
   -f lab11c/k8s/devops-info/values-prod.yaml \
-  --set helmSecret.username=helmuser \
-  --set helmSecret.password='your-temp-password'
+  --set helmSecret.username=myuser \
+  --set helmSecret.password=mypass
 ```
 
-**Verification:**
+`kubectl describe pod` only shows the Secret name under env-from, not the cleartext. Inside the container you’ll see them in `printenv` — ok for debugging, just don’t paste real passwords into the repo or chat. Same story if `helm get values` picked up `--set` args.
 
-- `kubectl describe pod <pod>` lists **only the Secret name** under “Environment Variables from”, not the cleartext values.
-- `kubectl exec deploy/app11-devops-info -c app -- printenv` shows `username` and `password` in the container — fine for a lab; don’t paste that output into git or tickets.
+## Resources
 
-**Note:** `helm get values` can show what you passed with `--set`; treat that as sensitive too.
+CPU/memory live in `values.yaml`, with overrides in `values-dev.yaml` / `values-prod.yaml`. Requests = what scheduling assumes; limits = hard cap (CPU gets throttled, memory can OOM).
 
----
+## Vault
 
-## 3) Resource management
-
-CPU/memory come from `values.yaml` and are overridden per env in `values-dev.yaml` / `values-prod.yaml`.
-
-- **Requests** — what the scheduler uses for placement; kubelet guarantees at least this much.
-- **Limits** — hard cap; container throttled (CPU) or OOM-killed (memory) if it goes over.
-
-Pick requests from steady usage (metrics), limits a bit above peak. Dev: smaller; prod: higher replicas + larger limits (see prod values file).
-
----
-
-## 4) Vault integration
-
-**Install:** Official Helm repo was unreachable from this network (403), so Vault was installed from a local checkout of HashiCorp’s `vault-helm` chart (tag v0.29.1), namespace `vault`, dev server + injector:
+The HashiCorp Helm repo returned 403 from my network, so I installed from source:
 
 ```bash
-helm install vault ./path-to-vault-helm-chart -n vault --create-namespace \
+git clone --depth 1 --branch v0.29.1 https://github.com/hashicorp/vault-helm.git vault-helm
+helm install vault ./vault-helm -n vault --create-namespace \
   --set server.dev.enabled=true \
   --set injector.enabled=true
 ```
 
-**Cluster check:**
+Check:
 
-```text
+```bash
 kubectl get pods -n vault
-# vault-0 and vault-agent-injector should be Running
 ```
 
-**Inside Vault (dev pod, example flow):**
+Rest is inside `vault-0`. Enable KV v2 on `secret` if it isn’t there yet:
 
-- KV v2 at path `secret/` (default mount name `secret`).
-- Example secret: `secret/devops-info/config` with at least two keys (e.g. `username`, `password`, plus `api_key` for demo).
-- `vault auth enable kubernetes`
-- `vault write auth/kubernetes/config ...` (kubernetes host, CA, token reviewer — per tutorial).
-- Policy `devops-info-read`:
+```bash
+kubectl exec -n vault vault-0 -- vault secrets enable -path=secret kv-v2
+```
 
-```hcl
+(If it already exists you’ll get an error — ignore.)
+
+Stuff I used for the app path:
+
+```bash
+kubectl exec -n vault vault-0 -- vault kv put secret/devops-info/config \
+  username="vault-demo-user" \
+  password="vault-demo-password" \
+  api_key="vault-demo-api-key"
+```
+
+Wire up Kubernetes auth:
+
+```bash
+kubectl exec -n vault vault-0 -- sh -c 'vault auth enable kubernetes 2>/dev/null || true; vault write auth/kubernetes/config \
+  kubernetes_host="https://kubernetes.default.svc:443" \
+  kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+  token_reviewer_jwt=@/var/run/secrets/kubernetes.io/serviceaccount/token \
+  issuer="https://kubernetes.default.svc.cluster.local"'
+```
+
+Policy + role for release `app11` (ServiceAccount `app11-devops-info`):
+
+```bash
+kubectl exec -i -n vault vault-0 -- vault policy write devops-info-read - <<'EOF'
 path "secret/data/devops-info/*" {
   capabilities = ["read"]
 }
+EOF
+
+kubectl exec -n vault vault-0 -- vault write auth/kubernetes/role/devops-info \
+  bound_service_account_names=app11-devops-info \
+  bound_service_account_namespaces=default \
+  policies=devops-info-read \
+  ttl=1h
 ```
 
-- Role `devops-info` bound to service account `app11-devops-info` in namespace `default`, policy `devops-info-read`.
+Turn on the injector in `values-dev.yaml` / `values-prod.yaml` and you get the usual annotations (`vault.hashicorp.com/agent-inject`, `role`, `agent-inject-secret-vaultconfig`, service URL). Pod goes to 2/2 with the agent sidecar. Injected file landed at `/vault/secrets/vaultconfig` for me — I only checked with `ls`/`cat`, didn’t commit contents.
 
-**Injection:** With `vault.injector.enabled: true` (see `values-dev.yaml` / `values-prod.yaml`), the pod template gets annotations such as:
+Rough idea: mutating webhook adds the agent, it logs into Vault with Kubernetes auth, writes files into the volume.
 
-- `vault.hashicorp.com/agent-inject: "true"`
-- `vault.hashicorp.com/role: "devops-info"`
-- `vault.hashicorp.com/agent-inject-secret-vaultconfig: "secret/data/devops-info/config"`
-- `vault.hashicorp.com/service: "http://vault.vault.svc:8200"`
+## Takeaway
 
-Pod goes to **2/2** (app + `vault-agent`). Injected file path:
-
-```text
-/vault/secrets/vaultconfig
-```
-
-Content is KV data in a small text blob — don’t commit real contents; confirm with `ls` / `head` in the lab only.
-
-**Pattern:** Mutating webhook adds the agent; agent authenticates to Vault using Kubernetes auth; it writes secrets into a shared volume the app reads as files.
+Built-in Secrets are the easy path; etcd encryption + RBAC still matter, rotation is on you. Vault adds policy/audit/rotation story but it’s another moving part. Dev-mode Vault from the lab is not production material.
 
 ---
 
-## 5) Security analysis
+## Evidence (captured on kind v1.31, 2026-04-11)
 
-| Topic | Native Secret | Vault |
-|--------|----------------|--------|
-| Storage | etcd (encode + optional encryption at rest) | Dedicated store, policies, audit |
-| Rotation | Manual / external tooling | Built for rotation, dynamic secrets |
-| Access | RBAC on Secret objects | Policies, namespaces, roles |
-| Footprint | None extra | Agent sidecar or CSI / API |
+**Imperative Secret (YAML fragment):**
 
-**When to use what:** In-cluster Secret is fine for small teams and non-critical data if etcd encryption and RBAC are in good shape. Vault (or another external manager) pays off for many apps, strict audit, rotation, and when several clusters need the same source of truth.
+```yaml
+data:
+  password: ZGVtby1wYXNz
+  username: ZGVtby11c2Vy
+kind: Secret
+metadata:
+  name: app-credentials
+  namespace: default
+type: Opaque
+```
 
-**Production:** encrypt etcd; narrow RBAC; avoid `stringData` defaults with real passwords in git; prefer external secret sync or Vault Agent/CSI; dev mode Vault is **not** for production.
+**Vault pods:**
+
+```text
+NAME                                    READY   STATUS    RESTARTS   AGE
+vault-0                                 1/1     Running   0          ...
+vault-agent-injector-75f9d67594-xxxxx   1/1     Running   0          ...
+```
+
+**Helm release pod (injector on):** `app11-devops-info-...` shows `2/2` — app container + `vault-agent`. `kubectl describe pod` lists `Environment Variables from: app11-devops-info-secret` (values only in the container env, not in describe).
+
+**Env check (demo strings from chart values + Vault file):** variables `username` and `password` present; injected file at `/vault/secrets/vaultconfig` starts with KV-style text (contains `username`, `password`, `api_key` from Vault path `secret/data/devops-info/config`).
+
+**Policy:**
+
+```text
+path "secret/data/devops-info/*" { capabilities = ["read"] }
+```
+
+Full local runbook: see `RUNBOOK.md` in this folder.
