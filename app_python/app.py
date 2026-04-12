@@ -54,7 +54,7 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 START_TIME = datetime.now(timezone.utc)
 
 # ── Visits counter ──────────────────────────────────────────────────
-VISITS_FILE = os.getenv('VISITS_FILE', '/data/visits')
+VISITS_FILE = os.getenv('VISITS_FILE', '/tmp/data/visits')
 _visits_lock = threading.Lock()
 
 
@@ -62,16 +62,19 @@ def _read_visits():
     try:
         with open(VISITS_FILE, 'r') as f:
             return int(f.read().strip())
-    except (FileNotFoundError, ValueError):
+    except (FileNotFoundError, ValueError, PermissionError):
         return 0
 
 
 def _write_visits(count):
-    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
-    tmp = VISITS_FILE + '.tmp'
-    with open(tmp, 'w') as f:
-        f.write(str(count))
-    os.replace(tmp, VISITS_FILE)
+    try:
+        os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+        tmp = VISITS_FILE + '.tmp'
+        with open(tmp, 'w') as f:
+            f.write(str(count))
+        os.replace(tmp, VISITS_FILE)
+    except PermissionError:
+        logger.warning("Cannot write visits file: permission denied")
 
 # ── Prometheus metrics ──────────────────────────────────────────────
 http_requests_total = Counter(

@@ -45,6 +45,8 @@ env:
     value: "0.0.0.0"
   - name: PORT
     value: "5000"
+  - name: VISITS_FILE
+    value: "/data/visits"
 
 secrets:
   username: "admin"
