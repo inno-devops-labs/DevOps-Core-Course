@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+    user: "0:0"
+    ports:
+      - "5000:5000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 5000
+      DEBUG: "false"
+      APP_NAME: devops-info-service
+      APP_ENV: docker-compose
+      LOG_LEVEL: INFO
+      APP_CONFIG_PATH: /config/config.json
+      VISITS_FILE: /data/visits
+    volumes:
+      - ./data:/data
+      - ./config:/config:ro

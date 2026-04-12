@@ -41,6 +41,7 @@ DevOps Info Service - small Flask based service what return and report system me
 ## Available Endpoints
 - `GET /` - Returns system metadata including hostname, IP address, and current timestamp.
 - `GET /health` - Returns the health status of the service.
+- `GET /visits` - Returns the persistent visits counter stored on disk.
 - `GET /metrics` - Returns Prometheus metrics in text exposition format.
 
 
@@ -58,8 +59,27 @@ docker run --rm \
    -e HOST=0.0.0.0 \
    -e PORT=5000 \
    -e DEBUG=True \
+   -e APP_CONFIG_PATH=/config/config.json \
+   -e VISITS_FILE=/data/visits \
+   -v "$(pwd)/data:/data" \
+   -v "$(pwd)/config:/config:ro" \
    ${DOCKER_USER}/devops-info-service-python:latest
 ```
+
+### Local persistence test with Docker Compose
+```bash
+mkdir -p data
+docker compose up --build -d
+curl http://127.0.0.1:5000/
+curl http://127.0.0.1:5000/
+curl http://127.0.0.1:5000/visits
+cat data/visits
+docker compose restart app
+curl http://127.0.0.1:5000/visits
+docker compose down
+```
+
+The compose file mounts `./data` to `/data` so the visits counter survives container restarts, and mounts `./config/config.json` into `/config/config.json` for externalized configuration.
 
 ### Pull from Docker Hub
 Link to docker hub: 

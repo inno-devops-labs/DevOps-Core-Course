@@ -1,0 +1,12 @@
+{
+  "appName": "devops-info-service",
+  "environment": "docker-compose",
+  "featureFlags": {
+    "visitsCounter": true,
+    "configHotReload": true
+  },
+  "settings": {
+    "logLevel": "INFO",
+    "banner": "local-docker"
+  }
+}

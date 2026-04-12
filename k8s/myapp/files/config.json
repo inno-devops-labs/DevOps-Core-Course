@@ -1,0 +1,12 @@
+{
+  "appName": "{{ .Values.config.appName }}",
+  "environment": "{{ .Values.config.environment }}",
+  "featureFlags": {
+    "visitsCounter": true,
+    "configHotReload": true
+  },
+  "settings": {
+    "logLevel": "{{ .Values.config.logLevel }}",
+    "greeting": "Hello from Helm checksum rollout"
+  }
+}

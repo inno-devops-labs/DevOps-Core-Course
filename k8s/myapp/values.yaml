@@ -6,6 +6,7 @@ fullnameOverride: ""
 image:
   repository: zsalavat/devops-info-service-python
   tag: latest
+  pullPolicy: IfNotPresent
 
 service:
   type: NodePort
@@ -20,9 +21,22 @@ serviceAccount:
 
 podAnnotations: {}
 
+config:
+  appName: devops-info-service
+  environment: dev
+  logLevel: INFO
+  mountPath: /config
+
 secret:
   username: "dev-user"
   password: "dev-pass"
+
+persistence:
+  enabled: true
+  mountPath: /data
+  fileName: visits
+  size: 100Mi
+  storageClass: ""
 
 resources:
   requests:

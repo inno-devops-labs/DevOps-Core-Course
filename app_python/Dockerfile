@@ -19,6 +19,6 @@ RUN chown -R app:app /app
 
 USER app
 
-EXPOSE 8000
+EXPOSE 5000
 
 CMD ["python", "app.py"]

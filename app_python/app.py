@@ -1,9 +1,12 @@
 from __future__ import annotations
+import json
 import os
 import socket
 import platform
 import logging
 import time
+from pathlib import Path
+from threading import Lock
 from datetime import datetime, timezone
 from typing import Dict
 
@@ -48,6 +51,13 @@ system_info_duration_seconds = Histogram(
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+VISITS_FILE = Path(os.getenv("VISITS_FILE", "/data/visits"))
+CONFIG_PATH = Path(os.getenv("APP_CONFIG_PATH", "/config/config.json"))
+APP_NAME = os.getenv("APP_NAME", "devops-info-service")
+APP_ENV = os.getenv("APP_ENV", "dev")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+visits_lock = Lock()
 
 
 # ── JSON logger configuration ──────────────────────────────────────────────
@@ -75,12 +85,75 @@ logging.root.setLevel(logging.INFO)
 logging.root.handlers = [handler]
 
 logger = logging.getLogger("devops-info-service")
+logger.setLevel(LOG_LEVEL.upper())
 
 
 def normalize_endpoint(path: str) -> str:
-    if path in {"/", "/health", "/metrics"}:
+    if path in {"/", "/health", "/metrics", "/visits"}:
         return path
     return "/other"
+
+
+def ensure_parent_dir(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def read_visits() -> int:
+    try:
+        return int(VISITS_FILE.read_text(encoding="utf-8").strip() or "0")
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        logger.warning("Visits file contained invalid data", extra={"path": str(VISITS_FILE)})
+        return 0
+
+
+def write_visits(count: int) -> None:
+    ensure_parent_dir(VISITS_FILE)
+    with VISITS_FILE.open("w", encoding="utf-8") as visits_file:
+        visits_file.write(str(count))
+        visits_file.flush()
+        os.fsync(visits_file.fileno())
+    VISITS_FILE.chmod(0o664)
+
+
+def increment_visits() -> int:
+    with visits_lock:
+        current = read_visits()
+        updated = current + 1
+        write_visits(updated)
+        return updated
+
+
+def load_runtime_config() -> Dict[str, object]:
+    config = {
+        "appName": APP_NAME,
+        "environment": APP_ENV,
+        "featureFlags": {
+            "visitsCounter": True,
+            "configHotReload": True,
+        },
+        "settings": {
+            "logLevel": LOG_LEVEL.upper(),
+        },
+    }
+    try:
+        file_config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return config
+    except json.JSONDecodeError as exc:
+        logger.warning(
+            "Config file is not valid JSON",
+            extra={"path": str(CONFIG_PATH), "error": str(exc)},
+        )
+        config["configError"] = "invalid_json"
+        return config
+
+    if isinstance(file_config, dict):
+        merged = config.copy()
+        merged.update(file_config)
+        return merged
+    return config
 
 # ── Request / response lifecycle hooks ─────────────────────────────────────
 @app.before_request
@@ -126,6 +199,10 @@ logger.debug("Environment variables", extra={"HOST": HOST, "PORT": PORT, "DEBUG"
 
 # save service start time
 START_TIME = datetime.now(timezone.utc)
+try:
+    write_visits(read_visits())
+except OSError as exc:
+    logger.warning("Failed to initialize visits file", extra={"path": str(VISITS_FILE), "error": str(exc)})
 
 # utility functions
 def get_system_info() -> Dict[str, object]:
@@ -162,15 +239,18 @@ def get_request_info() -> Dict[str, object]:
 @app.route("/", methods=["GET"])
 def index():
     logger.info("Handling index request", extra={"path": request.path, "method": request.method})
+    visits = increment_visits()
+    runtime_config = load_runtime_config()
     with system_info_duration_seconds.time():
         system_info = get_system_info()
 
     payload = {
         "service": {
-            "name" : "devops-info-service",
+            "name" : APP_NAME,
             "version": "1.0.0",
             "description": "DevOps course info service"
         },
+        "configuration": runtime_config,
         "system": system_info,
         "runtime": {
             "uptime_seconds": get_uptime()["seconds"],
@@ -178,10 +258,15 @@ def index():
             "current-time": datetime.now(timezone.utc).isoformat(),
             "timezone": "UTC",
         },
+        "visits": {
+            "count": visits,
+            "storage_file": str(VISITS_FILE),
+        },
         "request": get_request_info(),
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Persistent visits counter"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
@@ -200,6 +285,19 @@ def health():
     )
     logger.debug("Health response", extra={"uptime": get_uptime()})
     return response, 200
+
+
+@app.route("/visits", methods=["GET"])
+def visits():
+    return (
+        jsonify(
+            {
+                "count": read_visits(),
+                "storage_file": str(VISITS_FILE),
+            }
+        ),
+        200,
+    )
 
 
 @app.route("/metrics", methods=["GET"])

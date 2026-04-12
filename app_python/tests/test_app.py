@@ -1,19 +1,25 @@
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import patch
 import sys
 import os
 
 # Add parent directory to path to import app
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from app import app, get_system_info, get_uptime, get_request_info
+import app as app_module
+from app import app, get_system_info, get_uptime, get_request_info, load_runtime_config, read_visits
 
 
 @pytest.fixture
-def client():
+def client(tmp_path, monkeypatch):
     """Create a test client for the Flask app."""
     app.config['TESTING'] = True
+    monkeypatch.setattr(app_module, "VISITS_FILE", tmp_path / "visits")
+    monkeypatch.setattr(app_module, "CONFIG_PATH", tmp_path / "config.json")
+    monkeypatch.setattr(app_module, "APP_NAME", "devops-info-service")
+    monkeypatch.setattr(app_module, "APP_ENV", "test")
+    monkeypatch.setattr(app_module, "LOG_LEVEL", "INFO")
+    app_module.write_visits(0)
     with app.test_client() as client:
         yield client
 
@@ -81,6 +87,8 @@ def test_index_endpoint(client):
     assert "runtime" in data
     assert "request" in data
     assert "endpoints" in data
+    assert "configuration" in data
+    assert "visits" in data
 
     service = data["service"]
     assert service["name"] == "devops-info-service"
@@ -107,11 +115,16 @@ def test_index_endpoint(client):
     assert req_info["path"] == "/"
 
     endpoints = data["endpoints"]
-    assert len(endpoints) == 3
+    assert len(endpoints) == 4
     paths = {e["path"] for e in endpoints}
     assert "/" in paths
     assert "/health" in paths
+    assert "/visits" in paths
     assert "/metrics" in paths
+
+    assert data["configuration"]["environment"] == "test"
+    assert data["visits"]["count"] == 1
+    assert data["visits"]["storage_file"].endswith("visits")
 
 
 def test_metrics_endpoint(client):
@@ -146,6 +159,48 @@ def test_health_endpoint(client):
 
     assert isinstance(data["uptime_seconds"], int)
     assert data["uptime_seconds"] >= 0
+
+
+def test_visits_endpoint_tracks_persistent_counter(client):
+    client.get("/")
+    client.get("/")
+
+    response = client.get("/visits")
+    assert response.status_code == 200
+    data = response.get_json()
+
+    assert data["count"] == 2
+    assert read_visits() == 2
+
+
+def test_load_runtime_config_reads_json_file(tmp_path, monkeypatch):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        '{"appName":"config-driven-app","environment":"prod","featureFlags":{"beta":true}}',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(app_module, "CONFIG_PATH", config_path)
+    monkeypatch.setattr(app_module, "APP_NAME", "fallback-app")
+    monkeypatch.setattr(app_module, "APP_ENV", "dev")
+    monkeypatch.setattr(app_module, "LOG_LEVEL", "WARNING")
+
+    config = load_runtime_config()
+
+    assert config["appName"] == "config-driven-app"
+    assert config["environment"] == "prod"
+    assert config["featureFlags"]["beta"] is True
+
+
+def test_visits_survive_client_restart(tmp_path, monkeypatch):
+    visits_file = tmp_path / "visits"
+    monkeypatch.setattr(app_module, "VISITS_FILE", visits_file)
+    app_module.write_visits(5)
+
+    with app.test_client() as local_client:
+        response = local_client.get("/visits")
+
+    assert response.status_code == 200
+    assert response.get_json()["count"] == 5
 
 
 def test_404_error_handler(client):
