@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "info-service.fullname" . }}
+  labels:
+    {{- include "info-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "info-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "info-service.serviceAccountName" . }}
+      {{- include "common-lib.security.context" .Values.podSecurityContext | nindent 6 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        {{- include "common-lib.security.context" .Values.securityContext | nindent 10 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+          protocol: TCP
+        env:
+        {{- range $key, $value := .Values.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "info-service.fullname" . }}-env
+        {{- include "common-lib.resources" .Values.resources | nindent 8 }}
+        {{- include "common-lib.probes.liveness" .Values.livenessProbe | nindent 8 }}
+        {{- include "common-lib.probes.readiness" .Values.readinessProbe | nindent 8 }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: {{ .Values.config.mountPath }}
+          readOnly: true
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          mountPath: /data
+        {{- end }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ include "info-service.fullname" . }}-config
+      {{- if .Values.persistence.enabled }}
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: {{ include "info-service.fullname" . }}-data
+      {{- end }}
+  strategy:
+    canary:
+      steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: {duration: 30}
+      - setWeight: 60
+      - pause: {duration: 30}
+      - setWeight: 80
+      - pause: {duration: 30}
+      - setWeight: 100

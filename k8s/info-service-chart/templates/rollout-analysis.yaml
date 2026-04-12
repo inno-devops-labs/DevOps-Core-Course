@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "info-service.fullname" . }}-analysis
+  labels:
+    {{- include "info-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "info-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+        env:
+        - name: APP_NAME
+          value: "{{ .Values.env.APP_NAME }}-analysis"
+        envFrom:
+        - configMapRef:
+            name: {{ include "info-service.fullname" . }}-env
+        {{- include "common-lib.resources" .Values.resources | nindent 8 }}
+        {{- include "common-lib.probes.liveness" .Values.livenessProbe | nindent 8 }}
+        {{- include "common-lib.probes.readiness" .Values.readinessProbe | nindent 8 }}
+  strategy:
+    canary:
+      steps:
+      - setWeight: 10
+      - analysis:
+          templates:
+          - templateName: {{ include "info-service.fullname" . }}-health-check
+          - templateName: {{ include "info-service.fullname" . }}-visits-check
+          args:
+          - name: service-name
+            value: {{ include "info-service.fullname" . }}
+      
+      - setWeight: 30
+      - pause: {duration: 30}
+      
+      - setWeight: 60
+      - analysis:
+          templates:
+          - templateName: {{ include "info-service.fullname" . }}-health-check
+          - templateName: {{ include "info-service.fullname" . }}-visits-check
+      
+      - setWeight: 100

@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "info-service.fullname" . }}-health-check
+spec:
+  metrics:
+    - name: health-check
+      successCondition: result == "healthy"
+      failureLimit: 2
+      interval: 10s
+      count: 5
+      provider:
+        web:
+          url: "http://{{ include "info-service.fullname" . }}-canary.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}/health"
+          jsonPath: "{$.status}"
+          timeoutSeconds: 5
+          headers:
+            - key: X-Canary-Check
+              value: "true"
+    
+    - name: error-rate
+      successCondition: result < 0.05
+      failureLimit: 3
+      interval: 15s
+      count: 4
+      provider:
+        web:
+          url: "http://{{ include "info-service.fullname" . }}-canary.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}/metrics/error-rate"
+          jsonPath: "{$.error_rate}"
+          timeoutSeconds: 5

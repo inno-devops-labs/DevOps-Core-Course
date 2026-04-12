@@ -1,0 +1,26 @@
+replicaCount: 5
+
+image:
+  repository: sayfetik/info-service-python
+  tag: canary-test
+  pullPolicy: Always
+
+environment: canary-test
+debug: true
+logLevel: "DEBUG"
+
+service:
+  type: NodePort
+  nodePort: 30085
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "100m"
+
+persistence:
+  enabled: true
+  size: 100Mi

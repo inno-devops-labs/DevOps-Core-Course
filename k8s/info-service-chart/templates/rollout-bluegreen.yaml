@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "info-service.fullname" . }}-bluegreen
+  labels:
+    {{- include "info-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "info-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+        env:
+        {{- range $key, $value := .Values.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "info-service.fullname" . }}-env
+        volumeMounts:
+        - name: config-volume
+          mountPath: {{ .Values.config.mountPath }}
+          readOnly: true
+        {{- include "common-lib.resources" .Values.resources | nindent 8 }}
+        {{- include "common-lib.probes.liveness" .Values.livenessProbe | nindent 8 }}
+        {{- include "common-lib.probes.readiness" .Values.readinessProbe | nindent 8 }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ include "info-service.fullname" . }}-config
+  strategy:
+    blueGreen:
+      activeService: {{ include "info-service.fullname" . }}
+      previewService: {{ include "info-service.fullname" . }}-preview
+      autoPromotionEnabled: false

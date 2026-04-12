@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "info-service.fullname" . }}-visits-check
+spec:
+  metrics:
+    - name: visits-increasing
+      successCondition: result[0] > result[1]
+      failureLimit: 2
+      interval: 15s
+      count: 3
+      provider:
+        web:
+          url: "http://{{ include "info-service.fullname" . }}-canary.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}/visits"
+          jsonPath: "{$.visits}"
+          timeoutSeconds: 5
+    
+    - name: response-time
+      successCondition: result < 0.5
+      failureLimit: 3
+      interval: 10s
+      count: 6
+      provider:
+        web:
+          url: "http://{{ include "info-service.fullname" . }}-canary.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}/slow"
+          jsonPath: "{$.delay}"
+          timeoutSeconds: 3
