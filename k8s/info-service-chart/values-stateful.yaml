@@ -1,0 +1,30 @@
+replicaCount: 3
+
+image:
+  repository: sayfetik/info-service-python
+  tag: stateful
+  pullPolicy: Always
+
+environment: stateful-test
+debug: true
+logLevel: "DEBUG"
+
+service:
+  type: NodePort
+  nodePort: 30087
+
+persistence:
+  enabled: true
+  size: 100Mi
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "100m"
+
+env:
+  APP_NAME: "info-service-stateful"
+  DEBUG: "true"

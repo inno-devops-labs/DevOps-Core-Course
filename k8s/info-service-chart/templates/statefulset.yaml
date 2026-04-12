@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "info-service.fullname" . }}-stateful
+  labels:
+    {{- include "info-service.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "info-service.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "info-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "info-service.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "info-service.serviceAccountName" . }}
+      {{- include "common-lib.security.context" .Values.podSecurityContext | nindent 6 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        {{- include "common-lib.security.context" .Values.securityContext | nindent 10 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+          protocol: TCP
+        env:
+        {{- range $key, $value := .Values.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "info-service.fullname" . }}-env
+        {{- include "common-lib.resources" .Values.resources | nindent 8 }}
+        {{- include "common-lib.probes.liveness" .Values.livenessProbe | nindent 8 }}
+        {{- include "common-lib.probes.readiness" .Values.readinessProbe | nindent 8 }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: {{ .Values.config.mountPath }}
+          readOnly: true
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ include "info-service.fullname" . }}-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+      labels:
+        {{- include "info-service.labels" . | nindent 8 }}
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size | default "100Mi" }}
+      {{- if .Values.persistence.storageClass }}
+      storageClassName: {{ .Values.persistence.storageClass }}
+      {{- end }}
