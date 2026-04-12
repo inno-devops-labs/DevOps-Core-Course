@@ -110,3 +110,10 @@ persistence:
   enabled: true
   size: 100Mi
   storageClass: ""
+
+rollout:
+  enabled: false
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30

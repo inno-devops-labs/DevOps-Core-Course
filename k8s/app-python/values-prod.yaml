@@ -1,7 +1,4 @@
-replicaCount: 2
-
-image:
-  tag: "2026.04.09"
+replicaCount: 1
 
 service:
   type: NodePort
@@ -11,28 +8,28 @@ service:
 
 resources:
   requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
     memory: "128Mi"
     cpu: "100m"
-  limits:
-    memory: "256Mi"
-    cpu: "200m"
 
 env:
   debug: "False"
-  releaseVersion: "prod"
+  releaseVersion: "prod-green-v2"
   appEnv: "prod"
-  logLevel: "WARN"
+  logLevel: "INFO"
 
 configFile:
-  environment: "prod"
+  environment: "prod-bonus"
 
 livenessProbe:
   enabled: true
   httpGet:
     path: /health
     port: 5000
-  initialDelaySeconds: 15
-  periodSeconds: 5
+  initialDelaySeconds: 5
+  periodSeconds: 10
   timeoutSeconds: 2
   failureThreshold: 3
 
@@ -41,7 +38,17 @@ readinessProbe:
   httpGet:
     path: /health
     port: 5000
-  initialDelaySeconds: 5
-  periodSeconds: 3
+  initialDelaySeconds: 3
+  periodSeconds: 5
   timeoutSeconds: 2
   failureThreshold: 3
+
+persistence:
+  enabled: false
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
