@@ -100,6 +100,23 @@ env:
   APP_NAME: "info-service-helm"
   DEBUG: "false"
 
+environment: "development"
+debug: true
+logLevel: "INFO"
+
+visitsFile: "/data/visits.txt"
+
+config:
+  mountPath: "/config"
+  fileName: "config.json"
+
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
+
 nodeSelector: {}
 
 tolerations: []

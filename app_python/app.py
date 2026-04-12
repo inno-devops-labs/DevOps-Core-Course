@@ -1,5 +1,5 @@
 """
-DevOps Info Service with Prometheus metrics
+DevOps Info Service with Prometheus metrics and Vault integration
 """
 import os
 import platform
@@ -7,7 +7,10 @@ import socket
 import time
 import logging
 import random
+import json
+import fcntl
 from datetime import datetime, timezone
+from pathlib import Path
 from flask import Flask, jsonify, request, Response
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
 import psutil
@@ -16,6 +19,10 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5050))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 APP_NAME = os.getenv("APP_NAME", "info-service")
+VAULT_ENABLED = os.getenv("VAULT_ENABLED", "false").lower() == "true"
+VAULT_SECRETS_PATH = os.getenv("VAULT_SECRETS_PATH", "/vault/secrets")
+
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits.txt")
 
 app = Flask(__name__)
 start_time = time.time()
@@ -58,7 +65,116 @@ process_memory_bytes = Gauge(
     'Memory usage of the Python process in bytes'
 )
 
+vault_secrets_info = Gauge(
+    'vault_secrets_info',
+    'Information about Vault secrets',
+    ['format', 'version']
+)
+
+visits_total = Counter(
+    'visits_total',
+    'Total number of visits to the root endpoint'
+)
+
 request_counter = 0
+
+def read_visits():
+    """Read visits count from file with locking"""
+    try:
+        os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+        
+        with open(VISITS_FILE, 'a+') as f:
+            fcntl.flock(f, fcntl.LOCK_SH)
+            f.seek(0)
+            content = f.read().strip()
+            fcntl.flock(f, fcntl.LOCK_UN)
+            
+            if content:
+                return int(content)
+            return 0
+    except Exception as e:
+        logger.error(f"Error reading visits file: {e}")
+        return 0
+
+def write_visits(count):
+    """Write visits count to file with locking"""
+    try:
+        with open(VISITS_FILE, 'w') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.write(str(count))
+            fcntl.flock(f, fcntl.LOCK_UN)
+        return True
+    except Exception as e:
+        logger.error(f"Error writing visits file: {e}")
+        return False
+
+def increment_visits():
+    """Increment visits count atomically"""
+    current = read_visits()
+    new_count = current + 1
+    if write_visits(new_count):
+        visits_total.inc()
+        return new_count
+    return current
+
+def load_vault_secrets():
+    """Load secrets from Vault injected files"""
+    secrets = {
+        "env": {},
+        "json": None,
+        "yaml": None,
+        "formats": []
+    }
+    
+    vault_path = Path(VAULT_SECRETS_PATH)
+    
+    if not vault_path.exists():
+        logger.info("Vault secrets path not found, skipping")
+        return secrets
+    
+    env_file = vault_path / ".env"
+    if env_file.exists():
+        logger.info("Loading secrets from .env file")
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('export ') and '=' in line:
+                    parts = line.replace('export ', '', 1).split('=', 1)
+                    if len(parts) == 2:
+                        key, value = parts
+                        value = value.strip().strip('"').strip("'")
+                        secrets["env"][key] = value
+                        os.environ[key] = value
+        secrets["formats"].append("env")
+        vault_secrets_info.labels(format='env', version='1').set(1)
+    
+    json_file = vault_path / "config.json"
+    if json_file.exists():
+        logger.info("Loading secrets from config.json")
+        try:
+            with open(json_file) as f:
+                secrets["json"] = json.load(f)
+            secrets["formats"].append("json")
+            vault_secrets_info.labels(format='json', version='1').set(1)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON: {e}")
+    
+    yaml_file = vault_path / "config.yaml"
+    if yaml_file.exists():
+        logger.info("Loading secrets from config.yaml")
+        try:
+            with open(yaml_file) as f:
+                secrets["yaml"] = yaml.safe_load(f)
+            secrets["formats"].append("yaml")
+            vault_secrets_info.labels(format='yaml', version='1').set(1)
+        except:
+            logger.error(f"Failed to parse YAML: {e}")
+    
+    if secrets["json"] and "_metadata" in secrets["json"]:
+        version = secrets["json"]["_metadata"].get("version", 1)
+        vault_secrets_info.labels(format='json', version=str(version)).set(1)
+    
+    return secrets
 
 def update_process_metrics():
     """Update process-level metrics"""
@@ -122,14 +238,20 @@ def main_info():
     try:
         time.sleep(random.uniform(0.01, 0.1))
         
+        visit_count = increment_visits()
+        
         with system_info_duration.time():
             uptime_seconds = int(time.time() - start_time)
             hours = uptime_seconds // 3600
             minutes = (uptime_seconds % 3600) // 60
 
-            # Получаем информацию о процессе
             process = psutil.Process()
             memory_info = process.memory_info()
+            
+            vault_secrets = load_vault_secrets() if VAULT_ENABLED else {}
+            
+            db_password = os.getenv("db_password", os.getenv("DB_PASSWORD", "not-set"))
+            api_key = os.getenv("api_key", os.getenv("API_KEY", "not-set"))
             
             response = {
                 "service": {
@@ -165,16 +287,54 @@ def main_info():
                     "/": "Main service information",
                     "/health": "Health check endpoint",
                     "/metrics": "Prometheus metrics endpoint",
-                    "/slow": "Endpoint with artificial delay for testing"
+                    "/slow": "Endpoint with artificial delay for testing",
+                    "/secrets": "Show Vault secrets info (if enabled)",
+                    "/reload": "Trigger secrets reload (demo only)",
+                    "/visits": "Show total visits count"
+                },
+                "visits": {
+                    "total": visit_count
                 }
             }
+            
+            if VAULT_ENABLED:
+                response["vault"] = {
+                    "enabled": True,
+                    "secrets_path": VAULT_SECRETS_PATH,
+                    "secrets_available": len(vault_secrets.get("env", {})) > 0,
+                    "formats": vault_secrets.get("formats", []),
+                    "env_keys": list(vault_secrets.get("env", {}).keys()),
+                    "demo_values": vault_secrets.get("env", {}) if DEBUG else {
+                        k: "***hidden***" for k in vault_secrets.get("env", {}).keys()
+                    }
+                }
+                
+                if vault_secrets.get("json"):
+                    response["vault"]["json_metadata"] = vault_secrets["json"].get("_metadata", {})
+                
+                response["secrets_demo"] = {
+                    "db_password_exists": db_password != "not-set",
+                    "api_key_exists": api_key != "not-set",
+                    "db_password_preview": db_password[:3] + "***" if db_password != "not-set" else "not-set"
+                }
 
-        logger.info("Main endpoint processed successfully")
+        logger.info(f"Main endpoint processed, visit #{visit_count}")
         return jsonify(response)
     
     except Exception as e:
         logger.error(f"Error in main endpoint: {e}")
         return jsonify({"error": "Internal server error"}), 500
+
+@app.route("/visits")
+def visits_endpoint():
+    """Return current visits count"""
+    endpoint_calls.labels(endpoint='/visits').inc()
+    count = read_visits()
+    return jsonify({
+        "visits": count,
+        "file": VISITS_FILE,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
 
 @app.route("/health")
 def health_check():
@@ -186,7 +346,67 @@ def health_check():
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": int(time.time() - start_time)
     }
+    
+    try:
+        visits = read_visits()
+        response["visits_file"] = {
+            "path": VISITS_FILE,
+            "exists": os.path.exists(VISITS_FILE),
+            "readable": True,
+            "current_count": visits
+        }
+    except Exception as e:
+        response["visits_file"] = {
+            "path": VISITS_FILE,
+            "exists": False,
+            "error": str(e)
+        }
+    
+    if VAULT_ENABLED:
+        vault_path = Path(VAULT_SECRETS_PATH)
+        response["vault"] = {
+            "secrets_mounted": vault_path.exists(),
+            "secrets_files": [f.name for f in vault_path.glob("*")] if vault_path.exists() else []
+        }
+    
     return jsonify(response), 200
+
+@app.route("/secrets")
+def secrets_info():
+    """Show secrets information (debug endpoint)"""
+    endpoint_calls.labels(endpoint='/secrets').inc()
+    
+    if not VAULT_ENABLED:
+        return jsonify({"error": "Vault integration not enabled"}), 404
+    
+    vault_secrets = load_vault_secrets()
+    
+    if DEBUG:
+        return jsonify(vault_secrets)
+    else:
+        return jsonify({
+            "enabled": True,
+            "formats": vault_secrets.get("formats", []),
+            "secrets_count": len(vault_secrets.get("env", {})),
+            "json_available": vault_secrets.get("json") is not None,
+            "yaml_available": vault_secrets.get("yaml") is not None
+        })
+
+@app.route("/reload", methods=["POST"])
+def reload_secrets():
+    """Force reload secrets (demo endpoint)"""
+    endpoint_calls.labels(endpoint='/reload').inc()
+    
+    if not VAULT_ENABLED:
+        return jsonify({"error": "Vault integration not enabled"}), 404
+    
+    secrets = load_vault_secrets()
+    
+    return jsonify({
+        "status": "reloaded",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "formats_found": secrets.get("formats", [])
+    })
 
 @app.route("/slow")
 def slow_endpoint():
@@ -211,6 +431,17 @@ def internal_error(error):
 
 if __name__ == "__main__":
     update_process_metrics()
+    
+    initial_count = read_visits()
+    logger.info(f"Starting with visits count: {initial_count}")
+    
+    if VAULT_ENABLED:
+        logger.info(f"Vault integration enabled, looking for secrets in {VAULT_SECRETS_PATH}")
+        vault_secrets = load_vault_secrets()
+        logger.info(f"Found secrets formats: {vault_secrets.get('formats', [])}")
+    
     logger.info(f"Starting {APP_NAME} on {HOST}:{PORT}")
     logger.info(f"Metrics available at http://{HOST}:{PORT}/metrics")
+    logger.info(f"Visits file: {VISITS_FILE}")
+    logger.info(f"Debug mode: {DEBUG}")
     app.run(host=HOST, port=PORT, debug=DEBUG)

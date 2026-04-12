@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "info-service.fullname" . }}-config
+  labels:
+    {{- include "info-service.labels" . | nindent 4 }}
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/configmap-file.yaml") . | sha256sum }}
+data:
+  config.json: |
+{{ .Files.Get "files/config.json" | indent 4 }}

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  info-service:
+    build: .
+    container_name: info-service
+    ports:
+      - "5050:5050"
+    environment:
+      - APP_NAME=info-service-dev
+      - DEBUG=true
+      - VISITS_FILE=/data/visits.txt
+    volumes:
+      - visits-data:/data
+    restart: unless-stopped
+
+volumes:
+  visits-data:

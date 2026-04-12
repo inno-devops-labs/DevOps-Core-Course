@@ -69,3 +69,14 @@ podAntiAffinity:
           values:
           - info-service
       topologyKey: kubernetes.io/hostname
+
+environment: "production"
+debug: false
+logLevel: "WARNING"
+
+visitsFile: "/data/visits.txt"
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: "standard"

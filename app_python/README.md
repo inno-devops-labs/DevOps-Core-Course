@@ -143,6 +143,29 @@ docker pull <your-username>/devops-info-service:latest
 docker run -p 5000:5000 <your-username>/devops-info-service:latest
 ```
 
+### Persistence Features
+
+The application now tracks visit counts persistently:
+
+- **Endpoint**: `/visits` returns current visit count
+- **Storage**: Count stored in `/data/visits.txt`
+- **File locking**: Uses `fcntl` for concurrent access safety
+- **Persistence**: Data survives container restarts via Docker volumes
+
+### Testing Persistence
+
+```bash
+# Make requests
+curl http://localhost:5050/
+curl http://localhost:5050/visits
+
+# Restart container
+docker-compose restart
+
+# Verify count persisted
+curl http://localhost:5050/visits
+```
+
 ### Container Details
 
 - **Base Image:** python:3.13-slim

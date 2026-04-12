@@ -25,6 +25,12 @@ spec:
         vault.hashicorp.com/agent-inject-file-config.json: "config.json"
         vault.hashicorp.com/agent-inject-file-config.yaml: "config.yaml"
         vault.hashicorp.com/agent-inject-period: "30s"
+        checksum/config: {{ include (print $.Template.BasePath "/configmap-file.yaml") . | sha256sum }}
+        checksum/env: {{ include (print $.Template.BasePath "/configmap-env.yaml") . | sha256sum }}
+        {{- if .Values.vault.enabled }}
+        {{- include "info-service.vault.annotations" . | nindent 8 }}
+        {{- end }}
+        helm.sh/restart: {{ now | quote }}
       {{- end }}
     spec:
       serviceAccountName: {{ include "info-service.serviceAccountName" . }}
@@ -37,37 +43,39 @@ spec:
         - name: vault-secrets
           mountPath: /vault/secrets
       volumes:
+      {{- if .Values.vault.enabled }}
       - name: vault-secrets
+        emptyDir: {}
+      {{- end }}
+      - name: config-volume
+        configMap:
+          name: {{ include "info-service.fullname" . }}-config
+      {{- if .Values.persistence.enabled }}
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: {{ include "info-service.fullname" . }}-data
+      {{- else }}
+      - name: data-volume
         emptyDir: {}
       {{- end }}
       containers:
       - name: {{ .Chart.Name }}
-        securityContext:
-          {{- toYaml .Values.securityContext | nindent 10 }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        ports:
-        - name: http
-          containerPort: {{ .Values.service.targetPort }}
-          protocol: TCP
+        volumeMounts:
+        {{- if .Values.vault.enabled }}
+        - name: vault-secrets
+          mountPath: /vault/secrets
+          readOnly: true
+        {{- end }}
+        - name: config-volume
+          mountPath: {{ .Values.config.mountPath }}
+          readOnly: true
+        - name: data-volume
+          mountPath: /data
         env:
         {{- range $key, $value := .Values.env }}
         - name: {{ $key }}
           value: {{ $value | quote }}
         {{- end }}
-        {{- if not .Values.vault.enabled }}
-        {{- if .Values.secrets.enabled }}
         envFrom:
-        - secretRef:
-            name: {{ include "info-service.fullname" . }}-secrets
-        {{- end }}
-        {{- end }}
-        {{- include "common-lib.resources" .Values.resources | nindent 8 }}
-        {{- include "common-lib.probes.liveness" .Values.livenessProbe | nindent 8 }}
-        {{- include "common-lib.probes.readiness" .Values.readinessProbe | nindent 8 }}
-        {{- if .Values.vault.enabled }}
-        volumeMounts:
-        - name: vault-secrets
-          mountPath: /vault/secrets
-          readOnly: true
-        {{- end }}
+        - configMapRef:
+            name: {{ include "info-service.fullname" . }}-env

@@ -39,5 +39,9 @@ secrets:
     api_key: dev-api-key
     db_password: dev-db-pass
 
+persistence:
+  enabled: true
+  size: 50Mi
+
 podSecurityContext: {}
 securityContext: {}
