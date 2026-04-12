@@ -1,0 +1,14 @@
+{
+  "app_name": "devops-info-service",
+  "environment": "dev",
+  "version": "1.0.0",
+  "features": {
+    "metrics_enabled": true,
+    "debug_mode": false,
+    "visits_tracking": true
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "json"
+  }
+}

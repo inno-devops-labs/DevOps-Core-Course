@@ -134,6 +134,26 @@ curl http://localhost:5000/
 }
 ```
 
+### GET /visits
+
+**Description:** Returns the current visit counter value
+
+**Response:** JSON object with visit count
+
+**Example Request:**
+```bash
+curl http://localhost:5000/visits
+```
+
+**Example Response:**
+```json
+{
+  "visits": 42
+}
+```
+
+The visit counter increments on each request to `/` and is persisted to disk at `/data/visits`. The counter survives container restarts when a volume is mounted at `/data`.
+
 ### GET /health
 
 **Description:** Health check endpoint for monitoring and orchestration tools (e.g., Kubernetes probes)
@@ -165,6 +185,7 @@ The application can be configured using environment variables:
 | `HOST` | `0.0.0.0` | Host address to bind (0.0.0.0 = all interfaces) |
 | `PORT` | `5000` | Port number to listen on |
 | `DEBUG` | `false` | Enable Flask debug mode (true/false) |
+| `VISITS_FILE` | `/data/visits` | Path to the file storing the visit counter |
 
 
 ## Testing the Service

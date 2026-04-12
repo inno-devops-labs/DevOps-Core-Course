@@ -8,6 +8,7 @@ import time
 import socket
 import platform
 import logging
+import threading
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request, Response
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
@@ -51,6 +52,26 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # Application start time for uptime calculation
 START_TIME = datetime.now(timezone.utc)
+
+# ── Visits counter ──────────────────────────────────────────────────
+VISITS_FILE = os.getenv('VISITS_FILE', '/data/visits')
+_visits_lock = threading.Lock()
+
+
+def _read_visits():
+    try:
+        with open(VISITS_FILE, 'r') as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def _write_visits(count):
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    tmp = VISITS_FILE + '.tmp'
+    with open(tmp, 'w') as f:
+        f.write(str(count))
+    os.replace(tmp, VISITS_FILE)
 
 # ── Prometheus metrics ──────────────────────────────────────────────
 http_requests_total = Counter(
@@ -181,6 +202,10 @@ def index():
     endpoint_calls.labels(endpoint='/').inc()
     uptime = get_uptime()
 
+    with _visits_lock:
+        visits = _read_visits() + 1
+        _write_visits(visits)
+
     response_data = {
         'service': {
             'name': 'devops-info-service',
@@ -196,11 +221,17 @@ def index():
             'timezone': 'UTC'
         },
         'request': get_request_info(),
+        'visits': visits,
         'endpoints': [
             {
                 'path': '/',
                 'method': 'GET',
                 'description': 'Service information'
+            },
+            {
+                'path': '/visits',
+                'method': 'GET',
+                'description': 'Visit counter'
             },
             {
                 'path': '/health',
@@ -216,6 +247,14 @@ def index():
     }
 
     return jsonify(response_data)
+
+
+@app.route('/visits')
+def visits():
+    """Return the current visit count."""
+    endpoint_calls.labels(endpoint='/visits').inc()
+    count = _read_visits()
+    return jsonify({'visits': count})
 
 
 @app.route('/health')

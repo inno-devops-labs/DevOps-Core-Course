@@ -7,7 +7,8 @@ WORKDIR /app
 # Create non-root user for security
 # -r creates a system user, -s /bin/bash sets shell, -u 1000 sets UID
 RUN useradd -r -s /bin/bash -u 1000 appuser && \
-    chown -R appuser:appuser /app
+    mkdir -p /data && \
+    chown -R appuser:appuser /app /data
 
 # Copy requirements first for better layer caching
 COPY requirements.txt .

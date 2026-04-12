@@ -16,6 +16,7 @@ spec:
       labels:
         {{- include "python-app.selectorLabels" . | nindent 8 }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
@@ -50,3 +51,21 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "python-app.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "python-app.fullname" . }}-env
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "python-app.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "python-app.fullname" . }}-data
+        {{- end }}

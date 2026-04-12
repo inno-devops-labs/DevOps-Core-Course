@@ -50,6 +50,17 @@ secrets:
   username: "admin"
   password: "changeme"
 
+config:
+  appName: "devops-info-service"
+  environment: "dev"
+  logLevel: "INFO"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  accessMode: ReadWriteOnce
+  storageClass: ""
+
 vault:
   enabled: false
   role: "python-app"
