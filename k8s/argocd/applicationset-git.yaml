@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: git-generator-appset
+  namespace: argocd
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/sayfetik/DevOps-Core-Course.git
+        revision: HEAD
+        directories:
+          - path: k8s/charts/*
+  
+  template:
+    metadata:
+      name: '{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/sayfetik/DevOps-Core-Course.git
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'

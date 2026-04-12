@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: info-service-dev
+  namespace: argocd
+spec:
+  project: info-service
+  
+  source:
+    repoURL: https://github.com/sayfetik/DevOps-Core-Course.git
+    targetRevision: HEAD
+    path: k8s/info-service-chart
+    helm:
+      valueFiles:
+        - values-dev.yaml
+      parameters:
+        - name: sayfetik/info-service-python
+          value: latest
+        - name: environment
+          value: development
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

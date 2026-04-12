@@ -1,0 +1,28 @@
+replicaCount: 2
+
+image:
+  tag: staging-latest
+  pullPolicy: Always
+
+service:
+  type: NodePort
+  nodePort: 30084
+
+environment: staging
+debug: true
+logLevel: "DEBUG"
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "100m"
+
+persistence:
+  enabled: true
+  size: 100Mi
+
+vault:
+  enabled: false
