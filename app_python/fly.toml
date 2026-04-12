@@ -1,0 +1,57 @@
+app = "info-service-fly"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 5050
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 2
+  max_machines_running = 10
+  processes = ["app"]
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 5050
+    path = "/health"
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "30s"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[mounts]
+  source = "data_volume"
+  destination = "/data"
+
+[[services]]
+  internal_port = 5050
+  protocol = "tcp"
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 100
+    soft_limit = 50
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls"]
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.http_checks]]
+    interval = "10s"
+    grace_period = "30s"
+    method = "get"
+    path = "/health"
+    protocol = "http"
+    timeout = "2s"
