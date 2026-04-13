@@ -49,14 +49,41 @@ spec:
               value: {{ .Values.app.version | quote }}
             - name: APP_DESCRIPTION
               value: {{ .Values.app.description | quote }}
-          {{- if .Values.secrets.create }}
+            - name: VISITS_FILE
+              value: {{ .Values.persistence.mountPath }}/visits
           envFrom:
+            {{- if .Values.configMap.env.enabled }}
+            - configMapRef:
+                name: {{ include "python-app.configEnvName" . }}
+            {{- end }}
+            {{- if .Values.secrets.create }}
             - secretRef:
                 name: {{ include "python-app.secretName" . }}
-          {{- end }}
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.configMap.file.enabled }}
+            - name: config-volume
+              mountPath: {{ .Values.configMap.file.mountDir }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
+      volumes:
+        {{- if .Values.configMap.file.enabled }}
+        - name: config-volume
+          configMap:
+            name: {{ include "python-app.configFileName" . }}
+        {{- end }}
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "python-app.pvcName" . }}
+        {{- end }}

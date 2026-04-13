@@ -8,10 +8,16 @@ image:
   tag: "latest"
   pullPolicy: Never
 
+
 app:
   name: python-app
-  version: lab11
+  version: lab12
   description: DevOps course info service
+  environment: dev
+  logLevel: info
+  featureFlags:
+    visitsEnabled: true
+    metricsEnabled: true
 
 service:
   type: NodePort
@@ -92,3 +98,21 @@ hooks:
       - sh
       - -c
       - echo '[post-install] smoke test placeholder' && sleep 3 && echo '[post-install] installation looks good'
+
+
+configMap:
+  file:
+    enabled: true
+    name: ""
+    source: files/config.json
+    mountDir: /config
+  env:
+    enabled: true
+    name: ""
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  existingClaim: ""
+  mountPath: /data

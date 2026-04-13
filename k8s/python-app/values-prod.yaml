@@ -5,7 +5,9 @@ image:
   pullPolicy: Never
 
 app:
-  version: lab11-prod
+  version: lab12-prod
+  environment: prod
+  logLevel: info
 
 service:
   type: LoadBalancer
@@ -36,3 +38,15 @@ livenessProbe:
   periodSeconds: 10
   timeoutSeconds: 2
   failureThreshold: 3
+
+configMap:
+  file:
+    enabled: true
+  env:
+    enabled: true
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data

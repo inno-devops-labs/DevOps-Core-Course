@@ -1,0 +1,26 @@
+{{- if .Values.configMap.file.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "python-app.configFileName" . }}
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+data:
+  config.json: |-
+{{ .Files.Get .Values.configMap.file.source | indent 4 }}
+{{- end }}
+
+{{- if .Values.configMap.env.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "python-app.configEnvName" . }}
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.app.environment | quote }}
+  LOG_LEVEL: {{ .Values.app.logLevel | quote }}
+  FEATURE_VISITS_ENABLED: {{ .Values.app.featureFlags.visitsEnabled | quote }}
+  FEATURE_METRICS_ENABLED: {{ .Values.app.featureFlags.metricsEnabled | quote }}
+{{- end }}

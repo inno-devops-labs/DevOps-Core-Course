@@ -1,0 +1,13 @@
+{
+  "applicationName": "python-app",
+  "environment": "dev",
+  "featureFlags": {
+    "visitsEnabled": true,
+    "metricsEnabled": true,
+    "vaultEnabled": false
+  },
+  "settings": {
+    "logLevel": "info",
+    "visitsFile": "/data/visits"
+  }
+}

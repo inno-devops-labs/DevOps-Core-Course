@@ -49,3 +49,23 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "python-app.secretName" -}}
 {{- default (printf "%s-secret" (include "python-app.fullname" .)) .Values.secrets.name }}
 {{- end }}
+
+
+{{/* ConfigMap name for file-based config. */}}
+{{- define "python-app.configFileName" -}}
+{{- default (printf "%s-config" (include "python-app.fullname" .)) .Values.configMap.file.name }}
+{{- end }}
+
+{{/* ConfigMap name for env config. */}}
+{{- define "python-app.configEnvName" -}}
+{{- default (printf "%s-env" (include "python-app.fullname" .)) .Values.configMap.env.name }}
+{{- end }}
+
+{{/* PVC name. */}}
+{{- define "python-app.pvcName" -}}
+{{- if .Values.persistence.existingClaim }}
+{{- .Values.persistence.existingClaim }}
+{{- else }}
+{{- printf "%s-data" (include "python-app.fullname" .) }}
+{{- end }}
+{{- end }}
