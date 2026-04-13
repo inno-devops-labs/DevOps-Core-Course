@@ -4,18 +4,28 @@ Unit tests for the DevOps Info Service API.
 Tests cover:
 - GET / endpoint with all required fields and structure
 - GET /health endpoint with status verification
+- GET /visits endpoint and persisted counter updates
 - Error cases and edge conditions
 """
+from datetime import datetime, timezone
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
+
+import app as app_module
 from app import app
-from datetime import datetime, timezone
 
 
 @pytest.fixture
-def client():
+def client(tmp_path, monkeypatch):
     """Create a test client for the FastAPI app."""
-    return TestClient(app)
+    visits_file = tmp_path / "data" / "visits"
+    monkeypatch.setenv("VISITS_FILE", str(visits_file))
+    app_module.ensure_visits_storage()
+
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 class TestRootEndpoint:
@@ -120,7 +130,7 @@ class TestRootEndpoint:
         endpoints = response.json()["endpoints"]
         
         assert isinstance(endpoints, list), "Endpoints should be a list"
-        assert len(endpoints) >= 2, "Should have at least 2 endpoints"
+        assert len(endpoints) >= 4, "Should have at least 4 endpoints"
         
         for endpoint in endpoints:
             assert "path" in endpoint
@@ -134,6 +144,8 @@ class TestRootEndpoint:
         paths = [ep["path"] for ep in endpoints]
         assert "/" in paths
         assert "/health" in paths
+        assert "/visits" in paths
+        assert "/metrics" in paths
 
     def test_root_endpoint_with_custom_user_agent(self, client):
         """Test that custom user agent is captured correctly."""
@@ -224,6 +236,36 @@ class TestHealthEndpoint:
         
         # Second uptime should be >= first (allowing for same second)
         assert uptime2 >= uptime1, "Uptime should not decrease"
+
+
+class TestVisitsEndpoint:
+    """Test suite for the /visits endpoint and file persistence."""
+
+    def test_visits_endpoint_returns_zero_before_root_requests(self, client):
+        """Test that visits counter starts at zero for a fresh file."""
+        response = client.get("/visits")
+
+        assert response.status_code == 200
+        assert response.json() == {"visits": 0}
+
+    def test_root_requests_increment_visits_counter(self, client):
+        """Test that each GET / call increments the persisted counter."""
+        client.get("/")
+        client.get("/")
+
+        response = client.get("/visits")
+
+        assert response.status_code == 200
+        assert response.json()["visits"] == 2
+
+    def test_visits_counter_is_written_to_file(self, client):
+        """Test that the counter value is stored in the configured file."""
+        client.get("/")
+        client.get("/")
+        visits_file = Path(app_module.get_visits_file_path())
+
+        assert visits_file.exists()
+        assert visits_file.read_text(encoding="utf-8").strip() == "2"
 
 
 class TestErrorHandling:

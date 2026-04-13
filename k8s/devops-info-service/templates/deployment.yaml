@@ -37,6 +37,15 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.configFileName" . }}
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.pvcName" . }}
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -45,11 +54,21 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
-          {{- if .Values.credentialsSecret.enabled }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.envConfigName" . }}
+          {{- if .Values.credentialsSecret.enabled }}
             - secretRef:
                 name: {{ include "devops-info-service.credentialsSecretName" . }}
           {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:

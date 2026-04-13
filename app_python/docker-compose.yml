@@ -1,0 +1,12 @@
+services:
+  devops-info-service:
+    build:
+      context: .
+    image: nexonm22/devops-info-service:lab12
+    container_name: devops-info-service
+    ports:
+      - "8000:8000"
+    environment:
+      VISITS_FILE: /data/visits
+    volumes:
+      - ./data:/data

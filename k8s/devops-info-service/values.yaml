@@ -2,7 +2,7 @@ replicaCount: 5
 
 image:
   repository: nexonm22/devops-info-service
-  tag: "lab08"
+  tag: "lab12"
   pullPolicy: IfNotPresent
 
 nameOverride: ""
@@ -25,6 +25,28 @@ vaultInjector:
   role: devops-info-service
   secretPath: secret/data/devops-info-service/config
   secretFileName: config
+
+appConfig:
+  name: devops-info-service
+  environment: default
+  features:
+    visitsEndpoint: true
+    metricsEndpoint: true
+  settings:
+    logLevel: info
+    visitsFile: /data/visits
+
+envConfig:
+  APP_NAME: devops-info-service
+  APP_ENV: default
+  LOG_LEVEL: info
+  VISITS_FILE: /data/visits
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data
 
 podAnnotations: {}
 

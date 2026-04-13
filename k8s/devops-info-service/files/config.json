@@ -1,0 +1,14 @@
+{
+  "application": {
+    "name": "{{ .Values.appConfig.name }}",
+    "environment": "{{ .Values.appConfig.environment }}"
+  },
+  "features": {
+    "visitsEndpoint": {{ .Values.appConfig.features.visitsEndpoint }},
+    "metricsEndpoint": {{ .Values.appConfig.features.metricsEndpoint }}
+  },
+  "settings": {
+    "logLevel": "{{ .Values.appConfig.settings.logLevel }}",
+    "visitsFile": "{{ .Values.appConfig.settings.visitsFile }}"
+  }
+}

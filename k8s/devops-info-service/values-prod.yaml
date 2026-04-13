@@ -1,7 +1,16 @@
 replicaCount: 5
 
 image:
-  tag: "lab08"
+  tag: "lab12"
+
+appConfig:
+  environment: prod
+  settings:
+    logLevel: info
+
+envConfig:
+  APP_ENV: prod
+  LOG_LEVEL: info
 
 resources:
   requests:
@@ -15,6 +24,10 @@ service:
   type: LoadBalancer
   port: 80
   targetPort: http
+
+persistence:
+  size: 100Mi
+  storageClass: ""
 
 livenessProbe:
   httpGet:

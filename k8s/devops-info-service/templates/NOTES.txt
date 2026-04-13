@@ -14,3 +14,4 @@ Access via:   kubectl get svc {{ include "devops-info-service.fullname" . }} -o 
 {{- end }}
 
 Health endpoint: /health
+Visits endpoint: /visits

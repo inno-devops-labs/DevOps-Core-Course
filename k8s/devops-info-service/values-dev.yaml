@@ -1,7 +1,16 @@
 replicaCount: 1
 
 image:
-  tag: "lab08"
+  tag: "lab12"
+
+appConfig:
+  environment: dev
+  settings:
+    logLevel: debug
+
+envConfig:
+  APP_ENV: dev
+  LOG_LEVEL: debug
 
 resources:
   requests:
@@ -16,6 +25,10 @@ service:
   port: 80
   targetPort: http
   nodePort: 30081
+
+persistence:
+  size: 100Mi
+  storageClass: ""
 
 livenessProbe:
   httpGet:

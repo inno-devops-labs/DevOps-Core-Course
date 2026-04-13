@@ -60,3 +60,24 @@ Secret object name for application credentials (Helm-managed).
 {{- define "devops-info-service.credentialsSecretName" -}}
 {{- printf "%s-%s" (include "devops-info-service.fullname" .) .Values.credentialsSecret.nameSuffix | trunc 63 | trimSuffix "-" }}
 {{- end }}
+
+{{/*
+ConfigMap name for file-based application configuration.
+*/}}
+{{- define "devops-info-service.configFileName" -}}
+{{- printf "%s-config" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+ConfigMap name for environment variables.
+*/}}
+{{- define "devops-info-service.envConfigName" -}}
+{{- printf "%s-env" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+PersistentVolumeClaim name for application data.
+*/}}
+{{- define "devops-info-service.pvcName" -}}
+{{- printf "%s-data" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}

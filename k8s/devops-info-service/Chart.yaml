@@ -3,7 +3,7 @@ name: devops-info-service
 description: Helm chart for the devops-info-service FastAPI Python application
 type: application
 version: 0.1.0
-appVersion: "lab08"
+appVersion: "lab12"
 keywords:
   - python
   - fastapi
