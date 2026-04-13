@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 3
 
 nameOverride: ""
 fullnameOverride: ""
@@ -12,7 +12,7 @@ service:
   type: NodePort
   port: 80
   targetPort: 5000
-  nodePort: 30080
+  nodePort: 30083
 
 container:
   port: 5000
@@ -117,3 +117,6 @@ rollout:
   blueGreen:
     autoPromotionEnabled: false
     scaleDownDelaySeconds: 30
+
+statefulset:
+  enabled: true

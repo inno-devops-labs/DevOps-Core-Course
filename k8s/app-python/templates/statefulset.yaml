@@ -1,20 +1,18 @@
-{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "app-python.fullname" . }}
   labels:
     {{- include "app-python.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "app-python.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       {{- include "app-python.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -56,7 +54,7 @@ spec:
               mountPath: /config
               readOnly: true
             {{- if .Values.persistence.enabled }}
-            - name: data-volume
+            - name: data
               mountPath: /data
             {{- end }}
           securityContext:
@@ -87,9 +85,18 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "app-python.fileConfigMapName" . }}
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "app-python.pvcName" . }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
         {{- end }}
+  {{- end }}
 {{- end }}
