@@ -60,6 +60,18 @@ readinessProbe:
   timeoutSeconds: 2
   failureThreshold: 3
 
+configMap:
+  APP_ENV: "default"
+  LOG_LEVEL: "info"
+  FEATURES_VISITS: "true"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  accessMode: ReadWriteOnce
+  storageClass: ""
+  mountPath: /data
+
 secrets:
   USERNAME: "placeholder-user"
   PASSWORD: "placeholder-pass"

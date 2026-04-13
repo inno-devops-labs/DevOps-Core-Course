@@ -17,6 +17,15 @@ service:
   port: 80
   targetPort: 8000
 
+configMap:
+  APP_ENV: "production"
+  LOG_LEVEL: "warn"
+  FEATURES_VISITS: "true"
+
+persistence:
+  enabled: true
+  size: 1Gi
+
 livenessProbe:
   httpGet:
     path: /health

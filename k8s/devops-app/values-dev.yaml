@@ -15,6 +15,15 @@ service:
   type: NodePort
   nodePort: 30080
 
+configMap:
+  APP_ENV: "dev"
+  LOG_LEVEL: "debug"
+  FEATURES_VISITS: "true"
+
+persistence:
+  enabled: true
+  size: 50Mi
+
 livenessProbe:
   httpGet:
     path: /health

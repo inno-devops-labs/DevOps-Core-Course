@@ -1,0 +1,13 @@
+{
+  "app_name": "devops-app",
+  "environment": "default",
+  "features": {
+    "visits_counter": true,
+    "prometheus_metrics": true,
+    "json_logging": true
+  },
+  "server": {
+    "graceful_shutdown_timeout": 30,
+    "max_request_size": 1048576
+  }
+}

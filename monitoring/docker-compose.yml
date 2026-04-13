@@ -141,6 +141,9 @@ services:
     environment:
       - APP_NAME=devops-python
       - APP_PORT=8000
+      - DATA_DIR=/data
+    volumes:
+      - app-python-data:/data
     networks:
       - logging
     labels:
@@ -175,6 +178,9 @@ services:
     environment:
       - APP_NAME=devops-python-bonus
       - APP_PORT=8000
+      - DATA_DIR=/data
+    volumes:
+      - app-python-bonus-data:/data
     networks:
       - logging
     labels:
@@ -207,3 +213,5 @@ volumes:
   loki-data:
   grafana-data:
   prometheus-data:
+  app-python-data:
+  app-python-bonus-data:
