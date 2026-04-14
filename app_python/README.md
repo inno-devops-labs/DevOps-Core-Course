@@ -120,6 +120,24 @@ curl http://localhost:8080/
 }
 ```
 
+### `GET /visits`
+
+Returns the current visit counter value. The counter is incremented on each `GET /` request and persisted to `/data/visits`.
+
+**Example request:**
+
+```bash
+curl http://localhost:8080/visits
+```
+
+**Example response:**
+
+```json
+{
+  "visits": 42
+}
+```
+
 ### `GET /health`
 
 Simple health check endpoint for monitoring systems and Kubernetes probes.
@@ -151,6 +169,7 @@ The application supports the following environment variables:
 | `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `8080` | Server port |
 | `DEBUG` | `False` | Enable Flask debug mode |
+| `VISITS_FILE` | `/data/visits` | Path to the visits counter file |
 
 ## Project Structure
 

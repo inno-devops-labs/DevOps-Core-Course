@@ -32,3 +32,6 @@ venv/
 
 # Local course secrets (do not commit)
 k8s/COURSE_CREDENTIALS.local.md
+
+# macOS
+.DS_Store

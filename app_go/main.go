@@ -6,12 +6,55 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
 // Global variables
 var startTime = time.Now()
+
+var (
+	visitsFile = getEnvDefault("VISITS_FILE", "/data/visits")
+	visitsMu   sync.Mutex
+)
+
+func getEnvDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func readVisits() int {
+	data, err := os.ReadFile(visitsFile)
+	if err != nil {
+		return 0
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+func writeVisits(count int) {
+	_ = os.MkdirAll(filepath.Dir(visitsFile), 0755)
+	tmp := visitsFile + ".tmp"
+	_ = os.WriteFile(tmp, []byte(strconv.Itoa(count)), 0644)
+	_ = os.Rename(tmp, visitsFile)
+}
+
+func incrementVisits() int {
+	visitsMu.Lock()
+	defer visitsMu.Unlock()
+	count := readVisits() + 1
+	writeVisits(count)
+	return count
+}
 
 // Struct definitions for JSON response
 type ServiceInfo struct {
@@ -62,6 +105,10 @@ type HealthResponse struct {
 	Status        string `json:"status"`
 	Timestamp     string `json:"timestamp"`
 	UptimeSeconds int    `json:"uptime_seconds"`
+}
+
+type VisitsResponse struct {
+	Visits int `json:"visits"`
 }
 
 // Helper functions
@@ -116,58 +163,71 @@ func getClientIP(r *http.Request) string {
 func mainHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Request: %s %s", r.Method, r.URL.Path)
 
-	// Only handle root path
 	if r.URL.Path != "/" {
 		notFoundHandler(w, r)
 		return
 	}
 
+	visits := incrementVisits()
 	uptimeSeconds, uptimeHuman := getUptime()
 
-	info := ServiceInfo{
-		Service: Service{
-			Name:        "devops-info-service",
-			Version:     "1.0.0",
-			Description: "DevOps course info service",
-			Framework:   "Go net/http",
-		},
-		System: System{
-			Hostname:        getHostname(),
-			Platform:        runtime.GOOS,
-			PlatformVersion: runtime.Version(),
-			Architecture:    runtime.GOARCH,
-			CPUCount:        runtime.NumCPU(),
-			GoVersion:       runtime.Version(),
-		},
-		Runtime: Runtime{
-			UptimeSeconds: uptimeSeconds,
-			UptimeHuman:   uptimeHuman,
-			CurrentTime:   time.Now().UTC().Format(time.RFC3339Nano),
-			Timezone:      "UTC",
-		},
-		Request: Request{
-			ClientIP:  getClientIP(r),
-			UserAgent: r.UserAgent(),
-			Method:    r.Method,
-			Path:      r.URL.Path,
-		},
-		Endpoints: []Endpoint{
-			{
-				Path:        "/",
-				Method:      "GET",
-				Description: "Service information",
+	type ServiceInfoWithVisits struct {
+		ServiceInfo
+		Visits int `json:"visits"`
+	}
+
+	info := ServiceInfoWithVisits{
+		ServiceInfo: ServiceInfo{
+			Service: Service{
+				Name:        "devops-info-service",
+				Version:     "1.0.0",
+				Description: "DevOps course info service",
+				Framework:   "Go net/http",
 			},
-			{
-				Path:        "/health",
-				Method:      "GET",
-				Description: "Health check",
+			System: System{
+				Hostname:        getHostname(),
+				Platform:        runtime.GOOS,
+				PlatformVersion: runtime.Version(),
+				Architecture:    runtime.GOARCH,
+				CPUCount:        runtime.NumCPU(),
+				GoVersion:       runtime.Version(),
+			},
+			Runtime: Runtime{
+				UptimeSeconds: uptimeSeconds,
+				UptimeHuman:   uptimeHuman,
+				CurrentTime:   time.Now().UTC().Format(time.RFC3339Nano),
+				Timezone:      "UTC",
+			},
+			Request: Request{
+				ClientIP:  getClientIP(r),
+				UserAgent: r.UserAgent(),
+				Method:    r.Method,
+				Path:      r.URL.Path,
+			},
+			Endpoints: []Endpoint{
+				{Path: "/", Method: "GET", Description: "Service information"},
+				{Path: "/health", Method: "GET", Description: "Health check"},
+				{Path: "/visits", Method: "GET", Description: "Visit counter"},
 			},
 		},
+		Visits: visits,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(info); err != nil {
+		log.Printf("Error encoding response: %v", err)
+	}
+}
+
+func visitsHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Visits check: %s %s", r.Method, r.URL.Path)
+	visitsMu.Lock()
+	count := readVisits()
+	visitsMu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(VisitsResponse{Visits: count}); err != nil {
 		log.Printf("Error encoding response: %v", err)
 	}
 }
@@ -218,6 +278,7 @@ func main() {
 	// Setup routes
 	http.HandleFunc("/", mainHandler)
 	http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/visits", visitsHandler)
 
 	// Start server
 	log.Printf("Starting DevOps Info Service on %s", addr)

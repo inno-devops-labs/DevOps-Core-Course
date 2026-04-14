@@ -79,6 +79,22 @@ curl http://localhost:8080/
 }
 ```
 
+### `GET /visits`
+
+Returns the current visit counter. The counter increments on each `GET /` request and persists to `/data/visits`.
+
+**Request:**
+```bash
+curl http://localhost:8080/visits
+```
+
+**Response:**
+```json
+{
+  "visits": 42
+}
+```
+
 ### `GET /health`
 
 Health check endpoint.
@@ -103,6 +119,7 @@ curl http://localhost:8080/health
 |----------|---------|-------------|
 | `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `8080` | Server port |
+| `VISITS_FILE` | `/data/visits` | Path to the visits counter file |
 
 ## Docker
 

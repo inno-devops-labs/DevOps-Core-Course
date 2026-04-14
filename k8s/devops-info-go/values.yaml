@@ -65,5 +65,15 @@ vault:
     API_KEY={{ .Data.data.api_key }}
     {{- end -}}
 
+config:
+  environment: "dev"
+  logLevel: "INFO"
+  appName: "devops-info-go"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
 nameOverride: ""
 fullnameOverride: ""

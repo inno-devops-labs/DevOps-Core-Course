@@ -139,6 +139,8 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8080
+    volumes:
+      - app-python-data:/data
     networks:
       - logging
     labels:
@@ -169,6 +171,8 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8080
+    volumes:
+      - app-go-data:/data
     networks:
       - logging
     labels:
@@ -193,6 +197,8 @@ volumes:
   loki-data:
   grafana-data:
   prometheus-data:
+  app-python-data:
+  app-go-data:
 
 networks:
   logging:

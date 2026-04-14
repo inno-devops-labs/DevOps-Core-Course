@@ -20,9 +20,10 @@ spec:
     metadata:
       labels:
         {{- include "common.selectorLabels" . | nindent 8 }}
-      {{- with .Values.vault }}
-      {{- if .enabled }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.vault }}
+        {{- if .enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: {{ .role | quote }}
         vault.hashicorp.com/agent-inject-secret-config: {{ .secretPath | quote }}
@@ -30,8 +31,8 @@ spec:
         vault.hashicorp.com/agent-inject-template-config: |
           {{- .template | nindent 10 }}
         {{- end }}
-      {{- end }}
-      {{- end }}
+        {{- end }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "common.fullname" . }}
       containers:
@@ -48,9 +49,27 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "common.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "common.fullname" . }}-env
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "common.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-data
+        {{- end }}

@@ -8,6 +8,7 @@ import time
 import socket
 import platform
 import logging
+import threading
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
@@ -83,9 +84,36 @@ logger = logging.getLogger(__name__)
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 8080))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+VISITS_FILE = os.getenv('VISITS_FILE', '/data/visits')
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
+
+# Thread-safe visits counter backed by file
+_visits_lock = threading.Lock()
+
+
+def _read_visits():
+    try:
+        with open(VISITS_FILE, 'r') as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def _write_visits(count):
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    tmp = VISITS_FILE + '.tmp'
+    with open(tmp, 'w') as f:
+        f.write(str(count))
+    os.replace(tmp, VISITS_FILE)
+
+
+def increment_visits():
+    with _visits_lock:
+        count = _read_visits() + 1
+        _write_visits(count)
+        return count
 
 
 def get_system_info():
@@ -176,6 +204,7 @@ def metrics():
 def index():
     """Main endpoint - service and system information."""
     devops_info_endpoint_calls.labels(endpoint='/').inc()
+    visits = increment_visits()
     uptime = get_uptime()
     system = get_system_info()
 
@@ -186,6 +215,7 @@ def index():
             'description': 'DevOps course info service',
             'framework': 'Flask'
         },
+        'visits': visits,
         'system': system,
         'runtime': {
             'uptime_seconds': uptime['seconds'],
@@ -211,6 +241,11 @@ def index():
                 'description': 'Health check'
             },
             {
+                'path': '/visits',
+                'method': 'GET',
+                'description': 'Visit counter'
+            },
+            {
                 'path': '/metrics',
                 'method': 'GET',
                 'description': 'Prometheus metrics'
@@ -219,6 +254,13 @@ def index():
     }
 
     return jsonify(response)
+
+
+@app.route('/visits')
+def visits():
+    """Return current visit count."""
+    devops_info_endpoint_calls.labels(endpoint='/visits').inc()
+    return jsonify({'visits': _read_visits()})
 
 
 @app.route('/health')

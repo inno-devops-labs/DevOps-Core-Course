@@ -30,8 +30,11 @@ WORKDIR /app
 # Copy only the compiled binary from builder stage
 COPY --from=builder /build/devops-info-service .
 
+# Create data directory for visits persistence
+RUN mkdir -p /data
+
 # Change ownership to non-root user
-RUN chown appuser:appuser /app/devops-info-service
+RUN chown -R appuser:appuser /app /data
 
 # Switch to non-root user
 USER appuser

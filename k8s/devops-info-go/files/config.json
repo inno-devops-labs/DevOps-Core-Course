@@ -1,0 +1,13 @@
+{
+  "app_name": "devops-info-go",
+  "environment": "dev",
+  "version": "1.0.0",
+  "features": {
+    "debug_mode": false,
+    "visits_tracking": true
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "text"
+  }
+}

@@ -17,8 +17,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app.py .
 
+# Create data directory for visits persistence
+RUN mkdir -p /data
+
 # Change ownership to non-root user
-RUN chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /app /data
 
 # Switch to non-root user
 USER appuser
