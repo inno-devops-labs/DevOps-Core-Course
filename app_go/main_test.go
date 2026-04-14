@@ -4,13 +4,25 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
 
+func setupTestVisitsFile(t *testing.T) (cleanup func()) {
+	t.Helper()
+	dir := t.TempDir()
+	original := visitsFile
+	visitsFile = filepath.Join(dir, "visits")
+	return func() { visitsFile = original }
+}
+
 // --- GET / endpoint tests ---
 
 func TestMainHandler_StatusCode(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	mainHandler(w, req)
@@ -21,6 +33,8 @@ func TestMainHandler_StatusCode(t *testing.T) {
 }
 
 func TestMainHandler_ContentType(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	mainHandler(w, req)
@@ -32,6 +46,8 @@ func TestMainHandler_ContentType(t *testing.T) {
 }
 
 func TestMainHandler_ServiceFields(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	mainHandler(w, req)
@@ -53,6 +69,8 @@ func TestMainHandler_ServiceFields(t *testing.T) {
 }
 
 func TestMainHandler_SystemFields(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	mainHandler(w, req)
@@ -77,6 +95,8 @@ func TestMainHandler_SystemFields(t *testing.T) {
 }
 
 func TestMainHandler_RuntimeFields(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	mainHandler(w, req)
@@ -98,6 +118,8 @@ func TestMainHandler_RuntimeFields(t *testing.T) {
 }
 
 func TestMainHandler_RequestFields(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("User-Agent", "TestBot/1.0")
 	w := httptest.NewRecorder()
@@ -120,6 +142,8 @@ func TestMainHandler_RequestFields(t *testing.T) {
 }
 
 func TestMainHandler_Endpoints(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	mainHandler(w, req)
@@ -129,8 +153,8 @@ func TestMainHandler_Endpoints(t *testing.T) {
 		t.Fatalf("failed to decode JSON: %v", err)
 	}
 
-	if len(data.Endpoints) != 2 {
-		t.Fatalf("expected 2 endpoints, got %d", len(data.Endpoints))
+	if len(data.Endpoints) != 3 {
+		t.Fatalf("expected 3 endpoints, got %d", len(data.Endpoints))
 	}
 
 	paths := map[string]bool{}
@@ -142,6 +166,9 @@ func TestMainHandler_Endpoints(t *testing.T) {
 	}
 	if !paths["/health"] {
 		t.Error("missing /health endpoint")
+	}
+	if !paths["/visits"] {
+		t.Error("missing /visits endpoint")
 	}
 }
 
@@ -211,6 +238,8 @@ func TestNotFoundHandler(t *testing.T) {
 }
 
 func TestMainHandler_NotFoundForWrongPath(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
 	req := httptest.NewRequest("GET", "/wrong", nil)
 	w := httptest.NewRecorder()
 	mainHandler(w, req)
@@ -309,6 +338,99 @@ func TestGetUptime_ExactlyOneMinute(t *testing.T) {
 	_, human := getUptime()
 	if !contains(human, "minute") {
 		t.Errorf("expected 'minute' in string, got %s", human)
+	}
+}
+
+// --- Visits counter tests ---
+
+func TestVisitsHandler_StatusCode(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
+	req := httptest.NewRequest("GET", "/visits", nil)
+	w := httptest.NewRecorder()
+	visitsHandler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
+	}
+}
+
+func TestVisitsHandler_ReturnsZeroInitially(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
+	req := httptest.NewRequest("GET", "/visits", nil)
+	w := httptest.NewRecorder()
+	visitsHandler(w, req)
+
+	var data VisitsResponse
+	if err := json.NewDecoder(w.Body).Decode(&data); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
+	if data.Visits != 0 {
+		t.Errorf("expected 0 visits initially, got %d", data.Visits)
+	}
+}
+
+func TestIncrementVisits(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
+
+	v1 := incrementVisits()
+	if v1 != 1 {
+		t.Errorf("expected 1 after first increment, got %d", v1)
+	}
+	v2 := incrementVisits()
+	if v2 != 2 {
+		t.Errorf("expected 2 after second increment, got %d", v2)
+	}
+}
+
+func TestReadVisits_InvalidContent(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
+	if err := os.MkdirAll(filepath.Dir(visitsFile), 0755); err != nil {
+		t.Fatalf("failed to create dir: %v", err)
+	}
+	if err := os.WriteFile(visitsFile, []byte("not-a-number"), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+	if v := readVisits(); v != 0 {
+		t.Errorf("expected 0 for invalid content, got %d", v)
+	}
+}
+
+func TestMainHandler_VisitsIncrement(t *testing.T) {
+	cleanup := setupTestVisitsFile(t)
+	defer cleanup()
+
+	for i := 1; i <= 3; i++ {
+		req := httptest.NewRequest("GET", "/", nil)
+		w := httptest.NewRecorder()
+		mainHandler(w, req)
+
+		var raw map[string]interface{}
+		if err := json.NewDecoder(w.Body).Decode(&raw); err != nil {
+			t.Fatalf("failed to decode JSON: %v", err)
+		}
+		visits := int(raw["visits"].(float64))
+		if visits != i {
+			t.Errorf("request %d: expected visits=%d, got %d", i, i, visits)
+		}
+	}
+}
+
+func TestGetEnvDefault_Fallback(t *testing.T) {
+	v := getEnvDefault("UNLIKELY_ENV_VAR_FOR_TEST_XYZ", "fallback")
+	if v != "fallback" {
+		t.Errorf("expected fallback, got %s", v)
+	}
+}
+
+func TestGetEnvDefault_Set(t *testing.T) {
+	t.Setenv("TEST_ENV_VAR_GO_CI", "custom")
+	v := getEnvDefault("TEST_ENV_VAR_GO_CI", "fallback")
+	if v != "custom" {
+		t.Errorf("expected custom, got %s", v)
 	}
 }
 

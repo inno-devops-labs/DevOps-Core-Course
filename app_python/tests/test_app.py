@@ -1,7 +1,18 @@
 """Unit tests for DevOps Info Service."""
 import json
 import pytest
-from app import app, get_system_info, get_uptime, http_requests_total
+import app as app_module
+from app import app, get_system_info, get_uptime
+
+
+@pytest.fixture(autouse=True)
+def isolate_visits(tmp_path):
+    """Redirect visits file to a temp directory for every test."""
+    tmp_file = str(tmp_path / "visits")
+    original = app_module.VISITS_FILE
+    app_module.VISITS_FILE = tmp_file
+    yield
+    app_module.VISITS_FILE = original
 
 
 @pytest.fixture
@@ -107,11 +118,12 @@ class TestMainEndpoint:
         assert 'endpoints' in data
         endpoints = data['endpoints']
         assert isinstance(endpoints, list)
-        assert len(endpoints) == 3
+        assert len(endpoints) == 4
 
         paths = [e['path'] for e in endpoints]
         assert '/' in paths
         assert '/health' in paths
+        assert '/visits' in paths
         assert '/metrics' in paths
 
     def test_all_top_level_keys(self, client):
@@ -119,7 +131,7 @@ class TestMainEndpoint:
         response = client.get('/')
         data = json.loads(response.data)
 
-        expected_keys = {'service', 'system', 'runtime', 'request', 'endpoints'}
+        expected_keys = {'service', 'system', 'runtime', 'request', 'endpoints', 'visits'}
         assert set(data.keys()) == expected_keys
 
     def test_custom_user_agent(self, client):
