@@ -74,6 +74,12 @@ containerSecurityContext:
     drop:
       - ALL
 
+secrets:
+  enabled: true
+  data:
+    APP_USERNAME: "change-me"
+    APP_PASSWORD: "change-me"
+
 env:
   - name: PYTHONUNBUFFERED
     value: "1"
