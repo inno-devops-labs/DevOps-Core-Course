@@ -41,10 +41,16 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
               protocol: TCP
-          {{- if .Values.secrets.enabled }}
+          {{- if or .Values.configMaps.enabled .Values.secrets.enabled }}
           envFrom:
+            {{- if .Values.configMaps.enabled }}
+            - configMapRef:
+                name: {{ include "devops-info.configEnvConfigMapName" . }}
+            {{- end }}
+            {{- if .Values.secrets.enabled }}
             - secretRef:
                 name: {{ include "devops-info.secretName" . }}
+            {{- end }}
           {{- end }}
           env:
             {{- toYaml .Values.env | nindent 12 }}
@@ -56,3 +62,24 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.configMaps.enabled }}
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+      volumes:
+        {{- if .Values.configMaps.enabled }}
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info.configFileConfigMapName" . }}
+        {{- end }}
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info.pvcName" . }}
+        {{- end }}

@@ -14,6 +14,7 @@ A production-ready web service providing comprehensive system information and he
 - **Runtime Monitoring**: Uptime tracking and timestamped responses
 - **Health Checks**: Kubernetes-compatible liveness/readiness probe endpoint
 - **Request Tracking**: Client IP, user agent, and request path logging
+- **Visit Persistence**: File-based counter stored on a mounted volume
 - **Environment Configuration**: PORT and HOST customization via env vars
 
 ## Prerequisites
@@ -131,6 +132,9 @@ Returns comprehensive service and system information.
     "method": "GET",
     "path": "/"
   },
+  "visits": {
+    "count": 1
+  },
   "endpoints": [
     {
       "path": "/",
@@ -141,6 +145,11 @@ Returns comprehensive service and system information.
       "path": "/health",
       "method": "GET",
       "description": "Health check"
+    },
+    {
+      "path": "/visits",
+      "method": "GET",
+      "description": "Visits counter"
     }
   ]
 }
@@ -159,6 +168,19 @@ Simple health check endpoint.
 }
 ```
 
+### GET /visits
+
+Returns the persisted visits counter and storage file location.
+
+**Response (200 OK):**
+```json
+{
+  "visits": 3,
+  "file_path": "/data/visits",
+  "timestamp": "2026-04-14T15:28:00.000000Z"
+}
+```
+
 ## Configuration
 
 | Variable | Default | Description |
@@ -166,6 +188,27 @@ Simple health check endpoint.
 | HOST | 0.0.0.0 | Server bind address |
 | PORT | 5000 | Server port |
 | DEBUG | false | Enable debug mode and verbose logging |
+| VISITS_FILE | /data/visits | Path to persisted visits counter file |
+
+## Docker Compose Persistence Test
+
+From `app_python/`:
+
+```bash
+docker compose up --build -d
+curl http://localhost:5000/
+curl http://localhost:5000/
+curl http://localhost:5000/visits
+cat ./data/visits
+docker compose restart devops-info-service
+curl http://localhost:5000/visits
+docker compose down
+```
+
+Expected behavior:
+- `/` increments the counter.
+- `./data/visits` stores the current number.
+- After container restart, `/visits` returns the previous value (persistence works).
 
 
 ## Testing
@@ -186,32 +229,38 @@ pytest tests/ -v --cov=. --cov-report=term-missing --cov-fail-under=70
 
 Expected output:  
 ```bash
- pytest tests/ -v
-================================================= test session starts ==================================================
-platform linux -- Python 3.10.12, pytest-9.0.2, pluggy-1.6.0 -- /mnt/c/Users/1alen/Desktop/My_Py_Projects/DevOps-Core-Course/app_python/venv/bin/python3
+DevOps-Core-Course/app_python ‹lab12*›$ pytest -v
+================================ test session starts =================================
+platform linux -- Python 3.10.12, pytest-8.3.3, pluggy-1.6.0 -- /usr/bin/python3
 cachedir: .pytest_cache
-plugins: anyio-4.12.1, cov-7.0.0
-collected 19 items
+rootdir: /mnt/c/Users/1alen/Desktop/My_Py_Projects/DevOps-Core-Course/app_python
+plugins: cov-5.0.0, anyio-4.9.0
+collected 23 items
 
-tests/test_app.py::TestRootEndpoint::test_success_response_code PASSED                                           [  5%]
-tests/test_app.py::TestRootEndpoint::test_response_content_type PASSED                                           [ 10%]
-tests/test_app.py::TestRootEndpoint::test_response_structure_validation PASSED                                   [ 15%]
-tests/test_app.py::TestRootEndpoint::test_service_section_validation PASSED                                      [ 21%]
-tests/test_app.py::TestRootEndpoint::test_system_section_validation PASSED                                       [ 26%]
-tests/test_app.py::TestRootEndpoint::test_runtime_section_validation PASSED                                      [ 31%]
-tests/test_app.py::TestRootEndpoint::test_request_section_validation PASSED                                      [ 36%]
-tests/test_app.py::TestRootEndpoint::test_endpoints_section_validation PASSED                                    [ 42%]
-tests/test_app.py::TestRootEndpoint::test_x_forwarded_for_header_handling PASSED                                 [ 47%]
-tests/test_app.py::TestRootEndpoint::test_uptime_increases_over_time PASSED                                      [ 52%]
-tests/test_app.py::TestHealthEndpoint::test_success_response_code PASSED                                         [ 57%]
-tests/test_app.py::TestHealthEndpoint::test_response_structure PASSED                                            [ 63%]
-tests/test_app.py::TestHealthEndpoint::test_status_field PASSED                                                  [ 68%]
-tests/test_app.py::TestHealthEndpoint::test_uptime_field PASSED                                                  [ 73%]
-tests/test_app.py::TestHealthEndpoint::test_timestamp_field PASSED                                               [ 78%]
-tests/test_app.py::TestHealthEndpoint::test_uptime_consistency_with_root PASSED                                  [ 84%]
-tests/test_app.py::TestErrorHandling::test_404_not_found PASSED                                                  [ 89%]
-tests/test_app.py::TestErrorHandling::test_method_not_allowed PASSED                                             [ 94%]
-tests/test_app.py::TestErrorHandling::test_method_not_allowed_health PASSED                                      [100%]
+tests/test_app.py::TestRootEndpoint::test_success_response_code PASSED         [  4%]
+tests/test_app.py::TestRootEndpoint::test_response_content_type PASSED         [  8%]
+tests/test_app.py::TestRootEndpoint::test_response_structure_validation PASSED [ 13%]
+tests/test_app.py::TestRootEndpoint::test_service_section_validation PASSED    [ 17%]
+tests/test_app.py::TestRootEndpoint::test_system_section_validation PASSED     [ 21%]
+tests/test_app.py::TestRootEndpoint::test_runtime_section_validation PASSED    [ 26%]
+tests/test_app.py::TestRootEndpoint::test_request_section_validation PASSED    [ 30%]
+tests/test_app.py::TestRootEndpoint::test_endpoints_section_validation PASSED  [ 34%]
+tests/test_app.py::TestRootEndpoint::test_visits_section_validation PASSED     [ 39%]
+tests/test_app.py::TestRootEndpoint::test_x_forwarded_for_header_handling PASSED [ 43%]
+tests/test_app.py::TestRootEndpoint::test_uptime_increases_over_time PASSED    [ 47%]
+tests/test_app.py::TestHealthEndpoint::test_success_response_code PASSED       [ 52%]
+tests/test_app.py::TestHealthEndpoint::test_response_structure PASSED          [ 56%]
+tests/test_app.py::TestHealthEndpoint::test_status_field PASSED                [ 60%]
+tests/test_app.py::TestHealthEndpoint::test_uptime_field PASSED                [ 65%]
+tests/test_app.py::TestHealthEndpoint::test_timestamp_field PASSED             [ 69%]
+tests/test_app.py::TestHealthEndpoint::test_uptime_consistency_with_root PASSED [ 73%]
+tests/test_app.py::TestVisitsEndpoint::test_visits_endpoint_success PASSED     [ 78%]
+tests/test_app.py::TestVisitsEndpoint::test_visits_increases_after_root_request PASSED [ 82%]
+tests/test_app.py::TestVisitsEndpoint::test_visits_persisted_to_file PASSED    [ 86%]
+tests/test_app.py::TestErrorHandling::test_404_not_found PASSED                [ 91%]
+tests/test_app.py::TestErrorHandling::test_method_not_allowed PASSED           [ 95%]
+tests/test_app.py::TestErrorHandling::test_method_not_allowed_health PASSED    [100%]
 
-================================================== 19 passed in 3.09s ==================================================
+=========================== 23 passed, 1 warning in 0.89s ============================
+DevOps-Core-Course/app_python ‹lab12*›$
 ```

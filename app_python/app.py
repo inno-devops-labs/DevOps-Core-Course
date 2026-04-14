@@ -4,6 +4,8 @@ import platform
 import logging
 import json
 import time
+import threading
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Dict, Any
 
@@ -18,6 +20,9 @@ from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTEN
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes")
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
+_visits_lock = threading.Lock()
+_in_memory_visits_count = 0
 
 # Custom JSON formatter
 class JSONFormatter(logging.Formatter):
@@ -143,9 +148,52 @@ def get_request_info(request: Request) -> Dict[str, Any]:
     }
 
 
+def _get_visits_path() -> Path:
+    return Path(os.getenv("VISITS_FILE", VISITS_FILE))
+
+
+def _read_visits_count() -> int:
+    global _in_memory_visits_count
+    visits_path = _get_visits_path()
+    try:
+        content = visits_path.read_text(encoding="utf-8").strip()
+        return int(content) if content else 0
+    except FileNotFoundError:
+        return _in_memory_visits_count
+    except (ValueError, OSError):
+        return _in_memory_visits_count
+
+
+def _write_visits_count(value: int) -> None:
+    visits_path = _get_visits_path()
+    visits_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = visits_path.with_suffix(".tmp")
+    tmp_path.write_text(str(value), encoding="utf-8")
+    os.replace(tmp_path, visits_path)
+
+
+def increment_visits_count() -> int:
+    global _in_memory_visits_count
+    with _visits_lock:
+        current = _read_visits_count()
+        updated = current + 1
+        _in_memory_visits_count = updated
+        try:
+            _write_visits_count(updated)
+        except OSError:
+            logger.warning("Visits counter fallback to in-memory storage", extra={"path": str(_get_visits_path())})
+        return updated
+
+
+def get_visits_count() -> int:
+    with _visits_lock:
+        return _read_visits_count()
+
+
 ENDPOINTS = [
     {"path": "/", "method": "GET", "description": "Service information"},
     {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/visits", "method": "GET", "description": "Visits counter"},
     {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
 ]
 
@@ -222,6 +270,7 @@ async def index(request: Request):
 
     logger.info("Index endpoint accessed", extra={"endpoint": "/", "method": "GET"})
     endpoint_calls.labels(endpoint="/").inc()
+    visits = increment_visits_count()
     with system_info_collection_seconds.time():
         system = get_system_info()
     uptime = get_uptime()
@@ -241,6 +290,7 @@ async def index(request: Request):
             "timezone": "UTC",
         },
         "request": get_request_info(request),
+        "visits": {"count": visits},
         "endpoints": ENDPOINTS,
     }
     return JSONResponse(content=response)
@@ -257,6 +307,18 @@ async def health(request: Request):
         "status": "healthy",
         "timestamp": _format_iso_z(datetime.now(timezone.utc)),
         "uptime_seconds": uptime["seconds"],
+    }
+    return JSONResponse(content=payload)
+
+
+@app.get("/visits", summary="Visits counter")
+async def visits(request: Request):
+    logger.info("Visits endpoint accessed", extra={"endpoint": "/visits", "method": "GET"})
+    endpoint_calls.labels(endpoint="/visits").inc()
+    payload = {
+        "visits": get_visits_count(),
+        "file_path": str(_get_visits_path()),
+        "timestamp": _format_iso_z(datetime.now(timezone.utc)),
     }
     return JSONResponse(content=payload)
 

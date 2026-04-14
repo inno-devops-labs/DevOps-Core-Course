@@ -1,10 +1,17 @@
-import json
+import os
 import pytest
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
-from app import app, START_TIME, _format_iso_z
+from app import app
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def isolate_visits_file(tmp_path, monkeypatch):
+    visits_file = tmp_path / "visits"
+    monkeypatch.setenv("VISITS_FILE", str(visits_file))
+    yield
 
 
 class TestRootEndpoint:
@@ -28,7 +35,7 @@ class TestRootEndpoint:
         response = client.get("/")
         data = response.json()
 
-        required_keys = ["service", "system", "runtime", "request", "endpoints"]
+        required_keys = ["service", "system", "runtime", "request", "visits", "endpoints"]
         for key in required_keys:
             assert key in data, f"Missing required key: {key}"
 
@@ -137,7 +144,7 @@ class TestRootEndpoint:
 
         # Should be a list
         assert isinstance(data, list)
-        assert len(data) >= 2
+        assert len(data) >= 3
 
         # Each endpoint should have required fields
         for endpoint in data:
@@ -153,6 +160,7 @@ class TestRootEndpoint:
         endpoint_paths = [e["path"] for e in data]
         assert "/" in endpoint_paths
         assert "/health" in endpoint_paths
+        assert "/visits" in endpoint_paths
 
         # Verify specific endpoint details
         root_endpoint = next(e for e in data if e["path"] == "/")
@@ -162,6 +170,20 @@ class TestRootEndpoint:
         health_endpoint = next(e for e in data if e["path"] == "/health")
         assert health_endpoint["method"] == "GET"
         assert "Health check" in health_endpoint["description"]
+
+        visits_endpoint = next(e for e in data if e["path"] == "/visits")
+        assert visits_endpoint["method"] == "GET"
+        assert "Visits counter" in visits_endpoint["description"]
+
+    def test_visits_section_validation(self):
+        """Verify root endpoint includes visits counter section."""
+
+        response = client.get("/")
+        data = response.json()["visits"]
+
+        assert "count" in data
+        assert isinstance(data["count"], int)
+        assert data["count"] >= 1
 
     def test_x_forwarded_for_header_handling(self):
         """Verify X-Forwarded-For header is correctly processed."""
@@ -258,6 +280,39 @@ class TestHealthEndpoint:
         health_uptime = health_response.json()["uptime_seconds"]
 
         assert abs(root_uptime - health_uptime) <= 1
+
+
+class TestVisitsEndpoint:
+    """Tests for GET /visits endpoint and persistence behavior."""
+
+    def test_visits_endpoint_success(self):
+        response = client.get("/visits")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "visits" in data
+        assert "file_path" in data
+        assert "timestamp" in data
+        assert isinstance(data["visits"], int)
+        assert data["visits"] >= 0
+
+    def test_visits_increases_after_root_request(self):
+        before = client.get("/visits").json()["visits"]
+        client.get("/")
+        after = client.get("/visits").json()["visits"]
+        assert after == before + 1
+
+    def test_visits_persisted_to_file(self):
+        client.get("/")
+        client.get("/")
+
+        visits_data = client.get("/visits").json()
+        file_path = visits_data["file_path"]
+        assert os.path.exists(file_path)
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            stored_value = int(f.read().strip())
+        assert stored_value == visits_data["visits"]
 
 
 class TestErrorHandling:

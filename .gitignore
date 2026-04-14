@@ -19,6 +19,7 @@ pulumi/node_modules/
 *.key
 *.json
 !monitoring/grafana/dashboards/*.json
+!k8s/devops-info-chart/files/config.json
 credentials
 *.openrc
 openrc.sh

@@ -34,6 +34,28 @@ env:
     value: "5000"
   - name: PYTHONPATH
     value: "/home/app"
+  - name: VISITS_FILE
+    value: "/data/visits"
+
+appConfig:
+  name: "devops-info-service"
+  environment: "dev"
+  logLevel: "INFO"
+  defaultTimezone: "UTC"
+  features:
+    visitsCounter: true
+    metricsEnabled: true
+
+configMaps:
+  enabled: true
+
+persistence:
+  enabled: true
+  nameOverride: ""
+  size: 100Mi
+  accessMode: ReadWriteOnce
+  storageClass: ""
+  mountPath: /data
 
 secrets:
   enabled: true

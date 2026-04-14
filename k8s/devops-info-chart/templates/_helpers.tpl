@@ -63,3 +63,28 @@ Service account name.
 {{- printf "%s-sa" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
+
+{{/*
+ConfigMap name for file-based config.
+*/}}
+{{- define "devops-info.configFileConfigMapName" -}}
+{{- printf "%s-config-file" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+ConfigMap name for environment variables.
+*/}}
+{{- define "devops-info.configEnvConfigMapName" -}}
+{{- printf "%s-config-env" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+PersistentVolumeClaim name.
+*/}}
+{{- define "devops-info.pvcName" -}}
+{{- if .Values.persistence.nameOverride }}
+{{- .Values.persistence.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-data" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}

@@ -3,6 +3,14 @@ replicaCount: 1
 image:
   tag: "latest"
 
+appConfig:
+  environment: "dev"
+  logLevel: "DEBUG"
+
+persistence:
+  size: 100Mi
+  storageClass: ""
+
 resources:
   requests:
     cpu: "50m"

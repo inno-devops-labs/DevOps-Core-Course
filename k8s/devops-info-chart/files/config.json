@@ -1,0 +1,15 @@
+{
+  "application": {
+    "name": "{{ .Values.appConfig.name }}",
+    "environment": "{{ .Values.appConfig.environment }}",
+    "version": "{{ .Chart.AppVersion }}"
+  },
+  "features": {
+    "visitsCounter": {{ .Values.appConfig.features.visitsCounter }},
+    "metricsEnabled": {{ .Values.appConfig.features.metricsEnabled }}
+  },
+  "settings": {
+    "logLevel": "{{ .Values.appConfig.logLevel }}",
+    "defaultTimezone": "{{ .Values.appConfig.defaultTimezone }}"
+  }
+}

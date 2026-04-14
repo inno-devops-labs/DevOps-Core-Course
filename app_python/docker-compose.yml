@@ -1,0 +1,13 @@
+services:
+  devops-info-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-info-service
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: "5000"
+      VISITS_FILE: "/data/visits"
+    volumes:
+      - ./data:/data

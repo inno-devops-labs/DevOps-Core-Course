@@ -3,6 +3,14 @@ replicaCount: 3
 image:
   tag: "1.0.0"
 
+appConfig:
+  environment: "prod"
+  logLevel: "WARN"
+
+persistence:
+  size: 1Gi
+  storageClass: ""
+
 resources:
   requests:
     cpu: "200m"
