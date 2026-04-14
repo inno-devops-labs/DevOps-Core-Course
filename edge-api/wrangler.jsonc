@@ -14,6 +14,10 @@
 	"compatibility_flags": [
 		"nodejs_compat"
 	],
+	"vars": {
+    	"APP_NAME": "edge-api",
+    	"COURSE_NAME": "devops-core"
+  	},
 	"kv_namespaces": [
 		{
 			"binding": "COUNTER",
