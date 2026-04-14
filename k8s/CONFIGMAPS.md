@@ -98,7 +98,21 @@ data:
 {{ tpl (.Files.Get "files/config.json") . | indent 4 }}
 ```
 
-Example `config.json` content:
+Actual `ConfigMap`:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-config
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+data:
+  config.json: |-
+{{ tpl (.Files.Get "files/config.json") . | indent 4 }}
+```
+
+`config.json` content:
 
 ```json
 {
@@ -131,6 +145,26 @@ data:
   DATA_DIR: {{ .Values.persistence.mountPath | quote }}
   VISITS_FILE: {{ printf "%s/visits" .Values.persistence.mountPath | quote }}
   CONFIG_FILE: "/config/config.json"
+```
+
+Actual content:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-env
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.environment | quote }}
+  LOG_LEVEL: {{ .Values.logLevel | quote }}
+  DATA_DIR: {{ .Values.persistence.mountPath | quote }}
+  VISITS_FILE: {{ printf "%s/visits" .Values.persistence.mountPath | quote }}
+  CONFIG_FILE: "/config/config.json"
+  SERVICE_NAME: {{ .Values.config.applicationName | quote }}
+  SERVICE_VERSION: {{ .Chart.AppVersion | quote }}
+  SERVICE_DESCRIPTION: "DevOps course info service"
 ```
 
 ### Deployment integration
@@ -257,6 +291,28 @@ spec:
   resources:
     requests:
       storage: {{ .Values.persistence.size }}
+```
+
+Actual content:
+
+```yaml
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-data
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass | quote }}
+  {{- end }}
+{{- end }}
 ```
 
 ### Volume mount
