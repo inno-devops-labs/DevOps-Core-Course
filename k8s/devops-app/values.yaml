@@ -31,11 +31,25 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 3
 
-secrets:
-  dbUsername: "admin"
-  dbPassword: "supersecret123"
+# Переименовали из secrets в auth, чтобы соответствовать шаблону
+auth:
+  username: "admin"
+  password: "supersecret123"
 
-# Vault Configuration (оставляем для Task 3)
+environment: "dev"
+
+app:
+  name: "DevOps-App-K8s"
+  logLevel: "DEBUG"
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClass: ""
+  existingClaim: ""
+
+# Vault Configuration
 vault:
   enabled: true
   role: "devops-app-role"

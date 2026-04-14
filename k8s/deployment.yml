@@ -6,14 +6,14 @@ metadata:
     app: devops-app
 spec:
   replicas: 3
-  selector:
-    matchLabels:
-      app: devops-app
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: devops-app
   template:
     metadata:
       labels:
@@ -24,6 +24,17 @@ spec:
           image: ray326sq/devops-info-python:lab03
           ports:
             - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: devops-app-env
+            - secretRef:
+                name: devops-app-credentials
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            - name: data-volume
+              mountPath: /data
 
           resources:
             requests:
@@ -46,3 +57,10 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 3
+      volumes:
+        - name: config-volume
+          configMap:
+            name: devops-app-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: devops-app-data

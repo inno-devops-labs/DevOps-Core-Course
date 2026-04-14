@@ -16,7 +16,6 @@ spec:
       {{- include "devops-app.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      # АННОТАЦИИ ДОЛЖНЫ БЫТЬ ТУТ!
       annotations:
         {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
@@ -39,7 +38,17 @@ spec:
           ports:
             - containerPort: {{ .Values.service.targetPort }}
           
+          # МОНТИРОВАНИЕ ТОМА В КОНТЕЙНЕР
+          volumeMounts:
+            - name: storage-volume
+              mountPath: /data
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-app.fullname" . }}-env
             - secretRef:
                 name: {{ include "devops-app.fullname" . }}-credentials
 
@@ -59,3 +68,16 @@ spec:
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+
+      # ОПРЕДЕЛЕНИЕ ТОМА (ВНУТРИ SPEC ПОДА)
+      volumes:
+        - name: storage-volume
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-data" (include "devops-app.fullname" .)) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-app.fullname" . }}-config
