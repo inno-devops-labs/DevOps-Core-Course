@@ -118,5 +118,21 @@ rollout:
     autoPromotionEnabled: false
     scaleDownDelaySeconds: 30
 
+initContainers:
+  sharedVolumeMountPath: /init-data
+
+  waitForService:
+    enabled: true
+    image: busybox:1.36
+    host: vault.default.svc.cluster.local
+    port: 8200
+    sleepSeconds: 2
+
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: "http://vault.default.svc.cluster.local:8200/v1/sys/health?standbyok=true&perfstandbyok=true"
+    outputFile: "vault-health.json"
+
 statefulset:
   enabled: true

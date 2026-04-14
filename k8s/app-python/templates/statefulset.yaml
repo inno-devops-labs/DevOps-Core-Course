@@ -36,6 +36,45 @@ spec:
       serviceAccountName: {{ include "app-python.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if or .Values.initContainers.waitForService.enabled .Values.initContainers.download.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image | quote }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          command:
+            - sh
+            - -c
+            - >
+              until nc -z -w 2 {{ .Values.initContainers.waitForService.host }} {{ .Values.initContainers.waitForService.port }};
+              do
+                echo "Waiting for {{ .Values.initContainers.waitForService.host }}:{{ .Values.initContainers.waitForService.port }}";
+                sleep {{ .Values.initContainers.waitForService.sleepSeconds }};
+              done;
+              echo "Service is reachable"
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image | quote }}
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          command:
+            - sh
+            - -c
+            - >
+              wget -O {{ .Values.initContainers.sharedVolumeMountPath }}/{{ .Values.initContainers.download.outputFile }}
+              {{ .Values.initContainers.download.url | quote }} &&
+              ls -l {{ .Values.initContainers.sharedVolumeMountPath }}
+          volumeMounts:
+            - name: init-shared
+              mountPath: {{ .Values.initContainers.sharedVolumeMountPath }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -52,6 +91,9 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /config
+              readOnly: true
+            - name: init-shared
+              mountPath: {{ .Values.initContainers.sharedVolumeMountPath }}
               readOnly: true
             {{- if .Values.persistence.enabled }}
             - name: data
@@ -85,6 +127,8 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "app-python.fileConfigMapName" . }}
+        - name: init-shared
+          emptyDir: {}
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
