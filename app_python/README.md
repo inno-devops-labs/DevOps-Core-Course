@@ -51,10 +51,12 @@ DEBUG=true python app.py         # Debug mode (auto-reload)
 | Endpoint    | Method | Description                          |
 | ----------- | ------ | ------------------------------------ |
 | `/`       | GET    | Service, system, runtime information |
+| `/visits` | GET    | Current persisted visits counter     |
 | `/health` | GET    | Health status for monitoring         |
 
 ```
 curl http://localhost:5000/
+curl http://localhost:5000/visits
 curl http://localhost:5000/health
 ```
 
@@ -67,6 +69,7 @@ Environment variables for flexible deployment:
 | `HOST`  | `0.0.0.0` | Bind address                  |
 | `PORT`  | `5000`    | TCP port                      |
 | `DEBUG` | `False`   | Debug mode (development only) |
+| `VISITS_FILE` | `/data/visits` | Path to persisted visits counter file |
 
 **Example** :
 
@@ -98,3 +101,20 @@ Open http://localhost:8081/
 docker pull plaffyyy9/devops-info-service:lab2
 docker run --rm -p 8081:5001 plaffyyy9/devops-info-service:lab2
 ```
+
+## Docker Compose with persisted visits counter
+
+```bash
+mkdir -p data
+docker compose up -d --build
+
+curl http://localhost:5001/
+curl http://localhost:5001/
+curl http://localhost:5001/visits
+cat ./data/visits
+
+docker compose restart devops-info-service
+curl http://localhost:5001/visits
+```
+
+The value in `./data/visits` is preserved after container restart.

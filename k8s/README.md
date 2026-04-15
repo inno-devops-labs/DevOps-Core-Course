@@ -1,5 +1,10 @@
 # Kubernetes Deployment — DevOps Info Service
 
+Related docs:
+- `k8s/HELM.md`
+- `k8s/SECRETS.md`
+- `k8s/CONFIGMAPS.md`
+
 ## 1. Architecture Overview
 
 ```

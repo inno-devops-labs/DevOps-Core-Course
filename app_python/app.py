@@ -9,6 +9,8 @@ import socket
 import platform
 import logging
 import json
+import tempfile
+import threading
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request, Response
 from prometheus_client import (
@@ -57,11 +59,13 @@ logger.addHandler(handler)
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5001))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+VISITS_FILE = os.getenv('VISITS_FILE', '/data/visits')
 
 # Application start time for uptime calculation
 START_TIME = datetime.now(timezone.utc)
 
 app = Flask(__name__)
+VISITS_LOCK = threading.Lock()
 
 # ---------------------------------------------------------------------------
 # Prometheus metrics
@@ -109,7 +113,61 @@ def _normalize_endpoint(path: str) -> str:
         return '/ready'
     if path.startswith('/metrics'):
         return '/metrics'
+    if path.startswith('/visits'):
+        return '/visits'
     return '/other'
+
+
+def _read_visits_count() -> int:
+    """Read visits count from file; return 0 if file does not exist."""
+    try:
+        with open(VISITS_FILE, 'r', encoding='utf-8') as visits_file:
+            value = visits_file.read().strip()
+            return int(value) if value else 0
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        logger.warning(
+            "Invalid visits counter value; resetting to 0",
+            extra={"event": "visits_counter_invalid", "path": VISITS_FILE}
+        )
+        return 0
+
+
+def _write_visits_count(count: int) -> None:
+    """Persist visits count using atomic replace."""
+    visits_dir = os.path.dirname(VISITS_FILE) or '.'
+    os.makedirs(visits_dir, exist_ok=True)
+
+    fd, temp_path = tempfile.mkstemp(dir=visits_dir, prefix='visits-', text=True)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as tmp:
+            tmp.write(str(count))
+        os.replace(temp_path, VISITS_FILE)
+    finally:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+
+
+def initialize_visits_storage() -> None:
+    """Ensure visits counter file exists and is valid."""
+    with VISITS_LOCK:
+        count = _read_visits_count()
+        _write_visits_count(count)
+
+
+def get_visits_count() -> int:
+    """Return current visits counter value."""
+    with VISITS_LOCK:
+        return _read_visits_count()
+
+
+def increment_visits_count() -> int:
+    """Increment and persist visits counter value."""
+    with VISITS_LOCK:
+        count = _read_visits_count() + 1
+        _write_visits_count(count)
+        return count
 
 
 # ---------------------------------------------------------------------------
@@ -206,6 +264,18 @@ def metrics():
 @app.route('/')
 def index():
     """Main endpoint - service and system information."""
+    try:
+        visits_count = increment_visits_count()
+    except OSError:
+        logger.exception(
+            "Failed to update visits counter",
+            extra={"event": "visits_counter_write_failed", "path": VISITS_FILE}
+        )
+        return jsonify({
+            "error": "Internal Server Error",
+            "message": "Failed to update visits counter"
+        }), 500
+
     devops_endpoint_calls.labels(endpoint='/').inc()
     return jsonify({
         "service": {
@@ -227,13 +297,38 @@ def index():
             "method": request.method,
             "path": request.path
         },
+        "visits": {
+            "count": visits_count,
+            "storage_file": VISITS_FILE
+        },
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
+            {"path": "/visits", "method": "GET", "description": "Current visits count"},
             {"path": "/health", "method": "GET", "description": "Health check"},
             {"path": "/ready", "method": "GET", "description": "Readiness probe"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"}
         ]
     })
+
+
+@app.route('/visits')
+def visits():
+    """Return current visits counter."""
+    devops_endpoint_calls.labels(endpoint='/visits').inc()
+    try:
+        return jsonify({
+            "visits": get_visits_count(),
+            "storage_file": VISITS_FILE
+        })
+    except OSError:
+        logger.exception(
+            "Failed to read visits counter",
+            extra={"event": "visits_counter_read_failed", "path": VISITS_FILE}
+        )
+        return jsonify({
+            "error": "Internal Server Error",
+            "message": "Failed to read visits counter"
+        }), 500
 
 
 @app.route('/health')
@@ -276,5 +371,6 @@ def internal_error(error):
 
 
 if __name__ == '__main__':
+    initialize_visits_storage()
     logger.info(f'Starting DevOps Service on {HOST}:{PORT} (debug={DEBUG})')
     app.run(host=HOST, port=PORT, debug=DEBUG)

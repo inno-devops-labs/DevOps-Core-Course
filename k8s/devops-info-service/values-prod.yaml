@@ -21,6 +21,9 @@ app:
   environment: "prod"
   logLevel: "warning"
 
+configEnv:
+  featureVisits: "true"
+
 secrets:
   data:
     username: "prod-username"

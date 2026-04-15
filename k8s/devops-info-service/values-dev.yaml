@@ -19,6 +19,9 @@ app:
   environment: "dev"
   logLevel: "debug"
 
+configEnv:
+  featureVisits: "true"
+
 secrets:
   data:
     username: "dev-username"

@@ -21,10 +21,19 @@ env:
   HOST: "0.0.0.0"
   PORT: "5001"
   DEBUG: "false"
+  VISITS_FILE: "/data/visits"
 
 app:
   environment: "dev"
   logLevel: "info"
+
+configEnv:
+  featureVisits: "true"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
 
 secrets:
   enabled: true
@@ -47,6 +56,7 @@ vault:
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 1000
+  fsGroup: 1000
 
 resources:
   requests:

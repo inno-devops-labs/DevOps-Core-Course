@@ -7,6 +7,7 @@ COPY requirements.txt .
 # Use --trusted-host for corporate networks with SSL inspection
 RUN pip install --no-cache-dir -r requirements.txt
 RUN useradd -m appuser
+RUN mkdir -p /data /config && chown -R appuser:appuser /app /data /config
 
 COPY app.py .
 COPY README.md ./README.md

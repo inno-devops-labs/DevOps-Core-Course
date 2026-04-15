@@ -1,0 +1,14 @@
+services:
+  devops-info-service:
+    build:
+      context: .
+    image: plaffyyy9/devops-info-service:lab12-local
+    ports:
+      - "5001:5001"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5001"
+      DEBUG: "false"
+      VISITS_FILE: "/data/visits"
+    volumes:
+      - ./data:/data
