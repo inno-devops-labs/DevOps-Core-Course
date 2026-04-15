@@ -13,14 +13,36 @@ spec:
     metadata:
       labels:
         {{- include "common.selectorLabels" . | nindent 8 }}
-      {{- if .Values.vault.enabled }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
         vault.hashicorp.com/agent-inject-secret-config.txt: {{ .Values.vault.secretPath | quote }}
       {{- end }}
     spec:
       serviceAccountName: {{ default (include "common.fullname" .) .Values.serviceAccount.name }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "common.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "common.fullname" . }}-data
+        {{- end }}
+      {{- if .Values.persistence.enabled }}
+      initContainers:
+        - name: volume-permissions
+          image: busybox:1.36.1
+          command:
+            - sh
+            - -c
+            - mkdir -p /data && chown -R 999:999 /data
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+      {{- end }}
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -29,7 +51,17 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
               protocol: TCP
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
           envFrom:
+            - configMapRef:
+                name: {{ include "common.fullname" . }}-env
             - secretRef:
                 name: {{ include "common.fullname" . }}-secret
           env:

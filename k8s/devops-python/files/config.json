@@ -1,0 +1,8 @@
+{
+  "application_name": "{{ .Values.configFile.applicationName }}",
+  "environment": "{{ .Values.configFile.environment }}",
+  "settings": {
+    "featureGreeting": {{ .Values.configFile.settings.featureGreeting }},
+    "maxVisitsDisplay": {{ .Values.configFile.settings.maxVisitsDisplay }}
+  }
+}

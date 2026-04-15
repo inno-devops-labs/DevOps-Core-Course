@@ -6,6 +6,7 @@ volumes:
   loki-data:
   grafana-data:
   prometheus-data:
+  app-python-data:
 
 services:
   loki:
@@ -129,10 +130,18 @@ services:
           memory: 512M
 
   app-python:
+    build:
+      context: ../app_python
     image: s3rap1s/devops-info-service:latest
     container_name: app-python
+    user: "0:0"
+    command: sh -c "mkdir -p /app/data && chown -R 999:999 /app/data && python app.py"
     ports:
       - "5000:5000"
+    environment:
+      - DATA_DIR=/app/data
+    volumes:
+      - app-python-data:/app/data
     networks:
       - logging
     labels:

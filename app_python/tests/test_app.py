@@ -1,14 +1,35 @@
 import pytest
 import sys
 import os
+import json
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from app import app
+import app as app_module
+
+app = app_module.app
 
 
 @pytest.fixture
-def client():
+def client(tmp_path, monkeypatch):
     """Fixture for test client Flask"""
+    visits_file = tmp_path / "visits"
+    config_file = tmp_path / "config.json"
+    config_file.write_text(
+        json.dumps(
+            {
+                "application_name": "test-devops-service",
+                "environment": "test",
+                "settings": {
+                    "featureGreeting": True,
+                    "maxVisitsDisplay": 10,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(app_module, "DATA_DIR", str(tmp_path))
+    monkeypatch.setattr(app_module, "VISITS_FILE", str(visits_file))
+    monkeypatch.setattr(app_module, "CONFIG_FILE", str(config_file))
     with app.test_client() as client:
         yield client
 
@@ -74,6 +95,7 @@ def test_main_endpoint(client):
     assert "uptime_seconds" in data["runtime"]
     assert "current_time" in data["runtime"]
     assert data["runtime"]["timezone"] == "UTC"
+    assert data["runtime"]["visits_count"] == 1
 
     # Request structure test
     assert "request" in data
@@ -81,10 +103,14 @@ def test_main_endpoint(client):
     assert "method" in data["request"]
     assert data["request"]["method"] == "GET"
 
+    assert "configuration" in data
+    assert data["configuration"]["file"]["application_name"] == "test-devops-service"
+    assert data["configuration"]["environment"]["CONFIG_FILE"].endswith("config.json")
+
     # Endpoints structure test
     assert "endpoints" in data
     assert isinstance(data["endpoints"], list)
-    assert len(data["endpoints"]) >= 2
+    assert len(data["endpoints"]) >= 3
 
 
 def test_health_endpoint(client):
@@ -207,3 +233,22 @@ def test_metrics_endpoint(client):
     )
     assert "devops_info_endpoint_calls_total" in metrics_output
     assert "devops_info_system_info_collection_seconds_bucket" in metrics_output
+
+
+def test_visits_endpoint_and_persistence(client):
+    """The root endpoint increments visits and /visits returns the stored counter."""
+    first_response = client.get("/")
+    second_response = client.get("/")
+    visits_response = client.get("/visits")
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    assert visits_response.status_code == 200
+
+    assert first_response.get_json()["runtime"]["visits_count"] == 1
+    assert second_response.get_json()["runtime"]["visits_count"] == 2
+    assert visits_response.get_json()["visits"] == 2
+    assert os.path.exists(app_module.VISITS_FILE)
+
+    with open(app_module.VISITS_FILE, "r", encoding="utf-8") as visits_file:
+        assert visits_file.read().strip() == "2"

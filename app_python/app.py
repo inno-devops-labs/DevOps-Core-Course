@@ -8,6 +8,9 @@ import socket
 import platform
 import logging
 import time
+import json
+import tempfile
+from threading import Lock
 from datetime import datetime, timezone
 from flask import Flask, Response, g, jsonify, request
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
@@ -20,6 +23,11 @@ app = Flask(__name__)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.getenv("DATA_DIR", os.path.join(BASE_DIR, "data"))
+VISITS_FILE = os.getenv("VISITS_FILE", os.path.join(DATA_DIR, "visits"))
+CONFIG_FILE = os.getenv("CONFIG_FILE", os.path.join(BASE_DIR, "config", "config.json"))
+VISITS_LOCK = Lock()
 
 # Application startup time
 START_TIME = datetime.now(timezone.utc)
@@ -60,6 +68,67 @@ logHandler.setFormatter(formatter)
 logger = logging.getLogger()
 logger.addHandler(logHandler)
 logger.setLevel(logging.INFO)
+
+
+def ensure_parent_directory(file_path):
+    """Ensure the parent directory for a file exists."""
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+
+def read_visits_count():
+    """Read the visits counter from disk, defaulting to zero."""
+    try:
+        with open(VISITS_FILE, "r", encoding="utf-8") as visits_file:
+            raw_value = visits_file.read().strip()
+    except FileNotFoundError:
+        return 0
+
+    if not raw_value:
+        return 0
+
+    try:
+        return int(raw_value)
+    except ValueError:
+        logger.warning("Invalid visits counter value, resetting to zero", extra={"file": VISITS_FILE})
+        return 0
+
+
+def write_visits_count(count):
+    """Persist the visits counter using an atomic file replacement."""
+    ensure_parent_directory(VISITS_FILE)
+
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=os.path.dirname(VISITS_FILE),
+        delete=False,
+    ) as temp_file:
+        temp_file.write(str(count))
+        temp_file.flush()
+        os.fsync(temp_file.fileno())
+        temp_path = temp_file.name
+
+    os.replace(temp_path, VISITS_FILE)
+
+
+def increment_visits_count():
+    """Increment the visits counter in a thread-safe way."""
+    with VISITS_LOCK:
+        count = read_visits_count() + 1
+        write_visits_count(count)
+        return count
+
+
+def load_app_config():
+    """Load JSON configuration from disk if available."""
+    try:
+        with open(CONFIG_FILE, "r", encoding="utf-8") as config_file:
+            return json.load(config_file)
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError:
+        logger.warning("Invalid JSON configuration file", extra={"file": CONFIG_FILE})
+        return {}
 
 
 def get_request_endpoint():
@@ -151,6 +220,8 @@ def index():
     ENDPOINT_CALLS_TOTAL.labels(endpoint=endpoint).inc()
     uptime = get_uptime()
     system_info = get_system_info()
+    visits_count = increment_visits_count()
+    file_config = load_app_config()
 
     # Forming a response
     response = {
@@ -166,6 +237,7 @@ def index():
             "uptime_human": uptime["human"],
             "current_time": datetime.now(timezone.utc).isoformat(),
             "timezone": "UTC",
+            "visits_count": visits_count,
         },
         "request": {
             "client_ip": client_ip,
@@ -173,9 +245,20 @@ def index():
             "method": request.method,
             "path": request.path,
         },
+        "configuration": {
+            "file": file_config,
+            "environment": {
+                "APP_ENV": os.getenv("APP_ENV", "undefined"),
+                "LOG_LEVEL": os.getenv("LOG_LEVEL", "undefined"),
+                "FEATURE_GREETINGS": os.getenv("FEATURE_GREETINGS", "undefined"),
+                "CONFIG_FILE": CONFIG_FILE,
+                "DATA_DIR": DATA_DIR,
+            },
+        },
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Visit counter"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
@@ -192,6 +275,17 @@ def health():
         "uptime_seconds": get_uptime()["seconds"],
     }
     logger.debug(f"Health check: {response}")
+    return jsonify(response), 200
+
+
+@app.route("/visits")
+def visits():
+    """Return the current visits counter without incrementing it."""
+    ENDPOINT_CALLS_TOTAL.labels(endpoint=get_request_endpoint()).inc()
+    response = {
+        "visits": read_visits_count(),
+        "file": VISITS_FILE,
+    }
     return jsonify(response), 200
 
 

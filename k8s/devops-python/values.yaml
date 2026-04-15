@@ -23,6 +23,20 @@ env:
   - name: HOST
     value: "0.0.0.0"
 
+configFile:
+  applicationName: "devops-info-service"
+  environment: "development"
+  settings:
+    featureGreeting: true
+    maxVisitsDisplay: 10
+
+configEnv:
+  APP_ENV: "development"
+  LOG_LEVEL: "info"
+  FEATURE_GREETINGS: "true"
+  DATA_DIR: "/data"
+  CONFIG_FILE: "/config/config.json"
+
 resources:
   requests:
     cpu: 100m
@@ -67,3 +81,9 @@ vault:
   enabled: false
   role: "devops-python"
   secretPath: "secret/data/myapp/config"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  accessMode: ReadWriteOnce

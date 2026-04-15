@@ -27,3 +27,9 @@ readinessProbe:
     port: 5000
   initialDelaySeconds: 3
   periodSeconds: 5
+
+configFile:
+  environment: "development"
+
+configEnv:
+  APP_ENV: "development"

@@ -62,6 +62,9 @@ PORT=8080 python app.py
 
 # With custom port and host
 HOST=127.0.0.1 PORT=3000 python app.py
+
+# With custom data and config paths
+DATA_DIR=./data CONFIG_FILE=./config/config.json python app.py
 ```
 
 ## Testing the Application
@@ -91,6 +94,12 @@ docker run -d -p 8080:5000 devops-info-service:latest
 
 # Run with environment variables
 docker run -d -p 3000:3000 -e PORT=3000 -e HOST=0.0.0.0 devops-info-service:latest
+
+# Run with persistent visits storage
+docker run -d -p 5000:5000 \
+  -e DATA_DIR=/app/data \
+  -v devops-info-service-data:/app/data \
+  devops-info-service:latest
 ```
 
 ### Pulling from Docker Hub
@@ -123,7 +132,7 @@ Return comprehensive service and system information:
 {
   "service": {
     "name": "devops-info-service",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "DevOps course info service",
     "framework": "Flask"
   },
@@ -139,7 +148,8 @@ Return comprehensive service and system information:
     "uptime_seconds": 3600,
     "uptime_human": "1 hour, 0 minutes",
     "current_time": "2026-01-07T14:30:00.000Z",
-    "timezone": "UTC"
+    "timezone": "UTC",
+    "visits_count": 12
   },
   "request": {
     "client_ip": "127.0.0.1",
@@ -147,9 +157,28 @@ Return comprehensive service and system information:
     "method": "GET",
     "path": "/"
   },
+  "configuration": {
+    "file": {
+      "application_name": "devops-info-service",
+      "environment": "development",
+      "settings": {
+        "featureGreeting": true,
+        "maxVisitsDisplay": 10
+      }
+    },
+    "environment": {
+      "APP_ENV": "development",
+      "LOG_LEVEL": "info",
+      "FEATURE_GREETINGS": "true",
+      "CONFIG_FILE": "/config/config.json",
+      "DATA_DIR": "/data"
+    }
+  },
   "endpoints": [
     {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"}
+    {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/visits", "method": "GET", "description": "Visit counter"},
+    {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"}
   ]
 }
 ```
@@ -166,6 +195,17 @@ Simple health endpoint for monitoring:
 }
 ```
 
+### `GET /visits`
+
+Returns the current persisted visit counter:
+
+```json
+{
+  "visits": 12,
+  "file": "/data/visits"
+}
+```
+
 
 ## Configuration
 
@@ -174,3 +214,12 @@ Simple health endpoint for monitoring:
 | `HOST`   | `0.0.0.0` | Network interface to bind    |
 | `PORT`   | `5000`    | Port to listen on            |
 | `DEBUG`  | `false`   | Enable debug mode            |
+| `DATA_DIR` | `./data` | Directory used for visits persistence |
+| `VISITS_FILE` | `<DATA_DIR>/visits` | File storing visit counter |
+| `CONFIG_FILE` | `./config/config.json` | JSON config file path |
+
+## Persistence
+
+The root endpoint increments a counter stored in the visits file. The `/visits` endpoint returns the current value without incrementing it.
+
+For local Docker Compose testing, the application container mounts a persistent volume to keep `/app/data/visits` across container restarts.
