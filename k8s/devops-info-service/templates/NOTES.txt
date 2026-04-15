@@ -1,7 +1,14 @@
 1. Release: {{ .Release.Name }}
 2. Namespace: {{ .Release.Namespace }}
 
-{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
+{{- if .Values.statefulset.enabled }}
+StatefulSet resources:
+  kubectl get statefulset,pod,pvc -n {{ .Release.Namespace }}
+Headless service DNS example:
+  {{ include "devops-info-service.fullname" . }}-0.{{ include "devops-info-service.headlessServiceName" . }}.{{ .Release.Namespace }}.svc.cluster.local
+Port-forward locally:
+  kubectl port-forward svc/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+{{- else if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
 Active service:
   kubectl port-forward svc/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
 Preview service:
@@ -21,9 +28,18 @@ Port-forward locally:
 {{- end }}
 
 Useful checks:
+{{- if .Values.statefulset.enabled }}
+  kubectl exec {{ include "devops-info-service.fullname" . }}-0 -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.configFilePath" . }}
+  kubectl exec {{ include "devops-info-service.fullname" . }}-0 -n {{ .Release.Namespace }} -- printenv | grep APP_
+  kubectl exec {{ include "devops-info-service.fullname" . }}-0 -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.visitsFilePath" . }}
+{{- else }}
   kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.configFilePath" . }}
   kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- printenv | grep APP_
   kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.visitsFilePath" . }}
+{{- end }}
 {{- if .Values.rollout.enabled }}
   kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }}
+{{- end }}
+{{- if .Values.statefulset.enabled }}
+  kubectl exec {{ include "devops-info-service.fullname" . }}-1 -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.visitsFilePath" . }}
 {{- end }}

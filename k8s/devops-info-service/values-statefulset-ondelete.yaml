@@ -1,0 +1,13 @@
+replicaCount: 3
+
+service:
+  type: ClusterIP
+
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: OnDelete
+
+env:
+  appEnv: statefulset-ondelete
+  appRegion: lab15-ondelete

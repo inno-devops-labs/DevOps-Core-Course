@@ -1,0 +1,11 @@
+replicaCount: 3
+
+service:
+  type: ClusterIP
+
+statefulset:
+  enabled: true
+
+env:
+  appEnv: statefulset
+  appRegion: lab15

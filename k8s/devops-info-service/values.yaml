@@ -56,6 +56,14 @@ rollout:
     failureLimit: 1
     path: /health
 
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
 service:
   type: NodePort
   port: 80

@@ -32,7 +32,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/Ravwvil/DevOps-Core-Course.git
-        targetRevision: lab14
+        targetRevision: lab15
         path: k8s/devops-info-service
         helm:
           releaseName: '{{ .releaseName }}'

@@ -57,6 +57,10 @@ Chart-local wrappers around the shared library helpers.
 {{- printf "%s-preview" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "devops-info-service.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- define "devops-info-service.analysisTemplateName" -}}
 {{- printf "%s-health" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
@@ -95,9 +99,19 @@ FEATURE_VISITS_COUNTER: {{ ternary "true" "false" .Values.config.featureFlags.vi
 {{- end -}}
 
 {{- define "devops-info-service.persistenceValidation" -}}
-{{- if and .Values.persistence.enabled (eq .Values.persistence.accessMode "ReadWriteOnce") (gt (int .Values.replicaCount) 1) -}}
+{{- if and .Values.persistence.enabled (eq .Values.persistence.accessMode "ReadWriteOnce") (gt (int .Values.replicaCount) 1) (not .Values.statefulset.enabled) -}}
 {{- fail "devops-info-service: persistence.enabled with ReadWriteOnce requires replicaCount <= 1" -}}
 {{- end -}}
+{{- end -}}
+
+{{- define "devops-info-service.workloadValidation" -}}
+{{- if and .Values.rollout.enabled .Values.statefulset.enabled -}}
+{{- fail "devops-info-service: rollout.enabled and statefulset.enabled are mutually exclusive" -}}
+{{- end -}}
+{{- if and .Values.statefulset.enabled (not .Values.persistence.enabled) -}}
+{{- fail "devops-info-service: statefulset.enabled requires persistence.enabled=true" -}}
+{{- end -}}
+{{- include "devops-info-service.persistenceValidation" . -}}
 {{- end -}}
 
 {{- define "devops-info-service.vaultConfigTemplate" -}}

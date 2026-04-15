@@ -1,0 +1,15 @@
+replicaCount: 3
+
+service:
+  type: ClusterIP
+
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2
+
+env:
+  appEnv: statefulset-partitioned
+  appRegion: lab15-partitioned
