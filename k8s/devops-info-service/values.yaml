@@ -8,6 +8,26 @@ podLabels:
 # Optional annotations on the pod (e.g. Prometheus). Vault injector adds its own when vault.enabled.
 podAnnotations: {}
 
+# Lab 12: checksum annotation triggers rolling restart when ConfigMaps change (bonus / hot-reload pattern).
+config:
+  checksumAnnotation: false
+  mountPath: /config/config.json
+
+# Visit counter file path inside the container (must be under the /data volume mount).
+visits:
+  filePath: /data/visits
+
+# Lab 12: keys injected as environment variables via ConfigMap (non-sensitive).
+configMapEnv:
+  APP_ENV: "production"
+  LOG_LEVEL: "info"
+
+# Lab 12: persistent storage for /data (ReadWriteOnce). Use replicaCount: 1 when enabled.
+persistence:
+  enabled: false
+  size: 100Mi
+  storageClass: ""
+
 replicaCount: 3
 
 image:

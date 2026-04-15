@@ -3,8 +3,10 @@ import json
 import os
 import platform
 import socket
+import threading
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request, HTTPException
@@ -17,6 +19,58 @@ METRICS_REGISTRY = CollectorRegistry()
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+_visits_lock = threading.Lock()
+
+
+def _visits_path() -> Path:
+    """Path to the visit counter file (Lab 12 persistence)."""
+    return Path(os.getenv("VISITS_FILE", "/data/visits"))
+
+
+def _config_json_path() -> Path:
+    """Optional mounted ConfigMap file (Lab 12)."""
+    return Path(os.getenv("CONFIG_JSON_PATH", "/config/config.json"))
+
+
+def load_mounted_config() -> dict:
+    """Load JSON from CONFIG_JSON_PATH if the file exists."""
+    path = _config_json_path()
+    if not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        logging.getLogger(__name__).warning(
+            "Could not read config file", extra={"path": str(path), "error": str(e)}
+        )
+        return {}
+
+
+def read_visits() -> int:
+    path = _visits_path()
+    try:
+        content = path.read_text(encoding="utf-8").strip()
+        return int(content) if content else 0
+    except FileNotFoundError:
+        return 0
+    except (ValueError, OSError):
+        return 0
+
+
+def write_visits(count: int) -> None:
+    path = _visits_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(str(count), encoding="utf-8")
+    tmp.replace(path)
+
+
+def increment_visits() -> int:
+    with _visits_lock:
+        n = read_visits() + 1
+        write_visits(n)
+        return n
 
 
 class JSONFormatter(logging.Formatter):
@@ -124,7 +178,7 @@ def _normalize_endpoint(path: str) -> str:
     """Normalize endpoint for low cardinality (avoid user IDs etc.)."""
     if path == "/":
         return "/"
-    if path in ("/health", "/metrics"):
+    if path in ("/health", "/metrics", "/visits"):
         return path
     return path
 
@@ -165,7 +219,7 @@ async def log_requests(request: Request, call_next):
     http_request_duration_seconds.labels(method=request.method, endpoint=endpoint).observe(duration_s)
     http_requests_in_progress.dec()
 
-    if endpoint in ("/", "/health"):
+    if endpoint in ("/", "/health", "/visits"):
         devops_info_endpoint_calls.labels(endpoint=endpoint).inc()
         devops_info_system_collection_seconds.observe(duration_s)
 
@@ -208,12 +262,18 @@ async def read_root(request: Request):
         },
     )
     try:
+        visit_total = increment_visits()
+        mounted = load_mounted_config()
+        app_name = mounted.get("applicationName", "devops-info-service")
+        env_label = mounted.get("environment", "development")
         return {
             "service": {
-                "name": "devops-info-service",
+                "name": app_name,
                 "version": "1.0.0",
                 "description": "DevOps course info service",
-                "framework": "FastAPI"
+                "framework": "FastAPI",
+                "environment": env_label,
+                "mountedConfig": mounted if mounted else None,
             },
             "system": {
                 "hostname": socket.gethostname(),
@@ -224,6 +284,10 @@ async def read_root(request: Request):
                 "python_version": platform.python_version(),
             },
             "runtime": get_runtime_info(),
+            "visits": {
+                "total": visit_total,
+                "file": str(_visits_path()),
+            },
             "request": {
                 "client_ip": request.client.host,
                 "user_agent": request.headers.get("User-Agent"),
@@ -231,7 +295,8 @@ async def read_root(request: Request):
                 "path": request.url.path
             },
             "endpoints": [
-                {"path": "/", "method": "GET", "description": "Service information"},
+                {"path": "/", "method": "GET", "description": "Service information (increments visit counter)"},
+                {"path": "/visits", "method": "GET", "description": "Current visit counter"},
                 {"path": "/health", "method": "GET", "description": "Health check"},
                 {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
             ],
@@ -242,6 +307,12 @@ async def read_root(request: Request):
             extra={"error": str(e)},
         )
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.get("/visits", tags=["Info"])
+async def visits():
+    """Return the current persisted visit counter (Lab 12)."""
+    return {"visits": read_visits(), "file": str(_visits_path())}
+
 
 @app.get("/health", tags=["Monitoring"])
 async def health():

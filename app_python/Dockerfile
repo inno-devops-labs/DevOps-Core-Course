@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app.py .
 
-# Change ownership of app directory to non-root user
-RUN chown -R appuser:appuser /app
+# Persisted visit counter (Lab 12); writable when using a volume or emptyDir
+RUN mkdir -p /data /config && chown -R appuser:appuser /app /data /config
 
 # Switch to non-root user
 USER appuser

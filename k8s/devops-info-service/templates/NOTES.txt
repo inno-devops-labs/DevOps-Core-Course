@@ -10,3 +10,7 @@ Quick checks:
 {{- else if eq .Values.service.type "LoadBalancer" }}
   kubectl get svc -n {{ .Release.Namespace }} {{ include "common-lib.fullname" . }} -w
 {{- end }}
+
+{{- if .Values.persistence.enabled }}
+Lab 12: PVC uses ReadWriteOnce — keep replicaCount at 1 unless your storage class supports ReadWriteMany.
+{{- end }}

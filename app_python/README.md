@@ -9,7 +9,8 @@ This project implements a **DevOps Info Service** – a small web API that repor
 The service is used in the DevOps Core Course as a base for further labs: containerization, CI/CD, monitoring, and Kubernetes deployment.
 
 Main endpoints:
-- `GET /` – detailed service, system, runtime and request information, plus a list of available endpoints.
+- `GET /` – detailed service, system, runtime and request information, plus a list of available endpoints. **(Lab 12)** Increments a persisted visit counter and returns `visits` in the JSON payload.
+- `GET /visits` – **(Lab 12)** returns the current visit counter from disk (`VISITS_FILE`, default `/data/visits`).
 - `GET /health` – lightweight health check with status, timestamp, and uptime in seconds.
 
 ## Prerequisites
@@ -102,6 +103,15 @@ Example:
 curl -s http://127.0.0.1:5000/ | jq
 ```
 
+### `GET /visits` – Visit counter (Lab 12)
+
+Returns JSON:
+
+- `visits` – integer count persisted in `VISITS_FILE` (default `/data/visits`)
+- `file` – path to the counter file
+
+Does **not** increment the counter (use `GET /` for that).
+
 ### `GET /health` – Health check
 
 Returns a minimal JSON body for liveness/readiness checks:
@@ -163,8 +173,25 @@ The application is configured via environment variables, with sensible defaults:
 | `HOST`   | `0.0.0.0`  | Interface to bind the server to                  |
 | `PORT`   | `5000`     | TCP port to listen on                            |
 | `DEBUG`  | `false`    | When `true`, enables auto-reload for development |
+| `VISITS_FILE` | `/data/visits` | **(Lab 12)** Path to the visit counter file |
+| `CONFIG_JSON_PATH` | `/config/config.json` | **(Lab 12)** Optional JSON config from a ConfigMap mount |
 
 These values are read in `app.py` using `os.getenv(...)` and passed to `uvicorn.run()` when the app is started with `python app.py`.
+
+## Lab 12 — Docker Compose (visit persistence)
+
+From `app_python/`:
+
+```bash
+docker compose up --build
+```
+
+- Host directory `./data` is mounted to `/data` in the container.
+- Hit `http://127.0.0.1:5000/` several times, then `http://127.0.0.1:5000/visits`.
+- Run `docker compose restart` and confirm `/visits` continues from the last value.
+- Inspect `app_python/data/visits` on the host if needed.
+
+For Kubernetes / Helm, see `k8s/CONFIGMAPS.md`.
 
 ## Docker
 

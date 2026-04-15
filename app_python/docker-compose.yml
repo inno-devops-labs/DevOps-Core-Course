@@ -1,0 +1,14 @@
+# Lab 12: local persistence for the visit counter (./data on the host).
+services:
+  devops-info-service:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      VISITS_FILE: /data/visits
+      HOST: "0.0.0.0"
+      PORT: "5000"
+    volumes:
+      - ./data:/data
+    # Bind mounts are often root-owned; run as root for local lab verification only.
+    user: "0:0"

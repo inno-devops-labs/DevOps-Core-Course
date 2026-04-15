@@ -21,10 +21,13 @@ spec:
         {{- range $k, $v := .Values.podLabels }}
         {{ $k }}: {{ $v | quote }}
         {{- end }}
-      {{- if or .Values.podAnnotations .Values.vault.enabled }}
+      {{- if or .Values.podAnnotations .Values.vault.enabled .Values.config.checksumAnnotation }}
       annotations:
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.config.checksumAnnotation }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- end }}
         {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
@@ -40,6 +43,17 @@ spec:
       {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       {{- end }}
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ include "common-lib.fullname" . }}-config-file
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "common-lib.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
       containers:
         - name: {{ include "common-lib.fullname" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -48,13 +62,29 @@ spec:
             - name: {{ .Values.container.portName }}
               containerPort: {{ .Values.container.port }}
               protocol: TCP
+          volumeMounts:
+            - name: app-config
+              mountPath: /config
+              readOnly: true
+            - name: data
+              mountPath: /data
           env:
             {{- toYaml .Values.env | nindent 12 }}
             {{- include "devops-info-service.extraEnv" . | nindent 12 }}
-          {{- if .Values.secrets.enabled }}
+            - name: VISITS_FILE
+              value: {{ .Values.visits.filePath | quote }}
+            - name: CONFIG_JSON_PATH
+              value: {{ .Values.config.mountPath | quote }}
+          {{- if or .Values.secrets.enabled (and .Values.configMapEnv (gt (len .Values.configMapEnv) 0)) }}
           envFrom:
+          {{- if and .Values.configMapEnv (gt (len .Values.configMapEnv) 0) }}
+            - configMapRef:
+                name: {{ include "common-lib.fullname" . }}-env
+          {{- end }}
+          {{- if .Values.secrets.enabled }}
             - secretRef:
                 name: {{ include "common-lib.fullname" . }}-credentials
+          {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

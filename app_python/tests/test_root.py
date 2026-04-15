@@ -22,6 +22,7 @@ class TestRootEndpoint:
         assert "service" in data
         assert "system" in data
         assert "runtime" in data
+        assert "visits" in data
         assert "request" in data
         assert "endpoints" in data
 
@@ -35,6 +36,7 @@ class TestRootEndpoint:
         assert service["version"] == "1.0.0"
         assert service["description"] == "DevOps course info service"
         assert service["framework"] == "FastAPI"
+        assert service.get("environment") == "development"
 
     def test_root_endpoint_system_info(self, client):
         """Test system information structure and types."""
@@ -89,6 +91,7 @@ class TestRootEndpoint:
         # Check that root and health endpoints are listed
         endpoint_paths = [ep["path"] for ep in endpoints]
         assert "/" in endpoint_paths
+        assert "/visits" in endpoint_paths
         assert "/health" in endpoint_paths
         
         # Verify endpoint structure
