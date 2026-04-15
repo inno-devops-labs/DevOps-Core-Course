@@ -1,0 +1,17 @@
+replicaCount: 4
+
+persistence:
+  enabled: false
+
+service:
+  type: ClusterIP
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+
+env:
+  appEnv: rollout-bluegreen
+  appRegion: lab14-bluegreen

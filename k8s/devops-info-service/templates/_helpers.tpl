@@ -53,6 +53,14 @@ Chart-local wrappers around the shared library helpers.
 {{- end -}}
 {{- end -}}
 
+{{- define "devops-info-service.previewServiceName" -}}
+{{- printf "%s-preview" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "devops-info-service.analysisTemplateName" -}}
+{{- printf "%s-health" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- define "devops-info-service.configFilePath" -}}
 {{- printf "%s/%s" .Values.config.mountPath .Values.config.fileName -}}
 {{- end -}}

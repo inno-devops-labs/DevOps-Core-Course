@@ -40,6 +40,22 @@ persistence:
   mountPath: /data
   visitsFileName: visits
 
+rollout:
+  enabled: false
+  strategy: canary
+  canary:
+    maxSurge: 25%
+    maxUnavailable: 0
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: 0
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    path: /health
+
 service:
   type: NodePort
   port: 80

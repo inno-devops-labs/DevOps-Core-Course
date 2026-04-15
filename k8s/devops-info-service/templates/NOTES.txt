@@ -1,7 +1,15 @@
 1. Release: {{ .Release.Name }}
 2. Namespace: {{ .Release.Namespace }}
 
-{{- if eq .Values.service.type "NodePort" }}
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
+Active service:
+  kubectl port-forward svc/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+Preview service:
+  kubectl port-forward svc/{{ include "devops-info-service.previewServiceName" . }} 8081:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+Rollout commands:
+  kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }}
+  kubectl argo rollouts promote {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }}
+{{- else if eq .Values.service.type "NodePort" }}
 Application URL:
   http://127.0.0.1:{{ .Values.service.nodePort }}/
 {{- else if eq .Values.service.type "LoadBalancer" }}
@@ -16,3 +24,6 @@ Useful checks:
   kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.configFilePath" . }}
   kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- printenv | grep APP_
   kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.visitsFilePath" . }}
+{{- if .Values.rollout.enabled }}
+  kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }}
+{{- end }}
