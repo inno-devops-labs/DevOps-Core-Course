@@ -60,3 +60,22 @@ app: {{ include "devops-info.name" . }}
 {{- printf "%s-credentials" (include "devops-info.fullname" .) }}
 {{- end }}
 {{- end }}
+
+{{/* Create config file ConfigMap name. */}}
+{{- define "devops-info.configFileConfigMapName" -}}
+{{- printf "%s-config" (include "devops-info.fullname" .) }}
+{{- end }}
+
+{{/* Create env ConfigMap name. */}}
+{{- define "devops-info.configEnvConfigMapName" -}}
+{{- printf "%s-env" (include "devops-info.fullname" .) }}
+{{- end }}
+
+{{/* Create persistence claim name. */}}
+{{- define "devops-info.persistenceClaimName" -}}
+{{- if .Values.persistence.existingClaim }}
+{{- .Values.persistence.existingClaim }}
+{{- else }}
+{{- printf "%s-data" (include "devops-info.fullname" .) }}
+{{- end }}
+{{- end }}

@@ -20,6 +20,12 @@ resources:
 env:
   RELEASE_VERSION: "dev"
 
+configEnv:
+  APP_ENV: "dev"
+  LOG_LEVEL: "debug"
+  FEATURE_VISITS_COUNTER: "true"
+  VISITS_FILE: "/data/visits"
+
 probes:
   readiness:
     initialDelaySeconds: 3

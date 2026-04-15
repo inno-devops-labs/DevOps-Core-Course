@@ -8,6 +8,10 @@ import socket
 import platform
 import logging
 import sys
+import tempfile
+import threading
+from contextlib import contextmanager
+from pathlib import Path
 from time import perf_counter
 from datetime import datetime, timezone
 from flask import Flask, Response, jsonify, request
@@ -18,6 +22,11 @@ from prometheus_client import (
     Histogram,
     generate_latest,
 )
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover
+    fcntl = None
 
 
 def format_timestamp(timestamp: datetime | None = None) -> str:
@@ -98,13 +107,16 @@ app = Flask(__name__)
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+VISITS_FILE = os.getenv('VISITS_FILE', 'data/visits')
+VISITS_LOCK_FILE = f'{VISITS_FILE}.lock'
+VISITS_MUTEX = threading.Lock()
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
 
 # Known endpoints are exposed as-is; unknown paths are grouped to keep
 # label values low-cardinality.
-KNOWN_ENDPOINTS = {'/', '/health', '/metrics', '/boom'}
+KNOWN_ENDPOINTS = {'/', '/health', '/metrics', '/boom', '/visits'}
 
 # RED metrics for HTTP traffic.
 HTTP_REQUESTS_TOTAL = Counter(
@@ -202,6 +214,73 @@ def get_request_info():
     }
 
 
+def ensure_visits_parent_dir() -> None:
+    """Create parent directory for visits data files when needed."""
+    Path(VISITS_FILE).parent.mkdir(parents=True, exist_ok=True)
+
+
+@contextmanager
+def acquire_visits_lock():
+    """Serialize read/write access to visits files."""
+    ensure_visits_parent_dir()
+    with VISITS_MUTEX:
+        with open(VISITS_LOCK_FILE, 'a+', encoding='utf-8') as lock_file:
+            if fcntl is not None:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                if fcntl is not None:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+
+def read_visits_count() -> int:
+    """Return current visits counter value or zero when file is absent."""
+    try:
+        with open(VISITS_FILE, 'r', encoding='utf-8') as data_file:
+            raw_value = data_file.read().strip()
+            return int(raw_value) if raw_value else 0
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        logger.warning(
+            'visits_file_invalid_content',
+            extra={'path': VISITS_FILE},
+        )
+        return 0
+
+
+def write_visits_count(value: int) -> None:
+    """Persist visits counter with an atomic file replace."""
+    ensure_visits_parent_dir()
+    temp_fd, temp_path = tempfile.mkstemp(
+        prefix='visits-',
+        dir=str(Path(VISITS_FILE).parent),
+    )
+    try:
+        with os.fdopen(temp_fd, 'w', encoding='utf-8') as temp_file:
+            temp_file.write(f'{value}\n')
+        os.replace(temp_path, VISITS_FILE)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+def increment_visits_count() -> int:
+    """Increase visits counter by one and return updated value."""
+    with acquire_visits_lock():
+        current = read_visits_count()
+        updated = current + 1
+        write_visits_count(updated)
+        return updated
+
+
+def get_visits_count() -> int:
+    """Read current visits counter value."""
+    with acquire_visits_lock():
+        return read_visits_count()
+
+
 def get_client_ip() -> str:
     """Extract client IP address with proxy awareness."""
     forwarded_for = request.headers.get('X-Forwarded-For', '')
@@ -285,11 +364,16 @@ def log_request_completed(response):
 def index():
     """Main endpoint - service and system information."""
     ENDPOINT_CALLS_TOTAL.labels(endpoint='/').inc()
+    visits_count = increment_visits_count()
     response = {
         'service': get_service_info(),
         'system': get_system_info(),
         'runtime': get_runtime_info(),
         'request': get_request_info(),
+        'visits': {
+            'count': visits_count,
+            'file': VISITS_FILE,
+        },
         'endpoints': [
             {
                 'path': '/',
@@ -305,6 +389,11 @@ def index():
                 'path': '/metrics',
                 'method': 'GET',
                 'description': 'Prometheus metrics endpoint',
+            },
+            {
+                'path': '/visits',
+                'method': 'GET',
+                'description': 'Current visits counter value',
             },
         ],
     }
@@ -325,6 +414,13 @@ def health():
             'uptime_seconds': uptime['seconds'],
         },
     )
+
+
+@app.route('/visits')
+def visits():
+    """Return current visits counter value."""
+    ENDPOINT_CALLS_TOTAL.labels(endpoint='/visits').inc()
+    return jsonify({'visits': get_visits_count()})
 
 
 @app.errorhandler(404)
@@ -383,6 +479,7 @@ if __name__ == '__main__':
             'host': HOST,
             'port': PORT,
             'debug': DEBUG,
+            'visits_file': VISITS_FILE,
             'started_at': format_timestamp(START_TIME),
         },
     )

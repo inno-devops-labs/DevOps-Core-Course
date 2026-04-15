@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DevOps Info Service is a RESTful web application built with Flask that exposes system information, runtime metrics, and health status. It's designed to be lightweight, configurable, and production-ready, with proper error handling, logging, and documentation.
+The DevOps Info Service is a RESTful web application built with Flask that exposes system information, runtime metrics, health status, and a persistent visits counter. It's designed to be lightweight, configurable, and production-ready, with proper error handling, logging, and documentation.
 
 ## CI/CD Status
 
@@ -80,6 +80,9 @@ curl http://localhost:5000/
 # Health check
 curl http://localhost:5000/health
 
+# Persistent visits counter
+curl http://localhost:5000/visits
+
 # Pretty-printed JSON (requires jq)
 curl http://localhost:5000/ | jq
 ```
@@ -137,9 +140,15 @@ Returns comprehensive service and system information.
     "method": "GET",
     "path": "/"
   },
+  "visits": {
+    "count": 42,
+    "file": "/data/visits"
+  },
   "endpoints": [
     {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"}
+    {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/metrics", "method": "GET", "description": "Prometheus metrics endpoint"},
+    {"path": "/visits", "method": "GET", "description": "Current visits counter value"}
   ]
 }
 ```
@@ -160,6 +169,17 @@ Returns health status for monitoring and Kubernetes probes.
 **Status Codes:**
 - `200 OK` - Service is healthy
 
+### `GET /visits`
+
+Returns the current persistent visits counter without incrementing it.
+
+**Response:**
+```json
+{
+  "visits": 42
+}
+```
+
 ## Configuration
 
 The application can be configured using environment variables:
@@ -169,6 +189,7 @@ The application can be configured using environment variables:
 | `HOST` | `0.0.0.0` | Host address to bind to |
 | `PORT` | `5000` | Port number to listen on |
 | `DEBUG` | `False` | Enable debug mode (set to `true` to enable) |
+| `VISITS_FILE` | `data/visits` | File path used to persist the visits counter |
 
 ### Examples
 
@@ -181,6 +202,9 @@ HOST=0.0.0.0 PORT=8080 python app.py
 
 # Debug mode
 DEBUG=true python app.py
+
+# Custom persistent counter file
+VISITS_FILE=./data/visits python app.py
 ```
 
 ## Project Structure
@@ -268,3 +292,20 @@ docker pull <your-dockerhub-username>/devops-info-service:<your_tag>
 docker run -p 5000:5000 <your-dockerhub-username>/devops-info-service:<your_tag>
 ```
 
+### Local Persistence Test with Docker Compose
+
+From `app_python/`:
+
+```bash
+docker compose up --build -d
+curl -s http://localhost:5000/ >/dev/null
+curl -s http://localhost:5000/ >/dev/null
+curl http://localhost:5000/visits
+cat ./data/visits
+
+docker compose restart
+curl http://localhost:5000/visits
+```
+
+Compose mounts `./data` from host to `/app/data` in the container and sets
+`VISITS_FILE=/app/data/visits`, so the counter survives container restarts.

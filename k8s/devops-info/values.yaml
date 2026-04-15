@@ -37,12 +37,26 @@ env:
   DEBUG: "false"
   RELEASE_VERSION: "v1"
 
+configEnv:
+  APP_ENV: "dev"
+  LOG_LEVEL: "info"
+  FEATURE_VISITS_COUNTER: "true"
+  VISITS_FILE: "/data/visits"
+
 secrets:
   create: true
   name: ""
   data:
     APP_USERNAME: "change-me-username"
     APP_PASSWORD: "change-me-password"
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
 
 vault:
   enabled: false

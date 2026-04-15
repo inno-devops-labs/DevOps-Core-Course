@@ -1,0 +1,17 @@
+{
+  "application": {
+    "name": "devops-info-service",
+    "component": "api"
+  },
+  "environment": "default",
+  "features": {
+    "visitsCounter": true,
+    "prometheusMetrics": true,
+    "requestLogging": true
+  },
+  "settings": {
+    "logFormat": "json",
+    "timezone": "UTC",
+    "refreshSeconds": 30
+  }
+}

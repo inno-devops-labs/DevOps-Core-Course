@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pytest
 
+import app as app_module
 from app import app
 
 
@@ -11,6 +12,13 @@ def client():
     app.testing = True
     with app.test_client() as test_client:
         yield test_client
+
+
+@pytest.fixture(autouse=True)
+def isolate_visits_file(tmp_path, monkeypatch):
+    visits_file = tmp_path / "visits"
+    monkeypatch.setattr(app_module, "VISITS_FILE", str(visits_file))
+    monkeypatch.setattr(app_module, "VISITS_LOCK_FILE", f"{visits_file}.lock")
 
 
 def assert_iso8601(timestamp: str) -> None:
@@ -31,7 +39,14 @@ def test_index_success_response_structure(client):
     assert isinstance(data, dict)
 
     # Top-level keys
-    for key in ("service", "system", "runtime", "request", "endpoints"):
+    for key in (
+        "service",
+        "system",
+        "runtime",
+        "request",
+        "visits",
+        "endpoints",
+    ):
         assert key in data
 
     # Service info
@@ -71,12 +86,18 @@ def test_index_success_response_structure(client):
     assert request_info["method"] == "GET"
     assert request_info["path"] == "/"
 
+    # Visits info
+    visits = data["visits"]
+    assert isinstance(visits["count"], int)
+    assert visits["count"] == 1
+
     # Endpoints list
     endpoints = data["endpoints"]
     assert isinstance(endpoints, list)
     assert any(ep["path"] == "/" for ep in endpoints)
     assert any(ep["path"] == "/health" for ep in endpoints)
     assert any(ep["path"] == "/metrics" for ep in endpoints)
+    assert any(ep["path"] == "/visits" for ep in endpoints)
 
 
 def test_index_error_method_not_allowed(client):
@@ -95,6 +116,16 @@ def test_health_success_response_structure(client):
     assert data["status"] == "healthy"
     assert isinstance(data["uptime_seconds"], int)
     assert_iso8601(data["timestamp"])
+
+
+def test_visits_counter_endpoint_returns_current_count(client):
+    client.get("/")
+    client.get("/")
+    response = client.get("/visits")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["visits"] == 2
 
 
 def test_metrics_endpoint_exposes_prometheus_metrics(client):

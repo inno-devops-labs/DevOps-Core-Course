@@ -25,3 +25,6 @@ Thumbs.db
 .coverage
 htmlcov/
 
+# Local persistence data
+data/*
+!data/.gitkeep

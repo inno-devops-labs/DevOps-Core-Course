@@ -34,10 +34,17 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info.serviceAccountName" . }}
+      securityContext:
+        fsGroup: 101
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 101
+            allowPrivilegeEscalation: false
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
@@ -48,8 +55,20 @@ spec:
               value: {{ index $.Values.env $key | quote }}
             {{- end }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info.configEnvConfigMapName" . }}
+            {{- if or .Values.secrets.create .Values.secrets.name }}
             - secretRef:
                 name: {{ include "devops-info.secretName" . }}
+            {{- end }}
+          volumeMounts:
+            - name: app-config
+              mountPath: /config
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:
@@ -68,3 +87,15 @@ spec:
             periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ include "devops-info.configFileConfigMapName" . }}
+            items:
+              - key: config.json
+                path: config.json
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info.persistenceClaimName" . }}
+        {{- end }}

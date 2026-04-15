@@ -1,0 +1,15 @@
+services:
+  devops-info:
+    build: .
+    container_name: devops-info-local
+    network_mode: bridge
+    user: "1000:1000"
+    ports:
+      - "5000:5000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5000"
+      DEBUG: "false"
+      VISITS_FILE: "/app/data/visits"
+    volumes:
+      - ./data:/app/data
