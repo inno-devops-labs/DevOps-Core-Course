@@ -1,7 +1,7 @@
 # DevOps Info Service (Python)
 
 ## Overview
-A simple DevOps info service that exposes system/runtime details and a health endpoint.
+A simple DevOps info service that exposes system/runtime details, a health endpoint, and a persistent visit counter.
 
 ## Prerequisites
 - Python 3.11+
@@ -34,6 +34,26 @@ docker build -t python-app .
 ```bash
 docker run --rm -p 8000:8000 python-app
 ```
+
+### Run with persistent visit storage
+```bash
+docker compose up --build
+```
+
+The Compose setup mounts `./data` into the container at `/data`, so the visit counter survives container restarts.
+
+### Verify visit persistence
+```bash
+curl http://localhost:8000/
+curl http://localhost:8000/
+curl http://localhost:8000/visits
+cat ./data/visits
+docker compose down
+docker compose up -d
+curl http://localhost:8000/visits
+```
+
+`VISITS_FILE` defaults to `/data/visits`, but you can override it with an environment variable for local testing.
 
 ### Pull from Docker Hub
 ```bash

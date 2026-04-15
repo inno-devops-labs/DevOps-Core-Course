@@ -3,6 +3,8 @@ import os
 import platform
 import socket
 import time
+from pathlib import Path
+from threading import Lock
 from datetime import datetime, timezone
 
 from flask import Flask, Response, jsonify, request, g
@@ -12,6 +14,7 @@ from pythonjsonlogger import jsonlogger
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+VISITS_FILE = Path(os.getenv("VISITS_FILE", "/data/visits"))
 
 app = Flask(__name__)
 
@@ -67,6 +70,47 @@ configure_logging()
 logger = logging.getLogger("devops-info-service")
 
 
+class VisitCounter:
+    def __init__(self, path: Path):
+        self.path = path
+        self._lock = Lock()
+        self._count = self._load_count()
+
+    def _load_count(self) -> int:
+        try:
+            return int(self.path.read_text(encoding="utf-8").strip() or "0")
+        except FileNotFoundError:
+            return 0
+        except ValueError:
+            logger.warning(
+                "invalid_visits_counter",
+                extra={
+                    "event": "invalid_visits_counter",
+                    "path": str(self.path),
+                },
+            )
+            return 0
+
+    def _write_count(self, count: int) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = self.path.with_suffix(".tmp")
+        temp_path.write_text(f"{count}\n", encoding="utf-8")
+        os.replace(temp_path, self.path)
+
+    def increment(self) -> int:
+        with self._lock:
+            self._count += 1
+            self._write_count(self._count)
+            return self._count
+
+    def get(self) -> int:
+        with self._lock:
+            return self._count
+
+
+visit_counter = VisitCounter(VISITS_FILE)
+
+
 def get_uptime():
     delta = datetime.now(timezone.utc) - START_TIME
     seconds = int(delta.total_seconds())
@@ -111,6 +155,7 @@ def get_service_info():
         "version": "1.0.0",
         "description": "DevOps course info service",
         "framework": "Flask",
+        "visits_file": str(VISITS_FILE),
     }
 
 
@@ -188,14 +233,17 @@ def teardown_request_metrics(exception):
 @app.route("/", methods=["GET"])
 def index():
     DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/").inc()
+    current_visits = visit_counter.increment()
     response = {
         "service": get_service_info(),
         "system": get_system_info(),
         "runtime": get_runtime_info(),
         "request": get_request_info(),
+        "visits": current_visits,
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Current visit count"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
@@ -216,6 +264,12 @@ def health():
         ),
         200,
     )
+
+
+@app.route("/visits", methods=["GET"])
+def visits():
+    DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/visits").inc()
+    return jsonify({"visits": visit_counter.get(), "visits_file": str(VISITS_FILE)}), 200
 
 
 @app.route("/metrics", methods=["GET"])

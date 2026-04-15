@@ -1,0 +1,15 @@
+{
+  "application": {
+    "name": "devops-info-service",
+    "environment": "{{ .Values.config.env.APP_ENV }}",
+    "visitsFile": "{{ .Values.persistence.mountPath }}/visits"
+  },
+  "features": {
+    "visitsEndpoint": {{ .Values.config.env.FEATURE_VISITS_ENABLED | default "true" }},
+    "metricsEndpoint": true
+  },
+  "settings": {
+    "logLevel": "{{ .Values.config.env.LOG_LEVEL }}",
+    "port": "{{ .Values.service.containerPort }}"
+  }
+}

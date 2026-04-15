@@ -8,10 +8,22 @@ service:
   nodePort: 30080
 
 env:
-  - name: APP_ENV
-    value: development
   - name: PORT
     value: "8000"
+  - name: VISITS_FILE
+    value: /data/visits
+
+config:
+  env:
+    APP_ENV: development
+    LOG_LEVEL: DEBUG
+    FEATURE_VISITS_ENABLED: "true"
+    CONFIG_PATH: /config/config.json
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
 
 secrets:
   data:

@@ -8,10 +8,22 @@ service:
   nodePort: null
 
 env:
-  - name: APP_ENV
-    value: production
   - name: PORT
     value: "8000"
+  - name: VISITS_FILE
+    value: /data/visits
+
+config:
+  env:
+    APP_ENV: production
+    LOG_LEVEL: INFO
+    FEATURE_VISITS_ENABLED: "true"
+    CONFIG_PATH: /config/config.json
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
 
 secrets:
   data:

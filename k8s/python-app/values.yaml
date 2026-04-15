@@ -18,10 +18,33 @@ service:
   nodePort: 30080
 
 env:
-  - name: APP_ENV
-    value: production
   - name: PORT
     value: "8000"
+  - name: VISITS_FILE
+    value: /data/visits
+
+config:
+  mountPath: /config
+  env:
+    APP_ENV: production
+    LOG_LEVEL: INFO
+    FEATURE_VISITS_ENABLED: "true"
+    CONFIG_PATH: /config/config.json
+
+persistence:
+  enabled: true
+  mountPath: /data
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
+
+podSecurityContext:
+  fsGroup: 1000
+
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
 
 serviceAccount:
   create: true

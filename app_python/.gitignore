@@ -5,6 +5,7 @@ venv/
 *.log
 .pytest_cache/
 .coverage
+data/
 
 # IDE
 .vscode/

@@ -5,7 +5,15 @@ from app import app as flask_app
 
 
 @pytest.fixture
-def client():
+def isolated_counter(tmp_path, monkeypatch):
+    visits_file = tmp_path / "visits"
+    monkeypatch.setattr(app_module, "VISITS_FILE", visits_file)
+    monkeypatch.setattr(app_module, "visit_counter", app_module.VisitCounter(visits_file))
+    return visits_file
+
+
+@pytest.fixture
+def client(isolated_counter):
     # Standard test client setup
     flask_app.config.update(
         TESTING=True,
@@ -15,7 +23,7 @@ def client():
 
 
 @pytest.fixture
-def client_no_propagate():
+def client_no_propagate(isolated_counter):
     """
     Flask in TESTING mode often propagates exceptions instead of invoking error handlers.
     This fixture ensures our 500 handler is actually returned as JSON.
@@ -26,28 +34,8 @@ def client_no_propagate():
     )
     with flask_app.test_client() as client:
         yield client
-@pytest.fixture
-def client():
-    # Standard test client setup
-    flask_app.config.update(
-        TESTING=True,
-    )
-    with flask_app.test_client() as client:
-        yield client
 
 
-@pytest.fixture
-def client_no_propagate():
-    """
-    Flask in TESTING mode often propagates exceptions instead of invoking error handlers.
-    This fixture ensures our 500 handler is actually returned as JSON.
-    """
-    flask_app.config.update(
-        TESTING=True,
-        PROPAGATE_EXCEPTIONS=False,
-    )
-    with flask_app.test_client() as client:
-        yield client
 ISO_8601_UTC_REGEX = re.compile(
     r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?\+00:00$"
 )
@@ -63,6 +51,7 @@ def test_get_root_returns_expected_json_structure(client):
     # Top-level keys
     for key in ("service", "system", "runtime", "request", "endpoints"):
         assert key in data
+    assert data["visits"] == 1
 
     # service block
     service = data["service"]
@@ -70,6 +59,7 @@ def test_get_root_returns_expected_json_structure(client):
     assert service["framework"] == "Flask"
     assert isinstance(service["version"], str)
     assert isinstance(service["description"], str)
+    assert isinstance(service["visits_file"], str) and service["visits_file"]
 
     # system block (types + presence)
     system = data["system"]
@@ -101,6 +91,7 @@ def test_get_root_returns_expected_json_structure(client):
     paths = {(e["path"], e["method"]) for e in endpoints}
     assert ("/", "GET") in paths
     assert ("/health", "GET") in paths
+    assert ("/visits", "GET") in paths
 
 
 def test_root_uses_x_forwarded_for_as_client_ip(client):
@@ -126,6 +117,31 @@ def test_get_health_returns_expected_payload(client):
     assert isinstance(data["uptime_seconds"], int) and data["uptime_seconds"] >= 0
     assert isinstance(data["timestamp"], str)
     assert ISO_8601_UTC_REGEX.match(data["timestamp"])
+
+
+def test_visits_endpoint_returns_current_counter(client):
+    client.get("/")
+    client.get("/")
+
+    resp = client.get("/visits")
+    assert resp.status_code == 200
+    assert resp.is_json
+
+    data = resp.get_json()
+    assert data["visits"] >= 2
+    assert isinstance(data["visits_file"], str) and data["visits_file"]
+
+
+def test_visits_counter_persists_to_file(tmp_path, client, monkeypatch):
+    visits_file = tmp_path / "visits"
+    monkeypatch.setattr(app_module, "VISITS_FILE", visits_file)
+    monkeypatch.setattr(app_module, "visit_counter", app_module.VisitCounter(visits_file))
+
+    client.get("/")
+    client.get("/")
+
+    assert visits_file.read_text(encoding="utf-8").strip() == "2"
+    assert app_module.visit_counter.get() == 2
 
 
 def test_404_returns_json_error_payload(client):
