@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-info-service-manual
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: devops-core-course
+    app.kubernetes.io/component: gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Ravwvil/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/devops-info-service
+    helm:
+      releaseName: devops-info-service-manual
+      values: |
+        service:
+          type: ClusterIP
+        env:
+          appEnv: gitops
+          appRegion: lab13-manual
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lab13
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
