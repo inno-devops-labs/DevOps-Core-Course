@@ -1,0 +1,2 @@
+Hello IPFS from the DevOps Core Course lab.
+This file is prepared for local Kubo and 4EVERLAND Bucket uploads.

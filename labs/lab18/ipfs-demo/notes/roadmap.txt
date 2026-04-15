@@ -1,0 +1,5 @@
+1. Run the local Kubo node from docker-compose.yml.
+2. Add this folder recursively with `ipfs add -Qr /pins`.
+3. Keep the returned root CID for gateway checks.
+4. Upload the same folder to 4EVERLAND Bucket to compare gateway access.
+5. Redeploy after changing one file and observe the new CID.

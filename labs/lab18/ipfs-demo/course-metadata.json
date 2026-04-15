@@ -1,0 +1,16 @@
+{
+  "course": "DevOps Core Course",
+  "lab": 18,
+  "topic": "Decentralized Hosting",
+  "artifacts": [
+    "index.html",
+    "hello-ipfs.txt",
+    "course-badge.svg",
+    "roadmap.txt"
+  ],
+  "deployTargets": [
+    "local-kubo",
+    "4EVERLAND-hosting",
+    "4EVERLAND-bucket"
+  ]
+}

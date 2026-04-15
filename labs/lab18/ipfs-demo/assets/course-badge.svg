@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" role="img" aria-labelledby="title desc">
+  <title id="title">DevOps Core Course IPFS Badge</title>
+  <desc id="desc">A simple badge for the lab18 IPFS demo folder.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15324d" />
+      <stop offset="100%" stop-color="#2c8b9c" />
+    </linearGradient>
+  </defs>
+  <rect width="360" height="120" rx="18" fill="url(#bg)" />
+  <circle cx="64" cy="60" r="28" fill="#f3f4f6" opacity="0.18" />
+  <path d="M52 60l12-12 12 12-12 12z" fill="#f8fafc" />
+  <text x="108" y="52" fill="#f8fafc" font-family="Arial, sans-serif" font-size="24" font-weight="700">
+    DevOps Core
+  </text>
+  <text x="108" y="82" fill="#dbeafe" font-family="Arial, sans-serif" font-size="18">
+    IPFS / 4EVERLAND Demo Asset
+  </text>
+</svg>
