@@ -11,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/Ravwvil/DevOps-Core-Course.git
-    targetRevision: lab15
+    targetRevision: lab16
     path: k8s/devops-info-service
     helm:
       releaseName: devops-info-service-dev

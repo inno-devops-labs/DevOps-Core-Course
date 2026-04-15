@@ -1,0 +1,21 @@
+replicaCount: 3
+
+service:
+  type: ClusterIP
+
+statefulset:
+  enabled: true
+
+initContainers:
+  enabled: true
+  waitForService:
+    host: monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local
+  download:
+    url: https://example.com
+
+serviceMonitor:
+  enabled: true
+
+env:
+  appEnv: monitoring-statefulset
+  appRegion: lab16

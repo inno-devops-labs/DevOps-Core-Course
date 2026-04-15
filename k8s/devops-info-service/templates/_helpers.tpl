@@ -61,6 +61,10 @@ Chart-local wrappers around the shared library helpers.
 {{- printf "%s-headless" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "devops-info-service.initSharedVolumeName" -}}
+{{- default "init-workdir" .Values.initContainers.shared.volumeName -}}
+{{- end -}}
+
 {{- define "devops-info-service.analysisTemplateName" -}}
 {{- printf "%s-health" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
@@ -112,6 +116,28 @@ FEATURE_VISITS_COUNTER: {{ ternary "true" "false" .Values.config.featureFlags.vi
 {{- fail "devops-info-service: statefulset.enabled requires persistence.enabled=true" -}}
 {{- end -}}
 {{- include "devops-info-service.persistenceValidation" . -}}
+{{- end -}}
+
+{{- define "devops-info-service.initContainers" -}}
+{{- if .Values.initContainers.waitForService.enabled }}
+- name: wait-for-service
+  image: {{ .Values.initContainers.waitForService.image | quote }}
+  command:
+    - sh
+    - -c
+    - until nslookup {{ .Values.initContainers.waitForService.host | quote }}; do sleep {{ .Values.initContainers.waitForService.intervalSeconds }}; done
+{{- end }}
+{{- if .Values.initContainers.download.enabled }}
+- name: init-download
+  image: {{ .Values.initContainers.download.image | quote }}
+  command:
+    - sh
+    - -c
+    - wget -O {{ printf "%s/%s" .Values.initContainers.shared.mountPath .Values.initContainers.download.fileName | quote }} {{ .Values.initContainers.download.url | quote }}
+  volumeMounts:
+    - name: {{ include "devops-info-service.initSharedVolumeName" . }}
+      mountPath: {{ .Values.initContainers.shared.mountPath }}
+{{- end }}
 {{- end -}}
 
 {{- define "devops-info-service.vaultConfigTemplate" -}}

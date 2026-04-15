@@ -1,0 +1,12 @@
+grafana:
+  adminPassword: prom-operator
+
+prometheus:
+  prometheusSpec:
+    retention: 10d
+    serviceMonitorSelectorNilUsesHelmValues: true
+    podMonitorSelectorNilUsesHelmValues: true
+
+alertmanager:
+  alertmanagerSpec:
+    replicas: 1

@@ -47,6 +47,10 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- include "devops-info-service.initContainers" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ include "devops-info-service.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -70,6 +74,10 @@ spec:
               readOnly: true
             - name: data-volume
               mountPath: {{ .Values.persistence.mountPath }}
+            {{- if .Values.initContainers.enabled }}
+            - name: {{ include "devops-info-service.initSharedVolumeName" . }}
+              mountPath: {{ .Values.initContainers.shared.mountPath }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.probes.startup.enabled }}
@@ -90,6 +98,10 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.configFileConfigMapName" . }}
+        {{- if .Values.initContainers.enabled }}
+        - name: {{ include "devops-info-service.initSharedVolumeName" . }}
+          emptyDir: {}
+        {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: data-volume

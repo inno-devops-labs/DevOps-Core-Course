@@ -64,6 +64,30 @@ statefulset:
     rollingUpdate:
       partition: 0
 
+initContainers:
+  enabled: false
+  shared:
+    volumeName: init-workdir
+    mountPath: /init-data
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: https://example.com
+    fileName: index.html
+  waitForService:
+    enabled: true
+    image: busybox:1.36
+    host: kubernetes.default.svc.cluster.local
+    intervalSeconds: 2
+
+serviceMonitor:
+  enabled: false
+  path: /metrics
+  interval: 15s
+  scrapeTimeout: 10s
+  labels:
+    release: monitoring
+
 service:
   type: NodePort
   port: 80
