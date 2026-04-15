@@ -154,8 +154,8 @@ All keys from `devops-info-service-env` become environment variables in the cont
 ```bash
 $ kubectl get configmap
 NAME                          DATA   AGE
-devops-info-service-config    1      2m
-devops-info-service-env       3      2m
+devops-info-service-config    1      17s
+devops-info-service-env       3      17s
 
 $ kubectl exec deploy/devops-info-service -- cat /config/config.json
 {
@@ -196,9 +196,9 @@ spec:
       storage: 100Mi
 ```
 
-`ReadWriteOnce` means the volume can be mounted by one node at a time. This is fine for our setup since all pods run on the same minikube node.
+`ReadWriteOnce` means the volume can be mounted by one node at a time. This is fine for our setup since all pods run on the same kind node.
 
-Storage class is left empty (`""`), which uses the cluster default — on minikube that's the `standard` class backed by hostPath.
+Storage class is left empty (`""`), which uses the cluster default — on kind that's the `standard` class backed by hostPath.
 
 ### Volume mount in deployment
 
@@ -220,34 +220,25 @@ The app writes `/data/visits` which lives on the PVC.
 
 ```bash
 $ kubectl get pvc
-NAME                        STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-devops-info-service-data    Bound    pvc-abc12345-...                           100Mi      RWO            standard       3m
-
-$ kubectl describe pvc devops-info-service-data
-Name:          devops-info-service-data
-Namespace:     default
-StorageClass:  standard
-Status:        Bound
-Volume:        pvc-abc12345-...
-Capacity:      100Mi
-Access Modes:  RWO
+NAME                       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+devops-info-service-data   Bound    pvc-67fe7840-efee-4fa4-9751-9bd556721e05   100Mi      RWO            standard       17s
 
 # Hit root endpoint 5 times
-$ for i in $(seq 5); do curl -s http://$(minikube ip):30080/ > /dev/null; done
+$ for i in $(seq 5); do curl -s http://localhost:8080/ > /dev/null; done
+$ curl -s http://localhost:8080/visits
+{"visits":5}
 
-# Check the count before deleting pod
+# Check the file on PVC before deleting pod
 $ kubectl exec deploy/devops-info-service -- cat /data/visits
 5
 
 # Delete the pod (Deployment recreates it automatically)
-$ kubectl delete pod -l app.kubernetes.io/name=devops-info-service
-pod "devops-info-service-7d..." deleted
+$ kubectl delete pod devops-info-service-8558ccb8d8-5f8hv
+pod "devops-info-service-8558ccb8d8-5f8hv" deleted
 
-# Wait for new pod to be ready
-$ kubectl get pods -w
-NAME                                   READY   STATUS    RESTARTS   AGE
-devops-info-service-7d...              0/1     Pending   0          3s
-devops-info-service-7d...              1/1     Running   0          10s
+# New pod comes up: devops-info-service-8558ccb8d8-5qgkh
+$ kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=devops-info-service
+pod/devops-info-service-8558ccb8d8-5qgkh condition met
 
 # Check count in the new pod — still 5
 $ kubectl exec deploy/devops-info-service -- cat /data/visits
@@ -344,11 +335,12 @@ This approach is simpler than running a sidecar reloader and works well when you
 ```bash
 $ kubectl get configmap,pvc
 NAME                                   DATA   AGE
-configmap/devops-info-service-config   1      5m
-configmap/devops-info-service-env      3      5m
+configmap/devops-info-service-config   1      17s
+configmap/devops-info-service-env      3      17s
+configmap/kube-root-ca.crt             1      69s
 
-NAME                                             STATUS   VOLUME                   CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-persistentvolumeclaim/devops-info-service-data   Bound    pvc-abc12345-...         100Mi      RWO            standard       5m
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+persistentvolumeclaim/devops-info-service-data   Bound    pvc-67fe7840-efee-4fa4-9751-9bd556721e05   100Mi      RWO            standard       17s
 
 $ kubectl exec deploy/devops-info-service -- cat /config/config.json
 {
@@ -373,10 +365,10 @@ VISITS_FILE=/data/visits
 $ kubectl exec deploy/devops-info-service -- cat /data/visits
 5
 
-$ kubectl delete pod -l app.kubernetes.io/name=devops-info-service
-pod "devops-info-service-7d..." deleted
+$ kubectl delete pod devops-info-service-8558ccb8d8-5f8hv
+pod "devops-info-service-8558ccb8d8-5f8hv" deleted
 
-# After new pod comes up
+# After new pod comes up (devops-info-service-8558ccb8d8-5qgkh)
 $ kubectl exec deploy/devops-info-service -- cat /data/visits
 5
 ```
