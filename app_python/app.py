@@ -3,17 +3,26 @@ DevOps Info Service
 Main application module providing system information and health status.
 Built with FastAPI for modern async support and automatic documentation.
 """
-import os
 import json
-import socket
-import platform
 import logging
+import os
+import platform
+import socket
+import tempfile
+from pathlib import Path
+from threading import Lock
 from time import perf_counter
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 
 STANDARD_LOG_RECORD_FIELDS = {
@@ -47,11 +56,28 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_entry)
 
 
+# Configuration from environment variables
+HOST = os.getenv('HOST', '0.0.0.0')
+PORT = int(os.getenv('PORT', 8000))
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+APP_ENV = os.getenv('APP_ENV', 'development')
+APP_REGION = os.getenv('APP_REGION', 'local')
+LOG_LEVEL_NAME = os.getenv('LOG_LEVEL', 'INFO').upper()
+CONFIG_PATH = os.getenv('CONFIG_PATH', '/config/config.json')
+VISITS_FILE = os.getenv(
+    'VISITS_FILE',
+    os.path.join(
+        os.getenv('DATA_DIR', os.path.join(os.getcwd(), 'data')),
+        'visits',
+    ),
+)
+
+
 # Configure JSON logging
 handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
 logging.root.handlers = [handler]
-logging.root.setLevel(logging.INFO)
+logging.root.setLevel(getattr(logging, LOG_LEVEL_NAME, logging.INFO))
 logger = logging.getLogger(__name__)
 
 for logger_name in ('uvicorn', 'uvicorn.error', 'uvicorn.access'):
@@ -59,17 +85,12 @@ for logger_name in ('uvicorn', 'uvicorn.error', 'uvicorn.access'):
     uvicorn_logger.handlers = [handler]
     uvicorn_logger.propagate = False
 
-# Configuration from environment variables
-HOST = os.getenv('HOST', '0.0.0.0')
-PORT = int(os.getenv('PORT', 8000))
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-
 # Application start time for uptime calculation
 START_TIME = datetime.now(timezone.utc)
 
 # Service metadata
 SERVICE_INFO = {
-    'name': 'devops-info-service',
+    'name': os.getenv('APP_NAME', 'devops-info-service'),
     'version': '1.0.0',
     'description': 'DevOps course info service',
     'framework': 'FastAPI'
@@ -78,6 +99,11 @@ SERVICE_INFO = {
 # Available endpoints
 ENDPOINTS = [
     {'path': '/', 'method': 'GET', 'description': 'Service information'},
+    {
+        'path': '/visits',
+        'method': 'GET',
+        'description': 'Persistent visits counter',
+    },
     {'path': '/health', 'method': 'GET', 'description': 'Health check'},
     {'path': '/ready', 'method': 'GET', 'description': 'Readiness check'},
     {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'}
@@ -117,8 +143,83 @@ app = FastAPI(
 )
 
 logger.info("DevOps Info Service starting up", extra={
-    "host": HOST, "port": PORT, "debug": DEBUG
+    "host": HOST,
+    "port": PORT,
+    "debug": DEBUG,
+    "config_path": CONFIG_PATH,
+    "visits_file": VISITS_FILE,
+    "app_env": APP_ENV,
+    "app_region": APP_REGION,
+    "log_level": LOG_LEVEL_NAME,
 })
+
+
+class VisitCounterStore:
+    """Persist a simple counter in a text file with atomic writes."""
+
+    def __init__(self, file_path):
+        self.file_path = Path(file_path)
+        self._lock = Lock()
+        self._count = self._load_count()
+
+    def _load_count(self):
+        try:
+            raw_value = self.file_path.read_text(encoding='utf-8').strip()
+        except FileNotFoundError:
+            return 0
+        except OSError:
+            logger.exception(
+                'Failed to read visits file',
+                extra={'visits_file': str(self.file_path)},
+            )
+            return 0
+
+        if not raw_value:
+            return 0
+
+        try:
+            return int(raw_value)
+        except ValueError:
+            logger.warning(
+                'Invalid visits file content, resetting counter',
+                extra={
+                    'visits_file': str(self.file_path),
+                    'raw_value': raw_value,
+                },
+            )
+            return 0
+
+    def _persist_count(self, count):
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_file = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                'w',
+                dir=self.file_path.parent,
+                delete=False,
+                encoding='utf-8',
+            ) as handle:
+                handle.write(str(count))
+                handle.flush()
+                os.fsync(handle.fileno())
+                temp_file = handle.name
+            os.replace(temp_file, self.file_path)
+        finally:
+            if temp_file and os.path.exists(temp_file):
+                os.unlink(temp_file)
+
+    def get_count(self):
+        with self._lock:
+            return self._count
+
+    def increment(self):
+        with self._lock:
+            self._count += 1
+            self._persist_count(self._count)
+            return self._count
+
+
+VISIT_COUNTER = VisitCounterStore(VISITS_FILE)
 
 
 def normalize_endpoint(request: Request):
@@ -128,7 +229,7 @@ def normalize_endpoint(request: Request):
     if route_path:
         return route_path
 
-    if request.url.path in {'/', '/health', '/metrics'}:
+    if request.url.path in {'/', '/health', '/metrics', '/visits'}:
         return request.url.path
 
     if request.url.path == '/ready':
@@ -145,7 +246,10 @@ async def collect_http_metrics(request: Request, call_next):
         return await call_next(request)
 
     method = request.method
-    in_progress = HTTP_REQUESTS_IN_PROGRESS.labels(method=method, endpoint=endpoint)
+    in_progress = HTTP_REQUESTS_IN_PROGRESS.labels(
+        method=method,
+        endpoint=endpoint,
+    )
     in_progress.inc()
     start_time = perf_counter()
     status_code = '500'
@@ -194,8 +298,12 @@ async def log_requests(request: Request, call_next):
             },
         )
         raise
+    response_message = (
+        f"Response {response.status_code} "
+        f"for {request.method} {request.url.path}"
+    )
     logger.info(
-        f"Response {response.status_code} for {request.method} {request.url.path}",
+        response_message,
         extra={
             "method": request.method,
             "path": str(request.url.path),
@@ -264,16 +372,80 @@ def get_request_info(request: Request):
     }
 
 
+def load_config_file():
+    """Load the mounted application configuration file on demand."""
+    config = {
+        'path': CONFIG_PATH,
+        'loaded': False,
+        'data': None,
+    }
+
+    try:
+        with open(CONFIG_PATH, 'r', encoding='utf-8') as handle:
+            config['data'] = json.load(handle)
+    except FileNotFoundError:
+        return config
+    except json.JSONDecodeError:
+        logger.exception(
+            'Failed to parse config file',
+            extra={'config_path': CONFIG_PATH},
+        )
+        config['error'] = 'invalid-json'
+        return config
+    except OSError:
+        logger.exception(
+            'Failed to read config file',
+            extra={'config_path': CONFIG_PATH},
+        )
+        config['error'] = 'read-error'
+        return config
+
+    config['loaded'] = True
+    return config
+
+
+def get_app_configuration():
+    """Return configuration visible to the application."""
+    return {
+        'file': load_config_file(),
+        'environment': {
+            'app_env': APP_ENV,
+            'app_region': APP_REGION,
+            'log_level': LOG_LEVEL_NAME,
+        },
+        'paths': {
+            'config': CONFIG_PATH,
+            'visits': VISITS_FILE,
+        }
+    }
+
+
 @app.get('/')
 async def index(request: Request):
     """Main endpoint - service and system information."""
     DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/').inc()
+    visits_count = VISIT_COUNTER.increment()
     return {
         'service': SERVICE_INFO,
         'system': get_system_info(),
         'runtime': get_runtime_info(),
         'request': get_request_info(request),
+        'configuration': get_app_configuration(),
+        'visits': {
+            'count': visits_count,
+            'file': VISITS_FILE,
+        },
         'endpoints': ENDPOINTS
+    }
+
+
+@app.get('/visits')
+async def visits():
+    """Return the current persisted visits count without incrementing it."""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint='/visits').inc()
+    return {
+        'count': VISIT_COUNTER.get_count(),
+        'file': VISITS_FILE,
     }
 
 
@@ -357,4 +529,11 @@ if __name__ == '__main__':
     import uvicorn
     logger.info(f'Starting DevOps Info Service on {HOST}:{PORT}')
     logger.info(f'Debug mode: {DEBUG}')
-    uvicorn.run('app:app', host=HOST, port=PORT, reload=DEBUG, access_log=False, log_config=None)
+    uvicorn.run(
+        'app:app',
+        host=HOST,
+        port=PORT,
+        reload=DEBUG,
+        access_log=False,
+        log_config=None,
+    )

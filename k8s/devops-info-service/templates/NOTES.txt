@@ -11,3 +11,8 @@ Check external access:
 Port-forward locally:
   kubectl port-forward svc/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
 {{- end }}
+
+Useful checks:
+  kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.configFilePath" . }}
+  kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- printenv | grep APP_
+  kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.visitsFilePath" . }}

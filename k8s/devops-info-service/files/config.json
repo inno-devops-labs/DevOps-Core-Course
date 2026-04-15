@@ -1,0 +1,17 @@
+{
+  "application": {
+    "name": "{{ .Values.env.appName }}",
+    "environment": "{{ .Values.env.appEnv }}",
+    "version": "{{ .Chart.AppVersion }}"
+  },
+  "featureFlags": {
+    "visitsCounter": {{ .Values.config.featureFlags.visitsCounter }},
+    "metrics": {{ .Values.config.featureFlags.metrics }},
+    "hotReload": {{ .Values.config.featureFlags.hotReload }}
+  },
+  "settings": {
+    "responseMode": "{{ .Values.config.responseMode }}",
+    "configMountPath": "{{ .Values.config.mountPath }}",
+    "visitsFile": "{{ include "devops-info-service.visitsFilePath" . }}"
+  }
+}

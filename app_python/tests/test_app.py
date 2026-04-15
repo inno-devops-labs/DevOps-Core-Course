@@ -2,31 +2,81 @@
 Unit tests for DevOps Info Service.
 Tests all endpoints, response structure, and error handling.
 """
+import json
 import re
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app import app, START_TIME, SERVICE_INFO, ENDPOINTS, get_uptime, get_system_info
+import app as app_module
 
 
 @pytest.fixture
-def client():
-    """Create a test client for the FastAPI application."""
-    return TestClient(app)
+def app_state(tmp_path, monkeypatch):
+    """Create an isolated test client and writable app state."""
+    visits_file = tmp_path / "data" / "visits"
+    config_path = tmp_path / "config" / "config.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        json.dumps(
+            {
+                "application": {
+                    "name": "devops-info-service-test",
+                    "environment": "test",
+                    "featureFlags": {
+                        "visitsCounter": True,
+                        "hotReload": True,
+                    },
+                },
+                "settings": {
+                    "responseMode": "detailed",
+                    "storagePath": str(visits_file),
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(app_module, "CONFIG_PATH", str(config_path))
+    monkeypatch.setattr(app_module, "VISITS_FILE", str(visits_file))
+    monkeypatch.setattr(
+        app_module,
+        "VISIT_COUNTER",
+        app_module.VisitCounterStore(str(visits_file)),
+    )
+
+    with TestClient(app_module.app) as client:
+        yield {
+            "client": client,
+            "visits_file": visits_file,
+            "config_path": config_path,
+        }
+
+
+@pytest.fixture
+def client(app_state):
+    """Expose the configured TestClient."""
+    return app_state["client"]
 
 
 def assert_metric_line_with_labels(metrics_text, metric_name, labels):
-    """Assert that one metric line contains the expected labels regardless of order."""
-    metric_pattern = re.compile(rf"^{re.escape(metric_name)}\{{.*\}}", re.MULTILINE)
+    """Assert one metric line contains the expected labels."""
+    metric_pattern = re.compile(
+        rf"^{re.escape(metric_name)}\{{.*\}}",
+        re.MULTILINE,
+    )
 
     for match in metric_pattern.finditer(metrics_text):
         line = match.group(0)
         if all(f'{key}="{value}"' in line for key, value in labels.items()):
             return
 
-    label_summary = ", ".join(f'{key}="{value}"' for key, value in labels.items())
-    raise AssertionError(f"Metric {metric_name} with labels {{{label_summary}}} not found")
+    label_summary = ", ".join(
+        f'{key}="{value}"'
+        for key, value in labels.items()
+    )
+    raise AssertionError(
+        f"Metric {metric_name} with labels {{{label_summary}}} not found"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -51,13 +101,21 @@ class TestMainEndpoint:
     def test_top_level_keys(self, client):
         """Response must contain all required top-level keys."""
         data = client.get("/").json()
-        required_keys = {"service", "system", "runtime", "request", "endpoints"}
+        required_keys = {
+            "service",
+            "system",
+            "runtime",
+            "request",
+            "configuration",
+            "visits",
+            "endpoints",
+        }
         assert required_keys.issubset(data.keys())
 
     # -- service section ---------------------------------------------------
 
     def test_service_fields(self, client):
-        """Service section must contain name, version, description, framework."""
+        """Service section must contain the expected metadata fields."""
         service = client.get("/").json()["service"]
         for field in ("name", "version", "description", "framework"):
             assert field in service
@@ -67,8 +125,8 @@ class TestMainEndpoint:
     def test_service_values(self, client):
         """Service section values must match constants."""
         service = client.get("/").json()["service"]
-        assert service["name"] == SERVICE_INFO["name"]
-        assert service["version"] == SERVICE_INFO["version"]
+        assert service["name"] == app_module.SERVICE_INFO["name"]
+        assert service["version"] == app_module.SERVICE_INFO["version"]
         assert service["framework"] == "FastAPI"
 
     # -- system section ----------------------------------------------------
@@ -95,7 +153,12 @@ class TestMainEndpoint:
     def test_runtime_fields(self, client):
         """Runtime section must contain uptime and time info."""
         runtime = client.get("/").json()["runtime"]
-        for field in ("uptime_seconds", "uptime_human", "current_time", "timezone"):
+        for field in (
+            "uptime_seconds",
+            "uptime_human",
+            "current_time",
+            "timezone",
+        ):
             assert field in runtime
 
     def test_runtime_uptime_nonnegative(self, client):
@@ -130,7 +193,7 @@ class TestMainEndpoint:
         """Endpoints must be a non-empty list."""
         eps = client.get("/").json()["endpoints"]
         assert isinstance(eps, list)
-        assert len(eps) >= 2
+        assert len(eps) >= 4
 
     def test_endpoints_structure(self, client):
         """Each endpoint entry must have path, method, description."""
@@ -138,6 +201,88 @@ class TestMainEndpoint:
             assert "path" in ep
             assert "method" in ep
             assert "description" in ep
+
+    def test_configuration_section(self, client):
+        """Configuration section should expose file and environment data."""
+        config = client.get("/").json()["configuration"]
+        assert config["file"]["loaded"] is True
+        assert config["file"]["data"]["application"]["environment"] == "test"
+        assert config["environment"]["app_env"] == app_module.APP_ENV
+        assert config["paths"]["config"] == app_module.CONFIG_PATH
+
+    def test_root_endpoint_increments_visits(self, client, app_state):
+        """GET / should increment the persisted visits counter."""
+        first = client.get("/").json()["visits"]["count"]
+        second = client.get("/").json()["visits"]["count"]
+
+        assert first == 1
+        assert second == 2
+        assert (
+            app_state["visits_file"].read_text(encoding="utf-8").strip() == "2"
+        )
+
+
+class TestVisitsEndpoint:
+    """Tests for the persistent visits endpoint GET /visits."""
+
+    def test_status_code(self, client):
+        """GET /visits should return 200 OK."""
+        assert client.get("/visits").status_code == 200
+
+    def test_returns_current_count_without_incrementing(self, client):
+        """GET /visits should not increment the counter."""
+        client.get("/")
+        current = client.get("/visits").json()["count"]
+        again = client.get("/visits").json()["count"]
+
+        assert current == 1
+        assert again == 1
+
+    def test_counter_persists_when_store_reloads(
+        self,
+        client,
+        app_state,
+        monkeypatch,
+    ):
+        """The visits file should restore the counter after reload."""
+        client.get("/")
+        client.get("/")
+
+        reloaded_store = app_module.VisitCounterStore(
+            str(app_state["visits_file"])
+        )
+        monkeypatch.setattr(app_module, "VISIT_COUNTER", reloaded_store)
+
+        assert client.get("/visits").json()["count"] == 2
+
+    def test_config_file_hot_reload(self, client, app_state):
+        """The app should re-read the config file on each request."""
+        updated_config = {
+            "application": {
+                "name": "devops-info-service-test",
+                "environment": "reloaded",
+                "featureFlags": {
+                    "visitsCounter": True,
+                    "hotReload": True,
+                },
+            },
+            "settings": {
+                "responseMode": "compact",
+                "storagePath": str(app_state["visits_file"]),
+            },
+        }
+        app_state["config_path"].write_text(
+            json.dumps(updated_config),
+            encoding="utf-8",
+        )
+
+        payload = client.get("/").json()
+        assert (
+            payload["configuration"]["file"]["data"]["application"][
+                "environment"
+            ]
+            == "reloaded"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -208,6 +353,7 @@ class TestMetricsEndpoint:
     def test_expected_metric_series_exist(self, client):
         """Metrics output must include HTTP and app-specific metrics."""
         client.get("/")
+        client.get("/visits")
         client.get("/health")
         client.get("/ready")
         client.get("/missing")
@@ -220,8 +366,9 @@ class TestMetricsEndpoint:
         assert "devops_info_system_info_collection_seconds" in metrics_text
 
     def test_metrics_include_expected_labels(self, client):
-        """Metrics should expose normalized labels for successful and 404 requests."""
+        """Metrics should expose normalized labels for success and 404s."""
         client.get("/")
+        client.get("/visits")
         client.get("/health")
         client.get("/ready")
         client.get("/missing")
@@ -236,6 +383,11 @@ class TestMetricsEndpoint:
             metrics_text,
             "http_requests_total",
             {"method": "GET", "endpoint": "/health", "status_code": "200"},
+        )
+        assert_metric_line_with_labels(
+            metrics_text,
+            "http_requests_total",
+            {"method": "GET", "endpoint": "/visits", "status_code": "200"},
         )
         assert_metric_line_with_labels(
             metrics_text,
@@ -256,6 +408,11 @@ class TestMetricsEndpoint:
             metrics_text,
             "devops_info_endpoint_calls_total",
             {"endpoint": "/health"},
+        )
+        assert_metric_line_with_labels(
+            metrics_text,
+            "devops_info_endpoint_calls_total",
+            {"endpoint": "/visits"},
         )
         assert_metric_line_with_labels(
             metrics_text,
@@ -296,7 +453,7 @@ class TestHelpers:
 
     def test_get_uptime_structure(self):
         """get_uptime must return dict with seconds and human keys."""
-        result = get_uptime()
+        result = app_module.get_uptime()
         assert "seconds" in result
         assert "human" in result
         assert isinstance(result["seconds"], int)
@@ -304,7 +461,7 @@ class TestHelpers:
 
     def test_get_system_info_keys(self):
         """get_system_info must return all expected keys."""
-        info = get_system_info()
+        info = app_module.get_system_info()
         expected = {
             "hostname", "platform", "platform_version",
             "architecture", "cpu_count", "python_version",
@@ -313,4 +470,4 @@ class TestHelpers:
 
     def test_start_time_exists(self):
         """START_TIME must be set."""
-        assert START_TIME is not None
+        assert app_module.START_TIME is not None

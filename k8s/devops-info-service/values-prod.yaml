@@ -1,12 +1,20 @@
-replicaCount: 3
+replicaCount: 1
 minReadySeconds: 10
 
 image:
   tag: "1.0.0"
 
 env:
+  appName: devops-info-service
   appEnv: production
+  appRegion: lab12-prod
   logLevel: info
+
+config:
+  responseMode: compact
+
+persistence:
+  size: 250Mi
 
 service:
   type: LoadBalancer

@@ -1,0 +1,14 @@
+services:
+  devops-info-service:
+    build:
+      context: .
+    container_name: devops-info-service
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: docker
+      APP_REGION: local-compose
+      LOG_LEVEL: INFO
+      VISITS_FILE: /app/data/visits
+    volumes:
+      - ./data:/app/data

@@ -1,7 +1,7 @@
 nameOverride: ""
 fullnameOverride: ""
 
-replicaCount: 3
+replicaCount: 1
 revisionHistoryLimit: 5
 minReadySeconds: 5
 
@@ -16,9 +16,29 @@ container:
 
 env:
   host: "0.0.0.0"
+  appName: devops-info-service
   appEnv: development
+  appRegion: local-cluster
   logLevel: info
   extra: []
+
+config:
+  fileName: config.json
+  mountPath: /config
+  responseMode: detailed
+  featureFlags:
+    visitsCounter: true
+    metrics: true
+    hotReload: true
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data
+  visitsFileName: visits
 
 service:
   type: NodePort

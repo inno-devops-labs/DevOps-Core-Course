@@ -37,21 +37,59 @@ Chart-local wrappers around the shared library helpers.
 {{- default (printf "%s-secret" (include "devops-info-service.fullname" .)) .Values.secrets.name -}}
 {{- end -}}
 
+{{- define "devops-info-service.configFileConfigMapName" -}}
+{{- printf "%s-config" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "devops-info-service.envConfigMapName" -}}
+{{- printf "%s-env" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "devops-info-service.pvcName" -}}
+{{- if .Values.persistence.existingClaim -}}
+{{- .Values.persistence.existingClaim -}}
+{{- else -}}
+{{- printf "%s-data" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "devops-info-service.configFilePath" -}}
+{{- printf "%s/%s" .Values.config.mountPath .Values.config.fileName -}}
+{{- end -}}
+
+{{- define "devops-info-service.visitsFilePath" -}}
+{{- printf "%s/%s" .Values.persistence.mountPath .Values.persistence.visitsFileName -}}
+{{- end -}}
+
 {{- define "devops-info-service.envVars" -}}
 - name: HOST
   value: {{ .Values.env.host | quote }}
 - name: PORT
   value: {{ .Values.container.port | quote }}
-- name: APP_ENV
-  value: {{ .Values.env.appEnv | quote }}
-- name: LOG_LEVEL
-  value: {{ .Values.env.logLevel | quote }}
+- name: CONFIG_PATH
+  value: {{ include "devops-info-service.configFilePath" . | quote }}
+- name: VISITS_FILE
+  value: {{ include "devops-info-service.visitsFilePath" . | quote }}
+{{- end -}}
+
+{{- define "devops-info-service.configEnvData" -}}
+APP_NAME: {{ .Values.env.appName | quote }}
+APP_ENV: {{ .Values.env.appEnv | quote }}
+APP_REGION: {{ .Values.env.appRegion | quote }}
+LOG_LEVEL: {{ .Values.env.logLevel | quote }}
+FEATURE_CONFIG_RELOAD: {{ ternary "true" "false" .Values.config.featureFlags.hotReload | quote }}
+FEATURE_VISITS_COUNTER: {{ ternary "true" "false" .Values.config.featureFlags.visitsCounter | quote }}
 {{- with .Values.env.extra }}
 {{- range . }}
-- name: {{ .name }}
-  value: {{ .value | quote }}
+{{ .name }}: {{ .value | quote }}
 {{- end }}
 {{- end }}
+{{- end -}}
+
+{{- define "devops-info-service.persistenceValidation" -}}
+{{- if and .Values.persistence.enabled (eq .Values.persistence.accessMode "ReadWriteOnce") (gt (int .Values.replicaCount) 1) -}}
+{{- fail "devops-info-service: persistence.enabled with ReadWriteOnce requires replicaCount <= 1" -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "devops-info-service.vaultConfigTemplate" -}}

@@ -4,6 +4,7 @@
 ![Coverage](https://coveralls.io/repos/github/Ravwvil/DevOps-Core-Course/badge.svg?branch=master)
 
 Web service providing system information and health status via REST API.
+The root endpoint also persists a visit counter to disk for Kubernetes PVC and Docker volume exercises.
 
 ## Requirements
 
@@ -26,6 +27,13 @@ python app.py                      # Default: http://0.0.0.0:8000
 PORT=3000 python app.py            # Custom port
 ```
 
+Persistent counter options:
+
+```bash
+VISITS_FILE=./data/visits python app.py
+CONFIG_PATH=./config/config.json python app.py
+```
+
 ## Testing
 
 ```bash
@@ -41,6 +49,7 @@ pytest tests/ -v --cov=. --cov-report=term
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/` | GET | Service and system information |
+| `/visits` | GET | Current persisted visit count |
 | `/health` | GET | Health check |
 | `/ready` | GET | Readiness check |
 | `/metrics` | GET | Prometheus metrics |
@@ -53,6 +62,12 @@ pytest tests/ -v --cov=. --cov-report=term
 | `HOST` | `0.0.0.0` | Bind address |
 | `PORT` | `8000` | Port number |
 | `DEBUG` | `false` | Enable auto-reload |
+| `APP_NAME` | `devops-info-service` | Service name exposed in responses |
+| `APP_ENV` | `development` | Environment label |
+| `APP_REGION` | `local` | Example environment metadata |
+| `LOG_LEVEL` | `INFO` | Application log level |
+| `CONFIG_PATH` | `/config/config.json` | Mounted JSON configuration file |
+| `VISITS_FILE` | `./data/visits` locally | File used for the persistent visits counter |
 
 ## Project Structure
 
@@ -87,6 +102,19 @@ docker run -d -p 8000:8000 --name devops-app devops-info-service:latest
 ```
 
 Access the application at `http://localhost:8000`
+
+### Run with Docker Compose and Persistent Visits
+
+```bash
+docker compose up -d
+curl http://localhost:8000/
+curl http://localhost:8000/visits
+docker compose restart
+curl http://localhost:8000/visits
+cat ./data/visits
+```
+
+The compose setup mounts `./data` into the container so the counter survives container restarts.
 
 ### Pull from Docker Hub
 
