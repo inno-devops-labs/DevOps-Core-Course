@@ -68,6 +68,7 @@ pytest tests/ -v --cov=. --cov-report=term
 | `LOG_LEVEL` | `INFO` | Application log level |
 | `CONFIG_PATH` | `/config/config.json` | Mounted JSON configuration file |
 | `VISITS_FILE` | `./data/visits` locally | File used for the persistent visits counter |
+| `TRACKED_SECRET_NAMES` | `APP_USERNAME,APP_PASSWORD` | Comma-separated secret env vars to report as present/absent without exposing values |
 
 ## Project Structure
 
@@ -115,6 +116,20 @@ cat ./data/visits
 ```
 
 The compose setup mounts `./data` into the container so the counter survives container restarts.
+
+## Fly.io
+
+The repository includes [`fly.toml`](./fly.toml) for the Lab 17 edge deployment exercise.
+
+```bash
+cd app_python
+fly launch --copy-config --no-deploy
+fly volumes create visits_data --size 1 --region ams
+fly secrets set APP_USERNAME="demo-user" APP_PASSWORD="demo-pass"
+fly deploy
+```
+
+The Fly config keeps the internal app port on `8000`, mounts `/data` for the visits counter, exposes `/metrics`, and uses `/health` for platform checks. The root response reports Fly region metadata and whether the tracked secrets are present, but never returns secret values.
 
 ### Pull from Docker Hub
 

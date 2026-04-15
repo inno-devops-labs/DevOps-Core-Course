@@ -208,7 +208,23 @@ class TestMainEndpoint:
         assert config["file"]["loaded"] is True
         assert config["file"]["data"]["application"]["environment"] == "test"
         assert config["environment"]["app_env"] == app_module.APP_ENV
+        assert config["platform"]["provider"] in {"local", "fly.io"}
+        assert config["secrets"]["APP_USERNAME"] is False
+        assert config["secrets"]["APP_PASSWORD"] is False
         assert config["paths"]["config"] == app_module.CONFIG_PATH
+
+    def test_configuration_reports_secret_presence(
+        self,
+        client,
+        monkeypatch,
+    ):
+        """Tracked secrets should be reported as present without values."""
+        monkeypatch.setenv("APP_USERNAME", "demo-user")
+        monkeypatch.setenv("APP_PASSWORD", "demo-pass")
+
+        config = client.get("/").json()["configuration"]
+        assert config["secrets"]["APP_USERNAME"] is True
+        assert config["secrets"]["APP_PASSWORD"] is True
 
     def test_root_endpoint_increments_visits(self, client, app_state):
         """GET / should increment the persisted visits counter."""

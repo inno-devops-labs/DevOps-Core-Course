@@ -1,0 +1,38 @@
+app = "ravwvil-devops-info-service-fly"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_NAME = "devops-info-service"
+  APP_ENV = "fly-production"
+  LOG_LEVEL = "INFO"
+  PORT = "8000"
+  VISITS_FILE = "/data/visits"
+  TRACKED_SECRET_NAMES = "APP_USERNAME,APP_PASSWORD"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "stop"
+  min_machines_running = 0
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 8000
+    path = "/health"
+    method = "get"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "20s"
+
+[metrics]
+  port = 8000
+  path = "/metrics"
+
+[[mounts]]
+  source = "visits_data"
+  destination = "/data"

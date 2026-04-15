@@ -61,7 +61,7 @@ HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 8000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 APP_ENV = os.getenv('APP_ENV', 'development')
-APP_REGION = os.getenv('APP_REGION', 'local')
+APP_REGION = os.getenv('APP_REGION') or os.getenv('FLY_REGION', 'local')
 LOG_LEVEL_NAME = os.getenv('LOG_LEVEL', 'INFO').upper()
 CONFIG_PATH = os.getenv('CONFIG_PATH', '/config/config.json')
 VISITS_FILE = os.getenv(
@@ -70,6 +70,14 @@ VISITS_FILE = os.getenv(
         os.getenv('DATA_DIR', os.path.join(os.getcwd(), 'data')),
         'visits',
     ),
+)
+TRACKED_SECRET_NAMES = tuple(
+    name.strip()
+    for name in os.getenv(
+        'TRACKED_SECRET_NAMES',
+        'APP_USERNAME,APP_PASSWORD',
+    ).split(',')
+    if name.strip()
 )
 
 
@@ -412,6 +420,15 @@ def get_app_configuration():
             'app_env': APP_ENV,
             'app_region': APP_REGION,
             'log_level': LOG_LEVEL_NAME,
+        },
+        'platform': {
+            'provider': 'fly.io' if os.getenv('FLY_APP_NAME') else 'local',
+            'fly_app_name': os.getenv('FLY_APP_NAME'),
+            'fly_region': os.getenv('FLY_REGION'),
+        },
+        'secrets': {
+            name: bool(os.getenv(name))
+            for name in TRACKED_SECRET_NAMES
         },
         'paths': {
             'config': CONFIG_PATH,
