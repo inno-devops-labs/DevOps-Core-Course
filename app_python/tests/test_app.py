@@ -8,13 +8,30 @@ from unittest.mock import patch
 # Add parent directory to path to import app
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import app, get_uptime
+import app as app_module
+from app import get_uptime
 
 
 @pytest.fixture
-def client():
-    app.config['TESTING'] = True
-    with app.test_client() as client:
+def visits_file(monkeypatch, request):
+    visits_path = os.path.join(os.getcwd(), f".{request.node.name}.visits")
+    lock_path = f"{visits_path}.lock"
+    if os.path.exists(visits_path):
+        os.remove(visits_path)
+    if os.path.exists(lock_path):
+        os.remove(lock_path)
+    monkeypatch.setattr(app_module, "VISITS_FILE", visits_path)
+    yield visits_path
+    if os.path.exists(visits_path):
+        os.remove(visits_path)
+    if os.path.exists(lock_path):
+        os.remove(lock_path)
+
+
+@pytest.fixture
+def client(visits_file):
+    app_module.app.config['TESTING'] = True
+    with app_module.app.test_client() as client:
         yield client
 
 
@@ -59,11 +76,14 @@ def test_home_endpoint_required_fields(client):
     # Check endpoints list
     assert isinstance(data['endpoints'], list), "Endpoints should be a list"
     assert len(data['endpoints']) >= 2, "Should have at least 2 endpoints"
+    assert 'visits' in data, "Response missing 'visits' field"
+    assert isinstance(data['visits'], int), "Visits count should be integer"
     
     # Verify specific endpoints exist
     endpoint_paths = [e['path'] for e in data['endpoints']]
     assert '/' in endpoint_paths, "Root endpoint (/) not documented"
     assert '/health' in endpoint_paths, "Health endpoint (/health) not documented"
+    assert '/visits' in endpoint_paths, "Visits endpoint (/visits) not documented"
 
 
 def test_home_endpoint_data_types(client):
@@ -78,6 +98,7 @@ def test_home_endpoint_data_types(client):
     assert isinstance(data['system']['platform'], str), "Platform should be string"
     assert isinstance(data['runtime']['uptime_human'], str), "Uptime human should be string"
     assert isinstance(data['runtime']['timezone'], str), "Timezone should be string"
+    assert isinstance(data['visits'], int), "Visits should be integer"
     
     # Integer fields
     assert isinstance(data['runtime']['uptime_seconds'], int), "Uptime seconds should be integer"
@@ -111,6 +132,31 @@ def test_home_endpoint_with_different_user_agents(client):
         headers = {'User-Agent': ua} if ua else {}
         response = client.get('/', headers=headers)
         assert response.status_code == 200, f"Failed with User-Agent: {ua}"
+
+
+def test_visits_endpoint_starts_at_zero(client):
+    response = client.get('/visits')
+    data = json.loads(response.data)
+
+    assert response.status_code == 200, "Visits endpoint should return 200 OK"
+    assert data['visits'] == 0, "Visits should start at 0 for a fresh file"
+
+
+def test_visits_counter_increments_and_persists(client, visits_file):
+    first_response = client.get('/')
+    first_data = json.loads(first_response.data)
+
+    second_response = client.get('/')
+    second_data = json.loads(second_response.data)
+
+    visits_response = client.get('/visits')
+    visits_data = json.loads(visits_response.data)
+
+    assert first_data['visits'] == 1, "First request should increment visits to 1"
+    assert second_data['visits'] == 2, "Second request should increment visits to 2"
+    assert visits_data['visits'] == 2, "Visits endpoint should return the current count"
+    with open(visits_file, 'r', encoding='utf-8') as file_handle:
+        assert file_handle.read() == '2', "Visits file should persist the latest count"
 
 
 # ============ TESTS FOR ENDPOINT: GET /health ============
@@ -273,6 +319,7 @@ def test_default_configuration():
     # Should have defaults
     assert hasattr(app_module, 'PORT'), "PORT should be defined"
     assert hasattr(app_module, 'HOST'), "HOST should be defined"
+    assert hasattr(app_module, 'VISITS_FILE'), "VISITS_FILE should be defined"
 
 
 # ============ TESTS FOR DATA CONSISTENCY ============

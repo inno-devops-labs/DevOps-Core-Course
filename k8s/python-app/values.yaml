@@ -5,7 +5,7 @@ replicaCount: 3
 
 image:
   repository: aliyasag/devops-info-service
-  tag: "latest"          # Defaults to Chart.appVersion when empty
+  tag: "latest"
   pullPolicy: IfNotPresent
 
 nameOverride: ""
@@ -25,12 +25,10 @@ resources:
     cpu: "200m"
     memory: "256Mi"
 
-# Security context for the Pod
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 1000
 
-# Rolling update strategy
 strategy:
   type: RollingUpdate
   rollingUpdate:
@@ -41,11 +39,22 @@ secret:
   username: "placeholder-user"
   password: "placeholder-password"
   secretKey: "placeholder-secret-key"
-  
+
 # Environment variables injected into the container
 env:
   - name: ENV
     value: "production"
+
+# ConfigMap environment values
+environment: "production"
+logLevel: "INFO"
+appName: "devops-info-service"
+
+# Persistent storage for visits counter
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""   # Empty string = use cluster default (works with Minikube)
 
 # Liveness probe — restarts the container if it stops responding
 livenessProbe:
@@ -64,4 +73,3 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 3
   failureThreshold: 3
-

@@ -25,6 +25,10 @@ env:
   - name: ENV
     value: "production"
 
+environment: "production"
+logLevel: "INFO"
+appName: "devops-info-service"
+
 livenessProbe:
   httpGet:
     path: /health

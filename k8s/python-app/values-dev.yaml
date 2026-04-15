@@ -25,6 +25,10 @@ env:
   - name: ENV
     value: "development"
 
+environment: "development"
+logLevel: "DEBUG"
+appName: "devops-info-service-dev"
+
 livenessProbe:
   httpGet:
     path: /health

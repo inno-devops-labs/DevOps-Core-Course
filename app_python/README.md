@@ -1,17 +1,24 @@
-## DevOps Info Service
+# DevOps Info Service
 
-![Python CI/CD Pipeline](https://github.com/AliyaSag/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
+A Flask web application used throughout the DevOps course labs.
 
-### Overview
+## Overview
 
-A simple web application built with **Flask** that provides comprehensive system introspection, runtime information, and health status. This project serves as a foundation for learning DevOps practices including CI/CD, containerization, and monitoring.
+The service returns system and runtime information, exposes a health check, and now keeps a persistent visit counter backed by a file.
 
-### Prerequisites
+## Features
 
-- **Python** 3.10+
-- **pip** (Python package manager)
+- `GET /` returns service metadata, host details, runtime info, request info, and the current visit count
+- `GET /health` provides a lightweight health check for Kubernetes probes
+- `GET /visits` returns the current visit counter without incrementing it
+- Visit counts are stored in a file so they survive container restarts when a volume is mounted
 
-### Installation
+## Requirements
+
+- Python 3.10+
+- `pip`
+
+## Local Setup
 
 ```bash
 python -m venv venv
@@ -19,111 +26,80 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Running the Application
+## Running the App
 
-The application runs on `0.0.0.0:5000` by default.
-
-Custom Configuration
-You can change the host and port using environment variables.
+The application listens on `0.0.0.0:5000` by default.
 
 ```bash
-$env:PORT=8080; python app.py
+python app.py
 ```
 
-### API Endpoints
+You can override the host, port, or visits file with environment variables:
 
-1. System Information
-- URL: GET /
-- Description: Returns detailed JSON about the service, system, runtime, and current request.
-- Example Response:
+```bash
+HOST=127.0.0.1 PORT=8080 VISITS_FILE=/tmp/visits python app.py
+```
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/` | Service information and increments the visit counter |
+| GET | `/health` | Health check for Kubernetes |
+| GET | `/visits` | Returns the current visit count |
+
+Example response from `/visits`:
 
 ```json
 {
-  "service": { "name": "devops-info-service", "version": "1.0.0" },
-  "system": { "platform": "Windows", "python_version": "3.12.0" },
-  "runtime": { "uptime_human": "0 hour, 5 minutes" }
+  "visits": 4,
+  "timestamp": "2026-04-15T18:00:00+00:00"
 }
 ```
-2. Health Check
-- URL: GET /health
-- Description: Lightweight endpoint for liveness/readiness probes.
-- Example Response:
 
-```json
-{
-  "status": "healthy",
-  "timestamp": "2026-01-28T16:20:00+00:00",
-  "uptime_seconds": 300
-}
-```
-### Configuration
+## Configuration
 
-| Variable | Description                     | Default |
-| -------- | ------------------------------- | ------- |
-| HOST     | Interface to bind the server to | 0.0.0.0 |
-| PORT     | Port number to listen on        | 5000    |
+| Variable | Description | Default |
+|---|---|---|
+| HOST | Interface to bind the server to | `0.0.0.0` |
+| PORT | Port number to listen on | `5000` |
+| VISITS_FILE | Path to the persistent counter file | `/data/visits` |
 
-## Docker Containerization
+## Docker
 
-### Building the Image Locally
-```bash
-docker build -t <image-name>:<tag> .
-
-### Running the Container
+### Build the Image
 
 ```bash
-# Run with default port mapping
-docker run -p <host-port>:<container-port> --name <container-name> <image-name>:<tag>
-
-# Run with environment variables
-docker run -p <host-port>:<container-port> -e PORT=<port> -e HOST=<host> --name <container-name> <image-name>:<tag>
-```
-
-### Pulling from Docker Hub
-
-```bash
-# Pull the image from Docker Hub
-docker pull <dockerhub-username>/<repository-name>:<tag>
-
-# Run the pulled image
-docker run -p <host-port>:<container-port> <dockerhub-username>/<repository-name>:<tag>
-```
-
-### Examples
-
-```bash
-# Build locally
 docker build -t devops-info-service:latest .
-
-# Run locally built image
-docker run -d -p 5000:5000 --name devops-service devops-info-service:latest
-
-# Pull from Docker Hub and run
-docker pull aliyasag/devops-info-service:latest
-docker run -d -p 8080:5000 --name devops-hub aliyasag/devops-info-service:latest
 ```
 
-### Container Management
+### Run the Container
 
 ```bash
-# List running containers
-docker ps
-
-# List all containers
-docker ps -a
-
-# View container logs
-docker logs <container-name>
-
-# Stop a container
-docker stop <container-name>
-
-# Remove a container
-docker rm <container-name>
-
-# Remove an image
-docker rmi <image-name>:<tag>
+docker run -d -p 5000:5000 --name devops-service devops-info-service:latest
 ```
 
-## Lab 6 Status
-[![Ansible Deployment](https://github.com/AliyaSag/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/AliyaSag/DevOps-Core-Course/tree/lab6-advanced-ansible/.github/workflows)
+### Persist the Counter with Docker Compose
+
+The Lab 12 compose file is stored in `k8s/docker-compose.yml` and mounts a local volume to `/data`.
+
+```bash
+docker compose -f k8s/docker-compose.yml up -d
+```
+
+After a few requests to `GET /`, the counter is stored on disk and survives container restarts.
+
+## Example Workflow
+
+```bash
+curl http://localhost:5000/
+curl http://localhost:5000/
+curl http://localhost:5000/visits
+```
+
+## Tests
+
+```bash
+pytest tests/ -v
+```
+

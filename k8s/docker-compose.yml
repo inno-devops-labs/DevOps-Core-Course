@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  python-app:
+    build:
+      context: ../app_python
+    ports:
+      - "5000:5000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5000
+      - VISITS_FILE=/data/visits
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
