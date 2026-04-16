@@ -12,6 +12,18 @@ env:
     value: "0.0.0.0"
   - name: PORT
     value: "5173"
+  - name: DATA_DIR
+    value: "/data"
+
+environment: "dev"
+logLevel: "INFO"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
+dataDir: "/data"
 
 secrets:
   username: "admin"

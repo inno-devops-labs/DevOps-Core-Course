@@ -88,6 +88,18 @@ returns comprehensive service and system information
 }
 ```
 
+### get /visits
+
+returns the current visit counter value
+
+**response example:**
+
+```json
+{
+  "visits": 42
+}
+```
+
 ### get /health
 
 returns service health status for monitoring
@@ -104,11 +116,12 @@ returns service health status for monitoring
 
 ## configuration
 
-| variable | default | description         |
-| -------- | ------- | ------------------- |
-| HOST     | 0.0.0.0 | server bind address |
-| PORT     | 5000    | server port         |
-| DEBUG    | false   | enable debug mode   |
+| variable | default | description                  |
+| -------- | ------- | ---------------------------- |
+| HOST     | 0.0.0.0 | server bind address          |
+| PORT     | 5173    | server port                  |
+| DEBUG    | false   | enable debug mode            |
+| DATA_DIR | /data   | directory for visits counter |
 
 ## testing
 
@@ -168,6 +181,15 @@ docker build -t devops-info-service .
 
 ```bash
 docker run -p 5173:5173 devops-info-service
+```
+
+### docker compose
+
+```bash
+docker compose up -d
+curl http://localhost:5173/visits
+docker compose restart app
+curl http://localhost:5173/visits  # counter persists
 ```
 
 ### pulling from docker hub
