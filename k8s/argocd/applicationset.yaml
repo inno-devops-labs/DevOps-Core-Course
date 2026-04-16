@@ -27,7 +27,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/mpasgat/DevOps-Core-Course.git
-        targetRevision: master
+        targetRevision: lab13
         path: k8s/devops-python
         helm:
           valueFiles:
