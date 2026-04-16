@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-app
+  name: {{ include "devops-chart.fullname" . }}
   labels:
-    app: devops-app
+    {{- include "devops-chart.labels" . | nindent 4 }}
 
 spec:
   replicas: {{ .Values.replicaCount }}
 
   selector:
     matchLabels:
-      app: devops-app
+      {{- include "devops-chart.selectorLabels" . | nindent 6 }}
 
   strategy:
     type: RollingUpdate
@@ -21,33 +21,42 @@ spec:
   template:
     metadata:
       labels:
-        app: devops-app
+        {{- include "devops-chart.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.vault.enabled }}
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPath | quote }}
+        {{- end }}
 
     spec:
+      serviceAccountName: {{ include "devops-chart.serviceAccountName" . }}
       containers:
         - name: devops-app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.targetPort }}
 
+          {{- if .Values.secret.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ default (printf "%s-secret" (include "devops-chart.fullname" .)) .Values.secret.name }}
+          {{- end }}
+
           resources:
-            requests:
-              memory: "128Mi"
-              cpu: "100m"
-            limits:
-              memory: "256Mi"
-              cpu: "200m"
+            {{- toYaml .Values.resources | nindent 12 }}
 
           livenessProbe:
             httpGet:
               path: /health
-              port: 5000
+              port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 10
             periodSeconds: 5
 
           readinessProbe:
             httpGet:
               path: /health
-              port: 5000
+              port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 5
             periodSeconds: 3
