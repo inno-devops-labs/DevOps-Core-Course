@@ -13,8 +13,7 @@ resources:
     cpu: "100m"
 
 service:
-  type: NodePort
-  nodePort: 30081
+  type: ClusterIP
 
 livenessProbe:
   httpGet:
