@@ -1,7 +1,5 @@
 # Lab 11 Report — Kubernetes Secrets & HashiCorp Vault
 
-Note: the lab handout asks for `k8s/SECRETS.md`, but this report is stored as `k8s/LAB11.md` by request. The old `SECRETS.md` file now only points here.
-
 ## 1. Overview
 
 Lab 11 extends the Helm chart from Lab 10 with two secret-management approaches:
