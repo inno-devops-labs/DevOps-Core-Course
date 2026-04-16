@@ -83,6 +83,34 @@ serviceAccount:
 
 podAnnotations: {}
 
+configMap:
+  enabled: true
+  mountPath: /config
+  fileName: config.json
+  envNameOverride: ""
+  fileNameOverride: ""
+
+appConfig:
+  appName: devops-info-service
+  environment: lab12
+  featureFlags:
+    visitsCounter: true
+    configMapMount: true
+    configMapEnv: true
+
+appEnv:
+  APP_ENV: lab12
+  LOG_LEVEL: info
+  FEATURE_VISITS_COUNTER: "true"
+  FEATURE_CONFIGMAP_MOUNT: "true"
+  FEATURE_CONFIGMAP_ENV: "true"
+
+persistence:
+  enabled: true
+  mountPath: /data
+  size: 100Mi
+  storageClass: ""
+
 vault:
   enabled: false
   role: ""

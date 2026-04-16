@@ -53,10 +53,28 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
-          {{- if .Values.secret.enabled }}
+          {{- if or .Values.configMap.enabled .Values.persistence.enabled }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+            {{- if .Values.configMap.enabled }}
+            - name: config-volume
+              mountPath: {{ .Values.configMap.mountPath }}
+              readOnly: true
+            {{- end }}
+          {{- end }}
+          {{- if or .Values.secret.enabled .Values.configMap.enabled }}
           envFrom:
+            {{- if .Values.secret.enabled }}
             - secretRef:
                 name: {{ include "devops-app.secretName" . }}
+            {{- end }}
+            {{- if .Values.configMap.enabled }}
+            - configMapRef:
+                name: {{ include "devops-app.configEnvName" . }}
+            {{- end }}
           {{- end }}
           {{- with .Values.env }}
           env:
@@ -74,3 +92,16 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      {{- if or .Values.configMap.enabled .Values.persistence.enabled }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-app.fullname" . }}-data
+        {{- end }}
+        {{- if .Values.configMap.enabled }}
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-app.configMapName" . }}
+        {{- end }}
+      {{- end }}

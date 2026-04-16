@@ -71,3 +71,25 @@ Create the name of the secret to use
 {{- printf "%s-credentials" (include "devops-app.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create the name of the ConfigMap that stores the file-based config
+*/}}
+{{- define "devops-app.configMapName" -}}
+{{- if .Values.configMap.fileNameOverride }}
+{{- .Values.configMap.fileNameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-config" (include "devops-app.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Create the name of the ConfigMap that stores environment variables
+*/}}
+{{- define "devops-app.configEnvName" -}}
+{{- if .Values.configMap.envNameOverride }}
+{{- .Values.configMap.envNameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-env" (include "devops-app.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}

@@ -7,6 +7,9 @@ import socket
 import platform
 import logging
 import time
+import threading
+import tempfile
+from pathlib import Path
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request, g, Response
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
@@ -48,6 +51,8 @@ system_info_duration = Histogram(
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+VISITS_FILE = Path(os.getenv('VISITS_FILE', '/data/visits'))
+VISITS_LOCK = threading.Lock()
 
 # Application start time (UTC)
 START_TIME = datetime.now(timezone.utc)
@@ -79,6 +84,46 @@ _handler.setFormatter(JSONFormatter())
 logging.basicConfig(level=logging.INFO, handlers=[_handler], force=True)
 logger = logging.getLogger(__name__)
 logger.info('DevOps Info Service starting', extra={'version': '1.0.0'})
+
+
+def ensure_visits_storage():
+    VISITS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    if not VISITS_FILE.exists():
+        VISITS_FILE.write_text('0\n', encoding='utf-8')
+
+
+def load_visits():
+    try:
+        content = VISITS_FILE.read_text(encoding='utf-8').strip()
+        return int(content) if content else 0
+    except FileNotFoundError:
+        return 0
+    except (ValueError, OSError):
+        logger.warning('Visits file is invalid, resetting counter', extra={'path': str(VISITS_FILE)})
+        return 0
+
+
+def save_visits(count):
+    VISITS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile('w', delete=False, dir=str(VISITS_FILE.parent), encoding='utf-8') as tmp:
+        tmp.write(f'{count}\n')
+        tmp_path = Path(tmp.name)
+    os.replace(tmp_path, VISITS_FILE)
+
+
+def increment_visits():
+    with VISITS_LOCK:
+        count = load_visits() + 1
+        save_visits(count)
+        return count
+
+
+def get_visits():
+    with VISITS_LOCK:
+        return load_visits()
+
+
+ensure_visits_storage()
 
 
 def get_uptime():
@@ -153,6 +198,7 @@ def log_request_end(response):
 @app.route('/')
 def index():
     endpoint_calls.labels(endpoint='/').inc()
+    visits = increment_visits()
     uptime = get_uptime()
     now = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
     with system_info_duration.time():
@@ -170,7 +216,8 @@ def index():
             'uptime_seconds': uptime['seconds'],
             'uptime_human': uptime['human'],
             'current_time': now,
-            'timezone': 'UTC'
+            'timezone': 'UTC',
+            'visits': visits
         },
         'request': {
             'client_ip': request.remote_addr,
@@ -197,6 +244,15 @@ def health():
         'status': 'healthy',
         'timestamp': now,
         'uptime_seconds': uptime['seconds']
+    }), 200
+
+
+@app.route('/visits')
+def visits():
+    endpoint_calls.labels(endpoint='/visits').inc()
+    return jsonify({
+        'visits': get_visits(),
+        'file': str(VISITS_FILE)
     }), 200
 
 

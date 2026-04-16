@@ -82,6 +82,7 @@ For detailed implementation documentation, see [LAB02.md](docs/LAB02.md)
 | `/` | GET | Service and system information (JSON) |
 | `/health` | GET | Health check — returns status 200 if healthy |
 | `/metrics` | GET | Prometheus metrics endpoint |
+| `/visits` | GET | Current persisted visit counter |
 
 ## Metrics (Prometheus)
 
@@ -102,8 +103,29 @@ Environment variables:
 | `HOST` | `0.0.0.0` | Bind address |
 | `PORT` | `5000` | Bind port |
 | `DEBUG` | `False` | Enable Flask debug mode |
+| `VISITS_FILE` | `/data/visits` | Path to persisted visit counter file |
 
 Example:
 ```bash
 HOST=127.0.0.1 PORT=3000 DEBUG=True python app.py
+```
+
+## Visits Counter and Persistence
+
+The root endpoint `/` now increments a counter stored in a file. The current value is available at `/visits`.
+
+For local Docker testing, use Docker Compose with a bind mount:
+
+```bash
+docker compose up -d
+```
+
+The compose file mounts `./data:/data`, so the counter survives container restarts.
+
+Example verification:
+
+```bash
+curl http://localhost:5000/
+curl http://localhost:5000/visits
+cat ./data/visits
 ```

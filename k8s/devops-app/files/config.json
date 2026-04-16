@@ -1,0 +1,10 @@
+{
+  "appName": "devops-info-service",
+  "environment": "lab12",
+  "description": "Configuration mounted from ConfigMap",
+  "featureFlags": {
+    "visitsCounter": true,
+    "configMapMount": true,
+    "configMapEnv": true
+  }
+}
