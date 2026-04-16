@@ -1,8 +1,5 @@
 FROM python:3.13-slim AS runtime
 
-RUN apt-get update && apt-get upgrade -y --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
 RUN groupadd --system appuser && useradd --system --create-home --gid appuser appuser
 
 WORKDIR /app

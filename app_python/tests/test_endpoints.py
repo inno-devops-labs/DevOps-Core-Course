@@ -46,6 +46,18 @@ def test_get_health_returns_healthy(client):
     assert isinstance(data["timestamp"], str) and data["timestamp"].endswith("Z")
 
 
+def test_visits_counter_increments(client):
+    first = client.get("/").get_json()
+    second = client.get("/").get_json()
+
+    assert first["request"]["path"] == "/"
+    assert second["request"]["path"] == "/"
+
+    visits = client.get("/visits")
+    assert visits.status_code == 200
+    assert visits.get_json() == {"visits": 2}
+
+
 def test_unknown_endpoint_returns_json_404(client):
     resp = client.get("/does-not-exist")
     assert resp.status_code == 404

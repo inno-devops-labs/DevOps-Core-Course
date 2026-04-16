@@ -34,6 +34,7 @@ DEBUG=True python app.py
 
 ## API Endpoints
 - `GET /` - Service and system information
+- `GET /visits` - Current persisted visits count
 - `GET /health` - Health check
 
 ## Configuration
@@ -42,10 +43,12 @@ DEBUG=True python app.py
 | `HOST`  | `0.0.0.0` | Interface to bind |
 | `PORT`  | `5000` | Port to listen on |
 | `DEBUG` | `False` | Enable Flask debug logging |
+| `VISITS_FILE` | `/data/visits` | File path used for persisted visits counter |
 
 ## Example Requests
 ```bash
 curl -s http://localhost:5000/ | jq .
+curl -s http://localhost:5000/visits | jq .
 curl -s http://localhost:5000/health | jq .
 ```
 
@@ -80,10 +83,29 @@ Use the following pattern inside `app_python`:
   docker run --rm -p 5000:5000 python-app
   ```
 
+- **Run with persistent visits file mounted from host**:
+  ```bash
+  docker run --rm -p 5000:5000 -v "$(pwd)/data:/data" python-app
+  ```
+
 - **Override host/port via environment variables (optional)**:
   ```bash
   docker run --rm -p 8080:8080 -e PORT=8080 -e HOST=0.0.0.0 python-app
   ```
+
+### Docker Compose Persistence Test
+
+From `app_python/`:
+
+```bash
+docker compose up -d
+curl -s http://localhost:5001/ > /dev/null
+curl -s http://localhost:5001/ > /dev/null
+curl -s http://localhost:5001/visits | jq .
+docker compose restart
+curl -s http://localhost:5001/visits | jq .
+docker compose down
+```
 
 ### Pull from Docker Hub
 

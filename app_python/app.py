@@ -2,8 +2,10 @@ import logging
 import os
 import platform
 import socket
+import threading
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from flask import Flask, jsonify, request
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
@@ -17,6 +19,7 @@ PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 START_TIME = datetime.now(timezone.utc)
+VISITS_LOCK = threading.Lock()
 
 # Metrics (RED method + app-specific)
 http_requests_total = Counter(
@@ -108,9 +111,38 @@ def get_request_info() -> dict:
     }
 
 
+def get_visits_file() -> Path:
+    return Path(os.getenv("VISITS_FILE", "/data/visits"))
+
+
+def read_visits_count() -> int:
+    visits_file = get_visits_file()
+    try:
+        return int(visits_file.read_text(encoding="utf-8").strip())
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        return 0
+
+
+def write_visits_count(value: int) -> None:
+    visits_file = get_visits_file()
+    visits_file.parent.mkdir(parents=True, exist_ok=True)
+    visits_file.write_text(f"{value}\n", encoding="utf-8")
+
+
+def increment_visits_count() -> int:
+    with VISITS_LOCK:
+        current = read_visits_count()
+        updated = current + 1
+        write_visits_count(updated)
+        return updated
+
+
 def get_endpoints() -> list[dict]:
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
+        {"path": "/visits", "method": "GET", "description": "Current visits count"},
         {"path": "/health", "method": "GET", "description": "Health check"},
     ]
 
@@ -159,6 +191,7 @@ def create_app() -> Flask:
     @app.get("/")
     def index():
         devops_info_endpoint_calls.labels(endpoint="/").inc()
+        increment_visits_count()
         payload = {
             "service": {
                 "name": APP_NAME,
@@ -172,6 +205,11 @@ def create_app() -> Flask:
             "endpoints": get_endpoints(),
         }
         return jsonify(payload)
+
+    @app.get("/visits")
+    def visits():
+        devops_info_endpoint_calls.labels(endpoint="/visits").inc()
+        return jsonify({"visits": read_visits_count()})
 
     @app.get("/health")
     def health():

@@ -1,0 +1,13 @@
+{
+  "application": {
+    "name": "devops-info-service",
+    "environment": "dev"
+  },
+  "features": {
+    "visitsCounter": true
+  },
+  "settings": {
+    "responseFormat": "json",
+    "collectSystemInfo": true
+  }
+}

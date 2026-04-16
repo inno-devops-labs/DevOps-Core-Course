@@ -75,4 +75,6 @@ Common environment variables for DRY templates.
   value: {{ .Values.env.appEnv | quote }}
 - name: LOG_LEVEL
   value: {{ .Values.env.logLevel | quote }}
+- name: VISITS_FILE
+  value: "/data/visits"
 {{- end }}
