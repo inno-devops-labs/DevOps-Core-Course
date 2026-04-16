@@ -1,4 +1,7 @@
-replicaCount: 4
+replicaCount: 1
+
+app:
+  environment: prod
 
 resources:
   requests:

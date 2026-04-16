@@ -1,5 +1,8 @@
 replicaCount: 1
 
+app:
+  environment: dev
+
 config:
   logLevel: DEBUG
 

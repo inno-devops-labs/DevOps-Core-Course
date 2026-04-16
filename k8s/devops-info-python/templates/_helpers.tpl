@@ -12,6 +12,15 @@ Validate chart values early so Helm fails before any Pod is created.
 {{- $vaultRole := required "vault.enabled=true requires vault.role to be set" .Values.vault.role -}}
 {{- $vaultSecretPath := required "vault.enabled=true requires vault.secretPath to be set" .Values.vault.secretPath -}}
 {{- end -}}
+{{- if .Values.persistence.enabled -}}
+{{- $persistenceSize := required "persistence.size must be set when persistence.enabled=true" .Values.persistence.size -}}
+{{- end -}}
+{{- $appName := required "app.name must be set" .Values.app.name -}}
+{{- $appEnvironment := required "app.environment must be set" .Values.app.environment -}}
+{{- $configMountPath := required "app.configMountPath must be set" .Values.app.configMountPath -}}
+{{- $dataMountPath := required "app.dataMountPath must be set" .Values.app.dataMountPath -}}
+{{- $configFileName := required "app.configFileName must be set" .Values.app.configFileName -}}
+{{- $visitsFileName := required "app.visitsFileName must be set" .Values.app.visitsFileName -}}
 {{- end -}}
 
 {{/*
@@ -42,15 +51,49 @@ Resolve the ServiceAccount name used by the workload and Vault role binding.
 {{- end -}}
 
 {{/*
-Render only the non-secret container environment in one place to keep the Deployment DRY.
+Resolve the mounted application config file path.
 */}}
-{{- define "devops-info-python.commonEnvVars" -}}
-- name: HOST
-  value: {{ .Values.config.host | quote }}
-- name: PORT
-  value: {{ .Values.config.port | quote }}
-- name: LOG_LEVEL
-  value: {{ .Values.config.logLevel | quote }}
+{{- define "devops-info-python.configFilePath" -}}
+{{- printf "%s/%s" .Values.app.configMountPath .Values.app.configFileName -}}
+{{- end -}}
+
+{{/*
+Resolve the mounted visits data file path.
+*/}}
+{{- define "devops-info-python.visitsFilePath" -}}
+{{- printf "%s/%s" .Values.app.dataMountPath .Values.app.visitsFileName -}}
+{{- end -}}
+
+{{/*
+Render the JSON config file stored under files/config.json.
+*/}}
+{{- define "devops-info-python.renderedConfigFile" -}}
+{{- tpl (.Files.Get "files/config.json") . -}}
+{{- end -}}
+
+{{/*
+Resolve the ConfigMap that stores the mounted JSON config file.
+*/}}
+{{- define "devops-info-python.configMapName" -}}
+{{- printf "%s-config" (include "common.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Resolve the ConfigMap that injects the runtime environment variables.
+*/}}
+{{- define "devops-info-python.envConfigMapName" -}}
+{{- printf "%s-env" (include "common.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Resolve the PersistentVolumeClaim used for visit persistence.
+*/}}
+{{- define "devops-info-python.persistenceClaimName" -}}
+{{- if .Values.persistence.existingClaim -}}
+{{- .Values.persistence.existingClaim | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-data" (include "common.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
 {{- end -}}
 
 {{/*

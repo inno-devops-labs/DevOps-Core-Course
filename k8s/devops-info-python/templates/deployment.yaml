@@ -21,8 +21,9 @@ spec:
       {{- $hasSecretChecksum := and .Values.secret.create (not .Values.secret.existingSecret) }}
       {{- $hasVaultAnnotations := .Values.vault.enabled }}
       {{- $hasPodAnnotations := gt (len .Values.podAnnotations) 0 }}
-      {{- if or $hasSecretChecksum (or $hasVaultAnnotations $hasPodAnnotations) }}
       annotations:
+        checksum/config-file: {{ include "devops-info-python.renderedConfigFile" . | sha256sum }}
+        checksum/config-env: {{ dict "appName" .Values.app.name "environment" .Values.app.environment "appMessage" (printf "Lab 12 release %s in %s" .Release.Name .Values.app.environment) "host" .Values.config.host "port" .Values.config.port "logLevel" .Values.config.logLevel "configFilePath" (include "devops-info-python.configFilePath" .) "visitsFilePath" (include "devops-info-python.visitsFilePath" .) "featureFlags" .Values.featureFlags | toJson | sha256sum }}
         {{- if $hasSecretChecksum }}
         checksum/secret: {{ printf "%s:%s:%s" (include "devops-info-python.secretName" .) .Values.secret.username .Values.secret.password | sha256sum }}
         {{- end }}
@@ -32,7 +33,6 @@ spec:
         {{- if $hasVaultAnnotations }}
         {{- include "devops-info-python.vaultAnnotations" . | nindent 8 }}
         {{- end }}
-      {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info-python.serviceAccountName" . }}
       automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
@@ -46,8 +46,10 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.containerPort }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-python.envConfigMapName" . }}
           env:
-            {{- include "devops-info-python.commonEnvVars" . | nindent 12 }}
             - name: APP_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -58,6 +60,12 @@ spec:
                 secretKeyRef:
                   name: {{ include "devops-info-python.secretName" . }}
                   key: password
+          volumeMounts:
+            - name: config-volume
+              mountPath: {{ .Values.app.configMountPath }}
+              readOnly: true
+            - name: data-volume
+              mountPath: {{ .Values.app.dataMountPath }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -66,3 +74,14 @@ spec:
             {{- include "common.httpProbe" .Values.readinessProbe | nindent 12 }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-python.configMapName" . }}
+        - name: data-volume
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-python.persistenceClaimName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

@@ -28,12 +28,23 @@ spec:
               echo "[pre-install] validating release {{ .Release.Name }}";
               test -n "{{ .Values.image.repository }}";
               test -n "{{ .Values.image.tag }}";
+              test -n "{{ .Values.app.name }}";
+              test -n "{{ .Values.app.environment }}";
+              test -n "{{ .Values.app.configMountPath }}";
+              test -n "{{ .Values.app.dataMountPath }}";
+              test -n "{{ .Values.app.configFileName }}";
+              test -n "{{ .Values.app.visitsFileName }}";
               test "{{ .Values.config.port }}" = "{{ .Values.containerPort }}";
+              test -n "{{ include "devops-info-python.configFilePath" . }}";
+              test -n "{{ include "devops-info-python.visitsFilePath" . }}";
               {{- if and .Values.secret.create (not .Values.secret.existingSecret) }}
               test -n "{{ .Values.secret.username }}";
               test -n "{{ .Values.secret.password }}";
               {{- else }}
               test -n "{{ include "devops-info-python.secretName" . }}";
+              {{- end }}
+              {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+              test -n "{{ .Values.persistence.size }}";
               {{- end }}
               {{- if .Values.vault.enabled }}
               test -n "{{ .Values.vault.role }}";

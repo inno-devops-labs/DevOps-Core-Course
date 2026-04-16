@@ -49,3 +49,7 @@ htmlcov/
 # Environment variables
 .env
 .env.local
+
+# Local persistence data
+data/visits
+data/visits.*

@@ -1,0 +1,23 @@
+{
+  "application": {
+    "name": "{{ .Values.app.name }}",
+    "environment": "{{ .Values.app.environment }}",
+    "version": "{{ .Chart.AppVersion }}"
+  },
+  "features": {
+    "visitsEndpoint": {{ .Values.featureFlags.visitsEndpoint }},
+    "metricsEndpoint": {{ .Values.featureFlags.metricsEndpoint }},
+    "configHotReload": {{ .Values.featureFlags.configHotReload }}
+  },
+  "settings": {
+    "host": "{{ .Values.config.host }}",
+    "port": {{ .Values.config.port }},
+    "logLevel": "{{ .Values.config.logLevel }}",
+    "configMountPath": "{{ .Values.app.configMountPath }}",
+    "dataMountPath": "{{ .Values.app.dataMountPath }}",
+    "configFileName": "{{ .Values.app.configFileName }}",
+    "visitsFileName": "{{ .Values.app.visitsFileName }}",
+    "visitsFilePath": "{{ printf "%s/%s" .Values.app.dataMountPath .Values.app.visitsFileName }}",
+    "configFilePath": "{{ printf "%s/%s" .Values.app.configMountPath .Values.app.configFileName }}"
+  }
+}

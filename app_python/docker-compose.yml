@@ -1,0 +1,19 @@
+services:
+  devops-info-service:
+    build: .
+    environment:
+      APP_CONFIG_PATH: /config/config.json
+      APP_ENV: docker-compose
+      APP_MESSAGE: Running via Docker Compose
+      FEATURE_CONFIG_RELOAD_ENABLED: "true"
+      FEATURE_METRICS_ENDPOINT_ENABLED: "true"
+      FEATURE_VISITS_ENDPOINT_ENABLED: "true"
+      HOST: 0.0.0.0
+      LOG_LEVEL: INFO
+      PORT: "3000"
+      VISITS_FILE_PATH: /data/visits
+    ports:
+      - "${APP_HOST_PORT:-3001}:3000"
+    volumes:
+      - ./config:/config:ro
+      - ./data:/data

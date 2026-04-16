@@ -1,21 +1,35 @@
-replicaCount: 3
+# Keep a single writer for the Lab 12 file-backed counter on one PVC.
+replicaCount: 1
 
 nameOverride: ""
 fullnameOverride: ""
 
 commonLabels:
   app.kubernetes.io/component: web
-  app.kubernetes.io/part-of: lab11
+  app.kubernetes.io/part-of: lab12
 
 image:
   repository: pepegx/devops-info-service
-  tag: lab02
+  tag: lab12
   pullPolicy: IfNotPresent
+
+app:
+  name: devops-info-service
+  environment: dev
+  configMountPath: /config
+  configFileName: config.json
+  dataMountPath: /data
+  visitsFileName: visits
 
 config:
   host: 0.0.0.0
   port: 3000
   logLevel: INFO
+
+featureFlags:
+  visitsEndpoint: true
+  metricsEndpoint: true
+  configHotReload: true
 
 podAnnotations: {}
 
@@ -43,6 +57,14 @@ vault:
   filePermissions: "0400"
   agentInjectCommand: ""
   templateStaticSecretRenderInterval: 1m
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  size: 100Mi
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
 
 containerPort: 3000
 revisionHistoryLimit: 5
@@ -86,6 +108,8 @@ readinessProbe:
   failureThreshold: 3
 
 podSecurityContext:
+  fsGroup: 101
+  fsGroupChangePolicy: OnRootMismatch
   seccompProfile:
     type: RuntimeDefault
 

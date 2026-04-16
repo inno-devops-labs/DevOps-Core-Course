@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info-python.configMapName" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  {{ .Values.app.configFileName }}: |-
+{{ include "devops-info-python.renderedConfigFile" . | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info-python.envConfigMapName" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  APP_NAME: {{ .Values.app.name | quote }}
+  APP_ENV: {{ .Values.app.environment | quote }}
+  APP_MESSAGE: {{ printf "Lab 12 release %s in %s" .Release.Name .Values.app.environment | quote }}
+  HOST: {{ .Values.config.host | quote }}
+  PORT: {{ .Values.config.port | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  VISITS_FILE_PATH: {{ include "devops-info-python.visitsFilePath" . | quote }}
+  APP_CONFIG_PATH: {{ include "devops-info-python.configFilePath" . | quote }}
+  FEATURE_VISITS_ENDPOINT_ENABLED: {{ printf "%t" .Values.featureFlags.visitsEndpoint | quote }}
+  FEATURE_METRICS_ENDPOINT_ENABLED: {{ printf "%t" .Values.featureFlags.metricsEndpoint | quote }}
+  FEATURE_CONFIG_RELOAD_ENABLED: {{ printf "%t" .Values.featureFlags.configHotReload | quote }}

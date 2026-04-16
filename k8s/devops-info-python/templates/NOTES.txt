@@ -1,29 +1,32 @@
-1. Check the rendered service:
-   kubectl get svc -n {{ .Release.Namespace }} {{ include "common.fullname" . }}
+1. Check the core Lab 12 resources:
+   kubectl get svc,configmap,pvc -n {{ .Release.Namespace }}
 
-2. Verify the Secret resource and pod wiring:
-   kubectl get secret -n {{ .Release.Namespace }} {{ include "devops-info-python.secretName" . }} -o yaml
-   kubectl describe pod -n {{ .Release.Namespace }} $(kubectl get pod -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }} -o jsonpath='{.items[0].metadata.name}') | sed -n '/^Containers:/,/^Conditions:/p'
-   # The sed filter skips the init-container block so you inspect the app container env only.
+2. Verify the mounted config file:
+   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
+     -c {{ include "common.name" . }} \
+     -- cat {{ include "devops-info-python.configFilePath" . }}
 
-3. Verify the application locally:
+3. Verify the injected environment variables:
+   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
+     -c {{ include "common.name" . }} \
+     -- sh -lc "env | grep -E '^(APP_NAME|APP_ENV|APP_MESSAGE|HOST|PORT|LOG_LEVEL|APP_CONFIG_PATH|VISITS_FILE_PATH|FEATURE_.*)=' | sort"
+
+4. Verify the application endpoints:
    kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "common.fullname" . }} 8080:{{ .Values.service.port }}
    curl http://127.0.0.1:8080/
    curl http://127.0.0.1:8080/health
+   curl http://127.0.0.1:8080/visits
 
-4. Verify injected environment variables:
+5. Verify persistent storage survives a pod restart:
    kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
      -c {{ include "common.name" . }} \
-     -- sh -lc "env | grep -E '^(APP_USERNAME|APP_PASSWORD|HOST|PORT|LOG_LEVEL)=' | sed 's/=.*$/=<redacted>/'"
-
-{{- if .Values.vault.enabled }}
-5. Verify Vault Agent injection:
-   ./k8s/scripts/bootstrap-lab11-vault.sh
-   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} -- ls -la {{ .Values.vault.secretVolumePath }}
+     -- cat {{ include "devops-info-python.visitsFilePath" . }}
+   kubectl delete pod -n {{ .Release.Namespace }} $(kubectl get pod -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }} -o jsonpath='{.items[0].metadata.name}')
+   kubectl rollout status deployment/{{ include "common.fullname" . }} -n {{ .Release.Namespace }} --timeout=180s
    kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
      -c {{ include "common.name" . }} \
-     -- sh -lc "sed 's/=.*$/=<redacted>/' {{ .Values.vault.secretVolumePath }}/{{ .Values.vault.fileName }}"
-{{- end }}
+     -- cat {{ include "devops-info-python.visitsFilePath" . }}
 
-6. Inspect the release:
-   helm status {{ .Release.Name }} -n {{ .Release.Namespace }}
+6. Trigger a rollout when ConfigMap values change through Helm:
+   helm upgrade {{ .Release.Name }} <same-chart-reference> -n {{ .Release.Namespace }} --reuse-values --set config.logLevel=INFO
+   kubectl rollout status deployment/{{ include "common.fullname" . }} -n {{ .Release.Namespace }}

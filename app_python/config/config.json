@@ -1,0 +1,16 @@
+{
+  "application": {
+    "name": "devops-info-service",
+    "environment": "docker-compose",
+    "owner": "devops-core-course"
+  },
+  "features": {
+    "visitsEndpoint": true,
+    "metricsEndpoint": true,
+    "configReload": true
+  },
+  "settings": {
+    "logLevel": "INFO",
+    "visitsFilePath": "/data/visits"
+  }
+}

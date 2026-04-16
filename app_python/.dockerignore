@@ -18,4 +18,5 @@ env/
 
 docs/
 tests/
+data/
 *.md
