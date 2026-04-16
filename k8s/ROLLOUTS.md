@@ -52,6 +52,8 @@ kubectl port-forward svc/argo-rollouts-dashboard -n argo-rollouts 3100:3100
 # Open http://localhost:3100
 ```
 
+![](./screenshots/lab14-rollouts.png)
+
 ---
 
 ## 2. Rollout vs Deployment — Key Differences
@@ -259,16 +261,19 @@ Rollback is instant — no gradual traffic shifting, just an immediate selector 
 | Risk | Lower — gradual exposure | Higher at cutover — but quick undo |
 
 **When to use canary:**
+
 - You want real user traffic to validate the new version gradually
 - You have enough replicas that 20% traffic split makes sense
 - You want to detect issues before full rollout
 
 **When to use blue-green:**
+
 - You need zero-downtime with instant cutover
 - You want to test the new version in a completely isolated environment first
 - Database migrations or breaking changes that don't allow mixed traffic
 
 **My recommendation:**
+
 - Use canary for regular application updates where gradual exposure matters
 - Use blue-green for major releases or when you need a clean preview environment for QA
 
