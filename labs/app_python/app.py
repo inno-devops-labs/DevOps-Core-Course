@@ -4,6 +4,7 @@ DevOps main application
 
 import platform
 import socket
+import fcntl
 import os
 import uvicorn
 import logging
@@ -18,6 +19,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import time
 
 app = FastAPI()
+VISITS_FILE = "/data/visits"
 
 # Prometheus
 http_requests_total = Counter(
@@ -48,6 +50,28 @@ system_info_duration = Histogram(
     'devops_info_system_collection_seconds',
     'Time taken to collect system info'
 )
+
+
+def read_visits() -> int:
+    try:
+        with open(VISITS_FILE, "r") as f:
+            fcntl.flock(f, fcntl.LOCK_SH)
+            val = f.read().strip()
+            fcntl.flock(f, fcntl.LOCK_UN)
+            return int(val) if val else 0
+    except FileNotFoundError:
+        return 0
+    except Exception as e:
+        logger.error("Error reading visits file", extra={"error": str(e)})
+        return 0
+
+
+def write_visits(count: int) -> None:
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    with open(VISITS_FILE, "w") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.write(str(count))
+        fcntl.flock(f, fcntl.LOCK_UN)
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):
@@ -247,6 +271,22 @@ def get_metrics():
     )
 
 
+@app.get("/visit")
+def visit():
+    """Increment visit counter and return current count."""
+    count = read_visits() + 1
+    write_visits(count)
+    logger.info("Visit incremented", extra={"count": count})
+    return {"visits": count}
+
+
+@app.get("/visits")
+def get_visits():
+    """Return current visit count without incrementing."""
+    count = read_visits()
+    return {"visits": count}
+
+
 @app.on_event("startup")
 def startup_event():
     logger.info(
@@ -258,7 +298,6 @@ def startup_event():
             "python_version": platform.python_version()
         }
     )
-
 
 # Application execution
 if __name__ == "__main__":

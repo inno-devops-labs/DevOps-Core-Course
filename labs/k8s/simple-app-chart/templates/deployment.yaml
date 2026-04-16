@@ -18,13 +18,20 @@ spec:
   template:
     metadata:
       annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "myapp-role"
-        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
+        # vault.hashicorp.com/agent-inject: "true"
+        # vault.hashicorp.com/role: "myapp-role"
+        # vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
       labels:
         app: {{ .Values.image.repository | replace "/" "-" | trunc 63 | trimSuffix "-" }}
         {{- include "simple-app.selectorLabels" . | nindent 8 }}
     spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "simple-app.fullname" . }}-file
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "simple-app.fullname" . }}-data
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -32,6 +39,11 @@ spec:
         ports:
         - containerPort: {{ .Values.service.targetPort }}
           name: http
+        volumeMounts:
+          - name: config-volume
+            mountPath: /config
+          - name: data-volume
+            mountPath: /data
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         livenessProbe:
@@ -41,3 +53,5 @@ spec:
         envFrom:
           - secretRef:
               name: {{ include "simple-app.fullname" . }}-secret
+
+

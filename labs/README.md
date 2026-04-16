@@ -45,6 +45,8 @@ docker pull thevex/simple-app:latest
 
    - `GET /` - Service and system information
    - `GET /health` - Health check
+   - `GET /visit` – increments the visit counter and returns the new value.
+   - `GET /visits` – returns the current counter value without incrementing.
 
 #### Configuration ####
 

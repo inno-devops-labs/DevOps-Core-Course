@@ -1,0 +1,7 @@
+{
+  "app_name": "SimpleApp",
+  "environment": "dev",
+  "features": {
+    "debug": true
+  }
+}

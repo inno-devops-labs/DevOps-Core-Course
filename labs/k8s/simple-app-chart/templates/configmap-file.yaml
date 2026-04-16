@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "simple-app.fullname" . }}-file
+data:
+  config.json: |-
+{{ .Files.Get "files/config.json" | indent 4 }}

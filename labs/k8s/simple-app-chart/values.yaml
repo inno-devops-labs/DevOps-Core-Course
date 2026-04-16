@@ -51,3 +51,9 @@ resources:
   limits:
     memory: "128Mi"
     cpu: "200m"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  accessMode: ReadWriteOnce
+  storageClass: "" 
