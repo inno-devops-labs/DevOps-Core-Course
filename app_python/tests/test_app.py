@@ -1,6 +1,7 @@
 from pathlib import Path
 import sys
 
+import pytest
 from fastapi.testclient import TestClient
 
 APP_DIR = Path(__file__).resolve().parents[1]
@@ -13,13 +14,21 @@ import app as app_module  # noqa: E402
 client = TestClient(app_module.app, raise_server_exceptions=False)
 
 
+@pytest.fixture(autouse=True)
+def isolated_visits_file(tmp_path, monkeypatch):
+    visits_path = tmp_path / "visits"
+    monkeypatch.setattr(app_module, "VISITS_FILE", str(visits_path))
+    yield
+
+
 def test_root_returns_expected_structure():
     response = client.get("/")
     assert response.status_code == 200
     payload = response.json()
 
-    required_top = {"service", "system", "runtime", "request", "endpoints"}
+    required_top = {"service", "system", "runtime", "request", "endpoints", "visits"}
     assert required_top.issubset(payload.keys())
+    assert isinstance(payload["visits"], int)
 
     service = payload["service"]
     for key in ("name", "version", "description", "framework"):
@@ -42,7 +51,46 @@ def test_root_returns_expected_structure():
     endpoints = payload["endpoints"]
     assert isinstance(endpoints, list)
     endpoint_paths = {item["path"] for item in endpoints}
-    assert {"/", "/health"}.issubset(endpoint_paths)
+    assert {"/", "/health", "/visits"}.issubset(endpoint_paths)
+
+
+def test_visits_endpoint_tracks_root_calls_and_is_persistent_in_file():
+    response = client.get("/visits")
+    assert response.status_code == 200
+    assert response.json() == {"visits": 0}
+
+    first = client.get("/")
+    second = client.get("/")
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["visits"] == 1
+    assert second.json()["visits"] == 2
+
+    visits = client.get("/visits")
+    assert visits.status_code == 200
+    assert visits.json() == {"visits": 2}
+
+    visits_file = Path(app_module.VISITS_FILE)
+    assert visits_file.exists()
+    assert visits_file.read_text(encoding="utf-8").strip() == "2"
+
+
+def test_visits_endpoint_does_not_increment_counter():
+    client.get("/")
+    response_one = client.get("/visits")
+    response_two = client.get("/visits")
+
+    assert response_one.status_code == 200
+    assert response_two.status_code == 200
+    assert response_one.json() == {"visits": 1}
+    assert response_two.json() == {"visits": 1}
+
+
+def test_visits_endpoint_returns_zero_for_invalid_file_content():
+    Path(app_module.VISITS_FILE).write_text("invalid-counter", encoding="utf-8")
+    response = client.get("/visits")
+    assert response.status_code == 200
+    assert response.json() == {"visits": 0}
 
 
 def test_root_request_metadata_uses_forwarded_for_header():

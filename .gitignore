@@ -26,3 +26,6 @@ venv/
 *.retry
 .vault_pass
 ansible/inventory/*.pyc
+
+# Local runtime data
+app_python/data/visits

@@ -1,298 +1,184 @@
-# ConfigMaps & Persistent Volumes — Lab 12
+# Lab 12: ConfigMaps & Persistent Volumes
+
+This document describes the completed implementation for Lab 12:
+- visits counter persistence in the Python app
+- ConfigMap file + ConfigMap environment variables in Helm
+- PVC mount for durable `/data/visits`
+- hot-reload strategy (bonus)
 
 ## 1. Application Changes
 
-### Visits Counter
+### Visits counter behavior
 
-The root endpoint (`GET /`) now tracks how many times it has been called.
-The counter is persisted in a plain-text file whose path is controlled by the
-`VISITS_FILE` environment variable (default: `/data/visits`).
+- `GET /` increments visits counter and returns `visits` in response.
+- `GET /visits` returns current counter without increment.
+- Counter is stored in file from `VISITS_FILE` (default: `/data/visits`).
+- Counter updates are protected with a cross-platform exclusive lock:
+  - `fcntl` on Unix-like systems
+  - `msvcrt` on Windows
 
-**New endpoint:**
+Relevant code:
+- `app_python/app.py`:
+  - `_read_visits()`
+  - `_exclusive_file_lock()`
+  - `_increment_visits()`
+  - `@app.get("/visits")`
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET`  | `/visits` | Returns `{"visits": <count>}` without incrementing the counter |
+### Local Docker persistence setup
 
-**Implementation details (`app_python/app.py`):**
+`app_python/docker-compose.yml` mounts host directory `./data` to `/data`:
 
-```python
-VISITS_FILE: str = os.getenv("VISITS_FILE", "/data/visits")
-
-def _read_visits() -> int:
-    try:
-        with open(VISITS_FILE, "r") as f:
-            return int(f.read().strip())
-    except (FileNotFoundError, ValueError):
-        return 0
-
-def _increment_visits() -> int:
-    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
-    with open(VISITS_FILE, "a+") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)   # exclusive lock → thread-safe
-        ...
+```yaml
+volumes:
+  - ./data:/data
 ```
 
-File locking (`fcntl`) prevents race conditions when multiple concurrent
-requests try to update the counter simultaneously.
+This keeps `./data/visits` on host and survives container restarts.
 
-### Local Testing with Docker Compose
+### Test coverage
 
-```bash
-cd app_python
-docker compose up --build -d
+`app_python/tests/test_app.py` now covers:
+- root payload includes `visits`
+- `/visits` starts from `0` when file is missing
+- `/` increments counter and persists value to file
+- `/visits` does not increment counter
+- invalid counter file content falls back to `0`
 
-# Hit the root endpoint several times
-curl http://localhost:5000/
-curl http://localhost:5000/
-curl http://localhost:5000/
-
-# Check the counter
-curl http://localhost:5000/visits
-# {"visits":3}
-
-# Restart the container — counter must survive
-docker compose restart
-curl http://localhost:5000/visits
-# {"visits":3}   ← same value
-```
-
-The named Docker volume `visits_data` is mounted at `/data`.
-
----
+Test result artifact:
+- `k8s/lab12-evidence/pytest-app_python.txt`
 
 ## 2. ConfigMap Implementation
 
-### a) File-based ConfigMap (`configmap.yaml`)
+### File-based ConfigMap
+
+Source file:
+- `k8s/devops-info-chart/files/config.json`
+
+Template:
+- `k8s/devops-info-chart/templates/configmap.yaml`
+
+`config.json` is loaded with `.Files.Get` and mounted into pod at `/config/config.json`.
+
+### Env ConfigMap
+
+Template:
+- `k8s/devops-info-chart/templates/configmap-env.yaml`
+
+Injected keys:
+- `APP_ENV`
+- `LOG_LEVEL`
+- `VISITS_FILE`
+
+### Deployment wiring
+
+File:
+- `k8s/devops-info-chart/templates/deployment.yaml`
+
+Implemented:
+- `envFrom.configMapRef` for env ConfigMap
+- `config-volume` mount at `/config`
+- checksum annotations:
+  - `checksum/config`
+  - `checksum/config-env`
+
+## 3. Persistent Volume (PVC)
+
+Template:
+- `k8s/devops-info-chart/templates/pvc.yaml`
+
+Configuration from `values.yaml`:
 
 ```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: <release>-devops-info-chart-config
-data:
-  config.json: |-
-    {
-      "app_name": "devops-info-service",
-      "environment": "production",
-      "features": { "visits_counter": true, ... }
-    }
-```
-
-The content of `files/config.json` is embedded at chart render time using
-`.Files.Get`. It is mounted as a read-only file at `/config/config.json` inside
-every pod.
-
-### b) Environment-variable ConfigMap (`configmap-env.yaml`)
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: <release>-devops-info-chart-env
-data:
-  APP_ENV: "production"
-  LOG_LEVEL: "info"
-  VISITS_FILE: "/data/visits"
-```
-
-Values come from `values.yaml` (`appEnv`, `logLevel`, `persistence.visitsFile`).
-
-### c) Volume mount for config file (in `deployment.yaml`)
-
-```yaml
-# pod spec
-volumes:
-  - name: config-volume
-    configMap:
-      name: <release>-devops-info-chart-config
-
-# container spec
-volumeMounts:
-  - name: config-volume
-    mountPath: /config
-```
-
-### d) Environment variables via `envFrom`
-
-```yaml
-envFrom:
-  - secretRef:
-      name: <release>-secret
-  - configMapRef:
-      name: <release>-devops-info-chart-env
-```
-
-All keys from the env ConfigMap are injected as environment variables
-(e.g. `APP_ENV`, `LOG_LEVEL`, `VISITS_FILE`).
-
-### Verification
-
-```bash
-# File content inside pod
-kubectl exec <pod> -- cat /config/config.json
-# {
-#   "app_name": "devops-info-service",
-#   ...
-# }
-
-# Environment variables
-kubectl exec <pod> -- printenv | grep -E "APP_ENV|LOG_LEVEL|VISITS_FILE"
-# APP_ENV=production
-# LOG_LEVEL=info
-# VISITS_FILE=/data/visits
-
-# List ConfigMaps and PVC
-kubectl get configmap,pvc
-# NAME                                       DATA   AGE
-# configmap/dev-devops-info-chart-config     1      2m
-# configmap/dev-devops-info-chart-env        3      2m
-# NAME                                           STATUS   VOLUME   CAPACITY   ACCESS MODES
-# persistentvolumeclaim/dev-devops-info-chart-data   Bound    ...      100Mi      RWO
-```
-
----
-
-## 3. Persistent Volume
-
-### PVC Template (`pvc.yaml`)
-
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: <release>-devops-info-chart-data
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
-```
-
-Controlled by:
-
-```yaml
-# values.yaml
 persistence:
   enabled: true
   size: 100Mi
-  storageClass: ""   # empty → cluster default (standard on Minikube)
+  storageClass: ""
+  visitsFile: "/data/visits"
 ```
 
-**Access mode `ReadWriteOnce`** — the volume can be mounted by a single node at
-a time. Sufficient for a single-replica deployment; use `ReadWriteMany` if you
-need multi-pod writes.
+PVC details:
+- access mode: `ReadWriteOnce`
+- requested storage: `100Mi`
+- storage class: configurable (default cluster class when empty)
 
-**Storage class** — leaving `storageClass` empty uses the cluster's default
-class. On Minikube this is `standard` (hostPath provisioner). In cloud
-environments (GKE, EKS, AKS) the default class is backed by cloud block storage.
+Deployment mounts claim to `/data`:
+- `persistentVolumeClaim.claimName: <release>-devops-info-chart-data`
+- `volumeMounts.mountPath: /data`
 
-### Volume mount (in `deployment.yaml`)
+## 4. Verification Evidence
 
-```yaml
-volumes:
-  - name: data-volume
-    persistentVolumeClaim:
-      claimName: <release>-devops-info-chart-data
+### Static artifacts already captured
 
-volumeMounts:
-  - name: data-volume
-    mountPath: /data
+- `k8s/lab12-evidence/helm-lint.txt`
+- `k8s/lab12-evidence/helm-template-dev.yaml`
+- `k8s/lab12-evidence/pytest-app_python.txt`
+- `k8s/lab12-evidence/environment-status.txt`
+- `k8s/lab12-evidence/runtime-k8s.txt`
+- `k8s/lab12-evidence/runtime-k8s-attempt.log`
+
+### Runtime kubectl proof capture (required outputs)
+
+When Docker + Minikube are running, execute:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File k8s/scripts/capture-lab12-runtime-evidence.ps1
 ```
 
-### Persistence Test
+It generates:
+- `k8s/lab12-evidence/runtime-k8s.txt`
 
-```bash
-# 1. Deploy
-helm upgrade --install dev k8s/devops-info-chart -f k8s/devops-info-chart/values-dev.yaml
+The generated file includes all required lab outputs:
+- `kubectl get configmap,pvc`
+- `kubectl exec ... -- cat /config/config.json`
+- `kubectl exec ... -- printenv` filtered to `APP_ENV|LOG_LEVEL|VISITS_FILE`
+- persistence test:
+  - visits value before pod deletion
+  - `kubectl delete pod ...`
+  - visits value after pod recreation
 
-# 2. Hit the endpoint multiple times
-for i in $(seq 1 5); do curl -s $(minikube service dev-devops-info-chart --url)/; done
+Current execution status (2026-04-16):
+- Script execution was performed in this workspace.
+- Generated `runtime-k8s.txt` with status `COMPLETED WITH ERRORS`.
+- Blocking issue is host-level runtime availability (Docker service/cluster unreachable), not chart or app code.
+- See `k8s/lab12-evidence/environment-status.txt` for concrete command errors.
 
-# 3. Check counter
-kubectl exec <pod> -- cat /data/visits
-# 5
+## 5. ConfigMap vs Secret
 
-# 4. Delete the pod
-kubectl delete pod <pod>
-# pod deleted — Deployment immediately creates a new one
-
-# 5. Wait for the new pod
-kubectl rollout status deployment/<deployment>
-
-# 6. Verify counter is preserved
-kubectl exec <new-pod> -- cat /data/visits
-# 5   ← data survived the pod deletion
-```
-
----
-
-## 4. ConfigMap vs Secret
-
-| | ConfigMap | Secret |
+| Topic | ConfigMap | Secret |
 |---|---|---|
-| **Purpose** | Non-sensitive application configuration | Sensitive credentials and tokens |
-| **Storage at rest** | Stored as plain text in etcd | Base64-encoded in etcd (encrypted if etcd encryption is configured) |
-| **Access** | Any pod in the namespace by default | Can be restricted via RBAC |
-| **Typical content** | Feature flags, environment names, file-based config, log levels | Passwords, API keys, TLS certificates, SSH private keys |
-| **Visible in `kubectl get`** | Yes, fully readable | Yes, but values are base64-encoded |
-| **Use when** | Data is safe to expose to all team members / developers | Data must be restricted; values are secret |
+| Purpose | Non-sensitive configuration | Sensitive data (passwords, tokens, certs) |
+| Storage in etcd | Plain text | Base64-encoded (and can be encrypted at rest) |
+| Typical values | Feature flags, log level, app env | API keys, credentials, TLS keys |
+| Exposure risk | Higher | Lower with RBAC + secret handling |
 
-**Rule of thumb:** if you would be comfortable putting the value in a public Git
-repository, use a ConfigMap. If not, use a Secret (and ideally back it with an
-external secret manager such as HashiCorp Vault or AWS Secrets Manager).
+Rule: if value is sensitive, use Secret (or external secret manager), not ConfigMap.
 
----
+## 6. Bonus: ConfigMap Hot Reload
 
-## 5. Bonus — ConfigMap Hot Reload
-
-### Checksum Annotation Pattern
+Implemented restart-on-config-change pattern:
 
 ```yaml
-# deployment.yaml — pod template metadata
 annotations:
   checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
   checksum/config-env: {{ include (print $.Template.BasePath "/configmap-env.yaml") . | sha256sum }}
 ```
 
-When `helm upgrade` is run after changing a ConfigMap, the SHA-256 checksums in
-the pod template annotations change. Kubernetes sees this as a pod template
-change and performs a rolling restart, ensuring pods always run with the latest
-configuration.
+Behavior notes:
+- Full ConfigMap directory mounts update automatically with kubelet sync delay.
+- `subPath` does not auto-update for ConfigMap file changes.
+- Alternative auto-restart approach: `stakater/reloader`.
 
-### Update Delay
+## 7. Checklist Status
 
-Without the checksum annotation, changes to a mounted ConfigMap propagate after
-the kubelet's sync period (default **60 s**) plus the kube-apiserver watch
-cache TTL. Total observed delay is typically **1–3 minutes**.
-
-### `subPath` Limitation
-
-When a ConfigMap key is mounted using `subPath`, Kubernetes copies the file at
-pod start time instead of creating a symlink into the ConfigMap directory.
-Because there is no symlink, kubelet cannot replace the file atomically, so
-**updates to the ConfigMap are never reflected in the mounted file** while the
-pod is running.
-
-Use full directory mounts (without `subPath`) when you need automatic updates.
-Use `subPath` only when you need to inject a single file without overwriting
-other files in the same directory.
-
-### stakater/Reloader (alternative approach)
-
-`Reloader` is a Kubernetes controller that watches ConfigMaps and Secrets and
-automatically triggers rolling restarts of Deployments/DaemonSets/StatefulSets
-when they change — without requiring annotation churn.
-
-```bash
-helm repo add stakater https://stakater.github.io/stakater-charts
-helm install reloader stakater/reloader -n kube-system
-
-# Annotate the deployment
-kubectl annotate deployment <name> reloader.stakater.com/auto="true"
-```
-
-With this in place, any `kubectl edit configmap ...` or `helm upgrade` that
-changes a ConfigMap referenced by the deployment will automatically trigger a
-rolling restart.
+- [x] Visits counter implemented and persisted in file
+- [x] `/visits` endpoint implemented
+- [x] Docker Compose volume for persistence configured
+- [x] App README updated
+- [x] ConfigMap file template implemented
+- [x] ConfigMap env template implemented
+- [x] ConfigMap mounted into pod at `/config`
+- [x] Env vars injected via `envFrom`
+- [x] PVC template implemented
+- [x] PVC mounted to `/data`
+- [x] Checksum annotation pattern implemented (bonus)
+- [x] Lab documentation completed in this file

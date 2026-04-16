@@ -136,7 +136,8 @@ environment variable (default: `/data/visits`).
 
 On each request to `/`:
 1. The counter file is read (defaults to `0` if missing).
-2. The value is incremented and written back atomically (file locking via `fcntl`).
+2. The value is incremented and written back atomically (cross-platform file locking:
+   `fcntl` on Unix-like systems and `msvcrt` on Windows).
 3. The new count is included in the JSON response under the `visits` key.
 
 The `/visits` endpoint lets you query the current count without modifying it.
@@ -148,13 +149,19 @@ The `/visits` endpoint lets you query the current count without modifying it.
 docker compose up --build
 curl http://localhost:5000/
 curl http://localhost:5000/visits
+# Linux / macOS
+cat ./data/visits
+
+# Windows PowerShell
+Get-Content .\data\visits
+
 # Restart and verify counter continues from where it left off
 docker compose restart
 curl http://localhost:5000/visits
 ```
 
-The named volume `visits_data` is mounted at `/data` inside the container, so
-the counter file survives container restarts and recreations.
+The bind mount `./data:/data` keeps the counter file on the host filesystem, so
+the value survives container restarts and recreations.
 
 ## Configuration
 

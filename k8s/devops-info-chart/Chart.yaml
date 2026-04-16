@@ -1,12 +1,12 @@
 apiVersion: v2
 name: devops-info-chart
-description: Helm chart for the DevOps Info Service (Python Flask app)
+description: Helm chart for the DevOps Info Service (Python FastAPI app)
 type: application
 version: 0.1.0
 appVersion: "lab02"
 keywords:
   - python
-  - flask
+  - fastapi
   - devops
 maintainers:
   - name: Vladimir Zhidkov

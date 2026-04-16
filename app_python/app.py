@@ -6,15 +6,26 @@ Production-minded FastAPI application that exposes runtime and system details.
 
 from __future__ import annotations
 
-import fcntl
+import contextlib
 import json
 import logging
 import os
 import platform
 import socket
+import threading
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Iterator, TextIO, Tuple
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - unavailable on Windows
+    fcntl = None  # type: ignore[assignment]
+
+try:
+    import msvcrt
+except ImportError:  # pragma: no cover - unavailable on Unix
+    msvcrt = None  # type: ignore[assignment]
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -103,6 +114,7 @@ ENDPOINTS = [
 ]
 
 VISITS_FILE: str = os.getenv("VISITS_FILE", "/data/visits")
+_VISITS_THREAD_LOCK = threading.Lock()
 
 START_TIME: datetime = datetime.now(timezone.utc)
 
@@ -256,26 +268,60 @@ async def log_and_instrument_request(request: Request, call_next):
 def _read_visits() -> int:
     """Read the current visit count from disk. Returns 0 if file is missing or corrupt."""
     try:
-        with open(VISITS_FILE, "r") as f:
+        with open(VISITS_FILE, "r", encoding="utf-8") as f:
             return int(f.read().strip())
     except (FileNotFoundError, ValueError):
         return 0
 
 
+@contextlib.contextmanager
+def _exclusive_file_lock(file_obj: TextIO) -> Iterator[None]:
+    """
+    Cross-platform exclusive lock for the visits counter file.
+
+    - Unix: uses fcntl.flock
+    - Windows: uses msvcrt.locking with an in-process mutex
+    - Fallback: in-process mutex only
+    """
+    if fcntl is not None:
+        fcntl.flock(file_obj.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(file_obj.fileno(), fcntl.LOCK_UN)
+        return
+
+    if msvcrt is not None:
+        with _VISITS_THREAD_LOCK:
+            file_obj.seek(0)
+            msvcrt.locking(file_obj.fileno(), msvcrt.LK_LOCK, 1)
+            try:
+                yield
+            finally:
+                file_obj.seek(0)
+                msvcrt.locking(file_obj.fileno(), msvcrt.LK_UNLCK, 1)
+        return
+
+    with _VISITS_THREAD_LOCK:
+        yield
+
+
 def _increment_visits() -> int:
     """Atomically increment the visit counter and return the new value."""
-    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
-    with open(VISITS_FILE, "a+") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        try:
+    visits_dir = os.path.dirname(VISITS_FILE)
+    if visits_dir:
+        os.makedirs(visits_dir, exist_ok=True)
+
+    with open(VISITS_FILE, "a+", encoding="utf-8") as f:
+        with _exclusive_file_lock(f):
             f.seek(0)
             raw = f.read().strip()
             count = int(raw) + 1 if raw else 1
             f.seek(0)
             f.truncate()
             f.write(str(count))
-        finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
+            f.flush()
+            os.fsync(f.fileno())
     return count
 
 

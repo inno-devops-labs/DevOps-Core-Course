@@ -1,0 +1,23 @@
+Date: 2026-04-16
+
+Host checks performed:
+- `docker version` intermittently returns:
+  - `open //./pipe/dockerDesktopLinuxEngine: Access is denied.`
+  - `open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.`
+- `sc.exe start com.docker.service` returns:
+  - `OpenService FAILED 5: Access is denied.`
+- User is in `docker-users` group, but service control is blocked in this session.
+
+Minikube checks performed:
+- `minikube start --driver=docker` fails because Docker daemon pipe is unavailable.
+- `minikube start --driver=hyperv` fails with permission/feature availability error.
+- `minikube start --driver=virtualbox` fails because VT-x/AMD-v is disabled.
+- `kubectl` context is not set after profile cleanup; cluster API is unreachable (`localhost:8080` refused).
+
+Runtime evidence capture:
+- Script executed: `k8s/scripts/capture-lab12-runtime-evidence.ps1`
+- Output: `k8s/lab12-evidence/runtime-k8s.txt`
+- Status in file: `COMPLETED WITH ERRORS` (cluster unreachable)
+
+To collect full live kubectl proof after host permissions/virtualization are fixed:
+- `powershell -ExecutionPolicy Bypass -File k8s/scripts/capture-lab12-runtime-evidence.ps1`

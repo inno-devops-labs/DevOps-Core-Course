@@ -12,7 +12,7 @@ services:
       PORT: "5000"
       VISITS_FILE: "/data/visits"
     volumes:
-      - visits_data:/data
+      - ./data:/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
@@ -20,6 +20,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
-
-volumes:
-  visits_data:
