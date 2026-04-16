@@ -3,10 +3,13 @@ DevOps Info Service
 Main Flask application module.
 """
 
+import json
 import logging
 import os
 import platform
 import socket
+import tempfile
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -78,15 +81,82 @@ system_info_duration = Histogram(
 
 def _normalize_endpoint(path: str) -> str:
     """Normalize path for low-cardinality metrics."""
-    if path in ("/", "/health", "/metrics"):
+    if path in ("/", "/health", "/metrics", "/visits"):
         return path
     return "other"
+
+
+_visits_lock = threading.Lock()
+
+
+def _visits_path() -> str:
+    return os.environ.get("VISITS_DATA_PATH", "/data/visits")
+
+
+def _read_visits_unlocked() -> int:
+    path = _visits_path()
+    try:
+        with open(path, encoding="utf-8") as f:
+            return int((f.read() or "0").strip() or "0")
+    except (FileNotFoundError, ValueError, OSError):
+        return 0
+
+
+def _write_visits_atomic(n: int) -> None:
+    path = _visits_path()
+    parent = os.path.dirname(path) or "."
+    os.makedirs(parent, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(
+        dir=parent, prefix=".visits_", suffix=".tmp", text=True
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(str(n))
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def increment_visits() -> int:
+    """Increment persisted visit counter; returns new total."""
+    with _visits_lock:
+        n = _read_visits_unlocked() + 1
+        _write_visits_atomic(n)
+        return n
+
+
+def get_visits() -> int:
+    """Return current persisted visit total."""
+    with _visits_lock:
+        return _read_visits_unlocked()
+
+
+def load_config_file() -> dict | None:
+    """Return parsed /config/config.json if present (Kubernetes ConfigMap mount)."""
+    path = "/config/config.json"
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        logger.warning("Could not read or parse %s", path)
+        return None
 
 
 # Startup log
 logger.info(
     "Application starting",
     extra={"host": HOST, "port": PORT, "debug": DEBUG} if USE_JSON_LOGGING else {},
+)
+logger.info(
+    "Visit counter path %s (initial count=%s)",
+    _visits_path(),
+    get_visits(),
 )
 
 
@@ -183,6 +253,7 @@ def index():
     """Main endpoint — service, system, runtime, and request information."""
     logger.info("Handling / request")
 
+    visits_total = increment_visits()
     uptime_info = get_uptime()
 
     # Track system info collection duration
@@ -203,10 +274,18 @@ def index():
             "current_time": datetime.now(timezone.utc).isoformat(),
             "timezone": "UTC",
         },
+        "visits_total": visits_total,
+        "config": {
+            "environment": os.environ.get("APP_CONFIG_ENV", "local"),
+            "log_level": os.environ.get("LOG_LEVEL", "INFO"),
+            "feature_debug": os.environ.get("FEATURE_DEBUG", "false"),
+            "file": load_config_file(),
+        },
         "request": get_request_info(),
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Persisted visit counter"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
@@ -219,6 +298,22 @@ def index():
 def metrics():
     """Prometheus metrics endpoint."""
     return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
+
+
+@app.route("/visits", methods=["GET"])
+def visits():
+    """Return current persisted root-path visit total (without incrementing)."""
+    total = get_visits()
+    return (
+        jsonify(
+            {
+                "visits_total": total,
+                "data_path": _visits_path(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+        200,
+    )
 
 
 @app.route("/health", methods=["GET"])

@@ -67,5 +67,14 @@ Non-secret container env (DRY) — Lab 11 bonus
   value: {{ .Values.env.PORT | quote }}
 - name: LOG_FORMAT
   value: {{ .Values.env.LOG_FORMAT | quote }}
+- name: VISITS_DATA_PATH
+  value: {{ .Values.env.VISITS_DATA_PATH | quote }}
+{{- end -}}
+
+{{/*
+Stable checksum input for env ConfigMap (Lab 12 bonus — pod restart on change)
+*/}}
+{{- define "devops-python.configEnvChecksum" -}}
+{{- printf "%s|%s|%v" .Values.config.environment .Values.config.logLevel .Values.config.featureDebug -}}
 {{- end -}}
 

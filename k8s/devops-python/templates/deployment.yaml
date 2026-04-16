@@ -19,8 +19,13 @@ spec:
     metadata:
       labels:
         {{- include "devops-python.selectorLabels" . | nindent 8 }}
-      {{- if .Values.vault.injector.enabled }}
+      {{- if or (and .Values.configMapChecksum.enabled .Values.config.enabled) .Values.vault.injector.enabled }}
       annotations:
+        {{- if and .Values.configMapChecksum.enabled .Values.config.enabled }}
+        checksum/config-file: {{ .Files.Get "files/config.json" | sha256sum }}
+        checksum/config-env: {{ include "devops-python.configEnvChecksum" . | sha256sum }}
+        {{- end }}
+        {{- if .Values.vault.injector.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
         {{- if .Values.vault.injector.templateEnabled }}
@@ -32,11 +37,25 @@ spec:
         {{- range $k, $v := .Values.vault.injector.extraAnnotations }}
         {{ $k }}: {{ $v | quote }}
         {{- end }}
+        {{- end }}
       {{- end }}
     spec:
       serviceAccountName: {{ include "devops-python.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.securityContext.pod | nindent 8 }}
+      volumes:
+        {{- if .Values.config.enabled }}
+        - name: app-config
+          configMap:
+            name: {{ include "devops-python.fullname" . }}-file
+        {{- end }}
+        {{- if .Values.persistence.enabled }}
+        - name: visits-data
+          persistentVolumeClaim:
+            claimName: {{ include "devops-python.fullname" . }}-data
+        {{- end }}
+        - name: tmp
+          emptyDir: {}
       containers:
         - name: {{ include "devops-python.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -47,11 +66,30 @@ spec:
               protocol: TCP
           env:
             {{- include "devops-python.envVars" . | nindent 12 }}
-          {{- if and .Values.secrets.enabled (or .Values.secrets.create .Values.secrets.existingSecretName) }}
+          {{- $needEnvFrom := or (and .Values.config.enabled .Values.config.injectEnv) (and .Values.secrets.enabled (or .Values.secrets.create .Values.secrets.existingSecretName)) }}
+          {{- if $needEnvFrom }}
           envFrom:
+            {{- if and .Values.config.enabled .Values.config.injectEnv }}
+            - configMapRef:
+                name: {{ include "devops-python.fullname" . }}-env
+            {{- end }}
+            {{- if and .Values.secrets.enabled (or .Values.secrets.create .Values.secrets.existingSecretName) }}
             - secretRef:
                 name: {{ include "devops-python.secretName" . }}
+            {{- end }}
           {{- end }}
+          volumeMounts:
+            {{- if .Values.config.enabled }}
+            - name: app-config
+              mountPath: /config
+              readOnly: true
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - name: visits-data
+              mountPath: /data
+            {{- end }}
+            - name: tmp
+              mountPath: /tmp
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.probes.readiness.enabled }}

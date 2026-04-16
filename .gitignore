@@ -24,3 +24,6 @@ credentials
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+
+# Lab 12 — local visit counter bind mount (monitoring/docker-compose)
+monitoring/data/

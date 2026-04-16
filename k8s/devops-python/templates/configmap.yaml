@@ -1,0 +1,22 @@
+{{- if .Values.config.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-python.fullname" . }}-file
+  labels:
+    {{- include "devops-python.labels" . | nindent 4 }}
+data:
+  config.json: |
+{{ .Files.Get "files/config.json" | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-python.fullname" . }}-env
+  labels:
+    {{- include "devops-python.labels" . | nindent 4 }}
+data:
+  APP_CONFIG_ENV: {{ .Values.config.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  FEATURE_DEBUG: {{ .Values.config.featureDebug | quote }}
+{{- end }}

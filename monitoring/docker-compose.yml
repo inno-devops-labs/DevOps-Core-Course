@@ -144,6 +144,9 @@ services:
       PORT: "5000"
       HOST: "0.0.0.0"
       LOG_FORMAT: "json"
+      VISITS_DATA_PATH: "/data/visits"
+    volumes:
+      - ./data:/data
     networks:
       - logging
     deploy:

@@ -78,6 +78,21 @@ def test_index_endpoints_list(client):
     paths = [e["path"] for e in endpoints]
     assert "/" in paths
     assert "/health" in paths
+    assert "/visits" in paths
+
+
+def test_visits_returns_200(client):
+    """GET /visits returns 200 OK."""
+    response = client.get("/visits")
+    assert response.status_code == 200
+
+
+def test_visits_increments_on_index(client):
+    """GET / increments persisted visit counter; GET /visits reflects it."""
+    c1 = client.get("/visits").get_json()["visits_total"]
+    client.get("/")
+    c2 = client.get("/visits").get_json()["visits_total"]
+    assert c2 == c1 + 1
 
 
 def test_health_returns_200(client):
