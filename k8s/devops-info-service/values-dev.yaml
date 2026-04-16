@@ -4,9 +4,17 @@ image:
   tag: latest
   pullPolicy: Always
 
+config:
+  environment: dev
+  logLevel: DEBUG
+
 service:
   type: NodePort
   nodePort: 30080
+
+persistence:
+  enabled: true
+  size: 100Mi
 
 resources:
   requests:

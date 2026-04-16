@@ -3,3 +3,5 @@ test
 .vault_pass
 .env
 .venv
+monitoring/data/*
+!monitoring/data/.gitkeep

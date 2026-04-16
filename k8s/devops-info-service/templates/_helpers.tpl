@@ -67,6 +67,27 @@ Secret name.
 {{- end -}}
 
 {{/*
+File-based ConfigMap name.
+*/}}
+{{- define "devops-info-service.configMapName" -}}
+{{- printf "%s-config" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Environment ConfigMap name.
+*/}}
+{{- define "devops-info-service.envConfigMapName" -}}
+{{- printf "%s-env" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{/*
+PersistentVolumeClaim name.
+*/}}
+{{- define "devops-info-service.pvcName" -}}
+{{- printf "%s-data" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{/*
 Vault agent annotations.
 */}}
 {{- define "devops-info-service.vaultAnnotations" -}}

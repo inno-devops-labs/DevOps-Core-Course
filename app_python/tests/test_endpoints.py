@@ -5,7 +5,15 @@ def test_root_ok_structure(client):
     assert isinstance(data, dict)
 
     # required top-level keys
-    for k in ("service", "system", "runtime", "request", "endpoints"):
+    for k in (
+        "service",
+        "system",
+        "runtime",
+        "configuration",
+        "visits",
+        "request",
+        "endpoints",
+    ):
         assert k in data
 
     # service
@@ -28,12 +36,23 @@ def test_root_ok_structure(client):
     assert "uptime_human" in data["runtime"]
     assert data["runtime"]["timezone"] == "UTC"
 
+    # configuration
+    assert data["configuration"]["environment"] == "test"
+    assert data["configuration"]["config_loaded"] is True
+    assert data["configuration"]["feature_flags"]["visitsPersistence"] is True
+
+    # visits
+    assert data["visits"]["count"] == 1
+
     # request echo
     assert data["request"]["path"] == "/"
     assert data["request"]["method"] == "GET"
     assert data["request"]["user_agent"] == "pytest"
     assert any(
         endpoint["path"] == "/metrics" for endpoint in data["endpoints"]
+    )
+    assert any(
+        endpoint["path"] == "/visits" for endpoint in data["endpoints"]
     )
 
 
@@ -60,9 +79,20 @@ def test_client_ip_from_xff(client):
     assert data["request"]["client_ip"] == "1.2.3.4"
 
 
+def test_visits_endpoint_tracks_persistent_count(client):
+    client.get("/")
+    client.get("/")
+
+    r = client.get("/visits")
+    assert r.status_code == 200
+    data = r.get_json()
+    assert data["visits"] == 2
+
+
 def test_metrics_endpoint_exposes_prometheus_metrics(client):
     client.get("/")
     client.get("/health")
+    client.get("/visits")
 
     r = client.get("/metrics")
     assert r.status_code == 200
@@ -72,6 +102,7 @@ def test_metrics_endpoint_exposes_prometheus_metrics(client):
     assert "http_requests_total" in payload
     assert 'endpoint="/"' in payload
     assert 'endpoint="/health"' in payload
+    assert 'endpoint="/visits"' in payload
     assert 'method="GET"' in payload
     assert 'status_code="200"' in payload
     assert "http_request_duration_seconds_bucket" in payload

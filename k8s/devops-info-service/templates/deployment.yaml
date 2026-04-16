@@ -37,10 +37,14 @@ spec:
     spec:
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ include "devops-info-service.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.container.port }}
@@ -50,11 +54,20 @@ spec:
             - name: {{ .name }}
               value: {{ .value | quote }}
             {{- end }}
-          {{- if or .Values.secret.create .Values.secret.name }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.envConfigMapName" . }}
+            {{- if or .Values.secret.create .Values.secret.name }}
             - secretRef:
                 name: {{ include "devops-info-service.secretName" . }}
-          {{- end }}
+            {{- end }}
+          volumeMounts:
+            - name: app-config
+              mountPath: {{ printf "%s/%s" .Values.config.fileMountPath .Values.config.fileName }}
+              subPath: {{ .Values.config.fileName }}
+              readOnly: true
+            - name: app-data
+              mountPath: {{ .Values.persistence.mountPath }}
           {{- if .Values.readinessProbe.enabled }}
           readinessProbe:
             httpGet:
@@ -79,3 +92,14 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ include "devops-info-service.configMapName" . }}
+        - name: app-data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.pvcName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

@@ -9,3 +9,13 @@
   kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
   echo http://127.0.0.1:8080/health
 {{- end }}
+
+2. Verify ConfigMap mounts and environment variables:
+  POD=$(kubectl get pods --namespace {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/name={{ include "devops-info-service.name" . }} -o jsonpath="{.items[0].metadata.name}")
+  kubectl exec --namespace {{ .Release.Namespace }} $POD -- cat {{ .Values.config.appConfigPath }}
+  kubectl exec --namespace {{ .Release.Namespace }} $POD -- printenv | grep -E "APP_|LOG_LEVEL|VISITS_FILE"
+
+3. Verify persistence:
+  curl http://127.0.0.1:8080/
+  curl http://127.0.0.1:8080/visits
+  kubectl delete pod --namespace {{ .Release.Namespace }} $POD

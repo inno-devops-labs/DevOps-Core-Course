@@ -1,0 +1,13 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "dev",
+  "featureFlags": {
+    "visitsPersistence": true,
+    "metricsEnabled": true,
+    "healthChecksEnabled": true
+  },
+  "settings": {
+    "responseFormat": "json",
+    "configSource": "helm-file-configmap"
+  }
+}
