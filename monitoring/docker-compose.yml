@@ -105,9 +105,20 @@ services:
           memory: 512M
 
   app-python:
-    build: ../app_python
+    build: 
+      context: ../app_python
+      dockerfile: Dockerfile
     ports:
       - "8000:5000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5000
+      - DEBUG=False
+      - DATA_DIR=/app/data
+      - CONFIG_FILE_PATH=/app/config/config.json
+    volumes:
+      - ../app_python/config/config.json:/app/config/config.json:ro
+      - ../app_python/data:/app/data
     networks:
       - logging
     labels:
@@ -127,6 +138,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
 volumes:
   loki-data:
@@ -135,3 +147,4 @@ volumes:
 
 networks:
   logging:
+    driver: bridge

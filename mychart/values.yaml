@@ -1,0 +1,32 @@
+replicaCount: 1
+
+image:
+  repository: devops-python
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5000
+  targetPort: 5000
+
+environment: production
+logLevel: INFO
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 250m
+    memory: 128Mi
+
+configMap:
+  enabled: true
+  mountPath: /app/config

@@ -1,0 +1,14 @@
+{
+  "app_name": "DevOps Python Application",
+  "environment": "production",
+  "version": "1.0.0",
+  "features": {
+    "visits_counter": true,
+    "logging_enabled": true,
+    "metrics_enabled": false
+  },
+  "settings": {
+    "max_visits_display": 1000000,
+    "refresh_interval_seconds": 30
+  }
+}
