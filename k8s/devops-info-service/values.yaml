@@ -14,6 +14,15 @@ service:
   targetPort: 5000
   nodePort: 30080
 
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: true
+  role: myapp-role
+  secretPath: secret/data/myapp/config
+
 config:
   applicationName: devops-info-service
   features:
@@ -73,12 +82,6 @@ containerSecurityContext:
   capabilities:
     drop:
       - ALL
-
-secrets:
-  enabled: true
-  data:
-    APP_USERNAME: "change-me"
-    APP_PASSWORD: "change-me"
 
 env:
   - name: PYTHONUNBUFFERED
