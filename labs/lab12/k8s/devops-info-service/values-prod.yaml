@@ -1,0 +1,35 @@
+replicaCount: 3
+
+image:
+  tag: "latest"
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 5000
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+livenessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 5
+
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 5
+
+secret:
+  username: "prod-placeholder-user"
+  password: "prod-placeholder-password"
+
+vault:
+  enabled: false
+
+environment: "prod"
+logLevel: "info"

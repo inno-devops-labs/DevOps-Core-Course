@@ -1,0 +1,5 @@
+{
+  "appName": "devops-info-service",
+  "environment": "dev",
+  "featureFlag": true
+}

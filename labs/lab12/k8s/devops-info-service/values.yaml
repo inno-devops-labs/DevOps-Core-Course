@@ -1,0 +1,73 @@
+replicaCount: 3
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: fayzullin/devops-info-service
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 1
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 1
+  failureThreshold: 3
+
+hookJobs:
+  image: busybox
+  pullPolicy: IfNotPresent
+
+podSecurityContext: {}
+
+secret:
+  enabled: true
+  nameSuffix: secret
+  username: "placeholder-user"
+  password: "placeholder-password"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-info-service"
+  secretPath: "secret/data/devops-info-service/config"
+  injectFileName: "config"
+
+environment: "dev"
+logLevel: "info"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""

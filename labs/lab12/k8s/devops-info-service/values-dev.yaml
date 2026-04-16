@@ -1,0 +1,39 @@
+replicaCount: 1
+
+image:
+  tag: "latest"
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30081
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+secret:
+  username: "devuser"
+  password: "devpass123"
+
+vault:
+  enabled: true
+  role: "devops-info-service"
+  secretPath: "secret/data/devops-info-service/config"
+  injectFileName: "config"
+
+environment: "dev"
+logLevel: "debug"
