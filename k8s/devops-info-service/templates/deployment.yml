@@ -18,7 +18,7 @@ spec:
         vault.hashicorp.com/role: "myapp-role"
         vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
     spec:
-      serviceAccountName: {{ include "devops-info-service.fullname" . }}
+      serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       securityContext:
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
         runAsUser: {{ .Values.securityContext.runAsUser }}
@@ -93,3 +93,4 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "devops-info-service.fullname" . }}-data
         {{- end }}
+  
