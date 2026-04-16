@@ -12,3 +12,7 @@
    kubectl port-forward svc/{{ include "common-lib.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
    curl http://127.0.0.1:8080/health
 {{- end }}
+
+4. Verify ConfigMap and PVC mounts:
+   kubectl exec deploy/{{ include "common-lib.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ .Values.configMap.mountPath }}/{{ .Values.configMap.fileName }}
+   kubectl exec deploy/{{ include "common-lib.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ .Values.persistence.mountPath }}/visits

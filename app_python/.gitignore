@@ -18,6 +18,7 @@ dist/
 .pytest_cache/
 .coverage
 htmlcov/
+data/
 
 # OS / editor files
 .DS_Store

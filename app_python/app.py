@@ -9,7 +9,10 @@ import platform
 import socket
 import sys
 import time
+import fcntl
 from datetime import datetime, timezone
+from pathlib import Path
+from threading import Lock
 
 from fastapi import FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
@@ -19,7 +22,9 @@ SERVICE_NAME = os.getenv("SERVICE_NAME", "devops-info-service")
 SERVICE_VERSION = os.getenv("SERVICE_VERSION", "1.0.0")
 SERVICE_DESCRIPTION = os.getenv("SERVICE_DESCRIPTION", "DevOps course info service")
 SERVICE_VARIANT = os.getenv("SERVICE_VARIANT", "primary")
-KNOWN_ENDPOINTS = frozenset({"/", "/health", "/ready", "/metrics"})
+VISITS_FILE_PATH = os.getenv("VISITS_FILE_PATH", "/tmp/devops-info-service/visits")
+APP_CONFIG_PATH = os.getenv("APP_CONFIG_PATH", "/config/config.json")
+KNOWN_ENDPOINTS = frozenset({"/", "/health", "/ready", "/visits", "/metrics"})
 
 HTTP_REQUESTS_TOTAL = Counter(
     "http_requests_total",
@@ -81,6 +86,68 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=True)
 
 
+class VisitCounter:
+    """Persist a simple visits counter to disk for Lab 12."""
+
+    def __init__(self, file_path: str) -> None:
+        self.path = Path(file_path)
+        self._lock = Lock()
+        self._initialize_file()
+
+    def _ensure_parent_directory(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _read_count(self, counter_file) -> int:
+        counter_file.seek(0)
+        raw_value = counter_file.read().strip()
+        if not raw_value:
+            return 0
+
+        try:
+            return int(raw_value)
+        except ValueError:
+            logger.warning(
+                "visits_counter_reset",
+                extra={
+                    "event": "visits_counter",
+                    "path": str(self.path),
+                },
+            )
+            return 0
+
+    def _write_count(self, counter_file, count: int) -> None:
+        counter_file.seek(0)
+        counter_file.truncate()
+        counter_file.write(f"{count}\n")
+        counter_file.flush()
+        os.fsync(counter_file.fileno())
+
+    def _initialize_file(self) -> None:
+        self._ensure_parent_directory()
+        with self.path.open("a+", encoding="utf-8") as counter_file:
+            fcntl.flock(counter_file.fileno(), fcntl.LOCK_EX)
+            count = self._read_count(counter_file)
+            self._write_count(counter_file, count)
+            fcntl.flock(counter_file.fileno(), fcntl.LOCK_UN)
+
+    def increment(self) -> int:
+        with self._lock:
+            with self.path.open("r+", encoding="utf-8") as counter_file:
+                fcntl.flock(counter_file.fileno(), fcntl.LOCK_EX)
+                count = self._read_count(counter_file) + 1
+                self._write_count(counter_file, count)
+                fcntl.flock(counter_file.fileno(), fcntl.LOCK_UN)
+                return count
+
+    def get_count(self) -> int:
+        with self._lock:
+            with self.path.open("r+", encoding="utf-8") as counter_file:
+                fcntl.flock(counter_file.fileno(), fcntl.LOCK_EX)
+                count = self._read_count(counter_file)
+                fcntl.flock(counter_file.fileno(), fcntl.LOCK_UN)
+                return count
+
+
 def configure_logging() -> logging.Logger:
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter())
@@ -101,6 +168,7 @@ def configure_logging() -> logging.Logger:
 logger = configure_logging()
 
 app = FastAPI(title=SERVICE_NAME, version=SERVICE_VERSION)
+VISIT_COUNTER = VisitCounter(VISITS_FILE_PATH)
 
 
 def get_uptime() -> dict[str, str | int]:
@@ -132,6 +200,37 @@ def get_service_metadata() -> dict[str, str]:
         "framework": "FastAPI",
         "variant": SERVICE_VARIANT,
     }
+
+
+def load_app_config() -> dict[str, object]:
+    """Load optional JSON configuration from a mounted ConfigMap file."""
+    try:
+        with Path(APP_CONFIG_PATH).open(encoding="utf-8") as config_file:
+            return {
+                "path": APP_CONFIG_PATH,
+                "loaded": True,
+                "values": json.load(config_file),
+            }
+    except FileNotFoundError:
+        return {
+            "path": APP_CONFIG_PATH,
+            "loaded": False,
+            "values": {},
+        }
+    except json.JSONDecodeError as exc:
+        logger.warning(
+            "config_file_invalid",
+            extra={
+                "event": "config_file",
+                "path": APP_CONFIG_PATH,
+            },
+        )
+        return {
+            "path": APP_CONFIG_PATH,
+            "loaded": False,
+            "values": {},
+            "error": str(exc),
+        }
 
 
 @app.middleware("http")
@@ -217,6 +316,8 @@ async def log_requests(request: Request, call_next):
 @app.get("/", summary="Service information")
 async def index(request: Request):
     DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/").inc()
+    visit_count = VISIT_COUNTER.increment()
+    app_config = load_app_config()
 
     with DEVOPS_INFO_SYSTEM_INFO_COLLECTION_SECONDS.time():
         now = datetime.now(timezone.utc)
@@ -246,10 +347,16 @@ async def index(request: Request):
                 "method": request.method,
                 "path": request.url.path,
             },
+            "visits": {
+                "count": visit_count,
+                "path": VISITS_FILE_PATH,
+            },
+            "configuration": app_config,
             "endpoints": [
                 {"path": "/", "method": "GET", "description": "Service information"},
                 {"path": "/health", "method": "GET", "description": "Liveness probe"},
                 {"path": "/ready", "method": "GET", "description": "Readiness probe"},
+                {"path": "/visits", "method": "GET", "description": "Persistent visits counter"},
                 {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
             ],
         }
@@ -273,6 +380,16 @@ async def ready():
     return {
         "status": "ready",
         "service": SERVICE_NAME,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/visits", summary="Current visits counter")
+async def visits():
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/visits").inc()
+    return {
+        "visits": VISIT_COUNTER.get_count(),
+        "path": VISITS_FILE_PATH,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 

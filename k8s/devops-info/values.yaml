@@ -1,7 +1,7 @@
 nameOverride: ""
 fullnameOverride: ""
 
-partOf: devops-lab11
+partOf: devops-lab12
 
 podLabels: {}
 podAnnotations: {}
@@ -14,7 +14,7 @@ terminationGracePeriodSeconds: 30
 
 image:
   repository: devops-info-service
-  tag: lab09
+  tag: lab12
   pullPolicy: IfNotPresent
 
 containerPort: 5000
@@ -44,6 +44,8 @@ securityContext:
     runAsNonRoot: true
     runAsUser: 10001
     runAsGroup: 10001
+    fsGroup: 10001
+    fsGroupChangePolicy: OnRootMismatch
     seccompProfile:
       type: RuntimeDefault
   container:
@@ -92,10 +94,25 @@ env:
   HOST: "0.0.0.0"
   PORT: "5000"
   LOG_LEVEL: "INFO"
+  APP_ENV: "development"
+  APP_CONFIG_PATH: "/config/config.json"
   SERVICE_NAME: "devops-info-service"
   SERVICE_VERSION: "1.0.0"
   SERVICE_DESCRIPTION: "DevOps course info service packaged with Helm"
   SERVICE_VARIANT: "primary"
+  VISITS_FILE_PATH: "/data/visits"
+
+configMap:
+  fileName: config.json
+  mountPath: /config
+
+persistence:
+  enabled: true
+  mountPath: /data
+  accessModes:
+    - ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
 
 secret:
   create: true

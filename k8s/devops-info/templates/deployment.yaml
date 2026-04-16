@@ -25,21 +25,32 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- $vaultAnnotations := include "devops-info.vaultAnnotations" . }}
-      {{- if or .Values.podAnnotations $vaultAnnotations }}
       annotations:
+        checksum/config-file: {{ .Files.Get (printf "files/%s" .Values.configMap.fileName) | sha256sum }}
+        checksum/config-env: {{ toJson .Values.env | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
         {{- if $vaultAnnotations }}
         {{- $vaultAnnotations | nindent 8 }}
         {{- end }}
-      {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info.serviceAccountName" . }}
       automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       securityContext:
         {{- include "common-lib.podSecurityContext" .Values.securityContext.pod | nindent 8 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info.fileConfigMapName" . }}
+        - name: data-volume
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info.persistenceClaimName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -48,11 +59,17 @@ spec:
             - name: http
               containerPort: {{ .Values.containerPort }}
               protocol: TCP
-          env:
-            {{- include "devops-info.envVars" . | nindent 12 }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info.envConfigMapName" . }}
             - secretRef:
                 name: {{ include "devops-info.secretName" . }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: {{ .Values.configMap.mountPath }}
+              readOnly: true
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- if .Values.probes.startup.enabled }}

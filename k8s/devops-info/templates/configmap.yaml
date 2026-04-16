@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info.fileConfigMapName" . }}
+  labels:
+    {{- include "devops-info.baseLabels" . | nindent 4 }}
+    app.kubernetes.io/component: "config"
+data:
+  {{ .Values.configMap.fileName }}: |-
+{{ .Files.Get (printf "files/%s" .Values.configMap.fileName) | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info.envConfigMapName" . }}
+  labels:
+    {{- include "devops-info.baseLabels" . | nindent 4 }}
+    app.kubernetes.io/component: "config-env"
+data:
+  {{- range $name := keys .Values.env | sortAlpha }}
+  {{ $name }}: {{ index $.Values.env $name | quote }}
+  {{- end }}

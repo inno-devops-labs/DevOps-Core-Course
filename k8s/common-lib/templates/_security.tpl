@@ -5,6 +5,12 @@ Reusable security context snippets.
 runAsNonRoot: {{ .runAsNonRoot }}
 runAsUser: {{ .runAsUser }}
 runAsGroup: {{ .runAsGroup }}
+{{- if hasKey . "fsGroup" }}
+fsGroup: {{ .fsGroup }}
+{{- end }}
+{{- if hasKey . "fsGroupChangePolicy" }}
+fsGroupChangePolicy: {{ .fsGroupChangePolicy }}
+{{- end }}
 seccompProfile:
   type: {{ .seccompProfile.type }}
 {{- end -}}

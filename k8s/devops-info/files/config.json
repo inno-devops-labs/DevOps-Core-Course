@@ -1,0 +1,16 @@
+{
+  "application": {
+    "name": "devops-info-service",
+    "environment": "development"
+  },
+  "features": {
+    "visitsCounter": true,
+    "prometheusMetrics": true,
+    "healthChecks": true
+  },
+  "settings": {
+    "logFormat": "json",
+    "configSource": "helm-configmap",
+    "persistencePath": "/data/visits"
+  }
+}

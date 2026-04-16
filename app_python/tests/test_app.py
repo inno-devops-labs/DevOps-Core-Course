@@ -61,7 +61,10 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(status, 200)
         self.assertIn("application/json", headers.get("content-type", ""))
-        self.assertEqual(set(payload.keys()), {"service", "system", "runtime", "request", "endpoints"})
+        self.assertEqual(
+            set(payload.keys()),
+            {"service", "system", "runtime", "request", "visits", "configuration", "endpoints"},
+        )
 
         service = payload["service"]
         self.assertEqual(service["name"], "devops-info-service")
@@ -86,8 +89,21 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(request_info["path"], "/")
         self.assertIsInstance(request_info["user_agent"], str)
 
+        visits = payload["visits"]
+        self.assertIsInstance(visits["count"], int)
+        self.assertGreaterEqual(visits["count"], 1)
+        self.assertTrue(visits["path"].endswith("visits"))
+
+        configuration = payload["configuration"]
+        self.assertTrue(configuration["path"].endswith("config.json"))
+        self.assertIsInstance(configuration["loaded"], bool)
+        self.assertIsInstance(configuration["values"], dict)
+
         endpoints = {(item["path"], item["method"]) for item in payload["endpoints"]}
-        self.assertEqual(endpoints, {("/", "GET"), ("/health", "GET"), ("/ready", "GET"), ("/metrics", "GET")})
+        self.assertEqual(
+            endpoints,
+            {("/", "GET"), ("/health", "GET"), ("/ready", "GET"), ("/visits", "GET"), ("/metrics", "GET")},
+        )
 
     async def test_root_uses_forwarded_for_header(self) -> None:
         status, payload, _ = await self._asgi_request(
@@ -137,6 +153,19 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(payload["service"], "devops-info-service")
         datetime.fromisoformat(payload["timestamp"])
 
+    async def test_visits_endpoint_tracks_root_requests(self) -> None:
+        before_status, before_payload, _ = await self._asgi_request("GET", "/visits")
+        root_status, root_payload, _ = await self._asgi_request("GET", "/")
+        after_status, after_payload, _ = await self._asgi_request("GET", "/visits")
+
+        self.assertEqual(before_status, 200)
+        self.assertEqual(root_status, 200)
+        self.assertEqual(after_status, 200)
+        self.assertEqual(after_payload["visits"], before_payload["visits"] + 1)
+        self.assertEqual(root_payload["visits"]["count"], after_payload["visits"])
+        self.assertTrue(after_payload["path"].endswith("visits"))
+        datetime.fromisoformat(after_payload["timestamp"])
+
     async def test_unknown_endpoint_returns_404(self) -> None:
         status, payload, _ = await self._asgi_request("GET", "/does-not-exist")
 
@@ -153,6 +182,7 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         await self._asgi_request("GET", "/")
         await self._asgi_request("GET", "/health")
         await self._asgi_request("GET", "/ready")
+        await self._asgi_request("GET", "/visits")
         await self._asgi_request("GET", "/does-not-exist")
         status, payload, headers = await self._asgi_request("GET", "/metrics")
 
@@ -165,8 +195,10 @@ class TestAppEndpoints(unittest.IsolatedAsyncioTestCase):
         self.assertIn('http_requests_total{endpoint="/",method="GET",status_code="200"}', payload)
         self.assertIn('http_requests_total{endpoint="/health",method="GET",status_code="200"}', payload)
         self.assertIn('http_requests_total{endpoint="/ready",method="GET",status_code="200"}', payload)
+        self.assertIn('http_requests_total{endpoint="/visits",method="GET",status_code="200"}', payload)
         self.assertIn('http_requests_total{endpoint="unmatched",method="GET",status_code="404"}', payload)
         self.assertIn('devops_info_endpoint_calls_total{endpoint="/"}', payload)
         self.assertIn('devops_info_endpoint_calls_total{endpoint="/health"}', payload)
         self.assertIn('devops_info_endpoint_calls_total{endpoint="/ready"}', payload)
+        self.assertIn('devops_info_endpoint_calls_total{endpoint="/visits"}', payload)
         self.assertIn("devops_info_system_info_collection_seconds_bucket", payload)

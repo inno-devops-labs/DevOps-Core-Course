@@ -13,6 +13,7 @@ resources:
     memory: 512Mi
 
 env:
+  APP_ENV: "production"
   SERVICE_VERSION: "1.0.1"
   SERVICE_DESCRIPTION: "Production deployment of the DevOps info service"
 

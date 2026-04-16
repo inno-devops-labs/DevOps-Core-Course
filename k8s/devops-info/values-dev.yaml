@@ -13,6 +13,7 @@ resources:
     memory: 128Mi
 
 env:
+  APP_ENV: "development"
   LOG_LEVEL: "DEBUG"
   SERVICE_DESCRIPTION: "Development deployment of the DevOps info service"
 

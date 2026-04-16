@@ -34,13 +34,24 @@ app.kubernetes.io/component: "hook"
 {{- end -}}
 
 {{/*
-Render stable application environment variables from values.
+Name for the ConfigMap that exposes environment variables.
 */}}
-{{- define "devops-info.envVars" -}}
-{{- range $name, $value := .Values.env }}
-- name: {{ $name }}
-  value: {{ $value | quote }}
-{{- end }}
+{{- define "devops-info.envConfigMapName" -}}
+{{- default (printf "%s-env" (include "common-lib.fullname" .)) .Values.configMap.envName -}}
+{{- end -}}
+
+{{/*
+Name for the ConfigMap that exposes the mounted JSON file.
+*/}}
+{{- define "devops-info.fileConfigMapName" -}}
+{{- default (printf "%s-config" (include "common-lib.fullname" .)) .Values.configMap.fileNameOverride -}}
+{{- end -}}
+
+{{/*
+Name for the PVC that stores the visits counter.
+*/}}
+{{- define "devops-info.persistenceClaimName" -}}
+{{- default (printf "%s-data" (include "common-lib.fullname" .)) .Values.persistence.claimName -}}
 {{- end -}}
 
 {{/*
