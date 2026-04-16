@@ -19,4 +19,5 @@ def test_root_json_structure(client):
     assert "system" in data
     assert "runtime" in data
     assert "request" in data
+    assert "visits" in data
     assert "endpoints" in data

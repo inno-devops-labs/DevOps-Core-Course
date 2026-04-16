@@ -9,6 +9,7 @@ import os
 import platform
 import socket
 import time
+from threading import Lock
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, g, request
@@ -74,6 +75,8 @@ logger.addHandler(_handler)
 logger.propagate = False
 
 app = Flask(__name__)
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
+_visits_lock = Lock()
 
 
 def get_uptime():
@@ -96,6 +99,47 @@ def get_system_info():
         "cpu_count": os.cpu_count(),
         "python_version": platform.python_version(),
     }
+
+
+def _ensure_visits_dir_exists() -> None:
+    directory = os.path.dirname(VISITS_FILE)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+
+def _read_visits_count() -> int:
+    try:
+        with open(VISITS_FILE, "r", encoding="utf-8") as visits_file:
+            return int(visits_file.read().strip() or "0")
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        logger.warning(
+            "invalid_visits_file_contents",
+            extra={"event": "invalid_visits_file_contents", "path": VISITS_FILE},
+        )
+        return 0
+
+
+def _write_visits_count(count: int) -> None:
+    _ensure_visits_dir_exists()
+    temp_path = f"{VISITS_FILE}.tmp"
+    with open(temp_path, "w", encoding="utf-8") as visits_file:
+        visits_file.write(str(count))
+    os.replace(temp_path, VISITS_FILE)
+
+
+def increment_visits_count() -> int:
+    with _visits_lock:
+        current_count = _read_visits_count()
+        new_count = current_count + 1
+        _write_visits_count(new_count)
+        return new_count
+
+
+def get_visits_count() -> int:
+    with _visits_lock:
+        return _read_visits_count()
 
 
 @app.before_request
@@ -138,6 +182,7 @@ def log_response(response):
 @app.route("/", methods=["GET"])
 def index():
     uptime = get_uptime()
+    visits = increment_visits_count()
 
     response = {
         "service": {
@@ -159,6 +204,7 @@ def index():
             "method": request.method,
             "path": request.path,
         },
+        "visits": {"count": visits},
         "endpoints": [
             {
                 "path": "/",
@@ -169,6 +215,11 @@ def index():
                 "path": "/health",
                 "method": "GET",
                 "description": "Health check"
+            },
+            {
+                "path": "/visits",
+                "method": "GET",
+                "description": "Visit counter"
             },
         ],
     }
@@ -187,6 +238,11 @@ def health():
             "uptime_seconds": uptime["seconds"],
         }
     )
+
+
+@app.route("/visits", methods=["GET"])
+def visits():
+    return jsonify({"visits": get_visits_count()})
 
 
 @app.errorhandler(404)
@@ -227,6 +283,9 @@ def internal_error(error):
 
 
 if __name__ == "__main__":
+    _ensure_visits_dir_exists()
+    if not os.path.exists(VISITS_FILE):
+        _write_visits_count(0)
     logger.info(
         "Starting DevOps Info Service",
         extra={
@@ -234,6 +293,7 @@ if __name__ == "__main__":
             "host": HOST,
             "port": PORT,
             "debug": DEBUG,
+            "visits_file": VISITS_FILE,
         },
     )
     app.run(host=HOST, port=PORT, debug=DEBUG)

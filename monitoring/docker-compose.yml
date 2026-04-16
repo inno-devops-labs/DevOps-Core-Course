@@ -58,6 +58,9 @@ services:
     environment:
       - PORT=8000
       - HOST=0.0.0.0
+      - VISITS_FILE=/data/visits
+    volumes:
+      - app-python-data:/data
     networks:
       - logging
     labels:
@@ -70,6 +73,7 @@ volumes:
   loki-data:
   grafana-data:
   prometheus-data:
+  app-python-data:
 
 networks:
   logging:

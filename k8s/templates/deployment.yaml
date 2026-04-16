@@ -18,8 +18,8 @@ spec:
     metadata:
       labels:
         {{- include "my-python-app.selectorLabels" . | nindent 8 }}
-      {{- if or .Values.vault.enabled .Values.podAnnotations }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
@@ -33,11 +33,19 @@ spec:
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- end }}
     spec:
       {{- if .Values.vault.enabled }}
       serviceAccountName: {{ include "my-python-app.serviceAccountName" . }}
       {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "my-python-app.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "my-python-app.fullname" . }}-data
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -53,8 +61,18 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           env:
             {{- include "my-python-app.containerEnv" . | nindent 12 }}
-          {{- if and .Values.secrets.enabled .Values.secrets.envFrom }}
           envFrom:
+            - configMapRef:
+                name: {{ include "my-python-app.fullname" . }}-env
+          {{- if and .Values.secrets.enabled .Values.secrets.envFrom }}
             - secretRef:
                 name: {{ include "my-python-app.fullname" . }}-credentials
           {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}

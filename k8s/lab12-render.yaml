@@ -1,0 +1,230 @@
+---
+# Source: my-python-app/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lab12-my-python-app-credentials
+  labels:
+    app.kubernetes.io/name: my-python-app
+    app.kubernetes.io/instance: lab12
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: my-python-app-0.1.0
+type: Opaque
+stringData:
+  username: "changeme-user"
+  password: "changeme-password"
+---
+# Source: my-python-app/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab12-my-python-app-config
+  labels:
+    app.kubernetes.io/name: my-python-app
+    app.kubernetes.io/instance: lab12
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: my-python-app-0.1.0
+data:
+  config.json: |-
+    {
+      "applicationName": "devops-info-service",
+      "environment": "production",
+      "features": {
+        "visitsCounter": true,
+        "structuredLogging": true
+      },
+      "settings": {
+        "configVersion": "1.0.0"
+      }
+    }
+---
+# Source: my-python-app/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab12-my-python-app-env
+  labels:
+    app.kubernetes.io/name: my-python-app
+    app.kubernetes.io/instance: lab12
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: my-python-app-0.1.0
+data:
+  APP_ENV: "prod"
+  LOG_LEVEL: "info"
+---
+# Source: my-python-app/templates/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lab12-my-python-app-data
+  labels:
+    app.kubernetes.io/name: my-python-app
+    app.kubernetes.io/instance: lab12
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: my-python-app-0.1.0
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+# Source: my-python-app/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab12-my-python-app
+  labels:
+    app.kubernetes.io/name: my-python-app
+    app.kubernetes.io/instance: lab12
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: my-python-app-0.1.0
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: my-python-app
+    app.kubernetes.io/instance: lab12
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+      name: http
+---
+# Source: my-python-app/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab12-my-python-app
+  labels:
+    app.kubernetes.io/name: my-python-app
+    app.kubernetes.io/instance: lab12
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: my-python-app-0.1.0
+spec:
+  replicas: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: my-python-app
+      app.kubernetes.io/instance: lab12
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: my-python-app
+        app.kubernetes.io/instance: lab12
+      annotations:
+        checksum/config: 52f3ab2303873b3c8610120bc518b7f643455dd76cb5353b39dc002f9a219a2a
+    spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: lab12-my-python-app-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: lab12-my-python-app-data
+      containers:
+        - name: my-python-app
+          image: "danielambda/devops-app:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            timeoutSeconds: 2
+          env:
+            - name: PORT
+              value: "8000"
+          envFrom:
+            - configMapRef:
+                name: lab12-my-python-app-env
+            - secretRef:
+                name: lab12-my-python-app-credentials
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            - name: data-volume
+              mountPath: /data
+---
+# Source: my-python-app/templates/hooks/post-install-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "lab12-my-python-app-post-install"
+  labels:
+    app.kubernetes.io/name: my-python-app
+    app.kubernetes.io/instance: lab12
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: my-python-app-0.1.0
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "lab12-my-python-app-post-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-job
+          image: busybox
+          command: ["sh", "-c", "echo Post-install validation && sleep 5 && echo Passed"]
+---
+# Source: my-python-app/templates/hooks/pre-install-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "lab12-my-python-app-pre-install"
+  labels:
+    app.kubernetes.io/name: my-python-app
+    app.kubernetes.io/instance: lab12
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    helm.sh/chart: my-python-app-0.1.0
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "lab12-my-python-app-pre-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-job
+          image: busybox
+          command: ["sh", "-c", "echo Pre-install task running && sleep 5 && echo Done"]

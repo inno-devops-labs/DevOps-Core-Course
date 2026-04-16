@@ -1,0 +1,11 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "production",
+  "features": {
+    "visitsCounter": true,
+    "structuredLogging": true
+  },
+  "settings": {
+    "configVersion": "1.0.0"
+  }
+}

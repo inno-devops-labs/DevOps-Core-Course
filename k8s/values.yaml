@@ -10,6 +10,9 @@ service:
   port: 80
   targetPort: 8000
 
+environment: "prod"
+logLevel: "info"
+
 deployment:
   strategy:
     rollingUpdate:
@@ -64,3 +67,8 @@ vault:
     name: ""
 
 podAnnotations: {}
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""

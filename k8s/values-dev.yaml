@@ -6,6 +6,9 @@ image:
 service:
   type: NodePort
 
+environment: "dev"
+logLevel: "debug"
+
 resources:
   requests:
     cpu: 50m

@@ -6,6 +6,9 @@ image:
 service:
   type: LoadBalancer
 
+environment: "prod"
+logLevel: "info"
+
 resources:
   requests:
     cpu: 200m

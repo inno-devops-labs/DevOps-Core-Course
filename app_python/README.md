@@ -11,6 +11,7 @@ The DevOps Info Service is a Python web application that provides runtime, syste
 
 * Exposes system and runtime information
 * Health check endpoint for monitoring
+* Persistent visits counter stored in a file
 * Configurable via environment variables
 * Clean, production-ready Flask application
 
@@ -108,6 +109,24 @@ Response:
 }
 ```
 
+### GET /visits
+
+Returns the current number of visits recorded by the root endpoint.
+
+Example:
+
+```bash
+curl http://localhost:5000/visits
+```
+
+Response:
+
+```json
+{
+  "visits": 5
+}
+```
+
 ## Configuration
 
 | Environment Variable | Default | Description               |
@@ -115,6 +134,7 @@ Response:
 | HOST                 | 0.0.0.0 | Network interface to bind |
 | PORT                 | 5000    | Application port          |
 | DEBUG                | False   | Enable Flask debug mode   |
+| VISITS_FILE          | /data/visits | File path for persisted visit counter |
 
 
 ## Docker
@@ -145,6 +165,8 @@ docker run -p <host-port>:<container-port> <image-name>
 The application will be accessible via the mapped host port.
 
 Environment variables such as `HOST`, `PORT`, and `DEBUG` can be passed at runtime using Docker options.
+
+To persist visit counts across container restarts, mount a volume to `/data` (or set `VISITS_FILE` to a path inside a mounted volume).
 
 ---
 
