@@ -24,10 +24,6 @@ Implemented behavior:
 - A second ConfigMap injects environment variables with `envFrom`.
 - A PersistentVolumeClaim stores the visits file under `/data/visits`.
 
-## Environment Note
-
-`kubectl` and `helm` are not installed in this workspace, so the verification commands below are documented as reproducible commands with expected output examples, not captured live output from this machine.
-
 ## 1. Application Changes
 
 ### Visits Counter
@@ -68,6 +64,8 @@ The root endpoint also includes:
 - config file path
 - whether config was loaded successfully
 
+![alt text](image-20.png)
+
 ### Local Docker Testing
 
 The monitoring compose stack now mounts a host directory for persistence:
@@ -77,21 +75,6 @@ volumes:
   - ./data:/data
   - ../k8s/devops-info-service/files/config.json:/config/config.json:ro
 ```
-
-Run locally:
-
-```bash
-mkdir -p monitoring/data
-docker compose -f monitoring/docker-compose.yml up -d app-python
-curl -s http://127.0.0.1:8000/
-curl -s http://127.0.0.1:8000/
-curl -s http://127.0.0.1:8000/visits | python -m json.tool
-cat monitoring/data/visits
-docker compose -f monitoring/docker-compose.yml restart app-python
-curl -s http://127.0.0.1:8000/visits | python -m json.tool
-```
-
-Expected result:
 
 - the `visits` file appears in `monitoring/data/`
 - the counter value survives the container restart
@@ -171,17 +154,7 @@ List created resources:
 ```bash
 kubectl get configmap,pvc -n devops
 ```
-
-Example output:
-
-```text
-NAME                                              DATA   AGE
-configmap/devops-info-devops-info-service-config  1      1m
-configmap/devops-info-devops-info-service-env     5      1m
-
-NAME                                                         STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
-persistentvolumeclaim/devops-info-devops-info-service-data   Bound    pvc-12345678-aaaa-bbbb-cccc-1234567890ab   100Mi      RWO            standard       1m
-```
+![alt text](image-21.png)
 
 Read the mounted file inside the pod:
 
@@ -189,24 +162,7 @@ Read the mounted file inside the pod:
 kubectl exec -n devops deploy/devops-info-devops-info-service -- \
   cat /config/config.json
 ```
-
-Expected output:
-
-```json
-{
-  "applicationName": "devops-info-service",
-  "environment": "dev",
-  "featureFlags": {
-    "visitsPersistence": true,
-    "metricsEnabled": true,
-    "healthChecksEnabled": true
-  },
-  "settings": {
-    "responseFormat": "json",
-    "configSource": "helm-file-configmap"
-  }
-}
-```
+![alt text](image-22.png)
 
 Inspect environment variables:
 
@@ -214,16 +170,7 @@ Inspect environment variables:
 kubectl exec -n devops deploy/devops-info-devops-info-service -- \
   sh -c 'printenv | grep -E "^(APP_|LOG_LEVEL|VISITS_FILE)"'
 ```
-
-Expected output:
-
-```text
-APP_CONFIG_PATH=/config/config.json
-APP_DISPLAY_NAME=devops-info-service
-APP_ENV=dev
-LOG_LEVEL=INFO
-VISITS_FILE=/data/visits
-```
+![alt text](image-23.png)
 
 ## 3. Persistent Volume
 
@@ -283,14 +230,7 @@ curl http://127.0.0.1:8080/
 curl http://127.0.0.1:8080/
 curl http://127.0.0.1:8080/visits
 ```
-
-Expected value before pod deletion:
-
-```json
-{
-  "visits": 2
-}
-```
+![alt text](image-24.png)
 
 Capture the pod name and delete it:
 
@@ -298,7 +238,7 @@ Capture the pod name and delete it:
 kubectl get pods -n devops
 kubectl delete pod -n devops <pod-name>
 ```
-
+![alt text](image-25.png)
 Wait for the replacement pod, then verify the counter:
 
 ```bash
@@ -306,18 +246,7 @@ kubectl get pods -n devops
 curl http://127.0.0.1:8080/visits
 kubectl exec -n devops deploy/devops-info-devops-info-service -- cat /data/visits
 ```
-
-Expected result after restart:
-
-```json
-{
-  "visits": 2
-}
-```
-
-```text
-2
-```
+![alt text](image-26.png)
 
 This demonstrates that the data survives pod recreation because it is stored on the PVC rather than inside the container filesystem.
 
