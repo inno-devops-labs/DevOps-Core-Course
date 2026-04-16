@@ -7,8 +7,10 @@ import logging
 import os
 import platform
 import socket
+import threading
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 from flask import Flask, Response, jsonify, g, request
 from prometheus_client import Counter, Gauge, Histogram, generate_latest
@@ -32,6 +34,9 @@ SERVICE_DESCRIPTION = os.getenv("SERVICE_DESCRIPTION", "DevOps course info servi
 FRAMEWORK = "Flask"
 
 START_TIME_UTC = datetime.now(timezone.utc)
+
+VISITS_FILE = Path(os.getenv("VISITS_FILE", "/data/visits"))
+VISITS_LOCK = threading.Lock()
 
 app = Flask(__name__)
 
@@ -88,6 +93,31 @@ def get_request_info() -> dict:
     }
 
 
+def read_visits() -> int:
+    if not VISITS_FILE.exists():
+        return 0
+
+    try:
+        raw_value = VISITS_FILE.read_text(encoding="utf-8").strip()
+        return int(raw_value) if raw_value else 0
+    except (ValueError, OSError):
+        logger.warning("Failed to read visits file, defaulting to 0")
+        return 0
+
+
+def write_visits(count: int) -> None:
+    VISITS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    VISITS_FILE.write_text(str(count), encoding="utf-8")
+
+
+def increment_visits() -> int:
+    with VISITS_LOCK:
+        current = read_visits()
+        current += 1
+        write_visits(current)
+        return current
+
+
 @app.before_request
 def before_request():
     if request.path != "/metrics":
@@ -125,6 +155,8 @@ def index():
     logger.info("Request: %s %s", request.method, request.path)
 
     uptime = get_uptime()
+    visits = increment_visits()
+
     payload = {
         "service": {
             "name": SERVICE_NAME,
@@ -132,6 +164,7 @@ def index():
             "description": SERVICE_DESCRIPTION,
             "framework": FRAMEWORK,
         },
+        "visits": visits,
         "system": get_system_info(),
         "runtime": {
             "uptime_seconds": uptime["seconds"],
@@ -141,8 +174,9 @@ def index():
         },
         "request": get_request_info(),
         "endpoints": [
-            {"path": "/", "method": "GET", "description": "Service information"},
+            {"path": "/", "method": "GET", "description": "Service information and visit counter"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Current visits counter"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
@@ -163,6 +197,12 @@ def health():
         ),
         200,
     )
+
+
+@app.get("/visits")
+def visits():
+    logger.info("Visits check: %s %s", request.method, request.path)
+    return jsonify({"visits": read_visits()}), 200
 
 
 @app.get("/metrics")

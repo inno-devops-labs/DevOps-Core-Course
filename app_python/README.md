@@ -1,114 +1,61 @@
 # DevOps Info Service (Python)
 
 ## Overview
-DevOps Info Service is a simple web application that provides information about itself and its runtime environment.  
-The service exposes system details, runtime metrics, request metadata, and a health check endpoint that can be used for monitoring and orchestration tools.
 
-This application serves as a foundation for future DevOps labs, including containerization, CI/CD pipelines, monitoring, and Kubernetes deployment.
+DevOps Info Service is a simple web application that provides
+information about itself and its runtime environment.
 
----
+It now includes:
+- System and runtime information
+- Health endpoint
+- Prometheus metrics
+- Persistent visits counter
 
-## Prerequisites
-- Python **3.11** or newer
-- `pip` package manager
+## Endpoints
 
----
+### GET /
 
-## Installation
+Returns service info and increments visit counter.
 
-Create and activate a virtual environment, then install dependencies:
+### GET /health
 
-### Linux / macOS
-```bash
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
+Health check endpoint.
 
-### Windows (PowerShell)
-```bash
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-## Running the Application
-Start the application with default settings:
-```bash
-python app.py
-```
-Run with custom configuration using environment variables:
-```bash
-HOST=127.0.0.1 PORT=3000 DEBUG=true python app.py
-```
-Once running, the service will be available at:
-```bash
-http://localhost:5000
-```
-or the custom port.
+### GET /visits
 
-## API Endpoints
-### Get /
-Returns detailed information about:
-- Service metadata
-- System information
-- Runtime and uptime
-- Request metadata
-- Available endpoints
+Returns current visit count.
+
 Example:
+```bash
+curl http://127.0.0.1:5000/visits
+```
+
+## Docker Compose
+
+Run:
+```bash
+docker compose up --build
+```
+Test:
 ```bash
 curl http://127.0.0.1:5000/
-```
-Pretty-printed output:
-```bash
-curl -s http://127.0.0.1:5000/ | python -m json.tool
-```
-### GET /health
-Health check endpoint used for monitoring and readiness/liveness probes.
-Returns HTTP 200 if the service is healthy.
-Example:
-```bash
-curl http://127.0.0.1:5000/health
+curl http://127.0.0.1:5000/
+curl http://127.0.0.1:5000/visits
+cat ./data/visits
 ```
 
-## Configuration
+Restart:
+```bash
+docker compose down
+docker compose up
+```
+The counter should persist because volume is mounted.
+
+## Environment Variables
+
 | Variable | Default | Description |
-|---|---|---|
-| HOST | 0.0.0.0 | Address to bind the server |
-| PORT | 5000 | Port to expose the service |
-| DEBUG | False | Enable Flask debug mode | 
-| LOG_LEVEL | INFO | Logging level | 
-| SERVICE_NAME | devops-info-service | Service name | 
-| SERVICE_VERSION | 1.0.0 | Service version | 
-| SERVICE_DESCRIPTION | DevOps course info service | Service description | 
-
-
-## Docker
-
-### Build image
-```bash
-docker build -t devops-info-service .
-```
-
-### Run container
-```bash
-docker run -p 5000:5000 devops-info-service
-```
-
-### Pull from Docker Hub
-```bash
-docker pull kvassoedik/devops-info-service
-docker run -p 5000:5000 kvassoedik/devops-info-service
-```
-
-## Continuous Integration
-
-![python-ci](https://github.com/kvassoedik/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)
-
-## Testing
-
-### Run locally
-```bash
-pip install -r app_python/requirements.txt -r app_python/requirements-dev.txt
-ruff check app_python
-pytest -q
-```
+| --- | --- | --- |
+| HOST | 0.0.0.0| Server host |
+| PORT| 5000| Server port |
+| LOG_LEVEL| INFO| Logging level |
+| VISITS_FILE| /data/visits| Visits file path |
