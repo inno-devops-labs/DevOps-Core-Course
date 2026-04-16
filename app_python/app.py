@@ -3,6 +3,7 @@ import logging
 import os
 import platform
 import socket
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -90,7 +91,27 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
+_visits_lock = threading.Lock()
+
 START_TIME = datetime.now()
+
+
+def read_visits():
+    try:
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def increment_visits():
+    with _visits_lock:
+        count = read_visits() + 1
+        os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+        with open(VISITS_FILE, "w") as f:
+            f.write(str(count))
+        return count
 
 
 def get_uptime():
@@ -156,6 +177,7 @@ def get_endpoints():
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
         {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
+        {"path": "/visits", "method": "GET", "description": "Visit counter"},
     ]
 
 
@@ -202,9 +224,16 @@ def metrics():
     return Response(generate_latest(), mimetype="text/plain")
 
 
+@app.route("/visits")
+def visits():
+    endpoint_calls.labels(endpoint="/visits").inc()
+    return jsonify({"visits": read_visits()})
+
+
 @app.route("/")
 def index():
     endpoint_calls.labels(endpoint="/").inc()
+    increment_visits()
     with system_info_duration.time():
         sys_info = get_system_info()
     return jsonify(

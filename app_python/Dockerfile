@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .
 
-RUN groupadd -r app && useradd -r -g app app && chown -R app:app /app
+RUN groupadd -r app && useradd -r -g app app && chown -R app:app /app && mkdir -p /data && chown app:app /data
 
 USER app
 

@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - visits_data:/data
+    environment:
+      - VISITS_FILE=/data/visits
+
+volumes:
+  visits_data:

@@ -1,0 +1,8 @@
+{
+  "app_name": "devops-info-service",
+  "environment": "production",
+  "features": {
+    "visits_counter": true,
+    "prometheus_metrics": true
+  }
+}

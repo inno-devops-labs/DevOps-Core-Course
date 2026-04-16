@@ -47,18 +47,21 @@ PORT=8080 python app.py
 
 ## API Endpoints
 
-- `GET /` - Show system information.
+- `GET /` - Show system information. Increments visit counter.
 - `GET /health` - Show health information (service uptime).
+- `GET /visits` - Return current visit count.
+- `GET /metrics` - Prometheus metrics.
 
 ## Configuration
 
 Environment Variables table
 
-| Variable | Default   | Description                          |
-|----------|-----------|--------------------------------------|
-| `HOST`   | `0.0.0.0` | Address for the service to listen on |
-| `PORT`   | `5000`    | Port for the service to listen on    |
-| `DEBUG`  | `False`   | Enable Flask debug mode              |
+| Variable      | Default         | Description                          |
+|---------------|-----------------|--------------------------------------|
+| `HOST`        | `0.0.0.0`       | Address for the service to listen on |
+| `PORT`        | `5000`          | Port for the service to listen on    |
+| `DEBUG`       | `False`         | Enable Flask debug mode              |
+| `VISITS_FILE` | `/data/visits`  | Path to the visit counter file       |
 
 ## Docker
 
@@ -73,6 +76,12 @@ docker build -t iucapstonead/devops-info-service:lab02 .
 
 ```bash
 docker run -p 5000:5000 iucapstonead/devops-info-service:lab02
+```
+
+### Running with Docker Compose (includes visit counter persistence)
+
+```bash
+docker compose up -d
 ```
 
 ### Pulling and running from docker hub

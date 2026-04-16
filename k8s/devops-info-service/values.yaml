@@ -51,5 +51,10 @@ vault:
   role: "devops-info-service"
   secretPath: "secret/data/myapp/config"
 
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
 nameOverride: ""
 fullnameOverride: ""
