@@ -5,12 +5,16 @@ A web service that provides comprehensive information about itself
 and its runtime environment.
 """
 
+import json
 import os
 import platform
 import re
 import socket
+import tempfile
+import threading
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, Any
 
 from fastapi import FastAPI, Request
@@ -59,6 +63,62 @@ system_info_duration = Histogram(
     "devops_info_system_collection_seconds",
     "System information collection duration in seconds",
 )
+
+# Persistence paths (Lab 12)
+DATA_DIR = Path(os.getenv("DATA_DIR", "/data"))
+VISITS_PATH = DATA_DIR / "visits"
+
+# Config file mount (Lab 12)
+CONFIG_PATH = Path(os.getenv("CONFIG_PATH", "/config/config.json"))
+
+_visits_lock = threading.Lock()
+_visits_count = 0
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=str(path.parent), delete=False
+    ) as tmp:
+        tmp.write(content)
+        tmp.flush()
+        os.fsync(tmp.fileno())
+        tmp_path = Path(tmp.name)
+    tmp_path.replace(path)
+
+
+def _read_visits_from_disk() -> int:
+    try:
+        raw = VISITS_PATH.read_text(encoding="utf-8").strip()
+        return int(raw) if raw else 0
+    except FileNotFoundError:
+        return 0
+    except (ValueError, OSError):
+        return 0
+
+
+def _write_visits_to_disk(value: int) -> None:
+    _atomic_write_text(VISITS_PATH, f"{value}\n")
+
+
+def _load_app_config() -> Dict[str, Any]:
+    try:
+        data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except FileNotFoundError:
+        return {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+app_config: Dict[str, Any] = {}
+
+
+@app.on_event("startup")
+def _startup_load_state() -> None:
+    global _visits_count, app_config
+    app_config = _load_app_config()
+    _visits_count = _read_visits_from_disk()
 
 
 def normalize_endpoint(path: str) -> str:
@@ -144,6 +204,15 @@ async def root(request: Request) -> Dict[str, Any]:
         JSON response with service, system, runtime, request, and endpoints info
     """
     endpoint_calls.labels(endpoint="/").inc()
+    global _visits_count
+    with _visits_lock:
+        _visits_count += 1
+        try:
+            _write_visits_to_disk(_visits_count)
+        except OSError:
+            # If persistence is misconfigured, keep serving responses; /visits will still
+            # reflect in-memory value for this process.
+            pass
     uptime = get_uptime()
     system_info = get_system_info()
 
@@ -160,6 +229,11 @@ async def root(request: Request) -> Dict[str, Any]:
             "description": "DevOps course info service",
             "framework": "FastAPI",
         },
+        "config": {
+            "app_name": app_config.get("app_name", "devops-info-service"),
+            "environment": app_config.get("environment", os.getenv("APP_ENV", "dev")),
+            "feature_flags": app_config.get("feature_flags", {}),
+        },
         "system": system_info,
         "runtime": {
             "uptime_seconds": uptime["seconds"],
@@ -175,8 +249,10 @@ async def root(request: Request) -> Dict[str, Any]:
             "method": method,
             "path": path,
         },
+        "visits": {"count": _visits_count},
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
+            {"path": "/visits", "method": "GET", "description": "Visits counter"},
             {"path": "/health", "method": "GET", "description": "Health check"},
             {"path": "/ready", "method": "GET", "description": "Readiness probe"},
             {
@@ -217,6 +293,17 @@ async def ready() -> Dict[str, str]:
     """Lightweight readiness for Kubernetes (traffic only when OK)."""
     endpoint_calls.labels(endpoint="/ready").inc()
     return {"status": "ready"}
+
+
+@app.get("/visits")
+async def visits() -> Dict[str, int]:
+    global _visits_count
+    with _visits_lock:
+        # Reconcile with disk in case the file was updated before this process started.
+        disk_value = _read_visits_from_disk()
+        if disk_value > _visits_count:
+            _visits_count = disk_value
+        return {"visits": _visits_count}
 
 
 @app.get("/metrics")

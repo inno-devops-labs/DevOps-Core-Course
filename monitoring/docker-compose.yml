@@ -115,6 +115,8 @@ services:
     container_name: devops-python
     ports:
       - "5000:5000"
+    volumes:
+      - ./data:/data:z
     networks:
       - logging
     labels:

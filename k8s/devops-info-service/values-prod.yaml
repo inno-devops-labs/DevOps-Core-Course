@@ -7,11 +7,20 @@ image:
   tag: "1.0.0"
   pullPolicy: IfNotPresent
 
+app:
+  environment: prod
+  logLevel: info
+
 service:
   type: LoadBalancer
   port: 80
   targetPort: http
   nodePort: null
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
 
 resources:
   limits:

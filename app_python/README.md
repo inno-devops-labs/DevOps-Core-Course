@@ -138,6 +138,26 @@ Alternative API documentation (ReDoc).
 
 OpenAPI schema in JSON format.
 
+### `GET /visits`
+
+Returns the current persisted visit count.
+
+**Response:**
+```json
+{
+  "visits": 42
+}
+```
+
+## Persistence (Lab 12)
+
+The service increments a visit counter on each request to `/` and persists it to a file at `DATA_DIR/visits`.
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `DATA_DIR` | `/data` | Directory to store persisted data (visit counter file `visits`) |
+| `CONFIG_PATH` | `/config/config.json` | Optional config file path (mounted via ConfigMap in Kubernetes) |
+
 ## Testing
 
 ### Running Tests

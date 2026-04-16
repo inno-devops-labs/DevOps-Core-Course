@@ -34,6 +34,22 @@ containerSecurityContext:
 env:
   PORT: "5000"
 
+# Lab 12 — ConfigMaps
+app:
+  name: devops-info-service
+  environment: dev
+  logLevel: info
+  featureFlags:
+    visitsCounter: "true"
+  dataDir: /data
+  configPath: /config/config.json
+
+# Lab 12 — Persistent storage for visits counter
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""   # Use cluster default when empty
+
 # Helm-managed Secret (Task 2). Override with --set-file / external tooling; never commit real credentials.
 credentialsSecret:
   enabled: true

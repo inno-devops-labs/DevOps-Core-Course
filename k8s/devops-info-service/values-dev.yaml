@@ -6,11 +6,20 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+app:
+  environment: dev
+  logLevel: debug
+
 service:
   type: NodePort
   port: 80
   targetPort: http
   nodePort: 30081
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
 
 resources:
   limits:

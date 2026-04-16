@@ -41,10 +41,20 @@ spec:
           env:
             - name: PORT
               value: {{ .Values.env.PORT | quote }}
-          {{- if .Values.credentialsSecret.enabled }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.fullname" . }}-env
+          {{- if .Values.credentialsSecret.enabled }}
             - secretRef:
                 name: {{ include "devops-info-service.credentialsSecretName" . }}
+          {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+          {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
           {{- end }}
           ports:
             - name: {{ .Values.containerPortName }}
@@ -56,3 +66,12 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.fullname" . }}-data
+        {{- end }}
