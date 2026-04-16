@@ -1,17 +1,26 @@
 1. Build the local dependency:
    helm dependency build ./k8s/devops-info
 
-2. Install the chart:
-   helm install devops-info ./k8s/devops-info -f ./k8s/devops-info/values-dev.yaml
+2. Install the chart with placeholder-secret overrides:
+   helm install devops-info ./k8s/devops-info \
+     -f ./k8s/devops-info/values-dev.yaml \
+     --set secret.stringData.username=lab11-user \
+     --set secret.stringData.password=lab11-password
 
 3. Inspect the release:
    helm list
-   kubectl get pods,svc
+   kubectl get pods,svc,secret
+   kubectl exec deploy/{{ include "common.fullname" . }} -- printenv | grep -E 'username|password'
 
 4. Upgrade to production values:
    helm upgrade devops-info ./k8s/devops-info -f ./k8s/devops-info/values-prod.yaml
 
-5. Access the service:
+5. Enable Vault-based file injection:
+   helm upgrade devops-info ./k8s/devops-info \
+     -f ./k8s/devops-info/values-dev.yaml \
+     -f ./k8s/devops-info/values-vault.yaml
+
+6. Access the service:
 {{- if eq .Values.service.type "NodePort" }}
    kubectl get svc {{ include "common.fullname" . }}
 {{- else }}

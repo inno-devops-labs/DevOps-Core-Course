@@ -1,0 +1,22 @@
+secret:
+  enabled: false
+  create: false
+  injectAsEnvFrom: false
+
+serviceAccount:
+  create: true
+  name: devops-info-vault
+
+vault:
+  enabled: true
+  authPath: auth/kubernetes
+  role: devops-info-role
+  secretPath: secret/data/devops-info/config
+  fileName: app-config.txt
+  injectCommand: ""
+  agentPrePopulateOnly: false
+  template: |
+    {{- with secret "secret/data/devops-info/config" -}}
+    username={{ .Data.data.username }}
+    password={{ .Data.data.password }}
+    {{- end -}}
