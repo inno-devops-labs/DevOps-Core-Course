@@ -148,12 +148,14 @@ logger.info("Application starting", extra={
 DATA_DIR = os.getenv('DATA_DIR', './data')
 VISITS_FILE = os.path.join(DATA_DIR, 'visits')
 
+
 def get_visits() -> int:
     try:
         with open(VISITS_FILE, 'r') as f:
             return int(f.read().strip())
     except (FileNotFoundError, ValueError):
         return 0
+
 
 def increment_visits() -> int:
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -255,6 +257,7 @@ async def get_service_information(request: Request) -> Dict[str, Any]:
         "endpoints": get_endpoints_list(),
         "visits": current_visits
     }
+
 
 @app.get("/visits", response_model=Dict[str, int])
 async def get_visits_endpoint() -> Dict[str, int]:
