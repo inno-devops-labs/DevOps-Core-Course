@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   tag: "latest"
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
 
 resources:
   requests:
