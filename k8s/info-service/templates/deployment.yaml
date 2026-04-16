@@ -18,10 +18,6 @@ spec:
     {{- end }}
   template:
     metadata:
-      annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "info-service"
-        vault.hashicorp.com/agent-inject-secret-config: "secret/data/info-service/config"
       labels:
         {{- include "info-service.selectorLabels" . | nindent 8 }}
     spec:
@@ -32,11 +28,29 @@ spec:
         envFrom:
         - secretRef:
             name: {{ include "info-service.fullname" . }}-secret
+        - configMapRef:
+            name: {{ include "info-service.fullname" . }}-env
         ports:
         - containerPort: {{ .Values.service.targetPort }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          mountPath: /data
+        {{- end }}
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 10 }}
         readinessProbe:
           {{- toYaml .Values.readinessProbe | nindent 10 }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ include "info-service.fullname" . }}-config
+      {{- if .Values.persistence.enabled }}
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: {{ include "info-service.fullname" . }}-data
+      {{- end }}

@@ -1,0 +1,12 @@
+{
+  "app_name": "devops-info-service",
+  "environment": "production",
+  "features": {
+    "visits_counter": true,
+    "metrics": true
+  },
+  "server": {
+    "port": 8000,
+    "log_level": "INFO"
+  }
+}

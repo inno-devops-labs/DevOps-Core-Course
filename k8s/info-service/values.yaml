@@ -8,7 +8,7 @@ image:
 service:
   type: NodePort
   port: 80
-  targetPort: 5000
+  targetPort: 8000
   nodePort: 30080
 
 secret:
@@ -32,13 +32,23 @@ strategy:
 livenessProbe:
   httpGet:
     path: /health
-    port: 5000
+    port: 8000
   initialDelaySeconds: 10
   periodSeconds: 5
 
 readinessProbe:
   httpGet:
     path: /health
-    port: 5000
+    port: 8000
   initialDelaySeconds: 5
   periodSeconds: 3
+
+config:
+  appName: "devops-info-service"
+  environment: "production"
+  logLevel: "INFO"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""

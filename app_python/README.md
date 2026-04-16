@@ -52,6 +52,14 @@ Returns service and system information.
 curl http://localhost:5000/
 ```
 
+### `GET /visits`
+
+Returns the current visit counter.
+
+```bash
+curl http://localhost:5000/visits
+```
+
 ### `GET /health`
 
 Health check endpoint.
@@ -67,6 +75,15 @@ curl http://localhost:5000/health
 | `HOST`   | `0.0.0.0` | Host address |
 | `PORT`   | `5000`    | Port number  |
 | `DEBUG`  | `False`   | Debug mode   |
+
+## Docker Compose
+
+```bash
+cd app_python
+docker-compose up --build
+```
+
+The visits counter is persisted via a volume mount (`./data:/data`).
 
 ## Docker
 
@@ -107,6 +124,7 @@ app_python/
 ├── docs/               # Lab docs, screenshots
 ├── requirements.txt
 ├── Dockerfile          # Container image
+├── docker-compose.yml  # Local dev with persistence
 ├── .dockerignore
 ├── .gitignore
 └── README.md

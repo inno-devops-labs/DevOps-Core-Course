@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  info-service:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data

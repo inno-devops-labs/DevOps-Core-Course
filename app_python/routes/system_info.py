@@ -1,9 +1,31 @@
 from fastapi import APIRouter, Request
 from datetime import datetime, timezone
 from prometheus_client import Counter, Histogram
+import os
+import threading
+
 import services.system_info as system_info_service
 
 router = APIRouter()
+
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
+
+_visits_lock = threading.Lock()
+
+
+def _read_visits() -> int:
+    try:
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def _write_visits(count: int):
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    with open(VISITS_FILE, "w") as f:
+        f.write(str(count))
+
 
 # Application-specific metrics
 endpoint_calls = Counter(
@@ -21,6 +43,11 @@ system_info_duration = Histogram(
 @router.get("/")
 async def get_system_info(request: Request):
     endpoint_calls.labels(endpoint="/").inc()
+
+    with _visits_lock:
+        count = _read_visits() + 1
+        _write_visits(count)
+
     with system_info_duration.time():
         result = {
             "service": system_info_service.get_service_info(),
@@ -30,6 +57,12 @@ async def get_system_info(request: Request):
             "endpoints": system_info_service.get_endpoints_info()
         }
     return result
+
+
+@router.get("/visits")
+async def get_visits():
+    endpoint_calls.labels(endpoint="/visits").inc()
+    return {"visits": _read_visits()}
 
 
 @router.get("/health")

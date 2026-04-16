@@ -69,5 +69,6 @@ def get_request_info(request: Request):
 def get_endpoints_info():
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
+        {"path": "/visits", "method": "GET", "description": "Visit counter"},
         {"path": "/health", "method": "GET", "description": "Health check"}
     ]
