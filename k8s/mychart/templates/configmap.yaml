@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mychart.fullname" . }}-config
+data:
+  config.json: |-
+{{ .Files.Get "files/config.json" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mychart.fullname" . }}-env-config
+  labels:
+    {{- include "mychart.labels" . | nindent 4 }}
+data:
+  APPLICATION_NAME: "Python app"
+  APP_ENV: "dev"
+  LOG_LEVEL: "info"
