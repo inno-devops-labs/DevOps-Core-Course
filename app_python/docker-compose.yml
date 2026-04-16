@@ -1,0 +1,12 @@
+services:
+  devops-info-service:
+    build: .
+    container_name: devops-info-service
+    ports:
+      - "5000:5000"
+    environment:
+      VISITS_FILE: /app/data/visits
+      CONFIG_FILE: /app/config/config.json
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config:ro

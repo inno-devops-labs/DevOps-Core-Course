@@ -1,0 +1,12 @@
+{
+  "applicationName": "{{ .Values.env.extra.appName }}",
+  "environment": "{{ .Values.env.appEnv }}",
+  "featureFlags": {
+    "visitsCounter": {{ .Values.env.extra.featureVisitsCounter }},
+    "metrics": true
+  },
+  "settings": {
+    "showExtendedSystemInfo": true,
+    "includeRequestMetadata": true
+  }
+}

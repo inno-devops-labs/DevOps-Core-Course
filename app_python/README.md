@@ -14,6 +14,8 @@ The DevOps Info Service is a FastAPI-based web application  that reports compreh
 - Runtime statistics (uptime, current time, timezone)
 - Request metadata (client IP, user agent, method, path)
 - Health check endpoint for monitoring
+- Persistent visits counter stored in file
+- Config file loading from JSON (`CONFIG_FILE`)
 
 
 ## Prerequisites
@@ -173,6 +175,23 @@ Simple health check endpoint for monitoring and Kubernetes liveness/readiness pr
 curl http://localhost:5000/health
 ```
 
+### `GET /visits`
+
+Returns current visits counter from the file configured via `VISITS_FILE`.
+
+**Response Example:**
+```json
+{
+  "visits": 42,
+  "file": "/data/visits"
+}
+```
+
+**Testing:**
+```bash
+curl http://localhost:5000/visits
+```
+
 ## Configuration
 
 The application can be configured using the following environment variables:
@@ -182,6 +201,8 @@ The application can be configured using the following environment variables:
 | `HOST` | `0.0.0.0` | Host address to bind the server |
 | `PORT` | `5000` | Port number to listen on |
 | `DEBUG` | `False` | Enable debug mode  |
+| `VISITS_FILE` | `data/visits` | File path for persisted visits counter |
+| `CONFIG_FILE` | `/config/config.json` | Path to JSON configuration file |
 
 ### Examples
 
@@ -260,6 +281,22 @@ docker build -t devops-info-service .
 docker run -p 5000:5000 devops-info-service
 ```
 Access the service at http://localhost:5000
+
+### Run with Docker Compose and persistent counter
+
+```bash
+docker compose up --build
+```
+
+Then verify persistence:
+
+```bash
+curl http://localhost:5000/
+curl http://localhost:5000/visits
+cat ./data/visits
+docker compose restart
+curl http://localhost:5000/visits
+```
 
 ## Pull the image from Docker Hub
 ```bash

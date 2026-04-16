@@ -6,6 +6,9 @@ image:
 env:
   appEnv: "dev"
   logLevel: "debug"
+  extra:
+    appName: "devops-info-service-dev"
+    featureVisitsCounter: true
 
 resources:
   requests:
@@ -17,6 +20,10 @@ resources:
 
 service:
   type: NodePort
+
+persistence:
+  size: "100Mi"
+  storageClass: ""
 
 livenessProbe:
   initialDelaySeconds: 5

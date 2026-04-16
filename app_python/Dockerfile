@@ -3,7 +3,9 @@ FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     HOST=0.0.0.0 \
-    PORT=5000
+    PORT=5000 \
+    VISITS_FILE=/data/visits \
+    CONFIG_FILE=/config/config.json
 
 RUN groupadd --system appgroup \
     && useradd --system --gid appgroup --create-home appuser
@@ -16,7 +18,8 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY app.py .
 
-RUN chown -R appuser:appgroup /app
+RUN mkdir -p /data /config \
+    && chown -R appuser:appgroup /app /data /config
 USER appuser
 
 EXPOSE 5000

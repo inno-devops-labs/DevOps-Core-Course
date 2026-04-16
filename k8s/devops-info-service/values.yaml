@@ -16,6 +16,20 @@ service:
 env:
   appEnv: "development"
   logLevel: "info"
+  extra:
+    appName: "devops-info-service"
+    featureVisitsCounter: true
+
+config:
+  fileName: "config.json"
+  mountPath: "/config"
+
+persistence:
+  enabled: true
+  mountPath: "/data"
+  size: "100Mi"
+  accessMode: "ReadWriteOnce"
+  storageClass: ""
 
 serviceAccount:
   create: true

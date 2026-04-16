@@ -61,6 +61,27 @@ Secret name.
 {{- end }}
 
 {{/*
+ConfigMap name for file-based config.
+*/}}
+{{- define "devops-info-service.configMapName" -}}
+{{- printf "%s-config" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
+ConfigMap name for env vars.
+*/}}
+{{- define "devops-info-service.envConfigMapName" -}}
+{{- printf "%s-env" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
+PVC name for persistent data.
+*/}}
+{{- define "devops-info-service.pvcName" -}}
+{{- printf "%s-data" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
 Named template for common environment variables.
 */}}
 {{- define "devops-info-service.commonEnv" -}}
@@ -68,4 +89,8 @@ Named template for common environment variables.
   value: {{ .Values.env.appEnv | quote }}
 - name: LOG_LEVEL
   value: {{ .Values.env.logLevel | quote }}
+- name: VISITS_FILE
+  value: {{ printf "%s/visits" .Values.persistence.mountPath | quote }}
+- name: CONFIG_FILE
+  value: {{ printf "%s/%s" .Values.config.mountPath .Values.config.fileName | quote }}
 {{- end }}

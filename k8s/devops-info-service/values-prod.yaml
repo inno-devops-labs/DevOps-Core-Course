@@ -6,6 +6,9 @@ image:
 env:
   appEnv: "prod"
   logLevel: "info"
+  extra:
+    appName: "devops-info-service-prod"
+    featureVisitsCounter: true
 
 resources:
   requests:
@@ -17,6 +20,10 @@ resources:
 
 service:
   type: LoadBalancer
+
+persistence:
+  size: "1Gi"
+  storageClass: ""
 
 livenessProbe:
   initialDelaySeconds: 30
