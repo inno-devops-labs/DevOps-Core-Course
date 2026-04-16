@@ -1,0 +1,11 @@
+server:
+  dev:
+    enabled: true
+  dataStorage:
+    enabled: false
+
+injector:
+  enabled: true
+
+ui:
+  enabled: true

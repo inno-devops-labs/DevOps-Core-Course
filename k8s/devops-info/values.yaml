@@ -71,6 +71,18 @@ env:
   - name: APP_REVISION
     value: v2
 
+secret:
+  enabled: true
+  create: true
+  name: ""
+  type: Opaque
+  annotations: {}
+  labels: {}
+  injectAsEnvFrom: true
+  stringData:
+    username: placeholder-user
+    password: placeholder-password
+
 resources:
   requests:
     cpu: 100m
@@ -105,6 +117,20 @@ readinessProbe:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+vault:
+  enabled: false
+  authPath: auth/kubernetes
+  role: devops-info-role
+  secretPath: secret/data/devops-info/config
+  fileName: app-config.txt
+  injectCommand: ""
+  agentPrePopulateOnly: false
+  template: |
+    {{- with secret "secret/data/devops-info/config" -}}
+    username={{ .Data.data.username }}
+    password={{ .Data.data.password }}
+    {{- end -}}
 
 hookJobs:
   enabled: true
