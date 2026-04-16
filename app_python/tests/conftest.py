@@ -16,5 +16,5 @@ def client():
     
     try:
         os.unlink(temp_file.name)
-    except:
+    except OSError:
         pass
