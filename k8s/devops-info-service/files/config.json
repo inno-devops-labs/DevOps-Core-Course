@@ -1,0 +1,14 @@
+{
+  "app_name": "devops-info-service",
+  "version": "1.0.0",
+  "environment": "dev",
+  "features": {
+    "visits_counter": true,
+    "prometheus_metrics": true,
+    "json_logging": true
+  },
+  "settings": {
+    "data_dir": "/data",
+    "log_level": "INFO"
+  }
+}

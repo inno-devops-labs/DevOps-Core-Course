@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY . .
 
-RUN chown -R app:app /app
+RUN mkdir -p /data && chown -R app:app /app /data
 
 USER app
 

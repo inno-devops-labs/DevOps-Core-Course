@@ -70,6 +70,7 @@ python -m pytest tests/ --cov=. --cov-report=xml --cov-report=term --cov-fail-un
 | `SERVICE_FRAMEWORK`   | FastAPI                    | Service framework          |
 | `HOST`                | 0.0.0.0                    | Service host               |
 | `PORT`                | 5000                       | Server port                |
+| `DATA_DIR`            | /data                      | Directory for persistent data (visits counter) |
 
 
 ##  API Endpoints
@@ -122,7 +123,17 @@ Returns information about the service, system, uptime, and request.
 }
 ```
 
-### 2. Health Check endpoint
+### 2. Visits endpoint
+
+**GET** `/visits`
+Returns the current visit counter value. The counter increments on each request to the root endpoint (`/`). The count is persisted to a file so it survives container restarts.
+```json
+{
+  "visits": 42
+}
+```
+
+### 3. Health Check endpoint
 
 **GET** `/health`
 Health check endpoint to monitor service status.
@@ -133,3 +144,13 @@ Health check endpoint to monitor service status.
   "uptime_seconds": 27
 }
 ```
+
+## Docker Compose (Local Development)
+
+A standalone `docker-compose.yml` is provided for local testing with persistent volume:
+```bash
+docker compose up --build
+# Access root endpoint: curl http://localhost:8000/
+# Check visits: curl http://localhost:8000/visits
+```
+The visits counter persists across container restarts via a named Docker volume.

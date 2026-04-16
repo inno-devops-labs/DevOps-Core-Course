@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Request
 from typing import Annotated
 from datetime import datetime
 from core.runtime import get_uptime
+from visits import increment_visits
 from routes.root.schemas import (
     SystemInfoResponse,
     ServiceSchema,
@@ -19,6 +20,7 @@ import logging
 class RootService:
     def system_info(self, request: Request) -> SystemInfoResponse:
         logging.info("Collecting system information")
+        increment_visits()
         try:
             return SystemInfoResponse(
                 service=ServiceSchema(
@@ -50,6 +52,9 @@ class RootService:
                 endpoints=[
                     EndpointSchema(
                         path="/", method="GET", description="Service information"
+                    ),
+                    EndpointSchema(
+                        path="/visits", method="GET", description="Visit counter"
                     ),
                     EndpointSchema(
                         path="/health", method="GET", description="Health check"

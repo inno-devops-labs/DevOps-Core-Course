@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-config
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+data:
+  config.json: |-
+{{ .Files.Get "files/config.json" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-env
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.config.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  DATA_DIR: {{ .Values.config.dataDir | quote }}

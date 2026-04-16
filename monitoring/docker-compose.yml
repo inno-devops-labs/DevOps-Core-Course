@@ -102,6 +102,9 @@ services:
       - "8000:80"
     environment:
       - LOG_FORMAT=json
+      - DATA_DIR=/data
+    volumes:
+      - app-data:/data
     networks:
       - logging
     labels:
@@ -166,6 +169,7 @@ volumes:
   loki-data:
   grafana-data:
   prometheus-data:
+  app-data:
 
 networks:
   logging:
