@@ -234,6 +234,14 @@ ArgoCD does not revert labels that are not part of the Helm template — only fi
 - With webhooks: sync is immediate after a Git push
 - Manual trigger: `argocd app sync <app-name>`
 
+![](./screenshots/lab13-all-aps.png)
+
+![](./screenshots/lab13-app-1.png)
+
+![](./screenshots/lab13-app-2.png)
+
+![](./screenshots/lab13-app-3.png)
+
 ---
 
 ## 5. Bonus — ApplicationSet
