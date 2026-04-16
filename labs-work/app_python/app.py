@@ -3,6 +3,7 @@ import logging
 import os
 import platform
 import socket
+import threading
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
@@ -12,8 +13,11 @@ app = Flask(__name__)
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5173))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+DATA_DIR = os.getenv('DATA_DIR', '/data')
+VISITS_FILE = os.path.join(DATA_DIR, 'visits')
 
 START_TIME = datetime.now(timezone.utc)
+_visits_lock = threading.Lock()
 
 
 class JSONFormatter(logging.Formatter):
@@ -46,6 +50,20 @@ werkzeug_logger = logging.getLogger('werkzeug')
 werkzeug_logger.handlers = []
 werkzeug_logger.addHandler(handler)
 werkzeug_logger.propagate = False
+
+
+def _read_visits():
+    try:
+        with open(VISITS_FILE, 'r') as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def _write_visits(count):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(VISITS_FILE, 'w') as f:
+        f.write(str(count))
 
 
 def get_uptime():
@@ -91,7 +109,8 @@ def get_request_info():
 def get_endpoints_list():
     return [
         {'path': '/', 'method': 'GET', 'description': 'Service information'},
-        {'path': '/health', 'method': 'GET', 'description': 'Health check'}
+        {'path': '/health', 'method': 'GET', 'description': 'Health check'},
+        {'path': '/visits', 'method': 'GET', 'description': 'Visit counter'}
     ]
 
 
@@ -111,6 +130,10 @@ def log_request(response):
 
 @app.route('/')
 def index():
+    with _visits_lock:
+        count = _read_visits() + 1
+        _write_visits(count)
+
     uptime = get_uptime()
 
     response = {
@@ -123,10 +146,18 @@ def index():
             'timezone': 'UTC'
         },
         'request': get_request_info(),
-        'endpoints': get_endpoints_list()
+        'endpoints': get_endpoints_list(),
+        'visits': count
     }
 
     return jsonify(response)
+
+
+@app.route('/visits')
+def visits():
+    with _visits_lock:
+        count = _read_visits()
+    return jsonify({'visits': count})
 
 
 @app.route('/health')
