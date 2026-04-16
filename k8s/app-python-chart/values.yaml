@@ -58,3 +58,9 @@ vault:
   role: "lab11-app"
   secretPath: "lab11/data/myapp/config"
   injectFileName: "config"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data

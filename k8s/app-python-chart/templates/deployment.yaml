@@ -19,26 +19,32 @@ spec:
     metadata:
       labels:
         {{- include "app-python-chart.selectorLabels" . | nindent 8 }}
-      {{- if .Values.vault.enabled }}
-      annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
-        vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.injectFileName }}: {{ .Values.vault.secretPath | quote }}
-      {{- end }}
     spec:
-      serviceAccountName: {{ include "app-python-chart.serviceAccountName" . }}
       containers:
         - name: {{ include "app-python-chart.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            {{- include "app-python-chart.commonEnv" . | nindent 12 }}
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            - name: VISIT_FILE
+              value: "/data/visits"
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ include "app-python-chart.secretName" . }}
           ports:
             - name: http
               containerPort: {{ .Values.containerPort }}
+          volumeMounts:
+            - name: app-config
+              mountPath: /config.json
+              subPath: config.json
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:
@@ -57,3 +63,12 @@ spec:
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ include "app-python-chart.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "app-python-chart.fullname" . }}-data
+        {{- end }}

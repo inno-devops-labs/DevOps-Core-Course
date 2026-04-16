@@ -1,0 +1,11 @@
+NAME                              READY   STATUS    RESTARTS   AGE
+pod/app-python-79c4bc467d-cfqv6   1/1     Running   0          93s
+
+NAME                 TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/app-python   NodePort   10.108.218.56   <none>        80:30579/TCP   93s
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/app-python   1/1     1            1           93s
+
+NAME                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/app-python-79c4bc467d   1         1         1       93s

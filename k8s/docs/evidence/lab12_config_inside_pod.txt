@@ -1,0 +1,6 @@
+{
+  "appName": "app-python",
+  "environment": "lab12",
+  "featureFlag": true,
+  "logLevel": "info"
+}

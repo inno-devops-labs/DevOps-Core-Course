@@ -23,6 +23,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from typing import Any
+from pathlib import Path
 
 from flask import Flask, g, jsonify, request
 from prometheus_client import (
@@ -42,7 +43,7 @@ PORT = int(os.getenv("PORT", "8005"))
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 START_TIME = datetime.now(UTC)
-
+VISITS_FILE = Path(os.getenv("VISITS_FILE", "/app/visits"))
 # -----------------------------------------------------------------------------
 # Logging (JSON to stdout)
 # -----------------------------------------------------------------------------
@@ -97,6 +98,19 @@ http_requests_in_progress = Gauge(
 app = Flask(__name__)
 
 
+def read_visits() -> int:
+    try:
+        if VISITS_FILE.exists():
+            return int(VISITS_FILE.read_text().strip() or "0")
+    except Exception:
+        return 0
+    return 0
+
+def write_visits(value: int) -> None:
+    VISITS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    VISITS_FILE.write_text(str(value))
+
+
 def get_uptime() -> dict[str, Any]:
     delta = datetime.now(UTC) - START_TIME
     seconds = int(delta.total_seconds())
@@ -130,7 +144,7 @@ def normalize_endpoint(path: str) -> str:
     - known endpoints: '/', '/health', '/metrics'
     - everything else -> '/other'
     """
-    if path in ("/", "/health", "/metrics"):
+    if path in ("/", "/health", "/metrics", "/visits"):
         return path
     return "/other"
 
@@ -199,6 +213,9 @@ def metrics_after(resp):
 # -----------------------------------------------------------------------------
 @app.route("/", methods=["GET"])
 def index():
+    visits = read_visits() + 1
+    write_visits(visits)
+
     uptime = get_uptime()
 
     response = {
@@ -221,10 +238,12 @@ def index():
             "method": request.method,
             "path": request.path,
         },
+        "visits": visits,
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
+            {"path": "/visits", "method": "GET", "description": "Visits counter"},
         ],
     }
 
@@ -247,6 +266,10 @@ def health():
 def metrics():
     return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
+
+@app.route("/visits")
+def visits():
+    return jsonify(visits=read_visits())
 
 # -----------------------------------------------------------------------------
 # Error Handlers (JSON + logging)
