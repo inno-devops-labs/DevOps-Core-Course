@@ -4,9 +4,12 @@ secrets:
   username: "placeholder-user"
   password: "placeholder-password"
 
+environment: "dev"
+logLevel: "INFO"
+
 image:
   repository: aidarsarvartdinov/pythonapp
-  tag: "latest"
+  tag: "v1.1"
   pullPolicy: IfNotPresent
 
 service:
@@ -42,3 +45,10 @@ env:
     value: "0.0.0.0"
   - name: PORT
     value: "5000"
+  - name: DATA_DIR
+    value: "/data"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""

@@ -49,14 +49,17 @@ DEBUG=true python app.py
 ## API Endpoints
 - GET / - Service and system information
 - GET /health - Health check
+- GET /metrics - Prometheus metrics
+- GET /visits - Visit counter
 
 
 ## Configuration
-| Variable | Default   | Description                     |
-| -------- | --------- | ------------------------------- |
-| `HOST`   | `0.0.0.0` | Host to bind the server to      |
-| `PORT`   | `5000`    | Port to listen on               |
-| `DEBUG`  | `False`   | Enable debug mode               |
+| Variable   | Default   | Description                     |
+| ---------- | --------- | ------------------------------- |
+| `HOST`     | `0.0.0.0` | Host to bind the server to      |
+| `PORT`     | `5000`    | Port to listen on               |
+| `DEBUG`    | `False`   | Enable debug mode               |
+| `DATA_DIR` | `./data`  | Directory for storing app data  |
 
 
 ## Docker
@@ -67,7 +70,12 @@ docker build -t <image-name>:<tag> .
 
 Running a container
 ```bash
-docker run -d -p <host-port>:8000 --name <container-name> <image-name>:<tag>
+docker run -d -p <host-port>:5000 --name <container-name> <image-name>:<tag>
+```
+
+Testing with Docker Compose (with volume mounted for data persistence):
+```bash
+docker-compose up -d --build
 ```
 
 Pulling from Docker Hub

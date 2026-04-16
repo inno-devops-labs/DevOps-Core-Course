@@ -42,3 +42,23 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "pythonapp.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "pythonapp.fullname" . }}-env
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: data-volume
+              mountPath: /data
+            - name: code-volume
+              mountPath: /app/app.py
+              subPath: app.py
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "pythonapp.fullname" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "pythonapp.fullname" . }}-data
+        - name: code-volume
+          configMap:
+            name: {{ include "pythonapp.fullname" . }}-code
