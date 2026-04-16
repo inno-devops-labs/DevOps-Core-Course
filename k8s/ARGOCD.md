@@ -240,13 +240,15 @@ ArgoCD does not revert labels that are not part of the Helm template — only fi
 
 ### Manifest (`applicationset.yaml`)
 
-Uses the **List generator** to generate both dev and prod apps from a single template:
+Uses two ApplicationSets with the **List generator** — one for dev (with auto-sync) and one for prod (manual sync). This approach properly separates sync policies per environment since ApplicationSet templates don't support conditional blocks.
+
+**Dev ApplicationSet (auto-sync):**
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: python-app-set
+  name: python-app-dev-set
   namespace: argocd
 spec:
   generators:
@@ -255,9 +257,6 @@ spec:
           - env: dev
             namespace: dev
             valuesFile: values-dev.yaml
-          - env: prod
-            namespace: prod
-            valuesFile: values-prod.yaml
   template:
     metadata:
       name: 'python-app-{{env}}'
@@ -274,18 +273,23 @@ spec:
         server: https://kubernetes.default.svc
         namespace: '{{namespace}}'
       syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
         syncOptions:
           - CreateNamespace=true
 ```
 
+**Prod ApplicationSet (manual sync):** Same structure but without the `automated` block.
+
 ### ApplicationSet Status
 
-The ApplicationSet generated both `python-app-dev` and `python-app-prod` successfully:
+Both ApplicationSets generated their apps successfully:
 
 ```
-resources:
-  - name: python-app-dev   status: Synced   health: Healthy
-  - name: python-app-prod  status: Synced   health: Healthy
+NAME                    STATUS  HEALTH   SYNCPOLICY
+python-app-dev          Synced  Healthy  Auto-Prune  (managed by python-app-dev-set)
+python-app-prod         Synced  Healthy  Manual      (managed by python-app-prod-set)
 ```
 
 ### Benefits of ApplicationSet vs Individual Applications
