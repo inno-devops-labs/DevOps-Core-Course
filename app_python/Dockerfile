@@ -10,7 +10,9 @@ WORKDIR /app
 # Create a non-root user (mandatory)
 # Fixed UID/GID helps in CI and when mounting volumes.
 RUN groupadd --gid 10001 appuser \
- && useradd  --uid 10001 --gid 10001 --create-home --shell /usr/sbin/nologin appuser
+ && useradd  --uid 10001 --gid 10001 --create-home --shell /usr/sbin/nologin appuser \
+ && mkdir -p /app/data /config \
+ && chown -R appuser:appuser /app /config
 
 # Install dependencies first to leverage Docker layer caching
 COPY requirements.txt /app/requirements.txt

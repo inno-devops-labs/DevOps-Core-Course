@@ -128,12 +128,18 @@ services:
     image: egrapa/devops-core-course-lab2:latest
     build:
       context: ../app_python
+    user: "${UID:-1000}:${GID:-1000}"
     environment:
       - HOST=0.0.0.0
       - PORT=8000
       - DEBUG=false
+      - APP_CONFIG_PATH=/config/config.json
+      - VISITS_FILE=/data/visits
     ports:
       - "8000:8000"
+    volumes:
+      - ./data:/data
+      - ../k8s/devops-info-service/files/config.json:/config/config.json:ro
     networks:
       - logging
     labels:

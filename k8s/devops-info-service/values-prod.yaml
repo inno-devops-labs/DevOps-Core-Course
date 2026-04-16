@@ -4,9 +4,17 @@ image:
   tag: "1.0.0"
   pullPolicy: IfNotPresent
 
+config:
+  environment: prod
+  logLevel: INFO
+
 service:
   type: LoadBalancer
   nodePort: null
+
+persistence:
+  enabled: true
+  size: 250Mi
 
 resources:
   requests:

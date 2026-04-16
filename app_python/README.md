@@ -94,6 +94,16 @@ Example:
 curl -s http://127.0.0.1:5000/health | python -m json.tool
 ```
 
+### `GET /visits`
+
+Returns the current persistent visit count.
+
+Example:
+
+``` bash
+curl -s http://127.0.0.1:5000/visits | python -m json.tool
+```
+
 ## Configuration
 
 The application is configured via environment variables:
@@ -103,6 +113,27 @@ The application is configured via environment variables:
   `HOST`     `0.0.0.0`   Server bind address
   `PORT`     `5000`      TCP port
   `DEBUG`    `False`     Enables Flask debug mode and debug logging
+  `APP_CONFIG_PATH` `/config/config.json` JSON config file path
+  `VISITS_FILE` `data/visits` Persistent visit counter file
+  `APP_ENV`  `dev`       Runtime environment label
+  `LOG_LEVEL` `INFO`     Log level metadata exposed by the app
+  `APP_DISPLAY_NAME` `devops-info-service` Service name override
+
+## Persistent Visits Counter
+
+Every `GET /` request increments a file-backed counter. The application
+loads the existing value on startup, stores updates in `VISITS_FILE`,
+and exposes the current count through `GET /visits`.
+
+Quick local check:
+
+``` bash
+cd app_python
+python app.py
+curl -s http://127.0.0.1:5000/
+curl -s http://127.0.0.1:5000/visits | python -m json.tool
+cat data/visits
+```
 
 ## Testing & Lint (Lab 3)
 
@@ -171,6 +202,22 @@ Test from host:
 ``` bash
 curl -s http://127.0.0.1:8080/health | python -m json.tool
 curl -s http://127.0.0.1:8080/ | python -m json.tool
+```
+
+### Compose Persistence Check
+
+The monitoring compose stack now bind-mounts `monitoring/data` into the
+app container so the visits file survives container restarts.
+
+``` bash
+mkdir -p monitoring/data
+docker compose -f monitoring/docker-compose.yml up -d app-python
+curl -s http://127.0.0.1:8000/
+curl -s http://127.0.0.1:8000/
+curl -s http://127.0.0.1:8000/visits | python -m json.tool
+cat monitoring/data/visits
+docker compose -f monitoring/docker-compose.yml restart app-python
+curl -s http://127.0.0.1:8000/visits | python -m json.tool
 ```
 
 ## Notes

@@ -27,6 +27,16 @@ strategy:
 podAnnotations: {}
 podLabels: {}
 
+podSecurityContext:
+  fsGroup: 10001
+  fsGroupChangePolicy: OnRootMismatch
+
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  allowPrivilegeEscalation: false
+
 env:
   - name: HOST
     value: "0.0.0.0"
@@ -34,6 +44,23 @@ env:
     value: "5000"
   - name: DEBUG
     value: "False"
+
+config:
+  fileMountPath: /config
+  fileName: config.json
+  appConfigPath: /config/config.json
+  appName: devops-info-service
+  environment: dev
+  logLevel: INFO
+  visitsFile: /data/visits
+
+persistence:
+  enabled: true
+  mountPath: /data
+  accessModes:
+    - ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
 
 serviceAccount:
   create: true

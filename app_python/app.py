@@ -13,7 +13,9 @@ import socket
 import json
 import sys
 import time
+import threading
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict
 
 from flask import Flask, Response, jsonify, request, g
@@ -30,13 +32,62 @@ APP_VERSION = "1.0.0"
 APP_DESCRIPTION = "DevOps course info service"
 APP_FRAMEWORK = "Flask"
 
-# Configuration (env)2
+# Configuration (env)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEFAULT_CONFIG_PATH = Path(os.getenv("APP_CONFIG_PATH", "/config/config.json"))
+DEFAULT_VISITS_FILE = Path(os.getenv("VISITS_FILE", "data/visits"))
 
 # Application start time (UTC)
 START_TIME = datetime.now(timezone.utc)
+
+
+class VisitCounter:
+    """Thread-safe file-backed visit counter."""
+
+    def __init__(self, file_path: Path) -> None:
+        self._lock = threading.Lock()
+        self._count = 0
+        self.file_path = Path(file_path)
+        self._load_from_disk()
+
+    def _load_from_disk(self) -> None:
+        try:
+            self.file_path.parent.mkdir(parents=True, exist_ok=True)
+            self._count = int(self.file_path.read_text().strip())
+        except FileNotFoundError:
+            self._count = 0
+        except (OSError, ValueError):
+            self._count = 0
+
+    def _write_to_disk(self, count: int) -> None:
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_file = self.file_path.with_suffix(f"{self.file_path.suffix}.tmp")
+        temp_file.write_text(f"{count}\n")
+        os.replace(temp_file, self.file_path)
+
+    def increment(self) -> int:
+        with self._lock:
+            self._count += 1
+            self._write_to_disk(self._count)
+            return self._count
+
+    def get_count(self) -> int:
+        with self._lock:
+            return self._count
+
+    def reset(self, file_path: Path | None = None) -> None:
+        with self._lock:
+            if file_path is not None:
+                self.file_path = Path(file_path)
+            self._count = 0
+            if self.file_path.exists():
+                self.file_path.unlink()
+            self.file_path.parent.mkdir(parents=True, exist_ok=True)
+
+
+visit_counter = VisitCounter(DEFAULT_VISITS_FILE)
 
 
 class JSONFormatter(logging.Formatter):
@@ -162,6 +213,44 @@ def get_system_info() -> Dict[str, Any]:
     }
 
 
+def load_app_config() -> Dict[str, Any]:
+    """Load application configuration from file with env overrides."""
+    config_path = Path(app.config.get("APP_CONFIG_PATH", DEFAULT_CONFIG_PATH))
+    file_config: Dict[str, Any] = {}
+    config_loaded = False
+
+    try:
+        file_config = json.loads(config_path.read_text())
+        config_loaded = True
+    except FileNotFoundError:
+        file_config = {}
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning(
+            "config_load_failed",
+            extra={
+                "event": "config_load_failed",
+                "config_path": str(config_path),
+                "error": str(exc),
+            },
+        )
+
+    return {
+        "name": os.getenv(
+            "APP_DISPLAY_NAME",
+            file_config.get("applicationName", APP_NAME),
+        ),
+        "environment": os.getenv(
+            "APP_ENV",
+            file_config.get("environment", "dev"),
+        ),
+        "log_level": os.getenv("LOG_LEVEL", "INFO"),
+        "feature_flags": file_config.get("featureFlags", {}),
+        "settings": file_config.get("settings", {}),
+        "config_path": str(config_path),
+        "config_loaded": config_loaded,
+    }
+
+
 def get_client_ip() -> str:
     """
     Best-effort client IP extraction.
@@ -244,13 +333,15 @@ def track_request_teardown(_error) -> None:
 def index():
     """Main endpoint - service and system information."""
     devops_info_endpoint_calls_total.labels(endpoint="/").inc()
+    current_visits = visit_counter.increment()
     uptime = get_uptime()
+    app_config = load_app_config()
     with devops_info_system_collection_seconds.time():
         system_info = get_system_info()
 
     payload = {
         "service": {
-            "name": APP_NAME,
+            "name": app_config["name"],
             "version": APP_VERSION,
             "description": APP_DESCRIPTION,
             "framework": APP_FRAMEWORK,
@@ -261,6 +352,18 @@ def index():
             "uptime_human": uptime["human"],
             "current_time": datetime.now(timezone.utc).isoformat(),
             "timezone": "UTC",
+        },
+        "configuration": {
+            "environment": app_config["environment"],
+            "log_level": app_config["log_level"],
+            "feature_flags": app_config["feature_flags"],
+            "settings": app_config["settings"],
+            "config_path": app_config["config_path"],
+            "config_loaded": app_config["config_loaded"],
+        },
+        "visits": {
+            "count": current_visits,
+            "storage_path": str(visit_counter.file_path),
         },
         "request": {
             "client_ip": get_client_ip(),
@@ -283,6 +386,11 @@ def index():
                 "path": "/metrics",
                 "method": "GET",
                 "description": "Prometheus metrics",
+            },
+            {
+                "path": "/visits",
+                "method": "GET",
+                "description": "Persistent visits counter",
             },
         ],
     }
@@ -312,6 +420,13 @@ def metrics() -> Response:
     """Prometheus metrics endpoint."""
     devops_info_endpoint_calls_total.labels(endpoint="/metrics").inc()
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
+@app.route("/visits", methods=["GET"])
+def visits():
+    """Return the current visit count."""
+    devops_info_endpoint_calls_total.labels(endpoint="/visits").inc()
+    return jsonify({"visits": visit_counter.get_count()}), 200
 
 
 @app.errorhandler(404)
