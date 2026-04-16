@@ -1,13 +1,59 @@
-from src.app import app
-import pytest
+import json
 import re
+
+import pytest
+
+from src.app import app
 
 
 @pytest.fixture
-def client():
-    app.config["TESTING"] = True
-    with app.test_client() as client:
-        yield client
+def client(tmp_path):
+    config_path = tmp_path / "config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "application": {
+                    "name": "test-devops-info-service",
+                    "environment": "test",
+                    "description": "Test config for the DevOps info service",
+                    "version": "1.0.0",
+                },
+                "featureFlags": {
+                    "visitsCounter": True,
+                    "metricsEndpoint": True,
+                    "showRuntimeDetails": True,
+                },
+                "settings": {
+                    "logLevel": "DEBUG",
+                    "visitsFile": str(tmp_path / "visits"),
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    original_values = {
+        "TESTING": app.config.get("TESTING"),
+        "VISITS_FILE": app.config.get("VISITS_FILE"),
+        "APP_CONFIG_PATH": app.config.get("APP_CONFIG_PATH"),
+        "APP_NAME": app.config.get("APP_NAME"),
+        "APP_ENV": app.config.get("APP_ENV"),
+        "LOG_LEVEL": app.config.get("LOG_LEVEL"),
+    }
+
+    app.config.update(
+        TESTING=True,
+        VISITS_FILE=str(tmp_path / "visits"),
+        APP_CONFIG_PATH=str(config_path),
+        APP_NAME="test-devops-info-service",
+        APP_ENV="test",
+        LOG_LEVEL="DEBUG",
+    )
+
+    with app.test_client() as test_client:
+        yield test_client
+
+    app.config.update(original_values)
 
 
 # ----------------------------
@@ -25,11 +71,12 @@ def test_index_json_structure(client):
     response = client.get("/")
     data = response.get_json()
 
-    # Top-level keys
     assert "service" in data
     assert "system" in data
     assert "request" in data
     assert "runtime" in data
+    assert "configuration" in data
+    assert "visits" in data
     assert "endpoints" in data
 
 
@@ -37,9 +84,10 @@ def test_index_service_fields(client):
     data = client.get("/").get_json()
     service = data["service"]
 
-    assert service["name"] == "devops-info-service"
+    assert service["name"] == "test-devops-info-service"
     assert service["version"] == "1.0.0"
     assert service["framework"] == "Flask"
+    assert service["environment"] == "test"
     assert isinstance(service["description"], str)
 
 
@@ -80,9 +128,26 @@ def test_index_runtime_fields(client):
 
     assert isinstance(runtime["seconds"], int)
     assert runtime["seconds"] >= 0
-
-    # Validate Zulu timestamp format
     assert runtime["current_time"].endswith("Z")
+
+
+def test_index_configuration_fields(client):
+    configuration = client.get("/").get_json()["configuration"]
+
+    assert configuration["environment"] == "test"
+    assert configuration["log_level"] == "DEBUG"
+    assert configuration["file_loaded"] is True
+    assert configuration["config_path"].endswith("config.json")
+    assert configuration["feature_flags"]["visitsCounter"] is True
+
+
+def test_index_visits_are_incremented(client):
+    first_response = client.get("/").get_json()
+    second_response = client.get("/").get_json()
+
+    assert first_response["visits"]["count"] == 1
+    assert second_response["visits"]["count"] == 2
+    assert second_response["visits"]["file"].endswith("visits")
 
 
 def test_index_endpoints_list(client):
@@ -90,9 +155,10 @@ def test_index_endpoints_list(client):
     endpoints = data["endpoints"]
 
     assert isinstance(endpoints, list)
-    assert any(e["path"] == "/" for e in endpoints)
-    assert any(e["path"] == "/health" for e in endpoints)
-    assert any(e["path"] == "/metrics" for e in endpoints)
+    assert any(endpoint["path"] == "/" for endpoint in endpoints)
+    assert any(endpoint["path"] == "/health" for endpoint in endpoints)
+    assert any(endpoint["path"] == "/visits" for endpoint in endpoints)
+    assert any(endpoint["path"] == "/metrics" for endpoint in endpoints)
 
 
 # ----------------------------
@@ -121,9 +187,18 @@ def test_health_timestamp_format(client):
     data = client.get("/health").get_json()
     timestamp = data["timestamp"]
 
-    # ISO 8601 basic validation
     iso_regex = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
     assert re.match(iso_regex, timestamp)
+
+
+def test_visits_returns_current_count_without_incrementing(client):
+    client.get("/")
+    client.get("/")
+
+    visits_response = client.get("/visits")
+
+    assert visits_response.status_code == 200
+    assert visits_response.get_json()["visits"] == 2
 
 
 def test_metrics_success(client):
@@ -139,6 +214,7 @@ def test_metrics_success(client):
 def test_metrics_contains_http_and_app_specific_metrics(client):
     client.get("/")
     client.get("/health")
+    client.get("/visits")
     client.get("/non-existent")
 
     metrics_output = client.get("/metrics").get_data(as_text=True)
@@ -150,6 +226,7 @@ def test_metrics_contains_http_and_app_specific_metrics(client):
     assert "devops_info_system_info_collection_seconds" in metrics_output
     assert 'endpoint="/"' in metrics_output
     assert 'endpoint="/health"' in metrics_output
+    assert 'endpoint="/visits"' in metrics_output
 
 
 # ----------------------------

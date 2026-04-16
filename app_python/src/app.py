@@ -1,23 +1,41 @@
 """
-DevOps Info Service
-Main application module
+DevOps Info Service application module.
 """
 
-import os
-import socket
-import platform
+import json
 import logging
-from time import perf_counter
+import os
+import platform
+import socket
 from datetime import datetime, timezone
+from pathlib import Path
+from time import perf_counter
+
 from flask import Flask, Response, g, jsonify, request
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows fallback for local runs
+    fcntl = None
+
 
 app = Flask(__name__)
+app.config.from_mapping(
+    HOST=os.getenv("HOST", "0.0.0.0"),
+    PORT=int(os.getenv("PORT", 5000)),
+    VISITS_FILE=os.getenv("VISITS_FILE", "data/visits"),
+    APP_CONFIG_PATH=os.getenv("APP_CONFIG_PATH", "config/config.json"),
+    APP_NAME=os.getenv("APP_NAME", "devops-info-service"),
+    APP_ENV=os.getenv("APP_ENV", "development"),
+    LOG_LEVEL=os.getenv("LOG_LEVEL", "INFO"),
+)
+
+logging.basicConfig(
+    level=getattr(logging, app.config["LOG_LEVEL"].upper(), logging.INFO),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 HTTP_REQUESTS_TOTAL = Counter(
@@ -46,9 +64,8 @@ DEVOPS_INFO_SYSTEM_INFO_COLLECTION_SECONDS = Histogram(
 )
 
 
-# Configuration
-HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", 5000))
+HOST = app.config["HOST"]
+PORT = app.config["PORT"]
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
@@ -109,6 +126,93 @@ def teardown_request_metrics(error):
         g.metrics_gauge_decremented = True
 
 
+def get_setting(name, default=None):
+    return app.config.get(name, default)
+
+
+def get_visits_file_path():
+    return Path(get_setting("VISITS_FILE", "data/visits"))
+
+
+def get_app_config_path():
+    return Path(get_setting("APP_CONFIG_PATH", "config/config.json"))
+
+
+def ensure_parent_directory(file_path):
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def lock_file(handle):
+    if fcntl is not None:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+
+
+def unlock_file(handle):
+    if fcntl is not None:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def parse_visits_count(raw_value):
+    raw_value = raw_value.strip()
+    if not raw_value:
+        return 0
+
+    try:
+        return int(raw_value)
+    except ValueError:
+        logger.warning("invalid_visits_file_contents", extra={"raw_value": raw_value})
+        return 0
+
+
+def read_visits_count():
+    visits_file_path = get_visits_file_path()
+    ensure_parent_directory(visits_file_path)
+
+    with visits_file_path.open("a+", encoding="utf-8") as visits_file:
+        lock_file(visits_file)
+        try:
+            visits_file.seek(0)
+            return parse_visits_count(visits_file.read())
+        finally:
+            unlock_file(visits_file)
+
+
+def increment_visits_count():
+    visits_file_path = get_visits_file_path()
+    ensure_parent_directory(visits_file_path)
+
+    with visits_file_path.open("a+", encoding="utf-8") as visits_file:
+        lock_file(visits_file)
+        try:
+            visits_file.seek(0)
+            current_count = parse_visits_count(visits_file.read())
+            next_count = current_count + 1
+            visits_file.seek(0)
+            visits_file.truncate()
+            visits_file.write(str(next_count))
+            visits_file.flush()
+            os.fsync(visits_file.fileno())
+            return next_count
+        finally:
+            unlock_file(visits_file)
+
+
+def load_runtime_config():
+    config_path = get_app_config_path()
+    if not config_path.exists():
+        return {}
+
+    try:
+        with config_path.open("r", encoding="utf-8") as config_file:
+            return json.load(config_file)
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning(
+            "runtime_config_load_failed",
+            extra={"path": str(config_path), "error": str(exc)},
+        )
+        return {}
+
+
 def get_system_info():
     """Collect system information."""
     start = perf_counter()
@@ -125,35 +229,59 @@ def get_system_info():
 
 def get_request():
     return {
-        "client_ip": request.remote_addr,  # Client IP
-        "user_agent": request.headers.get("User-Agent"),  # User agent
-        "method": request.method,  # HTTP method
-        "path": request.path,  # Request path
+        "client_ip": request.remote_addr,
+        "user_agent": request.headers.get("User-Agent"),
+        "method": request.method,
+        "path": request.path,
     }
 
 
-def get_service():
+def get_service(runtime_config):
+    app_config = runtime_config.get("application", {})
     return {
-        "name": "devops-info-service",
-        "version": "1.0.0",
-        "description": "DevOps course info service",
+        "name": get_setting("APP_NAME", app_config.get("name", "devops-info-service")),
+        "version": app_config.get("version", "1.0.0"),
+        "description": app_config.get("description", "DevOps course info service"),
         "framework": "Flask",
+        "environment": get_setting("APP_ENV", app_config.get("environment", "development")),
+    }
+
+
+def get_configuration(runtime_config):
+    app_config = runtime_config.get("application", {})
+    feature_flags = runtime_config.get("featureFlags", {})
+    settings = runtime_config.get("settings", {})
+
+    return {
+        "environment": get_setting("APP_ENV", app_config.get("environment", "development")),
+        "log_level": get_setting("LOG_LEVEL", settings.get("logLevel", "INFO")),
+        "config_path": str(get_app_config_path()),
+        "file_loaded": bool(runtime_config),
+        "feature_flags": feature_flags,
+        "settings": settings,
     }
 
 
 @app.route("/")
 def index():
-    logger.debug(f"Request: {request.method} {request.path}")
-    """Main endpoint - service and system information."""
+    logger.debug("Request: %s %s", request.method, request.path)
     DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/").inc()
+    runtime_config = load_runtime_config()
+    visit_count = increment_visits_count()
     return {
-        "service": get_service(),
+        "service": get_service(runtime_config),
         "system": get_system_info(),
         "request": get_request(),
         "runtime": get_uptime(),
+        "configuration": get_configuration(runtime_config),
+        "visits": {
+            "count": visit_count,
+            "file": str(get_visits_file_path()),
+        },
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Current visit count"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
@@ -164,27 +292,36 @@ def get_uptime():
     seconds = int(delta.total_seconds())
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
-    now_utc = datetime.now(timezone.utc).isoformat()
-    # Example output: '2026-01-28T19:10:00.123456+00:00'
-    # Replace the +00:00 with Z
-    iso_format_zulu = now_utc.replace("+00:00", ".000Z")
+    current_time = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
     return {
         "seconds": seconds,
         "human": f"{hours} hours, {minutes} minutes",
-        "current_time": iso_format_zulu,
+        "current_time": current_time.replace("+00:00", "Z"),
         "timezone": "UTC",
     }
 
 
 @app.route("/health")
 def health():
-    logger.debug(f"Request: {request.method} {request.path}")
+    logger.debug("Request: %s %s", request.method, request.path)
     DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/health").inc()
     return jsonify(
         {
             "status": "healthy",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "uptime_seconds": get_uptime()["seconds"],
+        }
+    )
+
+
+@app.route("/visits")
+def visits():
+    logger.debug("Request: %s %s", request.method, request.path)
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/visits").inc()
+    return jsonify(
+        {
+            "visits": read_visits_count(),
+            "file": str(get_visits_file_path()),
         }
     )
 

@@ -1,4 +1,9 @@
-replicaCount: 3
+replicaCount: 1
+
+appConfig:
+  environment: "prod"
+  settings:
+    logLevel: "INFO"
 
 service:
   type: LoadBalancer
@@ -17,6 +22,9 @@ secret:
   stringData:
     APP_USERNAME: "prod-user"
     APP_PASSWORD: "replace-me-in-prod"
+
+persistence:
+  size: 250Mi
 
 livenessProbe:
   httpGet:

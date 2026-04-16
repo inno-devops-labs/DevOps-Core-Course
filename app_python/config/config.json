@@ -1,0 +1,17 @@
+{
+  "application": {
+    "name": "devops-info-service",
+    "environment": "local",
+    "description": "Local Docker Compose configuration for the DevOps info service",
+    "version": "1.0.0"
+  },
+  "featureFlags": {
+    "visitsCounter": true,
+    "metricsEndpoint": true,
+    "showRuntimeDetails": true
+  },
+  "settings": {
+    "logLevel": "INFO",
+    "visitsFile": "/data/visits"
+  }
+}

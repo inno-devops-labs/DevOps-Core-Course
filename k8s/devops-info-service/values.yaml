@@ -1,8 +1,8 @@
-replicaCount: 3
+replicaCount: 1
 
 image:
   repository: devops-info-service
-  tag: "lab09"
+  tag: "lab12"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -23,6 +23,21 @@ containerPort: 5000
 env:
   - name: PORT
     value: "5000"
+  - name: VISITS_FILE
+    value: "/data/visits"
+  - name: APP_CONFIG_PATH
+    value: "/config/config.json"
+
+appConfig:
+  applicationName: "devops-info-service"
+  environment: "development"
+  description: "DevOps course info service"
+  featureFlags:
+    visitsCounter: true
+    metricsEndpoint: true
+    showRuntimeDetails: true
+  settings:
+    logLevel: "INFO"
 
 secret:
   enabled: true
@@ -51,7 +66,7 @@ service:
   type: NodePort
   port: 80
   targetPort: http
-  nodePort: 30081
+  nodePort: 30082
 
 deploymentStrategy:
   type: RollingUpdate
@@ -63,6 +78,10 @@ minReadySeconds: 5
 revisionHistoryLimit: 5
 
 podSecurityContext:
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  fsGroupChangePolicy: OnRootMismatch
   seccompProfile:
     type: RuntimeDefault
 
@@ -115,3 +134,12 @@ hooks:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data

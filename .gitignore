@@ -20,6 +20,8 @@ Pulumi.*.yaml
 *.pem
 *.key
 *.json
+!app_python/config/config.json
+!k8s/devops-info-service/files/config.json
 credentials
 
 # Ansible

@@ -1,0 +1,17 @@
+{
+  "application": {
+    "name": "{{ .Values.appConfig.applicationName }}",
+    "environment": "{{ .Values.appConfig.environment }}",
+    "description": "{{ .Values.appConfig.description }}",
+    "version": "{{ .Chart.AppVersion }}"
+  },
+  "featureFlags": {
+    "visitsCounter": {{ .Values.appConfig.featureFlags.visitsCounter | toJson }},
+    "metricsEndpoint": {{ .Values.appConfig.featureFlags.metricsEndpoint | toJson }},
+    "showRuntimeDetails": {{ .Values.appConfig.featureFlags.showRuntimeDetails | toJson }}
+  },
+  "settings": {
+    "logLevel": "{{ .Values.appConfig.settings.logLevel }}",
+    "visitsFile": "{{ .Values.persistence.mountPath }}/visits"
+  }
+}

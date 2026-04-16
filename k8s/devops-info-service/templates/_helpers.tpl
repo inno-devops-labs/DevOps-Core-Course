@@ -76,6 +76,31 @@ Return the Secret name used by the workload.
 {{- end }}
 
 {{/*
+Return the file-backed ConfigMap name.
+*/}}
+{{- define "devops-info-service.fileConfigMapName" -}}
+{{- printf "%s-config" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
+Return the environment ConfigMap name.
+*/}}
+{{- define "devops-info-service.envConfigMapName" -}}
+{{- printf "%s-env" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
+Return the PVC name used by the workload.
+*/}}
+{{- define "devops-info-service.pvcName" -}}
+{{- if .Values.persistence.existingClaim }}
+{{- .Values.persistence.existingClaim }}
+{{- else }}
+{{- printf "%s-data" (include "devops-info-service.fullname" .) }}
+{{- end }}
+{{- end }}
+
+{{/*
 Render static environment variables.
 */}}
 {{- define "devops-info-service.envVars" -}}
@@ -83,6 +108,24 @@ Render static environment variables.
 - name: {{ .name }}
   value: {{ .value | quote }}
 {{- end }}
+{{- end }}
+
+{{/*
+Render the file-backed application config content.
+*/}}
+{{- define "devops-info-service.configFileContent" -}}
+{{ tpl (.Files.Get "files/config.json") . }}
+{{- end }}
+
+{{/*
+Render the environment ConfigMap key/value pairs.
+*/}}
+{{- define "devops-info-service.envConfigData" -}}
+APP_NAME: {{ .Values.appConfig.applicationName | quote }}
+APP_ENV: {{ .Values.appConfig.environment | quote }}
+LOG_LEVEL: {{ .Values.appConfig.settings.logLevel | quote }}
+FEATURE_VISITS: {{ ternary "true" "false" .Values.appConfig.featureFlags.visitsCounter | quote }}
+FEATURE_RUNTIME_DETAILS: {{ ternary "true" "false" .Values.appConfig.featureFlags.showRuntimeDetails | quote }}
 {{- end }}
 
 {{/*
