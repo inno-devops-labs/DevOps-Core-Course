@@ -12,12 +12,13 @@ spec:
   template:
     metadata:
       labels:
-        {{- if .Values.vault.enabled }}
-        annotations:
-          vault.hashicorp.com/agent-inject: "true"
-          vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
-          vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPath | quote }}
-        {{- end }}
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+      {{- if .Values.vault.enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPath | quote }}
+      {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       securityContext:
