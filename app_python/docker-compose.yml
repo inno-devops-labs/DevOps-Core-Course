@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  app:
+    image: almax07082005/devops-info-service:latest
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      VISITS_FILE: "/data/visits"
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

@@ -14,6 +14,24 @@ from prometheus_client import (
 )
 from pythonjsonlogger import jsonlogger
 
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
+
+
+def read_visits() -> int:
+    try:
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def write_visits(count: int) -> None:
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    tmp = VISITS_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(str(count))
+    os.replace(tmp, VISITS_FILE)
+
 
 def create_app() -> Flask:
     app = Flask(__name__)
@@ -123,6 +141,9 @@ def create_app() -> Flask:
     def index():
         endpoint_calls.labels(endpoint="/").inc()
 
+        count = read_visits() + 1
+        write_visits(count)
+
         system_start = datetime.now(timezone.utc)
         system_info = {
             "hostname": socket.gethostname(),
@@ -166,11 +187,17 @@ def create_app() -> Flask:
             "system": system_info,
             "runtime": runtime_info,
             "request": request_info,
+            "visits": count,
             "endpoints": [
                 {
                     "path": "/",
                     "method": "GET",
                     "description": "Service information",
+                },
+                {
+                    "path": "/visits",
+                    "method": "GET",
+                    "description": "Visit counter",
                 },
                 {
                     "path": "/health",
@@ -186,6 +213,12 @@ def create_app() -> Flask:
         }
 
         return jsonify(response)
+
+    @app.route("/visits", methods=["GET"])
+    def visits():
+        endpoint_calls.labels(endpoint="/visits").inc()
+        count = read_visits()
+        return jsonify({"visits": count})
 
     @app.route("/health", methods=["GET"])
     def health():
@@ -230,4 +263,3 @@ def configure_logging() -> None:
 if __name__ == "__main__":
     flask_app = create_app()
     flask_app.run_app()  # type: ignore[attr-defined]
-

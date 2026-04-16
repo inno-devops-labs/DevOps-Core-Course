@@ -1,4 +1,4 @@
-replicaCount: 3
+replicaCount: 1
 
 image:
   repository: almax07082005/devops-info-service
@@ -14,13 +14,22 @@ service:
   targetPort: 8000
   nodePort: 30080
 
+environment: "production"
+logLevel: "INFO"
+
 env:
   - name: HOST
     value: "0.0.0.0"
   - name: PORT
     value: "8000"
   - name: APP_BUILD
-    value: "lab11-1"
+    value: "lab12-1"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  visitsFile: "/data/visits"
 
 # Helm-managed Secret (placeholder values only — override at install time).
 secrets:
