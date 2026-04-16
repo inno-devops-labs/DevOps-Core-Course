@@ -1,7 +1,14 @@
 import app as app_module
+import pytest
 
 
 app = app_module.app
+
+
+@pytest.fixture(autouse=True)
+def use_temp_visits_file(tmp_path, monkeypatch):
+    visits_file = tmp_path / "visits"
+    monkeypatch.setattr(app_module, "VISITS_FILE", str(visits_file))
 
 
 def test_index_returns_service_system_runtime_request():
