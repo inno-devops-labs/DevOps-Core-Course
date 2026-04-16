@@ -5,6 +5,9 @@ image:
   repository: reiterwurger/app
   tag: "v1"
 
+environment: dev
+logLevel: info
+
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 1000
@@ -29,6 +32,17 @@ livenessProbe:
   port: 8080
   initialDelaySeconds: 8
   periodSeconds: 5
+
+readinessProbe:
+  path: /health
+  port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
 
 appSecrets:
   username: "helm_user"
