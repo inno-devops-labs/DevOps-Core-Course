@@ -4,5 +4,13 @@
 2. Inspect the application service:
    kubectl get svc {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }}
 
-3. For NodePort access:
+3. Inspect Lab 12 configuration resources:
+   kubectl get configmap {{ include "devops-info-service.fileConfigMapName" . }} {{ include "devops-info-service.envConfigMapName" . }} --namespace {{ .Release.Namespace }}
+   kubectl get pvc {{ include "devops-info-service.pvcName" . }} --namespace {{ .Release.Namespace }}
+
+4. Verify mounted configuration and persistence:
+   kubectl exec deploy/{{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }} -- cat {{ .Values.config.file.mountPath }}/{{ .Values.config.file.fileName }}
+   kubectl exec deploy/{{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }} -- printenv | grep -E 'APP_|LOG_LEVEL|VISITS'
+
+5. For NodePort access:
    kubectl get svc {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }} -o wide

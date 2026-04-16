@@ -51,6 +51,7 @@ Thumbs.db
 
 # Logs
 *.log
+data/
 
 # Docker files (prevent recursive context)
 Dockerfile*

@@ -17,6 +17,24 @@ Resolve the service account name used by the workload.
 {{- end -}}
 
 {{/*
+Resolve ConfigMap names used for Lab 12.
+*/}}
+{{- define "devops-info-service.fileConfigMapName" -}}
+{{- printf "%s-config" (include "common-lib.fullname" .) -}}
+{{- end -}}
+
+{{- define "devops-info-service.envConfigMapName" -}}
+{{- printf "%s-env" (include "common-lib.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Resolve the PersistentVolumeClaim name for visits storage.
+*/}}
+{{- define "devops-info-service.pvcName" -}}
+{{- printf "%s-data" (include "common-lib.fullname" .) -}}
+{{- end -}}
+
+{{/*
 Common environment variables shared by the application container.
 */}}
 {{- define "devops-info-service.envVars" -}}

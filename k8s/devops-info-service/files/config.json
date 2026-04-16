@@ -1,0 +1,18 @@
+{
+  "application": {
+    "name": "{{ .Values.config.application.name }}",
+    "environment": "{{ .Values.config.application.environment }}",
+    "description": "{{ .Values.config.application.description }}"
+  },
+  "settings": {
+    "releaseTrack": "{{ .Values.config.settings.releaseTrack }}",
+    "logLevel": "{{ .Values.config.env.LOG_LEVEL }}",
+    "persistenceEnabled": {{ .Values.persistence.enabled }},
+    "visitsFilePath": "{{ printf "%s/%s" .Values.persistence.mountPath .Values.persistence.fileName }}",
+    "featureFlags": {
+      "visitsCounter": {{ .Values.config.settings.featureFlags.visitsCounter }},
+      "configMapDemo": {{ .Values.config.settings.featureFlags.configMapDemo }},
+      "pvcPersistence": {{ .Values.config.settings.featureFlags.pvcPersistence }}
+    }
+  }
+}

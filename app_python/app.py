@@ -1,18 +1,20 @@
 """
 DevOps Info Service
-Main application module providing system information and health status.
+Main application module providing system information, persistence, and health status.
 Structured JSON logging for Loki/observability (Lab 7).
 """
 
-import os
-import socket
-import platform
+import json
 import logging
+import os
+import platform
+import socket
+import threading
 import time
 from datetime import datetime, timezone
-from flask import Flask, jsonify, request, g, Response
+from pathlib import Path
 
-from pythonjsonlogger import jsonlogger
+from flask import Flask, Response, g, jsonify, request
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     Counter,
@@ -20,6 +22,8 @@ from prometheus_client import (
     Histogram,
     generate_latest,
 )
+from pythonjsonlogger import jsonlogger
+
 
 def setup_logging():
     """Configure JSON logging for Loki/observability (timestamp, level, message + extra)."""
@@ -36,22 +40,16 @@ def setup_logging():
     root.handlers = [handler]
     return logging.getLogger(__name__)
 
+
 logger = setup_logging()
 
 app = Flask(__name__)
 
-# -----------------------------
-# Prometheus metrics (Lab 8)
-# -----------------------------
 
 def normalize_endpoint(path: str) -> str:
     """Normalize request paths to keep Prometheus label cardinality low."""
-    if path == "/":
-        return "/"
-    if path == "/health":
-        return "/health"
-    if path == "/metrics":
-        return "/metrics"
+    if path in {"/", "/health", "/metrics", "/visits"}:
+        return path
     return "other"
 
 
@@ -86,9 +84,13 @@ devops_info_system_collection_seconds = Histogram(
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+VISITS_FILE_PATH = Path(os.getenv("VISITS_FILE_PATH", "/data/visits"))
+APP_CONFIG_FILE = Path(os.getenv("APP_CONFIG_FILE", "/config/config.json"))
 
 # Application start time for uptime calculation
 START_TIME = datetime.now(timezone.utc)
+
+visit_counter_lock = threading.Lock()
 
 
 def get_uptime():
@@ -140,9 +142,108 @@ def get_request_info():
 def get_endpoints():
     """Return list of available endpoints."""
     return [
-        {"path": "/", "method": "GET", "description": "Service information"},
+        {"path": "/", "method": "GET", "description": "Service information and visit increment"},
         {"path": "/health", "method": "GET", "description": "Health check"},
+        {"path": "/visits", "method": "GET", "description": "Current persisted visit counter"},
+        {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
     ]
+
+
+def ensure_parent_directory(file_path: Path):
+    """Ensure that the target directory for persistent files exists."""
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+
+def read_visit_count_from_file() -> int:
+    """Read the visit counter from the persistent file."""
+    try:
+        content = VISITS_FILE_PATH.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        return 0
+    except OSError as error:
+        logger.warning(
+            "Failed to read visits file",
+            extra={"path": str(VISITS_FILE_PATH), "error": str(error)},
+        )
+        return 0
+
+    if not content:
+        return 0
+
+    try:
+        return int(content)
+    except ValueError:
+        logger.warning(
+            "Visits file contained invalid counter value",
+            extra={"path": str(VISITS_FILE_PATH), "content": content},
+        )
+        return 0
+
+
+def write_visit_count_to_file(count: int):
+    """Persist the visit counter using an atomic file replacement."""
+    ensure_parent_directory(VISITS_FILE_PATH)
+    temp_file_path = VISITS_FILE_PATH.with_name(f"{VISITS_FILE_PATH.name}.tmp")
+    temp_file_path.write_text(f"{count}\n", encoding="utf-8")
+    os.replace(temp_file_path, VISITS_FILE_PATH)
+
+
+def get_visit_count() -> int:
+    """Return the current persisted visit count."""
+    global VISIT_COUNTER
+    with visit_counter_lock:
+        VISIT_COUNTER = read_visit_count_from_file()
+        return VISIT_COUNTER
+
+
+def increment_visit_count() -> int:
+    """Increment and persist the visit counter."""
+    global VISIT_COUNTER
+    with visit_counter_lock:
+        VISIT_COUNTER = read_visit_count_from_file() + 1
+        write_visit_count_to_file(VISIT_COUNTER)
+        return VISIT_COUNTER
+
+
+def load_app_config():
+    """Load optional JSON configuration from a mounted file."""
+    config_path = str(APP_CONFIG_FILE)
+    try:
+        raw_config = APP_CONFIG_FILE.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {"loaded": False, "path": config_path, "data": {}}
+    except OSError as error:
+        logger.warning(
+            "Failed to read application config file",
+            extra={"path": config_path, "error": str(error)},
+        )
+        return {
+            "loaded": False,
+            "path": config_path,
+            "data": {},
+            "error": str(error),
+        }
+
+    try:
+        return {
+            "loaded": True,
+            "path": config_path,
+            "data": json.loads(raw_config),
+        }
+    except json.JSONDecodeError as error:
+        logger.warning(
+            "Application config file contained invalid JSON",
+            extra={"path": config_path, "error": str(error)},
+        )
+        return {
+            "loaded": False,
+            "path": config_path,
+            "data": {},
+            "error": "Invalid JSON configuration",
+        }
+
+
+VISIT_COUNTER = read_visit_count_from_file()
 
 
 @app.before_request
@@ -150,7 +251,6 @@ def before_request():
     """Log incoming request."""
     g.start_time = datetime.now(timezone.utc)
 
-    # Metrics for Prometheus (include /metrics itself to follow Lab 8 requirements).
     g.metrics_enabled = True
     if g.metrics_enabled:
         http_requests_in_progress.inc()
@@ -206,11 +306,12 @@ def after_request(response):
 
 @app.route("/")
 def index():
-    """Main endpoint - service and system information."""
+    """Main endpoint - service, system information, configuration, and visits."""
     uptime = get_uptime()
     t0 = time.perf_counter()
     system = get_system_info()
     devops_info_system_collection_seconds.observe(time.perf_counter() - t0)
+    current_visits = increment_visit_count()
     response = {
         "service": get_service_info(),
         "system": system,
@@ -221,6 +322,11 @@ def index():
             "timezone": "UTC",
         },
         "request": get_request_info(),
+        "configuration": load_app_config(),
+        "visits": {
+            "count": current_visits,
+            "file_path": str(VISITS_FILE_PATH),
+        },
         "endpoints": get_endpoints(),
     }
     return jsonify(response)
@@ -235,6 +341,18 @@ def health():
             "status": "healthy",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "uptime_seconds": uptime["seconds"],
+        }
+    )
+
+
+@app.route("/visits")
+def visits():
+    """Return the current persisted visit count without incrementing it."""
+    return jsonify(
+        {
+            "count": get_visit_count(),
+            "file_path": str(VISITS_FILE_PATH),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     )
 
@@ -283,6 +401,13 @@ def internal_error(error):
 if __name__ == "__main__":
     logger.info(
         "Starting DevOps Info Service",
-        extra={"host": HOST, "port": PORT, "debug": DEBUG},
+        extra={
+            "host": HOST,
+            "port": PORT,
+            "debug": DEBUG,
+            "visits_file_path": str(VISITS_FILE_PATH),
+            "app_config_file": str(APP_CONFIG_FILE),
+            "visit_counter": VISIT_COUNTER,
+        },
     )
     app.run(host=HOST, port=PORT, debug=DEBUG)

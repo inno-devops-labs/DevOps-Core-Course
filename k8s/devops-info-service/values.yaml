@@ -4,22 +4,30 @@ fullnameOverride: ""
 partOf: devops-core-course
 component: web
 
-replicaCount: 3
+replicaCount: 1
 revisionHistoryLimit: 5
 
 image:
   repository: devops-info-service
-  tag: lab10-python
+  tag: lab12-python
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 podAnnotations: {}
 podLabels: {}
 
+podSecurityContext:
+  fsGroup: 1000
+
+containerSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
 serviceAccount:
   create: true
   automount: true
-  name: "devops-info-service"
+  name: ""
 
 containerPort: 5000
 
@@ -43,6 +51,34 @@ env:
   - name: RELEASE_TRACK
     value: "stable"
 
+config:
+  enabled: true
+  application:
+    name: "devops-info-service"
+    environment: "stable"
+    description: "DevOps course info service deployed with Helm"
+  env:
+    APP_ENV: "stable"
+    LOG_LEVEL: "INFO"
+  settings:
+    releaseTrack: "stable"
+    featureFlags:
+      visitsCounter: true
+      configMapDemo: true
+      pvcPersistence: true
+  file:
+    mountPath: "/config"
+    fileName: "config.json"
+
+persistence:
+  enabled: true
+  size: "100Mi"
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  mountPath: "/data"
+  fileName: "visits"
+
 secrets:
   enabled: true
   name: ""
@@ -54,7 +90,7 @@ service:
   type: NodePort
   port: 80
   targetPort: http
-  nodePort: 30080
+  nodePort: null
 
 resources:
   requests:
@@ -102,8 +138,8 @@ hooks:
   preInstall:
     enabled: true
     weight: -5
-    message: "Validating release configuration before install"
+    message: "Validating Lab 12 release configuration before install"
   postInstall:
     enabled: true
     weight: 5
-    message: "Running HTTP smoke test after install"
+    message: "Running Lab 12 HTTP smoke test after install"

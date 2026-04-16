@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  tag: lab10-python
+  tag: lab12-python
 
 env:
   - name: HOST
@@ -17,11 +17,22 @@ env:
   - name: RELEASE_TRACK
     value: "dev"
 
+config:
+  application:
+    name: "devops-info-service-dev"
+    environment: "dev"
+    description: "Development deployment of the Python DevOps Info Service"
+  env:
+    APP_ENV: "dev"
+    LOG_LEVEL: "DEBUG"
+  settings:
+    releaseTrack: "dev"
+
 service:
   type: NodePort
   port: 80
   targetPort: http
-  nodePort: 30081
+  nodePort: null
 
 resources:
   requests:

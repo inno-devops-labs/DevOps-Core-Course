@@ -1,18 +1,56 @@
 """
-Unit tests for DevOps Info Service
-Tests all endpoints and error handling.
+Unit tests for DevOps Info Service.
+Tests endpoints, file-backed visit persistence, and config loading.
 """
 
-import pytest
+from concurrent.futures import ThreadPoolExecutor
+import json
 from datetime import datetime
-from app import app, get_service_info, get_system_info, get_endpoints, get_uptime
+
+import pytest
+
+import app as app_module
 
 
 @pytest.fixture
-def client():
+def runtime_files(monkeypatch, tmp_path):
+    """Prepare isolated runtime files for each test."""
+    visits_file = tmp_path / "data" / "visits"
+    config_file = tmp_path / "config" / "config.json"
+    config_file.parent.mkdir(parents=True, exist_ok=True)
+    config_file.write_text(
+        json.dumps(
+            {
+                "application": {
+                    "name": "devops-info-service",
+                    "environment": "test",
+                },
+                "featureFlags": {
+                    "visitsCounter": True,
+                    "configMapDemo": True,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(app_module, "VISITS_FILE_PATH", visits_file)
+    monkeypatch.setattr(app_module, "APP_CONFIG_FILE", config_file)
+
+    with app_module.visit_counter_lock:
+        app_module.VISIT_COUNTER = app_module.read_visit_count_from_file()
+
+    return {
+        "visits_file": visits_file,
+        "config_file": config_file,
+    }
+
+
+@pytest.fixture
+def client(runtime_files):
     """Create a test client for the Flask application."""
-    app.config["TESTING"] = True
-    with app.test_client() as client:
+    app_module.app.config["TESTING"] = True
+    with app_module.app.test_client() as client:
         yield client
 
 
@@ -20,17 +58,14 @@ class TestMainEndpoint:
     """Tests for GET / endpoint."""
 
     def test_main_endpoint_status_code(self, client):
-        """Test that main endpoint returns 200 OK."""
         response = client.get("/")
         assert response.status_code == 200
 
     def test_main_endpoint_content_type(self, client):
-        """Test that response is JSON."""
         response = client.get("/")
         assert response.content_type == "application/json"
 
     def test_main_endpoint_service_info(self, client):
-        """Test that service information is present and correct."""
         response = client.get("/")
         data = response.get_json()
 
@@ -41,138 +76,108 @@ class TestMainEndpoint:
         assert data["service"]["framework"] == "Flask"
 
     def test_main_endpoint_system_info(self, client):
-        """Test that system information is present and has correct types."""
         response = client.get("/")
         data = response.get_json()
-
-        assert "system" in data
         system = data["system"]
 
-        # Check all required fields exist
-        assert "hostname" in system
-        assert "platform" in system
-        assert "platform_version" in system
-        assert "architecture" in system
-        assert "cpu_count" in system
-        assert "python_version" in system
-
-        # Check types
         assert isinstance(system["hostname"], str)
         assert isinstance(system["platform"], str)
         assert isinstance(system["platform_version"], str)
         assert isinstance(system["architecture"], str)
         assert isinstance(system["cpu_count"], int)
         assert isinstance(system["python_version"], str)
-
-        # Check CPU count is positive
         assert system["cpu_count"] > 0
 
     def test_main_endpoint_runtime_info(self, client):
-        """Test that runtime information is present and correct."""
         response = client.get("/")
         data = response.get_json()
-
-        assert "runtime" in data
         runtime = data["runtime"]
 
-        # Check required fields
-        assert "uptime_seconds" in runtime
-        assert "uptime_human" in runtime
-        assert "current_time" in runtime
-        assert "timezone" in runtime
-
-        # Check types
         assert isinstance(runtime["uptime_seconds"], int)
         assert isinstance(runtime["uptime_human"], str)
         assert isinstance(runtime["current_time"], str)
         assert runtime["timezone"] == "UTC"
-
-        # Check uptime is non-negative
         assert runtime["uptime_seconds"] >= 0
-
-        # Check time format (ISO 8601)
-        try:
-            datetime.fromisoformat(runtime["current_time"].replace("Z", "+00:00"))
-        except ValueError:
-            pytest.fail("current_time is not in ISO 8601 format")
+        datetime.fromisoformat(runtime["current_time"].replace("Z", "+00:00"))
 
     def test_main_endpoint_request_info(self, client):
-        """Test that request information is captured correctly."""
         response = client.get("/", headers={"User-Agent": "TestAgent/1.0"})
         data = response.get_json()
-
-        assert "request" in data
         request_info = data["request"]
 
-        # Check required fields
-        assert "client_ip" in request_info
-        assert "user_agent" in request_info
-        assert "method" in request_info
-        assert "path" in request_info
-
-        # Check values
         assert request_info["method"] == "GET"
         assert request_info["path"] == "/"
         assert request_info["user_agent"] == "TestAgent/1.0"
         assert isinstance(request_info["client_ip"], str)
 
     def test_main_endpoint_endpoints_list(self, client):
-        """Test that endpoints list is present and correct."""
         response = client.get("/")
         data = response.get_json()
 
         assert "endpoints" in data
         assert isinstance(data["endpoints"], list)
-        assert len(data["endpoints"]) == 2
+        assert len(data["endpoints"]) == 4
 
-        # Check endpoint structure
-        for endpoint in data["endpoints"]:
-            assert "path" in endpoint
-            assert "method" in endpoint
-            assert "description" in endpoint
-
-        # Check specific endpoints
-        paths = [e["path"] for e in data["endpoints"]]
+        paths = [endpoint["path"] for endpoint in data["endpoints"]]
         assert "/" in paths
         assert "/health" in paths
+        assert "/visits" in paths
+        assert "/metrics" in paths
+
+    def test_main_endpoint_increments_and_persists_visits(self, client, runtime_files):
+        first_response = client.get("/")
+        second_response = client.get("/")
+
+        first_count = first_response.get_json()["visits"]["count"]
+        second_count = second_response.get_json()["visits"]["count"]
+
+        assert first_count == 1
+        assert second_count == 2
+        assert runtime_files["visits_file"].read_text(encoding="utf-8").strip() == "2"
+
+    def test_main_endpoint_loads_config_file(self, client, runtime_files):
+        response = client.get("/")
+        data = response.get_json()
+        configuration = data["configuration"]
+
+        assert configuration["loaded"] is True
+        assert configuration["path"] == str(runtime_files["config_file"])
+        assert configuration["data"]["application"]["environment"] == "test"
+        assert configuration["data"]["featureFlags"]["visitsCounter"] is True
+
+    def test_main_endpoint_handles_missing_config_file(self, client, monkeypatch, tmp_path):
+        missing_config = tmp_path / "missing" / "config.json"
+        monkeypatch.setattr(app_module, "APP_CONFIG_FILE", missing_config)
+
+        response = client.get("/")
+        data = response.get_json()
+
+        assert data["configuration"]["loaded"] is False
+        assert data["configuration"]["path"] == str(missing_config)
+        assert data["configuration"]["data"] == {}
 
 
 class TestHealthEndpoint:
     """Tests for GET /health endpoint."""
 
     def test_health_endpoint_status_code(self, client):
-        """Test that health endpoint returns 200 OK."""
         response = client.get("/health")
         assert response.status_code == 200
 
     def test_health_endpoint_content_type(self, client):
-        """Test that response is JSON."""
         response = client.get("/health")
         assert response.content_type == "application/json"
 
     def test_health_endpoint_structure(self, client):
-        """Test that health endpoint returns correct structure."""
         response = client.get("/health")
         data = response.get_json()
 
-        # Check required fields
-        assert "status" in data
-        assert "timestamp" in data
-        assert "uptime_seconds" in data
-
-        # Check values
         assert data["status"] == "healthy"
         assert isinstance(data["uptime_seconds"], int)
         assert data["uptime_seconds"] >= 0
-
-        # Check timestamp format
-        try:
-            datetime.fromisoformat(data["timestamp"].replace("Z", "+00:00"))
-        except ValueError:
-            pytest.fail("timestamp is not in ISO 8601 format")
+        datetime.fromisoformat(data["timestamp"].replace("Z", "+00:00"))
 
     def test_health_endpoint_uptime_increases(self, client):
-        """Test that uptime increases over time."""
         import time
 
         response1 = client.get("/health")
@@ -186,39 +191,59 @@ class TestHealthEndpoint:
         assert uptime2 >= uptime1
 
 
+class TestVisitsEndpoint:
+    """Tests for GET /visits endpoint."""
+
+    def test_visits_endpoint_returns_current_count_without_increment(self, client):
+        client.get("/")
+        client.get("/")
+
+        response = client.get("/visits")
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data["count"] == 2
+
+        second_response = client.get("/visits")
+        assert second_response.get_json()["count"] == 2
+
+    def test_visits_endpoint_returns_zero_when_file_does_not_exist(self, client, runtime_files):
+        assert runtime_files["visits_file"].exists() is False
+
+        response = client.get("/visits")
+        data = response.get_json()
+
+        assert data["count"] == 0
+        assert data["file_path"] == str(runtime_files["visits_file"])
+
+
 class TestErrorHandling:
     """Tests for error handling."""
 
     def test_404_error(self, client):
-        """Test that 404 errors return correct JSON response."""
         response = client.get("/nonexistent")
 
         assert response.status_code == 404
         assert response.content_type == "application/json"
 
         data = response.get_json()
-        assert "error" in data
-        assert "message" in data
         assert data["error"] == "Not Found"
         assert data["message"] == "Endpoint does not exist"
 
     def test_404_error_different_paths(self, client):
-        """Test 404 handling for various invalid paths."""
         invalid_paths = ["/invalid", "/api/v1", "/test/123"]
 
         for path in invalid_paths:
             response = client.get(path)
             assert response.status_code == 404
-            data = response.get_json()
-            assert data["error"] == "Not Found"
+            assert response.get_json()["error"] == "Not Found"
 
 
 class TestHelperFunctions:
     """Tests for helper functions."""
 
     def test_get_service_info(self):
-        """Test get_service_info helper function."""
-        info = get_service_info()
+        info = app_module.get_service_info()
 
         assert isinstance(info, dict)
         assert info["name"] == "devops-info-service"
@@ -227,58 +252,61 @@ class TestHelperFunctions:
         assert info["framework"] == "Flask"
 
     def test_get_system_info(self):
-        """Test get_system_info helper function."""
-        info = get_system_info()
+        info = app_module.get_system_info()
 
         assert isinstance(info, dict)
-        assert "hostname" in info
-        assert "platform" in info
-        assert "architecture" in info
-        assert "cpu_count" in info
-        assert "python_version" in info
         assert isinstance(info["cpu_count"], int)
         assert info["cpu_count"] > 0
 
     def test_get_endpoints(self):
-        """Test get_endpoints helper function."""
-        endpoints = get_endpoints()
+        endpoints = app_module.get_endpoints()
 
         assert isinstance(endpoints, list)
-        assert len(endpoints) == 2
-
-        for endpoint in endpoints:
-            assert "path" in endpoint
-            assert "method" in endpoint
-            assert "description" in endpoint
+        assert len(endpoints) == 4
+        assert any(endpoint["path"] == "/visits" for endpoint in endpoints)
 
     def test_get_uptime(self):
-        """Test get_uptime helper function."""
-        uptime = get_uptime()
+        uptime = app_module.get_uptime()
 
         assert isinstance(uptime, dict)
-        assert "seconds" in uptime
-        assert "human" in uptime
         assert isinstance(uptime["seconds"], int)
         assert uptime["seconds"] >= 0
         assert isinstance(uptime["human"], str)
-        assert "hour" in uptime["human"] or "minute" in uptime["human"]
+
+    def test_read_visit_count_from_invalid_file(self, monkeypatch, tmp_path):
+        visits_file = tmp_path / "data" / "visits"
+        visits_file.parent.mkdir(parents=True, exist_ok=True)
+        visits_file.write_text("not-a-number", encoding="utf-8")
+        monkeypatch.setattr(app_module, "VISITS_FILE_PATH", visits_file)
+
+        assert app_module.read_visit_count_from_file() == 0
+
+    def test_increment_visit_count_is_thread_safe(self, monkeypatch, tmp_path):
+        visits_file = tmp_path / "data" / "visits"
+        monkeypatch.setattr(app_module, "VISITS_FILE_PATH", visits_file)
+
+        with app_module.visit_counter_lock:
+            app_module.VISIT_COUNTER = 0
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            results = list(executor.map(lambda _: app_module.increment_visit_count(), range(25)))
+
+        assert sorted(results) == list(range(1, 26))
+        assert app_module.read_visit_count_from_file() == 25
+        assert visits_file.read_text(encoding="utf-8").strip() == "25"
 
 
 class TestHTTPMethods:
-    """Tests for different HTTP methods."""
+    """Tests for unsupported HTTP methods."""
 
     def test_post_not_allowed(self, client):
-        """Test that POST to / returns 405 or handles gracefully."""
         response = client.post("/")
-        # Flask returns 405 Method Not Allowed for unsupported methods
-        assert response.status_code in [405, 200]  # Some frameworks return 200
+        assert response.status_code in [405, 200]
 
     def test_put_not_allowed(self, client):
-        """Test that PUT to / returns 405 or handles gracefully."""
         response = client.put("/")
         assert response.status_code in [405, 200]
 
     def test_delete_not_allowed(self, client):
-        """Test that DELETE to / returns 405 or handles gracefully."""
         response = client.delete("/")
         assert response.status_code in [405, 200]

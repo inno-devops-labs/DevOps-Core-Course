@@ -1,7 +1,7 @@
-replicaCount: 4
+replicaCount: 1
 
 image:
-  tag: lab10-python
+  tag: lab12-python
 
 env:
   - name: HOST
@@ -16,6 +16,17 @@ env:
     value: "Production deployment of the Python DevOps Info Service"
   - name: RELEASE_TRACK
     value: "prod"
+
+config:
+  application:
+    name: "devops-info-service"
+    environment: "prod"
+    description: "Production deployment of the Python DevOps Info Service"
+  env:
+    APP_ENV: "prod"
+    LOG_LEVEL: "INFO"
+  settings:
+    releaseTrack: "prod"
 
 service:
   type: LoadBalancer

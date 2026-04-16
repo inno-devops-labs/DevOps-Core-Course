@@ -35,3 +35,7 @@ Thumbs.db
 .env
 .env.local
 *.local
+
+# Lab 12 runtime data
+data/*
+!data/.gitkeep

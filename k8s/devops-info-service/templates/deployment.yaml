@@ -18,7 +18,13 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ toJson .Values.env | sha256sum }}
+        checksum/runtime-env: {{ toJson .Values.env | sha256sum }}
+        {{- if .Values.config.enabled }}
+        checksum/configmaps: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if .Values.persistence.enabled }}
+        checksum/persistence: {{ toJson .Values.persistence | sha256sum }}
+        {{- end }}
         {{- if .Values.secrets.enabled }}
         checksum/secret: {{ toJson .Values.secrets.data | sha256sum }}
         {{- end }}
@@ -35,6 +41,8 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      securityContext:
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
       {{- with .Values.imagePullSecrets }}
@@ -45,16 +53,36 @@ spec:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: {{ .Values.containerSecurityContext.runAsNonRoot }}
+            runAsUser: {{ .Values.containerSecurityContext.runAsUser }}
+            runAsGroup: {{ .Values.containerSecurityContext.runAsGroup }}
           ports:
             - name: http
               containerPort: {{ .Values.containerPort }}
               protocol: TCP
           env:
             {{- include "devops-info-service.envVars" . | nindent 12 }}
-          {{- if .Values.secrets.enabled }}
           envFrom:
+            {{- if .Values.config.enabled }}
+            - configMapRef:
+                name: {{ include "devops-info-service.envConfigMapName" . }}
+            {{- end }}
+            {{- if .Values.secrets.enabled }}
             - secretRef:
                 name: {{ include "devops-info-service.secretName" . }}
+            {{- end }}
+          {{- if or .Values.config.enabled .Values.persistence.enabled }}
+          volumeMounts:
+            {{- if .Values.config.enabled }}
+            - name: config-volume
+              mountPath: {{ .Values.config.file.mountPath }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -74,3 +102,16 @@ spec:
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+      {{- if or .Values.config.enabled .Values.persistence.enabled }}
+      volumes:
+        {{- if .Values.config.enabled }}
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.fileConfigMapName" . }}
+        {{- end }}
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.pvcName" . }}
+        {{- end }}
+      {{- end }}
