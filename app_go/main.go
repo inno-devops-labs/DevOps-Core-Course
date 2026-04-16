@@ -6,8 +6,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -16,6 +19,7 @@ type ServiceInfo struct {
 	System    System     `json:"system"`
 	Runtime   Runtime    `json:"runtime"`
 	Request   Request    `json:"request"`
+	Visits    int64      `json:"visits"`
 	Endpoints []Endpoint `json:"endpoints"`
 }
 
@@ -61,7 +65,60 @@ type HealthResponse struct {
 	UptimeSeconds float64 `json:"uptime_seconds"`
 }
 
+type VisitsResponse struct {
+	Visits int64  `json:"visits"`
+	File   string `json:"file"`
+}
+
 var startTime = time.Now()
+
+// visitsFile is the path to the persistent visits counter file.
+// Configurable via VISITS_FILE env var; defaults to /data/visits.
+var visitsFile = func() string {
+	if p := os.Getenv("VISITS_FILE"); p != "" {
+		return p
+	}
+	return "/data/visits"
+}()
+
+var visitsMu sync.Mutex
+
+func readVisits() int64 {
+	visitsMu.Lock()
+	defer visitsMu.Unlock()
+	data, err := os.ReadFile(visitsFile)
+	if err != nil {
+		return 0
+	}
+	n, err := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+func incrementVisits() int64 {
+	visitsMu.Lock()
+	defer visitsMu.Unlock()
+
+	var count int64
+	data, err := os.ReadFile(visitsFile)
+	if err == nil {
+		n, _ := strconv.ParseInt(strings.TrimSpace(string(data)), 10, 64)
+		count = n
+	}
+	count++
+
+	dir := filepath.Dir(visitsFile)
+	if mkErr := os.MkdirAll(dir, 0755); mkErr != nil {
+		log.Printf("visits: failed to create dir %s: %v", dir, mkErr)
+		return count
+	}
+	if wErr := os.WriteFile(visitsFile, []byte(strconv.FormatInt(count, 10)), 0644); wErr != nil {
+		log.Printf("visits: failed to write counter: %v", wErr)
+	}
+	return count
+}
 
 type statusCapturingResponseWriter struct {
 	http.ResponseWriter
@@ -148,6 +205,7 @@ func getClientIP(r *http.Request) string {
 }
 
 func mainHandler(w http.ResponseWriter, r *http.Request) {
+	visits := incrementVisits()
 	uptimeSeconds := time.Since(startTime).Seconds()
 
 	info := ServiceInfo{
@@ -177,9 +235,11 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			Method:    r.Method,
 			Path:      r.URL.Path,
 		},
+		Visits: visits,
 		Endpoints: []Endpoint{
-			{Path: "/", Method: "GET", Description: "Service information"},
+			{Path: "/", Method: "GET", Description: "Service information + visit counter increment"},
 			{Path: "/health", Method: "GET", Description: "Health check"},
+			{Path: "/visits", Method: "GET", Description: "Current visit count"},
 		},
 	}
 
@@ -205,6 +265,20 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func visitsHandler(w http.ResponseWriter, r *http.Request) {
+	visits := readVisits()
+
+	resp := VisitsResponse{
+		Visits: visits,
+		File:   visitsFile,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("failed to encode visits response: %v", err)
+	}
+}
+
 func roundFloat(val float64, precision int) float64 {
 	multiplier := 1.0
 	for i := 0; i < precision; i++ {
@@ -214,8 +288,11 @@ func roundFloat(val float64, precision int) float64 {
 }
 
 func main() {
+	log.Printf("visits counter file: %s", visitsFile)
+
 	http.HandleFunc("/", withAccessLog(mainHandler))
 	http.HandleFunc("/health", withAccessLog(healthHandler))
+	http.HandleFunc("/visits", withAccessLog(visitsHandler))
 
 	port := os.Getenv("PORT")
 	if port == "" {

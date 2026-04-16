@@ -4,6 +4,9 @@ metadata:
   name: {{ include "devops-go-chart.fullname" . }}
   labels:
     {{- include "devops-go-chart.labels" . | nindent 4 }}
+  annotations:
+    # Restart pods automatically when ConfigMap content changes (Bonus: checksum pattern)
+    checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -18,6 +21,8 @@ spec:
     metadata:
       labels:
         {{- include "devops-go-chart.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
@@ -30,9 +35,34 @@ spec:
           env:
             - name: PORT
               value: {{ .Values.env.port | quote }}
+          # Inject all keys from the env ConfigMap as environment variables
+          envFrom:
+            - configMapRef:
+                name: {{ include "devops-go-chart.fullname" . }}-env
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            # Mount config.json from ConfigMap
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            # Mount PVC for persistent visits counter
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
+      volumes:
+        # ConfigMap volume: exposes config.json as /config/config.json
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-go-chart.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        # PVC volume: persistent storage for /data/visits
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-go-chart.fullname" . }}-data
+        {{- end }}

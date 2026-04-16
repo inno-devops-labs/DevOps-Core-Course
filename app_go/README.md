@@ -10,11 +10,13 @@ A production-ready web service implemented in Go that provides comprehensive inf
 The DevOps Info Service (Go version) is a RESTful API that exposes system information, runtime metrics, and health status. This implementation demonstrates the benefits of compiled languages: small binary size, fast execution, and single-file deployment.
 
 **Key Features:**
-- System information endpoint (`GET /`)
+- System information endpoint (`GET /`) — increments persistent visit counter
 - Health check endpoint (`GET /health`)
+- Visit counter endpoint (`GET /visits`) — returns total visit count
 - Configurable via environment variables
 - Single binary deployment (no runtime dependencies)
 - Fast startup and execution
+- Persistent visit counter stored on disk (survives restarts)
 
 ## Prerequisites
 
@@ -112,9 +114,11 @@ Returns comprehensive service and system information.
     "method": "GET",
     "path": "/"
   },
+  "visits": 42,
   "endpoints": [
-    {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"}
+    {"path": "/", "method": "GET", "description": "Service information + visit counter increment"},
+    {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/visits", "method": "GET", "description": "Current visit count"}
   ]
 }
 ```
@@ -123,6 +127,25 @@ Returns comprehensive service and system information.
 ```bash
 curl http://localhost:8080/
 ```
+
+### `GET /visits`
+
+Returns the current persistent visit count.
+
+**Response:**
+```json
+{
+  "visits": 42,
+  "file": "/data/visits"
+}
+```
+
+**Example Request:**
+```bash
+curl http://localhost:8080/visits
+```
+
+---
 
 ### `GET /health`
 
@@ -152,6 +175,7 @@ The application can be configured using the following environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `8080` | Port number to listen on |
+| `VISITS_FILE` | `/data/visits` | Path to the persistent visits counter file |
 
 ## Build Process
 
@@ -209,13 +233,37 @@ $ ls -lh devops-info-service
 - Lower memory footprint
 - Better suited for containerized deployments (smaller images)
 
+## Running with Docker Compose
+
+```bash
+# Build and start (persists visits in ./data/visits)
+docker compose up --build -d
+
+# Check visits counter
+curl http://localhost:8080/visits
+
+# Access root endpoint a few times to increment counter
+curl http://localhost:8080/
+
+# Restart container and verify counter is preserved
+docker compose restart
+curl http://localhost:8080/visits
+
+# View the counter file directly on the host
+cat ./data/visits
+```
+
 ## Project Structure
 
 ```
 app_go/
 ├── main.go                 # Main application
 ├── go.mod                  # Go module definition
+├── Dockerfile              # Multi-stage Docker build
+├── docker-compose.yml      # Local development with persistent volume
 ├── README.md              # This file
+├── data/                  # Persistent visits counter (git-ignored)
+│   └── visits             # Counter file
 └── docs/                  # Documentation
     ├── LAB01.md          # Lab submission documentation
     ├── GO.md             # Language justification

@@ -28,7 +28,8 @@ WORKDIR /app
 
 COPY --from=builder /build/devops-info-service .
 
-RUN chown -R appuser:appuser /app
+# Create /data directory for persistent visits counter and set ownership
+RUN mkdir -p /data && chown -R appuser:appuser /app /data
 
 USER appuser
 

@@ -1,0 +1,22 @@
+{{/* ConfigMap 1: application config file mounted as /config/config.json */}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-go-chart.fullname" . }}-config
+  labels:
+    {{- include "devops-go-chart.labels" . | nindent 4 }}
+data:
+  config.json: |-
+{{ .Files.Get "files/config.json" | indent 4 }}
+---
+{{/* ConfigMap 2: key-value pairs injected as environment variables via envFrom */}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-go-chart.fullname" . }}-env
+  labels:
+    {{- include "devops-go-chart.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.environment | quote }}
+  LOG_LEVEL: {{ .Values.logLevel | quote }}
+  VISITS_FILE: {{ .Values.persistence.visitsFile | quote }}

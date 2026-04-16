@@ -1,0 +1,22 @@
+services:
+  devops-info-service-go:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: devops-info-service-go:local
+    container_name: devops-go
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      VISITS_FILE: "/data/visits"
+    volumes:
+      # Persist visits counter across container restarts
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    restart: unless-stopped

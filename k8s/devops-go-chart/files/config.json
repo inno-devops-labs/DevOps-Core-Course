@@ -1,0 +1,15 @@
+{
+  "appName": "devops-info-service-go",
+  "version": "1.0.0",
+  "environment": "production",
+  "features": {
+    "visitsCounter": true,
+    "structuredLogging": true,
+    "healthCheck": true
+  },
+  "settings": {
+    "dataDir": "/data",
+    "visitsFile": "/data/visits",
+    "maxRequestsPerSecond": 100
+  }
+}

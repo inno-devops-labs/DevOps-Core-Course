@@ -1,5 +1,6 @@
 # Number of pod replicas
-replicaCount: 2
+# Note: set to 1 when persistence is enabled — ReadWriteOnce PVC binds to one node
+replicaCount: 1
 
 image:
   repository: mirana18/devops-info-service-go
@@ -27,6 +28,10 @@ resources:
 env:
   port: "8080"
 
+# Application environment — injected into pods via env ConfigMap
+environment: "production"
+logLevel: "debug"
+
 livenessProbe:
   httpGet:
     path: /health
@@ -46,3 +51,10 @@ readinessProbe:
 rollingUpdate:
   maxSurge: 1
   maxUnavailable: 0
+
+# Persistent storage for the visits counter file
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""    # Empty string = use cluster default storage class
+  visitsFile: "/data/visits"
