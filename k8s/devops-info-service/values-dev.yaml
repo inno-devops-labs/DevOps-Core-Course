@@ -19,6 +19,10 @@ env:
   serviceVersion: "latest"
   serviceDescription: "Dev environment (NodePort)"
 
+config:
+  env:
+    appEnv: "dev"
+
 probes:
   readiness:
     initialDelaySeconds: 2

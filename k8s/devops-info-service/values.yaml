@@ -45,6 +45,19 @@ env:
   serviceDescription: "DevOps course info service"
   logLevel: "INFO"
   pythondontwritebytecode: "1"
+  visitsFile: "/data/visits"
+
+config:
+  env:
+    appEnv: "dev"
+    appName: "devops-info-service"
+    featureVisitsCounter: "true"
+    logLevel: "INFO"
+
+persistence:
+  enabled: true
+  size: "100Mi"
+  storageClass: ""
 
 probes:
   readiness:

@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    image: devops-info-service-local:latest
+    ports:
+      - "5050:5000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5000"
+      VISITS_FILE: "/data/visits"
+    volumes:
+      - ./data:/data

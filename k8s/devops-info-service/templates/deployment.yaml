@@ -19,8 +19,10 @@ spec:
     metadata:
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
-      {{- if .Values.vault.enabled }}
       annotations:
+        checksum/config-file: {{ .Files.Get "files/config.json" | sha256sum }}
+        checksum/config-env: {{ include (print $.Template.BasePath "/configmap-env.yaml") . | sha256sum }}
+      {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/auth-path: {{ .Values.vault.authPath | quote }}
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
@@ -49,6 +51,8 @@ spec:
           env:
             {{- include "devops-info-service.commonEnv" . | nindent 12 }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.configEnvMapName" . }}
             - secretRef:
                 name: {{ include "devops-info-service.secretName" . }}
           securityContext:
@@ -62,6 +66,11 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            - name: config-file
+              mountPath: /config
+              readOnly: true
+            - name: data
+              mountPath: /data
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu | quote }}
@@ -76,4 +85,10 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: config-file
+          configMap:
+            name: {{ include "devops-info-service.configFileMapName" . }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.pvcName" . }}
 

@@ -1,0 +1,12 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "dev",
+  "features": {
+    "visitsCounter": true,
+    "prometheusMetrics": true
+  },
+  "settings": {
+    "timezone": "UTC",
+    "reloadStrategy": "checksum-annotation"
+  }
+}

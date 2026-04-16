@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info-service.configEnvMapName" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.config.env.appEnv | quote }}
+  APP_NAME: {{ .Values.config.env.appName | quote }}
+  FEATURE_VISITS_COUNTER: {{ .Values.config.env.featureVisitsCounter | quote }}
+  LOG_LEVEL: {{ .Values.config.env.logLevel | quote }}

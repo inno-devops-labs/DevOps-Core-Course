@@ -10,6 +10,7 @@ import logging
 import platform
 import sys
 import time
+from threading import Lock
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request, g
@@ -23,6 +24,7 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
 
 SERVICE_NAME = os.getenv("SERVICE_NAME", "devops-info-service")
 SERVICE_VERSION = os.getenv("SERVICE_VERSION", "1.0.0")
@@ -115,6 +117,7 @@ def setup_logging() -> logging.Logger:
 logger = setup_logging()
 app = Flask(__name__)
 START_TIME = datetime.now(timezone.utc)
+VISITS_LOCK = Lock()
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -179,9 +182,37 @@ def get_request_info() -> dict:
 def get_endpoints() -> list:
     return [
         {"path": "/",        "method": "GET", "description": "Service information"},
+        {"path": "/visits",  "method": "GET", "description": "Current visits counter"},
         {"path": "/health",  "method": "GET", "description": "Health check"},
         {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
     ]
+
+
+def read_visits_count() -> int:
+    try:
+        with open(VISITS_FILE, "r", encoding="utf-8") as visits_file:
+            content = visits_file.read().strip()
+            return int(content) if content else 0
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        return 0
+
+
+def write_visits_count(count: int) -> None:
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    temp_file = f"{VISITS_FILE}.tmp"
+    with open(temp_file, "w", encoding="utf-8") as visits_file:
+        visits_file.write(str(count))
+    os.replace(temp_file, VISITS_FILE)
+
+
+def increment_visits_count() -> int:
+    with VISITS_LOCK:
+        current = read_visits_count()
+        updated = current + 1
+        write_visits_count(updated)
+        return updated
 
 # ── Middleware ────────────────────────────────────────────────────────────────
 
@@ -222,6 +253,7 @@ def after_request_logging(response):
 @app.route("/", methods=["GET"])
 def index():
     devops_info_endpoint_calls_total.labels(endpoint="/").inc()
+    visits_count = increment_visits_count()
     with devops_info_system_collection_seconds.time():
         system_info = get_system_info()
     uptime = get_uptime()
@@ -240,9 +272,16 @@ def index():
             "timezone": "UTC",
         },
         "request": get_request_info(),
+        "visits": {"count": visits_count, "storage_file": VISITS_FILE},
         "endpoints": get_endpoints(),
     }
     return jsonify(payload), 200
+
+
+@app.route("/visits", methods=["GET"])
+def visits():
+    devops_info_endpoint_calls_total.labels(endpoint="/visits").inc()
+    return jsonify({"visits": read_visits_count(), "storage_file": VISITS_FILE}), 200
 
 
 @app.route("/health", methods=["GET"])

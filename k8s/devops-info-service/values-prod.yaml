@@ -20,6 +20,10 @@ env:
   serviceVersion: "1.0.0"
   serviceDescription: "Production environment (LoadBalancer)"
 
+config:
+  env:
+    appEnv: "prod"
+
 probes:
   readiness:
     initialDelaySeconds: 10

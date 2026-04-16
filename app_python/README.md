@@ -34,6 +34,7 @@ gunicorn -w 2 -b 0.0.0.0:5000 app:app
 
 ## API Endpoints
 - GET `/` — Service and system information
+- GET `/visits` — Current persisted visits count
 - GET `/health` — Health check
 
 ## Configuration
@@ -46,6 +47,7 @@ gunicorn -w 2 -b 0.0.0.0:5000 app:app
 | SERVICE_NAME        | devops-info-service        | Service name        |
 | SERVICE_VERSION     | 1.0.0                      | Service version     |
 | SERVICE_DESCRIPTION | DevOps course info service | Service description |
+| VISITS_FILE         | /data/visits               | Path to visits file |
 
 ## Testing
 Install dev dependencies:
@@ -86,4 +88,10 @@ For local built image replace `gghost1/devops-lab-app-python:latest` on your `<i
 Pull an already published image from Docker Hub:
 ```bash
 docker pull gghost1/devops-lab-app-python:latest
+```
+
+### Docker Compose
+Run with bind-mounted storage:
+```bash
+docker compose up -d --build
 ```

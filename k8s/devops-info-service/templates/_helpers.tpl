@@ -36,6 +36,18 @@ This chart delegates common naming/labels to the `common-lib` dependency.
 {{- end -}}
 {{- end -}}
 
+{{- define "devops-info-service.configFileMapName" -}}
+{{- printf "%s-config-file" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{- define "devops-info-service.configEnvMapName" -}}
+{{- printf "%s-config-env" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{- define "devops-info-service.pvcName" -}}
+{{- printf "%s-data" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
 {{- define "devops-info-service.commonEnv" -}}
 - name: HOST
   value: {{ .Values.env.host | quote }}
@@ -51,5 +63,7 @@ This chart delegates common naming/labels to the `common-lib` dependency.
   value: {{ .Values.env.logLevel | quote }}
 - name: PYTHONDONTWRITEBYTECODE
   value: {{ .Values.env.pythondontwritebytecode | quote }}
+- name: VISITS_FILE
+  value: {{ .Values.env.visitsFile | quote }}
 {{- end -}}
 
