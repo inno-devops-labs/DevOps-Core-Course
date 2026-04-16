@@ -1,3 +1,4 @@
+import os
 import fastapi
 from datetime import datetime, timezone
 import uvicorn
@@ -11,6 +12,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
+
+VISITS_FILE = "/data/visits"
 
 app = fastapi.FastAPI()
 
@@ -71,6 +74,25 @@ def get_system():
     }
 
 
+def read_visits():
+    try:
+        if not os.path.exists(VISITS_FILE):
+            return 0
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read().strip() or 0)
+    except Exception:
+        return 0
+
+
+def write_visits(count):
+    try:
+        os.makedirs("/data", exist_ok=True)
+        with open(VISITS_FILE, "w") as f:
+            f.write(str(count))
+    except Exception as e:
+        logger.error(f"Failed to write visits: {e}")
+
+
 @app.middleware("http")
 async def metrics_middleware(request: fastapi.Request, call_next):
     method = request.method
@@ -96,13 +118,26 @@ async def metrics_middleware(request: fastapi.Request, call_next):
         http_requests_in_progress.dec()
 
 
+
 @app.get("/")
 def root(request: fastapi.Request):
+    visits = read_visits()
+    visits += 1
+    write_visits(visits)
+
     return {
         "service": "devops-info-service",
         "system": get_system(),
         "uptime": get_uptime(),
-        "client": request.client.host
+        "client": request.client.host,
+        "visits": visits
+    }
+
+
+@app.get("/visits")
+def get_visits():
+    return {
+        "visits": read_visits()
     }
 
 

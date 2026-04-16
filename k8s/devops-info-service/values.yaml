@@ -32,3 +32,8 @@ probes:
 secrets:
   username: "admin"
   password: "changeme"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""

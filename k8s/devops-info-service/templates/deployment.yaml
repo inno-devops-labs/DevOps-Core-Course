@@ -24,20 +24,42 @@ spec:
         vault.hashicorp.com/role: "myapp-role"
         vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
     spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-service.name" . }}-config
+
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-service.name" . }}-data
+
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+
           ports:
             - containerPort: {{ .Values.service.targetPort }}
+
           env:
             - name: HOST
               value: "0.0.0.0"
             - name: PORT
               value: "{{ .Values.service.targetPort }}"
+
           envFrom:
             - secretRef:
                 name: {{ include "devops-service.name" . }}-secret
+            - configMapRef:
+                name: {{ include "devops-service.name" . }}-env
+
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+
+            - name: data-volume
+              mountPath: /data
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
@@ -54,4 +76,3 @@ spec:
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
-  
