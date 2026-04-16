@@ -1,0 +1,19 @@
+{{- if and .Values.rollout.enabled .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-success-rate
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: webcheck
+      provider:
+        web:
+          url: http://{{ include "devops-info-service.fullname" . }}.{{ .Release.Namespace }}.svc/health
+          jsonPath: "{$.status}"
+      successCondition: result == "healthy"
+      interval: 10s
+      count: 3
+      failureLimit: 1
+{{- end }}
