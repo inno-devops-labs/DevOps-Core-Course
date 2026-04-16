@@ -1,4 +1,6 @@
 replicaCount: 1
+environment: dev
+logLevel: DEBUG
 
 image:
   tag: "dev"
@@ -15,6 +17,11 @@ resources:
     cpu: "100m"
     memory: "128Mi"
 
+config:
+  features:
+    debugEndpoints: true
+    showVisitsInRoot: true
+
 probes:
   startup:
     failureThreshold: 30
@@ -24,4 +31,9 @@ probes:
   liveness:
     initialDelaySeconds: 10
     periodSeconds: 10
-    
+
+secrets:
+  enabled: true
+  data:
+    APP_USERNAME: "dev-user"
+    APP_PASSWORD: "dev-password"

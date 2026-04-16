@@ -1,4 +1,7 @@
-replicaCount: 3
+replicaCount: 1
+
+environment: dev
+logLevel: INFO
 
 image:
   repository: devops-info-service
@@ -10,6 +13,18 @@ service:
   port: 80
   targetPort: 5000
   nodePort: 30080
+
+config:
+  applicationName: devops-info-service
+  features:
+    debugEndpoints: true
+    showVisitsInRoot: true
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data
 
 resources:
   requests:
@@ -68,3 +83,11 @@ secrets:
 env:
   - name: PYTHONUNBUFFERED
     value: "1"
+  - name: PORT
+    value: "5000"
+
+secrets:
+  enabled: true
+  data:
+    APP_USERNAME: "change-me"
+    APP_PASSWORD: "change-me"

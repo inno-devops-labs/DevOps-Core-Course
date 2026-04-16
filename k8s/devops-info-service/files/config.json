@@ -1,0 +1,11 @@
+{
+  "applicationName": "{{ .Values.config.applicationName }}",
+  "environment": "{{ .Values.environment }}",
+  "settings": {
+    "featureFlags": {
+      "debugEndpoints": "{{ .Values.config.features.debugEndpoints }}",
+      "showVisitsInRoot": "{{ .Values.config.features.showVisitsInRoot }}"
+    },
+    "logLevel": "{{ .Values.logLevel }}"
+  }
+}

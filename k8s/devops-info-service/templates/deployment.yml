@@ -37,8 +37,16 @@ spec:
               value: {{ .value | quote }}
             {{- end }}
           envFrom:
-            - secretRef:
-                name: {{ include "devops-info-service.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "devops-info-service.fullname" . }}-env
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:
@@ -46,7 +54,6 @@ spec:
             readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
             capabilities:
               {{- toYaml .Values.containerSecurityContext.capabilities | nindent 14 }}
-
           {{- if .Values.probes.startup.enabled }}
           startupProbe:
             httpGet:
@@ -57,7 +64,6 @@ spec:
             timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.startup.failureThreshold }}
           {{- end }}
-
           {{- if .Values.probes.readiness.enabled }}
           readinessProbe:
             httpGet:
@@ -68,7 +74,6 @@ spec:
             timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
           {{- end }}
-
           {{- if .Values.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
@@ -79,3 +84,12 @@ spec:
             timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
           {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.fullname" . }}-data
+        {{- end }}
