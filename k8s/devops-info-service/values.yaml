@@ -37,10 +37,10 @@ persistence:
 
 resources:
   requests:
-    cpu: "100m"
+    cpu: "150m"
     memory: "128Mi"
   limits:
-    cpu: "200m"
+    cpu: "150m"
     memory: "256Mi"
 
 probes:
