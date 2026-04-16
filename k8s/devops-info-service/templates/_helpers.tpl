@@ -6,8 +6,13 @@
 {{ .Release.Name }}-{{ .Chart.Name }}
 {{- end }}
 
+{{- define "devops-info-service.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "devops-info-service.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
 {{- define "devops-info-service.labels" -}}
-app: {{ include "devops-info-service.name" . }}
+{{ include "devops-info-service.selectorLabels" . }}
 project: devops-core-course
 tier: backend
 {{- end }}

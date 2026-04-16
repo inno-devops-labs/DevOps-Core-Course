@@ -8,8 +8,11 @@ import platform
 import logging
 import sys
 import json
+import fcntl
+from pathlib import Path
 import time
 from datetime import datetime, timezone
+
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
@@ -23,7 +26,14 @@ DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 START_TIME = datetime.now(timezone.utc)
 APP_NAME = "devops-info-service"
-APP_VERSION = "1.0.0"
+APP_VERSION = os.getenv("RELEASE_VERSION", "1.0.0")
+
+APP_ENV = os.getenv("APP_ENV", "dev")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
+
+CONFIG_PATH = Path(os.getenv("CONFIG_PATH", "/config/config.json"))
+DATA_DIR = Path(os.getenv("DATA_DIR", "/data"))
+VISITS_FILE = Path(os.getenv("VISITS_FILE", str(DATA_DIR / "visits")))
 
 
 class JSONFormatter(logging.Formatter):
@@ -151,14 +161,92 @@ def get_system_info():
     return info
 
 
+def ensure_visits_file() -> None:
+    VISITS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    if not VISITS_FILE.exists():
+        VISITS_FILE.write_text("0", encoding="utf-8")
+
+
+def read_config_file():
+    if not CONFIG_PATH.exists():
+        return {}
+
+    try:
+        with CONFIG_PATH.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        logger.exception(
+            "failed to read config file",
+            extra={
+                "event": "config_read_failed",
+                "path": str(CONFIG_PATH),
+            }
+        )
+        return {}
+
+
+def read_visits() -> int:
+    ensure_visits_file()
+
+    with VISITS_FILE.open("a+", encoding="utf-8") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        f.seek(0)
+        raw = f.read().strip()
+
+        try:
+            count = int(raw) if raw else 0
+        except ValueError:
+            count = 0
+
+        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        return count
+
+
+def increment_visits() -> int:
+    ensure_visits_file()
+
+    with VISITS_FILE.open("a+", encoding="utf-8") as f:
+        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        f.seek(0)
+        raw = f.read().strip()
+
+        try:
+            count = int(raw) if raw else 0
+        except ValueError:
+            count = 0
+
+        count += 1
+
+        f.seek(0)
+        f.truncate()
+        f.write(str(count))
+        f.flush()
+        os.fsync(f.fileno())
+
+        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        return count
+
+
 @app.on_event("startup")
 async def startup_event():
+    ensure_visits_file()
+
     logger.info(
         "application started",
         extra={
             "event": "startup",
             "service": APP_NAME,
             "version": APP_VERSION,
+        }
+    )
+
+    logger.info(
+        "application paths initialized",
+        extra={
+            "event": "paths_initialized",
+            "service": APP_NAME,
+            "version": APP_VERSION,
+            "path": str(VISITS_FILE),
         }
     )
 
@@ -245,7 +333,10 @@ async def metrics():
 @app.get("/")
 async def root(request: Request):
     endpoint_calls_total.labels(endpoint="/").inc()
+
+    current_visits = increment_visits()
     uptime = get_uptime()
+    file_config = read_config_file()
 
     return {
         "service": {
@@ -267,6 +358,17 @@ async def root(request: Request):
             "method": request.method,
             "path": request.url.path
         },
+        "configuration": {
+            "app_env": APP_ENV,
+            "log_level": LOG_LEVEL,
+            "config_path": str(CONFIG_PATH),
+            "config_loaded": CONFIG_PATH.exists(),
+            "file_config": file_config
+        },
+        "visits": {
+            "count": current_visits,
+            "file": str(VISITS_FILE)
+        },
         "endpoints": [
             {
                 "path": "/",
@@ -282,6 +384,11 @@ async def root(request: Request):
                 "path": "/metrics",
                 "method": "GET",
                 "description": "Prometheus metrics"
+            },
+            {
+                "path": "/visits",
+                "method": "GET",
+                "description": "Current visits counter"
             }
         ]
     }
@@ -296,6 +403,15 @@ def health():
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime["seconds"]
+    }
+
+
+@app.get("/visits")
+def visits():
+    endpoint_calls_total.labels(endpoint="/visits").inc()
+    return {
+        "visits": read_visits(),
+        "file": str(VISITS_FILE)
     }
 
 

@@ -76,6 +76,7 @@ HOST=127.0.0.1 PORT=8080 uvicorn app:app --reload
 | --------- | ------ | --------------------------------------------------------- |
 | `/`       | GET    | Returns service, system, runtime, and request information |
 | `/health` | GET    | Returns service health status and uptime                  |
+| `/visits` | GET    | Returns persisted visits counter                          |
 
 **Example request:**
 
@@ -260,3 +261,24 @@ This project uses `pytest` for unit testing.
    pytest
    ```
 
+
+## Visits Counter Persistence
+
+The application stores a visits counter in `/data/visits`.
+
+### Local Docker test
+
+```bash
+mkdir -p ../monitoring/data
+chmod 777 ../monitoring/data
+
+docker compose -f ../monitoring/docker-compose.yml up --build -d app-python
+
+curl http://localhost:5001/
+curl http://localhost:5001/
+curl http://localhost:5001/visits
+cat ../monitoring/data/visits
+
+docker compose -f ../monitoring/docker-compose.yml restart app-python
+curl http://localhost:5001/visits
+```

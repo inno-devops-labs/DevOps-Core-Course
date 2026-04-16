@@ -103,6 +103,15 @@ services:
     container_name: app-python
     ports:
       - "5001:5000"
+    environment:
+      APP_ENV: "dev"
+      LOG_LEVEL: "info"
+      RELEASE_VERSION: "lab12-local"
+      CONFIG_PATH: "/config/config.json"
+      DATA_DIR: "/data"
+    volumes:
+      - ./data:/data
+      - ./config.local.json:/config/config.json:ro
     networks:
       - logging
     labels:

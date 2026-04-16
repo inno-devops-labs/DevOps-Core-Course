@@ -1,8 +1,8 @@
-replicaCount: 3
+replicaCount: 1
 
 image:
   repository: egorlazutkin/devops-info-service
-  tag: "lab2"
+  tag: "lab12"
   pullPolicy: IfNotPresent
 
 service:
@@ -17,7 +17,18 @@ env:
   HOST: "0.0.0.0"
   PORT: "5000"
   DEBUG: "false"
-  RELEASE_VERSION: "prod"
+  RELEASE_VERSION: "lab12-prod"
+
+config:
+  environment: "prod"
+  logLevel: "info"
+  featureVisitsEnabled: true
+  featureMetricsEnabled: true
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
 
 resources:
   requests:

@@ -8,13 +8,11 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "devops-info-service.name" . }}
+      {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ include "devops-info-service.name" . }}
-        project: devops-core-course
-        tier: backend
+        {{- include "devops-info-service.labels" . | nindent 8 }}
       annotations:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "devops-info-service"
@@ -24,8 +22,12 @@ spec:
           username={{ .Data.data.username }}
           password={{ .Data.data.password }}
           {{- end }}`}}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       serviceAccountName: devops-info-service
+      securityContext:
+        fsGroup: 10001
+
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -45,8 +47,19 @@ spec:
               value: {{ .Values.env.RELEASE_VERSION | quote }}
 
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.fullname" . }}-env
             - secretRef:
                 name: {{ include "devops-info-service.fullname" . }}-secret
+
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -64,3 +77,13 @@ spec:
               port: {{ .Values.containerPort }}
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.fullname" . }}-data
+        {{- end }}

@@ -7,7 +7,7 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: {{ include "devops-info-service.name" . }}
+    {{- include "devops-info-service.selectorLabels" . | nindent 4 }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}

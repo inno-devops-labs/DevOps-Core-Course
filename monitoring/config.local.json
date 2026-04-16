@@ -1,0 +1,12 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "dev",
+  "features": {
+    "visitsCounter": true,
+    "metrics": true
+  },
+  "settings": {
+    "logLevel": "info",
+    "timezone": "UTC"
+  }
+}

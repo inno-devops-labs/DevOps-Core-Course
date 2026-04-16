@@ -1,7 +1,9 @@
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    DATA_DIR=/data \
+    CONFIG_PATH=/config/config.json
 
 RUN useradd -m -u 10001 appuser
 
@@ -15,6 +17,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .
+
+RUN mkdir -p /data /config \
+    && chown -R appuser:appuser /app /data /config
 
 USER appuser
 
