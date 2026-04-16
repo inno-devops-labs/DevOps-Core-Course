@@ -33,6 +33,13 @@ env:
   - name: APP_VERSION
     value: "v2"
 
+secret:
+  enabled: true
+  nameOverride: ""
+  data:
+    username: demo-user
+    password: change-me
+
 resources:
   requests:
     cpu: "100m"
@@ -69,7 +76,20 @@ httpRoute:
   enabled: false
 
 serviceAccount:
-  create: false
-  automount: false
+  create: true
+  automount: true
   annotations: {}
   name: ""
+
+podAnnotations: {}
+
+vault:
+  enabled: false
+  role: ""
+  secretPath: ""
+  secretFile: config
+  secretTemplate: |
+    {{- with secret "secret/data/myapp/config" -}}
+    username={{ .Data.data.username }}
+    password={{ .Data.data.password }}
+    {{- end -}}

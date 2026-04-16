@@ -1,0 +1,23 @@
+replicaCount: 1
+
+service:
+  type: ClusterIP
+
+secret:
+  enabled: false
+
+serviceAccount:
+  create: true
+  automount: true
+  name: devops-vault-sa
+
+vault:
+  enabled: true
+  role: devops-app-vault
+  secretPath: secret/data/myapp/config
+  secretFile: app-config
+  secretTemplate: |
+    {{- with secret "secret/data/myapp/config" -}}
+    username={{ .Data.data.username }}
+    password={{ .Data.data.password }}
+    {{- end -}}

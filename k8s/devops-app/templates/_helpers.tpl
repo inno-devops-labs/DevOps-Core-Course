@@ -60,3 +60,14 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create the name of the secret to use
+*/}}
+{{- define "devops-app.secretName" -}}
+{{- if .Values.secret.nameOverride }}
+{{- .Values.secret.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-credentials" (include "devops-app.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
