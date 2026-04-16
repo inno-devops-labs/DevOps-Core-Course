@@ -8,8 +8,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Non-root user with fixed UID/GID (matches typical fsGroup in Kubernetes)
+RUN groupadd -g 1000 appuser && useradd -u 1000 -g appuser -m appuser
 
 # Copy requirements first for better layer caching
 # This layer will only rebuild if requirements.txt changes

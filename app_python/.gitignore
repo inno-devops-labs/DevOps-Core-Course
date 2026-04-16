@@ -30,3 +30,6 @@ dist/
 build/
 *.egg-info/
 
+# Local compose persistence (keep directory via data/.gitkeep)
+data/visits
+

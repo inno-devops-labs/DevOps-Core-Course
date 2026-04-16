@@ -12,7 +12,14 @@ APP_PYTHON_DIR = Path(__file__).resolve().parents[1]
 if str(APP_PYTHON_DIR) not in sys.path:
     sys.path.insert(0, str(APP_PYTHON_DIR))
 
-from app import app as flask_app  # noqa: E402  (import after sys.path tweak)
+import app as app_module  # noqa: E402  (import after sys.path tweak)
+
+flask_app = app_module.app
+
+
+@pytest.fixture(autouse=True)
+def tmp_visits_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(app_module, "VISITS_FILE", tmp_path / "visits")
 
 
 @pytest.fixture()
@@ -30,7 +37,7 @@ def test_get_root_returns_expected_json_structure(client):
     assert isinstance(data, dict)
 
     # Top-level keys
-    for key in ("service", "system", "runtime", "request", "endpoints"):
+    for key in ("service", "system", "runtime", "request", "visits", "endpoints"):
         assert key in data
 
     # Service info
@@ -72,12 +79,25 @@ def test_get_root_returns_expected_json_structure(client):
     assert req["user_agent"] == "pytest"
     assert "client_ip" in req
 
+    visits = data["visits"]
+    assert isinstance(visits["count"], int)
+    assert visits["count"] >= 1
+    assert "file" in visits
+
     # Endpoints list
     endpoints = data["endpoints"]
     assert isinstance(endpoints, list)
     paths = {e["path"] for e in endpoints}
     assert "/" in paths
     assert "/health" in paths
+    assert "/visits" in paths
+
+
+def test_visits_counter_persists_in_file(client):
+    assert client.get("/").get_json()["visits"]["count"] == 1
+    assert client.get("/").get_json()["visits"]["count"] == 2
+    assert client.get("/visits").get_json()["visits"] == 2
+    assert app_module.VISITS_FILE.read_text(encoding="utf-8").strip() == "2"
 
 
 def test_get_health_returns_healthy_status(client):

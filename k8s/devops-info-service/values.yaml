@@ -23,11 +23,26 @@ vaultInjection:
   secretPath: secret/data/devops-info/config
   secretAlias: config
 
+config:
+  fileMountPath: /config
+  env:
+    APP_NAME: devops-info-service
+    APP_ENV: dev
+    LOG_LEVEL: info
+
+persistence:
+  enabled: false
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data
+  fileName: visits
+
 podAnnotations: {}
 
 podLabels: {}
 
-podSecurityContext: {}
+podSecurityContext:
+  fsGroup: 1000
 
 service:
   type: NodePort

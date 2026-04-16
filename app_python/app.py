@@ -12,6 +12,8 @@ import platform
 import logging
 import json
 import time
+import threading
+from pathlib import Path
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request, g
@@ -28,6 +30,9 @@ app = Flask(__name__)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "false").lower() == "true"
+VISITS_FILE = Path(os.getenv("VISITS_FILE", "/data/visits"))
+
+_visits_lock = threading.Lock()
 
 # Application start time (used for uptime calculation)
 START_TIME = datetime.now(timezone.utc)
@@ -72,6 +77,36 @@ def _normalize_endpoint_label():
     if rule and getattr(rule, "rule", None):
         return rule.rule
     return request.path
+
+
+def _read_visits_counter():
+    try:
+        raw = VISITS_FILE.read_text(encoding="utf-8").strip()
+        return int(raw) if raw else 0
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        logger.warning(json.dumps({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": "WARNING",
+            "event": "visits_counter_invalid",
+            "message": f"Invalid integer in {VISITS_FILE}; treating as 0",
+        }))
+        return 0
+
+
+def _write_visits_counter(value: int) -> None:
+    VISITS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = VISITS_FILE.with_suffix(".tmp")
+    tmp.write_text(str(value), encoding="utf-8")
+    tmp.replace(VISITS_FILE)
+
+
+def _increment_visits_counter() -> int:
+    with _visits_lock:
+        n = _read_visits_counter() + 1
+        _write_visits_counter(n)
+        return n
 
 
 # ------------------------------------------------------------------------------
@@ -194,6 +229,7 @@ def index():
     }))
 
     uptime_seconds, uptime_human = get_uptime()
+    visits_count = _increment_visits_counter()
     devops_info_endpoint_calls.labels(endpoint="/").inc()
 
     response = {
@@ -216,9 +252,14 @@ def index():
             "method": request.method,
             "path": request.path,
         },
+        "visits": {
+            "count": visits_count,
+            "file": str(VISITS_FILE),
+        },
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Visits counter"},
         ],
     }
 
@@ -249,6 +290,19 @@ def health():
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": uptime_seconds,
+    })
+
+
+@app.route("/visits", methods=["GET"])
+def visits():
+    devops_info_endpoint_calls.labels(endpoint="/visits").inc()
+
+    with _visits_lock:
+        count = _read_visits_counter()
+
+    return jsonify({
+        "visits": count,
+        "file": str(VISITS_FILE),
     })
 
 

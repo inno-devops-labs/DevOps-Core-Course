@@ -35,3 +35,10 @@ readinessProbe:
   periodSeconds: 3
   timeoutSeconds: 2
   failureThreshold: 3
+
+persistence:
+  enabled: false
+
+config:
+  env:
+    APP_ENV: prod

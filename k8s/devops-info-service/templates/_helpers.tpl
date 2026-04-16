@@ -65,3 +65,24 @@ Name of the Helm-managed Secret holding app credentials.
 {{- define "devops-info-service.credentialsSecretName" -}}
 {{- printf "%s-credentials" (include "devops-info-service.fullname" .) }}
 {{- end }}
+
+{{/*
+ConfigMap holding files/config.json
+*/}}
+{{- define "devops-info-service.configMapFileName" -}}
+{{- printf "%s-config" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
+ConfigMap for envFrom (APP_NAME, APP_ENV, LOG_LEVEL)
+*/}}
+{{- define "devops-info-service.configMapEnvName" -}}
+{{- printf "%s-env" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
+PVC for visit counter data
+*/}}
+{{- define "devops-info-service.pvcName" -}}
+{{- printf "%s-data" (include "devops-info-service.fullname" .) }}
+{{- end }}

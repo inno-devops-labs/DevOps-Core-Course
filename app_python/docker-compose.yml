@@ -1,0 +1,12 @@
+services:
+  devops-info-service:
+    build: .
+    container_name: devops-info-service
+    ports:
+      - "8080:5000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5000"
+      VISITS_FILE: /app/data/visits
+    volumes:
+      - ./data:/app/data

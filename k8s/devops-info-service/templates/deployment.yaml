@@ -48,18 +48,39 @@ spec:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
               protocol: TCP
-          {{- if .Values.credentials.enabled }}
           envFrom:
+            {{- if .Values.credentials.enabled }}
             - secretRef:
                 name: {{ include "devops-info-service.credentialsSecretName" . }}
-          {{- end }}
-          {{- with .Values.env }}
+            {{- end }}
+            - configMapRef:
+                name: {{ include "devops-info-service.configMapEnvName" . }}
           env:
+            {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- end }}
+            - name: VISITS_FILE
+              value: {{ printf "%s/%s" .Values.persistence.mountPath .Values.persistence.fileName | quote }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: {{ .Values.config.fileMountPath | quote }}
+              readOnly: true
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath | quote }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.configMapFileName" . }}
+        - name: data-volume
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.pvcName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

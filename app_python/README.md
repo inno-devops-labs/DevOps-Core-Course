@@ -162,12 +162,19 @@ Returns information about the service, system, runtime, and request.
     "method": "GET",
     "path": "/"
   },
+  "visits": {
+    "count": 3,
+    "file": "/data/visits"
+  },
   "endpoints": [
     {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"}
+    {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/visits", "method": "GET", "description": "Visits counter"}
   ]
 }
 ```
+
+Each `GET /` increments a persisted visit counter stored at `VISITS_FILE` (default `/data/visits`).
 
 ### GET /health
 
@@ -183,6 +190,19 @@ Returns service health status.
 }
 ```
 
+### GET /visits
+
+Returns the current visit count (read from `VISITS_FILE` without incrementing).
+
+**Response Example:**
+
+```json
+{
+  "visits": 12,
+  "file": "/data/visits"
+}
+```
+
 ## Configuration
 
 Environment variables for customization:
@@ -192,12 +212,28 @@ Environment variables for customization:
 | HOST | 0.0.0.0 | IP address to bind the service |
 | PORT | 5000 | Port to run the service |
 | DEBUG | False | Flask debug mode |
+| VISITS_FILE | /data/visits | Path to the persisted visits counter file |
 
 **Example:**
 
 ```bash
 HOST=127.0.0.1 PORT=8080 DEBUG=True python app.py
 ```
+
+## Docker Compose (persistent visits)
+
+From `app_python/`:
+
+```bash
+docker compose up --build -d
+curl -s http://localhost:8080/visits
+curl -s http://localhost:8080/
+cat ./data/visits
+docker compose restart
+curl -s http://localhost:8080/visits
+```
+
+`docker-compose.yml` binds `./data` on the host to `/app/data` in the container and sets `VISITS_FILE=/app/data/visits`.
 
 ## Logging
 
