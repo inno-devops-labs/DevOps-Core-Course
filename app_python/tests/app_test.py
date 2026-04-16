@@ -121,3 +121,20 @@ def test_with_headers(client):
     response = client.get("/", headers=headers)
     data = response.get_json()
     assert data["request"]["user_agent"] == "TestAgent/1.0"
+
+
+def test_visits_endpoint(client):
+    """Test GET /visits returns counter."""
+    import os
+    if os.path.exists("/data/visits"):
+        os.remove("/data/visits")
+    
+    client.get("/")
+    response = client.get("/visits")
+    data = response.get_json()
+    assert data["visits"] == 1
+    
+    client.get("/")
+    response = client.get("/visits")
+    data = response.get_json()
+    assert data["visits"] == 2
