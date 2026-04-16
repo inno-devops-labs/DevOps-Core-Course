@@ -1,0 +1,13 @@
+{
+  "app": {
+    "name": "devops-info-service",
+    "version": "1.0.0",
+    "description": "DevOps course info service"
+  },
+  "environment": "dev",
+  "features": {
+    "metrics": true,
+    "health_check": true,
+    "visits_counter": true
+  }
+}

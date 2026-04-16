@@ -13,10 +13,14 @@ spec:
       {{- include "mychart.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "myapp-role"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp"
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 6 }}
+        {{- end }}
       labels:
         {{- include "mychart.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
@@ -42,7 +46,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ .Values.containerPort }}
               protocol: TCP
           {{- with .Values.livenessProbe }}
           livenessProbe:
@@ -52,17 +56,34 @@ spec:
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.resources }}
-          resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ include "mychart.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "mychart.fullname" . }}-env
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
+        - name: config-volume
+          configMap:
+            name: {{ include "mychart.fullname" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "mychart.fullname" . }}-data
+      {{- else }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "mychart.fullname" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "mychart.fullname" . }}-data
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

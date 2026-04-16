@@ -11,6 +11,13 @@ image:
   repository: myapp
   tag: "1.0"
 
+environment: dev
+logLevel: info
+
+secrets:
+  username: dan
+  password: parol
+
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
 # This is to override the chart name.
@@ -46,7 +53,17 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
+volumeMounts:
+  - name: config-volume
+    mountPath: /config
+    readOnly: true
+  - name: data-volume
+    mountPath: /data
 
+volumes:
+  - name: config-volume
+    configMap:
+      name: myapp-mychart-config
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
@@ -131,6 +148,11 @@ readinessProbe:
     path: /health
     port: 5000
 
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
   enabled: false
@@ -157,3 +179,11 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi

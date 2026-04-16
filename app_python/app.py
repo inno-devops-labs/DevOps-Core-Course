@@ -16,7 +16,23 @@ HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
 
+VISITS_FILE = os.getenv('VISITS_FILE', '/data/visits')
+
 app = Flask(__name__)
+
+def get_visits():
+    try:
+        with open(VISITS_FILE, 'r') as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+def increment_visits():
+    count = get_visits() + 1
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    with open(VISITS_FILE, 'w') as f:
+        f.write(str(count))
+    return count
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
@@ -131,9 +147,11 @@ def get_response():
             "method": request.method,
             "path": request.path
         },
+        "visits": get_visits(),
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
-            {"path": "/health", "method": "GET", "description": "Health check"}
+            {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Visit counter"}
         ]
     }
     return response
@@ -163,7 +181,13 @@ def health():
 @app.route("/", methods=["GET"])
 def index():
     logger.info(f"{request.method} {request.path} from {request.remote_addr}")
+    increment_visits()
     return jsonify(get_response())
+
+@app.route("/visits", methods=["GET"])
+def visits():
+    logger.info(f"{request.method} {request.path} from {request.remote_addr}")
+    return jsonify({'visits': get_visits()})
 
 @app.errorhandler(404)
 def not_found(error):

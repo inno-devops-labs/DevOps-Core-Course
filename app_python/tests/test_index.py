@@ -23,3 +23,6 @@ def test_index_response_structure(client):
 
     assert data["request"]["method"] == "GET"
     assert data["request"]["path"] == "/"
+
+    assert "visits" in data
+    assert isinstance(data["visits"], int)

@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN chown -R dockeruser:dockeruser /app
+RUN mkdir -p /data && chown -R dockeruser:dockeruser /data
 USER dockeruser
 
 EXPOSE 5000
