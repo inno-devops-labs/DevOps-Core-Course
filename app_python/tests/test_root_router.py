@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from core.runtime import set_start_time
@@ -20,7 +21,8 @@ def client(app):
 
 
 def test_root_endpoint_structure(client):
-    response = client.get("/")
+    with patch("routes.root.service.increment_visits"):
+        response = client.get("/")
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
