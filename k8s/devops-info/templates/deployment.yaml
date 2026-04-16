@@ -21,8 +21,11 @@ spec:
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- if or .Values.vault.enabled .Values.podAnnotations }}
+      {{- if or .Values.vault.enabled .Values.podAnnotations .Values.config.enabled }}
       annotations:
+        {{- if .Values.config.enabled }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
         {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/agent-pre-populate-only: {{ ternary "true" "false" .Values.vault.agentPrePopulateOnly | quote }}
@@ -59,10 +62,28 @@ spec:
               protocol: TCP
           env:
             {{- include "devops-info.envVars" . | nindent 12 }}
-          {{- if and .Values.secret.enabled .Values.secret.injectAsEnvFrom }}
+          {{- if or (and .Values.config.enabled .Values.config.env.enabled) (and .Values.secret.enabled .Values.secret.injectAsEnvFrom) }}
           envFrom:
+            {{- if and .Values.config.enabled .Values.config.env.enabled }}
+            - configMapRef:
+                name: {{ include "devops-info.envConfigMapName" . }}
+            {{- end }}
+            {{- if and .Values.secret.enabled .Values.secret.injectAsEnvFrom }}
             - secretRef:
                 name: {{ include "devops-info.secretName" . }}
+            {{- end }}
+          {{- end }}
+          {{- if or (and .Values.config.enabled .Values.config.file.enabled) .Values.persistence.enabled }}
+          volumeMounts:
+            {{- if and .Values.config.enabled .Values.config.file.enabled }}
+            - name: config-volume
+              mountPath: {{ .Values.config.file.mountPath }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -74,6 +95,19 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+      {{- if or (and .Values.config.enabled .Values.config.file.enabled) .Values.persistence.enabled }}
+      volumes:
+        {{- if and .Values.config.enabled .Values.config.file.enabled }}
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info.fileConfigMapName" . }}
+        {{- end }}
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info.pvcName" . }}
+        {{- end }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

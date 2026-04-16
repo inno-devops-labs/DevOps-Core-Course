@@ -16,10 +16,27 @@ env:
     value: "0.0.0.0"
   - name: PORT
     value: "5002"
+  - name: CONFIG_PATH
+    value: /config/config.json
+  - name: VISITS_FILE
+    value: /data/visits
   - name: APP_ENV
     value: helm-prod
   - name: APP_REVISION
     value: prod-v1
+
+config:
+  file:
+    environment: prod
+  env:
+    data:
+      APP_MODE: production
+      LOG_LEVEL: warn
+      FEATURE_PROFILE: stable
+      FEATURE_RUNTIME_CONFIG: enabled
+
+persistence:
+  enabled: false
 
 livenessProbe:
   httpGet:

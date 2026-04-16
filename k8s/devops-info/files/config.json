@@ -1,0 +1,12 @@
+{
+  "applicationName": {{ .Values.config.file.applicationName | quote }},
+  "environment": {{ .Values.config.file.environment | quote }},
+  "featureFlags": {
+    "visitsCounter": {{ .Values.config.file.featureFlags.visitsCounter }},
+    "configHotReload": {{ .Values.config.file.featureFlags.configHotReload }}
+  },
+  "settings": {
+    "logFormat": {{ .Values.config.file.settings.logFormat | quote }},
+    "storagePath": {{ .Values.config.file.settings.storagePath | quote }}
+  }
+}
