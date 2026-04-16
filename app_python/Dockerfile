@@ -6,8 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Create a non-root user and group
 RUN groupadd --gid 1000 appgroup \
     && useradd --uid 1000 --gid appgroup --create-home --home-dir /home/appuser --shell /bin/bash appuser \
-    && mkdir -p /app \
-    && chown -R appuser:appgroup /app
+    && mkdir -p /app /data \
+    && chown -R appuser:appgroup /app /data
 
 WORKDIR /app
 
@@ -18,8 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy only the application code
 COPY app.py ./
 
-# Ensure app directory ownership, switch to non-root user
-RUN chown -R appuser:appgroup /app
+# Ensure runtime directories stay writable for the non-root user
+RUN chown -R appuser:appgroup /app /data
 USER appuser
 
 # Document the port the app uses

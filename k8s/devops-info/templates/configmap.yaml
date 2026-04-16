@@ -1,0 +1,28 @@
+{{- if .Values.config.enabled }}
+{{- if .Values.config.file.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info.fileConfigMapName" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  {{ .Values.config.file.fileName }}: |-
+{{ tpl (.Files.Get "files/config.json") . | indent 4 }}
+{{- end }}
+{{- if and .Values.config.file.enabled .Values.config.env.enabled }}
+---
+{{- end }}
+{{- if .Values.config.env.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info.envConfigMapName" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.config.env.data }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

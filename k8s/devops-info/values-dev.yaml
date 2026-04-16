@@ -13,10 +13,27 @@ env:
     value: "0.0.0.0"
   - name: PORT
     value: "5002"
+  - name: CONFIG_PATH
+    value: /config/config.json
+  - name: VISITS_FILE
+    value: /data/visits
   - name: APP_ENV
     value: helm-dev
   - name: APP_REVISION
     value: dev-v1
+
+config:
+  file:
+    environment: dev
+  env:
+    data:
+      APP_MODE: lab12-dev
+      LOG_LEVEL: debug
+      FEATURE_PROFILE: persistence-demo
+      FEATURE_RUNTIME_CONFIG: enabled
+
+persistence:
+  enabled: true
 
 livenessProbe:
   httpGet:

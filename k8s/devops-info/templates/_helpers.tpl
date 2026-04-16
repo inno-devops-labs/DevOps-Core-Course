@@ -25,3 +25,24 @@ Resolve the application Secret name.
 {{- define "devops-info.secretName" -}}
 {{- default (printf "%s-secret" (include "common.fullname" .)) .Values.secret.name -}}
 {{- end }}
+
+{{/*
+Resolve the file-backed ConfigMap name.
+*/}}
+{{- define "devops-info.fileConfigMapName" -}}
+{{- printf "%s-config" (include "common.fullname" .) -}}
+{{- end }}
+
+{{/*
+Resolve the environment variable ConfigMap name.
+*/}}
+{{- define "devops-info.envConfigMapName" -}}
+{{- printf "%s-env" (include "common.fullname" .) -}}
+{{- end }}
+
+{{/*
+Resolve the persistence claim name.
+*/}}
+{{- define "devops-info.pvcName" -}}
+{{- default (printf "%s-data" (include "common.fullname" .)) .Values.persistence.existingClaim -}}
+{{- end }}
