@@ -1,5 +1,8 @@
 replicaCount: 5
 
+environment: prod
+logLevel: info
+
 
 resources:
   limits:
@@ -13,9 +16,18 @@ service:
   type: LoadBalancer
 
 livenessProbe:
+  path: /health
+  port: 8080
   initialDelaySeconds: 30
   periodSeconds: 5
 
 readinessProbe:
+  path: /health
+  port: 8080
   initialDelaySeconds: 10
   periodSeconds: 3
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""
