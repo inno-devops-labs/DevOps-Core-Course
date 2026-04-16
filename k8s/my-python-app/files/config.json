@@ -1,0 +1,11 @@
+{
+    "app_name": "devops-info-service",
+    "environment": "production",
+    "features": {
+        "visits_counter": true,
+        "metrics": true,
+        "health_checks": true
+    },
+    "log_format": "json",
+    "version": "1.1.0"
+}

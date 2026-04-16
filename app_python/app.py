@@ -3,6 +3,7 @@ import logging
 import os
 import platform
 import socket
+import threading
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request, Response
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
@@ -31,8 +32,30 @@ FRAMEWORK = "Flask"
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DATA_DIR = os.getenv("DATA_DIR", "/data")
+VISITS_FILE = os.path.join(DATA_DIR, "visits")
 
 START_TIME = datetime.now(timezone.utc)
+
+_visits_lock = threading.Lock()
+
+def _read_visits() -> int:
+    try:
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+def _write_visits(count: int) -> None:
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(VISITS_FILE, "w") as f:
+        f.write(str(count))
+
+def increment_visits() -> int:
+    with _visits_lock:
+        count = _read_visits() + 1
+        _write_visits(count)
+        return count
 
 # Custom JSON Log Formatter
 class JsonFormatter(logging.Formatter):
@@ -113,8 +136,8 @@ def get_endpoints() -> list[dict]:
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
         {"path": "/ready", "method": "GET", "description": "Readiness check"},
+        {"path": "/visits", "method": "GET", "description": "Visit counter"},
     ]
-
 
 def create_app() -> Flask:
     app = Flask(__name__)
@@ -165,6 +188,7 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
+        count = increment_visits()
         payload = {
             "service": {
                 "name": APP_NAME,
@@ -172,12 +196,18 @@ def create_app() -> Flask:
                 "description": APP_DESCRIPTION,
                 "framework": FRAMEWORK,
             },
+            "visits": count,
             "system": get_system_info(),
             "runtime": get_runtime_info(),
             "request": get_request_info(),
             "endpoints": get_endpoints(),
         }
         return jsonify(payload)
+
+    @app.get("/visits")
+    def visits():
+        count = _read_visits()
+        return jsonify({"visits": count})
 
     @app.get("/health")
     def health():

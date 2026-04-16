@@ -21,6 +21,8 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY app_python/app.py .
 
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
 RUN chown -R appuser:appuser /app
 
 USER appuser
@@ -28,7 +30,8 @@ USER appuser
 EXPOSE 5000
 
 ENV HOST=0.0.0.0 \
-    PORT=5000
+    PORT=5000 \
+    DATA_DIR=/data
 
 CMD ["python", "app.py"]
 

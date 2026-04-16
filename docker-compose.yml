@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  app:
+    image: saddogsec/devops-info-service:latest
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5000
+      - DATA_DIR=/data
+    restart: unless-stopped
