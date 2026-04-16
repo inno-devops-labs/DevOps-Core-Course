@@ -1,5 +1,3 @@
-import pytest
-
 def test_visits_endpoint(client):
     response = client.get("/visits")
     assert response.status_code == 200
