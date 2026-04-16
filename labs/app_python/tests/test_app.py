@@ -11,6 +11,7 @@ def test_root_success_structure():
 
     data = response.json()
     assert set(data.keys()) >= {"service", "system", "runtime", "request", "endpoints"}
+    assert isinstance(data["visits"], int)
 
     service = data["service"]
     assert service["name"] == "devops-info-service"
@@ -28,6 +29,7 @@ def test_root_success_structure():
     endpoints = data["endpoints"]
     assert any(endpoint["path"] == "/" for endpoint in endpoints)
     assert any(endpoint["path"] == "/health" for endpoint in endpoints)
+    assert any(endpoint["path"] == "/visits" for endpoint in endpoints)
 
 
 def test_health_success():
@@ -52,3 +54,14 @@ def test_not_found_error_response():
 def test_method_not_allowed_error_response():
     response = client.post("/health")
     assert response.status_code == 405
+
+
+def test_visits_endpoint_returns_counter():
+    client.get("/")
+    response = client.get("/visits")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "visits" in data
+    assert isinstance(data["visits"], int)
+    assert data["visits"] >= 1

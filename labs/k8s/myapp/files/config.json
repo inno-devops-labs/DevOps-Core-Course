@@ -1,0 +1,12 @@
+{
+  "appName": "devops-info-service",
+  "environment": "dev",
+  "featureFlags": {
+    "visitsCounter": true,
+    "structuredLogs": true
+  },
+  "settings": {
+    "logLevel": "info",
+    "requestTimeoutSeconds": 15
+  }
+}

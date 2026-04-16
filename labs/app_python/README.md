@@ -11,6 +11,7 @@ A lightweight FastAPI-based service that provides comprehensive system and runti
 - Service uptime tracking and human-readable formatting
 - Request metadata capture (client IP, user agent, path)
 - Health check endpoint for load balancers and orchestrators
+- Persistent visits counter stored in a file
 - Environment-based configuration
 - FastAPI with automatic OpenAPI documentation
 
@@ -146,6 +147,22 @@ uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 - Load balancer health checks
 - Monitoring and alerting systems
 
+### GET `/visits`
+
+**Description:** Returns current visits counter value from the persistent file.
+
+**Response Example:**
+```json
+{
+  "visits": 12
+}
+```
+
+**How it works:**
+- Each request to `/` increments and saves the counter.
+- Counter is stored in `VISITS_FILE` (default: `./data/visits`).
+- `/visits` reads and returns current value.
+
 ---
 
 ## Configuration
@@ -157,6 +174,8 @@ All configuration is done via environment variables. Set them before running the
 | `HOST` | `0.0.0.0` | String | Bind address for the service |
 | `PORT` | `8080` | Integer | Service port |
 | `DEBUG` | `False` | Boolean | Enable debug mode with auto-reload (accepts `"true"` or `"false"`) |
+| `DATA_DIR` | `./data` | String | Directory where persistent counter data is stored |
+| `VISITS_FILE` | `./data/visits` | String | Full path to visits counter file |
 
 ### Example Configuration
 
@@ -183,6 +202,16 @@ or
 ```bash
 docker run -p 8080:8080 reiterwurger/app:v1
 ```
+
+### Local persistence with Docker Compose
+
+Use `docker-compose.yml` in this directory to persist visits data on the host:
+
+```bash
+docker compose up -d --build
+```
+
+The counter file is stored on host in `./data/visits` and survives container restarts.
 
 ---
 

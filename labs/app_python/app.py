@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import threading
 import fastapi
 import platform
 import socket
@@ -61,6 +62,9 @@ START_TIME = time.time()
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8080))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DATA_DIR = os.getenv("DATA_DIR", "./data")
+VISITS_FILE = os.getenv("VISITS_FILE", os.path.join(DATA_DIR, "visits"))
+VISITS_LOCK = threading.Lock()
 
 
 # --- Определение метрик Prometheus ---
@@ -136,9 +140,36 @@ def get_metadata(request: Request):
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Visits counter"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
+
+
+def read_visits_count() -> int:
+    try:
+        with open(VISITS_FILE, "r", encoding="utf-8") as file:
+            raw_value = file.read().strip()
+            return int(raw_value) if raw_value else 0
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        logger.warning("Visits file is corrupted, resetting counter to 0")
+        return 0
+
+
+def write_visits_count(value: int) -> None:
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    with open(VISITS_FILE, "w", encoding="utf-8") as file:
+        file.write(str(value))
+
+
+def increment_visits_count() -> int:
+    with VISITS_LOCK:
+        current = read_visits_count()
+        new_value = current + 1
+        write_visits_count(new_value)
+        return new_value
 
 
 app = fastapi.FastAPI()
@@ -203,6 +234,9 @@ def log_request(request: Request, message: str, level: str = "INFO", **extra):
 @app.on_event("startup")
 async def startup_event():
     """Log application startup"""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    if not os.path.exists(VISITS_FILE):
+        write_visits_count(0)
     logger.info(
         f"Application starting - host={HOST}, port={PORT}, log_format={LOG_FORMAT}"
     )
@@ -220,12 +254,14 @@ def metrics():
 def get_info(request: Request):
     # Обновляем кастомную метрику
     endpoint_calls.labels(endpoint="/").inc()
+    visits = increment_visits_count()
     
     # Замеряем время выполнения конкретно функции сборки метаданных
     with system_info_duration.time():
         metadata = get_metadata(request)
         
-    log_request(request, "Info endpoint requested", status_code=200)
+    metadata["visits"] = visits
+    log_request(request, "Info endpoint requested", status_code=200, visits=visits)
     return metadata
 
 
@@ -234,6 +270,14 @@ def health_check(request: Request):
     endpoint_calls.labels(endpoint="/health").inc()
     log_request(request, "Health check requested", status_code=200)
     return get_health()
+
+
+@app.get("/visits")
+def visits_count(request: Request):
+    endpoint_calls.labels(endpoint="/visits").inc()
+    visits = read_visits_count()
+    log_request(request, "Visits endpoint requested", status_code=200, visits=visits)
+    return {"visits": visits}
 
 
 def get_health():
