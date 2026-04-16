@@ -21,3 +21,6 @@ Thumbs.db
 
 # Environment
 .env
+
+# Local docker-compose persisted visits
+data/

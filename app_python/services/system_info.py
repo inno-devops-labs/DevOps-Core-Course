@@ -76,4 +76,7 @@ def get_endpoints() -> list[EndpointInfo]:
         EndpointInfo(
             path="/health", method="GET", description="Health check"
         ),
+        EndpointInfo(
+            path="/visits", method="GET", description="Persisted visit counter"
+        ),
     ]

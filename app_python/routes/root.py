@@ -8,12 +8,14 @@ from services.system_info import (
     get_service_info,
     get_system_info,
 )
+from services.visits_counter import increment, read_count
 
 router = APIRouter()
 
 
 @router.get("/", response_model=RootResponse)
 def index(request: Request):
+    increment()
     return RootResponse(
         service=get_service_info(),
         system=get_system_info(),
@@ -21,3 +23,8 @@ def index(request: Request):
         request=get_request_info(request),
         endpoints=get_endpoints(),
     )
+
+
+@router.get("/visits")
+def visits():
+    return {"visits": read_count()}

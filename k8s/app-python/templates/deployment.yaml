@@ -27,6 +27,10 @@ spec:
       labels:
         {{- include "app-python.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.persistence.enabled }}
+      securityContext:
+        fsGroup: 1000
+      {{- end }}
       {{- if .Values.vault.enabled }}
       serviceAccountName: default
       initContainers:
@@ -57,11 +61,20 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "app-python.fullname" . }}-secret
-          {{- if .Values.vault.enabled }}
+            - configMapRef:
+                name: {{ include "app-python.fullname" . }}-env
           volumeMounts:
+            {{- if .Values.vault.enabled }}
             - name: vault-secrets
               mountPath: /vault/secrets
-          {{- end }}
+            {{- end }}
+            - name: app-config
+              mountPath: /config
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: app-data
+              mountPath: /data
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -82,11 +95,19 @@ spec:
             failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-      {{- if .Values.vault.enabled }}
       volumes:
+        {{- if .Values.vault.enabled }}
         - name: vault-config
           configMap:
             name: {{ include "app-python.fullname" . }}-vault-config
         - name: vault-secrets
           emptyDir: {}
-      {{- end }}
+        {{- end }}
+        - name: app-config
+          configMap:
+            name: {{ include "app-python.fullname" . }}-app-config
+        {{- if .Values.persistence.enabled }}
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: {{ include "app-python.fullname" . }}-data
+        {{- end }}

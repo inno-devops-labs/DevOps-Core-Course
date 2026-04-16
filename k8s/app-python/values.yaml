@@ -1,9 +1,19 @@
-replicaCount: 3
+# ReadWriteOnce PVC: only one replica can mount the volume.
+replicaCount: 1
+
+environment: dev
+logLevel: info
+appName: devops-info-service
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
 
 image:
   repository: 4hellboy4/devops-info-service
-  tag: "latest"
-  pullPolicy: Never
+  tag: "lab12"
+  pullPolicy: IfNotPresent
 
 nameOverride: ""
 fullnameOverride: ""
@@ -12,7 +22,7 @@ service:
   type: NodePort
   port: 80
   targetPort: 8000
-  nodePort: 30080
+  nodePort: 30082
 
 resources:
   requests:

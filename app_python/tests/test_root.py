@@ -65,10 +65,11 @@ def test_root_request_fields():
 def test_root_endpoints_list():
     data = client.get("/").json()["endpoints"]
     assert isinstance(data, list)
-    assert len(data) >= 2
+    assert len(data) >= 3
     paths = [e["path"] for e in data]
     assert "/" in paths
     assert "/health" in paths
+    assert "/visits" in paths
 
 
 def test_root_endpoint_entries_have_required_fields():

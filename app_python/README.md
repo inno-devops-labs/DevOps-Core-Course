@@ -45,7 +45,8 @@ uvicorn app:app --reload --port 8000
 
 | Method | Path      | Description                          |
 |--------|-----------|--------------------------------------|
-| GET    | `/`       | Service and system information       |
+| GET    | `/`       | Service and system information (increments visit counter) |
+| GET    | `/visits` | Current persisted visit count          |
 | GET    | `/health` | Health check (status, uptime)        |
 
 ### `GET /`
@@ -133,11 +134,24 @@ pytest --cov=. --cov-report=term
 
 ## Configuration
 
-| Variable | Default   | Description          |
-|----------|-----------|----------------------|
-| `HOST`   | `0.0.0.0` | Server bind address  |
-| `PORT`   | `8000`    | Server port          |
-| `DEBUG`  | `false`   | Enable debug mode    |
+| Variable           | Default        | Description                              |
+|--------------------|----------------|------------------------------------------|
+| `HOST`             | `0.0.0.0`      | Server bind address                      |
+| `PORT`             | `8000`         | Server port                              |
+| `DEBUG`            | `false`        | Enable debug mode                        |
+| `VISITS_FILE_PATH` | `/data/visits` | File where the visit counter is stored   |
+
+Visit counter: each `GET /` increments an integer persisted in `VISITS_FILE_PATH` (directory is created if needed). Use a mounted volume in Docker/Kubernetes so the count survives restarts.
+
+## Docker Compose (local persistence)
+
+From `app_python/`:
+
+```bash
+docker compose up --build
+```
+
+The compose file mounts `./data` on the host to `/data` in the container so `./data/visits` keeps the counter across container restarts.
 
 ## Docker
 
@@ -183,7 +197,9 @@ app_python/
 │   └── health.py
 ├── services/             # Business logic
 │   ├── system_info.py
-│   └── uptime.py
+│   ├── uptime.py
+│   └── visits_counter.py
+├── docker-compose.yml    # Local run with ./data volume
 ├── tests/
 └── docs/
     └── LAB01.md
