@@ -1,0 +1,31 @@
+replicaCount: 3
+
+image:
+  tag: "1.0.0"
+
+appConfig:
+  appEnv: production
+  logLevel: INFO
+
+service:
+  type: LoadBalancer
+  nodePort: null
+
+persistence:
+  size: 1Gi
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 5
+
+livenessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 5

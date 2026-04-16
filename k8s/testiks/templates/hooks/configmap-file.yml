@@ -1,0 +1,10 @@
+{{- include "devops-info-service.persistenceValidation" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info-service.configFileConfigMapName" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+data:
+  {{ .Values.config.fileName }}: |-
+{{ tpl (.Files.Get "files/config.json") . | nindent 4 }}

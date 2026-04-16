@@ -1,0 +1,15 @@
+services:
+  testiks-info:
+    image: cacucoh/testiks:latest
+    build:
+      context: .
+    container_name: testiks-info
+    ports:
+      - "8000:5000"
+    environment:
+      APP_ENV: docker
+      APP_REGION: local-compose
+      LOG_LEVEL: INFO
+      VISITS_FILE: /data/visits
+    volumes:
+      - ./data:/data

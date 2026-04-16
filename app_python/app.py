@@ -30,6 +30,7 @@ app = Flask(__name__)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
 
 START_TIME = datetime.now(timezone.utc)
 
@@ -97,6 +98,32 @@ def get_system_info():
         "python_version": platform.python_version(),
     }
 
+def read_visits():
+    try:
+        with open(VISITS_FILE, 'r') as f:
+            return int(f.read().strip())
+    except FileNotFoundError:
+        return 0
+    except Exception:
+        return 0
+
+def write_visits(count):
+    temp_file = VISITS_FILE + ".tmp"
+    with open(temp_file, 'w') as f:
+        f.write(str(count))
+    os.replace(temp_file, VISITS_FILE)
+
+
+@app.route("/visits", methods=["GET"])
+@track_metrics
+def get_visits():
+    count = read_visits()
+    return jsonify({
+        "visits": count,
+        "endpoint": "/",
+        "description": "Number of requests to root endpoint"
+    })
+
 
 @app.route("/health", methods=["GET"])
 @track_metrics
@@ -121,12 +148,19 @@ def metrics():
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
+
 @app.route("/", methods=["GET"])
 @track_metrics
 def default_route():
     logger.info(f"Request: {request.method} {request.path}")
+    
+    current = read_visits()
+    current += 1
+    write_visits(current)
+    
+    
     uptime = get_uptime()
-
+    
     response = {
         "service": {
             "name": "devops-info-service",
@@ -150,6 +184,7 @@ def default_route():
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Visit counter"}, 
         ],
     }
 

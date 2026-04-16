@@ -1,0 +1,12 @@
+{
+  "application": {
+    "name": "{{ .Values.appConfig.appName }}",
+    "environment": "{{ .Values.appConfig.environment }}"
+  },
+  "settings": {
+    "featureFlags": {
+      "visitsEndpoint": {{ .Values.appConfig.featureFlags.visitsEndpoint | quote }},
+      "metricsEndpoint": {{ .Values.appConfig.featureFlags.metricsEndpoint | quote }}
+    }
+  }
+}

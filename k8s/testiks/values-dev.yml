@@ -1,0 +1,31 @@
+replicaCount: 1
+
+image:
+  tag: latest
+
+appConfig:
+  appEnv: development
+  logLevel: DEBUG
+
+service:
+  type: NodePort
+  nodePort: 30080
+
+persistence:
+  size: 100Mi
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 10
+
+livenessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 10

@@ -1,12 +1,18 @@
 {{- define "testiks.envVars" -}}
 - name: PORT
-  value: {{ .Values.service.targetPort | quote }}
+  value: {{ .Values.container.port | quote }}
 - name: HOST
-  value: {{ .Values.env.host | quote }}
+  value: {{ .Values.appConfig.host | quote }}
 - name: APP_ENV
-  value: {{ .Values.environment | quote }}
+  value: {{ .Values.appConfig.appEnv | quote }}
 - name: LOG_LEVEL
-  value: {{ .Values.logLevel | quote }}
+  value: {{ .Values.appConfig.logLevel | quote }}
+- name: DEBUG
+  value: {{ .Values.appConfig.debug | quote }}
+{{- if .Values.persistence.enabled }}
+- name: VISITS_FILE
+  value: {{ .Values.persistence.mountPath }}/{{ .Values.persistence.visitsFileName }}
+{{- end }}
 {{- end -}}
 
 {{/* Vault Agent Injector annotations for file-based secret rendering. */}}
