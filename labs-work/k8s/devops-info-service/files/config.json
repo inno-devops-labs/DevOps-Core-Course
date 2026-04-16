@@ -1,0 +1,8 @@
+{
+  "app_name": "devops-info-service",
+  "environment": "staging",
+  "features": {
+    "visits_counter": true,
+    "debug_mode": false
+  }
+}

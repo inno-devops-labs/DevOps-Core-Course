@@ -71,17 +71,18 @@ class TestIndexEndpoint:
         assert data['request']['path'] == '/'
 
     def test_index_contains_endpoints(self, client):
-        """Test that response contains endpoints list with at least 2 items."""
+        """Test that response contains endpoints list with at least 3 items."""
         response = client.get('/')
         data = json.loads(response.data)
 
         assert 'endpoints' in data
         assert isinstance(data['endpoints'], list)
-        assert len(data['endpoints']) >= 2
+        assert len(data['endpoints']) >= 3
 
         paths = [ep['path'] for ep in data['endpoints']]
         assert '/' in paths
         assert '/health' in paths
+        assert '/visits' in paths
 
     def test_index_data_types(self, client):
         """Test that response fields have correct data types."""
@@ -163,3 +164,45 @@ class TestErrorHandlers:
         data = json.loads(response.data)
 
         assert data['path'] == '/some/invalid/path'
+
+
+class TestVisitsEndpoint:
+    """Tests for GET /visits endpoint and visit counter."""
+
+    def test_visits_returns_200(self, client):
+        """Test that visits endpoint returns HTTP 200."""
+        response = client.get('/visits')
+        assert response.status_code == 200
+
+    def test_visits_returns_json(self, client):
+        """Test that visits endpoint returns JSON content type."""
+        response = client.get('/visits')
+        assert response.content_type == 'application/json'
+
+    def test_visits_starts_at_zero(self, client):
+        """Test that visits counter starts at zero."""
+        response = client.get('/visits')
+        data = json.loads(response.data)
+        assert data['visits'] == 0
+
+    def test_visits_increments_on_index(self, client):
+        """Test that visiting / increments the counter."""
+        client.get('/')
+        response = client.get('/visits')
+        data = json.loads(response.data)
+        assert data['visits'] == 1
+
+    def test_visits_multiple_increments(self, client):
+        """Test that multiple visits increment correctly."""
+        for _ in range(5):
+            client.get('/')
+        response = client.get('/visits')
+        data = json.loads(response.data)
+        assert data['visits'] == 5
+
+    def test_index_includes_visits_count(self, client):
+        """Test that index response includes visits count."""
+        response = client.get('/')
+        data = json.loads(response.data)
+        assert 'visits' in data
+        assert data['visits'] == 1
