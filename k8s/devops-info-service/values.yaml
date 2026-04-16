@@ -67,3 +67,8 @@ rollout:
     autoPromotionEnabled: false
   analysis:
     enabled: false
+
+statefulset:
+  enabled: false
+  updateStrategy: RollingUpdate
+  partition: 0

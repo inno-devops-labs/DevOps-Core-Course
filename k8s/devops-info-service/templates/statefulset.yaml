@@ -1,33 +1,29 @@
-{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "devops-info-service.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: {{ .Values.strategy.type }}
+  updateStrategy:
+    {{- if eq .Values.statefulset.updateStrategy "OnDelete" }}
+    type: OnDelete
+    {{- else }}
+    type: RollingUpdate
     rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+      partition: {{ .Values.statefulset.partition | default 0 }}
+    {{- end }}
   template:
     metadata:
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
       annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "devops-info-service"
-        vault.hashicorp.com/agent-inject-secret-config: "secret/data/devops-info-service/config"
-        vault.hashicorp.com/agent-inject-template-config: |
-          {{`{{- with secret "secret/data/devops-info-service/config" -}}
-          APP_USERNAME={{ .Data.data.username }}
-          APP_PASSWORD={{ .Data.data.password }}
-          {{- end -}}`}}
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       securityContext:
@@ -48,10 +44,8 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /config
-            {{- if .Values.persistence.enabled }}
-            - name: data-volume
+            - name: data
               mountPath: /data
-            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -62,9 +56,15 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-service.fullname" . }}-data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
         {{- end }}
 {{- end }}
