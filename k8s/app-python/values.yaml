@@ -63,6 +63,15 @@ secrets:
   serviceName: "devops-info-service"
   apiKey: "changeme"
 
+config:
+  environment: "dev"
+  logLevel: "INFO"
+
+persistence:
+  enabled: true
+  size: "100Mi"
+  storageClass: ""
+
 nodeSelector: {}
 tolerations: []
 affinity: {}

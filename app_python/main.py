@@ -1,3 +1,4 @@
+import json
 import logging
 import multiprocessing
 import os
@@ -5,6 +6,7 @@ import platform
 import socket
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -68,6 +70,32 @@ system_info_duration = Histogram(
 
 app = FastAPI()
 START = datetime.now(timezone.utc)
+
+# Visit counter initialization
+VISITS_FILE = "/data/visits"
+VISITS_DIR = Path("/data")
+
+
+def get_visits_count():
+    try:
+        if Path(VISITS_FILE).exists():
+            with open(VISITS_FILE, "r") as f:
+                return int(f.read().strip())
+    except Exception as e:
+        logger.warning("Failed to read visits file", extra={"error": str(e)})
+    return 0
+
+
+def increment_visits():
+    try:
+        VISITS_DIR.mkdir(parents=True, exist_ok=True)
+        count = get_visits_count() + 1
+        with open(VISITS_FILE, "w") as f:
+            f.write(str(count))
+        return count
+    except Exception as e:
+        logger.warning("Failed to increment visits", extra={"error": str(e)})
+        return 0
 
 
 def uptime():
@@ -139,6 +167,7 @@ async def metrics():
 @app.get("/", response_class=JSONResponse)
 async def index(request: Request):
     endpoint_calls.labels(endpoint="/").inc()
+    increment_visits()
     s, h = uptime()
     return {
         "service": {
@@ -165,6 +194,7 @@ async def index(request: Request):
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Visit count"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
@@ -178,6 +208,16 @@ async def health():
         "status": "healthy",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": s,
+    }
+
+
+@app.get("/visits", response_class=JSONResponse)
+async def visits():
+    endpoint_calls.labels(endpoint="/visits").inc()
+    count = get_visits_count()
+    return {
+        "visits": count,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 

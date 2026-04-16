@@ -47,6 +47,8 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "app-python.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "app-python.fullname" . }}-env
           env:
             {{- include "app-python.envVars" . | nindent 12 }}
           livenessProbe:
@@ -57,6 +59,18 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: data-volume
+              mountPath: /data
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "app-python.fullname" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "app-python.fullname" . }}-data
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

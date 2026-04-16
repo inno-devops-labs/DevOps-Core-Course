@@ -1,0 +1,10 @@
+{
+  "appName": "devops-info-service",
+  "environment": "dev",
+  "logLevel": "INFO",
+  "features": {
+    "metricsEnabled": true,
+    "cachingEnabled": true,
+    "debugMode": false
+  }
+}

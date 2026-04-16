@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - SERVICE_NAME=devops-info-service
+      - SERVICE_VERSION=1.0.0
+      - SERVICE_DESCRIPTION=DevOps course info service
+    volumes:
+      - ./data:/data
+    command: python main.py
