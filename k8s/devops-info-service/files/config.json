@@ -1,0 +1,14 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "{{ .Values.app.environment }}",
+  "featureFlags": {
+    "visitsCounter": true,
+    "swaggerEnabled": true,
+    "configFileMounted": true
+  },
+  "settings": {
+    "logLevel": "{{ .Values.app.logLevel }}",
+    "configSource": "helm-configmap-reloaded",
+    "persistenceEnabled": {{ .Values.persistence.enabled }}
+  }
+}

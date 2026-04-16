@@ -18,8 +18,8 @@ spec:
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- if or .Values.podAnnotations .Values.vault.enabled }}
       annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -34,7 +34,6 @@ spec:
         {{ printf "vault.hashicorp.com/agent-inject-command-%s" .Values.vault.injectFileName }}: {{ .Values.vault.injectCommand | quote }}
         {{- end }}
         {{- end }}
-      {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       containers:
@@ -47,11 +46,21 @@ spec:
               protocol: TCP
           env:
 {{ include "devops-info-service.commonEnv" . | nindent 12 }}
-          {{- if .Values.secret.enabled }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.envConfigMapName" . }}
+          {{- if .Values.secret.enabled }}
             - secretRef:
                 name: {{ include "devops-info-service.secretName" . }}
           {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: {{ .Values.config.mountPath | quote }}
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath | quote }}
+            {{- end }}
           resources:
 {{ toYaml .Values.resources | nindent 12 }}
           {{- if .Values.livenessProbe.enabled }}
@@ -62,3 +71,12 @@ spec:
           readinessProbe:
 {{ toYaml (omit .Values.readinessProbe "enabled") | nindent 12 }}
           {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.configFileConfigMapName" . }}
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.pvcName" . }}
+        {{- end }}

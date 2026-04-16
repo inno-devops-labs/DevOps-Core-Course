@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import platform
 import socket
+import tempfile
+from pathlib import Path
+from threading import Lock
 from datetime import datetime, timezone
+from typing import Any
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
@@ -17,9 +22,12 @@ load_dotenv()
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', '5000'))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+DEFAULT_CONFIG_PATH = os.getenv('APP_CONFIG_PATH', os.path.join('config', 'config.json'))
+DEFAULT_VISITS_FILE_PATH = os.getenv('VISITS_FILE_PATH', os.path.join('data', 'visits'))
 
 # start time
 START_TIME = datetime.now(timezone.utc)
+VISITS_LOCK = Lock()
 
 # Logging
 logging.basicConfig(
@@ -93,13 +101,109 @@ def get_request_info() -> dict:
     }
 
 
+def get_config_path() -> Path:
+    configured_path = app.config.get('APP_CONFIG_PATH') or os.getenv('APP_CONFIG_PATH') or DEFAULT_CONFIG_PATH
+    return Path(configured_path)
+
+
+def get_visits_file_path() -> Path:
+    configured_path = app.config.get('VISITS_FILE_PATH') or os.getenv('VISITS_FILE_PATH') or DEFAULT_VISITS_FILE_PATH
+    return Path(configured_path)
+
+
+def _default_application_config() -> dict[str, Any]:
+    return {
+        'applicationName': 'devops-info-service',
+        'environment': os.getenv('APP_ENV', 'dev'),
+        'featureFlags': {
+            'visitsCounter': True,
+            'swaggerEnabled': True
+        },
+        'settings': {
+            'logLevel': os.getenv('LOG_LEVEL', 'info'),
+            'configPath': str(get_config_path()),
+            'visitsFilePath': str(get_visits_file_path())
+        }
+    }
+
+
+def _merge_dicts(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    result = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = _merge_dicts(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def load_application_config() -> dict[str, Any]:
+    config = _default_application_config()
+    config_path = get_config_path()
+
+    if not config_path.exists():
+        return config
+
+    try:
+        file_config = json.loads(config_path.read_text(encoding='utf-8'))
+    except (OSError, json.JSONDecodeError) as exc:
+        logger.warning('Failed to load config file %s: %s', config_path, exc)
+        return config
+
+    return _merge_dicts(config, file_config)
+
+
+def _write_text_atomically(file_path: Path, value: str) -> None:
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile('w', encoding='utf-8', dir=file_path.parent, delete=False) as temp_file:
+        temp_file.write(value)
+        temp_name = temp_file.name
+    os.replace(temp_name, file_path)
+
+
+def _read_visit_count_unlocked(file_path: Path) -> int:
+    try:
+        return int(file_path.read_text(encoding='utf-8').strip())
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        logger.warning('Visits file %s contains invalid data. Resetting counter to 0.', file_path)
+        return 0
+
+
+def initialize_visit_counter() -> None:
+    file_path = get_visits_file_path()
+    with VISITS_LOCK:
+        if file_path.exists():
+            current_value = _read_visit_count_unlocked(file_path)
+            _write_text_atomically(file_path, str(current_value))
+            return
+        _write_text_atomically(file_path, '0')
+
+
+def increment_visit_counter() -> int:
+    file_path = get_visits_file_path()
+    with VISITS_LOCK:
+        current_value = _read_visit_count_unlocked(file_path) + 1
+        _write_text_atomically(file_path, str(current_value))
+        return current_value
+
+
+def get_visit_count() -> int:
+    file_path = get_visits_file_path()
+    with VISITS_LOCK:
+        return _read_visit_count_unlocked(file_path)
+
+
 def get_service_info() -> dict:
     """return metadata"""
+    app_config = load_application_config()
     return {
-        'name': 'devops-info-service',
+        'name': app_config.get('applicationName', 'devops-info-service'),
         'version': '1.0.0',
         'description': 'DevOps course info service',
-        'framework': 'Flask'
+        'framework': 'Flask',
+        'environment': app_config.get('environment', os.getenv('APP_ENV', 'dev'))
     }
 
 
@@ -107,7 +211,8 @@ def get_endpoints() -> list[dict]:
     """return a list of available endpoints"""
     return [
         {'path': '/', 'method': 'GET', 'description': 'Service information'},
-        {'path': '/health', 'method': 'GET', 'description': 'Health check'}
+        {'path': '/health', 'method': 'GET', 'description': 'Health check'},
+        {'path': '/visits', 'method': 'GET', 'description': 'Current visits count'}
     ]
 
 #API
@@ -138,9 +243,21 @@ OPENAPI_SPEC = {
                     }
                 }
             }
+        },
+        '/visits': {
+            'get': {
+                'summary': 'Visits counter',
+                'responses': {
+                    '200': {
+                        'description': 'Current visits count'
+                    }
+                }
+            }
         }
     }
 }
+
+initialize_visit_counter()
 
 
 @app.before_request
@@ -152,6 +269,7 @@ def log_request() -> None:
 def index():
     """main endpoint"""
     uptime = get_uptime()
+    visits = increment_visit_counter()
     payload = {
         'service': get_service_info(),
         'system': get_system_info(),
@@ -161,6 +279,11 @@ def index():
             'current_time': _iso_utc_now(),
             'timezone': 'UTC'
         },
+        'visits': {
+            'count': visits,
+            'storage_path': str(get_visits_file_path())
+        },
+        'configuration': load_application_config(),
         'request': get_request_info(),
         'endpoints': get_endpoints()
     }
@@ -175,6 +298,14 @@ def health():
         'status': 'healthy',
         'timestamp': _iso_utc_now(),
         'uptime_seconds': uptime['seconds']
+    })
+
+
+@app.route('/visits')
+def visits():
+    return jsonify({
+        'count': get_visit_count(),
+        'storage_path': str(get_visits_file_path())
     })
 
 

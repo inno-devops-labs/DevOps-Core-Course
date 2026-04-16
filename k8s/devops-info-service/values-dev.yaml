@@ -7,6 +7,9 @@ app:
   environment: "dev"
   logLevel: "debug"
 
+persistence:
+  size: 100Mi
+
 secret:
   data:
     username: "dev-user"

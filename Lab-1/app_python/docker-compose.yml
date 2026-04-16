@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    container_name: devops-info-service
+    ports:
+      - "5000:5000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 5000
+      APP_ENV: local
+      LOG_LEVEL: debug
+      VISITS_FILE_PATH: /app/data/visits
+    volumes:
+      - ./data:/app/data

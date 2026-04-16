@@ -1,13 +1,4 @@
-__pycache__/
-*.py[cod]
-*.log
-.env
-venv/
-.venv/
-.git/
-.gitignore
-.vscode/
-.idea/
-docs/
-tests/
-README.md
+.pytest_tmp
+.pytest_cache
+tests
+data

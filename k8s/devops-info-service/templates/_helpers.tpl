@@ -69,6 +69,24 @@ Secret name.
 {{- end -}}
 
 {{/*
+ConfigMap names.
+*/}}
+{{- define "devops-info-service.configFileConfigMapName" -}}
+{{- printf "%s-config" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{- define "devops-info-service.envConfigMapName" -}}
+{{- printf "%s-env" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{/*
+PVC name.
+*/}}
+{{- define "devops-info-service.pvcName" -}}
+{{- printf "%s-data" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{/*
 Common environment variables.
 */}}
 {{- define "devops-info-service.commonEnv" -}}
@@ -76,8 +94,4 @@ Common environment variables.
   value: "0.0.0.0"
 - name: PORT
   value: "{{ .Values.containerPort }}"
-- name: APP_ENV
-  value: {{ .Values.app.environment | quote }}
-- name: LOG_LEVEL
-  value: {{ .Values.app.logLevel | quote }}
 {{- end -}}

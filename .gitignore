@@ -32,3 +32,11 @@ pulumi/venv/
 *.jks
 *.json
 credentials
+
+# Lab 12 runtime artifacts
+Lab-1/app_python/data/
+Lab-1/app_python/.pytest_tmp/
+Lab-1/app_python/tests/.testdata-*/
+
+# Helm chart config file committed to the repo
+!k8s/devops-info-service/files/config.json

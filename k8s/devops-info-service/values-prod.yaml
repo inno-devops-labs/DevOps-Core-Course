@@ -7,6 +7,9 @@ app:
   environment: "prod"
   logLevel: "warn"
 
+persistence:
+  size: 1Gi
+
 secret:
   data:
     username: "prod-user"

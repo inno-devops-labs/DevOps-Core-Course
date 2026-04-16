@@ -25,6 +25,10 @@ Create a `.env` file in `app_python/`:
 HOST=0.0.0.0
 PORT=5000
 DEBUG=false
+APP_ENV=dev
+LOG_LEVEL=info
+APP_CONFIG_PATH=config/config.json
+VISITS_FILE_PATH=data/visits
 ```
 
 ## Running the Application
@@ -63,6 +67,7 @@ docker pull linktur/devops-lab2:v1
 ## API Endpoints
 - `GET /` - Service and system information
 - `GET /health` - Health check
+- `GET /visits` - Current visits counter
 - `GET /swagger.json` - OpenAPI spec
 - `GET /docs` - Swagger UI
 
@@ -93,3 +98,29 @@ pytest --cov=. --cov-report=term-missing --cov-fail-under=70
 | `HOST` | `0.0.0.0` | Bind address |
 | `PORT` | `5000` | HTTP port |
 | `DEBUG` | `False` | Flask debug mode (`true`/`false`) |
+| `APP_ENV` | `dev` | Runtime environment name |
+| `LOG_LEVEL` | `info` | Logging level exposed via config |
+| `APP_CONFIG_PATH` | `config/config.json` | Path to JSON config file |
+| `VISITS_FILE_PATH` | `data/visits` | File storing the persistent visits counter |
+
+## Persistent Visits Counter
+The root endpoint increments a counter stored in a file. The current value is returned by `GET /visits`.
+
+Local run:
+```bash
+python app.py
+curl http://127.0.0.1:5000/
+curl http://127.0.0.1:5000/visits
+cat data/visits
+```
+
+Docker Compose with persistent storage:
+```bash
+docker compose up --build
+curl http://127.0.0.1:5000/
+curl http://127.0.0.1:5000/visits
+cat ./data/visits
+docker compose down
+docker compose up
+curl http://127.0.0.1:5000/visits
+```

@@ -23,6 +23,10 @@ app:
   environment: "dev"
   logLevel: "info"
 
+config:
+  fileName: "config.json"
+  mountPath: "/config"
+
 serviceAccount:
   create: true
   name: ""
@@ -81,6 +85,14 @@ readinessProbe:
   periodSeconds: 3
   timeoutSeconds: 2
   failureThreshold: 3
+
+persistence:
+  enabled: true
+  mountPath: "/data"
+  fileName: "visits"
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
 
 hookJob:
   image: busybox:1.36
