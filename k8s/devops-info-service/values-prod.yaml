@@ -37,3 +37,8 @@ secrets:
   data:
     APP_USERNAME: "prod-user"
     APP_PASSWORD: "prod-password"
+
+vault:
+  enabled: true
+  role: myapp-role-prod
+  secretPath: secret/data/myapp/config

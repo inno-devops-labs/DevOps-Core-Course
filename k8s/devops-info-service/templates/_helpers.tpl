@@ -26,3 +26,11 @@ helm.sh/chart: {{ include "devops-info-service.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
+
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create }}
+{{- default (include "devops-info-service.fullname" .) .Values.serviceAccount.name }}
+{{- else }}
+{{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
