@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: devops-info-service-set
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+            autoSync: "true"
+            prune: "true"
+            selfHeal: "true"
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+            autoSync: "false"
+            prune: "false"
+            selfHeal: "false"
+  template:
+    metadata:
+      name: devops-info-service-{{env}}
+      namespace: argocd
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/gghost1/DevOps-Core-Course.git
+        targetRevision: lab12
+        path: k8s/devops-info-service
+        helm:
+          valueFiles:
+            - "{{valuesFile}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
