@@ -7,7 +7,7 @@ image:
 
 service:
   type: NodePort
-  nodePort: 30081
+  nodePort: 30091
 
 resources:
   requests:
@@ -37,3 +37,8 @@ secrets:
   data:
     APP_USERNAME: "dev-user"
     APP_PASSWORD: "dev-password"
+
+vault:
+  enabled: true
+  role: myapp-role-dev
+  secretPath: secret/data/myapp/config
