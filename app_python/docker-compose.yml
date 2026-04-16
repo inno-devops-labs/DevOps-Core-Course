@@ -1,0 +1,16 @@
+services:
+  devops-info:
+    build: .
+    container_name: devops-info-compose
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5002"
+      APP_ENV: "docker-compose"
+      APP_MODE: "local"
+      LOG_LEVEL: "info"
+      FEATURE_PROFILE: "persistence-demo"
+      VISITS_FILE: "/data/visits"
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./data:/data

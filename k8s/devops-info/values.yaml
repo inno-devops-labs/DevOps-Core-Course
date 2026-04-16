@@ -66,10 +66,36 @@ env:
     value: "0.0.0.0"
   - name: PORT
     value: "5002"
+  - name: CONFIG_PATH
+    value: /config/config.json
+  - name: VISITS_FILE
+    value: /data/visits
   - name: APP_ENV
     value: helm
   - name: APP_REVISION
     value: v2
+
+config:
+  enabled: true
+  file:
+    enabled: true
+    mountPath: /config
+    fileName: config.json
+    applicationName: devops-info-service
+    environment: dev
+    featureFlags:
+      visitsCounter: true
+      configHotReload: true
+    settings:
+      logFormat: json
+      storagePath: /data/visits
+  env:
+    enabled: true
+    data:
+      APP_MODE: configmap
+      LOG_LEVEL: info
+      FEATURE_PROFILE: persistence
+      FEATURE_RUNTIME_CONFIG: enabled
 
 secret:
   enabled: true
@@ -117,6 +143,14 @@ readinessProbe:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+persistence:
+  enabled: false
+  existingClaim: ""
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data
 
 vault:
   enabled: false

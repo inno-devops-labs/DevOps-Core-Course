@@ -34,8 +34,10 @@ HOST=127.0.0.1 PORT=3000 DEBUG=true python app.py
 
 - `GET /` – Service and system information
   - Service metadata (name, version, description, framework)
+  - External configuration loaded from `CONFIG_PATH`
   - System info (hostname, platform, architecture, CPU count, Python version)
   - Runtime info (uptime, current time, timezone)
+  - Persisted visits counter and storage path
   - Request info (client IP, user agent, HTTP method, path)
   - List of available endpoints
 
@@ -54,17 +56,59 @@ HOST=127.0.0.1 PORT=3000 DEBUG=true python app.py
     - `devops_info_endpoint_calls{endpoint}`
     - `devops_info_system_collection_seconds`
 
+- `GET /visits` – Persisted visits counter
+  - Returns the current count stored in `VISITS_FILE`
+  - Does not increment the counter
+
 ## Configuration
 
 Configuration is done via environment variables:
 
-| Variable | Default     | Description                           |
-|---------|-------------|---------------------------------------|
-| `HOST`  | `0.0.0.0`   | Address the Flask app listens on      |
-| `PORT`  | `5002`      | TCP port for HTTP server              |
-| `DEBUG` | `False`     | Enable Flask debug mode if `true`     |
+| Variable | Default | Description |
+|---------|---------|-------------|
+| `HOST` | `0.0.0.0` | Address the Flask app listens on |
+| `PORT` | `5002` | TCP port for HTTP server |
+| `DEBUG` | `False` | Enable Flask debug mode if `true` |
+| `CONFIG_PATH` | `/config/config.json` | JSON config file loaded at request time |
+| `VISITS_FILE` | `/data/visits` | File used to persist the visit counter |
 
 All configuration is read in `app.py` at startup, so restart the application after changing environment variables.
+
+The JSON config file is optional. If `CONFIG_PATH` does not exist, the application still starts and returns an empty `configuration.config_file` object.
+
+## Persistence
+
+The root endpoint increments a file-backed counter on every request. The counter is persisted in `VISITS_FILE` using an atomic write (`os.replace`) and a process-local lock so the file contents remain consistent during concurrent requests handled by the same container.
+
+Quick local check without Docker:
+
+```bash
+mkdir -p data
+VISITS_FILE=./data/visits python app.py
+curl -s http://127.0.0.1:5002/ | jq '.visits'
+curl -s http://127.0.0.1:5002/ | jq '.visits'
+curl -s http://127.0.0.1:5002/visits | jq
+cat ./data/visits
+```
+
+## Docker Compose Persistence Test
+
+Run the container with a bind mount so the counter survives container recreation:
+
+```bash
+docker compose up --build -d
+curl -s http://127.0.0.1:5002/ | jq '.visits'
+curl -s http://127.0.0.1:5002/ | jq '.visits'
+cat ./data/visits
+docker compose down
+docker compose up -d
+curl -s http://127.0.0.1:5002/visits | jq
+```
+
+Expected result:
+
+- `./data/visits` increases with each `GET /`
+- after `docker compose down` and `docker compose up -d`, `GET /visits` returns the previously stored value
 
 ## Structured Logging (Lab 7)
 

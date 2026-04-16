@@ -8,6 +8,8 @@ import logging
 import os
 import platform
 import socket
+import tempfile
+import threading
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict
@@ -23,6 +25,9 @@ app = Flask(__name__)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 5002))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+CONFIG_PATH = os.getenv("CONFIG_PATH", "/config/config.json")
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
+VISITS_FILE_LOCK = threading.Lock()
 
 
 # Application start time (for uptime calculation)
@@ -73,6 +78,8 @@ logger.info(
             "event": "startup",
             "host": HOST,
             "port": PORT,
+            "config_path": CONFIG_PATH,
+            "visits_file": VISITS_FILE,
         }
     },
 )
@@ -149,9 +156,102 @@ def get_normalized_endpoint() -> str:
     """Map routes to low-cardinality labels for Prometheus metrics."""
     if request.url_rule is not None and request.url_rule.rule:
         return request.url_rule.rule
-    if request.path in {"/", "/health", "/ready", "/metrics"}:
+    if request.path in {"/", "/health", "/ready", "/metrics", "/visits"}:
         return request.path
     return "/unknown"
+
+
+def read_config_file() -> Dict[str, Any]:
+    """Load optional runtime configuration from a JSON file."""
+    try:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as config_file:
+            return json.load(config_file)
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError as exc:
+        logger.warning(
+            "Invalid configuration file",
+            extra={
+                "context": {
+                    "event": "config_invalid",
+                    "config_path": CONFIG_PATH,
+                    "error": str(exc),
+                }
+            },
+        )
+        return {
+            "error": "invalid_json",
+            "path": CONFIG_PATH,
+        }
+
+
+def get_config_env_vars() -> Dict[str, str]:
+    """Expose non-sensitive APP/LOG/FEATURE env vars in the response."""
+    allowed_prefixes = ("APP_", "LOG_", "FEATURE_")
+    return {
+        key: os.environ[key]
+        for key in sorted(os.environ)
+        if key.startswith(allowed_prefixes)
+    }
+
+
+def read_visit_count() -> int:
+    """Read the persisted visit count, defaulting to zero."""
+    try:
+        with open(VISITS_FILE, "r", encoding="utf-8") as visits_file:
+            raw_value = visits_file.read().strip()
+    except FileNotFoundError:
+        return 0
+
+    if not raw_value:
+        return 0
+
+    try:
+        return int(raw_value)
+    except ValueError:
+        logger.warning(
+            "Visit counter file contains invalid data",
+            extra={
+                "context": {
+                    "event": "visits_invalid",
+                    "visits_file": VISITS_FILE,
+                    "raw_value": raw_value,
+                }
+            },
+        )
+        return 0
+
+
+def write_visit_count(count: int) -> None:
+    """Persist the visit counter using an atomic rename."""
+    directory = os.path.dirname(VISITS_FILE)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+    file_descriptor, temp_path = tempfile.mkstemp(
+        dir=directory or None, prefix="visits-", text=True
+    )
+    try:
+        with os.fdopen(file_descriptor, "w", encoding="utf-8") as temp_file:
+            temp_file.write(str(count))
+        os.replace(temp_path, VISITS_FILE)
+    finally:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+
+
+def get_current_visit_count() -> int:
+    """Return the current persisted visit count."""
+    with VISITS_FILE_LOCK:
+        return read_visit_count()
+
+
+def increment_visit_count() -> int:
+    """Increment and persist the visit counter safely within this process."""
+    with VISITS_FILE_LOCK:
+        count = read_visit_count() + 1
+        write_visit_count(count)
+        return count
 
 
 @app.before_request
@@ -196,9 +296,11 @@ def after_request_logging(response):
 def index():
     """Main endpoint - service and system information."""
     DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/").inc()
+    visit_count = increment_visit_count()
     uptime = get_uptime()
     system_info = get_system_info()
     request_info = get_request_info()
+    config_file = read_config_file()
 
     response = {
         "service": {
@@ -207,12 +309,21 @@ def index():
             "description": "DevOps course info service",
             "framework": "Flask",
         },
+        "configuration": {
+            "config_path": CONFIG_PATH,
+            "config_file": config_file,
+            "environment_variables": get_config_env_vars(),
+        },
         "system": system_info,
         "runtime": {
             "uptime_seconds": uptime["seconds"],
             "uptime_human": uptime["human"],
             "current_time": datetime.now(timezone.utc).isoformat(),
             "timezone": "UTC",
+        },
+        "visits": {
+            "count": visit_count,
+            "storage_file": VISITS_FILE,
         },
         "request": request_info,
         "endpoints": [
@@ -235,6 +346,11 @@ def index():
                 "path": "/metrics",
                 "method": "GET",
                 "description": "Prometheus metrics",
+            },
+            {
+                "path": "/visits",
+                "method": "GET",
+                "description": "Current persisted visit count",
             },
         ],
     }
@@ -273,6 +389,21 @@ def metrics():
     """Expose Prometheus scrape endpoint."""
     DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/metrics").inc()
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+
+@app.route("/visits", methods=["GET"])
+def visits():
+    """Return the current persisted visit count without incrementing it."""
+    DEVOPS_INFO_ENDPOINT_CALLS.labels(endpoint="/visits").inc()
+    return (
+        jsonify(
+            {
+                "count": get_current_visit_count(),
+                "storage_file": VISITS_FILE,
+            }
+        ),
+        200,
+    )
 
 
 @app.errorhandler(404)
