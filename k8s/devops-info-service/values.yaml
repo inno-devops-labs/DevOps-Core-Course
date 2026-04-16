@@ -72,3 +72,7 @@ statefulset:
   enabled: false
   updateStrategy: RollingUpdate
   partition: 0
+
+serviceMonitor:
+  enabled: false
+  release: monitoring
