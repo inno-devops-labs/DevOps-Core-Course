@@ -148,8 +148,11 @@ services:
       HOST: "0.0.0.0"
       PORT: "8080"
       DEBUG: "false"
+      VISITS_FILE: "/data/visits"
     ports:
       - "8000:8080"
+    volumes:
+      - ../app_python/data:/data
     labels:
       logging: "promtail"
       app: "devops-python"

@@ -3,6 +3,16 @@ replicaCount: 1
 image:
   tag: "latest"
 
+appConfig:
+  environment: "dev"
+
+configMaps:
+  env:
+    data:
+      APP_ENV: "dev"
+      LOG_LEVEL: "DEBUG"
+      FEATURE_VISITS: "true"
+
 service:
   type: NodePort
   nodePort: 30080

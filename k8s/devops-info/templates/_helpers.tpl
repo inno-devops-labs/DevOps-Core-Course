@@ -80,3 +80,21 @@ Secret resource name
 {{- define "devops-info.secretName" -}}
 {{- default (printf "%s-secret" (include "devops-info.fullname" .)) .Values.secret.name }}
 {{- end }}
+
+{{/*
+ConfigMap resource names
+*/}}
+{{- define "devops-info.configFileMapName" -}}
+{{- printf "%s-config" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "devops-info.configEnvMapName" -}}
+{{- printf "%s-env" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+PVC resource name
+*/}}
+{{- define "devops-info.pvcName" -}}
+{{- printf "%s-data" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}

@@ -14,7 +14,9 @@ sys.path.insert(0, str(ROOT))
 
 
 @pytest.fixture()
-def client():
+def client(tmp_path):
+    app.VISITS_FILE = tmp_path / "visits"
+    app.initialize_visits_storage()
     app.app.config.update({"TESTING": True})
     with app.app.test_client() as client:
         yield client
@@ -25,7 +27,9 @@ def test_index_success_structure(client):
     assert response.status_code == 200
     data = response.get_json()
 
-    assert set(data.keys()) == {"service", "system", "runtime", "request", "endpoints"}
+    assert set(data.keys()) == {"service", "visits", "system", "runtime", "request", "endpoints"}
+    assert isinstance(data["visits"], int)
+    assert data["visits"] >= 1
 
     service = data["service"]
     assert service["name"] == app.APP_NAME
@@ -59,8 +63,26 @@ def test_index_success_structure(client):
     assert isinstance(endpoints, list)
     paths_methods = {(item.get("path"), item.get("method")) for item in endpoints}
     assert ("/", "GET") in paths_methods
+    assert ("/visits", "GET") in paths_methods
     assert ("/health", "GET") in paths_methods
     assert ("/metrics", "GET") in paths_methods
+
+
+def test_visits_counter_increments_and_reads_current_value(client):
+    first = client.get("/")
+    second = client.get("/")
+    third = client.get("/visits")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert third.status_code == 200
+
+    first_count = first.get_json()["visits"]
+    second_count = second.get_json()["visits"]
+    current_count = third.get_json()["visits"]
+
+    assert second_count == first_count + 1
+    assert current_count == second_count
 
 
 def test_health_success(client):

@@ -40,13 +40,31 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
               protocol: TCP
-          {{- if .Values.secret.enabled }}
+          {{- if or .Values.configMaps.env.enabled .Values.secret.enabled }}
           envFrom:
+            {{- if .Values.configMaps.env.enabled }}
+            - configMapRef:
+                name: {{ include "devops-info.configEnvMapName" . }}
+            {{- end }}
+            {{- if .Values.secret.enabled }}
             - secretRef:
                 name: {{ include "devops-info.secretName" . }}
+            {{- end }}
           {{- end }}
           env:
             {{- toYaml .Values.container.env | nindent 12 }}
+          {{- if or .Values.configMaps.file.enabled .Values.persistence.enabled }}
+          volumeMounts:
+            {{- if .Values.configMaps.file.enabled }}
+            - name: config-volume
+              mountPath: {{ .Values.configMaps.file.mountPath }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+          {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -59,3 +77,16 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+      {{- if or .Values.configMaps.file.enabled .Values.persistence.enabled }}
+      volumes:
+        {{- if .Values.configMaps.file.enabled }}
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info.configFileMapName" . }}
+        {{- end }}
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info.pvcName" . }}
+        {{- end }}
+      {{- end }}

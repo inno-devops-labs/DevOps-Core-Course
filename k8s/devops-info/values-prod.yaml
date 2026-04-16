@@ -3,6 +3,16 @@ replicaCount: 4
 image:
   tag: "v1.0.0"
 
+appConfig:
+  environment: "prod"
+
+configMaps:
+  env:
+    data:
+      APP_ENV: "prod"
+      LOG_LEVEL: "INFO"
+      FEATURE_VISITS: "true"
+
 service:
   type: LoadBalancer
   nodePort: null

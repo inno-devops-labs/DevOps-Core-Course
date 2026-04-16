@@ -15,6 +15,33 @@ container:
       value: "0.0.0.0"
     - name: PORT
       value: "8080"
+    - name: VISITS_FILE
+      value: "/data/visits"
+
+appConfig:
+  environment: "dev"
+  appName: "devops-info-service"
+  featureFlags:
+    visitsEndpoint: true
+    metricsEndpoint: true
+
+configMaps:
+  file:
+    enabled: true
+    mountPath: "/config"
+  env:
+    enabled: true
+    data:
+      APP_ENV: "dev"
+      LOG_LEVEL: "INFO"
+      FEATURE_VISITS: "true"
+
+persistence:
+  enabled: true
+  size: "100Mi"
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  mountPath: "/data"
 
 deployment:
   revisionHistoryLimit: 5

@@ -9,6 +9,9 @@ import logging
 import os
 import platform
 import socket
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+from threading import Lock
 from time import perf_counter
 from datetime import datetime, timezone
 from typing import Dict, List, Any
@@ -25,9 +28,11 @@ FRAMEWORK = "Flask"
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8080))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+VISITS_FILE = Path(os.getenv("VISITS_FILE", "data/visits"))
 
 # Track application start time for uptime calculations
 START_TIME = datetime.now(timezone.utc)
+VISITS_LOCK = Lock()
 
 app = Flask(__name__)
 
@@ -78,6 +83,7 @@ class JSONFormatter(logging.Formatter):
             "app",
             "version",
             "event",
+            "visits",
         ):
             if hasattr(record, field):
                 payload[field] = getattr(record, field)
@@ -165,6 +171,7 @@ def get_endpoints() -> List[Dict[str, str]]:
     """List known HTTP endpoints."""
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
+        {"path": "/visits", "method": "GET", "description": "Current visits counter"},
         {"path": "/health", "method": "GET", "description": "Health check"},
         {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
     ]
@@ -172,11 +179,56 @@ def get_endpoints() -> List[Dict[str, str]]:
 
 def get_metrics_endpoint_label() -> str:
     """Normalize endpoint labels to keep cardinality low."""
-    if request.path in {"/", "/health", "/metrics"}:
+    if request.path in {"/", "/visits", "/health", "/metrics"}:
         return request.path
     if request.url_rule and request.url_rule.rule:
         return request.url_rule.rule
     return "unknown"
+
+
+def _parse_visits(raw_value: str) -> int:
+    """Parse a persisted visit counter value."""
+    try:
+        return max(0, int(raw_value.strip()))
+    except (TypeError, ValueError):
+        return 0
+
+
+def read_visits_count() -> int:
+    """Read visit counter from file, defaulting to 0 when missing/invalid."""
+    if not VISITS_FILE.exists():
+        return 0
+    try:
+        return _parse_visits(VISITS_FILE.read_text(encoding="utf-8"))
+    except OSError:
+        return 0
+
+
+def write_visits_count(value: int) -> None:
+    """Persist visit counter using atomic replace."""
+    VISITS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile("w", delete=False, dir=str(VISITS_FILE.parent), encoding="utf-8") as tmp:
+        tmp.write(str(max(0, value)))
+        temp_name = tmp.name
+    os.replace(temp_name, VISITS_FILE)
+
+
+def initialize_visits_storage() -> int:
+    """Ensure visits file is initialized and return startup value."""
+    with VISITS_LOCK:
+        visits = read_visits_count()
+        if not VISITS_FILE.exists():
+            write_visits_count(visits)
+        return visits
+
+
+def increment_visits_count() -> int:
+    """Increment and persist visits counter."""
+    with VISITS_LOCK:
+        current = read_visits_count()
+        updated = current + 1
+        write_visits_count(updated)
+        return updated
 
 
 @app.before_request
@@ -237,6 +289,7 @@ def log_response(response):  # type: ignore[no-untyped-def]
 @app.route("/", methods=["GET"])
 def index() -> Any:
     """Main endpoint returning service, system, runtime, and request info."""
+    visits = increment_visits_count()
     response = {
         "service": {
             "name": APP_NAME,
@@ -244,12 +297,19 @@ def index() -> Any:
             "description": APP_DESCRIPTION,
             "framework": FRAMEWORK,
         },
+        "visits": visits,
         "system": get_system_info(),
         "runtime": get_runtime_info(),
         "request": get_request_info(),
         "endpoints": get_endpoints(),
     }
     return jsonify(response), 200
+
+
+@app.route("/visits", methods=["GET"])
+def visits() -> Any:
+    """Return the current visits counter."""
+    return jsonify({"visits": read_visits_count()}), 200
 
 
 @app.route("/health", methods=["GET"])
@@ -300,7 +360,17 @@ def internal_error(error):  # type: ignore[override]
 
 
 def main() -> None:
+    startup_visits = initialize_visits_storage()
     setup_logging()
+    logging.info(
+        "visits_counter_initialized",
+        extra={
+            "event": "visits_counter_initialized",
+            "visits": startup_visits,
+            "app": APP_NAME,
+            "version": APP_VERSION,
+        },
+    )
     app.run(host=HOST, port=PORT, debug=DEBUG, use_reloader=False)
 
 
