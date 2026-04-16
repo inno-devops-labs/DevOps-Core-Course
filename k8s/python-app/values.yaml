@@ -9,8 +9,13 @@ secrets:
   apiKey: "placeholder-api-key"
   dbUrl: "postgresql://app-user:changeme@localhost:5432/appdb"
 
+# Application environment configuration (used in ConfigMap)
+environment: "dev"
+logLevel: "info"
+
 # Number of pod replicas
-replicaCount: 3
+# NOTE: Must be 1 when persistence.enabled=true and accessMode=ReadWriteOnce
+replicaCount: 1
 
 image:
   repository: newspec/python_app
@@ -103,3 +108,10 @@ vault:
   enabled: false
   role: "python-app"
   secretPath: "secret/data/python-app/config"
+
+# Persistent storage configuration for visits counter
+# NOTE: ReadWriteOnce requires replicaCount=1 (single node access)
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""  # Empty string = use cluster default storage class

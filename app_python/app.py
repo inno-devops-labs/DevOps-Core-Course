@@ -7,6 +7,7 @@ import os
 import platform
 import socket
 import sys
+import tempfile
 from datetime import datetime, timezone
 
 import uvicorn
@@ -37,6 +38,7 @@ instrumentator.instrument(app).expose(app, endpoint="/metrics")
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
 
 # JSON Logging Configuration
 
@@ -178,24 +180,69 @@ def get_request_info(request: Request):
 
 
 def get_endpoints():
-    """Get all existing ednpoints."""
+    """Get all existing endpoints."""
     logger.debug('Getting list of all endpoints.')
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
+        {"path": "/visits", "method": "GET", "description": "Visit counter"},
     ]
+
+
+def read_visits() -> int:
+    """Read the current visit count from file.
+
+    Returns 0 if file doesn't exist.
+    """
+    try:
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def write_visits(count: int) -> None:
+    """Atomically write the visit count to file."""
+    data_dir = os.path.dirname(VISITS_FILE)
+    if data_dir:
+        os.makedirs(data_dir, exist_ok=True)
+    # Atomic write: write to temp file then rename
+    fd, tmp_path = tempfile.mkstemp(dir=data_dir if data_dir else ".")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(str(count))
+        os.replace(tmp_path, VISITS_FILE)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
 
 
 @app.get("/", status_code=status.HTTP_200_OK)
 async def root(request: Request):
     """Main endpoint - service and system information."""
     logger.info("Processing root endpoint request")
+    current = read_visits()
+    new_count = current + 1
+    write_visits(new_count)
+    logger.info("Visit counter incremented", extra={"visits": new_count})
     return {
         "service": get_service_info(),
         "system": get_system_info(),
         "runtime": get_runtime_info(),
         "request": get_request_info(request),
         "endpoints": get_endpoints(),
+        "visits": new_count,
+    }
+
+
+@app.get("/visits", status_code=status.HTTP_200_OK)
+async def visits(request: Request):
+    """Endpoint to return the current visit count."""
+    logger.info("Visits endpoint requested")
+    count = read_visits()
+    return {
+        "visits": count,
+        "file": VISITS_FILE,
     }
 
 

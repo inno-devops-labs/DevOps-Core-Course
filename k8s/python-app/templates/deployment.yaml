@@ -35,9 +35,20 @@ spec:
           DB_URL={{ `{{ .Data.data.db_url }}` }}
           {{`{{- end -}}`}}
         {{- end }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/config-env: {{ include (print $.Template.BasePath "/configmap-env.yaml") . | sha256sum }}
     spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "python-app.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "python-app.fullname" . }}-data
+        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -53,8 +64,18 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "python-app.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "python-app.fullname" . }}-env
           env:
             {{- include "python-app.commonEnvVars" . | nindent 12 }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:

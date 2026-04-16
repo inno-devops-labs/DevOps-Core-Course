@@ -32,17 +32,29 @@ PORT=8080 python app.py
 ```
 
 ## API Endpoints
-- `GET /` - Service and system information
+- `GET /` - Service and system information (also increments visit counter)
 - `GET /health` - Health check
+- `GET /visits` - Current visit count
 
 ## Configuration
 
 The application is configured using environment variables.
 
-| Variable | Default | Description | Example     |
-|---------|---------|-------------|-------------|
-| `HOST`  | `0.0.0.0` | Host interface to bind the server to | `127.0.0.1` |
-| `PORT`  | `8000` | Port the server listens on | `8080`      |
+| Variable | Default | Description | Example |
+|---------|---------|-------------|---------|
+| `HOST` | `0.0.0.0` | Host interface to bind the server to | `127.0.0.1` |
+| `PORT` | `8000` | Port the server listens on | `8080` |
+| `VISITS_FILE` | `/data/visits` | Path to the visits counter file | `/tmp/visits` |
+
+## Visits Counter
+
+Each request to `GET /` increments a persistent counter stored in `VISITS_FILE` (default: `/data/visits`).
+The counter survives container restarts when the data directory is mounted as a volume.
+
+```
+GET /  →  read counter  →  increment  →  write back  →  return response with visits
+GET /visits  →  read counter  →  return {"visits": N}
+```
 
 # Docker
 
@@ -57,6 +69,29 @@ Command pattern:
 ```bash
 docker run --rm -p <host_port>:<container_port> <image_name>:<tag>
 ```
+
+## Running with Docker Compose (with persistent visits counter)
+
+```bash
+# Start the application with a persistent data volume
+docker compose up -d
+
+# Access the root endpoint (increments counter)
+curl http://localhost:8000/
+
+# Check the visit count
+curl http://localhost:8000/visits
+
+# Inspect the counter file on the host
+cat ./data/visits
+
+# Restart the container and verify counter persists
+docker compose restart
+curl http://localhost:8000/visits
+```
+
+The `docker-compose.yml` mounts `./data` on the host to `/app/data` inside the container,
+so the visits file survives container restarts.
 
 ## Pulling from Docker Hub
 Command pattern:
