@@ -3,6 +3,8 @@ import socket
 import platform
 import logging
 import time
+import json
+import threading
 from datetime import datetime, timezone
 from typing import Dict, Any
 
@@ -10,13 +12,18 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pythonjsonlogger import jsonlogger
-
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
 
+# Application configuration
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
+# Visits file path
+VISITS_FILE = "/data/visits"
+lock = threading.Lock()
+
+# JSON logging
 logHandler = logging.StreamHandler()
 formatter = jsonlogger.JsonFormatter(
     fmt='%(asctime)s %(levelname)s %(name)s %(message)s',
@@ -30,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 START_TIME = datetime.now(timezone.utc)
 
+# FastAPI app
 app = FastAPI(
     title="DevOps Info Service",
     version="1.0.0",
@@ -44,30 +52,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ========== Prometheus Metrics ==========
 http_requests_total = Counter(
     'http_requests_total',
     'Total HTTP requests',
     ['method', 'endpoint', 'status']
 )
-
 http_request_duration_seconds = Histogram(
     'http_request_duration_seconds',
     'HTTP request duration in seconds',
     ['method', 'endpoint'],
     buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10)
 )
-
 http_requests_in_progress = Gauge(
     'http_requests_in_progress',
     'Number of HTTP requests currently being processed'
 )
-
 endpoint_calls = Counter(
     'devops_info_endpoint_calls_total',
     'Total calls per endpoint',
     ['endpoint']
 )
+# ========================================
 
+# ========== Visits counter helpers ==========
+def read_visits() -> int:
+    """Read the current visit count from file."""
+    try:
+        with open(VISITS_FILE, "r") as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+def write_visits(count: int) -> None:
+    """Write the visit count to file atomically."""
+    with lock:
+        with open(VISITS_FILE, "w") as f:
+            f.write(str(count))
+# ===========================================
+
+# Middleware to log and measure requests
 @app.middleware("http")
 async def monitor_requests(request: Request, call_next):
     method = request.method
@@ -100,6 +124,7 @@ async def monitor_requests(request: Request, call_next):
     )
     return response
 
+# Helper functions
 def get_system_info() -> Dict[str, Any]:
     return {
         "hostname": socket.gethostname(),
@@ -130,9 +155,12 @@ def get_request_info(request: Request) -> Dict[str, Any]:
         "path": request.url.path,
     }
 
+# ========== Endpoints ==========
 @app.get("/", response_model=Dict[str, Any])
 async def root(request: Request) -> Dict[str, Any]:
-    logger.debug("Root endpoint processing")
+    count = read_visits() + 1
+    write_visits(count)
+    logger.info(f"Visits incremented to {count}")
     return {
         "service": {
             "name": "devops-info-service",
@@ -152,6 +180,7 @@ async def root(request: Request) -> Dict[str, Any]:
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
+            {"path": "/visits", "method": "GET", "description": "Visit counter"},
         ],
     }
 
@@ -165,8 +194,12 @@ async def health() -> Dict[str, Any]:
 
 @app.get("/metrics")
 async def metrics():
-    """Expose Prometheus metrics."""
     return Response(content=generate_latest(REGISTRY), media_type="text/plain")
+
+@app.get("/visits")
+async def visits():
+    count = read_visits()
+    return {"visits": count}
 
 @app.exception_handler(404)
 async def not_found(request: Request, exc):

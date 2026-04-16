@@ -1,0 +1,9 @@
+{
+  "appName": "DevOps Info Service",
+  "environment": "production",
+  "features": {
+    "visits": true,
+    "metrics": true
+  },
+  "logLevel": "info"
+}

@@ -16,14 +16,10 @@ spec:
       maxUnavailable: 0
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
         {{- include "my-python-app.selectorLabels" . | nindent 8 }}
-      {{- if .Values.vault.enabled }}
-      annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
-        vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPath | quote }}
-      {{- end }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
@@ -32,17 +28,31 @@ spec:
         ports:
         - containerPort: {{ .Values.service.targetPort }}
           name: http
+        env:
+        - name: PORT
+          value: "8000"
+        - name: HOST
+          value: "0.0.0.0"
         envFrom:
+        - configMapRef:
+            name: {{ include "my-python-app.fullname" . }}-env
         - secretRef:
             name: {{ include "my-python-app.fullname" . }}-secret
-        env:
-        {{- include "my-python-app.envVars" . | nindent 8 }}
-        {{- with .Values.env }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+        - name: data-volume
+          mountPath: /data
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 10 }}
         readinessProbe:
           {{- toYaml .Values.readinessProbe | nindent 10 }}
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ include "my-python-app.fullname" . }}-config
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: {{ include "my-python-app.fullname" . }}-data

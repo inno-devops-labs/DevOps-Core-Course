@@ -1,14 +1,9 @@
-# Default values for my-python-app
 replicaCount: 3
 
 image:
   repository: acecution/devops-info-service
-  tag: "metrics"
+  tag: metrics
   pullPolicy: IfNotPresent
-
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
 
 service:
   type: NodePort
@@ -16,7 +11,20 @@ service:
   targetPort: 8000
   nodePort: 30080
 
-# Resource limits (CPU and memory)
+environment: "production"
+logLevel: "info"
+features:
+  visits: true
+
+secrets:
+  username: placeholder-user
+  password: placeholder-password
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
 resources:
   requests:
     memory: "64Mi"
@@ -25,7 +33,6 @@ resources:
     memory: "128Mi"
     cpu: "200m"
 
-# Probes (health checks)
 livenessProbe:
   httpGet:
     path: /health
@@ -45,20 +52,8 @@ readinessProbe:
   successThreshold: 1
   failureThreshold: 3
 
-# Environment variables (non-secret)
 env:
   - name: PORT
     value: "8000"
   - name: HOST
     value: "0.0.0.0"
-
-# Secrets (use --set or external secret management for real values)
-secrets:
-  username: placeholder-user
-  password: placeholder-password
-
-# Vault integration (annotations will be added via --set or values)
-vault:
-  enabled: false
-  role: "devops-app"
-  secretPath: "secret/data/devops-app/config"

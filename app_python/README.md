@@ -391,3 +391,36 @@ services:
 6. **✅ Minimal image**: Small footprint (~123MB)
 7. **✅ Specific versions**: Reproducible builds
 8. **✅ Proper logging**: Structured application logs
+
+## Visits Counter
+
+The application now tracks how many times the root endpoint (`/`) has been accessed.
+
+- **Endpoint:** `GET /visits` returns the current visit count.
+- **Persistence:** The counter is stored in a file at `/data/visits`.
+- When running with Docker Compose, a local directory is mounted to preserve the counter across restarts.
+- In Kubernetes, a PersistentVolumeClaim is used to store the data.
+
+**Example response:**
+```json
+{"visits": 42}
+```
+
+### Testing Locally
+
+```bash
+mkdir data
+docker compose up -d
+curl http://localhost:8000/          # increments
+curl http://localhost:8000/visits
+docker compose restart
+curl http://localhost:8000/visits    # value preserved
+```
+
+### In Kubernetes
+
+After deploying the Helm chart, access the service and check:
+
+```bash
+curl http://$(minikube ip):30080/visits
+```
