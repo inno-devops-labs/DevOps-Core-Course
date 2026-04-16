@@ -4,16 +4,15 @@
 
 **What was deployed:** DevOps Core Course landing page (`index.html`)
 
-**4EVERLAND Hosting URL:** https://devops-info-service-lab18.4everland.app
+**4EVERLAND Hosting URL:** https://devops-core-course-qff0qpmo-blxxdclxud.ipfs.4everland.app
 
 **IPFS Gateway URLs:**
-- 4EVERLAND: `https://ipfs.4everland.link/ipfs/QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa`
-- IPFS.io: `https://ipfs.io/ipfs/QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa`
-- DWeb.link: `https://dweb.link/ipfs/QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa`
+- 4EVERLAND: `https://ipfs.4everland.link/ipfs/bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je`
+- IPFS.io: `https://ipfs.io/ipfs/bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je`
+- DWeb.link: `https://dweb.link/ipfs/bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je`
 
 **CIDs obtained:**
-- `index.html` CID: `QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa`
-- `hello.txt` CID: `QmeoZRLd2Srb2ENuEXA1BX8TJDM12qh6RpupazVikUz5PK`
+- `index.html` CID: `bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je`
 - CIDv1 (base32): `bafybeigbvkbudsszdvive63e4x67cmiy5ln6bcyufrczdenvnfk3cb6np4`
 
 ---
@@ -27,7 +26,7 @@
 - IPFS: `ipfs://QmXxx...` — you ask for a *hash of the content*. Anyone who has the file can serve it.
 
 **CID (Content Identifier):**
-A CID is the hash of your file's content. The same file always produces the same CID. If the file changes even by one character, the CID changes. Example: `QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa`
+A CID is the hash of your file's content. The same file always produces the same CID. If the file changes even by one character, the CID changes. Example: `bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je`
 
 **Pinning:** By default, IPFS runs garbage collection and deletes files you're not actively using. Pinning marks a file as "keep this forever." Pinning services (like 4EVERLAND) keep files pinned so they stay available globally.
 
@@ -62,11 +61,11 @@ curl -L http://localhost:8888/ipfs/QmeoZRLd2Srb2ENuEXA1BX8TJDM12qh6RpupazVikUz5P
 # Add the course landing page
 docker cp labs/lab18/index.html ipfs:/index.html
 docker exec ipfs ipfs add /index.html
-# added QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa index.html
+# added bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je index.html
 
 # Verify it's pinned
 docker exec ipfs ipfs pin ls --type=recursive
-# QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa recursive
+# bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je recursive
 ```
 
 ---
@@ -104,7 +103,7 @@ curl -I https://devops-info-service-lab18.4everland.app
 # HTTP/2 200
 
 # Access via IPFS gateway
-curl https://ipfs.4everland.link/ipfs/QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa | head -5
+curl https://ipfs.4everland.link/ipfs/bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je | head -5
 ```
 
 ### Content Permanence
@@ -119,7 +118,7 @@ Same file = same CID. After making a small change to index.html and redeploying,
 
 1. 4EVERLAND Dashboard → Bucket → Create Bucket (`devops-lab18`)
 2. Uploaded files:
-   - `index.html` — CID: `QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa`
+   - `index.html` — CID: `bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je`
    - `hello.txt` — CID: `QmeoZRLd2Srb2ENuEXA1BX8TJDM12qh6RpupazVikUz5PK`
 3. Uploaded the whole `lab18/` directory → directory CID: `QmYsGHUd...`
 
@@ -127,13 +126,13 @@ Same file = same CID. After making a small change to index.html and redeploying,
 
 ```bash
 # 4EVERLAND (fast, reliable)
-https://ipfs.4everland.link/ipfs/QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa
+https://ipfs.4everland.link/ipfs/bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je
 
 # IPFS.io (official)
-https://ipfs.io/ipfs/QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa
+https://ipfs.io/ipfs/bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je
 
 # DWeb.link (Cloudflare-backed, very fast)
-https://dweb.link/ipfs/QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa
+https://dweb.link/ipfs/bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je
 ```
 
 All three gateways return the same file because IPFS uses content addressing — the CID guarantees you get exactly the right bytes regardless of which gateway you use.
@@ -160,7 +159,7 @@ Without pinning, IPFS garbage collects files that aren't in use. When 4EVERLAND 
 After making a small text change in `index.html` and pushing:
 
 ```
-Old CID: QmbNeCQiZt4WiaRPGuD53zc8HA8uLZd5bbub3NCJDxD2Sa  (still accessible)
+Old CID: bafkreid4c3xgakvdq5igbtokbvspbzouid6q2egoqsn22hwcl4lkxjh4je  (still accessible)
 New CID: QmNewCID...  (new deployment)
 Project URL: https://devops-info-service-lab18.4everland.app  (same, now shows new content)
 ```
