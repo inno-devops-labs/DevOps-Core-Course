@@ -43,8 +43,21 @@ app:
   logLevel: "info"
   serviceName: "devops-info-service"
   serviceVersion: "1.0.0"
+  serviceDescription: "DevOps course info service"
+  serviceFramework: "FastAPI"
   host: "0.0.0.0"
   port: "5000"
+
+config:
+  mountPath: "/config"
+  env:
+    APP_ENV: "dev"
+    LOG_LEVEL: "info"
+    APP_DISPLAY_NAME: "DevOps Info Service"
+    FEATURE_VISITS_ENABLED: "true"
+    FEATURE_CONFIG_HOT_RELOAD: "true"
+    APP_CONFIG_PATH: "/config/config.json"
+    VISITS_FILE: "/data/visits"
 
 secret:
   enabled: true
@@ -66,6 +79,13 @@ vault:
     password: "password"
 
 extraEnv: []
+
+persistence:
+  enabled: true
+  mountPath: "/data"
+  size: "100Mi"
+  accessMode: "ReadWriteOnce"
+  storageClass: ""
 
 resources:
   requests:
@@ -105,7 +125,7 @@ hooks:
   enabled: true
   image:
     repository: devops-info-service
-    tag: "lab09"
+    tag: "latest"
     pullPolicy: IfNotPresent
   preInstall:
     deletePolicy:

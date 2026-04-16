@@ -38,10 +38,10 @@ Chart-local aliases around the shared library helpers.
   value: {{ .Values.app.serviceName | quote }}
 - name: SERVICE_VERSION
   value: {{ .Values.app.serviceVersion | quote }}
-- name: APP_ENV
-  value: {{ .Values.app.environment | quote }}
-- name: LOG_LEVEL
-  value: {{ .Values.app.logLevel | quote }}
+- name: SERVICE_DESCRIPTION
+  value: {{ .Values.app.serviceDescription | quote }}
+- name: SERVICE_FRAMEWORK
+  value: {{ .Values.app.serviceFramework | quote }}
 {{- with .Values.extraEnv }}
 {{ toYaml . }}
 {{- end }}

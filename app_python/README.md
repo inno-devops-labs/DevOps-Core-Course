@@ -5,6 +5,7 @@
 [![Coverage Status](https://codecov.io/gh/InnoNodo/DevOps-Core-Course/branch/lab03/graph/badge.svg)](https://app.codecov.io/github/InnoNodo/DevOps-Core-Course/tree/lab03)
 
 This Python application provides a RESTful service that delivers system and service information through health check endpoints.
+It also persists visit counts to a file so the counter survives container restarts when `/data` is mounted.
 
 ## Prerequisites
 - Python 3.8 or higher
@@ -39,8 +40,11 @@ PORT=8080 python app.py
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | Service and system information |
+| GET | `/` | Service, system, config, and visit information. Each request increments the persisted visits counter |
+| GET | `/visits` | Current persisted visits counter |
 | GET | `/health` | Health check status |
+| GET | `/ready` | Readiness check status |
+| GET | `/metrics` | Prometheus metrics |
 
 ## Configuration
 
@@ -49,7 +53,32 @@ Configure the application using environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `5000` | Server port |
-| `HOST` | `127.0.0.1` | Server host address |
+| `HOST` | `0.0.0.0` | Server host address |
+| `VISITS_FILE` | `/data/visits` | Path to the persisted visits counter file |
+| `APP_CONFIG_PATH` | `/config/config.json` | Path to JSON configuration loaded at runtime |
+| `APP_ENV` | `dev` | Environment name exposed by the service |
+| `LOG_LEVEL` | `info` | Application log level |
+
+## Visits Persistence
+
+The root endpoint increments a counter stored in `VISITS_FILE`. The `/visits` endpoint returns the current value without incrementing it.
+
+Implementation details:
+- The counter is loaded from disk on demand and defaults to `0` when the file does not exist.
+- Updates are serialized with a process-local lock.
+- Writes use a temporary file plus atomic rename to reduce corruption risk.
+
+Example:
+```bash
+curl http://127.0.0.1:5000/
+curl http://127.0.0.1:5000/
+curl http://127.0.0.1:5000/visits
+```
+
+Expected result:
+```json
+{"visits": 2, "storage": "/data/visits"}
+```
 
 ## Testing
 
@@ -220,6 +249,32 @@ Run the container interactively to start the application.
 Pattern:
 ```bash
 docker run -p <port:port> -it <image-name>
+```
+
+### Run with Docker Compose and a persistent volume
+
+The repository includes [docker-compose.yml](/home/nodo/DevOps-Core-Course/app_python/docker-compose.yml) for local persistence testing.
+
+```bash
+cd app_python
+docker compose up -d
+curl http://127.0.0.1:5000/
+curl http://127.0.0.1:5000/visits
+cat data/visits
+docker compose restart
+curl http://127.0.0.1:5000/visits
+```
+
+What this does:
+- Uses the local `devops-info-service:latest` image and bind-mounts `app.py` so the current workspace code runs immediately
+- Mounts `./data` to `/data` so the visits file survives restarts
+- Mounts `./config/config.json` to `/config/config.json`
+- Keeps the image immutable while externalizing runtime state and config
+
+If the image is not present yet, build or pull it first:
+
+```bash
+docker build -t devops-info-service:latest .
 ```
 
 ### Pull from Docker Hub

@@ -1,0 +1,12 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "dev",
+  "features": {
+    "visits": true,
+    "configHotReload": true
+  },
+  "settings": {
+    "region": "local",
+    "message": "Configuration loaded from mounted file"
+  }
+}

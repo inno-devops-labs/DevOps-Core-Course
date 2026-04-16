@@ -16,13 +16,15 @@ spec:
     metadata:
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
-      {{- if or .Values.vault.enabled .Values.podAnnotations }}
       annotations:
+        checksum/config-file: {{ .Files.Get "files/config.json" | sha256sum }}
+        checksum/config-env: {{ toJson .Values.config.env | sha256sum }}
+        {{- if or .Values.vault.enabled .Values.podAnnotations }}
         {{- include "devops-info-service.vaultAnnotations" . | nindent 8 }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
-      {{- end }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       securityContext:
@@ -37,11 +39,19 @@ spec:
               protocol: TCP
           env:
             {{- include "devops-info-service.envVars" . | nindent 12 }}
-          {{- if .Values.secret.enabled }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.fullname" . }}-env
+          {{- if .Values.secret.enabled }}
             - secretRef:
                 name: {{ include "devops-info-service.secretName" . }}
           {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: {{ .Values.config.mountPath }}
+              readOnly: true
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:
@@ -50,3 +60,14 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.fullname" . }}-config
+        - name: data-volume
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

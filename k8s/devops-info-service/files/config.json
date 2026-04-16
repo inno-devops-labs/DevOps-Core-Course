@@ -1,0 +1,12 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "dev",
+  "features": {
+    "visits": true,
+    "configHotReload": true
+  },
+  "settings": {
+    "region": "eu-central",
+    "message": "Mounted from Helm chart files/config.json"
+  }
+}
