@@ -35,6 +35,15 @@ env:
   - name: PORT
     value: "5000"
 
+environment: "dev"
+logLevel: "INFO"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  visitsFile: "/data/visits"
+
 strategy:
   type: RollingUpdate
   rollingUpdate:

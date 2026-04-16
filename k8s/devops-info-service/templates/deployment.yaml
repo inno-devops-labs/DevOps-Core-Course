@@ -28,6 +28,7 @@ spec:
           PASSWORD={{`{{ .Data.data.password }}`}}
           SECRET_KEY={{`{{ .Data.data.secret_key }}`}}
           {{`{{- end -}}`}}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
@@ -39,11 +40,29 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "devops-info-service.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "devops-info-service.fullname" . }}-env
           env:
             {{- include "devops-info-service.envVars" . | nindent 12 }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.fullname" . }}-data
+        {{- end }}
