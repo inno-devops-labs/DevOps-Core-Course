@@ -1,6 +1,11 @@
 replicaCount: 3
 image:
-  tag: lab10
+  tag: lab12
+config:
+  environment: prod
+  settings:
+    greeting: Hello from the production release
+    logLevel: WARNING
 service:
   type: LoadBalancer
 resources:

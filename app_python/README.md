@@ -45,6 +45,23 @@ For production, use gunicorn:
 gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 
+## Configuration and persistence
+
+The service reads two external files when they are available:
+
+- `APP_CONFIG_PATH` points to a JSON config file. Default: `/config/config.json`
+- `VISITS_FILE_PATH` points to the visits counter file. Default: `/data/visits`
+
+If the config file is missing, the app falls back to built-in defaults. If the visits file is missing, the app creates it and starts from `0`.
+
+The root endpoint increments the counter and stores it in the visits file. The `/visits` endpoint returns the current value without incrementing it.
+
+Example:
+
+```bash
+APP_CONFIG_PATH=./config/config.json VISITS_FILE_PATH=./data/visits python app.py
+```
+
 ## Testing
 
 Run linting:
@@ -70,29 +87,45 @@ python -m pytest --cov=app --cov-report=term-missing --cov-report=xml --cov-fail
 Build image locally:
 
 ```bash
-docker build -t <dockerhub-username>/<image-name>:<tag> .
+docker build -t devops-info-service-python:lab12 .
 ```
 
 Run container:
 
 ```bash
-docker run --rm -p <host-port>:5000 --name <container-name> <dockerhub-username>/<image-name>:<tag>
+docker run --rm -p 5000:5000 \
+  -e APP_CONFIG_PATH=/config/config.json \
+  -e VISITS_FILE_PATH=/data/visits \
+  -v "$(pwd)/config:/config:ro" \
+  -v "$(pwd)/data:/data" \
+  devops-info-service-python:lab12
 ```
 
-Pull from Docker Hub:
+Run with Docker Compose:
 
 ```bash
-docker pull <dockerhub-username>/<image-name>:<tag>
+mkdir -p data
+docker compose up --build
+curl http://127.0.0.1:5000/ | python -m json.tool
+curl http://127.0.0.1:5000/visits | python -m json.tool
 ```
 
 ## API Endpoints
 
 ### GET /
 
-Returns service info, system details, runtime stats, and request information.
+Returns service info, system details, runtime stats, effective configuration, and the updated visits count.
 
 ```bash
 curl http://localhost:5000/ | python -m json.tool
+```
+
+### GET /visits
+
+Returns the current visits counter without changing it.
+
+```bash
+curl http://localhost:5000/visits | python -m json.tool
 ```
 
 ### GET /health
@@ -105,11 +138,17 @@ curl http://localhost:5000/health
 
 ## Configuration
 
-| Variable | Default   | Description  |
-| -------- | --------- | ------------ |
-| `HOST`   | `0.0.0.0` | Host address |
-| `PORT`   | `5000`    | Port number  |
-| `DEBUG`  | `false`   | Debug mode   |
+| Variable | Default | Description |
+| -------- | ------- | ----------- |
+| `HOST` | `0.0.0.0` | Host address |
+| `PORT` | `5000` | Port number |
+| `DEBUG` | `false` | Debug mode |
+| `APP_CONFIG_PATH` | `/config/config.json` | JSON config file path |
+| `VISITS_FILE_PATH` | `/data/visits` | Visits counter file path |
+| `APP_ENV` | `dev` | Effective environment value |
+| `APP_LOG_LEVEL` | `INFO` | Log level override |
+
+Settings such as the greeting and feature flags come from `config.json`, which makes them reloadable when the mounted file changes.
 
 ## Troubleshooting
 
@@ -118,3 +157,5 @@ curl http://localhost:5000/health
 **Import errors:** Make sure venv is activated and dependencies are installed
 
 **Permission denied:** Use port > 1024 or run with elevated privileges
+
+**Visits file not updating:** Make sure the directory behind `VISITS_FILE_PATH` is mounted and writable

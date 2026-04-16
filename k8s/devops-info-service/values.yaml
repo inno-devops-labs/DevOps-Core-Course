@@ -4,7 +4,7 @@ replicaCount: 3
 revisionHistoryLimit: 5
 image:
   repository: devops-info-service-python
-  tag: lab10
+  tag: lab12
   pullPolicy: IfNotPresent
 service:
   type: NodePort
@@ -23,6 +23,23 @@ env:
   serviceVersion: "1.0.0"
   serviceDescription: DevOps course info service
   serviceFramework: Flask
+config:
+  mountPath: /config
+  environment: dev
+  featureFlags:
+    showHostname: true
+    showRequestHeaders: false
+  settings:
+    greeting: Welcome to the DevOps info service
+    logLevel: INFO
+persistence:
+  enabled: true
+  existingClaim: ""
+  mountPath: /data
+  fileName: visits
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
 secret:
   create: true
   name: ""
@@ -63,6 +80,7 @@ resources:
     cpu: 250m
     memory: 256Mi
 podSecurityContext:
+  fsGroup: 999
   seccompProfile:
     type: RuntimeDefault
 containerSecurityContext:

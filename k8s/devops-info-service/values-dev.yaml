@@ -1,6 +1,11 @@
 replicaCount: 1
 image:
-  tag: lab10
+  tag: lab12
+config:
+  environment: dev
+  settings:
+    greeting: Hello from the development release
+    logLevel: INFO
 service:
   type: NodePort
 resources:

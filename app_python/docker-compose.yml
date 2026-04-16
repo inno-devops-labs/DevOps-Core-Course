@@ -1,0 +1,16 @@
+services:
+  devops-info-service:
+    build:
+      context: .
+    image: devops-info-service-python:lab12
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: "5000"
+      APP_ENV: local
+      APP_LOG_LEVEL: INFO
+      APP_CONFIG_PATH: /config/config.json
+      VISITS_FILE_PATH: /data/visits
+    volumes:
+      - ./config:/config:ro
+      - ./data:/data

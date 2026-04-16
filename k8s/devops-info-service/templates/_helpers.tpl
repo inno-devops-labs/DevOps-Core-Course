@@ -6,6 +6,30 @@
 {{- end -}}
 {{- end -}}
 
+{{- define "devops-info-service.configFileConfigMapName" -}}
+{{- printf "%s-config" (include "common-lib.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "devops-info-service.envConfigMapName" -}}
+{{- printf "%s-env" (include "common-lib.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "devops-info-service.persistenceClaimName" -}}
+{{- if .Values.persistence.existingClaim -}}
+{{- .Values.persistence.existingClaim | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-data" (include "common-lib.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "devops-info-service.configFilePath" -}}
+{{- printf "%s/config.json" (.Values.config.mountPath | trimSuffix "/") -}}
+{{- end -}}
+
+{{- define "devops-info-service.visitsFilePath" -}}
+{{- printf "%s/%s" (.Values.persistence.mountPath | trimSuffix "/") .Values.persistence.fileName -}}
+{{- end -}}
+
 {{- define "devops-info-service.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
 {{- if .Values.serviceAccount.name -}}
@@ -29,6 +53,17 @@
   value: {{ .Values.env.serviceDescription | quote }}
 - name: SERVICE_FRAMEWORK
   value: {{ .Values.env.serviceFramework | quote }}
+{{- end -}}
+
+{{- define "devops-info-service.renderedConfigFile" -}}
+{{- tpl (.Files.Get "files/config.json") . -}}
+{{- end -}}
+
+{{- define "devops-info-service.envConfigData" -}}
+APP_ENV: {{ .Values.config.environment | quote }}
+APP_LOG_LEVEL: {{ .Values.config.settings.logLevel | quote }}
+APP_CONFIG_PATH: {{ include "devops-info-service.configFilePath" . | quote }}
+VISITS_FILE_PATH: {{ include "devops-info-service.visitsFilePath" . | quote }}
 {{- end -}}
 
 {{- define "devops-info-service.vaultAnnotations" -}}

@@ -1,0 +1,14 @@
+{
+  "application": {
+    "name": {{ .Values.env.serviceName | quote }},
+    "environment": {{ .Values.config.environment | quote }},
+    "feature_flags": {
+      "show_hostname": {{ .Values.config.featureFlags.showHostname }},
+      "show_request_headers": {{ .Values.config.featureFlags.showRequestHeaders }}
+    },
+    "settings": {
+      "greeting": {{ .Values.config.settings.greeting | quote }},
+      "log_level": {{ .Values.config.settings.logLevel | quote }}
+    }
+  }
+}

@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 
 import pytest
 
@@ -6,7 +7,40 @@ import app as info_service
 
 
 @pytest.fixture()
-def client():
+def client(monkeypatch, tmp_path):
+    visits_file_path = tmp_path / "data" / "visits"
+    config_path = tmp_path / "config" / "config.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        json.dumps(
+            {
+                "application": {
+                    "name": "devops-info-service",
+                    "environment": "test",
+                    "feature_flags": {
+                        "show_hostname": True,
+                        "show_request_headers": False,
+                    },
+                    "settings": {
+                        "greeting": "Hello from tests",
+                        "log_level": "INFO",
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("VISITS_FILE_PATH", str(visits_file_path))
+    monkeypatch.setenv("APP_CONFIG_PATH", str(config_path))
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.delenv("APP_FEATURE_SHOW_REQUEST_HEADERS", raising=False)
+    monkeypatch.delenv("APP_FEATURE_SHOW_HOSTNAME", raising=False)
+    monkeypatch.delenv("APP_GREETING", raising=False)
+    monkeypatch.delenv("APP_LOG_LEVEL", raising=False)
+    info_service._runtime_initialized = False
+    info_service._config_cache["path"] = None
+    info_service._config_cache["mtime_ns"] = None
+    info_service._config_cache["data"] = info_service.copy.deepcopy(info_service.DEFAULT_FILE_CONFIG)
     info_service.app.config.update(TESTING=True, PROPAGATE_EXCEPTIONS=False)
 
     with info_service.app.test_client() as test_client:
@@ -19,7 +53,17 @@ def test_index_returns_expected_payload(client):
     assert response.status_code == 200
     data = response.get_json()
     assert data is not None
-    assert set(data.keys()) == {"service", "system", "runtime", "request", "endpoints"}
+    assert set(data.keys()) == {
+        "message",
+        "service",
+        "system",
+        "runtime",
+        "request",
+        "configuration",
+        "visits",
+        "endpoints",
+    }
+    assert data["message"] == "Hello from tests"
 
     service = data["service"]
     assert service["name"] == "devops-info-service"
@@ -48,8 +92,24 @@ def test_index_returns_expected_payload(client):
     assert request_info["path"] == "/"
     assert request_info["user_agent"] == "pytest-client"
 
+    configuration = data["configuration"]
+    assert configuration["environment"] == "test"
+    assert configuration["feature_flags"] == {
+        "show_hostname": True,
+        "show_request_headers": False,
+    }
+    assert configuration["settings"] == {
+        "greeting": "Hello from tests",
+        "log_level": "INFO",
+    }
+    assert configuration["config_path"].endswith("config.json")
+
+    visits = data["visits"]
+    assert visits["count"] == 1
+    assert visits["file_path"].endswith("visits")
+
     endpoints = {(item["method"], item["path"]) for item in data["endpoints"]}
-    assert endpoints == {("GET", "/"), ("GET", "/health"), ("GET", "/metrics")}
+    assert endpoints == {("GET", "/"), ("GET", "/health"), ("GET", "/metrics"), ("GET", "/visits")}
 
 
 def test_health_returns_expected_payload(client):
@@ -92,6 +152,7 @@ def test_unhandled_exception_returns_json_500(client, monkeypatch):
 def test_metrics_endpoint_exposes_prometheus_metrics(client):
     client.get("/", headers={"User-Agent": "pytest-client"})
     client.get("/health")
+    client.get("/visits")
     response = client.get("/metrics")
 
     assert response.status_code == 200
@@ -103,6 +164,7 @@ def test_metrics_endpoint_exposes_prometheus_metrics(client):
     assert '# TYPE http_requests_total counter' in metrics_output
     assert 'http_requests_total{endpoint="/",method="GET",status_code="200"}' in metrics_output
     assert 'http_requests_total{endpoint="/health",method="GET",status_code="200"}' in metrics_output
+    assert 'http_requests_total{endpoint="/visits",method="GET",status_code="200"}' in metrics_output
 
     assert "# HELP http_request_duration_seconds HTTP request duration in seconds" in metrics_output
     assert 'http_request_duration_seconds_bucket{endpoint="/",le=' in metrics_output
@@ -115,7 +177,53 @@ def test_metrics_endpoint_exposes_prometheus_metrics(client):
     assert "# HELP devops_info_endpoint_calls_total Total calls to application endpoints" in metrics_output
     assert 'devops_info_endpoint_calls_total{endpoint="/"}' in metrics_output
     assert 'devops_info_endpoint_calls_total{endpoint="/health"}' in metrics_output
+    assert 'devops_info_endpoint_calls_total{endpoint="/visits"}' in metrics_output
     assert 'devops_info_endpoint_calls_total{endpoint="/metrics"}' in metrics_output
 
     assert "# HELP devops_info_system_collection_seconds Time spent collecting system information" in metrics_output
     assert 'devops_info_system_collection_seconds_bucket{le=' in metrics_output
+
+
+def test_visits_endpoint_returns_persisted_count(client):
+    client.get("/")
+    client.get("/")
+
+    response = client.get("/visits")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data == {
+        "count": 2,
+        "file_path": data["file_path"],
+    }
+    assert data["file_path"].endswith("visits")
+
+
+def test_request_headers_reload_from_config_file(client):
+    config_path = info_service.get_config_path()
+    config_path.write_text(
+        json.dumps(
+            {
+                "application": {
+                    "name": "devops-info-service",
+                    "environment": "test",
+                    "feature_flags": {
+                        "show_hostname": True,
+                        "show_request_headers": True,
+                    },
+                    "settings": {
+                        "greeting": "Hello from updated config",
+                        "log_level": "INFO",
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    response = client.get("/", headers={"User-Agent": "pytest-client", "X-Test-Header": "enabled"})
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["message"] == "Hello from updated config"
+    assert data["request"]["headers"]["X-Test-Header"] == "enabled"

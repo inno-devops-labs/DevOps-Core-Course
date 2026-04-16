@@ -18,11 +18,13 @@ spec:
       labels:
         {{- include "common-lib.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: api
-      {{- $vaultAnnotations := include "devops-info-service.vaultAnnotations" . }}
-      {{- if $vaultAnnotations }}
       annotations:
+        checksum/config-file: {{ include "devops-info-service.renderedConfigFile" . | sha256sum }}
+        checksum/config-env: {{ include "devops-info-service.envConfigData" . | sha256sum }}
+        {{- $vaultAnnotations := include "devops-info-service.vaultAnnotations" . }}
+        {{- if $vaultAnnotations }}
         {{- $vaultAnnotations | nindent 8 }}
-      {{- end }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       securityContext:
@@ -34,6 +36,8 @@ spec:
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.envConfigMapName" . }}
             - secretRef:
                 name: {{ include "devops-info-service.secretName" . }}
           env:
@@ -49,3 +53,20 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: {{ .Values.config.mountPath }}
+              readOnly: true
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.configFileConfigMapName" . }}
+        - name: data-volume
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.persistenceClaimName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
