@@ -51,6 +51,20 @@ env:
   PORT: "5000"
   DEBUG: "False"
 
+# Environment configuration
+environment: "development"
+logLevel: "INFO"
+
+# Metrics configuration
+metrics:
+  enabled: true
+
+# Persistence configuration
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""  # use default storage class
+
 # Rolling update strategy
 strategy:
   type: RollingUpdate
@@ -81,7 +95,7 @@ autoscaling:
 
 volumes: []
 
-volumeMount: []
+volumeMounts: []
 
 nodeSelector: {}
 

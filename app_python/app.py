@@ -2,12 +2,14 @@
 DevOps Info Service
 Main application module - FastAPI implementation
 """
+import fcntl
 import logging
 import os
 import platform
 import socket
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import uvicorn
@@ -18,6 +20,9 @@ from pydantic import BaseModel
 from pythonjsonlogger import jsonlogger
 
 from metrics import REQUEST_COUNT, REQUEST_LATENCY, ACTIVE_REQUESTS
+
+# Visits counter configuration
+VISITS_FILE = os.getenv('VISITS_FILE', '/data/visits')
 
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
@@ -61,10 +66,44 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 START_TIME = datetime.now(timezone.utc)
 
+
+def read_visits() -> int:
+    """Read visit count from file, default to 0."""
+    try:
+        if Path(VISITS_FILE).exists():
+            with open(VISITS_FILE, 'r') as f:
+                content = f.read().strip()
+                return int(content) if content else 0
+    except (ValueError, IOError, PermissionError):
+        pass
+    return 0
+
+
+def write_visits(count: int) -> None:
+    """Write visit count to file with file locking."""
+    try:
+        Path(VISITS_FILE).parent.mkdir(parents=True, exist_ok=True)
+        with open(VISITS_FILE, 'w') as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            f.write(str(count))
+            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+    except (IOError, PermissionError) as e:
+        logger.warning(f'Failed to write visits file: {e}')
+
+
+def increment_visits() -> int:
+    """Increment and return new visit count."""
+    count = read_visits()
+    count += 1
+    write_visits(count)
+    return count
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan events."""
     # Startup
+    initial_visits = read_visits()
     logger.info(
         'Application starting',
         extra={
@@ -72,18 +111,21 @@ async def lifespan(app: FastAPI):
             'host': HOST,
             'port': PORT,
             'python_version': platform.python_version(),
-            'debug': DEBUG
+            'debug': DEBUG,
+            'initial_visits': initial_visits
         }
     )
     yield
     # Shutdown
     uptime = get_uptime()
+    final_visits = read_visits()
     logger.info(
         'Application shutting down',
         extra={
             'event': 'shutdown',
             'uptime_seconds': uptime['seconds'],
-            'uptime_human': uptime['human']
+            'uptime_human': uptime['human'],
+            'final_visits': final_visits
         }
     )
 
@@ -213,6 +255,7 @@ class ServiceResponse(BaseModel):
     runtime: RuntimeInfo
     request: RequestInfo
     endpoints: list[EndpointInfo]
+    visits: int
 
 
 class HealthResponse(BaseModel):
@@ -260,7 +303,9 @@ def get_system_info() -> dict[str, Any]:
 async def main(request: Request) -> ServiceResponse:
     """
     Main endpoint - returns comprehensive service and system information.
+    Increments visit counter on each request.
     """
+    visits = increment_visits()
     uptime = get_uptime()
     system = get_system_info()
 
@@ -301,7 +346,13 @@ async def main(request: Request) -> ServiceResponse:
                 method='GET',
                 description='Health check'
             ),
-        ]
+            EndpointInfo(
+                path='/visits',
+                method='GET',
+                description='Visit counter'
+            ),
+        ],
+        visits=visits
     )
 
 
@@ -330,6 +381,16 @@ async def metrics() -> Response:
         content=generate_latest(),
         media_type=CONTENT_TYPE_LATEST
     )
+
+
+@app.get('/visits', include_in_schema=False)
+async def get_visits() -> dict:
+    """
+    Visit counter endpoint - returns current visit count.
+    The counter is persisted to /data/visits file.
+    """
+    count = read_visits()
+    return {'visits': count}
 
 
 @app.exception_handler(404)

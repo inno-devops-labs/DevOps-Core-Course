@@ -68,7 +68,9 @@ spec:
               value: {{ .Values.env.PORT | quote }}
             - name: DEBUG
               value: {{ .Values.env.DEBUG | quote }}
-            {{- if and .Values.secrets.enabled (not .Values.vault.enabled) }}
+            - name: VISITS_FILE
+              value: "/data/visits"
+            {{- if .Values.secrets.enabled }}
             - name: APP_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -80,6 +82,13 @@ spec:
                   name: {{ include "devops-info-service.fullname" . }}-credentials
                   key: password
             {{- end }}
+            {{- if .Values.metrics.enabled }}
+            - name: METRICS_ENABLED
+              value: "true"
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.fullname" . }}-env
           livenessProbe:
             httpGet:
               path: {{ .Values.livenessProbe.httpGet.path }}
@@ -98,14 +107,19 @@ spec:
             failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.volumeMount }}
           volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            - name: data-volume
+              mountPath: /data
       volumes:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.fullname" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.fullname" . }}-data
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
