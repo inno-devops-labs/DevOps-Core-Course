@@ -1,0 +1,24 @@
+# Lab 16 bonus — scrape Flask /metrics (prometheus_client) via Prometheus Operator.
+# Requires kube-prometheus-stack Helm release name "monitoring" (label release=monitoring).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: lab16-ss-devops-info-service
+  namespace: default
+  labels:
+    release: monitoring
+    app.kubernetes.io/part-of: lab16
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-info-service
+      app.kubernetes.io/instance: lab16-ss
+    matchExpressions:
+      # Exclude the chart headless Service (same app/instance labels as the ClusterIP Service).
+      - key: app.kubernetes.io/component
+        operator: DoesNotExist
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scheme: http

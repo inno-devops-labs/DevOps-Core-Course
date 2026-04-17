@@ -1,0 +1,123 @@
+# Lab 16 — Init container patterns (namespace-isolated demo workloads).
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab16-init
+---
+# Minimal HTTP dependency for wait-for-service pattern.
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab16-dependency
+  namespace: lab16-init
+  labels:
+    app.kubernetes.io/name: lab16-dependency
+spec:
+  selector:
+    app.kubernetes.io/name: lab16-dependency
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab16-dependency
+  namespace: lab16-init
+  labels:
+    app.kubernetes.io/name: lab16-dependency
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lab16-dependency
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lab16-dependency
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+---
+# 1) wget init: download file to shared emptyDir; main reads /data/index.html
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab16-download-demo
+  namespace: lab16-init
+  labels:
+    app.kubernetes.io/name: lab16-download-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lab16-download-demo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lab16-download-demo
+    spec:
+      initContainers:
+        - name: init-download
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - wget -q -O /work-dir/index.html https://example.com
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+      containers:
+        - name: main-app
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep infinity"]
+          volumeMounts:
+            - name: workdir
+              mountPath: /data
+      volumes:
+        - name: workdir
+          emptyDir: {}
+---
+# 2) wait-for-service: block until lab16-dependency responds on port 80
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab16-wait-demo
+  namespace: lab16-init
+  labels:
+    app.kubernetes.io/name: lab16-wait-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lab16-wait-demo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lab16-wait-demo
+    spec:
+      initContainers:
+        - name: wait-for-service
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until wget -q -O- http://lab16-dependency.lab16-init.svc.cluster.local/ >/dev/null 2>&1; do
+                echo "waiting for lab16-dependency..."
+                sleep 2
+              done
+              echo "dependency is ready"
+      containers:
+        - name: main
+          image: busybox:1.36
+          command: ["sh", "-c", "echo ready && sleep infinity"]

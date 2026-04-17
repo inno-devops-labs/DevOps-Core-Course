@@ -5,6 +5,7 @@ metadata:
   name: {{ include "devops-info-service.headlessServiceName" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
+    app.kubernetes.io/component: headless
 spec:
   clusterIP: None
   publishNotReadyAddresses: true

@@ -1,0 +1,43 @@
+# Minikube-friendly overrides for Lab 16 (kube-prometheus-stack).
+# Install: helm install monitoring prometheus-community/kube-prometheus-stack \
+#   -n monitoring --create-namespace -f k8s/monitoring/values-kube-prometheus-stack.yaml
+
+prometheus:
+  prometheusSpec:
+    retention: 2d
+    scrapeInterval: 30s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1536Mi
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+grafana:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
