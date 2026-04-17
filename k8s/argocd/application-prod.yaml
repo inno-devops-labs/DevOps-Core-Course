@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: devops-info-service
+  name: devops-info-service-prod
   namespace: argocd
 spec:
   project: default
@@ -12,7 +12,7 @@ spec:
     helm:
       valueFiles:
         - values-prod.yaml
-      releaseName: devops-info-service
+      releaseName: devops-info-service-prod
   destination:
     server: https://kubernetes.default.svc
     namespace: prod
