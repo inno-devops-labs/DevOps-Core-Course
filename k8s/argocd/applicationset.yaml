@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: python-app-set
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: appset-dev
+            valuesFile: values-dev.yaml
+            autoSync: "true"
+          - env: prod
+            namespace: appset-prod
+            valuesFile: values-prod.yaml
+            autoSync: "false"
+  template:
+    metadata:
+      name: 'python-appset-{{.env}}'
+      labels:
+        env: '{{.env}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/AEZuraa/DevOps-Core-Course.git
+        targetRevision: lab13
+        path: k8s/devops-info-python
+        helm:
+          valueFiles:
+            - values.yaml
+            - '{{.valuesFile}}'
+          parameters:
+            - name: service.type
+              value: ClusterIP
+            - name: service.nodePort
+              value: ""
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.namespace}}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+  templatePatch: |
+    {{- if eq .env "dev" }}
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+    {{- end }}
