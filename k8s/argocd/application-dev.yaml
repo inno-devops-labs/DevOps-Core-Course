@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/Darriyano/DevOps-Core-Course.git
-    targetRevision: lab13
+    targetRevision: lab14
     path: k8s/python-app
     helm:
       valueFiles:

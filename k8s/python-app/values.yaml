@@ -8,10 +8,9 @@ image:
   tag: "latest"
   pullPolicy: Never
 
-
 app:
   name: python-app
-  version: lab12
+  version: lab14
   description: DevOps course info service
   environment: dev
   logLevel: info
@@ -99,7 +98,6 @@ hooks:
       - -c
       - echo '[post-install] smoke test placeholder' && sleep 3 && echo '[post-install] installation looks good'
 
-
 configMap:
   file:
     enabled: true
@@ -116,3 +114,26 @@ persistence:
   storageClass: ""
   existingClaim: ""
   mountPath: /data
+
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    previewService:
+      enabled: true
+      type: ClusterIP

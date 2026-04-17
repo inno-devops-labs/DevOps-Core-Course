@@ -69,3 +69,9 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-data" (include "python-app.fullname" .) }}
 {{- end }}
 {{- end }}
+
+
+{{/* Preview Service name for blue-green strategy. */}}
+{{- define "python-app.previewServiceName" -}}
+{{- printf "%s-preview" (include "python-app.fullname" .) }}
+{{- end }}

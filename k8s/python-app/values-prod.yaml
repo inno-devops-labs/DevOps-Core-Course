@@ -5,7 +5,7 @@ image:
   pullPolicy: Never
 
 app:
-  version: lab12-prod
+  version: lab14-prod
   environment: prod
   logLevel: info
 
@@ -50,3 +50,12 @@ persistence:
   size: 100Mi
   storageClass: ""
   mountPath: /data
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    previewService:
+      enabled: true
+      type: ClusterIP
