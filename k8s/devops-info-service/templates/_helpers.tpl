@@ -48,6 +48,10 @@ This chart delegates common naming/labels to the `common-lib` dependency.
 {{- printf "%s-data" (include "devops-info-service.fullname" .) -}}
 {{- end -}}
 
+{{- define "devops-info-service.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
 {{- define "devops-info-service.commonEnv" -}}
 - name: HOST
   value: {{ .Values.env.host | quote }}

@@ -3,7 +3,7 @@ name: devops-info-service
 description: Helm chart for the DevOps course Python info service
 type: application
 version: 0.1.0
-appVersion: "latest"
+appVersion: "1.0.0"
 dependencies:
   - name: common-lib
     version: 0.1.0

@@ -1,16 +1,23 @@
-{{- if not .Values.statefulset.enabled }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "devops-info-service.headlessServiceName" . }}
   replicas: {{ .Values.replicaCount }}
-  revisionHistoryLimit: 5
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if and (eq .Values.statefulset.updateStrategy.type "RollingUpdate") .Values.statefulset.updateStrategy.rollingUpdate }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
+    {{- end }}
   template:
     metadata:
       labels:
@@ -84,39 +91,24 @@ spec:
         - name: config-file
           configMap:
             name: {{ include "devops-info-service.configFileMapName" . }}
+        {{- if not .Values.persistence.enabled }}
         - name: data
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-service.pvcName" . }}
-  strategy:
-{{- if eq .Values.rollout.strategy "canary" }}
-    canary:
-{{- if .Values.rollout.analysis.enabled }}
-      steps:
-        - setWeight: 20
-        - analysis:
-            templates:
-              - templateName: {{ include "devops-info-service.fullname" . }}-health-analysis
-        - pause: {}
-        - setWeight: 40
-        - pause: { duration: 30s }
-        - setWeight: 60
-        - pause: { duration: 30s }
-        - setWeight: 80
-        - pause: { duration: 30s }
-        - setWeight: 100
-{{- else }}
-      steps:
-{{ toYaml .Values.rollout.canary.steps | nindent 8 }}
-{{- end }}
-{{- else if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "devops-info-service.fullname" . }}
-      previewService: {{ include "devops-info-service.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
-      {{- end }}
-{{- else }}
-{{- fail (printf "Invalid rollout.strategy %q (use canary or blueGreen)" .Values.rollout.strategy) }}
-{{- end }}
+          emptyDir: {}
+        {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "devops-info-service.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+  {{- end }}
 {{- end }}

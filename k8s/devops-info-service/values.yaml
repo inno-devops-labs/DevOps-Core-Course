@@ -3,10 +3,22 @@ fullnameOverride: ""
 
 replicaCount: 3
 
+# Lab 15: use StatefulSet + per-pod PVCs. Set false to use Argo Rollouts (rollout.yaml).
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    # RollingUpdate (optional rollingUpdate.partition) or OnDelete (pods pick up new template after manual delete).
+    type: RollingUpdate
+    rollingUpdate:
+      # Pods with ordinal >= partition get the new revision first (0 = update all ordinals).
+      partition: 0
+
 image:
   repository: gghost1/devops-lab-app-python
   tag: "latest"
-  pullPolicy: IfNotPresent
+  # Use Always with tag "latest" so pushed images are picked up; pin tag + IfNotPresent in prod (see values-prod.yaml).
+  pullPolicy: Always
 
 service:
   type: NodePort
