@@ -1,0 +1,25 @@
+repoURL: https://github.com/Darriyano/DevOps-Core-Course.git
+targetRevision: lab13
+path: k8s/python-app
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: <YOUR_GITHUB_REPO_URL>
+    targetRevision: <YOUR_GIT_BRANCH>
+    path: k8s/python-app
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
