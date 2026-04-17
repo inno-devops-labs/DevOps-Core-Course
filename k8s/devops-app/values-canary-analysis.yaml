@@ -1,0 +1,43 @@
+replicaCount: 5
+
+configMap:
+  APP_ENV: "canary-analysis-demo"
+  LOG_LEVEL: "info"
+
+vault:
+  enabled: false
+
+persistence:
+  enabled: false
+
+rollouts:
+  enabled: true
+  strategy: canary
+  revisionHistoryLimit: 5
+
+  canary:
+    maxSurge: "25%"
+    maxUnavailable: 0
+    steps:
+      - setWeight: 20
+      - pause:
+          duration: 15s
+      - analysis:
+          templates:
+            - templateName: devops-app-success-rate
+      - setWeight: 50
+      - pause:
+          duration: 30s
+      - analysis:
+          templates:
+            - templateName: devops-app-success-rate
+      - setWeight: 100
+
+  analysis:
+    enabled: true
+    web:
+      path: /health
+      interval: 10s
+      count: 3
+      failureLimit: 1
+      timeoutSeconds: 5

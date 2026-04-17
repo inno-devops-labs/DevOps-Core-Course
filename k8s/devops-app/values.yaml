@@ -90,3 +90,44 @@ vault:
 serviceAccount:
   create: true
   name: "devops-app"
+
+rollouts:
+  enabled: false
+  strategy: canary
+  revisionHistoryLimit: 5
+
+  canary:
+    maxSurge: "25%"
+    maxUnavailable: 0
+    stableService: ""
+    canaryService: ""
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+
+  blueGreen:
+    activeService: ""
+    previewService: ""
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+
+  analysis:
+    enabled: false
+    web:
+      path: /health
+      successCondition: ""
+      jsonPath: ""
+      interval: 10s
+      count: 3
+      failureLimit: 1
+      timeoutSeconds: 5

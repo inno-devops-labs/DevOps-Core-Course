@@ -1,0 +1,18 @@
+{{- if and .Values.rollouts.enabled (eq .Values.rollouts.strategy "blueGreen") }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-app.fullname" . }}-preview
+  labels:
+    {{- include "devops-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: preview
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "devops-app.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}

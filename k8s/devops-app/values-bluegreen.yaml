@@ -1,0 +1,23 @@
+replicaCount: 3
+
+configMap:
+  APP_ENV: "bluegreen-demo"
+  LOG_LEVEL: "info"
+
+vault:
+  enabled: false
+
+persistence:
+  enabled: false
+
+rollouts:
+  enabled: true
+  strategy: blueGreen
+  revisionHistoryLimit: 5
+
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+
+  analysis:
+    enabled: false

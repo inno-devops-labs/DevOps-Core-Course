@@ -1,17 +1,47 @@
-{{- if not .Values.rollouts.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollouts.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "devops-app.fullname" . }}
   labels:
     {{- include "devops-app.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.rollouts.revisionHistoryLimit | default 5 }}
   selector:
     matchLabels:
       {{- include "devops-app.selectorLabels" . | nindent 6 }}
   strategy:
-    {{- toYaml .Values.strategy | nindent 4 }}
+    {{- if eq .Values.rollouts.strategy "canary" }}
+    canary:
+      {{- with .Values.rollouts.canary.stableService }}
+      stableService: {{ . }}
+      {{- end }}
+      {{- with .Values.rollouts.canary.canaryService }}
+      canaryService: {{ . }}
+      {{- end }}
+      maxSurge: {{ .Values.rollouts.canary.maxSurge | default "25%" | quote }}
+      maxUnavailable: {{ .Values.rollouts.canary.maxUnavailable | default 0 }}
+      steps:
+        {{- toYaml .Values.rollouts.canary.steps | nindent 8 }}
+    {{- else if eq .Values.rollouts.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ .Values.rollouts.blueGreen.activeService | default (printf "%s-service" (include "devops-app.fullname" .)) }}
+      previewService: {{ .Values.rollouts.blueGreen.previewService | default (printf "%s-preview" (include "devops-app.fullname" .)) }}
+      autoPromotionEnabled: {{ .Values.rollouts.blueGreen.autoPromotionEnabled | default false }}
+      {{- with .Values.rollouts.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ . }}
+      {{- end }}
+      scaleDownDelaySeconds: {{ .Values.rollouts.blueGreen.scaleDownDelaySeconds | default 30 }}
+      {{- with .Values.rollouts.blueGreen.prePromotionAnalysis }}
+      prePromotionAnalysis:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.rollouts.blueGreen.postPromotionAnalysis }}
+      postPromotionAnalysis:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
   template:
     metadata:
       labels:
