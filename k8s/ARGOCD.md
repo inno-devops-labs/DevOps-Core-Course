@@ -1,584 +1,412 @@
 # Lab 13 — GitOps with ArgoCD
 
-## 1. Goal
+## 1. ArgoCD Setup
 
-In this lab the Helm chart from Labs 10-12 is managed by ArgoCD in a GitOps workflow.
-Git becomes the source of truth, while ArgoCD continuously compares the desired state from the repository with the live state in the Kubernetes cluster.
+ArgoCD was installed in the Kubernetes cluster using Helm.
 
-This lab includes:
-- ArgoCD installation via Helm
-- access to UI and CLI
-- declarative `Application` manifests
-- separate dev/prod environments
-- automatic sync and self-healing for dev
-- manual sync for prod
-- bonus `ApplicationSet`
-
----
-
-## 2. Repository Structure
-
-Added files:
-
-```text
-k8s/
-├── ARGOCD.md
-└── argocd/
-    ├── application.yaml
-    ├── application-dev.yaml
-    ├── application-prod.yaml
-    ├── applicationset.yaml
-    └── namespaces.yaml
-```
-
-Notes:
-- `application.yaml` is the single-application manifest for Task 2
-- `application-dev.yaml` and `application-prod.yaml` are for Task 3
-- `applicationset.yaml` is the bonus solution
-- do not apply `applicationset.yaml` together with the individual dev/prod Application manifests
-
----
-
-## 3. Prerequisites
-
-Required locally:
-- Docker Desktop
-- Minikube
-- kubectl
-- Helm
-- Homebrew
-
-Recommended checks:
-
-```bash
-kubectl config current-context
-kubectl get nodes
-helm version
-minikube status
-```
-
-Your application image must already exist inside Minikube, because the chart uses local image settings:
-
-```yaml
-image:
-  repository: python-app
-  tag: "latest"
-  pullPolicy: Never
-```
-
-If needed, rebuild and load the image again:
-
-```bash
-docker build -t python-app:latest ./app_python
-minikube image load python-app:latest
-```
-
----
-
-## 4. Install ArgoCD
-
-### 4.1 Add Helm repository
+### Installation commands
 
 ```bash
 helm repo add argo https://argoproj.github.io/argo-helm
 helm repo update
-```
-
-### 4.2 Create namespace
-
-```bash
 kubectl create namespace argocd
-```
-
-If it already exists:
-
-```bash
-kubectl get ns argocd
-```
-
-### 4.3 Install ArgoCD from Helm chart
-
-```bash
 helm upgrade --install argocd argo/argo-cd -n argocd
-```
-
-### 4.4 Verify installation
-
-```bash
 kubectl get pods -n argocd
-kubectl get svc -n argocd
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/part-of=argocd -n argocd --timeout=180s
 ```
 
-Expected result:
-- ArgoCD components are in `Running` or `Completed`
-- `argocd-server`, `argocd-repo-server`, `argocd-application-controller`, `argocd-applicationset-controller` are present
+### Installation result
 
----
-
-## 5. Access ArgoCD UI and CLI
-
-### 5.1 Port-forward the ArgoCD server
-
-Check the actual service name first:
-
-```bash
-kubectl get svc -n argocd
-```
-
-Typical command:
-
-```bash
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-```
-
-If Helm rendered another service name, use that name instead.
-
-Open in browser:
+ArgoCD installation completed successfully:
 
 ```text
-https://localhost:8080
+namespace/argocd created
+Release "argocd" does not exist. Installing it now.
+NAME: argocd
+LAST DEPLOYED: Fri Apr 17 20:25:15 2026
+NAMESPACE: argocd
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
 ```
 
-### 5.2 Get initial admin password
+All core ArgoCD components reached the `Running` state:
+
+```text
+NAME                                                READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                     1/1     Running   0          6m9s
+argocd-applicationset-controller-59f6b7dd64-pq2db   1/1     Running   0          6m9s
+argocd-dex-server-7b9588c494-g6gcr                  1/1     Running   0          6m9s
+argocd-notifications-controller-8f6855454-7zm2q     1/1     Running   0          6m9s
+argocd-redis-dc6b586fc-47ml7                        1/1     Running   0          6m9s
+argocd-repo-server-5f4d44d9f8-4f9qh                 1/1     Running   0          6m9s
+argocd-server-5f777b877f-n7z2t                      1/1     Running   0          6m9s
+```
+
+### UI access
+
+ArgoCD UI was accessed through port-forwarding:
 
 ```bash
-kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 -d && echo
+kubectl port-forward service/argocd-server -n argocd 8080:443
 ```
 
-Login credentials:
-- username: `admin`
-- password: output from the command above
+The initial admin password was retrieved with:
 
-### 5.3 Install ArgoCD CLI on macOS Apple Silicon
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+```
+
+### CLI access
+
+The ArgoCD CLI was installed on macOS and used to log in to the server:
 
 ```bash
 brew install argocd
-argocd version --client
-```
-
-### 5.4 Login via CLI
-
-```bash
 argocd login localhost:8080 --insecure
-```
-
-Useful checks:
-
-```bash
-argocd account get-user-info
 argocd app list
 ```
 
+This confirmed that the CLI was working and connected to the ArgoCD server.
+
 ---
 
-## 6. Task 2 — Single Application Deployment
+## 2. Application Configuration
 
-### 6.1 Prepare the manifest
+### Repository and chart source
 
-File:
+The ArgoCD applications were configured to use the Git repository as the source of truth:
+
+```text
+Repo:   https://github.com/Darriyano/DevOps-Core-Course.git
+Target: lab13
+Path:   k8s/python-app
+```
+
+The Helm chart from previous labs was reused without changing the overall GitOps idea.
+
+### Application manifests
+
+The following manifests were created:
 
 ```text
 k8s/argocd/application.yaml
+k8s/argocd/application-dev.yaml
+k8s/argocd/application-prod.yaml
+k8s/argocd/namespaces.yaml
+k8s/ARGOCD.md
 ```
 
-Before applying it, replace placeholders:
-- `<YOUR_GITHUB_REPO_URL>`
-- `<YOUR_GIT_BRANCH>`
+### Task 2 — single application deployment
 
-Example:
+A single ArgoCD application named `python-app` was created first in the `default` namespace with manual sync.
 
-```yaml
-source:
-  repoURL: https://github.com/your-user/your-repo.git
-  targetRevision: main
-  path: k8s/python-app
+Observed ArgoCD application state:
+
+```text
+Name:               argocd/python-app
+Project:            default
+Server:             https://kubernetes.default.svc
+Namespace:          default
+Source:
+- Repo:             https://github.com/Darriyano/DevOps-Core-Course.git
+  Target:           lab13
+  Path:             k8s/python-app
+  Helm Values:      values.yaml
+Sync Policy:        Manual
+Sync Status:        Synced to lab13
+Health Status:      Healthy
 ```
 
-Important:
-- the repository must contain the latest Helm chart files
-- if the repository is private, add it to ArgoCD first via UI or CLI
+Relevant synced resources:
 
-### 6.2 Apply the Application manifest
+```text
+ConfigMap              default    python-app-config       Synced
+ConfigMap              default    python-app-env          Synced
+PersistentVolumeClaim  default    python-app-data         Synced   Healthy
+Secret                 default    python-app-secret       Synced
+Service                default    python-app              Synced   Healthy
+ServiceAccount         default    python-app              Synced
+Deployment             default    python-app              Synced   Healthy
+```
+
+### Single application verification
+
+The application was reachable through the NodePort service and returned healthy responses:
 
 ```bash
-kubectl apply -f k8s/argocd/application.yaml
-argocd app list
-argocd app get python-app
+curl http://127.0.0.1:54872/health
+curl http://127.0.0.1:54872/visits
 ```
 
-Expected initial state:
-- application exists in ArgoCD
-- sync status is likely `OutOfSync`
-- health may be `Missing` or `Progressing` before first sync
+Observed output:
 
-### 6.3 Perform the initial sync
-
-```bash
-argocd app sync python-app
-argocd app get python-app
+```text
+{"status":"healthy","timestamp":"2026-04-17T16:23:06.151418+00:00","uptime_seconds":680}
+{"visits":0,"file":"/data/visits"}
 ```
 
-### 6.4 Verify resources
-
-```bash
-kubectl get all -n default
-kubectl get configmap,secret,pvc -n default
-```
-
-### 6.5 Access the application
-
-The base `values.yaml` uses NodePort `30080`.
-
-Check service:
-
-```bash
-kubectl get svc -n default
-minikube service python-app -n default --url
-```
-
-Then test:
-
-```bash
-curl http://127.0.0.1:<PORT>/health
-curl http://127.0.0.1:<PORT>/
-curl http://127.0.0.1:<PORT>/visits
-```
-
-### 6.6 Test GitOps flow
-
-Make a small change in Git, for example:
-- change `replicaCount` in `k8s/python-app/values.yaml`
-- or update `app.version`
-
-Then:
-
-```bash
-git add .
-git commit -m "Lab 13: change values for ArgoCD test"
-git push
-```
-
-Observe:
-
-```bash
-argocd app get python-app
-argocd app diff python-app
-```
-
-Manual sync again:
-
-```bash
-argocd app sync python-app
-```
-
-### 6.7 Clean up before Task 3
-
-To avoid having an extra copy of the application in the `default` namespace, remove the Task 2 application before creating dev/prod apps:
-
-```bash
-argocd app delete python-app --cascade
-kubectl delete -f k8s/argocd/application.yaml
-```
+This confirmed that the initial ArgoCD-managed deployment worked correctly.
 
 ---
 
-## 7. Task 3 — Multi-Environment Deployment
+## 3. Multi-Environment Deployment
 
-### 7.1 Create namespaces
+### Namespace separation
+
+Separate namespaces for development and production were created:
 
 ```bash
 kubectl apply -f k8s/argocd/namespaces.yaml
 kubectl get ns dev prod
 ```
 
-### 7.2 Apply environment-specific Applications
+Observed output:
 
-Before applying, replace placeholders in both files:
-- `k8s/argocd/application-dev.yaml`
-- `k8s/argocd/application-prod.yaml`
-
-Apply:
-
-```bash
-kubectl apply -f k8s/argocd/application-dev.yaml
-kubectl apply -f k8s/argocd/application-prod.yaml
+```text
+namespace/dev created
+namespace/prod created
+NAME   STATUS   AGE
+dev    Active   0s
+prod   Active   0s
 ```
 
-Check:
+### Dev application
 
-```bash
-argocd app list
-argocd app get python-app-dev
-argocd app get python-app-prod
-```
-
-### 7.3 Sync behavior
-
-#### Dev
-`python-app-dev` uses:
-- `values-dev.yaml`
+The `python-app-dev` application was configured with:
 - destination namespace `dev`
-- automated sync enabled
+- `values-dev.yaml`
+- automated sync
 - `prune: true`
 - `selfHeal: true`
 
-#### Prod
-`python-app-prod` uses:
-- `values-prod.yaml`
+Observed state:
+
+```text
+Name:               argocd/python-app-dev
+Namespace:          dev
+Helm Values:        values-dev.yaml
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to lab13
+Health Status:      Healthy
+```
+
+Observed dev resources:
+
+```text
+pod/python-app-dev-78f6bb67f5-bqptz   1/1   Running
+service/python-app-dev                NodePort   80:30081/TCP
+deployment.apps/python-app-dev        1/1   1   1
+configmap/python-app-dev-config
+configmap/python-app-dev-env
+secret/python-app-dev-secret
+persistentvolumeclaim/python-app-dev-data   Bound
+serviceaccount/python-app-dev
+```
+
+### Prod application
+
+The `python-app-prod` application was configured with:
 - destination namespace `prod`
+- `values-prod.yaml`
 - manual sync only
 
-### 7.4 Verify both environments
+Observed state before manual sync:
 
-```bash
-kubectl get all -n dev
-kubectl get configmap,secret,pvc -n dev
-kubectl get all -n prod
-kubectl get configmap,secret,pvc -n prod
+```text
+Name:               argocd/python-app-prod
+Namespace:          prod
+Helm Values:        values-prod.yaml
+Sync Policy:        Manual
+Sync Status:        OutOfSync
+Health Status:      Missing
 ```
 
-Check important differences:
-- replica count
-- resources requests/limits
-- app version
-- service type / port exposure
-- namespace separation
+After manual synchronization, the production application became available and responded correctly through port-forwarding.
 
-### 7.5 Access the environments
+### Environment access verification
 
 #### Dev
-`values-dev.yaml` uses NodePort `30081`.
+
+The dev environment was accessed through the NodePort service:
 
 ```bash
-minikube service python-app-dev -n dev --url
-curl http://127.0.0.1:<DEV_PORT>/health
-curl http://127.0.0.1:<DEV_PORT>/visits
+curl http://127.0.0.1:54872/health
+curl http://127.0.0.1:54872/visits
+```
+
+Observed output:
+
+```text
+{"status":"healthy","timestamp":"2026-04-17T16:23:06.151418+00:00","uptime_seconds":680}
+{"visits":0,"file":"/data/visits"}
 ```
 
 #### Prod
-`values-prod.yaml` currently uses `LoadBalancer`.
-For local Minikube verification, one of the following is convenient:
+
+The prod environment was accessed through port-forwarding to the service:
 
 ```bash
-kubectl port-forward -n prod svc/python-app-prod 8082:80
 curl http://127.0.0.1:8082/health
 curl http://127.0.0.1:8082/visits
 ```
 
-or:
+Observed output:
 
-```bash
-minikube service python-app-prod -n prod --url
+```text
+{"status":"healthy","timestamp":"2026-04-17T16:23:26.692630+00:00","uptime_seconds":240}
+{"visits":0,"file":"/data/visits"}
 ```
 
-### 7.6 Why prod stays manual
+### Dev vs Prod differences
 
-Manual sync for production is a good practice because it gives:
-- review before rollout
-- controlled release timing
-- safer change management
-- simpler rollback planning
-- reduced risk of pushing unreviewed changes directly to production
+| Property | Dev | Prod |
+|---|---|---|
+| Namespace | `dev` | `prod` |
+| Values file | `values-dev.yaml` | `values-prod.yaml` |
+| Sync policy | Automatic | Manual |
+| Purpose | fast iteration and self-healing | controlled deployment |
+
+### Why prod was kept manual
+
+Production was intentionally left on manual sync because it provides:
+- controlled rollout timing
+- explicit review before deployment
+- safer operational behavior
+- clearer separation between development and production workflows
 
 ---
 
-## 8. Task 4 — Self-Healing Tests
+## 4. Self-Healing and Drift Detection
 
-These tests should be done on `python-app-dev`, because auto-sync and self-heal are enabled there.
+All self-healing tests were performed on `python-app-dev`, because automated sync and self-heal were enabled only in the development environment.
 
-### 8.1 Scale drift test
+### 4.1 Manual scale drift test
 
-Check current state:
+Initial state before modification:
 
-```bash
-kubectl get deploy -n dev
-argocd app get python-app-dev
+```text
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+python-app-dev   1/1     1            1           13m
+
+Sync Policy:     Automated (Prune)
+Sync Status:     Synced
+Health Status:   Healthy
 ```
 
-Scale the deployment manually:
+Manual scale command:
 
 ```bash
 kubectl scale deployment python-app-dev -n dev --replicas=5
 ```
 
-Watch the recovery:
-
-```bash
-kubectl get pods -n dev -w
-argocd app diff python-app-dev
-argocd app get python-app-dev
-```
-
-Expected behavior:
-- deployment becomes drifted relative to Git
-- ArgoCD detects `OutOfSync`
-- ArgoCD automatically returns replicas to the Git-defined value from `values-dev.yaml`
-
-Document with timestamps in your report, for example:
+Observed result:
 
 ```text
-19:11:03 — deployment manually scaled to 5 replicas
-19:11:20 — ArgoCD shows OutOfSync
-19:12:05 — ArgoCD reconciles the application
-19:12:20 — replicas return to 1, status becomes Synced/Healthy
+deployment.apps/python-app-dev scaled
 ```
 
-### 8.2 Pod deletion test
+Observed pod behavior:
 
-Delete one pod:
+```text
+python-app-dev-78f6bb67f5-2s59n   1/1   Terminating
+python-app-dev-78f6bb67f5-9cncm   1/1   Terminating
+python-app-dev-78f6bb67f5-bqptz   1/1   Running
+python-app-dev-78f6bb67f5-dvn9q   0/1   Terminating
+python-app-dev-78f6bb67f5-xdbm9   1/1   Terminating
+```
+
+After reconciliation, ArgoCD again reported:
+
+```text
+Sync Status:     Synced
+Health Status:   Healthy
+```
+
+**Explanation:** the number of replicas was changed manually in the live cluster, but ArgoCD detected the drift and restored the deployment to the state described in Git (`replicaCount: 1` in `values-dev.yaml`).
+
+### 4.2 Pod deletion test
+
+Manual deletion command:
 
 ```bash
 kubectl delete pod -n dev -l app.kubernetes.io/name=python-app
 kubectl get pods -n dev -w
 ```
 
-Expected behavior:
-- Kubernetes recreates the pod through Deployment/ReplicaSet
-- this is Kubernetes self-healing, not ArgoCD self-healing
-
-### 8.3 Configuration drift test
-
-Patch the deployment with an extra label:
-
-```bash
-kubectl patch deployment python-app-dev -n dev \
-  --type merge \
-  -p '{"metadata":{"labels":{"manual-change":"true"}}}'
-```
-
-Observe the diff and recovery:
-
-```bash
-argocd app diff python-app-dev
-argocd app get python-app-dev
-kubectl get deployment python-app-dev -n dev --show-labels
-```
-
-Expected behavior:
-- ArgoCD detects configuration drift
-- self-heal removes the manual label and restores Git-defined state
-
----
-
-## 9. ArgoCD Sync Behavior
-
-### Kubernetes self-healing
-Kubernetes restores failed or deleted pods to satisfy the Deployment/ReplicaSet desired state.
-
-Example:
-- pod was deleted
-- Deployment controller creates a replacement pod
-
-### ArgoCD self-healing
-ArgoCD restores the cluster configuration to the state described in Git.
-
-Example:
-- replicas manually changed from 1 to 5
-- manual label added to Deployment
-- ArgoCD detects drift and re-applies the desired manifest
-
-### What triggers ArgoCD sync
-- manual sync from UI or CLI
-- automatic sync for apps with `automated` policy
-- drift detection after repository polling
-- drift detection when live cluster state no longer matches desired manifests
-
-### Sync interval
-By default, ArgoCD checks the tracked repository roughly every 3 minutes.
-It is effectively controlled by `timeout.reconciliation` with additional jitter.
-
----
-
-## 10. Screenshots to Include
-
-Recommended screenshots for submission:
-- ArgoCD Applications page showing `python-app-dev` and `python-app-prod`
-- one application details page with sync and health status
-- diff or OutOfSync state during drift test
-- recovered Synced/Healthy state after self-heal
-
----
-
-## 11. Bonus — ApplicationSet
-
-File:
+Observed output:
 
 ```text
-k8s/argocd/applicationset.yaml
+pod "python-app-dev-78f6bb67f5-bqptz" deleted from dev namespace
+python-app-dev-78f6bb67f5-wjcnk   0/1   Running   0   2s
 ```
 
-This manifest uses:
-- `List` generator
-- parameters for `dev` and `prod`
-- `goTemplate: true`
-- `templatePatch` to enable auto-sync only for dev
+**Explanation:** this is Kubernetes self-healing, not ArgoCD self-healing. The Deployment/ReplicaSet controller recreated the deleted pod automatically.
 
-### Apply bonus solution
+### 4.3 Configuration drift test
 
-First remove individual Application manifests if they are already applied:
+A manual patch was applied to replace the deployment image:
 
 ```bash
-kubectl delete -f k8s/argocd/application-dev.yaml
-kubectl delete -f k8s/argocd/application-prod.yaml
+kubectl patch deployment python-app-dev -n dev --type='json' -p='[{"op":"replace","path":"/spec/template/spec/containers/0/image","value":"nginx:latest"}]'
 ```
 
-Then apply the ApplicationSet:
+Observed result:
+
+```text
+deployment.apps/python-app-dev patched
+```
+
+Immediately after that, the live deployment again reported the desired image from Git:
 
 ```bash
-kubectl apply -f k8s/argocd/applicationset.yaml
-kubectl get applicationset -n argocd
-argocd app list
+kubectl get deployment python-app-dev -n dev -o jsonpath='{.spec.template.spec.containers[0].image}'; echo
 ```
 
-Expected result:
-- `python-app-dev` is generated automatically
-- `python-app-prod` is generated automatically
-- the dev app has automated sync
-- the prod app remains manual
+Observed output:
 
-### Why ApplicationSet is useful
+```text
+python-app:latest
+```
 
-Benefits over separate Application manifests:
-- less duplication
-- one template for many environments
-- easier scaling to more namespaces/clusters/apps
-- consistent naming and policy patterns
+ArgoCD status remained:
 
-When to use:
-- **List generator**: small fixed set of environments
-- **Git generator**: discover apps or folders from repository structure
-- **Cluster generator**: deploy to many clusters
-- **Matrix generator**: combine environments with clusters or app lists
+```text
+Sync Status:     Synced
+Health Status:   Healthy
+```
+
+**Explanation:** ArgoCD detected that the live deployment image had been changed manually and restored it to the Git-defined value (`python-app:latest`). This demonstrates configuration drift correction.
+
+### Sync behavior summary
+
+- **Kubernetes self-healing:** recreates missing pods to satisfy Deployment/ReplicaSet requirements.
+- **ArgoCD self-healing:** restores cluster configuration so that it matches the desired state stored in Git.
 
 ---
 
-## 12. Suggested Verification Commands Summary
+## 5. Screenshots
 
-```bash
-kubectl get pods -n argocd
-kubectl get svc -n argocd
-argocd app list
-argocd app get python-app-dev
-argocd app get python-app-prod
-kubectl get all -n dev
-kubectl get all -n prod
-kubectl get configmap,secret,pvc -n dev
-kubectl get configmap,secret,pvc -n prod
-argocd app diff python-app-dev
-```
+### Screenshot 1 — single application view
 
----
+![alt text](image.png)
 
-## 13. Conclusion
+### Screenshot 2 — multi-environment view
 
-Implemented in this lab:
-- ArgoCD installed via Helm
-- UI and CLI access configured
-- Git repository used as the source of truth
-- application deployed through ArgoCD `Application` manifests
-- separate dev/prod environments created
-- auto-sync and self-healing enabled for dev
-- manual sync preserved for prod
-- bonus `ApplicationSet` prepared for templated multi-environment deployment
+![alt text](image-1.png)
+
+## 6. Conclusion
+
+In this lab, GitOps continuous deployment was implemented with ArgoCD for the existing Helm-based application.
+
+Completed results:
+- ArgoCD was installed successfully with Helm
+- UI and CLI access were configured
+- a single manual-synced application was deployed from Git
+- separate `dev` and `prod` environments were created
+- automatic sync and self-healing were enabled for `dev`
+- manual sync was preserved for `prod`
+- application health was verified in both environments
+- drift recovery was demonstrated for scaling changes and configuration changes
+- the difference between Kubernetes self-healing and ArgoCD self-healing was validated
+
+The lab therefore demonstrates a working GitOps workflow where Git is the source of truth and ArgoCD continuously enforces the desired cluster state.
