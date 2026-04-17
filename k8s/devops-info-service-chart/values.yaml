@@ -1,4 +1,4 @@
-replicaCount: 5
+replicaCount: 4
 
 image:
   repository: chaleshka/devops-info-service
