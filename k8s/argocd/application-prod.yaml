@@ -11,11 +11,11 @@ spec:
     path: k8s/devops-info-service-chart
     helm:
       valueFiles:
-        - values.yaml
+        - values-prod.yaml
       releaseName: devops-info-service
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
+    namespace: prod
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
