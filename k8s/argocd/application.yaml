@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/chaleshka/DevOps-Core-Course.git
-    targetRevision: lab13
+    targetRevision: refs/heads/lab13
     path: k8s/devops-info-service-chart
     helm:
       valueFiles:
