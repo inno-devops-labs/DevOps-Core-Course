@@ -5,7 +5,7 @@ image:
   pullPolicy: Never
 
 app:
-  version: lab14-dev
+  version: lab14-dev-v2
   environment: dev
   logLevel: debug
 
