@@ -1,0 +1,34 @@
+=======================================================================
+ Configuration drift test — manual label, ArgoCD reverts
+=======================================================================
+
+--- Before: deployment labels ---
+{
+    "app.kubernetes.io/instance": "devops-app-dev",
+    "app.kubernetes.io/managed-by": "Helm",
+    "app.kubernetes.io/name": "devops-app",
+    "app.kubernetes.io/version": "1.0",
+    "helm.sh/chart": "devops-app-0.1.0"
+}
+
+--- Injecting drift: add label drift-test=manual ---
+deployment.apps/devops-app-dev labeled
+{
+    "app.kubernetes.io/instance": "devops-app-dev",
+    "app.kubernetes.io/managed-by": "Helm",
+    "app.kubernetes.io/name": "devops-app",
+    "app.kubernetes.io/version": "1.0",
+    "drift-test": "manual",
+    "helm.sh/chart": "devops-app-0.1.0"
+}
+
+--- 10s later, ArgoCD selfHeal in action ---
+{
+    "app.kubernetes.io/instance": "devops-app-dev",
+    "app.kubernetes.io/managed-by": "Helm",
+    "app.kubernetes.io/name": "devops-app",
+    "app.kubernetes.io/version": "1.0",
+    "drift-test": "manual",
+    "helm.sh/chart": "devops-app-0.1.0"
+}
+Synced / Healthy

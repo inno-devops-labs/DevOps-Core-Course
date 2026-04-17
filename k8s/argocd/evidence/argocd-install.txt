@@ -1,0 +1,16 @@
+=== Pods in argocd namespace ===
+NAME                                                READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                     1/1     Running   0          16m
+argocd-applicationset-controller-55f6c9b87f-k4dzs   1/1     Running   0          16m
+argocd-dex-server-5b8f8f64ff-hg5ff                  1/1     Running   0          16m
+argocd-notifications-controller-5547448775-8swj6    1/1     Running   0          16m
+argocd-redis-dc6b586fc-ngv2h                        1/1     Running   0          16m
+argocd-repo-server-6f8f987df7-v5drn                 1/1     Running   0          16m
+argocd-server-68bdd4bd96-bppw5                      1/1     Running   0          16m
+
+=== ArgoCD version ===
+argocd: v3.3.7+035e855.dirty
+
+=== Helm release ===
+NAME  	NAMESPACE	REVISION	UPDATED                            	STATUS  	CHART        	APP VERSION
+argocd	argocd   	1       	2026-04-17 13:03:58.35376 +0300 MSK	deployed	argo-cd-9.5.2	v3.3.7     

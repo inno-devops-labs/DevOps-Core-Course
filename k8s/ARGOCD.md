@@ -7,7 +7,7 @@
 - [3. Multi-Environment Deployment](#3-multi-environment-deployment)
 - [4. Self-Healing & Sync Policies](#4-self-healing--sync-policies)
 - [5. Bonus — ApplicationSet](#5-bonus--applicationset)
-- [6. Screenshots](#6-screenshots)
+- [6. Evidence](#6-evidence)
 
 ---
 
@@ -441,32 +441,130 @@ argocd/devops-app-prod     Synced  Healthy  <none>
 
 ---
 
-## 6. Screenshots
+## 6. Evidence
 
-> Place the screenshots in `k8s/argocd/screenshots/` and reference
-> them below.
+All outputs below were captured against a real `kind` cluster
+(`kind-lab13`) with ArgoCD 3.3.7 installed via Helm, after pushing
+the `lab13` branch to `origin` and applying the manifests from
+[`k8s/argocd/`](./argocd/).
 
-1. **ArgoCD UI — Applications overview** (both `devops-app-dev` and
-   `devops-app-prod` visible, with different sync policies):
+Evidence lives in [`k8s/argocd/evidence/`](./argocd/evidence/) —
+UI screenshots (`.png`) paired with corresponding `kubectl` /
+`argocd` CLI output (`.txt`).
 
-   ![Applications overview](./argocd/screenshots/apps-overview.png)
+### 6.1 Installation — [`argocd-install.txt`](./argocd/evidence/argocd-install.txt)
 
-2. **`devops-app-dev` detail** — resource tree with Deployment,
-   ReplicaSet, Service, ConfigMap, PVC, ServiceAccount:
+All 7 ArgoCD components `Running` in the `argocd` namespace:
+`application-controller`, `applicationset-controller`, `dex-server`,
+`notifications-controller`, `redis`, `repo-server`, `server`. The
+Helm release `argocd` is listed by `helm list -n argocd`.
 
-   ![Dev detail](./argocd/screenshots/app-dev-detail.png)
+### 6.2 Applications overview
 
-3. **`devops-app-prod` detail** — same chart, 5 replicas, status
-   `Synced / Healthy`:
+![Applications overview](./argocd/evidence/apps-overview.png)
 
-   ![Prod detail](./argocd/screenshots/app-prod-detail.png)
+Both `devops-app-dev` and `devops-app-prod` rendered as tiles. Note
+how the UI exposes the differentiating configuration at a glance:
 
-4. **Self-heal in action** — diff view after `kubectl scale`, then
-   automatic revert:
+- **Labels** — `env=dev` / `env=prod`, injected by the
+  `ApplicationSet` template
+- **Status** — `Healthy / Synced` vs `Progressing / OutOfSync`,
+  reflecting the auto-sync-dev / manual-prod policy
+- **Target Revision** — both pinned to `lab13`
+- **Destination namespaces** — `dev` / `prod`
 
-   ![Self heal](./argocd/screenshots/self-heal.png)
+Equivalent CLI view:
 
-5. **ApplicationSet** — both generated Applications listed with the
-   same owner reference:
+```
+NAME              SYNC STATUS   HEALTH STATUS   REVISION    PROJECT
+devops-app-dev    Synced        Healthy         e1cf9b6...  default
+devops-app-prod   OutOfSync     Progressing     e1cf9b6...  default
+```
 
-   ![ApplicationSet](./argocd/screenshots/applicationset.png)
+### 6.3 Dev application detail
+
+![Dev detail](./argocd/evidence/app-dev-detail.png)
+
+Resource tree of `devops-app-dev`: `Application` → `ConfigMap`,
+`Secret`, `PVC`, `ServiceAccount`, `Service`, `Deployment` →
+`ReplicaSet` → **1 Pod** — exactly as dictated by
+`values-dev.yaml: replicaCount: 1`. Header reports
+`APP HEALTH: Healthy`, `SYNC STATUS: Synced to lab13 (e1cf9b6)` and
+the hint **«Auto sync is enabled»**.
+
+Full manifest with policy (see also 6.6):
+
+![Dev manifest](./argocd/evidence/app-dev-manifest.png)
+
+`syncPolicy.automated.prune / selfHeal = true`, `retry.limit: 5`,
+`PrunePropagationPolicy=foreground`, `ServerSideApply=true` — all
+injected by the `templatePatch` block in `applicationset.yaml` for
+`env=dev` only.
+
+### 6.4 Prod application detail
+
+![Prod detail](./argocd/evidence/app-prod-detail.png)
+
+Same chart, completely different shape:
+
+- `APP HEALTH: Progressing`, `SYNC STATUS: OutOfSync from lab13`
+- Hint **«Auto sync is not enabled»** — the operator must click SYNC
+- Deployment fans out to **5 pods** (`values-prod.yaml: replicaCount: 5`)
+- A one-shot `pre-install` Helm Job is visible in the tree
+
+### 6.5 Self-healing in action
+
+![Self heal](./argocd/evidence/self-heal.png)
+
+Captured **mid-revert**. Right before the snap:
+
+```
+kubectl scale deployment devops-app-dev -n dev --replicas=5
+```
+
+What the screenshot shows at that moment:
+
+- `APP HEALTH: Healthy` but `SYNC STATUS: OutOfSync` — ArgoCD has
+  already noticed the drift
+- `LAST SYNC: Sync OK to e1cf9b6 — a few seconds ago` — the
+  reconcile has already started
+- 7 Pod tiles in the tree (the 5 "rogue" pods plus the 2 transitional
+  ones), several marked **terminating**
+- Left sidebar filter counter — `HEALTH STATUS / Progressing = 5` —
+  numeric proof that 5 pods are being removed
+
+The CLI timeline ([`self-heal.txt`](./argocd/evidence/self-heal.txt))
+measured the end-to-end revert at **~2 seconds** — the application
+controller reacted faster than the follow-up `kubectl get deploy`.
+
+### 6.6 Pod deletion — [`pod-deletion.txt`](./argocd/evidence/pod-deletion.txt)
+
+`kubectl delete pod` — a new pod (`devops-app-dev-6bcbc856f9-m5cn7`)
+is up in under 30 seconds. ArgoCD stays `Synced / Healthy` because
+the `Deployment` spec itself did not change; this is purely the
+Kubernetes `ReplicaSet` controller at work.
+
+### 6.7 Configuration drift — [`config-drift.txt`](./argocd/evidence/config-drift.txt)
+
+Manual `kubectl label deployment … drift-test=manual` — the label
+**persists**. This is intentional: ArgoCD does not prune fields that
+exist on the live object but are absent from Git, because other
+controllers (admission webhooks, cert-manager, Istio, …) routinely
+add labels/annotations that should be preserved. `selfHeal` reverts
+drift on fields that ArgoCD itself declared — see section 6.5
+(`replicas`) for the canonical demonstration.
+
+### 6.8 ApplicationSet — [`applicationset.txt`](./argocd/evidence/applicationset.txt)
+
+Output of `kubectl get applications -n argocd -o custom-columns=...`
+confirms both generated applications share a single owner:
+
+```
+APP               OWNED-BY         SET              AUTO-SYNC
+devops-app-dev    ApplicationSet   devops-app-set   map[prune:true selfHeal:true]
+devops-app-prod   ApplicationSet   devops-app-set   <none>
+```
+
+`templatePatch` did its job — only the `dev` instance received the
+`automated` block; `prod` remains manual-sync, all from **one**
+manifest.

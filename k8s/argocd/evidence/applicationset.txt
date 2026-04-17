@@ -1,0 +1,51 @@
+=======================================================================
+ ApplicationSet — one manifest, two generated Applications
+=======================================================================
+
+--- ApplicationSet resource ---
+NAME             AGE
+devops-app-set   38s
+
+--- Generated Applications ---
+NAME              SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+devops-app-dev    Synced        Healthy         e1cf9b6caae0caddf4d5a1af0c1e6d4124d3ab0c   default
+devops-app-prod   OutOfSync     Progressing     e1cf9b6caae0caddf4d5a1af0c1e6d4124d3ab0c   default
+
+--- Owner references confirm they are managed by the set ---
+APP               OWNED-BY         SET              AUTO-SYNC
+devops-app-dev    ApplicationSet   devops-app-set   map[prune:true selfHeal:true]
+devops-app-prod   ApplicationSet   devops-app-set   <none>
+
+--- Resources deployed to dev namespace ---
+NAME                                  READY   STATUS    RESTARTS   AGE
+pod/devops-app-dev-6bcbc856f9-4dgwq   1/1     Running   0          32s
+
+NAME                             TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+service/devops-app-dev-service   NodePort   10.96.85.124   <none>        80:30080/TCP   32s
+
+NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/devops-app-dev   1/1     1            1           32s
+
+NAME                                        DESIRED   CURRENT   READY   AGE
+replicaset.apps/devops-app-dev-6bcbc856f9   1         1         1       32s
+
+--- Resources deployed to prod namespace (replicaCount=5 from values-prod.yaml) ---
+NAME                                  READY   STATUS    RESTARTS   AGE
+pod/devops-app-prod-c9c64c647-dzlvc   1/1     Running   0          6m37s
+pod/devops-app-prod-c9c64c647-gt6kq   1/1     Running   0          6m26s
+pod/devops-app-prod-c9c64c647-nx6mk   1/1     Running   0          6m49s
+pod/devops-app-prod-c9c64c647-rlq2p   1/1     Running   0          6m15s
+pod/devops-app-prod-c9c64c647-wchjv   1/1     Running   0          6m4s
+
+NAME                              TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+service/devops-app-prod-service   LoadBalancer   10.96.57.245   <pending>     80:30834/TCP   13m
+
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/devops-app-prod   5/5     5            5           13m
+
+NAME                                         DESIRED   CURRENT   READY   AGE
+replicaset.apps/devops-app-prod-7b65899d7c   0         0         0       13m
+replicaset.apps/devops-app-prod-c9c64c647    5         5         5       6m49s
+
+NAME                                    STATUS     COMPLETIONS   DURATION   AGE
+job.batch/devops-app-prod-pre-install   Complete   1/1           5s         13m

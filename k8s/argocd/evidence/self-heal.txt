@@ -1,0 +1,50 @@
+=======================================================================
+ Self-healing test — scale deployment in dev (automated + selfHeal)
+=======================================================================
+
+--- [T0] Initial state (1 replica from values-dev.yaml) ---
+2026-04-17 13:21:06
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                   SELECTOR
+devops-app-dev   1/1     1            1           12m   devops-app   egortorshin/devops-info-service:latest   app.kubernetes.io/instance=devops-app-dev,app.kubernetes.io/name=devops-app
+
+--- [T1] Manual drift: kubectl scale --replicas=5 ---
+2026-04-17 13:21:06
+deployment.apps/devops-app-dev scaled
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                   SELECTOR
+devops-app-dev   1/1     1            1           12m   devops-app   egortorshin/devops-info-service:latest   app.kubernetes.io/instance=devops-app-dev,app.kubernetes.io/name=devops-app
+
+--- [T2] Application status immediately after drift ---
+Synced / Healthy
+
+--- [T3] Waiting 30s for ArgoCD selfHeal to reconcile... ---
+
+[+10s] 13:21:13
+devops-app-dev   1/1   1     1     12m   devops-app   egortorshin/devops-info-service:latest   app.kubernetes.io/instance=devops-app-dev,app.kubernetes.io/name=devops-app
+sync=Synced health=Healthy
+
+[+20s] 13:21:18
+devops-app-dev   1/1   1     1     12m   devops-app   egortorshin/devops-info-service:latest   app.kubernetes.io/instance=devops-app-dev,app.kubernetes.io/name=devops-app
+sync=Synced health=Healthy
+
+[+30s] 13:21:23
+devops-app-dev   1/1   1     1     12m   devops-app   egortorshin/devops-info-service:latest   app.kubernetes.io/instance=devops-app-dev,app.kubernetes.io/name=devops-app
+sync=Synced health=Healthy
+
+[+40s] 13:21:29
+devops-app-dev   1/1   1     1     12m   devops-app   egortorshin/devops-info-service:latest   app.kubernetes.io/instance=devops-app-dev,app.kubernetes.io/name=devops-app
+sync=Synced health=Healthy
+
+[+50s] 13:21:34
+devops-app-dev   1/1   1     1     12m   devops-app   egortorshin/devops-info-service:latest   app.kubernetes.io/instance=devops-app-dev,app.kubernetes.io/name=devops-app
+sync=Synced health=Healthy
+
+[+60s] 13:21:39
+devops-app-dev   1/1   1     1     12m   devops-app   egortorshin/devops-info-service:latest   app.kubernetes.io/instance=devops-app-dev,app.kubernetes.io/name=devops-app
+sync=Synced health=Healthy
+
+--- [T4] Final state (ArgoCD reverted to 1 replica) ---
+2026-04-17 13:21:39
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                   SELECTOR
+devops-app-dev   1/1     1            1           12m   devops-app   egortorshin/devops-info-service:latest   app.kubernetes.io/instance=devops-app-dev,app.kubernetes.io/name=devops-app
+NAME                              READY   STATUS    RESTARTS   AGE
+devops-app-dev-6bcbc856f9-h7sjx   1/1     Running   0          3m34s

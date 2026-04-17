@@ -22,4 +22,4 @@ kubectl apply -f k8s/argocd/application-prod.yaml
 kubectl apply -f k8s/argocd/applicationset.yaml
 ```
 
-See `k8s/ARGOCD.md` for the full write-up, screenshots and self-healing evidence.
+See `k8s/ARGOCD.md` for the full write-up, screenshots and self-healing evidence (all artifacts live in `k8s/argocd/evidence/`).

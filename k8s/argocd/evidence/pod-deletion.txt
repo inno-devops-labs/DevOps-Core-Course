@@ -1,0 +1,21 @@
+=======================================================================
+ Pod deletion test — Kubernetes ReplicaSet controller recreates pod
+=======================================================================
+
+--- Before ---
+NAME                              READY   STATUS    RESTARTS   AGE     IP            NODE                  NOMINATED NODE   READINESS GATES
+devops-app-dev-6bcbc856f9-h7sjx   1/1     Running   0          3m49s   10.244.0.24   lab13-control-plane   <none>           <none>
+
+--- Deleting pod ---
+pod "devops-app-dev-6bcbc856f9-h7sjx" deleted from dev namespace
+
+--- Immediately after delete (ReplicaSet already recreating) ---
+NAME                              READY   STATUS    RESTARTS   AGE   IP            NODE                  NOMINATED NODE   READINESS GATES
+devops-app-dev-6bcbc856f9-m5cn7   1/1     Running   0          30s   10.244.0.40   lab13-control-plane   <none>           <none>
+
+--- 5 seconds later ---
+NAME                              READY   STATUS    RESTARTS   AGE   IP            NODE                  NOMINATED NODE   READINESS GATES
+devops-app-dev-6bcbc856f9-m5cn7   1/1     Running   0          36s   10.244.0.40   lab13-control-plane   <none>           <none>
+
+--- ArgoCD status (still Synced — no drift in Deployment spec) ---
+Synced / Healthy
