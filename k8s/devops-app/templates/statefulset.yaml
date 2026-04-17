@@ -1,17 +1,19 @@
-{{- if and (not .Values.rollouts.enabled) (not .Values.statefulset.enabled) }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "devops-app.fullname" . }}
   labels:
     {{- include "devops-app.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "devops-app.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy | default "OrderedReady" }}
+  updateStrategy:
+    {{- toYaml .Values.statefulset.updateStrategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "devops-app.selectorLabels" . | nindent 6 }}
-  strategy:
-    {{- toYaml .Values.strategy | nindent 4 }}
   template:
     metadata:
       labels:
@@ -54,10 +56,8 @@ spec:
             - name: config-volume
               mountPath: /config
               readOnly: true
-            {{- if .Values.persistence.enabled }}
-            - name: data-volume
+            - name: {{ .Values.statefulset.volumeClaimTemplate.name | default "data" }}
               mountPath: {{ .Values.persistence.mountPath | default "/data" }}
-            {{- end }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
@@ -66,9 +66,18 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-app.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "devops-app.fullname" . }}-data
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ .Values.statefulset.volumeClaimTemplate.name | default "data" }}
+        labels:
+          {{- include "devops-app.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          {{- toYaml (.Values.statefulset.volumeClaimTemplate.accessModes | default (list "ReadWriteOnce")) | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.statefulset.volumeClaimTemplate.size | default .Values.persistence.size | default "100Mi" }}
+        {{- with .Values.statefulset.volumeClaimTemplate.storageClass }}
+        storageClassName: {{ . | quote }}
         {{- end }}
 {{- end }}

@@ -1,0 +1,42 @@
+# Override values for Lab 15 — StatefulSet mode.
+# Usage:
+#   helm upgrade --install devops-app ./k8s/devops-app \
+#     -f ./k8s/devops-app/values.yaml \
+#     -f ./k8s/devops-app/values-statefulset.yaml
+#
+# Disables the classic Deployment/Rollout path and renders a
+# StatefulSet with a headless Service and per-pod PVCs created
+# from volumeClaimTemplates.
+
+replicaCount: 3
+
+# Rollouts and StatefulSet are mutually exclusive in this chart.
+rollouts:
+  enabled: false
+
+statefulset:
+  enabled: true
+  # OrderedReady  -> pods come up 0 -> 1 -> 2 sequentially (default).
+  # Parallel      -> pods are created/terminated in parallel;
+  #                  still keeps stable identities and storage.
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # partition >= N means only pods with ordinal >= N get the new
+      # template on upgrade; ordinals below partition stay on the
+      # previous revision. Useful for canary-style StatefulSet rollouts.
+      partition: 0
+  volumeClaimTemplate:
+    name: data
+    accessModes:
+      - ReadWriteOnce
+    size: 100Mi
+    # Leave empty to use the cluster's default StorageClass
+    # (e.g. `standard` on minikube, `local-path` on kind).
+    storageClass: ""
+  headlessService:
+    # Headless service is the ClusterIP: None service required by
+    # StatefulSets for stable per-pod DNS records.
+    port: 80
+    targetPort: 8000

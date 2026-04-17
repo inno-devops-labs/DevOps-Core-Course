@@ -91,6 +91,23 @@ serviceAccount:
   create: true
   name: "devops-app"
 
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  volumeClaimTemplate:
+    name: data
+    accessModes:
+      - ReadWriteOnce
+    size: 100Mi
+    storageClass: ""
+  headlessService:
+    port: 80
+    targetPort: 8000
+
 rollouts:
   enabled: false
   strategy: canary
