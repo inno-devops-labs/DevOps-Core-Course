@@ -1,8 +1,14 @@
-This chart deploys `devops-info-service` with a Kubernetes Deployment and Service.
+This chart deploys `devops-info-service` as an Argo Rollouts `Rollout` and `Service` (plus `Service` preview when `rollout.strategy=blueGreen`).
 
 To check resources:
+  kubectl get rollout -l app.kubernetes.io/name={{ include "devops-info-service.name" . }}
   kubectl get pods -l app.kubernetes.io/name={{ include "devops-info-service.name" . }}
   kubectl get svc -l app.kubernetes.io/name={{ include "devops-info-service.name" . }}
+
+Rollouts CLI:
+  kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -w
+  kubectl argo rollouts promote {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }}
+  kubectl argo rollouts abort {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }}
 
 Service access:
 {{- if eq .Values.service.type "NodePort" }}

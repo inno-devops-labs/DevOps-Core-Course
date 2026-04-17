@@ -1,0 +1,14 @@
+# Blue/Green Rollout profile (Lab 14 Task 3).
+# Install example:
+#   helm upgrade --install lab14-bg ./k8s/devops-info-service -n lab14-bg --create-namespace -f k8s/devops-info-service/values-bluegreen.yaml
+
+replicaCount: 1
+
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+
+service:
+  type: NodePort
+  nodePort: 30083

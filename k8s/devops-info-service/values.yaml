@@ -15,6 +15,31 @@ service:
   targetPort: http
   containerPort: 5000
   nodePort: 30080
+  # Used only when rollout.strategy is blueGreen (preview Service).
+  preview:
+    type: ClusterIP
+    nodePort: ""
+
+rollout:
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: { duration: 30s }
+      - setWeight: 60
+      - pause: { duration: 30s }
+      - setWeight: 80
+      - pause: { duration: 30s }
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
 
 resources:
   requests:

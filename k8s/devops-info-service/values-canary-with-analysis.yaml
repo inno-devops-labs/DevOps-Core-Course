@@ -1,0 +1,7 @@
+# Bonus: metrics-based analysis during canary (Lab 14 Bonus).
+# Use together with base values:
+#   helm upgrade --install lab14 ./k8s/devops-info-service -n default -f k8s/devops-info-service/values-canary-with-analysis.yaml
+
+rollout:
+  analysis:
+    enabled: true
