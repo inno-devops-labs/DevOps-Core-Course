@@ -1,0 +1,16 @@
+HTTP/2 200 
+date: Fri, 17 Apr 2026 15:17:55 GMT
+content-type: application/json; charset=utf-8
+content-length: 79
+cache-control: no-store
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=AbkAnZjkLXWUWx8zZayZiMbHzv9Dy5AhhJR6BMrPB32Vs2XZZZzKQGvPjU%2BEuS98dotTmaocLvMuTC54DUy9uazC6lfNSXlDEj9JimfmDX8GbDiH5Gjhv8%2FGaTEOSg0m5uAI6InTlkfijSxX5y5buEo%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: 9edc6640c8dd2d77-ARN
+alt-svc: h3=":443"; ma=86400
+
+{
+  "status": "ok",
+  "app": "edge-api",
+  "time": "2026-04-17T15:17:55.971Z"
+}

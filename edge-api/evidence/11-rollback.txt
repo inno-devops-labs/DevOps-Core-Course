@@ -1,0 +1,35 @@
+
+ ⛅️ wrangler 4.83.0
+───────────────────
+├ Fetching latest deployment
+│
+├ Your current deployment has 1 version(s):
+│
+│ (100%) d3954b1f-7825-4e26-a44f-e20e513d1888
+│       Created:  2026-04-17T15:18:43.350165Z
+│           Tag:  -
+│       Message:  -
+│
+? Please provide an optional message for this rollback (120 characters max)
+🤖 Using default value in non-interactive context: lab17: verify rollback works
+│
+├  WARNING  You are about to rollback to Worker Version f4be8f98-64db-446a-a7ae-0e90ef41c3b0.
+│ This will immediately replace the current deployment and become the active deployment across all your deployed triggers.
+│ However, your local development environment will not be affected by this rollback.
+│ Rolling back to a previous deployment will not rollback any of the bound resources (Durable Object, D1, R2, KV, etc).
+│
+│ (100%) f4be8f98-64db-446a-a7ae-0e90ef41c3b0
+│       Created:  2026-04-17T15:18:08.065838Z
+│           Tag:  -
+│       Message:  -
+│
+? Are you sure you want to deploy this Worker Version to 100% of traffic?
+🤖 Using fallback value in non-interactive context: yes
+Performing rollback...
+? The following secrets have changed since version f4be8f98-64db-446a-a7ae-0e90ef41c3b0 was deployed. Please confirm you wish to continue with the rollback
+  * API_TOKEN
+🤖 Using fallback value in non-interactive context: yes
+│
+╰  SUCCESS  Worker Version f4be8f98-64db-446a-a7ae-0e90ef41c3b0 has been deployed to 100% of traffic.
+
+Current Version ID: f4be8f98-64db-446a-a7ae-0e90ef41c3b0

@@ -1,0 +1,65 @@
+
+ ⛅️ wrangler 4.83.0
+───────────────────
+Created:     2026-04-17T15:10:34.876Z
+Author:      e.torshin@innopolis.university
+Source:      Upload
+Message:     Automatic deployment on upload.
+Version(s):  (100%) ee540d70-9581-455b-8e6d-b9198165a58a
+                 Created:  2026-04-17T15:10:34.876Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-04-17T15:12:32.930Z
+Author:      e.torshin@innopolis.university
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) ac57c167-edec-4386-b44c-88d700ef6637
+                 Created:  2026-04-17T15:12:30.014Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-04-17T15:15:35.520Z
+Author:      e.torshin@innopolis.university
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 0ffd0f4d-0004-4f84-bcf3-e694c9a74337
+                 Created:  2026-04-17T15:15:32.671Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-04-17T15:17:59.999Z
+Author:      e.torshin@innopolis.university
+Source:      Secret Change
+Message:     -
+Version(s):  (100%) 5fca12b2-8ace-4cd5-929e-b5273bfe278f
+                 Created:  2026-04-17T15:17:59.999Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-04-17T15:18:08.065Z
+Author:      e.torshin@innopolis.university
+Source:      Secret Change
+Message:     -
+Version(s):  (100%) f4be8f98-64db-446a-a7ae-0e90ef41c3b0
+                 Created:  2026-04-17T15:18:08.065Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-04-17T15:18:43.350Z
+Author:      e.torshin@innopolis.university
+Source:      Secret Change
+Message:     -
+Version(s):  (100%) d3954b1f-7825-4e26-a44f-e20e513d1888
+                 Created:  2026-04-17T15:18:43.350Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-04-17T15:19:39.668Z
+Author:      e.torshin@innopolis.university
+Source:      Unknown (deployment)
+Message:     lab17: verify rollback works
+Version(s):  (100%) f4be8f98-64db-446a-a7ae-0e90ef41c3b0
+                 Created:  2026-04-17T15:18:08.065Z
+                     Tag:  -
+                 Message:  -

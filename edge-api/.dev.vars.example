@@ -1,0 +1,8 @@
+# Template for local-only secrets consumed by `wrangler dev`.
+# Copy to `.dev.vars` (which is git-ignored) and replace the values.
+# Production secrets live in Cloudflare — set them with:
+#   npx wrangler secret put API_TOKEN
+#   npx wrangler secret put ADMIN_EMAIL
+
+API_TOKEN=local-dev-token-change-me
+ADMIN_EMAIL=you@example.com

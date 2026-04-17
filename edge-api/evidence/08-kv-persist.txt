@@ -1,0 +1,14 @@
+# before redeploy
+{
+  "key": "visits",
+  "visits": 1
+}
+# wrangler triggers deploy (redeploy existing version)
+
+Deployed edge-api triggers (6.00 sec)
+  https://edge-api.e-torshin.workers.dev
+# after redeploy
+{
+  "key": "visits",
+  "visits": 2
+}

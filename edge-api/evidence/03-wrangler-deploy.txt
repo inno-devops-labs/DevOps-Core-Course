@@ -1,0 +1,40 @@
+# Deploy evidence — two-step workaround
+# 
+# `wrangler deploy` (single command) fails at the final trigger API call
+# from this network with "fetch failed" — likely the Cloudflare connectivity
+# issue that labs/lab17.md explicitly warns about for RU traffic.
+# 
+# The two-step form `versions upload` + `triggers deploy` works around it:
+# the bundle upload completes first (slow, ~80s), then a separate, smaller
+# call attaches the new version to workers.dev.
+
+=== npx wrangler versions upload ===
+
+ ⛅️ wrangler 4.83.0
+───────────────────
+Total Upload: 4.71 KiB / gzip: 1.56 KiB
+Worker Startup Time: 6 ms
+Your Worker has access to the following bindings:
+Binding                                                 Resource                  
+env.SETTINGS (54e62059c4484ca6a2b6754334304229)         KV Namespace              
+env.APP_NAME ("edge-api")                               Environment Variable      
+env.COURSE_NAME ("devops-core")                         Environment Variable      
+env.OWNER ("a89088")                                    Environment Variable      
+
+Uploaded edge-api (6.86 sec)
+Worker Version ID: 1c88aa10-583e-4b51-8760-48030f5cda51
+
+[31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mterminated[0m
+
+[32mIf you think this is a bug then please create an issue at https://github.com/cloudflare/workers-sdk/issues/new/choose[0m
+🪵  Logs were written to "/Users/a89088/Library/Preferences/.wrangler/logs/wrangler-2026-04-17_15-25-03_090.log"
+
+=== npx wrangler triggers deploy ===
+
+ ⛅️ wrangler 4.83.0
+───────────────────
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1m🚧 `wrangler triggers deploy` is an experimental command. Please report any issues to https://github.com/cloudflare/workers-sdk/issues/new/choose[0m
+
+
+Deployed edge-api triggers (6.65 sec)
+  https://edge-api.e-torshin.workers.dev

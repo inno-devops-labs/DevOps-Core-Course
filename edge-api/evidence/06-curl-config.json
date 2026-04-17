@@ -1,0 +1,12 @@
+{
+  "app": "edge-api",
+  "course": "devops-core",
+  "owner": "a89088",
+  "secrets": {
+    "API_TOKEN": "set",
+    "ADMIN_EMAIL": "set"
+  },
+  "bindings": {
+    "SETTINGS": "bound"
+  }
+}

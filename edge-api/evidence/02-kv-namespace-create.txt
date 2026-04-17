@@ -1,0 +1,34 @@
+
+ ⛅️ wrangler 4.83.0
+───────────────────
+Resource location: remote 
+
+🌀 Creating namespace with title "SETTINGS"
+✨ Success!
+To access your new KV Namespace in your Worker, add the following snippet to your configuration file:
+{
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "54e62059c4484ca6a2b6754334304229"
+    }
+  ]
+}
+? Would you like Wrangler to add it on your behalf?
+🤖 Using fallback value in non-interactive context: no
+
+ ⛅️ wrangler 4.83.0
+───────────────────
+Resource location: remote 
+
+🌀 Creating namespace with title "SETTINGS_preview"
+✨ Success!
+To access your new KV Namespace in your Worker, add the following snippet to your configuration file:
+{
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "preview_id": "db778bdf8d0645e9b65dcd3a19641227"
+    }
+  ]
+}

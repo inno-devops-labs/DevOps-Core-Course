@@ -1,0 +1,13 @@
+
+ ⛅️ wrangler 4.83.0
+───────────────────
+Successfully created tail, expires at 2026-04-17T21:19:03Z
+Connected to edge-api, waiting for logs...
+GET https://edge-api.e-torshin.workers.dev/edge - Ok @ 4/17/2026, 6:19:07 PM
+  (log) {"level":"info","path":"/edge","method":"GET","colo":"ARN","country":"RU","ts":"2026-04-17T15:19:07.598Z"}
+GET https://edge-api.e-torshin.workers.dev/counter - Ok @ 4/17/2026, 6:19:07 PM
+  (log) {"level":"info","path":"/counter","method":"GET","colo":"ARN","country":"RU","ts":"2026-04-17T15:19:07.762Z"}
+GET https://edge-api.e-torshin.workers.dev/config - Ok @ 4/17/2026, 6:19:08 PM
+  (log) {"level":"info","path":"/config","method":"GET","colo":"ARN","country":"RU","ts":"2026-04-17T15:19:08.048Z"}
+GET https://edge-api.e-torshin.workers.dev/ - Ok @ 4/17/2026, 6:19:08 PM
+  (log) {"level":"info","path":"/","method":"GET","colo":"ARN","country":"RU","ts":"2026-04-17T15:19:08.199Z"}

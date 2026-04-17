@@ -1,0 +1,16 @@
+{
+  "app": "edge-api",
+  "colo": "ARN",
+  "country": "RU",
+  "city": "Kazan",
+  "region": "Tatarstan Republic",
+  "continent": "EU",
+  "asn": 29194,
+  "asOrganization": "MTS OJSC",
+  "httpProtocol": "HTTP/2",
+  "tlsVersion": "TLSv1.3",
+  "tlsCipher": "AEAD-CHACHA20-POLY1305-SHA256",
+  "clientTcpRtt": 41,
+  "clientIp": "176.52.58.94",
+  "time": "2026-04-17T15:17:56.126Z"
+}

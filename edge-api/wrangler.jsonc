@@ -1,0 +1,56 @@
+/**
+ * Cloudflare Workers manifest for Lab 17 — DevOps Core.
+ *
+ * Structure:
+ *   - `name` is the workers.dev subdomain prefix. Must be unique on
+ *     your account. Final URL is
+ *     https://<name>.<account-subdomain>.workers.dev
+ *   - `main` is the TypeScript entry file. Wrangler bundles it with
+ *     esbuild on every `dev`/`deploy`.
+ *   - `compatibility_date` pins the Workers runtime ABI so the code
+ *     keeps behaving the same way even if Cloudflare ships breaking
+ *     runtime changes later. Bump it intentionally.
+ *   - `observability` enables the Workers Logs pipeline in the
+ *     dashboard (Task 5 — no extra cost on the free plan).
+ *   - `vars` are plaintext and bundled with the Worker — anyone with
+ *     the code can see them. Use them for non-sensitive config only
+ *     (app name, course name, owner tag). Anything secret goes
+ *     through `wrangler secret put` which lives encrypted in
+ *     Cloudflare and is injected at runtime via the same `env` object.
+ *   - `kv_namespaces` bind a Workers KV store to the Worker. The `id`
+ *     below is a placeholder — run
+ *       npx wrangler kv namespace create SETTINGS
+ *     and paste the returned namespace ID. `preview_id` is used by
+ *     `wrangler dev` so local traffic doesn't mutate production KV.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+
+  // Non-secret runtime configuration. Visible in the bundle.
+  "vars": {
+    "APP_NAME": "edge-api",
+    "COURSE_NAME": "devops-core",
+    "OWNER": "a89088"
+  },
+
+  // Workers KV — Task 4 persistence.
+  // Create the namespace, then paste the returned ID here:
+  //   npx wrangler kv namespace create SETTINGS
+  //   npx wrangler kv namespace create SETTINGS --preview
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "54e62059c4484ca6a2b6754334304229",
+      "preview_id": "db778bdf8d0645e9b65dcd3a19641227"
+    }
+  ]
+}
