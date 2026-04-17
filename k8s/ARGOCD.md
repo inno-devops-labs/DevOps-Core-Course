@@ -73,7 +73,7 @@ Common sync option: `CreateNamespace=true` so ArgoCD creates `dev` / `prod` on f
 
 | | default | dev | prod |
 |---|---|---|---|
-| `replicaCount` | 3 | 1 | 5 |
+| `replicaCount` | 3 | 2 *(bumped from 1 to exercise the GitOps workflow in §5)* | 5 |
 | `resources.requests` | 100m / 128Mi | 50m / 64Mi | 200m / 256Mi |
 | `resources.limits` | 200m / 256Mi | 100m / 128Mi | 500m / 512Mi |
 | `service.type` | NodePort | NodePort | LoadBalancer |
@@ -138,7 +138,7 @@ Resources live in distinct namespaces, so secrets / configmaps / PVCs do not col
 
 ### UI — resource tree per environment
 
-Dev (auto-sync, 1 replica):
+Dev (auto-sync, 2 replicas):
 
 ![python-app-dev resource tree](argocd/screenshots/argocd-python-app-dev-tree.png)
 
@@ -157,7 +157,8 @@ python-app-devops-info-python-67f5458c7c-qzjsf   1/1     Running   0          53
 
 $ kubectl get pods -n dev
 NAME                                                READY   STATUS    RESTARTS   AGE
-python-app-dev-devops-info-python-855bd58b5-2kwxt   1/1     Running   0          47m
+python-app-dev-devops-info-python-855bd58b5-2kwxt   1/1     Running   0          64m
+python-app-dev-devops-info-python-855bd58b5-hx9bk   1/1     Running   0          9m17s
 
 $ kubectl get pods -n prod
 NAME                                                   READY   STATUS      RESTARTS   AGE
@@ -169,7 +170,7 @@ python-app-prod-devops-info-python-699f869975-xncsf    1/1     Running     0    
 python-app-prod-devops-info-python-pre-install-xbqxv   0/1     Completed   0          51m
 ```
 
-`default`, `dev`, and `prod` have 3 / 1 / 5 running pods — matching `replicaCount` in `values.yaml`, `values-dev.yaml`, and `values-prod.yaml` respectively. The `pre-install` Job in `prod` is a successful Helm hook left behind because of `helm.sh/hook-delete-policy: hook-succeeded` (it's cleaned up on the next sync).
+`default`, `dev`, and `prod` have 3 / 2 / 5 running pods — matching `replicaCount` in `values.yaml`, `values-dev.yaml` (bumped from 1 to 2 during the GitOps test in §5), and `values-prod.yaml` respectively. The `pre-install` Completed pod in `prod` is a finished Helm `PreSync` hook Job.
 
 ### ArgoCD `app get` per environment
 
@@ -183,7 +184,7 @@ Source:
   Path:             k8s/devops-info-python
   Helm Values:      values.yaml,values-dev.yaml
 Sync Policy:        Automated (Prune)
-Sync Status:        Synced to lab13 (e11dc11)
+Sync Status:        Synced to lab13 (ccac837)
 Health Status:      Healthy
 
 GROUP  KIND                   NAMESPACE  NAME                                      STATUS  HEALTH
@@ -206,7 +207,7 @@ Source:
   Path:             k8s/devops-info-python
   Helm Values:      values.yaml,values-prod.yaml
 Sync Policy:        Manual
-Sync Status:        Synced to lab13 (e11dc11)
+Sync Status:        Synced to lab13 (ccac837)   ← prod renders the same output at ccac837 (only values-dev.yaml changed)
 Health Status:      Progressing
 
 GROUP  KIND                   NAMESPACE  NAME                                            STATUS     HEALTH        HOOK
@@ -240,7 +241,7 @@ Dev has `Sync Policy: Automated (Prune)` with `selfHeal` enabled; Prod stays `Ma
                        │                               │
                        ▼                               ▼
                 namespace: dev                namespace: prod
-                replicas: 1                   replicas: 5
+                replicas: 2                   replicas: 5
 ```
 
 ---
@@ -334,8 +335,8 @@ git add k8s/devops-info-python/values-dev.yaml
 git commit -m "chore(dev): bump dev replicas to 2"
 git push origin lab13
 
-# 3. Wait for reconcile OR force refresh
-argocd app refresh python-app-dev
+# 3. Wait for reconcile OR force refresh (hard-refresh busts the repo-server cache)
+argocd app get python-app-dev --hard-refresh
 
 # 4. Observe
 argocd app get python-app-dev | grep -E "Sync Status|Revision"
@@ -343,9 +344,42 @@ kubectl get deployment python-app-dev-devops-info-python -n dev \
     -o jsonpath='{.spec.replicas}'; echo
 ```
 
-Expected: `Sync Status: Synced to lab13 (<new-sha>)` and `.spec.replicas=2` within a few seconds of the refresh (Automated sync triggers right after the diff is computed).
+### Live run
 
-For `python-app-prod` (manual), the same push produces `Sync Status: OutOfSync` until an operator runs `argocd app sync python-app-prod`.
+Starting point: dev was synced to the previous commit `e11dc11` with 1 replica. After pushing `ccac837` (the commit that flips `replicaCount: 1 → 2` in `values-dev.yaml`):
+
+```
+$ argocd app get python-app-dev | grep -E "Sync Status|Health"
+Sync Status:        Synced to lab13 (e11dc11)   ← repo-server cache, Git already has ccac837
+Health Status:      Healthy
+
+$ argocd app get python-app-dev --hard-refresh | grep -E "Sync Status|Health"
+Sync Status:        OutOfSync from lab13 (ccac837)   ← drift detected
+Health Status:      Healthy
+
+# automated sync kicks in ~13 s later
+2026-04-17T17:17:37Z | Synced to lab13 (ccac837) | replicas=2 pods=1
+2026-04-17T17:17:42Z | Synced to lab13 (ccac837) | replicas=2 pods=2
+
+$ argocd app history python-app-dev
+ID  DATE                           REVISION
+0   2026-04-17 19:19:25 +0300 MSK  lab13 (e11dc11)   ← initial sync
+1   2026-04-17 19:21:04 +0300 MSK  lab13 (e11dc11)   ← re-sync after Application spec edit
+2   2026-04-17 20:17:59 +0300 MSK  lab13 (ccac837)   ← GitOps sync triggered by push
+```
+
+End state — two pods in dev, both from the new ReplicaSet:
+
+```
+$ kubectl get pods -n dev
+NAME                                                READY   STATUS    RESTARTS   AGE
+python-app-dev-devops-info-python-855bd58b5-2kwxt   1/1     Running   0          64m
+python-app-dev-devops-info-python-855bd58b5-hx9bk   1/1     Running   0          9m17s
+```
+
+Why `--hard-refresh` was needed: `argocd app refresh` only re-runs the diff against the cached checkout; `--hard-refresh` additionally forces the repo-server to re-clone and pick up the new commit. In production a GitHub webhook on `/api/webhook` makes this instant, and the 3-minute reconcile timer would pick it up anyway within `timeout.reconciliation`.
+
+For `python-app-prod` (manual) the same push would produce `Sync Status: OutOfSync` until an operator runs `argocd app sync python-app-prod` — only if the push changes something rendered by `values.yaml` or `values-prod.yaml`. The `ccac837` commit only touched `values-dev.yaml`, so prod renders identically and stays `Synced` after the hard-refresh. To force a manual-sync demo, change a field used by prod (e.g. bump `replicaCount` in `values-prod.yaml`) and observe `python-app-prod` go OutOfSync.
 
 ---
 
@@ -434,7 +468,7 @@ argocd app list
 argocd appset list
 kubectl get pods -A | grep -E 'argocd|default|dev|prod|appset'
 
-# Dev replicas (1 from values-dev.yaml)
+# Dev replicas (2 from values-dev.yaml)
 kubectl get deploy -n dev -o jsonpath='{.items[0].spec.replicas}'; echo
 
 # Prod replicas (5 from values-prod.yaml)
