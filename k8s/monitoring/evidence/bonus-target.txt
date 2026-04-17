@@ -1,0 +1,36 @@
+=== Prometheus targets for devops-app ===
+{
+  "scrapePool": "serviceMonitor/lab16/devops-app/0",
+  "health": "up",
+  "scrapeUrl": "http://10.244.0.87:8000/metrics",
+  "lastScrape": "2026-04-17T12:05:29.689703965Z",
+  "labels": {
+    "namespace": "lab16",
+    "pod": "devops-app-d45fbcbf8-njn2d",
+    "service": "devops-app-service"
+  }
+}
+{
+  "scrapePool": "serviceMonitor/lab16/devops-app/0",
+  "health": "up",
+  "scrapeUrl": "http://10.244.0.88:8000/metrics",
+  "lastScrape": "2026-04-17T12:05:23.295208928Z",
+  "labels": {
+    "namespace": "lab16",
+    "pod": "devops-app-d45fbcbf8-rmzbp",
+    "service": "devops-app-service"
+  }
+}
+
+=== Sample metric query: rate(http_requests_total) by endpoint ===
+[
+  {
+    "metric": {
+      "endpoint": "http"
+    },
+    "value": [
+      1776427533.591,
+      "0.6888713102474873"
+    ]
+  }
+]

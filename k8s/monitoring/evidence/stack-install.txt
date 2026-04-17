@@ -1,0 +1,17 @@
+NAME                                                         READY   STATUS    RESTARTS   AGE
+pod/alertmanager-monitoring-kube-prometheus-alertmanager-0   2/2     Running   0          2m21s
+pod/monitoring-grafana-69c84dd97f-rdc4p                      3/3     Running   0          2m29s
+pod/monitoring-kube-prometheus-operator-697b44f4b8-tvcrc     1/1     Running   0          2m29s
+pod/monitoring-kube-state-metrics-67d5f7bf68-7tpjv           1/1     Running   0          2m29s
+pod/monitoring-prometheus-node-exporter-46gjk                1/1     Running   0          2m29s
+pod/prometheus-monitoring-kube-prometheus-prometheus-0       2/2     Running   0          2m21s
+
+NAME                                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+service/alertmanager-operated                     ClusterIP   None            <none>        9093/TCP,9094/TCP,9094/UDP   2m21s
+service/monitoring-grafana                        ClusterIP   10.96.163.216   <none>        80/TCP                       2m29s
+service/monitoring-kube-prometheus-alertmanager   ClusterIP   10.96.20.249    <none>        9093/TCP,8080/TCP            2m29s
+service/monitoring-kube-prometheus-operator       ClusterIP   10.96.186.190   <none>        443/TCP                      2m29s
+service/monitoring-kube-prometheus-prometheus     ClusterIP   10.96.80.147    <none>        9090/TCP,8080/TCP            2m29s
+service/monitoring-kube-state-metrics             ClusterIP   10.96.248.224   <none>        8080/TCP                     2m29s
+service/monitoring-prometheus-node-exporter       ClusterIP   10.96.225.65    <none>        9100/TCP                     2m29s
+service/prometheus-operated                       ClusterIP   None            <none>        9090/TCP                     2m21s

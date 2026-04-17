@@ -1,0 +1,13 @@
+=== kubectl get pod -n lab16 devops-app-d45fbcbf8-njn2d ===
+NAME                         READY   STATUS    RESTARTS   AGE   IP            NODE                  NOMINATED NODE   READINESS GATES
+devops-app-d45fbcbf8-njn2d   1/1     Running   0          49s   10.244.0.87   lab13-control-plane   <none>           <none>
+
+=== kubectl logs -c init-download ===
+[init-download] fetching index.html ...
+wget: note: TLS certificate validation not implemented
+[init-download] bytes fetched: 528
+[init-download] done
+
+=== kubectl logs -c wait-for-service ===
+[wait-for-service] waiting for kubernetes.default ...
+[wait-for-service] dependency ready

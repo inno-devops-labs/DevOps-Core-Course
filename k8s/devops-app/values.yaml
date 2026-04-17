@@ -91,6 +91,54 @@ serviceAccount:
   create: true
   name: "devops-app"
 
+# Init containers run to completion before the main container starts.
+# Use for fetching assets, running DB migrations, or waiting for
+# dependencies. Declared as a raw list so any valid container spec
+# (image, command, env, volumeMounts, ...) can be used.
+initContainers: []
+  # - name: init-download
+  #   image: busybox:1.36
+  #   command: ["sh", "-c", "wget -O /work-dir/index.html https://example.com"]
+  #   volumeMounts:
+  #     - name: workdir
+  #       mountPath: /work-dir
+
+# Extra volumes appended to the pod spec (e.g. a shared emptyDir used
+# by an init container + the main container). Raw list, merged after
+# the chart's built-in volumes (config-volume, data-volume, ...).
+extraVolumes: []
+  # - name: workdir
+  #   emptyDir: {}
+
+# Extra volume mounts appended to the main container. Kept separate
+# from extraVolumes so a volume can be mounted by init containers
+# only if desired.
+extraVolumeMounts: []
+  # - name: workdir
+  #   mountPath: /usr/share/nginx/html
+
+# Prometheus Operator ServiceMonitor — scrapes the app's /metrics
+# endpoint. Requires the `monitoring.coreos.com/v1` CRD from
+# kube-prometheus-stack (Lab 16).
+serviceMonitor:
+  enabled: false
+  # Namespace the ServiceMonitor is created in. Empty = release
+  # namespace. The operator picks up SMs by label selector across
+  # namespaces, so this usually does not need to match Prometheus'.
+  namespace: ""
+  # kube-prometheus-stack's default Prometheus picks up
+  # ServiceMonitors labelled `release: <stack release name>`. Change
+  # this if your stack was installed under a different release name.
+  labels:
+    release: monitoring
+  port: http
+  path: /metrics
+  interval: 30s
+  scrapeTimeout: 10s
+  honorLabels: false
+  relabelings: []
+  metricRelabelings: []
+
 statefulset:
   enabled: false
   podManagementPolicy: OrderedReady

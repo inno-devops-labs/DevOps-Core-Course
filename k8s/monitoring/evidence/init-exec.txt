@@ -1,0 +1,8 @@
+=== kubectl exec devops-app-d45fbcbf8-njn2d -- ls -la /data/initfetch ===
+total 12
+drwxrwsrwx 2 root 1000 4096 Apr 17 12:02 .
+drwxrwxrwx 3 root root 4096 Apr 17 12:02 ..
+-rw-r--r-- 1 1000 1000  528 Apr 17 12:02 index.html
+
+=== kubectl exec devops-app-d45fbcbf8-njn2d -- head -c 300 /data/initfetch/index.html ===
+<!doctype html><html lang="en"><head><title>Example Domain</title><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{background:#eee;width:60vw;margin:15vh auto;font-family:system-ui,sans-serif}h1{font-size:1.5em}div{opacity:0.8}a:link,a:visited{color:#348}</style></head

@@ -1,0 +1,4 @@
+   1 NodeClockNotSynchronising
+   4 TargetDown
+   1 Watchdog
+   1 etcdInsufficientMembers
