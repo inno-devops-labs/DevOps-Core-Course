@@ -6,3 +6,5 @@ __pycache__/
 .env
 *.crt
 *.key
+*.tgz
+*.lock
