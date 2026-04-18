@@ -31,6 +31,28 @@ spec:
       serviceAccountName: {{ include "python-app.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        - name: init-download
+          image: "{{ .Values.initContainers.download.image.repository }}:{{ .Values.initContainers.download.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainers.download.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - wget -O {{ .Values.initContainers.sharedVolume.mountPath }}/{{ .Values.initContainers.download.destinationFile }} {{ .Values.initContainers.download.url | quote }}
+          volumeMounts:
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.mountPath }}
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: "{{ .Values.initContainers.waitForService.image.repository }}:{{ .Values.initContainers.waitForService.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainers.waitForService.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - until nc -z {{ .Values.initContainers.waitForService.host | quote }} {{ .Values.initContainers.waitForService.port }}; do echo "waiting for {{ .Values.initContainers.waitForService.host }}:{{ .Values.initContainers.waitForService.port }}"; sleep {{ .Values.initContainers.waitForService.sleepSeconds }}; done; echo "service is reachable"
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ include "python-app.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -60,6 +82,11 @@ spec:
             - name: config-volume
               mountPath: {{ .Values.config.mountPath }}
               readOnly: true
+            {{- if .Values.initContainers.enabled }}
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.mountPath }}
+              readOnly: true
+            {{- end }}
             {{- if .Values.persistence.enabled }}
             - name: {{ .Values.persistence.claimName }}
               mountPath: {{ .Values.persistence.mountPath }}
@@ -68,6 +95,10 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "python-app.fullname" . }}-config
+        {{- if .Values.initContainers.enabled }}
+        - name: {{ .Values.initContainers.sharedVolume.name }}
+          emptyDir: {}
+        {{- end }}
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:

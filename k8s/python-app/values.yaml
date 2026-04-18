@@ -137,3 +137,25 @@ hooks:
       - sh
       - -c
       - echo "Running python-app smoke test" && sleep 10 && echo "Post-install smoke test complete"
+
+initContainers:
+  enabled: true
+  sharedVolume:
+    name: bootstrap-data
+    mountPath: /bootstrap
+  download:
+    image:
+      repository: busybox
+      tag: "1.36.1"
+      pullPolicy: IfNotPresent
+    url: https://example.com
+    destinationFile: index.html
+  waitForService:
+    enabled: true
+    image:
+      repository: busybox
+      tag: "1.36.1"
+      pullPolicy: IfNotPresent
+    host: kubernetes.default.svc.cluster.local
+    port: 443
+    sleepSeconds: 2
