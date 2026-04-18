@@ -1,0 +1,16 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "python-app.fullname" . }}-preview
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "python-app.selectorLabels" . | nindent 4 }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}
