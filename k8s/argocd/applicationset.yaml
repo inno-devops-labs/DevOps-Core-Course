@@ -1,0 +1,43 @@
+# ApplicationSet with a List generator for dev and prod.
+# Note: One template shares one syncPolicy shape. Here dev and prod both use manual sync
+# in YAML. For automated dev + manual prod, use application-dev.yaml and application-prod.yaml
+# (two Applications) or maintain two ApplicationSet manifests with different policies.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: python-app-set
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+          - env: prod
+            namespace: prod
+  template:
+    metadata:
+      name: "python-app-set-{{env}}"
+      namespace: argocd
+    spec:
+      project: default
+      sources:
+        - repoURL: https://github.com/nexonm22/DevOps-Core-Course.git
+          targetRevision: main
+          ref: courseRepo
+        - repoURL: https://github.com/nexonm22/DevOps-Core-Course.git
+          targetRevision: main
+          path: k8s/devops-info-service
+          helm:
+            releaseName: "python-app-set-{{env}}"
+            parameters:
+              - name: fullnameOverride
+                value: "python-app-set-{{env}}"
+            valueFiles:
+              - $courseRepo/k8s/app-python/values-{{env}}.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true

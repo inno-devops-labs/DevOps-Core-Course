@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-app-dev
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/nexonm22/DevOps-Core-Course.git
+      targetRevision: main
+      ref: courseRepo
+    - repoURL: https://github.com/nexonm22/DevOps-Core-Course.git
+      targetRevision: main
+      path: k8s/devops-info-service
+      helm:
+        releaseName: python-app-dev
+        valueFiles:
+          - $courseRepo/k8s/app-python/values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

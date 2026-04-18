@@ -1,0 +1,38 @@
+# Dev overlay for Argo CD (used with k8s/devops-info-service Helm chart)
+replicaCount: 1
+
+fullnameOverride: python-app-dev
+
+image:
+  repository: nexonm22/devops-info-service
+  tag: "lab12"
+  pullPolicy: IfNotPresent
+
+appConfig:
+  environment: dev
+  settings:
+    logLevel: debug
+
+envConfig:
+  APP_ENV: dev
+  LOG_LEVEL: debug
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30081
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data

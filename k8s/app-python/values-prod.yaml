@@ -1,0 +1,37 @@
+# Production overlay for Argo CD (same image as dev; stronger limits and more replicas)
+replicaCount: 2
+
+fullnameOverride: python-app-prod
+
+image:
+  repository: nexonm22/devops-info-service
+  tag: "lab12"
+  pullPolicy: IfNotPresent
+
+appConfig:
+  environment: prod
+  settings:
+    logLevel: info
+
+envConfig:
+  APP_ENV: prod
+  LOG_LEVEL: info
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: http
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data
