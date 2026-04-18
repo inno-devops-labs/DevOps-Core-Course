@@ -4,3 +4,5 @@ test
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+*sln
+app_csharp/
