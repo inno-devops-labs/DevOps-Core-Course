@@ -1,5 +1,8 @@
 replicaCount: 1
 
+rollout:
+  strategy: canary
+
 image:
   tag: latest
 

@@ -63,3 +63,10 @@ Resolve the managed secret name.
 {{- define "python-app.secretName" -}}
 {{- default (printf "%s-secret" (include "python-app.fullname" .)) .Values.secrets.name -}}
 {{- end -}}
+
+{{/*
+Resolve the preview service name used by blue-green rollouts.
+*/}}
+{{- define "python-app.previewServiceName" -}}
+{{- printf "%s-%s" (include "python-app.fullname" .) .Values.rollout.blueGreen.previewServiceSuffix | trunc 63 | trimSuffix "-" -}}
+{{- end -}}

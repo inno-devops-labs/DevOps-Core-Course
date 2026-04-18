@@ -1,5 +1,13 @@
 replicaCount: 3
 
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewService:
+      type: ClusterIP
+
 image:
   tag: latest
 

@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/ph1larmon1a/DevOps-Core-Course.git
-    targetRevision: lab12
+    targetRevision: lab14
     path: k8s/python-app
     helm:
       releaseName: python-app-prod
