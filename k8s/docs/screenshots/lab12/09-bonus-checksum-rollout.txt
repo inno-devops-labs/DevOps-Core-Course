@@ -1,0 +1,8 @@
+old_pod=devops-info-python-58fbbbbbc7-2lkwq
+old_hash=58fbbbbbc7
+new_pod=devops-info-python-7c9f4f6d6b-x9q2p
+new_hash=7c9f4f6d6b
+rollout_changed=yes
+
+NAME                                  READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+devops-info-python-7c9f4f6d6b-x9q2p   1/1     Running   0          2m    10.244.0.71   minikube   <none>           <none>

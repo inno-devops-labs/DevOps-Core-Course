@@ -1,0 +1,18 @@
+pod=devops-info-python-58fbbbbbc7-2lkwq
+start=1714003200
+end=1714003260
+delay_seconds=60
+
+{
+  "appName": "DevOps Info Service (Python)",
+  "environment": "dev",
+  "features": {
+    "visitsCounter": true,
+    "metrics": true
+  },
+  "settings": {
+    "timezone": "UTC",
+    "logFormat": "text",
+    "hotReloadTest": "true"
+  }
+}

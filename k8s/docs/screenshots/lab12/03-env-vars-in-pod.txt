@@ -1,0 +1,4 @@
+LOG_LEVEL=info
+APP_NAME=devops-info-python
+APP_ENV=dev
+FEATURE_VISITS_ENABLED=true

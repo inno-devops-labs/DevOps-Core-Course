@@ -1,0 +1,13 @@
+{{- if .Values.config.file.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-config
+  labels:
+    app: {{ include "common.legacyAppLabel" . }}
+    component: api
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  {{ .Values.config.file.fileName }}: |-
+{{ .Files.Get "files/config.json" | indent 4 }}
+{{- end }}

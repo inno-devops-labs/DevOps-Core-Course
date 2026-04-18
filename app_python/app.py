@@ -2,6 +2,8 @@ import logging
 import os
 import platform
 import socket
+import tempfile
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -12,25 +14,22 @@ app = Flask(__name__)
 
 # Prometheus metrics
 http_requests_total = Counter(
-    'http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'status']
+    "http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"]
 )
 
 http_request_duration_seconds = Histogram(
-    'http_request_duration_seconds',
-    'HTTP request duration',
-    ['method', 'endpoint']
+    "http_request_duration_seconds", "HTTP request duration", ["method", "endpoint"]
 )
 
 http_requests_in_progress = Gauge(
-    'http_requests_in_progress',
-    'HTTP requests currently being processed'
+    "http_requests_in_progress", "HTTP requests currently being processed"
 )
 
 # App-specific metrics
-endpoint_calls = Counter('devops_info_endpoint_calls', 'Endpoint calls', ['endpoint'])
-system_info_duration = Histogram('devops_info_system_collection_seconds', 'System info collection time')
+endpoint_calls = Counter("devops_info_endpoint_calls", "Endpoint calls", ["endpoint"])
+system_info_duration = Histogram(
+    "devops_info_system_collection_seconds", "System info collection time"
+)
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
@@ -40,6 +39,8 @@ SERVICE_NAME = "devops-info-service"
 SERVICE_VERSION = "1.0.0"
 SERVICE_DESCRIPTION = "DevOps course info service"
 SERVICE_FRAMEWORK = "Flask"
+VISITS_FILE_DEFAULT = "/data/visits"
+_visits_lock = threading.Lock()
 
 
 logging.basicConfig(
@@ -49,9 +50,12 @@ logging.basicConfig(
 logger = logging.getLogger("devops-info-service")
 
 
-
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
 
 
 def get_uptime_seconds() -> int:
@@ -87,7 +91,66 @@ def get_endpoints():
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
+        {"path": "/visits", "method": "GET", "description": "Current visits count"},
     ]
+
+
+def get_visits_file_path() -> str:
+    return os.getenv("VISITS_FILE", VISITS_FILE_DEFAULT)
+
+
+def read_visits_count() -> int:
+    visits_file = get_visits_file_path()
+    try:
+        with open(visits_file, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            return int(content) if content else 0
+    except FileNotFoundError:
+        return 0
+    except (ValueError, OSError):
+        logger.warning("Could not read visits file: %s", visits_file)
+        return 0
+
+
+def write_visits_count(value: int) -> None:
+    visits_file = get_visits_file_path()
+    visits_dir = os.path.dirname(visits_file)
+    if visits_dir:
+        os.makedirs(visits_dir, exist_ok=True)
+
+    fd, temp_path = tempfile.mkstemp(prefix="visits-", dir=visits_dir or None)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+            tmp.write(str(value))
+        os.replace(temp_path, visits_file)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+def increment_visits_count() -> int:
+    with _visits_lock:
+        new_value = read_visits_count() + 1
+        write_visits_count(new_value)
+        return new_value
+
+
+def get_current_visits_count() -> int:
+    with _visits_lock:
+        return read_visits_count()
+
+
+def initialize_visits_storage() -> None:
+    visits_file = get_visits_file_path()
+    visits_dir = os.path.dirname(visits_file)
+    if visits_dir:
+        os.makedirs(visits_dir, exist_ok=True)
+
+    if not os.path.exists(visits_file):
+        write_visits_count(0)
+
+
+initialize_visits_storage()
 
 
 @app.before_request
@@ -122,13 +185,10 @@ def _record_metrics(status_code: int):
 
     duration = time.time() - getattr(request, "start_time", time.time())
     http_request_duration_seconds.labels(
-        method=request.method,
-        endpoint=request.path
+        method=request.method, endpoint=request.path
     ).observe(duration)
     http_requests_total.labels(
-        method=request.method,
-        endpoint=request.path,
-        status=str(status_code)
+        method=request.method, endpoint=request.path, status=str(status_code)
     ).inc()
     request._metrics_reported = True
 
@@ -137,6 +197,7 @@ def _record_metrics(status_code: int):
 @app.get("/")
 def index():
     endpoint_calls.labels(endpoint="/").inc()
+    visits_count = increment_visits_count()
     start_time = time.time()
     uptime_seconds = get_uptime_seconds()
     payload = {
@@ -166,6 +227,7 @@ def index():
             "method": request.method,
             "path": request.path,
         },
+        "visits": visits_count,
         "endpoints": get_endpoints(),
     }
     system_info_duration.observe(time.time() - start_time)
@@ -187,9 +249,24 @@ def health():
     )
 
 
+@app.get("/visits")
+def visits():
+    endpoint_calls.labels(endpoint="/visits").inc()
+    return (
+        jsonify(
+            {
+                "visits": get_current_visits_count(),
+                "file": get_visits_file_path(),
+                "timestamp": utc_now_iso(),
+            }
+        ),
+        200,
+    )
+
+
 @app.get("/metrics")
 def metrics():
-    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    return generate_latest(), 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
 # error handling
@@ -205,7 +282,12 @@ def not_found(_):
 def internal_error(_):
     logger.exception("Unhandled server error")
     return (
-        jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}),
+        jsonify(
+            {
+                "error": "Internal Server Error",
+                "message": "An unexpected error occurred",
+            }
+        ),
         500,
     )
 
