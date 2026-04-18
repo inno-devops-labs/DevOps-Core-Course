@@ -5,6 +5,9 @@ fullnameOverride: ""
 
 revisionHistoryLimit: 10
 
+workload:
+  type: statefulset
+
 rollout:
   strategy: canary
   canary:
@@ -63,6 +66,7 @@ persistence:
   accessMode: ReadWriteOnce
   size: 100Mi
   storageClass: ""
+  claimName: data-volume
 
 podSecurityContext:
   fsGroup: 1000
