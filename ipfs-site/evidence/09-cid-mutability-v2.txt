@@ -1,0 +1,17 @@
+# Task 5 — Mutability via new CID
+
+## SHA-256 of both index.html files
+v1: 7c16ee602aa3875060cdca0d64f0e5d440fd0d10ce849bad1ec25f16aba4fc49
+v2: ae70a937f6b84ff9c2097f64325c869af84797ea43786cbcd7b26a2a1a7c0807   (one string swapped: 'IPFS via 4EVERLAND' -> '… (rev-2)')
+
+## ipfs add -r --cid-version=1 on each version
+
+### v1 (original):
+bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq
+
+### v2 (rev-2):
+bafybeihizd7ib7vkfqoqnqjdxzximuzyk5qq2xtbzsq2nklc4gaxeg62wq
+
+# Same path, different content => totally different directory CID.
+# This is why IPNS (or 4EVERLAND's DNS) exists: the human-readable
+# pointer stays stable while the immutable CID underneath rolls.

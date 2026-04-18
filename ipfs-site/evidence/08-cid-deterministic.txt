@@ -1,0 +1,12 @@
+# Adding the exact same bytes twice must return the same CID.
+# (proves content addressing; no randomness, no timestamps)
+
+$ echo 'same content' | ipfs add -Q --cid-version=1 --only-hash
+bafkreihzko55ebf3qz7erjx7o5gp7i6477icyzma5dy5adbx3o5koq6wza
+
+$ echo 'same content' | ipfs add -Q --cid-version=1 --only-hash   # run again
+bafkreihzko55ebf3qz7erjx7o5gp7i6477icyzma5dy5adbx3o5koq6wza
+
+# One byte different => completely different CID
+$ echo 'same contentx' | ipfs add -Q --cid-version=1 --only-hash
+bafkreibqshmqqxfgaq7iu5eav4groiwwvjt7oihxd4mger63i3t6xb44x4

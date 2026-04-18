@@ -1,0 +1,35 @@
+{
+	"ID": "12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+	"PublicKey": "CAESIJLSFW0C48fyuPXGFDXNf8CYq9KwzcfUkpBO7VUQLG7r",
+	"Addresses": [
+		"/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip4/127.0.0.1/udp/4001/quic-v1/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip4/127.0.0.1/udp/4001/quic-v1/webtransport/certhash/uEiAi-3-25FZ7ttQ6bMx_IEh-RvsM_ONSEUuEg9OgUKX1ZQ/certhash/uEiCR82oqQfqqBHQQXYmdVa4DgT7DHqfzPXE61-IcysY95w/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip4/127.0.0.1/udp/4001/webrtc-direct/certhash/uEiCTXpzRz0wAvhH7uLvm7FiP0HI7ZJv2fzRgjbK9iA0NMA/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip4/172.17.0.2/tcp/4001/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip4/172.17.0.2/udp/4001/quic-v1/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip4/172.17.0.2/udp/4001/quic-v1/webtransport/certhash/uEiAi-3-25FZ7ttQ6bMx_IEh-RvsM_ONSEUuEg9OgUKX1ZQ/certhash/uEiCR82oqQfqqBHQQXYmdVa4DgT7DHqfzPXE61-IcysY95w/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip4/172.17.0.2/udp/4001/webrtc-direct/certhash/uEiCTXpzRz0wAvhH7uLvm7FiP0HI7ZJv2fzRgjbK9iA0NMA/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip6/::1/tcp/4001/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip6/::1/udp/4001/quic-v1/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip6/::1/udp/4001/quic-v1/webtransport/certhash/uEiAi-3-25FZ7ttQ6bMx_IEh-RvsM_ONSEUuEg9OgUKX1ZQ/certhash/uEiCR82oqQfqqBHQQXYmdVa4DgT7DHqfzPXE61-IcysY95w/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n",
+		"/ip6/::1/udp/4001/webrtc-direct/certhash/uEiCTXpzRz0wAvhH7uLvm7FiP0HI7ZJv2fzRgjbK9iA0NMA/p2p/12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n"
+	],
+	"AgentVersion": "kubo/0.30.0/846c5cc/docker",
+	"Protocols": [
+		"/ipfs/bitswap",
+		"/ipfs/bitswap/1.0.0",
+		"/ipfs/bitswap/1.1.0",
+		"/ipfs/bitswap/1.2.0",
+		"/ipfs/id/1.0.0",
+		"/ipfs/id/push/1.0.0",
+		"/ipfs/lan/kad/1.0.0",
+		"/ipfs/ping/1.0.0",
+		"/libp2p/autonat/1.0.0",
+		"/libp2p/autonat/2/dial-back",
+		"/libp2p/autonat/2/dial-request",
+		"/libp2p/circuit/relay/0.2.0/stop",
+		"/x/"
+	]
+}
+

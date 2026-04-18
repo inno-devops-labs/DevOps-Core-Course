@@ -1,0 +1,40 @@
+{
+  "Identity": {
+    "PeerID": "12D3KooWKhVVUZVrthtwGrnQQVS8rfyWQYFsZnnfdrucqqm56K4n"
+  },
+  "Addresses": {
+    "API": "/ip4/0.0.0.0/tcp/5001",
+    "Announce": [],
+    "AppendAnnounce": [],
+    "Gateway": "/ip4/0.0.0.0/tcp/8080",
+    "NoAnnounce": [],
+    "Swarm": [
+      "/ip4/0.0.0.0/tcp/4001",
+      "/ip6/::/tcp/4001",
+      "/ip4/0.0.0.0/udp/4001/webrtc-direct",
+      "/ip4/0.0.0.0/udp/4001/quic-v1",
+      "/ip4/0.0.0.0/udp/4001/quic-v1/webtransport",
+      "/ip6/::/udp/4001/webrtc-direct",
+      "/ip6/::/udp/4001/quic-v1",
+      "/ip6/::/udp/4001/quic-v1/webtransport"
+    ]
+  },
+  "Swarm": {
+    "AddrFilters": null,
+    "ConnMgr": {},
+    "DisableBandwidthMetrics": false,
+    "DisableNatPortMap": false,
+    "RelayClient": {},
+    "RelayService": {},
+    "ResourceMgr": {},
+    "Transports": {
+      "Multiplexers": {},
+      "Network": {},
+      "Security": {}
+    }
+  },
+  "Gateway": {
+    "NoFetch": false,
+    "RootRedirect": ""
+  }
+}

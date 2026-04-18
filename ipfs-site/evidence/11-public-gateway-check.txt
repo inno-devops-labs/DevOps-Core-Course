@@ -1,0 +1,16 @@
+# Public gateway access check (best-effort)
+# NOTE: this local node is NAT-isolated (residential Docker). The DHT
+# may not route to it from public gateways. A proper pinning service
+# (4EVERLAND Bucket) solves exactly this problem — it replicates the
+# content onto well-connected peers so every public gateway can resolve it.
+
+$ curl --max-time 15 -sS -o /dev/null -w '%{http_code}  %{time_total}s  %{url}
+' https://ipfs.io/ipfs/QmWHfKHAfPfMK4LcK4W4NETxG6peFP1XqKm7DkAce9Bntm
+000  15.005053s  https://ipfs.io/ipfs/QmWHfKHAfPfMK4LcK4W4NETxG6peFP1XqKm7DkAce9Bntm
+timeout/fail
+$ curl --max-time 15 -sS -o /dev/null -w '%{http_code}  %{time_total}s  %{url}
+' https://dweb.link/ipfs/QmWHfKHAfPfMK4LcK4W4NETxG6peFP1XqKm7DkAce9Bntm
+301  0.357355s  https://dweb.link/ipfs/QmWHfKHAfPfMK4LcK4W4NETxG6peFP1XqKm7DkAce9Bntm
+$ curl --max-time 15 -sS -o /dev/null -w '%{http_code}  %{time_total}s  %{url}
+' https://ipfs.4everland.link/ipfs/QmWHfKHAfPfMK4LcK4W4NETxG6peFP1XqKm7DkAce9Bntm
+404  0.435869s  https://ipfs.4everland.link/ipfs/QmWHfKHAfPfMK4LcK4W4NETxG6peFP1XqKm7DkAce9Bntm

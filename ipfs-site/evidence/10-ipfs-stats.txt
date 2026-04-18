@@ -1,0 +1,31 @@
+$ ipfs repo stat --human
+NumObjects: 5
+RepoSize:   72 kB
+StorageMax: 10 GB
+RepoPath:   /data/ipfs
+Version:    fs-repo@16
+
+$ ipfs stats bw
+Bandwidth
+TotalIn: 30 kB
+TotalOut: 16 kB
+RateIn: 0 B/s
+RateOut: 0 B/s
+
+$ ipfs swarm peers | wc -l  (connected peers)
+33
+
+$ ipfs dag stat bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq
+
+CID                                                        	Blocks         	Size
+bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq	2              	31227
+
+Summary
+Total Size: 31227
+Unique Blocks: 2
+Shared Size: 0
+Ratio: 1.000000
+
+
+CID: bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq, Size: 60, NumBlocks: 1
+CID: bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq, Size: 31227, NumBlocks: 2

@@ -1,0 +1,18 @@
+$ curl -sI http://127.0.0.1:5001/webui
+HTTP/1.1 301 Moved Permanently
+Content-Type: text/html; charset=utf-8
+Location: /webui/
+Date: Fri, 17 Apr 2026 15:37:39 GMT
+
+
+$ curl -sI http://127.0.0.1:5001/api/v0/version -X POST
+HTTP/1.1 200 OK
+Access-Control-Allow-Headers: X-Stream-Output, X-Chunked-Output, X-Content-Length
+Access-Control-Expose-Headers: X-Stream-Output, X-Chunked-Output, X-Content-Length
+Content-Type: application/json
+Server: kubo/0.30.0
+Trailer: X-Stream-Error
+
+$ curl -sS  -X POST http://127.0.0.1:5001/api/v0/version
+{"Version":"0.30.0","Commit":"846c5cc","Repo":"16","System":"arm64/linux","Golang":"go1.22.7"}
+

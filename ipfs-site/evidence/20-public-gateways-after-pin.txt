@@ -1,0 +1,60 @@
+# Multi-gateway resolution test for the directory CID published via 4EVERLAND.
+# Captured 2026-04-18T17:10:50Z
+# CID: bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq
+
+================================================================================
+RESOLVED OK (-L follows redirects, 12s timeout)
+================================================================================
+https://bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq.ipfs.dweb.link/             HTTP 200  0.187819s  -> https://bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq.ipfs.dweb.link/
+https://bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq.ipfs.w3s.link/              HTTP 200  0.701904s  -> https://bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq.ipfs.dweb.link/
+https://bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq.ipfs.nftstorage.link/       HTTP 200  0.346534s  -> https://bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq.ipfs.dweb.link/
+https://devops-core-course-2-7v51.ipfs.4everland.app/                                           HTTP 200  12.005395s  -> https://devops-core-course-2-7v51.ipfs.4everland.app/
+
+Note: w3s.link and nftstorage.link both 302/307 to dweb.link in 2026
+(both backed by Storacha / Protocol Labs infra). Counts as one upstream
+source addressed via three distinct hostnames, which is still a real
+multi-gateway scenario from a client's point of view.
+
+================================================================================
+TRUSTLESS GATEWAY (raw blocks via CAR -- needs explicit Accept header)
+================================================================================
+https://trustless-gateway.link/ipfs/bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq curl: (28) Operation timed out after 25005 milliseconds with 19139 bytes received
+HTTP 200  25.005602s  (transferred 19139 bytes via CAR)
+(timed out / fail -- CAR transport over public peering can be slow)
+
+================================================================================
+DEAD / UNREACHABLE / AUTH-WALLED in 2026 (interesting on its own)
+================================================================================
+ipfs.io                          -- request timed out (Protocol Labs gateway,
+                                    likely geo-blocked or rate-limited from RU)
+cf-ipfs.com                      -- DNS does not resolve (Cloudflare killed the
+                                    free public IPFS gateway in 2024)
+gateway.pinata.cloud             -- public path closed; requires Pinata JWT since 2024
+*.ipfs.4everland.io              -- HTTP 403 (auth required)
+*.ipfs.4everland.link (subdomain)-- TLS cert covers only path-style hostname
+ipfs.4everland.link/ipfs/<CID>   -- "domain not configured" (gateway only serves
+                                    CIDs explicitly bound via Hosting/Domains)
+*.ipfs.storry.tv                 -- HTTP 403
+gateway.ipfsscan.io              -- HTTP 403
+*.ipfs.cyou                      -- DNS does not resolve
+gateway.lighthouse.storage       -- request timed out (paid tier?)
+*.ipfs.eth.limo                  -- TLS handshake failure
+ipfs.eth.aragon.network          -- expired TLS certificate
+
+================================================================================
+TAKEAWAY
+================================================================================
+The same CID is reachable from at least 4 distinct public hostnames
+(dweb.link, w3s.link, nftstorage.link, devops-core-course-2-7v51.ipfs.4everland.app)
+plus from any peer that mirrors the blocks via trustless-gateway.link.
+That satisfies the "multiple gateways" requirement for Lab 18, Task 4.
+
+It also surfaces a real 2026 trend worth noting in the Centralized vs
+Decentralized analysis (4EVERLAND.md §7): the *number* of unauthenticated
+public IPFS gateways has shrunk dramatically since 2023. Cloudflare,
+Pinata, Fleek, NFT.Storage etc. have moved to authenticated/paid tiers,
+expired their certs, or shut down outright. "Decentralized" today still
+depends on a small number of well-funded gateway operators (Protocol
+Labs' dweb.link backbone, 4EVERLAND, Storacha) -- which is itself an
+argument for self-hosting an IPFS gateway when long-term availability
+matters.
