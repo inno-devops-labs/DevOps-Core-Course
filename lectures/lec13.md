@@ -91,16 +91,18 @@ By the end of this lecture, you will:
 **Traditional Deployment Models:**
 
 ```mermaid
-flowchart TD
-  subgraph 😰 Manual
-    A[👨‍💻 Developer] --> B[⌨️ kubectl apply]
-    B --> C[☸️ Cluster]
-  end
-
-  subgraph 🔄 CI/CD Push
+flowchart LR
+  subgraph "🔄 CI/CD Push"
+    direction LR
     D[📝 Git Push] --> E[🔧 CI Pipeline]
     E --> F[⌨️ kubectl apply]
     F --> G[☸️ Cluster]
+  end
+
+  subgraph "😰 Manual"
+    direction LR
+    A[👨‍💻 Developer] --> B[⌨️ kubectl apply]
+    B --> C[☸️ Cluster]
   end
 ```
 
@@ -227,15 +229,17 @@ flowchart LR
 ## 📍 Slide 13 – 🔄 Push vs Pull Deployment
 
 ```mermaid
-flowchart TD
-  subgraph 🔄 Push Model
-    A[📝 Git] --> B[🔧 CI/CD]
-    B --> |Push credentials needed| C[☸️ Cluster]
-  end
-
-  subgraph 🚀 Pull Model - GitOps
+flowchart LR
+  subgraph "🚀 Pull Model - GitOps"
+    direction LR
     D[📝 Git] --> |Pull| E[🤖 Agent in Cluster]
     E --> |Apply| F[☸️ Same Cluster]
+  end
+
+  subgraph "🔄 Push Model"
+    direction LR
+    A[📝 Git] --> B[🔧 CI/CD]
+    B --> |Push credentials needed| C[☸️ Cluster]
   end
 ```
 
@@ -743,7 +747,7 @@ flowchart TD
 **Adopting GitOps incrementally:**
 
 ```mermaid
-flowchart LR
+flowchart TD
   A[1️⃣ Non-critical app] --> B[2️⃣ Dev environment]
   B --> C[3️⃣ More apps]
   C --> D[4️⃣ Staging]
