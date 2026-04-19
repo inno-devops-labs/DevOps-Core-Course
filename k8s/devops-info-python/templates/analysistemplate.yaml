@@ -1,0 +1,22 @@
+{{- if and .Values.rollout.enabled .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "common.fullname" . }}-healthcheck
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: health-probe
+      interval: {{ .Values.rollout.analysis.interval | default "10s" }}
+      count: {{ .Values.rollout.analysis.count | default 3 }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit | default 1 }}
+      successCondition: 'result == "healthy"'
+      provider:
+        web:
+          url: "http://{{ "{{args.service-name}}" }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}/health"
+          timeoutSeconds: 5
+          jsonPath: "{$.status}"
+{{- end }}

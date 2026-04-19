@@ -1,0 +1,53 @@
+fullnameOverride: devops-info-python
+
+replicaCount: 4
+
+image:
+  tag: "python"
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "100m"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+persistence:
+  enabled: false
+
+vault:
+  enabled: false
+
+secrets:
+  DB_USERNAME: "admin"
+  DB_PASSWORD: "S3cur3P@ssw0rd"
+
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 25
+      - pause: { duration: 10s }
+      - analysis:
+          templates:
+            - templateName: devops-info-python-healthcheck
+          args:
+            - name: service-name
+              value: devops-info-python
+      - setWeight: 50
+      - pause: { duration: 10s }
+      - setWeight: 75
+      - pause: { duration: 10s }
+      - setWeight: 100
+  analysis:
+    enabled: true
+    interval: 10s
+    count: 3
+    failureLimit: 1
