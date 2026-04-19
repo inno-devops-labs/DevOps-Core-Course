@@ -38,7 +38,7 @@ Master **production-grade DevOps practices** through hands-on labs. Build, conta
 | 15 | 15 | StatefulSets | Persistent Storage, Headless Services |
 | 16 | 16 | Cluster Monitoring | Kube-Prometheus, Init Containers |
 | — | **Exam Alternative Labs** | | |
-| 17 | 17 | Edge Deployment | Fly.io, Global Distribution |
+| 17 | 17 | Edge Deployment | Cloudflare Workers, Global Edge |
 | 18 | 18 | Reproducible Builds | Nix, Deterministic Builds, Flakes |
 
 ---
@@ -142,7 +142,7 @@ Each lab is worth **10 points** (main tasks) + **2.5 points** (bonus).
 - StatefulSets, Monitoring
 
 **Exam Alternative (Labs 17-18)**
-- Fly.io, Nix Reproducible Builds
+- Cloudflare Workers, Nix Reproducible Builds
 
 </details>
 

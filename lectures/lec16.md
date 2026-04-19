@@ -124,7 +124,7 @@ flowchart TD
 ## 📍 Slide 8 – 📊 The Abstraction Spectrum
 
 ```mermaid
-flowchart LR
+flowchart TD
   A[🖥️ Bare Metal] --> B[☁️ VMs/IaaS]
   B --> C[☸️ Kubernetes]
   C --> D[✈️ PaaS]
