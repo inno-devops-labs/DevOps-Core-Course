@@ -1,0 +1,15 @@
+---
+- name: Deploy application
+  hosts: webservers
+  become: true
+
+  pre_tasks:
+    - name: Load vaulted variables (only when vault password file is provided)
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../group_vars/all.yml"
+      no_log: true
+      when:
+        - lookup('ansible.builtin.env', 'ANSIBLE_VAULT_PASSWORD_FILE', default='') | length > 0
+
+  roles:
+    - web_app

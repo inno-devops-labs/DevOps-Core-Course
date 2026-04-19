@@ -1,0 +1,80 @@
+---
+# wipe logic runs first when explicitly requested by variable + tag
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Validate deployment variables
+  assert:
+    that:
+      - app_name | length > 0
+      - docker_image | length > 0
+      - docker_tag | length > 0
+      - app_port | int > 0
+      - app_internal_port | int > 0
+    fail_msg: >-
+      Missing required application variables. Set app_name, docker_image,
+      docker_tag, app_port and app_internal_port in defaults or group_vars (vault).
+
+- name: Log in to Docker Hub (optional)
+  docker_login:
+    registry_url: https://index.docker.io/v1/
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+  when: dockerhub_username != '' and dockerhub_password != ''
+  no_log: true
+
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create app directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Template docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Deploy with docker-compose v2
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        pull: missing   # options: always, missing, never, policy
+        state: present
+  rescue:
+    - name: Handle deployment failure
+      debug:
+        msg: "Deployment failed for {{ app_name }}"
+  tags:
+    - app_deploy
+    - compose
+
+- name: Wait for application port to be ready
+  wait_for:
+    host: localhost
+    port: "{{ app_port }}"
+    delay: "{{ health_check_delay | default(5) }}"
+    timeout: "{{ health_check_timeout | default(60) }}"
+    state: started
+  retries: "{{ health_check_retries | default(10) }}"
+  delay: 2
+  register: port_check
+  until: port_check is succeeded
+
+- name: Verify health endpoint
+  uri:
+    url: "http://localhost:{{ app_port }}/health"
+    method: GET
+    status_code: 200
+    timeout: 5
+  register: health_result
+  until: health_result.status == 200
+  retries: "{{ health_check_retries | default(10) }}"
+  delay: "{{ health_check_delay | default(5) }}"

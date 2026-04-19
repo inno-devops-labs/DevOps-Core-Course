@@ -1,0 +1,108 @@
+---
+# roles/docker/tasks/main.yml
+
+- name: Docker installation tasks
+  when: ansible_facts['os_family'] == "Debian"
+  become: true
+  tags:
+    - app_deploy
+    - docker
+    - docker_install
+  block:
+    - name: Install prerequisites for Docker
+      ansible.builtin.apt:
+        name: "{{ docker_prerequisites }}"
+        state: present
+        update_cache: true
+
+    - name: Create directory for keyrings
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: "{{ docker_apt_gpg_key }}"
+        dest: "{{ docker_apt_keyring_path }}"
+        mode: '0644'
+      notify: Update apt cache
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_apt_arch }} signed-by={{ docker_apt_keyring_path }}]
+          https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}
+          {{ ansible_facts['distribution_release'] }}
+          {{ docker_apt_release_channel }}
+        filename: docker
+        state: present
+        update_cache: false
+      notify: Update apt cache
+
+    - name: Update apt cache after adding docker repo
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 0
+
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+      notify: Restart Docker
+
+  rescue:
+    - name: Retry apt update on GPG key failure
+      ansible.builtin.apt:
+        update_cache: true
+
+  always:
+    - name: Ensure Docker service is enabled (install cleanup)
+      ansible.builtin.service:
+        name: docker
+        enabled: true
+
+- name: Docker configuration
+  when: ansible_facts['os_family'] == "Debian"
+  become: true
+  tags:
+    - app_deploy
+    - docker
+    - docker_config
+  block:
+    - name: Ensure Docker service is running and enabled
+      ansible.builtin.service:
+        name: docker
+        state: "{{ docker_service_state }}"
+        enabled: "{{ docker_service_enabled }}"
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true
+      when: docker_user is defined
+      notify: Restart Docker
+
+    - name: Install python3-docker for Ansible modules
+      ansible.builtin.apt:
+        name: python3-docker
+        state: present
+      when: ansible_facts['os_family'] == "Debian"
+
+  rescue:
+    - name: Log docker configuration failure
+      ansible.builtin.debug:
+        msg: "Docker configuration block failed - attempting to continue"
+    - name: Retry ensuring Docker service state
+      ansible.builtin.service:
+        name: docker
+        state: "{{ docker_service_state }}"
+        enabled: "{{ docker_service_enabled }}"
+      failed_when: false
+
+  always:
+    - name: Ensure Docker service is enabled (configuration cleanup)
+      ansible.builtin.service:
+        name: docker
+        enabled: true

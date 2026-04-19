@@ -1,0 +1,35 @@
+---
+
+# credentials for Docker Hub (optional, used if private image)
+dockerhub_username: ""
+dockerhub_password: ""
+
+# application configuration
+app_name: devops-app
+# Docker image repository name. Default aligns with .github/workflows/python-ci.yml IMAGE_NAME.
+# Override this in group_vars/all.yml (vault) or inventory if you deploy a different image.
+docker_image: "zsalavat/devops-info-service-python"
+docker_tag: latest
+app_port: 8000            # host port
+# internal port used inside the container; default matches the sample Python
+# application which listens on 5000.  Override if your image uses a different
+# port.
+app_internal_port: 5000   # container port
+
+# Docker Compose settings
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# environment variables passed to container (can include vault secrets)
+app_environment:
+  APP_NAME: "{{ app_name }}"
+  ENVIRONMENT: "production"
+
+# optional secret stored via Ansible Vault
+app_secret_key: ""
+
+# Wipe Logic Control
+web_app_wipe: false  # Default: do not wipe the installation
+# Set to true to remove the application completely before (or instead of) deploying.
+#   * Wipe only:    ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+#   * Clean install: ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true"

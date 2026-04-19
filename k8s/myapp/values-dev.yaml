@@ -1,0 +1,7 @@
+replicaCount: 1
+
+service:
+  type: NodePort
+
+config:
+  environment: dev

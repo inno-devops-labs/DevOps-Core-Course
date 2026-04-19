@@ -1,0 +1,43 @@
+auth_enabled: false
+
+# Run as a single monolithic instance, no distributed ring/discovery needed
+target: all
+
+common:
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+server:
+  http_listen_port: 3100
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /loki/tsdb-index
+    cache_location: /loki/tsdb-cache
+    cache_ttl: 24h
+  filesystem:
+    directory: /loki/chunks
+
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  retention_period: 168h
+
+ingester:
+  wal:
+    dir: /loki/wal
+
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+  delete_request_store: filesystem

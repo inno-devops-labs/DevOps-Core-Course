@@ -1,0 +1,15 @@
+---
+# roles/common/defaults/main.yml
+
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - vim
+  - htop
+  - net-tools
+  - unzip
+  - software-properties-common
+
+common_timezone: "UTC"
+common_configure_timezone: true

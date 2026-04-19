@@ -1,0 +1,7 @@
+replicaCount: 5
+
+service:
+  type: LoadBalancer
+
+config:
+  environment: prod

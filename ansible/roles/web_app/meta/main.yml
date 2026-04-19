@@ -1,0 +1,10 @@
+---
+# Ensure that Docker is installed before trying to deploy the web application.
+# The docker role sets up the engine, python libraries and adds the user to the
+# docker group so that subsequent docker-compose actions will succeed.
+# Using a dependency causes Ansible to run the docker role automatically when
+# the web_app role is executed standalone.
+
+dependencies:
+  - role: docker
+    # no extra vars required; docker role reads its own defaults

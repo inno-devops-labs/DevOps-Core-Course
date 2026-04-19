@@ -1,0 +1,52 @@
+replicaCount: 2
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: zsalavat/devops-info-service-python
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+
+config:
+  appName: devops-info-service
+  environment: dev
+  logLevel: INFO
+  mountPath: /config
+
+secret:
+  username: "dev-user"
+  password: "dev-pass"
+
+persistence:
+  enabled: true
+  mountPath: /data
+  fileName: visits
+  size: 100Mi
+  storageClass: ""
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "100m"
+  limits:
+    memory: "128Mi"
+    cpu: "200m"
+
+vault:
+  enabled: false
+  role: myapp
+  secretPath: secret/data/myapp/config

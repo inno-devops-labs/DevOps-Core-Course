@@ -1,0 +1,20 @@
+services:
+  {{ app_name }}:
+    image: "{{ docker_image }}:{{ docker_tag }}"
+    container_name: {{ app_name }}
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    environment:
+      # explicit variables defined here; vault secrets may be inserted
+{% for key, value in app_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    restart: unless-stopped
+    # additional configuration can be added by overriding role defaults or
+    # passing extra variables such as `web_app_extra_compose` which should be a
+    # dictionary merged in via `combine`.
+
+# networks, volumes, etc, can be defined by overriding `web_app_extra_compose` in
+# inventory or group_vars.  Use Jinja templates (e.g. `{% raw %}{{ variable }}{% endraw %}`)
+# and control structures here to dynamically insert sections if needed.
+

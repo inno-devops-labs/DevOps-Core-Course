@@ -1,0 +1,161 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [ main, master, lab6 ]
+    paths:
+      - 'ansible/**'
+      - '!ansible/docs/**'            # don’t run when only docs change
+      - '.github/workflows/ansible-deploy.yml'
+  pull_request:
+    branches: [ main, master, lab6 ]
+    paths:
+      - 'ansible/**'
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine VM host from inventory
+        id: target
+        run: |
+          host=$(awk 'match($0, /ansible_host=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
+          user=$(awk 'match($0, /ansible_user=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
+          if [ -z "$host" ]; then
+            echo "Failed to determine ansible_host from ansible/inventory/hosts.ini" >&2
+            exit 1
+          fi
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+          echo "user=${user:-ubuntu}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Install required Ansible collections
+        run: |
+          ansible-galaxy collection install community.general
+
+      - name: Run ansible-lint
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          cd ansible
+          if [ -n "${ANSIBLE_VAULT_PASSWORD:-}" ]; then
+            echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+            chmod 600 /tmp/vault_pass
+            export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
+          fi
+          ansible-lint playbooks/*.yml
+          rm -f /tmp/vault_pass
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    runs-on: ubuntu-latest    # switch to "self-hosted" for a local runner
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine VM host from inventory
+        id: target
+        run: |
+          host=$(awk 'match($0, /ansible_host=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
+          user=$(awk 'match($0, /ansible_user=([^ ]+)/, m) { print m[1]; exit }' ansible/inventory/hosts.ini)
+          if [ -z "$host" ]; then
+            echo "Failed to determine ansible_host from ansible/inventory/hosts.ini" >&2
+            exit 1
+          fi
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+          echo "user=${user:-ubuntu}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Install required Ansible collections
+        run: |
+          ansible-galaxy collection install community.general
+
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          # Write the key without shell mangling; also converts literal "\n" sequences if needed.
+          python - <<'PY'
+          import os
+
+          key = os.environ.get("SSH_PRIVATE_KEY", "")
+          if not key.strip():
+            raise SystemExit("SSH_PRIVATE_KEY secret is empty")
+
+          # If the secret was stored as a single line containing literal \n, convert it.
+          if "\\n" in key and "\n" not in key:
+            key = key.replace("\\n", "\n")
+
+          # Normalize CRLF.
+          key = key.replace("\r\n", "\n").replace("\r", "\n")
+
+          with open(os.path.expanduser("~/.ssh/id_rsa"), "w", encoding="utf-8") as f:
+            f.write(key)
+            if not key.endswith("\n"):
+              f.write("\n")
+          PY
+          chmod 600 ~/.ssh/id_rsa
+
+          # Fail fast if the key is invalid or encrypted (would require a passphrase).
+          if ! ssh-keygen -y -f ~/.ssh/id_rsa >/dev/null; then
+            echo "SSH private key could not be parsed by OpenSSH." >&2
+            echo "Make sure secrets.SSH_PRIVATE_KEY is an unencrypted OpenSSH private key" >&2
+            echo "(starts with '-----BEGIN OPENSSH PRIVATE KEY-----') and is not a .ppk file." >&2
+            exit 1
+          fi
+
+          # Helpful debug: prints key fingerprint without leaking the key.
+          ssh-keygen -lf ~/.ssh/id_rsa
+
+          {
+            echo "Host *"
+            echo "  IdentityFile ~/.ssh/id_rsa"
+            echo "  IdentitiesOnly yes"
+          } > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+          ssh-keyscan -H "${{ steps.target.outputs.host }}" >> ~/.ssh/known_hosts
+
+      - name: SSH smoke test
+        run: |
+          ssh -o BatchMode=yes -o ConnectTimeout=10 "${{ steps.target.outputs.user }}"@"${{ steps.target.outputs.host }}" "echo ok"
+
+      - name: Deploy with Ansible
+        env:
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          cd ansible
+          echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+          export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
+          ansible-playbook playbooks/deploy.yml \
+            -i inventory/hosts.ini \
+            --vault-password-file /tmp/vault_pass \
+            --tags "app_deploy" && true
+          rm /tmp/vault_pass
+
+      - name: Verify Deployment
+        run: |
+          sleep 10
+          curl -f "http://${{ steps.target.outputs.host }}:8000" || exit 1
+          curl -f "http://${{ steps.target.outputs.host }}:8000/health" || exit 1

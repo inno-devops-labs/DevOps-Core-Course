@@ -60,7 +60,7 @@ Don't want to take the exam? Complete **both** bonus labs:
 
 | Lab | Topic | Points |
 |-----|-------|--------|
-| **Lab 17** | Cloudflare Workers Edge Deployment | 20 pts |
+| **Lab 17** | Fly.io Edge Deployment | 20 pts |
 | **Lab 18** | Reproducible Builds with Nix | 20 pts |
 
 **Requirements:**

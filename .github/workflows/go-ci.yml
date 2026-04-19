@@ -1,0 +1,91 @@
+name: Go CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "master", "lab3" ]
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+  pull_request:
+    branches: [ "master", "lab3" ]
+    paths:
+      - 'app_go/**'
+      - '.github/workflows/go-ci.yml'
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: zsalavat/devops-info-service-go
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('app_go/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        working-directory: app_go
+        run: go mod download
+
+      - name: Lint with golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.59.1
+          working-directory: app_go
+          args: --timeout=2m
+
+      - name: Run unit tests
+        working-directory: app_go
+        run: go test ./... -v
+
+  cd:
+    needs: ci
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/lab3')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata for Docker tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value={{date 'YYYY.MM'}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: app_go
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

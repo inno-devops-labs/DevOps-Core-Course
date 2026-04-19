@@ -1,6 +1,9 @@
 
 # DevOps Course Info Service (Go)
 
+![Go CI/CD Pipeline](https://github.com/setterwars/DevOps-Core-Course/actions/workflows/go-ci.yml/badge.svg)
+
+
 ## Overview
 Go implementation of the `app_python` DevOps Info Service.
 
@@ -24,3 +27,16 @@ From the `app_go/` directory:
 ## Docs
 - Implementation details: `docs/LAB01.md`
 - Language justification: `docs/GO.md`
+
+## Docker 
+
+### Build 
+
+```bash
+docker build -t ${DOCKER_USER}/devops-info-service-go:lab02 ./app_go
+```
+
+### Run
+```bash
+docker run --rm -p 5000:5000 ${DOCKER_USER}/devops-info-service-go:lab02
+```

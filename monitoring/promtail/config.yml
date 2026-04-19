@@ -1,0 +1,31 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+        filters:
+          # Only scrape containers that have the label logging=promtail
+          - name: label
+            values: ["logging=promtail"]
+    relabel_configs:
+      # Strip the leading "/" from the container name: /my-app → my-app
+      - source_labels: ["__meta_docker_container_name"]
+        target_label: container
+        regex: "/?(.+)"
+      # Promote the Docker label "app" to a Loki label
+      - source_labels: ["__meta_docker_container_label_app"]
+        target_label: app
+      # Keep a "job" label for convenience
+      - source_labels: ["__meta_docker_container_label_app"]
+        target_label: job
+        replacement: "docker"
