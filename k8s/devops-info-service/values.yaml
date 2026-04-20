@@ -18,6 +18,18 @@ serviceAccount:
   create: true
   name: ""
 
+rollout:
+  enabled: true
+  strategy: canary
+  revisionHistoryLimit: 3
+  canary:
+    maxSurge: 1
+    maxUnavailable: 0
+  blueGreen:
+    autoPromotionEnabled: false
+    previewReplicaCount: 1
+    scaleDownDelaySeconds: 30
+
 vault:
   enabled: true
   role: myapp-role

@@ -52,3 +52,4 @@ __pycache__/
 # GitHub Actions self-hosted runner (local)
 actions-runner/
 argocd.exe
+kubectl-argo-rollouts.exe

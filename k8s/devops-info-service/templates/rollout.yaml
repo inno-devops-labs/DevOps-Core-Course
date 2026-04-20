@@ -1,14 +1,16 @@
 {{- $rollout := .Values.rollout | default dict -}}
 {{- $enabled := $rollout.enabled | default false -}}
-{{- if not $enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- $strategy := $rollout.strategy | default "canary" -}}
+{{- if $enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ $rollout.revisionHistoryLimit | default 3 }}
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
@@ -98,4 +100,33 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "devops-info-service.fullname" . }}-data
         {{- end }}
+
+  strategy:
+    {{- if eq $strategy "canary" }}
+    canary:
+      maxSurge: {{ $rollout.canary.maxSurge | default 1 }}
+      maxUnavailable: {{ $rollout.canary.maxUnavailable | default 0 }}
+      stableService: {{ include "devops-info-service.fullname" . }}
+      canaryService: {{ include "devops-info-service.fullname" . }}-canary
+      steps:
+        - setWeight: 20
+        - pause: {}
+        - setWeight: 40
+        - pause:
+            duration: 30s
+        - setWeight: 60
+        - pause:
+            duration: 30s
+        - setWeight: 80
+        - pause:
+            duration: 30s
+        - setWeight: 100
+    {{- else if eq $strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "devops-info-service.fullname" . }}
+      previewService: {{ include "devops-info-service.fullname" . }}-preview
+      autoPromotionEnabled: {{ $rollout.blueGreen.autoPromotionEnabled | default false }}
+      previewReplicaCount: {{ $rollout.blueGreen.previewReplicaCount | default 1 }}
+      scaleDownDelaySeconds: {{ $rollout.blueGreen.scaleDownDelaySeconds | default 30 }}
+    {{- end }}
 {{- end }}
