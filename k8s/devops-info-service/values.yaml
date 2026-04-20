@@ -1,5 +1,10 @@
 replicaCount: 5
 
+# Progressive delivery (Argo Rollouts). When enabled, the Deployment template is not rendered.
+rollout:
+  enabled: true
+  strategy: canary
+
 image:
   repository: nexonm22/devops-info-service
   tag: "lab12"

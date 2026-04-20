@@ -1,19 +1,12 @@
-{{- if not .Values.rollout.enabled }}
-# Legacy Deployment — disabled when rollout.enabled is true.
-# Progressive delivery uses templates/rollout.yaml or templates/rollout-bluegreen.yaml instead.
-apiVersion: apps/v1
-kind: Deployment
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "bluegreen") }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
@@ -60,10 +53,10 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "devops-info-service.envConfigName" . }}
-          {{- if .Values.credentialsSecret.enabled }}
+            {{- if .Values.credentialsSecret.enabled }}
             - secretRef:
                 name: {{ include "devops-info-service.credentialsSecretName" . }}
-          {{- end }}
+            {{- end }}
           volumeMounts:
             - name: config-volume
               mountPath: /config
@@ -80,4 +73,9 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+  strategy:
+    blueGreen:
+      activeService: {{ include "devops-info-service.fullname" . }}
+      previewService: {{ include "devops-info-service.fullname" . }}-preview
+      autoPromotionEnabled: false
 {{- end }}

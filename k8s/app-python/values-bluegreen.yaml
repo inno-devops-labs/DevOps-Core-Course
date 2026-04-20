@@ -1,0 +1,4 @@
+# Switch Rollout strategy to blue-green (use together with values-dev.yaml or values-prod.yaml)
+rollout:
+  enabled: true
+  strategy: bluegreen
