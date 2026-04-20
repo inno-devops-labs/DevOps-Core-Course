@@ -3,7 +3,7 @@ environment: prod
 logLevel: INFO
 
 image:
-  tag: "1.0.0"
+  tag: "prod_bluegreen"
 
 service:
   type: LoadBalancer

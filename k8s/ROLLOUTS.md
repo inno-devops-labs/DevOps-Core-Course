@@ -16,6 +16,15 @@ Installation output:
 PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl get pods -n argo-rollouts
 NAME                             READY   STATUS    RESTARTS   AGE
 argo-rollouts-79b89d8856-tvttj   1/1     Running   0          147m
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl get pods -n argo-rollouts                      
+NAME                             READY   STATUS    RESTARTS   AGE
+argo-rollouts-79b89d8856-tvttj   1/1     Running   0          3h15m
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl get svc -n argo-rollouts 
+NAME                    TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+argo-rollouts-metrics   ClusterIP   10.109.177.179   <none>        8090/TCP   3h15m
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> curl http://localhost:3100/rollouts
+<!doctype html><html lang="en"><head><base href="/rollouts/" /><title>Argo Rollouts</title><link href="main.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div><script src="main.e4dfa16c55cf932e70bd.js"></script></body></html>
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> 
 ```
 
 ### 1.2 Kubectl Plugin
@@ -198,6 +207,9 @@ rollout 'devops-info-service-dev-devops-info-service' promoted
 
 ![](/k8s/screenshots/revision2.png)
 
+![](/k8s/screenshots/canary_v2.png)
+![](/k8s/screenshots/promote.png)
+
 Expected behavior:
 - first pause at 20% requires manual promotion;
 - next pauses at 40%, 60%, and 80% continue automatically after 30 seconds each;
@@ -250,20 +262,84 @@ kubectl get rollout,svc -n prod
 kubectl argo rollouts get rollout devops-info-service-prod-devops-info-service -n prod -w
 ```
 
+```bash
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl get rollout,svc -n prod
+NAME                                                               DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+rollout.argoproj.io/devops-info-service-prod-devops-info-service   2         2         2            2           127m
+
+NAME                                                           TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/devops-info-service-prod-devops-info-service           LoadBalancer   10.97.149.16    127.0.0.1     80:31960/TCP   3d23h
+service/devops-info-service-prod-devops-info-service-preview   ClusterIP      10.108.98.218   <none>        80/TCP         127m
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> 
+```
+
+```bash
+NAME                                                                      KIND        STATUS     AGE    INFO
+⟳ devops-info-service-prod-devops-info-service                            Rollout     ✔ Healthy  126m   
+└──# revision:1                                                                                         
+   └──⧉ devops-info-service-prod-devops-info-service-77c99499c4           ReplicaSet  ✔ Healthy  126m   stable,active
+      ├──□ devops-info-service-prod-devops-info-service-77c99499c4-mdxrv  Pod         ✔ Running  114m   ready:2/2
+      └──□ devops-info-service-prod-devops-info-service-77c99499c4-52kl8  Pod         ✔ Running  2m32s  ready:2/2
+Name:            devops-info-service-prod-devops-info-service
+Namespace:       prod
+Status:          ✔ Healthy
+Strategy:        BlueGreen
+Images:          devops-info-service:1.0.0 (stable, active)
+Replicas:
+  Desired:       2
+  Current:       2
+  Updated:       2
+  Ready:         2
+  Available:     2
+
+NAME                                                                      KIND        STATUS     AGE    INFO
+⟳ devops-info-service-prod-devops-info-service                            Rollout     ✔ Healthy  127m   
+└──# revision:1                                                                                         
+   └──⧉ devops-info-service-prod-devops-info-service-77c99499c4           ReplicaSet  ✔ Healthy  127m   stable,active
+      ├──□ devops-info-service-prod-devops-info-service-77c99499c4-mdxrv  Pod         ✔ Running  114m   ready:2/2
+      └──□ devops-info-service-prod-devops-info-service-77c99499c4-52kl8  Pod         ✔ Running  2m33s  ready:2/2
+```
+
+![](/k8s/screenshots/prod1.png)
+
 ### 3.4 Test Preview vs Active
 
 Port-forward both services:
 
 ```bash
-kubectl port-forward svc/devops-info-service-prod-devops-info-service -n prod 8080:80
+kubectl port-forward svc/devops-info-service-prod-devops-info-service -n prod 8082:80
 kubectl port-forward svc/devops-info-service-prod-devops-info-service-preview -n prod 8081:80
+```
+
+```bash
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl port-forward svc/devops-info-service-prod-devops-info-service -n prod 8082:80
+>> 
+Forwarding from 127.0.0.1:8082 -> 5000
+Forwarding from [::1]:8082 -> 5000
+Handling connection for 8082
+```
+
+```bash
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl port-forward svc/devops-info-service-prod-devops-info-service -n prod 8082:80
+>> 
+Forwarding from 127.0.0.1:8082 -> 5000
+Forwarding from [::1]:8082 -> 5000
+Handling connection for 8082
 ```
 
 Then compare:
 
 ```bash
-curl http://localhost:8080/
+curl http://localhost:8082/
 curl http://localhost:8081/
+```
+
+```bash
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> curl http://localhost:8081/          
+{"service":{"name":"devops-info-service","version":"1.0.0","description":"DevOps course info service","framework":"FastAPI"},"application":{"environment":"prod","log_level":"INFO"},"config":{"config_file":"/config/config.json","loaded":true,"content":{"applicationName":"devops-info-service","environment":"prod","settings":{"featureFlags":{"debugEndpoints":"false","showVisitsInRoot":"true"},"logLevel":"INFO"}}},"persistence":{"visits_file":"/data/visits","visits_count":1},"system":{"hostname":"devops-info-service-prod-devops-info-service-77c99499c4-mdxrv","platform":"Linux","platform_version":"#1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025","architecture":"x86_64","cpu_count":8,"python_version":"3.13.11"},"runtime":{"uptime_seconds":6808,"uptime_human":"1 hours, 53 minutes","current_time":"2026-04-20T17:29:45.434Z","timezone":"UTC"},"request":{"client_ip":"127.0.0.1","user_agent":"curl/8.18.0","method":"GET","path":"/"},"endpoints":[{"path":"/","method":"GET","description":"Service information"},{"path":"/health","method":"GET","description":"Health check"},{"path":"/visits","method":"GET","description":"Current visits counter"},{"path":"/metrics","method":"GET","description":"Prometheus metrics"}]}
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> curl http://localhost:8082/
+{"service":{"name":"devops-info-service","version":"1.0.0","description":"DevOps course info service","framework":"FastAPI"},"application":{"environment":"prod","log_level":"INFO"},"config":{"config_file":"/config/config.json","loaded":true,"content":{"applicationName":"devops-info-service","environment":"prod","settings":{"featureFlags":{"debugEndpoints":"false","showVisitsInRoot":"true"},"logLevel":"INFO"}}},"persistence":{"visits_file":"/data/visits","visits_count":2},"system":{"hostname":"devops-info-service-prod-devops-info-service-77c99499c4-mdxrv","platform":"Linux","platform_version":"#1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025","architecture":"x86_64","cpu_count":8,"python_version":"3.13.11"},"runtime":{"uptime_seconds":6813,"uptime_human":"1 hours, 53 minutes","current_time":"2026-04-20T17:29:50.694Z","timezone":"UTC"},"request":{"client_ip":"127.0.0.1","user_agent":"curl/8.18.0","method":"GET","path":"/"},"endpoints":[{"path":"/","method":"GET","description":"Service information"},{"path":"/health","method":"GET","description":"Health check"},{"path":"/visits","method":"GET","description":"Current visits counter"},{"path":"/metrics","method":"GET","description":"Prometheus metrics"}]}
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> 
 ```
 
 ### 3.5 Promote Green to Active
@@ -273,6 +349,40 @@ kubectl argo rollouts promote devops-info-service-prod-devops-info-service -n pr
 kubectl argo rollouts get rollout devops-info-service-prod-devops-info-service -n prod -w
 ```
 
+```bash
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl argo rollouts promote devops-info-service-prod-devops-info-service -n prod
+>> 
+rollout 'devops-info-service-prod-devops-info-service' promoted
+``
+
+```bash
+NAME                                                                      KIND        STATUS     AGE   INFO
+⟳ devops-info-service-prod-devops-info-service                            Rollout     ✔ Healthy  131m  
+└──# revision:1                                                                                        
+   └──⧉ devops-info-service-prod-devops-info-service-77c99499c4           ReplicaSet  ✔ Healthy  131m  stable,active
+      ├──□ devops-info-service-prod-devops-info-service-77c99499c4-mdxrv  Pod         ✔ Running  118m  ready:2/2
+      └──□ devops-info-service-prod-devops-info-service-77c99499c4-52kl8  Pod         ✔ Running  7m2s  ready:2/2
+Name:            devops-info-service-prod-devops-info-service
+Namespace:       prod
+Status:          ✔ Healthy
+Strategy:        BlueGreen
+Images:          devops-info-service:1.0.0 (stable, active)
+Replicas:
+  Desired:       2
+  Current:       2
+  Updated:       2
+  Ready:         2
+  Available:     2
+
+NAME                                                                      KIND        STATUS     AGE   INFO
+⟳ devops-info-service-prod-devops-info-service                            Rollout     ✔ Healthy  131m  
+└──# revision:1                                                                                        
+   └──⧉ devops-info-service-prod-devops-info-service-77c99499c4           ReplicaSet  ✔ Healthy  131m  stable,active
+      ├──□ devops-info-service-prod-devops-info-service-77c99499c4-mdxrv  Pod         ✔ Running  118m  ready:2/2
+      └──□ devops-info-service-prod-devops-info-service-77c99499c4-52kl8  Pod         ✔ Running  7m2s  ready:2/2
+```
+
+
 ### 3.6 Instant Rollback
 
 After promotion, trigger another update and abort it, or use undo:
@@ -281,6 +391,35 @@ After promotion, trigger another update and abort it, or use undo:
 kubectl argo rollouts undo devops-info-service-prod-devops-info-service -n prod
 kubectl argo rollouts get rollout devops-info-service-prod-devops-info-service -n prod -w
 ```
+
+```bash
+NAME                                                                      KIND        STATUS     AGE   INFO
+⟳ devops-info-service-prod-devops-info-service                            Rollout     ॥ Paused   138m  
+├──# revision:2                                                                                        
+│  └──⧉ devops-info-service-prod-devops-info-service-89f54d898            ReplicaSet  ✔ Healthy  101s  preview
+│     └──□ devops-info-service-prod-devops-info-service-89f54d898-qzl2d   Pod         ✔ Running  101s  ready:2/2
+└──# revision:1                                                                                        
+   └──⧉ devops-info-service-prod-devops-info-service-77c99499c4           ReplicaSet  ✔ Healthy  138m  stable,active
+      ├──□ devops-info-service-prod-devops-info-service-77c99499c4-mdxrv  Pod         ✔ Running  126m  ready:2/2
+      └──□ devops-info-service-prod-devops-info-service-77c99499c4-52kl8  Pod         ✔ Running  14m   ready:2/2
+Name:            devops-info-service-prod-devops-info-service
+Namespace:       prod
+Status:          ॥ Paused
+Message:         BlueGreenPause
+Strategy:        BlueGreen
+Images:          devops-info-service:1.0.0 (stable, active)
+                 devops-info-service:prod_bluegreen (preview)
+Replicas:
+  Desired:       2
+  Current:       3
+  Updated:       1
+  Ready:         2
+  Available:     2
+```
+
+![](/k8s/screenshots/blueg.png)
+
+![](/k8s/screenshots/image.png)
 
 ## 4. Strategy Comparison
 
@@ -325,12 +464,3 @@ kubectl argo rollouts abort <name> -n <namespace>
 kubectl argo rollouts retry rollout <name> -n <namespace>
 kubectl argo rollouts undo <name> -n <namespace>
 ```
-
-## 6. Screenshots to Include
-
-- Argo Rollouts dashboard main page
-- Canary rollout paused at 20%
-- Canary rollout after manual promotion
-- Abort result in canary rollout
-- Blue-green rollout with preview service
-- Blue-green rollout after promotion
