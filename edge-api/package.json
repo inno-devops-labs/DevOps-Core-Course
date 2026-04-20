@@ -1,0 +1,16 @@
+{
+  "name": "edge-api",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit",
+    "kv:create": "wrangler kv namespace create SETTINGS"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250418.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.12.0"
+  }
+}
