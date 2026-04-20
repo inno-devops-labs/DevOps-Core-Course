@@ -1,0 +1,3 @@
+persistence:
+  size: 100Mi
+  storageClass: ""

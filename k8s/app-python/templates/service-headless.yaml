@@ -1,12 +1,12 @@
-{{- if and .Values.rollout.enabled (not .Values.statefulSet.enabled) (eq .Values.rollout.strategy "bluegreen") }}
+{{- if .Values.statefulSet.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "devops-info-service.fullname" . }}-preview
+  name: {{ include "devops-info-service.fullname" . }}-headless
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP
+  clusterIP: None
   selector:
     {{- include "devops-info-service.selectorLabels" . | nindent 4 }}
   ports:
