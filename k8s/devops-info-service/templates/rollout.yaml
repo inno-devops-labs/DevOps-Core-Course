@@ -1,4 +1,7 @@
-{{- if .Values.rollout.enabled }}
+{{- $rollout := .Values.rollout | default dict -}}
+{{- $enabled := $rollout.enabled | default false -}}
+{{- $strategy := $rollout.strategy | default "canary" -}}
+{{- if $enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
@@ -7,7 +10,7 @@ metadata:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  revisionHistoryLimit: {{ .Values.rollout.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ $rollout.revisionHistoryLimit | default 3 }}
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
@@ -97,11 +100,12 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "devops-info-service.fullname" . }}-data
         {{- end }}
+
   strategy:
-    {{- if eq .Values.rollout.strategy "canary" }}
+    {{- if eq $strategy "canary" }}
     canary:
-      maxSurge: {{ .Values.rollout.canary.maxSurge | quote }}
-      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
+      maxSurge: {{ $rollout.canary.maxSurge | default 1 }}
+      maxUnavailable: {{ $rollout.canary.maxUnavailable | default 0 }}
       stableService: {{ include "devops-info-service.fullname" . }}
       canaryService: {{ include "devops-info-service.fullname" . }}-canary
       steps:
@@ -117,12 +121,12 @@ spec:
         - pause:
             duration: 30s
         - setWeight: 100
-    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    {{- else if eq $strategy "blueGreen" }}
     blueGreen:
       activeService: {{ include "devops-info-service.fullname" . }}
       previewService: {{ include "devops-info-service.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      previewReplicaCount: {{ .Values.rollout.blueGreen.previewReplicaCount }}
-      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      autoPromotionEnabled: {{ $rollout.blueGreen.autoPromotionEnabled | default false }}
+      previewReplicaCount: {{ $rollout.blueGreen.previewReplicaCount | default 1 }}
+      scaleDownDelaySeconds: {{ $rollout.blueGreen.scaleDownDelaySeconds | default 30 }}
     {{- end }}
 {{- end }}
