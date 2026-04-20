@@ -8,10 +8,10 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  type: LoadBalancer
+  type: NodePort
   port: 80
   targetPort: 5000
-  # nodePort omitted — LoadBalancer assigns ports automatically
+  nodePort: 30082
 
 resources:
   requests:
