@@ -3,7 +3,7 @@ environment: dev
 logLevel: DEBUG
 
 image:
-  tag: "dev"
+  tag: "dev_canary"
 
 service:
   type: NodePort

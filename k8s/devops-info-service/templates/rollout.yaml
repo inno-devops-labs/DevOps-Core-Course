@@ -1,6 +1,6 @@
 {{- $rollout := .Values.rollout | default dict -}}
 {{- $enabled := $rollout.enabled | default false -}}
-{{- $strategy := $rollout.strategy | default "canary" -}}
+{{- $strategy := $rollout.strategy | default "blueGreen" -}}
 {{- if $enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout

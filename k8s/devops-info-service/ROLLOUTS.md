@@ -10,6 +10,14 @@ kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/rele
 kubectl get pods -n argo-rollouts
 ```
 
+Installation output:
+
+```bash
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl get pods -n argo-rollouts
+NAME                             READY   STATUS    RESTARTS   AGE
+argo-rollouts-79b89d8856-tvttj   1/1     Running   0          147m
+```
+
 ### 1.2 Kubectl Plugin
 
 ```powershell
@@ -19,7 +27,14 @@ Invoke-WebRequest -Uri $url -OutFile kubectl-argo-rollouts.exe
 ```
 
 ```bash
-kubectl argo rollouts version
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl argo rollouts version
+kubectl-argo-rollouts: v1.9.0+838d4e7
+  BuildDate: 2026-03-20T21:15:27Z
+  GitCommit: 838d4e792be666ec11bd0c80331e0c5511b5010e
+  GitTreeState: clean
+  GoVersion: go1.24.13
+  Compiler: gc
+  Platform: windows/amd64
 ```
 
 ### 1.3 Dashboard Access
@@ -31,7 +46,7 @@ kubectl argo rollouts dashboard -n dev
 Open:
 
 ```text
-http://localhost:3100
+http://localhost:3100/rollouts
 ```
 
 ### 1.4 Rollout vs Deployment
@@ -81,12 +96,47 @@ helm lint k8s/devops-info-service
 helm template devops-info-service-dev k8s/devops-info-service -f k8s/devops-info-service/values-dev.yaml
 ```
 
-Push Helm changes to Git, then sync the ArgoCD dev app:
+Pushed Helm changes to Git, then synced the ArgoCD dev app:
 
 ```bash
 argocd app sync devops-info-service-dev --prune
 kubectl get rollout -n dev
 kubectl argo rollouts get rollout devops-info-service-dev-devops-info-service -n dev -w
+```
+
+Output:
+
+```bash
+NAME                                                                     KIND        STATUS        AGE    INFO
+⟳ devops-info-service-dev-devops-info-service                            Rollout     ✔ Healthy     137m   
+├──# revision:2                                                                                           
+│  └──⧉ devops-info-service-dev-devops-info-service-76c8fcb6d8           ReplicaSet  ✔ Healthy     90m    stable
+│     └──□ devops-info-service-dev-devops-info-service-76c8fcb6d8-q8m2f  Pod         ✔ Running     4m17s  ready:2/2
+└──# revision:1                                                                                           
+   └──⧉ devops-info-service-dev-devops-info-service-7c5f5d96df           ReplicaSet  • ScaledDown  137m   
+Name:            devops-info-service-dev-devops-info-service
+Namespace:       dev
+Status:          ✔ Healthy
+Strategy:        Canary
+  Step:          9/9
+  SetWeight:     100
+  ActualWeight:  100
+Images:          devops-info-service:dev_canary (stable)
+Replicas:
+  Desired:       1
+  Current:       1
+  Updated:       1
+  Ready:         1
+  Available:     1
+
+NAME                                                                     KIND        STATUS        AGE    INFO
+⟳ devops-info-service-dev-devops-info-service                            Rollout     ✔ Healthy     137m   
+├──# revision:2                                                                                           
+│  └──⧉ devops-info-service-dev-devops-info-service-76c8fcb6d8           ReplicaSet  ✔ Healthy     90m    stable
+│     └──□ devops-info-service-dev-devops-info-service-76c8fcb6d8-q8m2f  Pod         ✔ Running     4m18s  ready:2/2
+└──# revision:1                                                                                           
+   └──⧉ devops-info-service-dev-devops-info-service-7c5f5d96df           ReplicaSet  • ScaledDown  137m   
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> 
 ```
 
 ### 2.4 Trigger a Canary Update
@@ -101,12 +151,52 @@ argocd app sync devops-info-service-dev --prune
 kubectl argo rollouts get rollout devops-info-service-dev-devops-info-service -n dev -w
 ```
 
+```bash
+NAME                                                                     KIND        STATUS        AGE    INFO
+⟳ devops-info-service-dev-devops-info-service                            Rollout     ✔ Healthy     137m   
+├──# revision:2                                                                                           
+│  └──⧉ devops-info-service-dev-devops-info-service-76c8fcb6d8           ReplicaSet  ✔ Healthy     90m    stable
+│     └──□ devops-info-service-dev-devops-info-service-76c8fcb6d8-q8m2f  Pod         ✔ Running     4m17s  ready:2/2
+└──# revision:1                                                                                           
+   └──⧉ devops-info-service-dev-devops-info-service-7c5f5d96df           ReplicaSet  • ScaledDown  137m   
+Name:            devops-info-service-dev-devops-info-service
+Namespace:       dev
+Status:          ✔ Healthy
+Strategy:        Canary
+  Step:          9/9
+  SetWeight:     100
+  ActualWeight:  100
+Images:          devops-info-service:dev_canary (stable)
+Replicas:
+  Desired:       1
+  Current:       1
+  Updated:       1
+  Ready:         1
+  Available:     1
+
+NAME                                                                     KIND        STATUS        AGE    INFO
+⟳ devops-info-service-dev-devops-info-service                            Rollout     ✔ Healthy     137m   
+├──# revision:2                                                                                           
+│  └──⧉ devops-info-service-dev-devops-info-service-76c8fcb6d8           ReplicaSet  ✔ Healthy     90m    stable
+│     └──□ devops-info-service-dev-devops-info-service-76c8fcb6d8-q8m2f  Pod         ✔ Running     4m18s  ready:2/2
+└──# revision:1                                                                                           
+   └──⧉ devops-info-service-dev-devops-info-service-7c5f5d96df           ReplicaSet  • ScaledDown  137m   
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> 
+```
+
 ### 2.5 Manual Promotion and Automatic Progression
 
 ```bash
 kubectl argo rollouts promote devops-info-service-dev-devops-info-service -n dev
 kubectl argo rollouts get rollout devops-info-service-dev-devops-info-service -n dev -w
 ```
+
+```bash
+PS C:\Users\zagur\DevOps\DevOps-Core-Course> kubectl argo rollouts promote devops-info-service-dev-devops-info-service -n dev
+rollout 'devops-info-service-dev-devops-info-service' promoted
+```
+
+![](/k8s/screenshots/revision2.png)
 
 Expected behavior:
 - first pause at 20% requires manual promotion;
@@ -127,6 +217,8 @@ Optional retry:
 ```bash
 kubectl argo rollouts retry rollout devops-info-service-dev-devops-info-service -n dev
 ```
+
+![](/k8s/screenshots/after_abort.png)
 
 ## 3. Blue-Green Deployment
 
