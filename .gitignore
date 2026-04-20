@@ -13,3 +13,6 @@ ansible/inventory/*.pyc
 /.ansible/
 /tmp/
 /monitoring/.env
+.tools/
+pw.b64
+.pytest-tmp/
