@@ -9,6 +9,14 @@ service:
   type: LoadBalancer
   nodePort: null
 
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    previewReplicaCount: 1
+    scaleDownDelaySeconds: 30
+
 resources:
   requests:
     cpu: "200m"
