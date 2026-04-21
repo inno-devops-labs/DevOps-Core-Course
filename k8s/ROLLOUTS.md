@@ -62,20 +62,20 @@ The canary configuration is defined in [`k8s/python-app/values.yaml`](./python-a
 ### Deploy
 
 ```bash
-helm upgrade --install python-app-canary ./k8s/python-app -f k8s/python-app/values-canary.yaml
-kubectl argo rollouts get rollout python-app-canary-python-app -w
+helm upgrade --install canary ./k8s/python-app -f k8s/python-app/values-canary.yaml
+kubectl argo rollouts get rollout canary-python-app -w
 ```
 
 ### Promote
 
 ```bash
-kubectl argo rollouts promote python-app-canary-python-app
+kubectl argo rollouts promote canary-python-app
 ```
 
 ### Abort
 
 ```bash
-kubectl argo rollouts abort python-app-canary-python-app
+kubectl argo rollouts abort canary-python-app
 ```
 
 ### What to capture
@@ -99,32 +99,32 @@ The blue-green overrides are in [`k8s/python-app/values-bluegreen.yaml`](./pytho
 ### Deploy
 
 ```bash
-helm upgrade --install python-app-bg ./k8s/python-app -f k8s/python-app/values-bluegreen.yaml
-kubectl argo rollouts get rollout python-app-bg-python-app -w
+helm upgrade --install bluegreen ./k8s/python-app -f k8s/python-app/values-bluegreen.yaml
+kubectl argo rollouts get rollout bluegreen-python-app -w
 ```
 
 ### Preview service
 
 ```bash
-kubectl port-forward svc/python-app-bg-python-app-preview 8081:80
+kubectl port-forward svc/bluegreen-python-app-preview 8081:80
 ```
 
 ### Active service
 
 ```bash
-kubectl port-forward svc/python-app-bg-python-app-service 8080:80
+kubectl port-forward svc/bluegreen-python-app-service 8080:80
 ```
 
 ### Promote
 
 ```bash
-kubectl argo rollouts promote python-app-bg-python-app
+kubectl argo rollouts promote bluegreen-python-app
 ```
 
 ### Roll back
 
 ```bash
-kubectl argo rollouts undo python-app-bg-python-app
+kubectl argo rollouts undo bluegreen-python-app
 ```
 
 ## 4. Strategy Comparison
