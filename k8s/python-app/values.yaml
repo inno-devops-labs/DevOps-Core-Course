@@ -29,12 +29,6 @@ podSecurityContext:
   runAsNonRoot: true
   runAsUser: 1000
 
-strategy:
-  type: RollingUpdate
-  rollingUpdate:
-    maxSurge: 1
-    maxUnavailable: 0
-
 secret:
   username: "placeholder-user"
   password: "placeholder-password"
@@ -54,9 +48,30 @@ appName: "devops-info-service"
 persistence:
   enabled: true
   size: 100Mi
-  storageClass: ""   # Empty string = use cluster default (works with Minikube)
+  storageClass: ""
 
-# Liveness probe — restarts the container if it stops responding
+# Progressive delivery settings
+rollout:
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    previewServiceType: ClusterIP
+
+# Liveness probe - restarts the container if it stops responding
 livenessProbe:
   httpGet:
     path: /health
@@ -65,7 +80,7 @@ livenessProbe:
   periodSeconds: 5
   failureThreshold: 3
 
-# Readiness probe — removes the Pod from load balancing until ready
+# Readiness probe - removes the Pod from load balancing until ready
 readinessProbe:
   httpGet:
     path: /health

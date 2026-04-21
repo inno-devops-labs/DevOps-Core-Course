@@ -1,0 +1,16 @@
+# Canary rollout overrides for Lab 14.
+
+replicaCount: 4
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+environment: "canary"
+logLevel: "INFO"
+appName: "devops-info-service-canary"
+
+rollout:
+  strategy: canary

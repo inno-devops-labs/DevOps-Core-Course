@@ -1,19 +1,15 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "python-app.fullname" . }}
   labels:
     {{- include "python-app.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       {{- include "python-app.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
   template:
     metadata:
       labels:
@@ -22,7 +18,6 @@ spec:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "python-app-role"
         vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
-        # Trigger pod restart when ConfigMap changes
         checksum/config: {{ printf "%s\n%s" (include (print $.Template.BasePath "/configmap.yaml") .) (include (print $.Template.BasePath "/configmap-env.yaml") .) | sha256sum }}
     spec:
       securityContext:
@@ -84,3 +79,14 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "python-app.fullname" . }}-data
         {{- end }}
+  strategy:
+{{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "python-app.fullname" . }}-service
+      previewService: {{ include "python-app.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+{{- else }}
+    canary:
+      steps:
+{{ toYaml .Values.rollout.canary.steps | nindent 8 }}
+{{- end }}
