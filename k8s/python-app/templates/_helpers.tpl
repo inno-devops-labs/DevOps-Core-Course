@@ -75,3 +75,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "python-app.previewServiceName" -}}
 {{- printf "%s-preview" (include "python-app.fullname" .) }}
 {{- end }}
+
+{{/* Headless service name for StatefulSet. */}}
+{{- define "python-app.headlessServiceName" -}}
+{{- printf "%s-headless" (include "python-app.fullname" .) }}
+{{- end }}

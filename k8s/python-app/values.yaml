@@ -1,5 +1,8 @@
 replicaCount: 3
 
+controller:
+  kind: statefulset
+
 nameOverride: ""
 fullnameOverride: ""
 
@@ -113,10 +116,12 @@ persistence:
   size: 100Mi
   storageClass: ""
   existingClaim: ""
+  accessModes:
+    - ReadWriteOnce
   mountPath: /data
 
 rollout:
-  enabled: true
+  enabled: false
   strategy: canary
   canary:
     steps:
