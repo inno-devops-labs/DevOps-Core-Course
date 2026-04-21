@@ -228,5 +228,3 @@ The lab objectives were completed successfully:
 - Stable DNS identities were verified
 - Per-pod storage isolation was demonstrated
 - Persistence after pod deletion was demonstrated
-
-The bonus task on update strategies was intentionally not implemented.
