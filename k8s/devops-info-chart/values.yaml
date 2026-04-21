@@ -1,4 +1,4 @@
-replicaCount: 3
+replicaCount: 5
 
 nameOverride: ""
 fullnameOverride: ""
