@@ -1,0 +1,37 @@
+app = "devops-info-service-almax"
+primary_region = "ams"
+
+[build]
+  image = "almax07082005/devops-info-service:latest"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "8000"
+  VISITS_FILE = "/data/visits"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[checks]
+  [checks.health]
+    grace_period = "30s"
+    interval = "10s"
+    method = "GET"
+    path = "/health"
+    port = 8000
+    timeout = "2s"
+    type = "http"
+
+[mounts]
+  source = "devops_info_data"
+  destination = "/data"
