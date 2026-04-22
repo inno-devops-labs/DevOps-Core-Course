@@ -1,5 +1,11 @@
 replicaCount: 1
 
+rollout:
+  enabled: false          # set true to use Rollout instead of Deployment
+  strategy: canary        # canary | blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+
 image:
   repository: almax07082005/devops-info-service
   tag: "latest"

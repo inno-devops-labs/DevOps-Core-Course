@@ -1,0 +1,88 @@
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/config-env: {{ include (print $.Template.BasePath "/configmap-env.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info-service.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info-service.fullname" . }}-data
+        {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+          {{- if .Values.env }}
+          env:
+            {{- include "devops-info-service.envVars" . | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.fullname" . }}-env
+            {{- if .Values.secrets.enabled }}
+            - secretRef:
+                name: {{ include "devops-info-service.secretName" . }}
+            {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "devops-info-service.fullname" . }}
+      previewService: {{ include "devops-info-service.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+    {{- else }}
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {}
+        - setWeight: 40
+        - pause:
+            duration: 30s
+        - setWeight: 60
+        - pause:
+            duration: 30s
+        - setWeight: 80
+        - pause:
+            duration: 30s
+        - setWeight: 100
+    {{- end }}
+{{- end }}
