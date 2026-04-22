@@ -8,7 +8,9 @@ image:
 
 service:
   type: NodePort
-  nodePort: 30080
+  port: 80
+  targetPort: 8080
+  nodePort: 30081
 
 resources:
   requests:

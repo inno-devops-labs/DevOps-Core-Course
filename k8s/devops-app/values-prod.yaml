@@ -2,12 +2,15 @@ replicaCount: 3
 app:
   name: "devops-app-prod"
   logLevel: "INFO"
-  
+
 image:
   tag: "lab03"
 
 service:
   type: NodePort
+  port: 80
+  targetPort: 8080
+  nodePort: 30082
 
 resources:
   requests:
