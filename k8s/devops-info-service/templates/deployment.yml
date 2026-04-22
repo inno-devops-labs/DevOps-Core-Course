@@ -1,6 +1,8 @@
 {{- $rollout := .Values.rollout | default dict -}}
-{{- $enabled := $rollout.enabled | default false -}}
-{{- if not $enabled }}
+{{- $rolloutEnabled := $rollout.enabled | default false -}}
+{{- $stateful := .Values.statefulset | default dict -}}
+{{- $statefulEnabled := $stateful.enabled | default false -}}
+{{- if and (not $rolloutEnabled) (not $statefulEnabled) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

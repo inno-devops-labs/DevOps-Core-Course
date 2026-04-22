@@ -1,18 +1,20 @@
-{{- $rollout := .Values.rollout | default dict -}}
-{{- $rolloutEnabled := $rollout.enabled | default false -}}
-{{- $stateful := .Values.statefulset | default dict -}}
-{{- $statefulEnabled := $stateful.enabled | default false -}}
-{{- $strategy := $rollout.strategy | default "blueGreen" -}}
-{{- if and $rolloutEnabled (not $statefulEnabled) }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "devops-info-service.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
-  revisionHistoryLimit: {{ $rollout.revisionHistoryLimit | default 3 }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if and (eq .Values.statefulset.updateStrategy.type "RollingUpdate") (hasKey .Values.statefulset.updateStrategy "rollingUpdate") }}
+    rollingUpdate:
+      {{- toYaml .Values.statefulset.updateStrategy.rollingUpdate | nindent 6 }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
@@ -48,14 +50,17 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "devops-info-service.fullname" . }}-env
+            {{- if .Values.secrets.enabled }}
+            - secretRef:
+                name: {{ include "devops-info-service.fullname" . }}-secret
+            {{- end }}
           volumeMounts:
             - name: config-volume
               mountPath: /config
               readOnly: true
-            {{- if .Values.persistence.enabled }}
             - name: data-volume
-              mountPath: {{ .Values.persistence.mountPath }}
-            {{- end }}
+              mountPath: {{ .Values.persistence.mountPath | quote }}
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:
@@ -63,6 +68,7 @@ spec:
             readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
             capabilities:
               {{- toYaml .Values.containerSecurityContext.capabilities | nindent 14 }}
+
           {{- if .Values.probes.startup.enabled }}
           startupProbe:
             httpGet:
@@ -73,6 +79,7 @@ spec:
             timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.startup.failureThreshold }}
           {{- end }}
+
           {{- if .Values.probes.readiness.enabled }}
           readinessProbe:
             httpGet:
@@ -83,6 +90,7 @@ spec:
             timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
           {{- end }}
+
           {{- if .Values.probes.liveness.enabled }}
           livenessProbe:
             httpGet:
@@ -93,42 +101,23 @@ spec:
             timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
           {{- end }}
+
       volumes:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-service.fullname" . }}-data
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+        labels:
+          {{- include "devops-info-service.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode | quote }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
         {{- end }}
-
-  strategy:
-    {{- if eq $strategy "canary" }}
-    canary:
-      maxSurge: {{ $rollout.canary.maxSurge | default 1 }}
-      maxUnavailable: {{ $rollout.canary.maxUnavailable | default 0 }}
-      stableService: {{ include "devops-info-service.fullname" . }}
-      canaryService: {{ include "devops-info-service.fullname" . }}-canary
-      steps:
-        - setWeight: 20
-        - pause: {}
-        - setWeight: 40
-        - pause:
-            duration: 30s
-        - setWeight: 60
-        - pause:
-            duration: 30s
-        - setWeight: 80
-        - pause:
-            duration: 30s
-        - setWeight: 100
-    {{- else if eq $strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "devops-info-service.fullname" . }}
-      previewService: {{ include "devops-info-service.fullname" . }}-preview
-      autoPromotionEnabled: {{ $rollout.blueGreen.autoPromotionEnabled | default false }}
-      previewReplicaCount: {{ $rollout.blueGreen.previewReplicaCount | default 1 }}
-      scaleDownDelaySeconds: {{ $rollout.blueGreen.scaleDownDelaySeconds | default 30 }}
-    {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
 {{- end }}

@@ -12,10 +12,9 @@ service:
 rollout:
   enabled: true
   strategy: blueGreen
-  blueGreen:
-    autoPromotionEnabled: false
-    previewReplicaCount: 1
-    scaleDownDelaySeconds: 30
+
+statefulset:
+  enabled: false
 
 resources:
   requests:
