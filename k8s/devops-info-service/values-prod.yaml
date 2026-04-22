@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 3
 minReadySeconds: 10
 
 image:
@@ -7,17 +7,18 @@ image:
 env:
   appName: devops-info-service
   appEnv: production
-  appRegion: lab12-prod
+  appRegion: lab13-prod
   logLevel: info
 
 config:
   responseMode: compact
 
 persistence:
+  enabled: false
   size: 250Mi
 
 service:
-  type: LoadBalancer
+  type: ClusterIP
 
 resources:
   requests:

@@ -6,7 +6,7 @@ image:
 env:
   appName: devops-info-service
   appEnv: development
-  appRegion: lab12-dev
+  appRegion: lab13-dev
   logLevel: debug
 
 config:

@@ -12,18 +12,22 @@ spec:
     - list:
         elements:
           - env: dev
-            namespace: dev
-            releaseName: devops-info-service-dev
+            namespace: dev-appset
+            releaseName: devops-info-service-dev-appset
             valuesFile: values-dev.yaml
+            serviceType: ClusterIP
+            appRegion: lab13-appset-dev
             autoSync: "true"
           - env: prod
-            namespace: prod
-            releaseName: devops-info-service-prod
+            namespace: prod-appset
+            releaseName: devops-info-service-prod-appset
             valuesFile: values-prod.yaml
+            serviceType: ClusterIP
+            appRegion: lab13-appset-prod
             autoSync: "false"
   template:
     metadata:
-      name: 'devops-info-service-{{ .env }}'
+      name: 'devops-info-service-{{ .env }}-appset'
       labels:
         app.kubernetes.io/part-of: devops-core-course
         app.kubernetes.io/component: gitops
@@ -38,6 +42,11 @@ spec:
           releaseName: '{{ .releaseName }}'
           valueFiles:
             - '{{ .valuesFile }}'
+          values: |
+            service:
+              type: {{ .serviceType }}
+            env:
+              appRegion: {{ .appRegion }}
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{ .namespace }}'
