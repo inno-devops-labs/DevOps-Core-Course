@@ -1,4 +1,7 @@
 replicaCount: 1
+app:
+  name: "devops-app-dev"
+  logLevel: "DEBUG"
 
 image:
   tag: latest

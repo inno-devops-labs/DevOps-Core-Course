@@ -1,5 +1,8 @@
 replicaCount: 3
-
+app:
+  name: "devops-app-prod"
+  logLevel: "INFO"
+  
 image:
   tag: "lab03"
 
