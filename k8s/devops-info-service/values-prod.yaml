@@ -5,8 +5,8 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  type: LoadBalancer
-  nodePort: null
+  type: NodePort
+  nodePort: 30082
 
 resources:
   requests:
@@ -19,7 +19,7 @@ resources:
 livenessProbe:
   httpGet:
     path: /health
-    port: 80
+    port: 8080
   initialDelaySeconds: 30
   periodSeconds: 5
   timeoutSeconds: 5
@@ -28,7 +28,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /health
-    port: 80
+    port: 8080
   initialDelaySeconds: 10
   periodSeconds: 3
   timeoutSeconds: 3

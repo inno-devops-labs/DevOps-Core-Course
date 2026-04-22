@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: devops-info-service-set
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev-set
+            valuesFile: values-dev.yaml
+            nodePort: "30091"
+            autoSync: "true"
+          - env: prod
+            namespace: prod-set
+            valuesFile: values-prod.yaml
+            nodePort: "30092"
+            autoSync: "false"
+  template:
+    metadata:
+      name: 'devops-info-service-{{.env}}-set'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/andiazdi/DevOps-Core-Course.git
+        targetRevision: lab13
+        path: k8s/devops-info-service
+        helm:
+          releaseName: 'devops-info-service-{{.env}}-set'
+          valueFiles:
+            - values.yaml
+            - '{{.valuesFile}}'
+          parameters:
+            - name: service.nodePort
+              value: '{{.nodePort}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.namespace}}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+  templatePatch: |
+    spec:
+      syncPolicy:
+        {{- if eq .autoSync "true" }}
+        automated:
+          prune: true
+          selfHeal: true
+        {{- end }}

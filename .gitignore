@@ -11,3 +11,6 @@ __pycache__/
 # Monitoring secrets
 monitoring/.env
 .env
+
+# Local scratch
+.tmp/

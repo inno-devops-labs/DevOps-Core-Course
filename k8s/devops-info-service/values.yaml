@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: andiazdi/lab02
@@ -11,7 +11,7 @@ fullnameOverride: ""
 service:
   type: NodePort
   port: 80
-  targetPort: 80
+  targetPort: 8080
   nodePort: 30080
 
 resources:
@@ -24,7 +24,7 @@ resources:
 
 env:
   APP_HOST: "0.0.0.0"
-  APP_PORT: "80"
+  APP_PORT: "8080"
   LOG_FORMAT: "json"
 
 secret:
@@ -48,7 +48,7 @@ containerSecurityContext:
 livenessProbe:
   httpGet:
     path: /health
-    port: 80
+    port: 8080
   initialDelaySeconds: 15
   periodSeconds: 10
   timeoutSeconds: 5
@@ -57,7 +57,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /health
-    port: 80
+    port: 8080
   initialDelaySeconds: 5
   periodSeconds: 5
   timeoutSeconds: 3

@@ -6,7 +6,7 @@ image:
 
 service:
   type: NodePort
-  nodePort: 30080
+  nodePort: 30081
 
 resources:
   requests:
@@ -19,7 +19,7 @@ resources:
 livenessProbe:
   httpGet:
     path: /health
-    port: 80
+    port: 8080
   initialDelaySeconds: 5
   periodSeconds: 10
   timeoutSeconds: 5
@@ -28,7 +28,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /health
-    port: 80
+    port: 8080
   initialDelaySeconds: 3
   periodSeconds: 10
   timeoutSeconds: 3
