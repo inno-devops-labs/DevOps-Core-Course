@@ -247,4 +247,4 @@ Key differences:
 - [x] Persistence scenario documented
 - [x] `CONFIGMAPS.md` created
 
-Bonus (hot reload) is intentionally not implemented in this base submission.
+
