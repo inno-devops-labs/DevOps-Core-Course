@@ -6,6 +6,11 @@ rollout:
   blueGreen:
     autoPromotionEnabled: false
 
+statefulset:
+  enabled: false          # set true to use StatefulSet instead of Deployment
+  updateStrategy: RollingUpdate   # RollingUpdate | OnDelete
+  partition: 0            # only pods with ordinal >= partition are updated
+
 image:
   repository: almax07082005/devops-info-service
   tag: "latest"
