@@ -1,0 +1,49 @@
+{{- /*
+  Standalone Pod demonstrating init container patterns.
+  Deploy separately with: kubectl apply -f <rendered>
+  This is kept as a ConfigMap-rendered manifest to keep it tracked in the chart.
+*/}}
+{{- if .Values.initContainers.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-init-demo
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  restartPolicy: Never
+  initContainers:
+    {{- if .Values.initContainers.download.enabled }}
+    - name: init-download
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - wget -O {{ .Values.initContainers.download.outputPath }} {{ .Values.initContainers.download.url }}
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+    {{- end }}
+    {{- if .Values.initContainers.waitForService.enabled }}
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - until nslookup {{ .Values.initContainers.waitForService.serviceName }}; do echo "waiting..."; sleep 2; done
+    {{- end }}
+  containers:
+    - name: main-app
+      image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+      ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+      volumeMounts:
+        - name: workdir
+          mountPath: /data/init
+      resources:
+        {{- toYaml .Values.resources | nindent 8 }}
+  volumes:
+    - name: workdir
+      emptyDir: {}
+{{- end }}

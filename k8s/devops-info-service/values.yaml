@@ -11,6 +11,19 @@ statefulset:
   updateStrategy: RollingUpdate   # RollingUpdate | OnDelete
   partition: 0            # only pods with ordinal >= partition are updated
 
+initContainers:
+  enabled: false
+  download:
+    enabled: true
+    url: "https://example.com"
+    outputPath: "/work-dir/index.html"
+  waitForService:
+    enabled: true
+    serviceName: "devops-info-service-headless"
+
+metrics:
+  enabled: false          # expose /metrics and create ServiceMonitor
+
 image:
   repository: almax07082005/devops-info-service
   tag: "latest"
