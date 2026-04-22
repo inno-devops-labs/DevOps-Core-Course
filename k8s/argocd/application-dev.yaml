@@ -12,6 +12,9 @@ spec:
     helm:
       valueFiles:
         - values-dev.yaml
+      parameters:
+        - name: image.tag
+          value: lab03
   destination:
     server: https://kubernetes.default.svc
     namespace: dev

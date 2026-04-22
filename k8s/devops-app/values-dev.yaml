@@ -4,7 +4,7 @@ app:
   logLevel: "DEBUG"
 
 image:
-  tag: latest
+  tag: "lab03"
 
 service:
   type: NodePort
