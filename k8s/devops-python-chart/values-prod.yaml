@@ -43,7 +43,10 @@ readinessProbe:
 ingress:
   enabled: true
   className: nginx
-  host: devops.local
+  host: devops-prod.local
   tls:
     enabled: true
-    secretName: devops-tls-secret
+    secretName: devops-prod-tls-secret
+  paths:
+    - path: /app1
+      pathType: Prefix
