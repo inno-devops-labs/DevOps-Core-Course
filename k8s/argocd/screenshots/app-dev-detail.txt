@@ -1,0 +1,25 @@
+Name:               argocd/python-app-set-dev
+Project:            default
+Server:             https://kubernetes.default.svc
+Namespace:          dev
+URL:                https://argocd.example.com/applications/python-app-set-dev
+Source:
+- Repo:             https://github.com/ElinaNotElina/DevOps-Core-Course.git
+  Target:           lab13
+  Path:             k8s/devops-info-service
+  Helm Values:      values.yaml,values-dev.yaml
+SyncWindow:         Sync Allowed
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to lab13 (5b9f3f5)
+Health Status:      Healthy
+
+GROUP  KIND                   NAMESPACE  NAME                                                 STATUS     HEALTH   HOOK      MESSAGE
+batch  Job                    dev        python-app-set-dev-devops-info-service-pre-install   Succeeded           PreSync   Reached expected number of succeeded pods
+       ServiceAccount         dev        python-app-set-dev-devops-info-service               Synced                        serviceaccount/python-app-set-dev-devops-info-service created
+       Secret                 dev        python-app-set-dev-devops-info-service-secret        Synced                        secret/python-app-set-dev-devops-info-service-secret created
+       ConfigMap              dev        python-app-set-dev-devops-info-service-config        Synced                        configmap/python-app-set-dev-devops-info-service-config created
+       ConfigMap              dev        python-app-set-dev-devops-info-service-env           Synced                        configmap/python-app-set-dev-devops-info-service-env created
+       PersistentVolumeClaim  dev        python-app-set-dev-devops-info-service-data          Synced     Healthy            persistentvolumeclaim/python-app-set-dev-devops-info-service-data created
+       Service                dev        python-app-set-dev-devops-info-service               Synced     Healthy            service/python-app-set-dev-devops-info-service created
+apps   Deployment             dev        python-app-set-dev-devops-info-service               Synced     Healthy            deployment.apps/python-app-set-dev-devops-info-service created
+batch  Job                    dev        python-app-set-dev-devops-info-service-post-install  Succeeded           PostSync  Reached expected number of succeeded pods

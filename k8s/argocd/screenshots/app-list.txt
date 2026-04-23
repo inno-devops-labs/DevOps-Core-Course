@@ -1,0 +1,3 @@
+NAME                        CLUSTER                         NAMESPACE  PROJECT  STATUS  HEALTH   SYNCPOLICY  CONDITIONS  REPO                                                     PATH                     TARGET
+argocd/python-app-set-dev   https://kubernetes.default.svc  dev        default  Synced  Healthy  Auto-Prune  <none>      https://github.com/ElinaNotElina/DevOps-Core-Course.git  k8s/devops-info-service  lab13
+argocd/python-app-set-prod  https://kubernetes.default.svc  prod       default  Synced  Healthy  Manual      <none>      https://github.com/ElinaNotElina/DevOps-Core-Course.git  k8s/devops-info-service  lab13
