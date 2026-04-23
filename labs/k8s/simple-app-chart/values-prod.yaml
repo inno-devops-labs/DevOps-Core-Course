@@ -9,7 +9,7 @@ resources:
     cpu: 200m
     memory: 256Mi
 service:
-  type: LoadBalancer
+  type: NodePort
 livenessProbe:
   initialDelaySeconds: 30
 readinessProbe:
