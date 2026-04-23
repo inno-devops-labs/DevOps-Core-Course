@@ -1,7 +1,6 @@
 # Lab 13 — GitOps with ArgoCD
 
-This report is being filled while the lab is executed.  
-Current status: **Task 1 completed**, **Task 2 completed**, **Task 3 manifests created**, verification pending.
+This report documents the completed Lab 13 implementation.
 
 ---
 
@@ -246,7 +245,7 @@ Created:
 - sync policy: **manual** (no `automated` block)
 - Minikube override in ArgoCD parameters: `service.type=NodePort`, `service.nodePort=30086` (to avoid `LoadBalancer` health staying `Progressing` without an external LB)
 
-### 3.2 Apply and verify (run now)
+### 3.2 Apply and verify
 
 ```bash
 kubectl apply -f k8s/argocd/application-dev.yaml
@@ -256,10 +255,10 @@ argocd app get devops-info-service-dev
 argocd app get devops-info-service-prod
 ```
 
-Expected behavior:
+Observed behavior:
 
-- `devops-info-service-dev` starts syncing automatically.
-- `devops-info-service-prod` stays manual until explicit sync.
+- `devops-info-service-prod` remained manual and required explicit sync.
+- Initial `prod` wait timed out when a previous operation was still active; this was resolved by terminating the operation and syncing again.
 
 Manual sync for prod:
 
@@ -268,9 +267,194 @@ argocd app sync devops-info-service-prod
 argocd app wait devops-info-service-prod --sync --health --timeout 180
 ```
 
-Cluster verification:
+Recovery command used when operation lock was present:
+
+```bash
+argocd app terminate-op devops-info-service-prod
+```
+
+Evidence (prod):
+
+```text
+$ argocd app sync devops-info-service-prod
+...
+Sync Status:        Synced to lab13 (395bf43)
+Health Status:      Healthy
+Phase:              Succeeded
+Message:            successfully synced (no more tasks)
+```
+
+```text
+$ argocd app wait devops-info-service-prod --sync --health --timeout 180
+Sync Status:        Synced to lab13 (395bf43)
+Health Status:      Healthy
+```
+
+```text
+$ argocd app get devops-info-service-prod
+Sync Policy:        Manual
+Sync Status:        Synced to lab13 (395bf43)
+Health Status:      Healthy
+```
+
+```text
+$ kubectl get svc -n prod
+NAME                       TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+devops-info-service-prod   NodePort   10.104.15.139   <none>        80:30086/TCP   87m
+```
+
+Cluster verification commands:
 
 ```bash
 kubectl get all -n dev
 kubectl get all -n prod
 ```
+
+Task 3 conclusion: multi-environment ArgoCD applications are defined and deployed with different sync policies (dev automated, prod manual), and `prod` is confirmed `Synced`/`Healthy` after manual sync.
+
+Evidence summary:
+
+```text
+$ argocd app get devops-info-service-prod
+Sync Policy:        Manual
+Sync Status:        Synced to lab13 (395bf43)
+Health Status:      Healthy
+```
+
+```text
+$ argocd app get devops-info-service-dev
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to lab13 (395bf43)
+Health Status:      Healthy
+```
+
+```text
+$ kubectl get svc -n prod
+NAME                       TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+devops-info-service-prod   NodePort   10.104.15.139   <none>        80:30086/TCP   87m
+```
+
+---
+
+## 4. Self-healing and drift behavior (Task 4)
+
+### 4.1 Self-healing test: manual scale drift in `dev`
+
+Command:
+
+```bash
+kubectl scale deployment/devops-info-service-dev -n dev --replicas=5
+kubectl get deploy -n dev -w
+```
+
+Observed rollout stream:
+
+```text
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+devops-info-service-dev   1/5     5            1           91m
+devops-info-service-dev   1/1     5            1           91m
+devops-info-service-dev   1/1     5            1           91m
+devops-info-service-dev   1/1     5            1           91m
+devops-info-service-dev   1/1     1            1           91m
+```
+
+Interpretation: the deployment was manually scaled to 5 replicas, then ArgoCD (automated + self-heal) reconciled it back to the Git-defined value (`replicaCount: 1` in `values-dev.yaml`).
+
+Post-check:
+
+```text
+$ argocd app get devops-info-service-dev
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to lab13 (395bf43)
+Health Status:      Healthy
+```
+
+```text
+$ kubectl get deploy -n dev
+NAME                      READY   UP-TO-DATE   AVAILABLE   AGE
+devops-info-service-dev   1/1     1            1           99m
+```
+
+### 4.2 Pod deletion test (`dev`)
+
+Command sequence:
+
+```bash
+kubectl get pods -n dev
+kubectl delete pod -n dev devops-info-service-dev-7cf799f8d7-t49jd
+kubectl get pods -n dev -w
+```
+
+Observed behavior:
+
+```text
+NAME                                       READY   STATUS    RESTARTS   AGE
+devops-info-service-dev-7cf799f8d7-t49jd   1/1     Running   0          101m
+pod "devops-info-service-dev-7cf799f8d7-t49jd" deleted
+NAME                                       READY   STATUS    RESTARTS   AGE
+devops-info-service-dev-7cf799f8d7-4ppxm   1/1     Running   0          3m41s
+```
+
+Interpretation: pod recreation is Kubernetes controller behavior (Deployment/ReplicaSet reconciliation), not ArgoCD drift correction.
+
+Post-check:
+
+```text
+$ argocd app get devops-info-service-dev
+Sync Status:        Synced to lab13 (395bf43)
+Health Status:      Healthy
+```
+
+### 4.3 Configuration drift test (`dev`)
+
+Test command:
+
+```bash
+kubectl set image deployment/devops-info-service-dev \
+  devops-info-service=nginx:latest -n dev
+```
+
+```text
+deployment.apps/devops-info-service-dev image updated
+```
+
+Immediate and delayed app checks:
+
+```text
+$ argocd app get devops-info-service-dev
+Sync Policy:        Automated (Prune)
+Sync Status:        Synced to lab13 (395bf43)
+Health Status:      Healthy
+```
+
+```text
+$ kubectl get deployment devops-info-service-dev -n dev -o jsonpath='{.spec.template.spec.containers[0].image}'
+mararokkel/devops-info-service:latest
+```
+
+Interpretation: the manual runtime mutation was automatically reconciled back to the Git-defined image. In this run, auto-sync/self-heal acted fast enough that `OutOfSync` was not visible in CLI output snapshots.
+
+### 4.4 Sync behavior explanation
+
+- **Kubernetes self-healing:** replacing failed/deleted pods to satisfy the Deployment replica target.
+- **ArgoCD self-healing:** reconciling managed resource spec drift back to Git state (for automated apps with `selfHeal: true`).
+- **What triggers ArgoCD sync checks:** repository revision changes and periodic refresh/reconciliation loops.
+- **Observed policy difference in this lab:** `dev` auto-sync+prune+self-heal; `prod` manual sync.
+
+Task 4 conclusion: self-healing behavior was demonstrated for replica drift and spec drift in `dev`, and pod recreation behavior was distinguished as native Kubernetes reconciliation.
+
+---
+
+## 5. Screenshots
+
+### 5.1 Applications list (all apps + sync/health)
+
+![ArgoCD Applications List](./screenshots/argocd-applications-list.png)
+
+### 5.2 Dev application details (`devops-info-service-dev`)
+
+![ArgoCD Dev Application Details](./screenshots/argocd-dev-details.png)
+
+### 5.3 Prod application details (`devops-info-service-prod`)
+
+![ArgoCD Prod Application Details](./screenshots/argocd-prod-details.png)
