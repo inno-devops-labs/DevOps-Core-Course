@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-info-service-base
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/nonamecorn/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/devops-info-service
+    helm:
+      releaseName: devops-info-service-base
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: service.type
+          value: ClusterIP
+        - name: hooks.enabled
+          value: "false"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lab13-base
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

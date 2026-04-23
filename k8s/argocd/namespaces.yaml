@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    app.kubernetes.io/part-of: devops-core-course
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab13-base
+  labels:
+    app.kubernetes.io/part-of: devops-core-course
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+  labels:
+    app.kubernetes.io/part-of: devops-core-course
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod
+  labels:
+    app.kubernetes.io/part-of: devops-core-course

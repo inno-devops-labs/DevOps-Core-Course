@@ -1,0 +1,6 @@
+server:
+  service:
+    type: ClusterIP
+
+applicationSet:
+  enabled: true

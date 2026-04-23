@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: devops-info-service
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+  template:
+    metadata:
+      name: 'devops-info-service-{{ .env }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/nonamecorn/DevOps-Core-Course.git
+        targetRevision: lab13
+        path: k8s/devops-info-service
+        helm:
+          releaseName: 'devops-info-service-{{ .env }}'
+          valueFiles:
+            - '{{ .valuesFile }}'
+          parameters:
+            - name: hooks.enabled
+              value: "false"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ .namespace }}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+  templatePatch: |
+    {{- if eq .env "dev" }}
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+    {{- end }}
