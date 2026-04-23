@@ -1,0 +1,11 @@
+workload:
+  type: rollout
+
+rollout:
+  strategy: canary
+
+replicaCount: 3
+
+service:
+  type: NodePort
+  nodePort: 30080

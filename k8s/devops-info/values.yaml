@@ -3,6 +3,10 @@ replicaCount: 3
 nameOverride: ""
 fullnameOverride: ""
 
+workload:
+  # Supported: deployment, rollout, statefulset
+  type: rollout
+
 image:
   repository: devops_lab02
   tag: "cilc"
@@ -51,6 +55,26 @@ deployment:
       maxSurge: 1
       maxUnavailable: 0
 
+rollout:
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+
 podAnnotations: {}
 podLabels: {}
 
@@ -76,6 +100,10 @@ service:
   port: 80
   targetPort: 8080
   nodePort: 30080
+  preview:
+    enabled: false
+    suffix: preview
+    type: ClusterIP
 
 resources:
   requests:

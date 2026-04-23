@@ -1,6 +1,6 @@
-{{- if eq .Values.workload.type "deployment" }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if eq .Values.workload.type "rollout" }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "devops-info.fullname" . }}
   labels:
@@ -8,8 +8,6 @@ metadata:
 spec:
   replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
-  strategy:
-    {{- toYaml .Values.deployment.strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "devops-info.selectorLabels" . | nindent 6 }}
@@ -91,4 +89,22 @@ spec:
             claimName: {{ include "devops-info.pvcName" . }}
         {{- end }}
       {{- end }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "canary" }}
+    canary:
+      steps:
+        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
+    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "devops-info.fullname" . }}
+      previewService: {{ include "devops-info.previewServiceName" . }}
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- if ne .Values.rollout.blueGreen.autoPromotionSeconds nil }}
+      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
+      {{- end }}
+    {{- else }}
+    canary:
+      steps:
+        - setWeight: 100
+    {{- end }}
 {{- end }}

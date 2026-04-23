@@ -1,0 +1,16 @@
+workload:
+  type: rollout
+
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+
+service:
+  type: ClusterIP
+  nodePort: null
+  preview:
+    enabled: true
+    suffix: preview
+    type: ClusterIP

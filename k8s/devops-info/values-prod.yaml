@@ -1,5 +1,11 @@
 replicaCount: 4
 
+workload:
+  type: rollout
+
+rollout:
+  strategy: canary
+
 image:
   tag: "v1.0.0"
 
