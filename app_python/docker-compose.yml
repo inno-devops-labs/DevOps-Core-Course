@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  devops-info:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devops-info
+    ports:
+      - "5000:5000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5000"
+      DEBUG: "false"
+      VISITS_FILE: "/app/data/visits"
+    volumes:
+      - ./data:/app/data

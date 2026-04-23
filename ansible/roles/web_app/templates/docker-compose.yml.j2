@@ -1,0 +1,22 @@
+# {{ ansible_managed }}
+# Docker Compose configuration for {{ web_app_name }}
+
+services:
+  {{ web_app_name }}:
+    image: {{ web_app_image }}:{{ web_app_tag }}
+    container_name: {{ web_app_name }}
+    ports:
+      - "{{ web_app_port }}:{{ web_app_internal_port }}"
+{% if web_app_env | length > 0 %}
+    environment:
+{% for key, value in web_app_env.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ web_app_internal_port }}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

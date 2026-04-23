@@ -1,0 +1,15 @@
+INFO:     172.18.0.1:42738 - "GET / HTTP/1.1" 200 OK
+{"timestamp": "2026-03-12T09:59:17.069Z", "level": "INFO", "logger": "devops-info-service", "message": "method=GET path=/ status=200 client=172.18.0.1"}
+INFO:     172.18.0.1:42742 - "GET / HTTP/1.1" 200 OK
+{"timestamp": "2026-03-12T09:59:17.079Z", "level": "INFO", "logger": "devops-info-service", "message": "method=GET path=/health status=200 client=172.18.0.1"}
+INFO:     172.18.0.1:42754 - "GET /health HTTP/1.1" 200 OK
+{"timestamp": "2026-03-12T09:59:17.085Z", "level": "INFO", "logger": "devops-info-service", "message": "method=GET path=/health status=200 client=172.18.0.1"}
+INFO:     172.18.0.1:42758 - "GET /health HTTP/1.1" 200 OK
+{"timestamp": "2026-03-12T10:06:13.305Z", "level": "INFO", "logger": "devops-info-service", "message": "method=GET path=/ status=200 client=172.18.0.1"}
+INFO:     172.18.0.1:42430 - "GET / HTTP/1.1" 200 OK
+{"timestamp": "2026-03-12T10:06:13.469Z", "level": "INFO", "logger": "devops-info-service", "message": "method=GET path=/favicon.ico status=404 client=172.18.0.1"}
+INFO:     172.18.0.1:42430 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+{"timestamp": "2026-03-12T10:17:26.305Z", "level": "INFO", "logger": "devops-info-service", "message": "method=GET path=/health status=200 client=172.18.0.1"}
+INFO:     172.18.0.1:40410 - "GET /health HTTP/1.1" 200 OK
+{"timestamp": "2026-03-12T10:17:26.358Z", "level": "INFO", "logger": "devops-info-service", "message": "method=GET path=/ status=200 client=172.18.0.1"}
+INFO:     172.18.0.1:40412 - "GET / HTTP/1.1" 200 OK

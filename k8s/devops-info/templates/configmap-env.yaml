@@ -1,0 +1,12 @@
+{{- if .Values.config.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info.envConfigMapName" . }}
+  labels:
+    {{- include "devops-info.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.configEnv }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

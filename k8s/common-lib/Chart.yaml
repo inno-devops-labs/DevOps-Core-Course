@@ -1,0 +1,5 @@
+apiVersion: v2
+name: common-lib
+description: Shared helpers for Kubernetes application charts
+type: library
+version: 0.1.0

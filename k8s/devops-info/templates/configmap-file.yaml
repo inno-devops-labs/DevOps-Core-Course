@@ -1,0 +1,11 @@
+{{- if .Values.config.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "devops-info.fileConfigMapName" . }}
+  labels:
+    {{- include "devops-info.labels" . | nindent 4 }}
+data:
+  config.json: |-
+{{ tpl (.Files.Get "files/config.json") . | indent 4 }}
+{{- end }}

@@ -1,0 +1,10 @@
+{
+  "application": {
+    "name": "{{ .Values.appConfig.appName }}",
+    "environment": "{{ .Values.appConfig.environment }}"
+  },
+  "features": {
+    "enableVisitsCounter": {{ .Values.appConfig.features.enableVisitsCounter }},
+    "includeSystemInfo": {{ .Values.appConfig.features.includeSystemInfo }}
+  }
+}

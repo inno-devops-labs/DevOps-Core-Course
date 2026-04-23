@@ -1,0 +1,9 @@
+---
+- name: Full site deployment
+  hosts: webservers
+  become: true
+
+  roles:
+    - common
+    - docker
+    - web_app

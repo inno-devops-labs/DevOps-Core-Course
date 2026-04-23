@@ -1,0 +1,6 @@
+name: devops-vm
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Yandex Cloud VM for DevOps course (Lab 04)

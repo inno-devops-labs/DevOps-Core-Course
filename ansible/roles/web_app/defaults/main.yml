@@ -1,0 +1,19 @@
+---
+# Application Configuration
+web_app_name: devops-app
+web_app_port: 5000
+web_app_internal_port: 5000
+web_app_env: {}
+
+# Docker Image Configuration
+web_app_image: graymansion/devops-info-service
+web_app_tag: latest
+
+# Docker Compose Configuration
+web_app_compose_dir: "/opt/{{ web_app_name }}"
+
+# Wipe Logic Control (default: do not wipe)
+# Set to true to remove application completely
+# Wipe only:     ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install:  ansible-playbook deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false

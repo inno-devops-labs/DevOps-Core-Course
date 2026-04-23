@@ -1,0 +1,12 @@
+# Pulumi
+venv/
+__pycache__/
+*.pyc
+
+# Stack config (may contain secrets)
+Pulumi.*.yaml
+
+# General
+.env
+*.pem
+*.key

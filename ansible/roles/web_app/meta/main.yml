@@ -1,0 +1,4 @@
+---
+# Role dependencies — ensure Docker is installed before deploying the web app
+dependencies:
+  - role: docker

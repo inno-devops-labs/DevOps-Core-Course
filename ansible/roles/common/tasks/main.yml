@@ -1,0 +1,40 @@
+---
+# Package installation block with error handling
+- name: Install system packages
+  become: true
+  tags:
+    - packages
+    - common
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+    - name: Set timezone
+      community.general.timezone:
+        name: "{{ common_timezone }}"
+
+  rescue:
+    - name: Fix apt cache on failure
+      ansible.builtin.apt:
+        update_cache: true
+        force: true
+
+    - name: Retry package installation after fix
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+        update_cache: true
+
+  always:
+    - name: Log package installation completion
+      ansible.builtin.copy:
+        content: "Common role packages block completed at {{ ansible_date_time.iso8601 }}\n"
+        dest: /tmp/common_packages_done.log
+        mode: "0644"

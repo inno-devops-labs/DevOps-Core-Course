@@ -1,0 +1,7 @@
+---
+- name: Restart app with compose
+  ansible.builtin.command:
+    cmd: docker compose restart
+    chdir: "{{ web_app_compose_dir }}"
+  changed_when: true
+  become: true

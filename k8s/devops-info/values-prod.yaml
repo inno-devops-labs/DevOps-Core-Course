@@ -1,0 +1,23 @@
+replicaCount: 5
+
+image:
+  tag: "lab02"
+
+service:
+  type: LoadBalancer
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+probes:
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 5
+  readiness:
+    initialDelaySeconds: 10
+    periodSeconds: 3

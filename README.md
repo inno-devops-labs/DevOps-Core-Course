@@ -3,6 +3,7 @@
 [![Labs](https://img.shields.io/badge/Labs-18-blue)](#labs)
 [![Exam](https://img.shields.io/badge/Exam-Optional-green)](#exam-alternative)
 [![Duration](https://img.shields.io/badge/Duration-18%20Weeks-lightgrey)](#course-roadmap)
+[![Ansible Deployment](https://github.com/GrayMansion/DevOps-Core-Course/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/GrayMansion/DevOps-Core-Course/actions/workflows/ansible-deploy.yml)
 
 Master **production-grade DevOps practices** through hands-on labs. Build, containerize, deploy, monitor, and scale applications using industry-standard tools.
 

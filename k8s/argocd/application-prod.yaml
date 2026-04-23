@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-info-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/GrayMansion/DevOps-Core-Course.git
+    targetRevision: main
+    path: k8s/devops-info
+    helm:
+      valueFiles:
+        - values-prod.yaml
+      parameters:
+        - name: service.type
+          value: ClusterIP
+        - name: securityContext.runAsNonRoot
+          value: "false"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

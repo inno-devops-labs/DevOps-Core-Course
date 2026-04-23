@@ -1,0 +1,14 @@
+apiVersion: v2
+name: devops-info
+description: Helm chart for the DevOps info service
+type: application
+version: 0.1.0
+appVersion: "lab02"
+keywords:
+  - devops
+  - python
+  - api
+dependencies:
+  - name: common-lib
+    version: 0.1.0
+    repository: "file://../common-lib"

@@ -1,0 +1,128 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 3
+
+image:
+  repository: graymansion/devops-info-service
+  tag: "lab02"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+containerPort: 5000
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5000"
+  - name: DEBUG
+    value: "false"
+  - name: VISITS_FILE
+    value: "/data/visits"
+
+config:
+  enabled: true
+  mountPath: "/config"
+
+appConfig:
+  appName: "devops-info-service"
+  environment: "dev"
+  features:
+    enableVisitsCounter: true
+    includeSystemInfo: true
+
+configEnv:
+  APP_ENV: "dev"
+  LOG_LEVEL: "info"
+  FEATURE_VISITS: "true"
+
+persistence:
+  enabled: true
+  mountPath: "/data"
+  size: 100Mi
+  storageClass: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+secret:
+  enabled: true
+  name: ""
+  data:
+    username: "change-me-user"
+    password: "change-me-password"
+
+vault:
+  enabled: false
+  role: "devops-info-role"
+  secretPath: "secret/data/myapp/config"
+  fileName: "config"
+  command: ""
+  template: |
+    {{- with secret "secret/data/myapp/config" -}}
+    APP_USERNAME={{ .Data.data.username }}
+    APP_PASSWORD={{ .Data.data.password }}
+    {{- end -}}
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+probes:
+  liveness:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  readiness:
+    httpGet:
+      path: /health
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+  startup:
+    httpGet:
+      path: /health
+      port: http
+    periodSeconds: 3
+    failureThreshold: 20
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+podSecurityContext:
+  fsGroup: 1000
+
+hooks:
+  enabled: true
+  image:
+    repository: busybox
+    tag: "1.36"
+    pullPolicy: IfNotPresent
+  preInstall:
+    weight: -5
+    command: "echo Running pre-install validation for devops-info && sleep 3 && echo Pre-install validation done"
+  postInstall:
+    weight: 5
+    command: "echo Running post-install smoke check for devops-info && sleep 3 && echo Post-install smoke check done"

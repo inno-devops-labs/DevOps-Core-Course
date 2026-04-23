@@ -1,0 +1,39 @@
+---
+# Wipe tasks for web application — requires BOTH:
+#   1. Variable: web_app_wipe=true  (when condition)
+#   2. Tag: --tags web_app_wipe     (tag gating)
+# This double-safety prevents accidental wipe during normal deployments.
+
+- name: Wipe web application
+  when: web_app_wipe | bool
+  become: true
+  tags:
+    - web_app_wipe
+  block:
+    - name: Stop and remove containers with docker compose
+      ansible.builtin.command:
+        cmd: docker compose down --remove-orphans
+        chdir: "{{ web_app_compose_dir }}"
+      changed_when: true
+      failed_when: false
+
+    - name: Remove docker-compose file
+      ansible.builtin.file:
+        path: "{{ web_app_compose_dir }}/docker-compose.yml"
+        state: absent
+
+    - name: Remove application directory
+      ansible.builtin.file:
+        path: "{{ web_app_compose_dir }}"
+        state: absent
+
+    - name: Remove Docker image (optional cleanup)
+      community.docker.docker_image:
+        name: "{{ web_app_image }}"
+        tag: "{{ web_app_tag }}"
+        state: absent
+      failed_when: false
+
+    - name: Log wipe completion
+      ansible.builtin.debug:
+        msg: "Application {{ web_app_name }} wiped successfully from {{ web_app_compose_dir }}"
