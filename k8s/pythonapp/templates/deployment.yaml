@@ -16,10 +16,12 @@ spec:
       maxUnavailable: 0
   template:
     metadata:
+      {{- if .Values.vault.enabled }}
       annotations:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "myapp"
         vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
+      {{- end }}
       labels:
         {{- include "pythonapp.selectorLabels" . | nindent 8 }}
     spec:

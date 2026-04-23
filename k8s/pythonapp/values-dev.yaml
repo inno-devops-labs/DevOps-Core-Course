@@ -21,3 +21,6 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 3
   periodSeconds: 5
+
+vault:
+  enabled: false

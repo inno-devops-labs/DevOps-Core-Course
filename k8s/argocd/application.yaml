@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pythonapp
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/AidarSarvartdinov/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/pythonapp
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: service.nodePort
+          value: "30081"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitops
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

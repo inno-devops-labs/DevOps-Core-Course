@@ -52,3 +52,6 @@ persistence:
   enabled: true
   size: 100Mi
   storageClass: ""
+
+vault:
+  enabled: false
