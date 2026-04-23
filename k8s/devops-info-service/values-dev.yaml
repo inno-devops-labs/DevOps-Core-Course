@@ -32,7 +32,7 @@ service:
   type: NodePort
   port: 80
   targetPort: http
-  nodePort: null
+  nodePort: 30090
 
 resources:
   requests:
