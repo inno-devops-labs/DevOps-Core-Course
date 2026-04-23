@@ -1,5 +1,5 @@
 # Development: single replica, relaxed resources, NodePort, persistence + ConfigMap checksum (Lab 12)
-replicaCount: 1
+replicaCount: 2
 
 config:
   checksumAnnotation: true
