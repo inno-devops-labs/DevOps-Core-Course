@@ -13,8 +13,4 @@ service:
 livenessProbe:
   initialDelaySeconds: 30
 readinessProbe:
-  httpGet:
-    path: /health
-    port: 8000
   initialDelaySeconds: 10
-  periodSeconds: 5
