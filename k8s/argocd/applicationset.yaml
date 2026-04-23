@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: devops-info-set
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+            releaseName: devops-info-dev
+            autoSync: "true"
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+            releaseName: devops-info-prod
+            autoSync: "false"
+  template:
+    metadata:
+      name: 'devops-info-{{.env}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Vlad1mirZhidkov/DevOps-Core-Course.git
+        targetRevision: lab12
+        path: k8s/devops-info-chart
+        helm:
+          releaseName: '{{.releaseName}}'
+          valueFiles:
+            - '{{.valuesFile}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.namespace}}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+  templatePatch: |
+    spec:
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+        {{- if eq .autoSync "true" }}
+        automated:
+          prune: true
+          selfHeal: true
+        {{- end }}

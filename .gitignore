@@ -26,3 +26,15 @@ venv/
 *.retry
 .vault_pass
 ansible/inventory/*.pyc
+
+# Local Kubernetes tooling
+.minikube-home/
+.kube/
+.minikube-docker-home/
+.kube-docker/
+.argocd-sync-patch.json
+.argocd-screenshot.js
+.edge-argocd-profile/
+.npm-cache/
+.chrome-test*/
+.edge-test/
