@@ -1,4 +1,4 @@
-replicaCount: 5
+replicaCount: 6
 
 image:
   repository: thevex/simple-app
