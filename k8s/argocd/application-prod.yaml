@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-app-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Rozanalex/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/app-python-chart
+    helm:
+      valueFiles:
+        - values-prod.yaml
+      parameters:
+        - name: secret.data.username
+          value: produser
+        - name: secret.data.password
+          value: ProdPass123!
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-app-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Rozanalex/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/app-python-chart
+    helm:
+      valueFiles:
+        - values-dev.yaml
+      parameters:
+        - name: secret.data.username
+          value: devuser
+        - name: secret.data.password
+          value: DevPass123!
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
