@@ -4,6 +4,7 @@ Related docs:
 - `k8s/HELM.md`
 - `k8s/SECRETS.md`
 - `k8s/CONFIGMAPS.md`
+- `k8s/ARGOCD.md`
 
 ## 1. Architecture Overview
 
