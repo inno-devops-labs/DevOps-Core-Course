@@ -41,6 +41,8 @@ kubectl create namespace argocd
 helm install argocd argo/argo-cd --namespace argocd
 ```
 
+![alt text](image-27.png)
+
 Installation verification:
 
 ```bash
@@ -51,12 +53,8 @@ kubectl wait --for=condition=ready pod \
   --timeout=120s
 kubectl get svc -n argocd
 ```
-
-Expected result:
-
-- the `argocd` namespace exists
-- the ArgoCD server Pod is `Running`
-- the ArgoCD services are present in the namespace
+![alt text](image-29.png)
+![alt text](image-28.png)
 
 ### UI Access
 
@@ -79,6 +77,8 @@ Login details:
 - Username: `admin`
 - Password: value from `argocd-initial-admin-secret`
 
+![alt text](image-30.png)
+
 ### CLI Configuration
 
 The `argocd` CLI is used for synchronization and status checks.
@@ -91,7 +91,8 @@ argocd version
 argocd account get-user-info
 ```
 
-This section satisfies the lab requirements for installation verification, UI access, and CLI configuration.
+![alt text](image-31.png)
+![alt text](image-32.png)
 
 ## Application Configuration
 
@@ -116,7 +117,7 @@ Apply the manifest:
 kubectl apply -f k8s/argocd/application.yaml
 argocd app get devops-info-service
 ```
-
+![alt text](image-33.png)
 Run the initial sync:
 
 ```bash
@@ -317,27 +318,6 @@ Difference between Kubernetes healing and ArgoCD healing:
 
 This section satisfies the lab requirements for the manual scale test, pod deletion test, configuration drift test, and explanation of sync behavior.
 
-## Screenshots
-
-The lab report should include the following screenshots after running the commands on a real cluster:
-
-- ArgoCD Applications page showing both `devops-info-service-dev` and `devops-info-service-prod`
-- the sync and health status for both applications
-- the details page for the dev application
-- the details page for the prod application
-- a diff or history view during a self-healing test
-
-Suggested placeholders:
-
-```markdown
-![argocd-app-list](image-argocd-app-list.png)
-![argocd-dev-details](image-argocd-dev-details.png)
-![argocd-prod-details](image-argocd-prod-details.png)
-![argocd-self-heal](image-argocd-self-heal.png)
-```
-
-This section satisfies the lab requirement for screenshots showing both applications, sync state, and application details.
-
 ## Bonus — ApplicationSet
 
 The bonus task is implemented in [`k8s/argocd/applicationset.yaml`](argocd/applicationset.yaml).
@@ -363,106 +343,4 @@ Apply the ApplicationSet:
 
 ```bash
 kubectl apply -f k8s/argocd/applicationset.yaml
-```
-
-## Testing And Validation
-
-Validation workflow to run locally:
-
-```bash
-kubectl apply -f k8s/argocd/namespaces.yaml
-kubectl apply -f k8s/argocd/application.yaml
-kubectl apply -f k8s/argocd/application-dev.yaml
-kubectl apply -f k8s/argocd/application-prod.yaml
-argocd app list
-argocd app get devops-info-service-dev
-argocd app get devops-info-service-prod
-```
-
-Self-healing validation:
-
-```bash
-kubectl scale deployment devops-info-dev-devops-info-service -n dev --replicas=5
-argocd app diff devops-info-service-dev
-kubectl delete pod -n dev -l app.kubernetes.io/instance=devops-info-dev
-kubectl label deployment devops-info-dev-devops-info-service -n dev drift-test=true --overwrite
-```
-
-Local validation status in this workspace:
-
-- the ArgoCD manifests were created and matched to the existing Helm chart and values files
-- the chart renders successfully for both `values-dev.yaml` and `values-prod.yaml`
-- live ArgoCD reconciliation could not be verified from this workspace because the local Kubernetes API is not reliably reachable here
-
-## Lab Commands
-
-Use this sequence to complete the lab and collect evidence.
-
-### 1. Install ArgoCD
-
-```bash
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
-kubectl create namespace argocd
-helm install argocd argo/argo-cd --namespace argocd
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=argocd-server -n argocd --timeout=120s
-```
-
-### 2. Access the UI and CLI
-
-```bash
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-argocd login localhost:8080 --insecure
-argocd account get-user-info
-```
-
-### 3. Deploy the base application
-
-```bash
-kubectl apply -f k8s/argocd/application.yaml
-argocd app get devops-info-service
-argocd app sync devops-info-service
-```
-
-### 4. Deploy dev and prod environments
-
-```bash
-kubectl apply -f k8s/argocd/namespaces.yaml
-kubectl apply -f k8s/argocd/application-dev.yaml
-kubectl apply -f k8s/argocd/application-prod.yaml
-argocd app list
-kubectl get all -n dev
-kubectl get all -n prod
-```
-
-### 5. Test self-healing
-
-```bash
-kubectl scale deployment devops-info-dev-devops-info-service -n dev --replicas=5
-argocd app diff devops-info-service-dev
-kubectl delete pod -n dev -l app.kubernetes.io/instance=devops-info-dev
-kubectl label deployment devops-info-dev-devops-info-service -n dev drift-test=true --overwrite
-argocd app get devops-info-service-dev
-```
-
-### 6. Minimal pass checklist
-
-If you want the smallest command set that still covers the core lab requirements, run:
-
-```bash
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
-kubectl create namespace argocd
-helm install argocd argo/argo-cd --namespace argocd
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-argocd login localhost:8080 --insecure
-kubectl apply -f k8s/argocd/namespaces.yaml
-kubectl apply -f k8s/argocd/application-dev.yaml
-kubectl apply -f k8s/argocd/application-prod.yaml
-argocd app list
-kubectl scale deployment devops-info-dev-devops-info-service -n dev --replicas=5
-argocd app diff devops-info-service-dev
-kubectl delete pod -n dev -l app.kubernetes.io/instance=devops-info-dev
 ```
