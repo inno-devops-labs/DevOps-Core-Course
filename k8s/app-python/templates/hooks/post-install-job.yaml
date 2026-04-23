@@ -22,12 +22,9 @@ spec:
           command:
             - sh
             - -c
+            # Static script: avoids Job spec change when only Helm values differ (see pre-install job).
             - |
               echo "=== Post-install hook: smoke testing deployment ==="
-              echo "Release: {{ .Release.Name }}"
-              echo "Namespace: {{ .Release.Namespace }}"
               echo "Waiting for application to be ready..."
               sleep 5
-              echo "Running smoke test..."
               echo "Post-install validation completed successfully."
-              echo "Application {{ include "app-python.fullname" . }} is ready!"

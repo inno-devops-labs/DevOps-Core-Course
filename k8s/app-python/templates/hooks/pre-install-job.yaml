@@ -22,10 +22,8 @@ spec:
           command:
             - sh
             - -c
+            # Keep this script static (no values in the command) so Job spec.template does not
+            # change on every helm values edit — Kubernetes Jobs are immutable; ArgoCD sync would fail.
             - |
               echo "=== Pre-install hook: validating environment ==="
-              echo "Checking required configurations..."
-              echo "App: {{ include "app-python.fullname" . }}"
-              echo "Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}"
-              echo "Replicas: {{ .Values.replicaCount }}"
               echo "Pre-install validation completed successfully."
