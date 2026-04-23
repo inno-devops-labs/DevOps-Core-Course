@@ -1,10 +1,7 @@
 replicaCount: 4
 
 workload:
-  type: rollout
-
-rollout:
-  strategy: canary
+  type: statefulset
 
 image:
   tag: "v1.0.0"

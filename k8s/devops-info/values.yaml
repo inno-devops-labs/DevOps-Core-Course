@@ -5,7 +5,7 @@ fullnameOverride: ""
 
 workload:
   # Supported: deployment, rollout, statefulset
-  type: rollout
+  type: statefulset
 
 image:
   repository: devops_lab02
@@ -75,6 +75,11 @@ rollout:
     autoPromotionEnabled: false
     autoPromotionSeconds: null
 
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+
 podAnnotations: {}
 podLabels: {}
 
@@ -104,6 +109,9 @@ service:
     enabled: false
     suffix: preview
     type: ClusterIP
+
+headlessService:
+  enabled: true
 
 resources:
   requests:

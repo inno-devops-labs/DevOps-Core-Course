@@ -1,0 +1,11 @@
+workload:
+  type: statefulset
+
+replicaCount: 3
+
+service:
+  type: ClusterIP
+  nodePort: null
+
+headlessService:
+  enabled: true
