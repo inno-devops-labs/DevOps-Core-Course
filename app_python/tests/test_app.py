@@ -22,7 +22,14 @@ def test_index_ok(client):
     assert resp.status_code == 200
     data = resp.get_json()
 
-    assert set(data.keys()) == {"service", "system", "runtime", "request", "visits", "endpoints"}
+    assert set(data.keys()) == {
+        "service",
+        "system",
+        "runtime",
+        "request",
+        "visits",
+        "endpoints",
+    }
     assert data["service"]["name"] == "devops-info-service"
     assert data["service"]["framework"] == "Flask"
 

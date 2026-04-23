@@ -14,25 +14,22 @@ app = Flask(__name__)
 
 # Prometheus metrics
 http_requests_total = Counter(
-    'http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'status']
+    "http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"]
 )
 
 http_request_duration_seconds = Histogram(
-    'http_request_duration_seconds',
-    'HTTP request duration',
-    ['method', 'endpoint']
+    "http_request_duration_seconds", "HTTP request duration", ["method", "endpoint"]
 )
 
 http_requests_in_progress = Gauge(
-    'http_requests_in_progress',
-    'HTTP requests currently being processed'
+    "http_requests_in_progress", "HTTP requests currently being processed"
 )
 
 # App-specific metrics
-endpoint_calls = Counter('devops_info_endpoint_calls', 'Endpoint calls', ['endpoint'])
-system_info_duration = Histogram('devops_info_system_collection_seconds', 'System info collection time')
+endpoint_calls = Counter("devops_info_endpoint_calls", "Endpoint calls", ["endpoint"])
+system_info_duration = Histogram(
+    "devops_info_system_collection_seconds", "System info collection time"
+)
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
@@ -53,9 +50,12 @@ logging.basicConfig(
 logger = logging.getLogger("devops-info-service")
 
 
-
 def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
 
 
 def get_uptime_seconds() -> int:
@@ -185,13 +185,10 @@ def _record_metrics(status_code: int):
 
     duration = time.time() - getattr(request, "start_time", time.time())
     http_request_duration_seconds.labels(
-        method=request.method,
-        endpoint=request.path
+        method=request.method, endpoint=request.path
     ).observe(duration)
     http_requests_total.labels(
-        method=request.method,
-        endpoint=request.path,
-        status=str(status_code)
+        method=request.method, endpoint=request.path, status=str(status_code)
     ).inc()
     request._metrics_reported = True
 
@@ -269,7 +266,7 @@ def visits():
 
 @app.get("/metrics")
 def metrics():
-    return generate_latest(), 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    return generate_latest(), 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
 # error handling
@@ -285,7 +282,12 @@ def not_found(_):
 def internal_error(_):
     logger.exception("Unhandled server error")
     return (
-        jsonify({"error": "Internal Server Error", "message": "An unexpected error occurred"}),
+        jsonify(
+            {
+                "error": "Internal Server Error",
+                "message": "An unexpected error occurred",
+            }
+        ),
         500,
     )
 

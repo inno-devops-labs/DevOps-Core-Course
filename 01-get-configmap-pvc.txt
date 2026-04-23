@@ -1,0 +1,7 @@
+NAME                                  DATA   AGE
+configmap/devops-info-python-config   1      2m11s
+configmap/devops-info-python-env      4      2m11s
+configmap/kube-root-ca.crt            1      29d
+
+NAME                                            STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/devops-info-python-data   Bound    pvc-4cb75dad-dd64-49de-8d80-d81885bc825f   100Mi      RWO            standard       <unset>                 2m11s

@@ -1,0 +1,1 @@
+pod "devops-info-python-58fbbbbbc7-2lkwq" deleted from default namespace

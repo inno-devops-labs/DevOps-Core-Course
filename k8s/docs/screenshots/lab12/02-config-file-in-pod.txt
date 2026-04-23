@@ -1,0 +1,12 @@
+{
+  "appName": "DevOps Info Service (Python)",
+  "environment": "dev",
+  "features": {
+    "visitsCounter": true,
+    "metrics": true
+  },
+  "settings": {
+    "timezone": "UTC",
+    "logFormat": "text"
+  }
+}
