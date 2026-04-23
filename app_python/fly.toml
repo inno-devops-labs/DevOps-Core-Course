@@ -1,0 +1,28 @@
+app = "devops-core-course-lab17"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "8080"
+  VISITS_FILE = "/data/visits"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  grace_period = "30s"
+  interval = "10s"
+  method = "GET"
+  path = "/health"
+  timeout = "2s"
+
+[mounts]
+  source = "devops_info_data"
+  destination = "/data"
