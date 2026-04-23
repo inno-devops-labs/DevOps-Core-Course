@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: python-app-set
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+  template:
+    metadata:
+      name: 'python-app-{{env}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Arino4kaMyr/DevOps-Core-Course.git
+        targetRevision: lab13
+        path: k8s/devops-python-chart
+        helm:
+          valueFiles:
+            - values.yaml
+            - '{{valuesFile}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
