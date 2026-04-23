@@ -13,8 +13,8 @@ progressDeadlineSeconds: 60
 terminationGracePeriodSeconds: 30
 
 image:
-  repository: devops-info-service
-  tag: lab12
+  repository: ebortsov/devops-info
+  tag: "1.0.0"
   pullPolicy: IfNotPresent
 
 containerPort: 5000

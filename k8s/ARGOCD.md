@@ -78,6 +78,18 @@ Confirmed value layering:
 - `dev` renders as `NodePort`, `1` replica, debug-oriented config
 - `prod` renders as `LoadBalancer`, `4` replicas, higher resources, `SERVICE_VERSION=1.0.1`
 
+Published application image now configured in the chart:
+
+- repository: `ebortsov/devops-info`
+- tag: `1.0.0`
+
+Docker Hub push evidence:
+
+```bash
+$ docker push ebortsov/devops-info:1.0.0
+1.0.0: digest: sha256:f0718a5fc1d94e7567881f434b07603e8b885f22aaa4d4986e41d407d3fd479d size: 2200
+```
+
 ## 3. Fresh Cluster Recreation
 
 I recreated the `lab13` cluster from scratch before collecting the final evidence:
@@ -99,15 +111,6 @@ Fresh cluster node evidence:
 $ docker exec lab13-control-plane kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes -o wide
 NAME                  STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION      CONTAINER-RUNTIME
 lab13-control-plane   Ready    control-plane   58s   v1.35.0   172.18.0.3    <none>        Debian GNU/Linux 12 (bookworm)   6.17.0-22-generic   containerd://2.2.0
-```
-
-Application image loaded into the recreated `kind` node:
-
-```bash
-$ kind load docker-image --name lab13 devops-info-service:lab12
-
-$ docker exec lab13-control-plane ctr -n k8s.io images ls | grep 'devops-info-service.*lab12'
-docker.io/library/devops-info-service:lab12 ...
 ```
 
 ## 4. ArgoCD Installation Evidence
@@ -244,7 +247,7 @@ Stored cluster-side `ApplicationSet` spec confirms the `dev` / `prod` generator 
 
 ## 6. Runtime Blockers Found During Evidence Collection
 
-The cluster objects for Lab 13 were created successfully, but two external blockers prevent a clean `Synced/Healthy` runtime demonstration.
+The cluster objects for Lab 13 were created successfully, but one environment-level blocker still prevents a clean `Synced/Healthy` runtime demonstration.
 
 ### Blocker 1: broken system networking in the fresh `kind` cluster
 
@@ -265,33 +268,20 @@ kube-scheduler-lab13-control-plane            1/1     Running   0             2m
 
 This prevents the cluster from reaching a clean baseline for controller-to-service communication and application health checks.
 
-### Blocker 2: the GitHub repo does not publish branch `lab13`
-
-The manifests point to:
-
-- `repoURL: https://github.com/ebortsov/DevOps-Core-Course.git`
-- `targetRevision: lab13`
-
-But the remote repository currently exposes heads only up to `lab12` plus `master`:
+The GitHub branch blocker was resolved during validation:
 
 ```bash
-$ git ls-remote --heads https://github.com/ebortsov/DevOps-Core-Course.git
-63ea3a4bb52daaade1802d8b7a97dd9a6d383b90	refs/heads/lab02
-735bb8eb11ecc991f407a848c6fac6ce2aae01fd	refs/heads/lab03
-2c7dc3b8cefcc2dc681fbd3fdaf1bd8e21502983	refs/heads/lab04
-4659e20cc93096bed014fd88007cca75572ee62f	refs/heads/lab05
-f47aa1c9930f8e18c3f514e01859bfae04a45d4f	refs/heads/lab06
-24a5750a9006fccfc55cad7e35b5e9f140380372	refs/heads/lab07
-0abd8251bbca8d69d8777bfba89463c4dc8492cb	refs/heads/lab08
-8e814c5c545d61792e055679b438c690707cc66f	refs/heads/lab09
-f2469f54e90d521f91bf26c8282b5a24cee0019c	refs/heads/lab1
-c1b4438b443a512382576f83bd3959f18a8d2fbf	refs/heads/lab10
-50df2d9c77b235e079fee1c153fb946b59c867d9	refs/heads/lab11
-3560c1becb59a447d87e71eefbbe168e8b8233a6	refs/heads/lab12
-50dada41590dcfa6ea3b781aa34f7439e11b29ae	refs/heads/master
+$ git ls-remote --heads https://github.com/ebortsov/DevOps-Core-Course.git lab13
+f894415169692355fee47a592f3e83cea30dfce1	refs/heads/lab13
 ```
 
-So even on a healthy ArgoCD controller, this repo URL and revision would not resolve until `lab13` is pushed to GitHub.
+However, ArgoCD controllers still cannot reconcile because they repeatedly fail to reach the Kubernetes service IP `10.96.0.1:443`:
+
+```text
+failed to list *v1alpha1.Application: Get "https://10.96.0.1:443/...": dial tcp 10.96.0.1:443: connect: no route to host
+```
+
+This matches the broken `kube-proxy` state in `kube-system` and explains why `Application.status.sync` and `Application.status.health` remain empty.
 
 ## 7. Conclusion
 
@@ -313,4 +303,4 @@ What is not fully evidenced because of the environment:
 The missing runtime proof is blocked by the current environment, not by missing Lab 13 manifests:
 
 - fresh `kind` cluster still has failing `kube-proxy`
-- GitHub repo does not currently publish branch `lab13`
+- the remote `lab13` branch now exists, but ArgoCD controllers still cannot talk to the in-cluster service IP
