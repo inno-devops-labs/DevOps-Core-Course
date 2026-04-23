@@ -36,13 +36,6 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      initContainers:
-        - name: init-data
-          image: busybox
-          command: ['sh', '-c', 'chown -R 1000:1000 /data']
-          volumeMounts:
-            - name: data-volume
-              mountPath: /data
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
