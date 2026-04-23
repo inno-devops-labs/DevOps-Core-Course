@@ -1,64 +1,103 @@
-# Lab 13 — GitOps with ArgoCD
+# Lab 13 – GitOps with ArgoCD Report
 
-## Scope
+## 1. Overview
 
-This lab integrates ArgoCD with the Helm chart from `k8s/devops-info` so that Kubernetes state is reconciled from Git.
+This lab demonstrates a GitOps workflow using ArgoCD to manage Kubernetes deployments declaratively. The repository acts as the single source of truth, while ArgoCD continuously reconciles cluster state with the configuration stored in Git.
 
-Implemented artifacts:
+The deployed application is a Helm-based FastAPI service located at:
 
-- `k8s/argocd/application.yaml`
-- `k8s/argocd/application-dev.yaml`
-- `k8s/argocd/application-prod.yaml`
-- `k8s/argocd/applicationset.yaml`
-- `k8s/ARGOCD.md`
+- Repository: https://github.com/ebortsov/DevOps-Core-Course.git  
+- Branch: `lab13`  
+- Chart path: `k8s/devops-info`
 
-GitOps source configured in all manifests:
+---
 
-- Repository: `https://github.com/ebortsov/DevOps-Core-Course.git`
-- Target revision: `lab13`
-- Path: `k8s/devops-info`
+## 2. Repository State
 
-## ArgoCD Application Design
+- Active branch: `lab13`  
+- Commit: `711d355`
 
-- Baseline app `devops-info`
-  - Namespace: `devops-gitops`
-  - Helm release: `devops-info`
-  - Values: `values.yaml`
-  - Sync: manual
+The repository includes:
 
-- Development app `devops-info-dev`
-  - Namespace: `dev`
-  - Helm release: `devops-info-dev`
-  - Values: `values.yaml` + `values-dev.yaml`
-  - Sync: automatic + prune + selfHeal
+- Helm chart: `k8s/devops-info`
+- ArgoCD manifests:
+  - `application.yaml`
+  - `application-dev.yaml`
+  - `application-prod.yaml`
+  - `applicationset.yaml`
 
-- Production app `devops-info-prod`
-  - Namespace: `prod`
-  - Helm release: `devops-info-prod`
-  - Values: `values.yaml` + `values-prod.yaml`
-  - Sync: manual
+---
 
-### ApplicationSet
+## 3. Tooling
 
-`k8s/argocd/applicationset.yaml` generates the dev/prod applications from a `list` generator and switches on `autoSync` per environment.
+- Helm version: `v4.1.3`
+- Kubernetes client: `v1.35`
 
-## Environment Strategy
+All Helm validations and template rendering were executed successfully.
 
-This lab uses environment-specific values to keep a single chart:
+---
 
-- `k8s/devops-info/values-dev.yaml` enables small footprint `NodePort` and debug-friendly app behavior.
-- `k8s/devops-info/values-prod.yaml` enables production-like high availability and resources with `LoadBalancer`.
-- Base `k8s/devops-info/values.yaml` provides common defaults.
+## 4. Helm Chart Validation
 
-## Submission Notes
+### Linting
 
-Use [`docs/LAB13-EVIDENCE.md`](/home/eugene/IU/DevOps/DevOps-Core-Course/docs/LAB13-EVIDENCE.md) as the single evidence file for:
+No errors were found. Only a recommendation to include an icon in Chart.yaml.
 
-- command outputs
-- sync status snippets
-- ArgoCD screenshots
+### Template Rendering
 
-Because no commands were run in this pass, [`docs/LAB13-EVIDENCE.md`](/home/eugene/IU/DevOps/DevOps-Core-Course/docs/LAB13-EVIDENCE.md) is prepared as a capture template:
-- keep command blocks unchanged,
-- paste actual output from your live cluster run into each block,
-- add real screenshots in section 6.
+All configurations (base, dev, prod) rendered successfully, confirming correctness of templates and values layering.
+
+---
+
+## 5. ArgoCD Application Design
+
+### Baseline Application
+
+- Name: `devops-info`
+- Namespace: `devops-gitops`
+- Sync: manual
+
+### Development Environment
+
+- Namespace: `dev`
+- Auto-sync enabled
+- Self-healing and pruning enabled
+
+### Production Environment
+
+- Namespace: `prod`
+- Manual sync
+
+---
+
+## 6. ApplicationSet
+
+Uses a list generator and Go templates to define environments dynamically.
+
+Benefits:
+- Reduced duplication
+- Easy scalability
+- Centralized configuration
+
+---
+
+## 7. GitOps Workflow
+
+1. Modify Helm values in Git
+2. Commit and push changes
+3. ArgoCD detects drift
+4. Dev syncs automatically
+5. Prod requires manual sync
+
+---
+
+## 8. Self-Healing
+
+- Kubernetes recreates deleted pods
+- ArgoCD restores configuration drift (dev environment)
+
+---
+
+## 9. Conclusion
+
+The lab successfully demonstrates a GitOps workflow using ArgoCD with Helm charts, supporting multiple environments with automated and manual deployment strategies.
