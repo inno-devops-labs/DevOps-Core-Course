@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: myapp
+  repository: nginx
   tag: "latest"  
   pullPolicy: Always
 
