@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/Daniil20xx/DevOps-Core-Course.git
     targetRevision: lab13
-    path: k8s/devops-info-service
+    path: k8s/mychart
     helm:
       valueFiles:
         - values.yaml
