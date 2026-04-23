@@ -45,7 +45,6 @@ spec:
       syncPolicy:
         syncOptions:
           - CreateNamespace=true
-          - ServerSideApply=true
         {{- if eq .autoSync "true" }}
         automated:
           prune: true
