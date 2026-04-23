@@ -1,0 +1,90 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: devops-info-python-envs
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: devops-info-python
+    app.kubernetes.io/part-of: devops-core-course
+    app.kubernetes.io/managed-by: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            appName: devops-info-python-dev
+            releaseName: devops-info-python-dev
+            valueFiles:
+              - values.yaml
+              - values-dev.yaml
+            autoSync: true
+            prune: true
+            selfHeal: true
+          - env: prod
+            namespace: prod
+            appName: devops-info-python-prod
+            releaseName: devops-info-python-prod
+            valueFiles:
+              - values.yaml
+              - values-prod.yaml
+            autoSync: false
+            prune: false
+            selfHeal: false
+  template:
+    metadata:
+      name: '{{ .appName }}'
+      labels:
+        app.kubernetes.io/name: devops-info-python
+        app.kubernetes.io/instance: '{{ .env }}'
+        app.kubernetes.io/part-of: devops-core-course
+        app.kubernetes.io/managed-by: argocd
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/pepegx/DevOps-Core-Course.git
+        targetRevision: lab13
+        path: k8s/devops-info-python
+        helm:
+          releaseName: '{{ .releaseName }}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ .namespace }}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+  templatePatch: |
+    spec:
+      source:
+        helm:
+          valueFiles:
+          {{- range $valueFile := .valueFiles }}
+            - {{ $valueFile }}
+          {{- end }}
+          values: |
+            {{- if eq .env "dev" }}
+            service:
+              nodePort: 30091
+            {{- end }}
+            {{- if eq .env "prod" }}
+            replicaCount: 2
+            persistence:
+              enabled: false
+            service:
+              type: ClusterIP
+              nodePort: null
+            {{- end }}
+    {{- if .autoSync }}
+      syncPolicy:
+        automated:
+          prune: {{ .prune }}
+          selfHeal: {{ .selfHeal }}
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+          - PrunePropagationPolicy=foreground
+    {{- end }}

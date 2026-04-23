@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-info-python
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: devops-info-python
+    app.kubernetes.io/part-of: devops-core-course
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pepegx/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/devops-info-python
+    helm:
+      releaseName: devops-info-python
+      valueFiles:
+        - values.yaml
+      values: |
+        service:
+          nodePort: 30093
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: lab13
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

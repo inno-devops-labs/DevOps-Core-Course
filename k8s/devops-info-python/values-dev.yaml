@@ -16,8 +16,8 @@ resources:
 
 service:
   type: NodePort
-  # Keep dev deterministic, but avoid colliding with the original Lab 9 Service on 30080.
-  nodePort: 30081
+  # Keep dev deterministic, but avoid colliding with existing lab services in this cluster.
+  nodePort: 30091
 
 livenessProbe:
   initialDelaySeconds: 5

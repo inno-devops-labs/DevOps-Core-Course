@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-info-python-prod
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: devops-info-python
+    app.kubernetes.io/instance: prod
+    app.kubernetes.io/part-of: devops-core-course
+    app.kubernetes.io/managed-by: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pepegx/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/devops-info-python
+    helm:
+      releaseName: devops-info-python-prod
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+      values: |
+        replicaCount: 2
+        persistence:
+          enabled: false
+        service:
+          type: ClusterIP
+          nodePort: null
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
