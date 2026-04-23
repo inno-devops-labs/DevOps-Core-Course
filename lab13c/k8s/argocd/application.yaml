@@ -1,0 +1,21 @@
+# Lab 13 Task 2 — single Application, manual sync, default namespace
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-info
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TsixPhoenix/DevOps-CC.git
+    targetRevision: lab12
+    path: lab12c/k8s/devops-info
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

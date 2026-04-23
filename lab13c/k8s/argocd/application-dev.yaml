@@ -1,0 +1,24 @@
+# Lab 13 Task 3 — dev: auto-sync + selfHeal + prune
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-info-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/TsixPhoenix/DevOps-CC.git
+    targetRevision: lab12
+    path: lab12c/k8s/devops-info
+    helm:
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
