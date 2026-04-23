@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-info
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ebortsov/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/devops-info
+    helm:
+      releaseName: devops-info
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: devops-gitops
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
