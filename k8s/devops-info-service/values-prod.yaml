@@ -1,5 +1,5 @@
 # Production: HA replicas, tighter resources, LoadBalancer-ready service type
-replicaCount: 3
+replicaCount: 2
 
 image:
   tag: latest
