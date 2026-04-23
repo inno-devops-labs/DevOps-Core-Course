@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/iu-capstone-ad/DevOps-Core-Course.git
-    targetRevision: lab12
+    targetRevision: lab13
     path: k8s/devops-info-service
     helm:
       valueFiles:
