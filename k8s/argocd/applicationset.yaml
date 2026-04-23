@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: python-app-set
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+            autoSync: "true"
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+            autoSync: "false"
+  template:
+    metadata:
+      name: 'python-app-set-{{.env}}'
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/Daniil20xx/DevOps-Core-Course.git
+        targetRevision: lab13
+        path: k8s/devops-info-service
+        helm:
+          valueFiles:
+            - values.yaml
+            - '{{.valuesFile}}'
+          parameters:
+            - name: vault.enabled
+              value: "false"
+            - name: service.type
+              value: NodePort
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.namespace}}'
+  templatePatch: |
+    spec:
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+        {{- if eq .autoSync "true" }}
+        automated:
+          prune: true
+          selfHeal: true
+        {{- end }}
