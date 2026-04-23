@@ -11,10 +11,12 @@ spec:
     path: k8s/pythonapp
     helm:
       valueFiles:
-        - values.yaml
+        - values-dev.yaml
       parameters:
         - name: service.nodePort
           value: "30081"
+        - name: image.tag
+          value: "latest"
   destination:
     server: https://kubernetes.default.svc
     namespace: gitops
