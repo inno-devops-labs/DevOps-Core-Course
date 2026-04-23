@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 
 resources:
   requests:
@@ -20,7 +20,7 @@ env:
   - name: APP_ENV
     value: helm-dev
   - name: APP_REVISION
-    value: dev-v1
+    value: dev-v2
 
 config:
   file:
