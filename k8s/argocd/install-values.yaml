@@ -1,0 +1,18 @@
+# ArgoCD install values for local/lab usage.
+# Install:
+# helm repo add argo https://argoproj.github.io/argo-helm
+# helm repo update
+# kubectl create namespace argocd
+# helm upgrade --install argocd argo/argo-cd -n argocd -f k8s/argocd/install-values.yaml
+
+configs:
+  params:
+    server.insecure: true
+
+server:
+  service:
+    type: ClusterIP
+
+crds:
+  install: true
+
