@@ -51,3 +51,7 @@ labels:
     app: devops-app
     version: v1
     environment: production
+
+persistence:
+    enabled: false
+    size: 1Gi
