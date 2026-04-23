@@ -50,12 +50,7 @@ jobs:
   deploy:
     name: Deploy Application
     needs: lint
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' &&
-       secrets.SSH_PRIVATE_KEY != '' &&
-       secrets.VM_HOST != '' &&
-       secrets.VM_USER != '')
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -63,6 +58,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate required deploy secrets
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+        run: |
+          missing=0
+          [ -z "$SSH_PRIVATE_KEY" ] && echo "Missing secret: SSH_PRIVATE_KEY" && missing=1
+          [ -z "$VM_HOST" ] && echo "Missing secret: VM_HOST" && missing=1
+          [ -z "$VM_USER" ] && echo "Missing secret: VM_USER" && missing=1
+          if [ "$missing" -eq 1 ]; then
+            echo "Required deploy secrets are not configured."
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
