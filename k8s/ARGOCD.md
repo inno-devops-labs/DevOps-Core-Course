@@ -144,9 +144,12 @@ Auto-heal operations are reflected in application operation state (`autoHealAtte
 - ArgoCD sync triggers: Git revision changes, manual sync, or detected drift for automated apps.
 - Default repo polling interval is approximately 3 minutes; webhook integration can reduce detection latency.
 
-## 7. Screenshot checklist for submission
+## 7. Screenshot evidence
 
-For grading artifacts, capture and attach these UI screenshots from ArgoCD:
-1. Applications list showing `devops-info`, `devops-info-dev`, `devops-info-prod`
-2. Application details page for `devops-info-dev` (sync policy and revision)
-3. Operation history/diff view during a self-heal event
+Attached screenshots:
+1. Applications list with all three apps:
+   - `k8s/screenshots/lab13/lab13-applications-list.png`
+2. `devops-info-dev` application details (target revision and auto-sync policy):
+   - `k8s/screenshots/lab13/lab13-dev-app-details.png`
+3. Self-heal operation history/timeline:
+   - `k8s/screenshots/lab13/lab13-self-heal-history.png`
