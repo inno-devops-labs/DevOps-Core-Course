@@ -1,7 +1,7 @@
 # Lab 13 — GitOps with ArgoCD
 
 This report is being filled while the lab is executed.  
-Current status: **Task 1 completed**, **Task 2 manifest created**, deployment sync pending.
+Current status: **Task 1 completed**, **Task 2 completed**, **Task 3 manifests created**, verification pending.
 
 ---
 
@@ -176,3 +176,101 @@ Invalid value: 30082: provided port is already allocated
 ```
 
 Resolution: set a different NodePort declaratively in the ArgoCD Application Helm parameters (`service.nodePort=30084`) and re-sync.
+
+Successful re-sync evidence:
+
+```text
+$ kubectl apply -f k8s/argocd/application.yaml
+application.argoproj.io/devops-info-service configured
+```
+
+```text
+$ argocd app sync devops-info-service
+...
+Sync Status:        Synced to lab13 (6477475)
+Health Status:      Healthy
+Phase:              Succeeded
+Message:            successfully synced (no more tasks)
+...
+Service                lab13   devops-info-service               Synced     Healthy
+Deployment             lab13   devops-info-service               Synced     Healthy
+```
+
+```text
+$ argocd app wait devops-info-service --sync --health --timeout 180
+Sync Status:        Synced to lab13 (6477475)
+Health Status:      Healthy
+```
+
+Cluster resources in target namespace:
+
+```text
+$ kubectl get all -n lab13
+NAME                                       READY   STATUS    RESTARTS   AGE
+pod/devops-info-service-79f4477485-2lcm4   1/1     Running   0          3m9s
+
+NAME                          TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+service/devops-info-service   NodePort   10.97.23.19   <none>        80:30084/TCP   38s
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/devops-info-service   1/1     1            1           3m9s
+
+NAME                                             DESIRED   CURRENT   READY   AGE
+replicaset.apps/devops-info-service-79f4477485   1         1         1       3m9s
+```
+
+Task 2 conclusion: Application resource created, manual sync performed, and workloads are healthy in namespace `lab13`.
+
+---
+
+## 3. Multi-environment deployment (Task 3)
+
+### 3.1 Namespaces and application manifests
+
+Created:
+
+- [`k8s/argocd/application-dev.yaml`](./argocd/application-dev.yaml)
+- [`k8s/argocd/application-prod.yaml`](./argocd/application-prod.yaml)
+
+`dev` Application:
+
+- namespace: `dev`
+- values file: `values-dev.yaml`
+- sync policy: **automated** with `prune: true` and `selfHeal: true`
+- NodePort override: `service.nodePort=30085` to avoid collision with previous labs
+
+`prod` Application:
+
+- namespace: `prod`
+- values file: `values-prod.yaml`
+- sync policy: **manual** (no `automated` block)
+- Minikube override in ArgoCD parameters: `service.type=NodePort`, `service.nodePort=30086` (to avoid `LoadBalancer` health staying `Progressing` without an external LB)
+
+### 3.2 Apply and verify (run now)
+
+```bash
+kubectl apply -f k8s/argocd/application-dev.yaml
+kubectl apply -f k8s/argocd/application-prod.yaml
+argocd app list
+argocd app get devops-info-service-dev
+argocd app get devops-info-service-prod
+```
+
+Expected behavior:
+
+- `devops-info-service-dev` starts syncing automatically.
+- `devops-info-service-prod` stays manual until explicit sync.
+
+Manual sync for prod:
+
+```bash
+argocd app sync devops-info-service-prod
+argocd app wait devops-info-service-prod --sync --health --timeout 180
+```
+
+Cluster verification:
+
+```bash
+kubectl get all -n dev
+kubectl get all -n prod
+```
