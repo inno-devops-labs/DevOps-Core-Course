@@ -129,3 +129,4 @@ argocd app list
 **Evidence**
 
 ![applicationset created](docs/screenshots/lab13/bonus.png)
+![applicationset created](docs/screenshots/lab13/bonus-2.png)
