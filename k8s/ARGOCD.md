@@ -20,6 +20,8 @@ kubectl get pods -n argocd
 
 All pods reach `Running` status: argocd-server, argocd-repo-server, argocd-application-controller, argocd-dex-server, argocd-redis.
 
+![ArgoCD pods running](img/lab13/1.png)
+
 ### UI Access
 
 Port-forward the ArgoCD server (run in a separate terminal and keep it open):
@@ -76,6 +78,8 @@ argocd app sync python-app
 argocd app get python-app
 ```
 
+![python-app synced in ArgoCD UI](img/lab13/2.png)
+
 ---
 
 ## 3. Multi-Environment Deployment
@@ -123,6 +127,8 @@ kubectl get pods -n prod
 argocd app list
 ```
 
+![Both dev and prod applications in ArgoCD UI](img/lab13/3.png)
+
 ---
 
 ## 4. Self-Healing Evidence
@@ -153,6 +159,18 @@ kubectl get pods -n dev
 
 **Behavior:** ArgoCD polls Git every 3 minutes. When `selfHeal: true`, it compares the live cluster state with the desired state in Git. Since Git defines `replicaCount: 1` for dev, ArgoCD reverts the deployment to 1 replica automatically.
 
+**Before scaling (1 pod):**
+
+![1 pod before manual scale](img/lab13/1pod.png)
+
+**After manual scale to 5:**
+
+![5 pods after kubectl scale](img/lab13/5pods.png)
+
+**After ArgoCD self-heal (back to 1 pod):**
+
+![1 pod restored by ArgoCD](img/lab13/1podagain.png)
+
 ### Test 2 — Pod Deletion (Dev)
 
 ```bash
@@ -166,6 +184,8 @@ kubectl get pods -n dev -w
 ```
 
 **Behavior:** This is **Kubernetes self-healing**, not ArgoCD. The Deployment's ReplicaSet controller ensures the desired pod count is always maintained. ArgoCD is not involved — no sync event is triggered.
+
+![Pod deleted and recreated by Kubernetes](img/lab13/deletepod.png)
 
 ### Test 3 — Configuration Drift
 
@@ -197,12 +217,11 @@ kubectl get deployment python-app -n dev --show-labels
 
 ## 5. Screenshots
 
-> Screenshots are taken during the live demo session.
+![ArgoCD UI — all applications overview](img/lab13/1.png)
 
-- ArgoCD UI — both `python-app-dev` and `python-app-prod` applications listed
-- Sync status: `Synced` / `Healthy` for dev; `OutOfSync` detected after manual scale
-- Application details view showing resource tree (Deployment, Service, Pods)
-- Diff view showing drift after manual label addition
+![python-app resource tree](img/lab13/2.png)
+
+![Dev and prod applications](img/lab13/3.png)
 
 ---
 
@@ -249,3 +268,5 @@ argocd app list
 # python-app-dev    in-cluster  dev     ...
 # python-app-prod   in-cluster  prod    ...
 ```
+
+![ApplicationSet generating dev and prod apps](img/lab13/bonus.png)
