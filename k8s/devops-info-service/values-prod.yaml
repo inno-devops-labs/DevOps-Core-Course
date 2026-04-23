@@ -12,7 +12,8 @@ resources:
     cpu: "500m"
 
 service:
-  type: LoadBalancer
+  type: NodePort
+  nodePort: 30082
 
 livenessProbe:
   initialDelaySeconds: 30
