@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-app-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: python-app
+    app.kubernetes.io/instance: dev
+    app.kubernetes.io/managed-by: argocd
+    environment: dev
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/newspec/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/python-app
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+
+  # Auto-sync enabled for dev: ArgoCD will automatically apply Git changes
+  # selfHeal: reverts any manual kubectl changes back to Git state
+  # prune: removes resources that no longer exist in Git
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

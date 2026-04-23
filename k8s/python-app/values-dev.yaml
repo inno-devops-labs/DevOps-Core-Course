@@ -4,13 +4,13 @@
 replicaCount: 1
 
 image:
-  tag: "latest"
+  tag: "1.0"
 
 service:
   type: NodePort
   port: 80
   targetPort: 8000
-  nodePort: 30080
+  nodePort: 30081
 
 resources:
   requests:
@@ -32,16 +32,16 @@ livenessProbe:
   httpGet:
     path: /health
     port: 8000
-  initialDelaySeconds: 5
+  initialDelaySeconds: 15
   periodSeconds: 10
   timeoutSeconds: 3
-  failureThreshold: 3
+  failureThreshold: 5
 
 readinessProbe:
   httpGet:
     path: /health
     port: 8000
-  initialDelaySeconds: 3
+  initialDelaySeconds: 10
   periodSeconds: 5
   timeoutSeconds: 2
-  failureThreshold: 3
+  failureThreshold: 5

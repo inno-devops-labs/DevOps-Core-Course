@@ -1,0 +1,82 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: python-app-set
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: python-app
+    app.kubernetes.io/managed-by: argocd
+spec:
+  # The List generator produces one Application per element in the list.
+  # Each element defines environment-specific parameters that are substituted
+  # into the template below via Go template syntax {{env}}, {{namespace}}, etc.
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+            # autoSync flag is a custom parameter used in the template below
+            # to conditionally enable automated sync for dev only.
+            autoSync: "true"
+            replicaCount: "1"
+            imageTag: "latest"
+
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+            autoSync: "false"
+            replicaCount: "5"
+            imageTag: "1.0"
+
+  # goTemplate enables Go templating (required for conditional blocks)
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+
+  template:
+    metadata:
+      name: "python-app-{{.env}}"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: python-app
+        app.kubernetes.io/instance: "{{.env}}"
+        app.kubernetes.io/managed-by: argocd
+        environment: "{{.env}}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+
+      source:
+        repoURL: https://github.com/newspec/DevOps-Core-Course.git
+        targetRevision: lab13
+        path: k8s/python-app
+        helm:
+          valueFiles:
+            - values.yaml
+            - "{{.valuesFile}}"
+
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{.namespace}}"
+
+      syncPolicy:
+        # Conditional automated sync: enabled for dev, disabled for prod.
+        # When autoSync == "true" the automated block is rendered; otherwise
+        # the Application falls back to manual sync (no automated block).
+        {{- if eq .autoSync "true" }}
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        {{- end }}
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
