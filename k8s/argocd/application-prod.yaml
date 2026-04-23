@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lab13-devops-info-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/sofiakulagina/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/devops-info
+    helm:
+      releaseName: lab13-devops-info-prod
+      valueFiles:
+        - values-prod.yaml
+      parameters:
+        - name: hookJobs.enabled
+          value: "false"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
