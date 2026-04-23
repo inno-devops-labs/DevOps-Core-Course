@@ -250,15 +250,16 @@ flowchart TD
 **Two identical environments, instant switchover**
 
 ```mermaid
-flowchart LR
-  subgraph Before
-    A[🔵 Blue v1] --> |100%| C[🌐 Traffic]
-    B[🟢 Green v2] --> |0%| C
-  end
-
-  subgraph After Switch
+flowchart TD
+  subgraph "After Switch"
+    direction TD
     D[🔵 Blue v1] --> |0%| F[🌐 Traffic]
     E[🟢 Green v2] --> |100%| F
+  end
+  subgraph Before
+    direction TD
+    A[🔵 Blue v1] --> |100%| C[🌐 Traffic]
+    B[🟢 Green v2] --> |0%| C
   end
 ```
 
@@ -710,7 +711,7 @@ kubectl argo rollouts dashboard
 **Netflix Progressive Delivery:**
 
 ```mermaid
-flowchart LR
+flowchart TD
   A[📦 v2] --> B[🎯 Internal 1%]
   B --> C[🌍 One Region 5%]
   C --> D[🌍 All Regions 25%]
