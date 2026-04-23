@@ -1,5 +1,4 @@
-# values-dev.yaml
-replicaCount: 1
+replicaCount: 2
 
 image:
   tag: "metrics"
