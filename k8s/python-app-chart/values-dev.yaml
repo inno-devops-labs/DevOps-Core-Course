@@ -1,48 +1,20 @@
 replicaCount: 1
 
 image:
-  repository: gpshfrd/devops-info-python
-  tag: latest
-  pullPolicy: Always
+  repository: python
+  tag: 3.9-slim
+  pullPolicy: IfNotPresent
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 80
-  targetPort: 5000
 
 resources:
   limits:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 500m
+    memory: 512Mi
   requests:
-    cpu: 50m
-    memory: 64Mi
+    cpu: 250m
+    memory: 256Mi
 
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 5000
-  initialDelaySeconds: 10
-  periodSeconds: 15
-  timeoutSeconds: 5
-  failureThreshold: 5
-
-readinessProbe:
-  httpGet:
-    path: /ready
-    port: 5000
-  initialDelaySeconds: 5
-  periodSeconds: 10
-  timeoutSeconds: 5
-  successThreshold: 1
-  failureThreshold: 5
-
-env:
-  - name: APP_ENV
-    value: "development"
-  - name: LOG_LEVEL
-    value: "debug"
-
-securityContext:
-  runAsNonRoot: true
-  runAsUser: 1000
+environment: development
