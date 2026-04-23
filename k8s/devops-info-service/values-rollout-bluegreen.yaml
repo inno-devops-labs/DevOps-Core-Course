@@ -1,0 +1,22 @@
+# Lab 14 — Blue/green progressive delivery profile
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+
+service:
+  # Active (production) service
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30082
+  # Preview service for testing the green version before promotion
+  preview:
+    type: NodePort
+    port: 80
+    targetPort: http
+    nodePort: 30083
+

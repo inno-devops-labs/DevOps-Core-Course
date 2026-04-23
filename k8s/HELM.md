@@ -14,6 +14,8 @@ The chart lives at `k8s/devops-info-service/` and packages the Lab 9 workload as
 | `values-prod.yaml` | Production overrides (3 replicas, larger limits, `LoadBalancer` service, pinned image tag **1.0.0**). |
 | `templates/deployment.yaml` | Deployment template; image, replicas, strategy, security contexts, and probes come from values. |
 | `templates/service.yaml` | Service template; `type`, ports, and optional `nodePort` from values. |
+| `templates/rollout.yaml` | Argo Rollouts template (`kind: Rollout`) supporting canary and blue-green strategies (Lab 14). |
+| `templates/service-preview.yaml` | Preview service for blue-green strategy (Lab 14). |
 | `templates/_helpers.tpl` | Shared helpers: `fullname`, chart name, labels, selector labels. |
 | `templates/NOTES.txt` | Post-install hints (NodePort URL, LoadBalancer wait, or port-forward). |
 | `templates/hooks/pre-install-job.yaml` | `pre-install` Job (validation placeholder). |
@@ -39,6 +41,7 @@ The chart lives at `k8s/devops-info-service/` and packages the Lab 9 workload as
 | `hooks.preInstall` / `hooks.postInstall` | Enable flag and `image` for hook Jobs (BusyBox). |
 | `credentialsSecret` | Helm-rendered **Secret**; keys become env vars via `envFrom.secretRef` in the Deployment (Lab 11). |
 | `serviceAccount` / `vault.injector` | Optional **ServiceAccount** and **Vault Agent Injector** annotations (Lab 11); see `values-vault.yaml` and `k8s/SECRETS.md`. |
+| `rollout` | Progressive delivery settings (`enabled`, `strategy`, canary steps, blue-green promotion options) for Argo Rollouts (Lab 14). |
 
 **Customize per environment**
 

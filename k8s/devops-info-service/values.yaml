@@ -15,6 +15,11 @@ service:
   port: 80
   targetPort: http
   nodePort: 30080
+  preview:
+    type: ClusterIP
+    port: 80
+    targetPort: http
+    nodePort: null
 
 containerPort: 5000
 containerPortName: http
@@ -113,3 +118,26 @@ hooks:
   postInstall:
     enabled: true
     image: busybox:1.36
+
+# Lab 14 — Argo Rollouts
+rollout:
+  enabled: true
+  strategy: canary   # canary | blueGreen
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
