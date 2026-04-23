@@ -106,4 +106,3 @@ argocd/python-app       Synced  Healthy      Manual
 argocd/python-app-dev   Synced  Healthy      Auto-Prune
 argocd/python-app-prod  Synced  Healthy      Manual
 ```
-
