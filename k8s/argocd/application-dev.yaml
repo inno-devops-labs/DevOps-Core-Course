@@ -12,6 +12,9 @@ spec:
     helm:
       valueFiles:
         - values-dev.yaml
+      parameters:
+        - name: service.nodePort
+          value: "30081"
   destination:
     server: https://kubernetes.default.svc
     namespace: dev
