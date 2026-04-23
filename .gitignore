@@ -12,4 +12,4 @@ __pycache__/
 
 # IDE
 .vscode/
-.idea/.DS_Store
+.idea

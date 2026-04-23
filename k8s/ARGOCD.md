@@ -63,6 +63,8 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 # Username: admin
 ```
 
+![argocd-login.png](argocd/screenshots/argocd-login.png)
+
 The `configs.params."server.insecure"=true` setting disables TLS inside the
 `argocd-server` container. Because the service's port 443 forwards to the
 container's HTTP port, the UI is reached over **HTTP** on `localhost:8080`, not
@@ -128,6 +130,8 @@ argocd app sync python-app --plaintext
 
 Result: Sync Status `Synced`, Health `Healthy`, 3 replicas running on the
 `default` namespace NodePort service.
+
+![argocd-dashboard.png](argocd/screenshots/argocd-dashboard.png)
 
 ### 2.3 GitOps workflow test
 
@@ -290,6 +294,8 @@ managed field) but not the manual label.
 single ApplicationSet that uses the **List generator** to produce one
 Application per environment from one template.
 
+![argocd-app-details.png](argocd/screenshots/argocd-app-details.png)
+
 ### 5.1 Generator configuration
 
 ```yaml
@@ -380,33 +386,3 @@ When to use which:
 
 ---
 
-## 6. CLI-captured evidence
-
-Raw CLI output for each live state is preserved in `k8s/argocd/screenshots/`:
-
-| File | What it shows |
-|------|---------------|
-| `app-list.txt` | Both generated Applications synced & healthy |
-| `app-dev-detail.txt` | Dev Application full resource tree |
-| `app-prod-detail.txt` | Prod Application full resource tree |
-| `applicationset-status.yaml` | ApplicationSet spec + status |
-
-These serve as the textual equivalent of UI screenshots for this lab
-environment.
-
----
-
-## 7. Teardown
-
-```bash
-# Delete applications (finalizers will clean up workload namespaces)
-kubectl delete applicationset python-app-set -n argocd
-# or: argocd app delete python-app-set-dev python-app-set-prod --yes
-
-# Uninstall ArgoCD
-helm uninstall argocd -n argocd
-kubectl delete namespace argocd dev prod
-
-# Stop minikube
-minikube stop
-```
