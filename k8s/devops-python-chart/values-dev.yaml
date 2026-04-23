@@ -17,7 +17,7 @@ resources:
 
 service:
   type: NodePort
-  nodePort: 30080
+  nodePort: 30081
 
 env:
   debug: "True"
