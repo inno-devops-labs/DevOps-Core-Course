@@ -10,7 +10,7 @@ configMaps:
   env:
     data:
       APP_ENV: "dev"
-      LOG_LEVEL: "DEBUG"
+      LOG_LEVEL: "TRACE"
       FEATURE_VISITS: "true"
 
 service:
