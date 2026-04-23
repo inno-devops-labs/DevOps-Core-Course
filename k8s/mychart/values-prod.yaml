@@ -18,8 +18,8 @@ resources:
     memory: 64Mi
 
 livenessProbe:
-  initialDelaySeconds: 5
-  periodSeconds: 10
+  initialDelaySeconds: 10
+  periodSeconds: 30
 readinessProbe:
-  initialDelaySeconds: 3
-  periodSeconds: 5
+  initialDelaySeconds: 10
+  periodSeconds: 30
