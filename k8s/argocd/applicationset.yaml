@@ -1,0 +1,67 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: lab13-devops-info
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+            releaseName: lab13-devops-info-dev
+            nodePort: "30086"
+            autoSync: "true"
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+            releaseName: lab13-devops-info-prod
+            nodePort: ""
+            autoSync: "false"
+  template:
+    metadata:
+      name: "{{ .releaseName }}"
+      labels:
+        app.kubernetes.io/part-of: devops-core-course
+        app.kubernetes.io/managed-by: applicationset
+        env: "{{ .env }}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/sofiakulagina/DevOps-Core-Course.git
+        targetRevision: lab13
+        path: k8s/devops-info
+        helm:
+          releaseName: "{{ .releaseName }}"
+          valueFiles:
+            - "{{ .valuesFile }}"
+          parameters:
+            - name: hookJobs.enabled
+              value: "false"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .namespace }}"
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+  templatePatch: |
+    spec:
+      source:
+        helm:
+          parameters:
+            - name: hookJobs.enabled
+              value: "false"
+            {{- if .nodePort }}
+            - name: service.nodePort
+              value: "{{ .nodePort }}"
+            {{- end }}
+      syncPolicy:
+        {{- if eq .autoSync "true" }}
+        automated:
+          prune: true
+          selfHeal: true
+        {{- end }}
+        syncOptions:
+          - CreateNamespace=true

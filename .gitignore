@@ -3,3 +3,5 @@ terraform/.terraform/providers/registry.terraform.io/hashicorp/aws/6.33.0/darwin
 *.tfstate
 *.tfstate.*
 .terraform.lock.hcl
+/k8s/tls.crt
+/k8s/tls.key
