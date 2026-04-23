@@ -1,4 +1,8 @@
-replicaCount: 1
+# Multiple replicas: PVC must be off (chart default uses RWO).
+replicaCount: 2
+
+persistence:
+  enabled: false
 
 image:
   tag: "latest"
@@ -8,7 +12,8 @@ service:
   type: NodePort
   port: 80
   targetPort: 8000
-  nodePort: 30080
+  # NodePorts are cluster-wide; 30080 was used by an older install on minikube.
+  nodePort: 30084
 
 resources:
   requests:

@@ -57,7 +57,7 @@
 | Values | [values-dev.yaml](app-python/values-dev.yaml) | [values-prod.yaml](app-python/values-prod.yaml) |
 | Реплики | `2` (PVC отключён, см. комментарий в values) | `1` (наследуется persistence из базового `values.yaml`) |
 | Ресурсы | Меньшие requests/limits | Большие limits относительно dev |
-| Сервис | NodePort `30080` | NodePort `30081` |
+| Сервис | NodePort `30084` (`values-dev`) | NodePort `30081` |
 | ArgoCD sync | Автоматический с `prune` и `selfHeal` | Только ручной sync |
 
 **Почему prod остаётся manual**
