@@ -2,6 +2,8 @@ import logging
 import os
 import platform
 import socket
+import tempfile
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -40,6 +42,8 @@ SERVICE_NAME = "devops-info-service"
 SERVICE_VERSION = "1.0.0"
 SERVICE_DESCRIPTION = "DevOps course info service"
 SERVICE_FRAMEWORK = "Flask"
+VISITS_FILE_DEFAULT = "/data/visits"
+_visits_lock = threading.Lock()
 
 
 logging.basicConfig(
@@ -87,7 +91,66 @@ def get_endpoints():
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
+        {"path": "/visits", "method": "GET", "description": "Current visits count"},
     ]
+
+
+def get_visits_file_path() -> str:
+    return os.getenv("VISITS_FILE", VISITS_FILE_DEFAULT)
+
+
+def read_visits_count() -> int:
+    visits_file = get_visits_file_path()
+    try:
+        with open(visits_file, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            return int(content) if content else 0
+    except FileNotFoundError:
+        return 0
+    except (ValueError, OSError):
+        logger.warning("Could not read visits file: %s", visits_file)
+        return 0
+
+
+def write_visits_count(value: int) -> None:
+    visits_file = get_visits_file_path()
+    visits_dir = os.path.dirname(visits_file)
+    if visits_dir:
+        os.makedirs(visits_dir, exist_ok=True)
+
+    fd, temp_path = tempfile.mkstemp(prefix="visits-", dir=visits_dir or None)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+            tmp.write(str(value))
+        os.replace(temp_path, visits_file)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+def increment_visits_count() -> int:
+    with _visits_lock:
+        new_value = read_visits_count() + 1
+        write_visits_count(new_value)
+        return new_value
+
+
+def get_current_visits_count() -> int:
+    with _visits_lock:
+        return read_visits_count()
+
+
+def initialize_visits_storage() -> None:
+    visits_file = get_visits_file_path()
+    visits_dir = os.path.dirname(visits_file)
+    if visits_dir:
+        os.makedirs(visits_dir, exist_ok=True)
+
+    if not os.path.exists(visits_file):
+        write_visits_count(0)
+
+
+initialize_visits_storage()
 
 
 @app.before_request
@@ -137,6 +200,7 @@ def _record_metrics(status_code: int):
 @app.get("/")
 def index():
     endpoint_calls.labels(endpoint="/").inc()
+    visits_count = increment_visits_count()
     start_time = time.time()
     uptime_seconds = get_uptime_seconds()
     payload = {
@@ -166,6 +230,7 @@ def index():
             "method": request.method,
             "path": request.path,
         },
+        "visits": visits_count,
         "endpoints": get_endpoints(),
     }
     system_info_duration.observe(time.time() - start_time)
@@ -181,6 +246,21 @@ def health():
                 "status": "healthy",
                 "timestamp": utc_now_iso(),
                 "uptime_seconds": get_uptime_seconds(),
+            }
+        ),
+        200,
+    )
+
+
+@app.get("/visits")
+def visits():
+    endpoint_calls.labels(endpoint="/visits").inc()
+    return (
+        jsonify(
+            {
+                "visits": get_current_visits_count(),
+                "file": get_visits_file_path(),
+                "timestamp": utc_now_iso(),
             }
         ),
         200,

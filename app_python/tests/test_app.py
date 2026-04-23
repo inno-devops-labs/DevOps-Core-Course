@@ -1,11 +1,16 @@
 import pytest
 
-from app import app as flask_app
+import app as app_module
+
+flask_app = app_module.app
 
 
 @pytest.fixture()
-def client():
+def client(tmp_path, monkeypatch):
+    visits_file = tmp_path / "visits"
+    monkeypatch.setenv("VISITS_FILE", str(visits_file))
     flask_app.config.update({"TESTING": True})
+    app_module.initialize_visits_storage()
     with flask_app.test_client() as client:
         yield client
 
@@ -17,7 +22,7 @@ def test_index_ok(client):
     assert resp.status_code == 200
     data = resp.get_json()
 
-    assert set(data.keys()) == {"service", "system", "runtime", "request", "endpoints"}
+    assert set(data.keys()) == {"service", "system", "runtime", "request", "visits", "endpoints"}
     assert data["service"]["name"] == "devops-info-service"
     assert data["service"]["framework"] == "Flask"
 
@@ -29,10 +34,26 @@ def test_index_ok(client):
     assert data["request"]["path"] == "/"
     assert data["request"]["user_agent"] == "pytest"
     assert data["request"]["client_ip"] == "1.2.3.4"
+    assert data["visits"] >= 1
 
     endpoints = {(e["path"], e["method"]) for e in data["endpoints"]}
     assert ("/", "GET") in endpoints
     assert ("/health", "GET") in endpoints
+    assert ("/visits", "GET") in endpoints
+
+
+def test_visits_endpoint(client):
+    client.get("/")
+    client.get("/")
+
+    resp = client.get("/visits")
+    assert resp.status_code == 200
+
+    data = resp.get_json()
+    assert isinstance(data["visits"], int)
+    assert data["visits"] >= 2
+    assert isinstance(data["file"], str)
+    assert data["timestamp"].endswith("Z")
 
 
 def test_health_ok(client):
@@ -59,8 +80,6 @@ def test_404(client):
 
 def test_500_error_handler(monkeypatch):
     flask_app.config.update({"TESTING": False, "PROPAGATE_EXCEPTIONS": False})
-
-    import app as app_module
 
     def boom():
         raise RuntimeError("boom")

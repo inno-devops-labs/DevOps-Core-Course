@@ -14,11 +14,23 @@ app:
   environment: dev
   logLevel: info
 
+config:
+  file:
+    enabled: true
+    mountPath: /config
+    fileName: config.json
+  env:
+    enabled: true
+    appName: devops-info-python
+    featureVisitsEnabled: "true"
+
 env:
   - name: PORT
     value: "5000"
   - name: HOST
     value: "0.0.0.0"
+  - name: VISITS_FILE
+    value: "/data/visits"
 
 extraEnv: []
 
@@ -96,3 +108,9 @@ ingress:
     app1: /app1(/|$)(.*)
     app2: /app2(/|$)(.*)
   backendGoService: devops-info-go-service
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data

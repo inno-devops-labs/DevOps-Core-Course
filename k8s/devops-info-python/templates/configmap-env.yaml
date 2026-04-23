@@ -1,0 +1,15 @@
+{{- if .Values.config.env.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-env
+  labels:
+    app: {{ include "common.legacyAppLabel" . }}
+    component: api
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.app.environment | quote }}
+  LOG_LEVEL: {{ .Values.app.logLevel | quote }}
+  APP_NAME: {{ .Values.config.env.appName | quote }}
+  FEATURE_VISITS_ENABLED: {{ .Values.config.env.featureVisitsEnabled | quote }}
+{{- end }}

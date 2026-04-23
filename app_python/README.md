@@ -23,13 +23,22 @@ pip install -r requirements.txt
 ## API Endpoints
    - `GET /` - Service and system information
    - `GET /health` - Health check
+   - `GET /visits` - Current persisted visits counter
 
 ## Configuration 
     ```bash
     HOST = "0.0.0.0"
     PORT = "5000"
     DEBUG = "False"
+   VISITS_FILE = "/data/visits"
     ```
+
+## Visits Counter Persistence
+
+- Each request to `GET /` increments a counter.
+- Counter value is stored in a file (`VISITS_FILE`, default `/data/visits`).
+- `GET /visits` returns current value and file location.
+- File updates use atomic replace to reduce race-condition risk.
 
 ## Docker
 
@@ -41,6 +50,16 @@ docker build -t <dockerhub-username>/devops-info-python:lab02 .
 ### Run
 ```bash
 docker run --rm -p <host_port>:5000 <dockerhub-username>/devops-info-python:lab02
+```
+
+### Run with persistent volume (docker-compose)
+```bash
+docker compose up -d --build
+curl http://localhost:5000/
+curl http://localhost:5000/visits
+cat ./data/visits
+docker compose restart
+curl http://localhost:5000/visits
 ```
 
 ### Pull from Docker Hub
