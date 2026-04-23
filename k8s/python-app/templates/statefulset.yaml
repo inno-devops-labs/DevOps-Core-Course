@@ -32,6 +32,34 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ include "python-app.serviceAccountName" . }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image | quote }}
+          command:
+            - sh
+            - -c
+            - >
+              wget -O {{ .Values.initContainers.download.mountPath }}/{{ .Values.initContainers.download.outputFile }}
+              {{ .Values.initContainers.download.url }}
+          volumeMounts:
+            - name: {{ .Values.extraVolumes.initShared.name }}
+              mountPath: {{ .Values.initContainers.download.mountPath }}
+        {{- end }}
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image | quote }}
+          command:
+            - sh
+            - -c
+            - >
+              until nslookup {{ include "python-app.headlessServiceName" . }}.{{ .Release.Namespace }}.svc.cluster.local 2>/dev/null | grep -q 'Address:'; do
+                echo waiting for {{ include "python-app.headlessServiceName" . }}.{{ .Release.Namespace }}.svc.cluster.local;
+                sleep {{ .Values.initContainers.waitForService.sleepSeconds }};
+              done
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ include "python-app.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -68,6 +96,10 @@ spec:
             - name: data
               mountPath: {{ .Values.persistence.mountPath }}
             {{- end }}
+            {{- if .Values.extraVolumes.initShared.enabled }}
+            - name: {{ .Values.extraVolumes.initShared.name }}
+              mountPath: {{ .Values.extraVolumes.initShared.mountPath }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:
@@ -79,6 +111,10 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "python-app.configFileName" . }}
+        {{- end }}
+        {{- if .Values.extraVolumes.initShared.enabled }}
+        - name: {{ .Values.extraVolumes.initShared.name }}
+          emptyDir: {}
         {{- end }}
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:

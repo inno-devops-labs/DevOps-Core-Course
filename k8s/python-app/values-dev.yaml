@@ -72,3 +72,22 @@ rollout:
       - pause:
           duration: 30s
       - setWeight: 100
+
+initContainers:
+  enabled: true
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: https://example.com
+    outputFile: index.html
+    mountPath: /work-dir
+  waitForService:
+    enabled: true
+    image: busybox:1.36
+    sleepSeconds: 2
+
+extraVolumes:
+  initShared:
+    enabled: true
+    name: init-shared
+    mountPath: /init-data
