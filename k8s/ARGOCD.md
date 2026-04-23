@@ -141,7 +141,7 @@ spec:
 
 Sync mode is **manual** (no `automated` policy block).
 
-### 2.2 Apply and initial sync (run now)
+### 2.2 Apply and initial sync
 
 ```bash
 kubectl apply -f k8s/argocd/application.yaml
@@ -151,4 +151,28 @@ argocd app sync devops-info-service
 kubectl get all -n lab13
 ```
 
-Add outputs after execution in this section.
+```text
+$ kubectl apply -f k8s/argocd/application.yaml
+application.argoproj.io/devops-info-service created
+```
+
+```text
+$ argocd app list
+NAME                        CLUSTER                         NAMESPACE  PROJECT  STATUS     HEALTH   SYNCPOLICY
+argocd/devops-info-service  https://kubernetes.default.svc  lab13      default  OutOfSync  Missing  Manual
+```
+
+```text
+$ argocd app get devops-info-service
+Sync Status:        OutOfSync from lab13 (f8553df)
+Health Status:      Missing
+```
+
+First sync failed due to a NodePort collision inherited from `values-dev.yaml`:
+
+```text
+Service "devops-info-service" is invalid: spec.ports[0].nodePort:
+Invalid value: 30082: provided port is already allocated
+```
+
+Resolution: set a different NodePort declaratively in the ArgoCD Application Helm parameters (`service.nodePort=30084`) and re-sync.
