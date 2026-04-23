@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/4hellboy4/DevOps-Core-Course.git
-    # Должна существовать на origin (например: git push -u origin lab13).
+    # Branch must exist on origin (e.g. git push -u origin lab13).
     targetRevision: lab13
     path: k8s/app-python
     helm:

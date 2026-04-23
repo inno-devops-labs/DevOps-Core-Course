@@ -1,3 +1,4 @@
+# Single replica with persistence (merged with chart values.yaml).
 replicaCount: 1
 
 image:
