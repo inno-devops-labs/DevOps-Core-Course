@@ -1,0 +1,24 @@
+# ArgoCD Application — dev (auto-sync with self-heal and prune).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-app-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/4hellboy4/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/app-python
+    helm:
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
