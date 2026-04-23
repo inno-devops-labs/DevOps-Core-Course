@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: lab13-base
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/hololotl/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/devops-app
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: replicaCount
+          value: "1"
+        - name: service.type
+          value: ClusterIP
+        - name: persistence.enabled
+          value: "false"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
