@@ -454,7 +454,7 @@ Notes:
 - List generator is simple/explicit; Git/Cluster/Matrix generators scale better for large fleets.
 
 **Screenshot (evidence):**
-- ![sceen](k8s/argocd/screenshots/appset-cli-evidence.png) (CLI output showing ApplicationSet + generated apps)
+- ![sceen](argocd/screenshots/appset-cli-evidence.png) (CLI output showing ApplicationSet + generated apps)
 
 ## Checklist
 
