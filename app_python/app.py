@@ -51,8 +51,37 @@ system_info_duration = Histogram(
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-VISITS_FILE = Path(os.getenv('VISITS_FILE', '/data/visits'))
 VISITS_LOCK = threading.Lock()
+
+
+def resolve_visits_file():
+    configured = Path(os.getenv('VISITS_FILE', '/data/visits'))
+
+    def _ensure(path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if not path.exists():
+            path.write_text('0\n', encoding='utf-8')
+        return path
+
+    try:
+        return _ensure(configured)
+    except PermissionError:
+        fallback = Path(tempfile.gettempdir()) / 'devops-info-service' / 'visits'
+        logging.getLogger(__name__).warning(
+            'Visits file path is not writable, using fallback storage',
+            extra={'path': str(configured), 'fallback': str(fallback)},
+        )
+        return _ensure(fallback)
+    except OSError:
+        fallback = Path(tempfile.gettempdir()) / 'devops-info-service' / 'visits'
+        logging.getLogger(__name__).warning(
+            'Visits file path is unavailable, using fallback storage',
+            extra={'path': str(configured), 'fallback': str(fallback)},
+        )
+        return _ensure(fallback)
+
+
+VISITS_FILE = resolve_visits_file()
 
 # Application start time (UTC)
 START_TIME = datetime.now(timezone.utc)
