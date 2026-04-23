@@ -22,7 +22,8 @@ service:
   type: NodePort
   port: 80
   targetPort: 8000
-  nodePort: 30082
+  # Avoid collision with an older Service in default (e.g. 30082 already in use on minikube).
+  nodePort: 30090
 
 resources:
   requests:
