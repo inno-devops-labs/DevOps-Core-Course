@@ -2,7 +2,7 @@
 # Purpose: Development and testing environment
 # Characteristics: Lower replica count, relaxed resource limits, faster probes
 
-replicaCount: 2
+replicaCount: 1
 
 image:
   repository: daniil20xx/myapp
