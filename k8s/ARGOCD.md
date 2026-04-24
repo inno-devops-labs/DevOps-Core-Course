@@ -264,3 +264,5 @@ Sync interval:
 - Ensures cluster matches Git
 - Fixes drift (manual changes)
 - Requires selfHeal: true
+
+[a](./img/argocd.png)
