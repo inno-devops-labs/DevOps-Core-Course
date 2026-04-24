@@ -4,8 +4,6 @@ metadata:
   name: python-app-set
   namespace: argocd
 spec:
-  goTemplate: true
-  goTemplateOptions: ["missingkey=error"]
   generators:
     - list:
         elements:
@@ -19,9 +17,7 @@ spec:
             autoSync: "false"
   template:
     metadata:
-      name: 'python-app-set-{{.env}}'
-      finalizers:
-        - resources-finalizer.argocd.argoproj.io
+      name: 'python-app-{{env}}'
     spec:
       project: default
       source:
@@ -30,23 +26,19 @@ spec:
         path: k8s/mychart
         helm:
           valueFiles:
-            - values.yaml
-            - '{{.valuesFile}}'
-          parameters:
-            - name: vault.enabled
-              value: "false"
-            - name: service.type
-              value: NodePort
+            - '{{valuesFile}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{.namespace}}'
-  templatePatch: |
-    spec:
+        namespace: '{{namespace}}'
       syncPolicy:
         syncOptions:
           - CreateNamespace=true
-        {{- if eq .autoSync "true" }}
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
         automated:
           prune: true
           selfHeal: true
-        {{- end }}

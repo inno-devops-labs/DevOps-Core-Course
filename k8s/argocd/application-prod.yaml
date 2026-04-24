@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: python-app-prod
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
@@ -13,16 +11,16 @@ spec:
     path: k8s/mychart
     helm:
       valueFiles:
-        - values.yaml
         - values-prod.yaml
-      parameters:
-        - name: vault.enabled
-          value: "false"
-        - name: service.type
-          value: NodePort
   destination:
     server: https://kubernetes.default.svc
     namespace: prod
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

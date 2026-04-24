@@ -1,25 +1,41 @@
-replicaCount: 1
+# PROD Environment Configuration
+# Purpose: Production environment with high availability
+# Characteristics: Multiple replicas, strict resource limits, comprehensive health checks
+
+replicaCount: 3
 
 image:
   repository: myapp
-  tag: "latest"      
-  pullPolicy: Always
+  tag: "1.0"      
+  pullPolicy: IfNotPresent
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 8080
 
 resources:
   limits:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 500m
+    memory: 512Mi
   requests:
-    cpu: 50m
-    memory: 64Mi
+    cpu: 250m
+    memory: 256Mi
 
 livenessProbe:
-  initialDelaySeconds: 10
-  periodSeconds: 30
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
 readinessProbe:
-  initialDelaySeconds: 10
-  periodSeconds: 30
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+env: production
+logLevel: warn
+
+# Pod Disruption Budget for high availability
+podDisruptionBudget:
+  minAvailable: 2

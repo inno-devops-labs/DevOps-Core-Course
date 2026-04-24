@@ -16,3 +16,7 @@ app_python/__pycache__/
 
 # Env
 .env
+
+venv/
+.venv/
+app_python/**/venv/

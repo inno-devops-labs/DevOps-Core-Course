@@ -1,25 +1,37 @@
-replicaCount: 1
+# DEV Environment Configuration
+# Purpose: Development and testing environment
+# Characteristics: Lower replica count, relaxed resource limits, faster probes
+
+replicaCount: 2
 
 image:
-  repository: myapp
+  repository: daniil20xx/myapp
   tag: "latest"  
   pullPolicy: Always
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 8080
 
 resources:
   limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
     cpu: 100m
     memory: 128Mi
-  requests:
-    cpu: 50m
-    memory: 64Mi
 
 livenessProbe:
   initialDelaySeconds: 10
-  periodSeconds: 30
+  periodSeconds: 20
+  timeoutSeconds: 3
+  failureThreshold: 3
+
 readinessProbe:
-  initialDelaySeconds: 10
-  periodSeconds: 30
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 2
+
+env: development
+logLevel: debug
