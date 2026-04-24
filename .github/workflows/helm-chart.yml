@@ -40,7 +40,7 @@ jobs:
       - name: Template (values overlays)
         run: |
           set -e
-          for f in values-dev.yaml values-prod.yaml values-vault.yaml; do
+          for f in values-dev.yaml values-prod.yaml values-vault.yaml values-rollout-canary.yaml values-rollout-bluegreen.yaml values-statefulset.yaml; do
             echo "== $f =="
             helm template lab-ci k8s/devops-info-service \
               -f "k8s/devops-info-service/$f" \

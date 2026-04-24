@@ -141,3 +141,13 @@ rollout:
     autoPromotionEnabled: false
     autoPromotionSeconds: null
     scaleDownDelaySeconds: 30
+
+# Lab 15 — StatefulSet mode (replaces Deployment/Rollout when enabled)
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  volumeClaimTemplate:
+    name: data
+    accessMode: ReadWriteOnce
+    size: 100Mi
+    storageClass: ""

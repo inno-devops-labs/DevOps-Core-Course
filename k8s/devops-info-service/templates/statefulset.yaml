@@ -1,12 +1,14 @@
-{{- if and .Values.rollout.enabled (not .Values.statefulset.enabled) }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "devops-info-service.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
@@ -14,16 +16,9 @@ spec:
     metadata:
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
-      {{- if or .Values.vault.injector.enabled .Values.podAnnotations }}
+      {{- with .Values.podAnnotations }}
       annotations:
-        {{- if .Values.vault.injector.enabled }}
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: {{ .Values.vault.injector.role | quote }}
-        vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.injector.secretPath | quote }}
-        {{- end }}
-        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-        {{- end }}
       {{- end }}
     spec:
       {{- if .Values.serviceAccount.create }}
@@ -51,10 +46,8 @@ spec:
             - name: config-volume
               mountPath: /config
               readOnly: true
-          {{- if .Values.persistence.enabled }}
-            - name: data-volume
+            - name: {{ .Values.statefulset.volumeClaimTemplate.name }}
               mountPath: /data
-          {{- end }}
           ports:
             - name: {{ .Values.containerPortName }}
               containerPort: {{ .Values.containerPort }}
@@ -69,25 +62,19 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-service.fullname" . }}-data
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ .Values.statefulset.volumeClaimTemplate.name }}
+        labels:
+          {{- include "devops-info-service.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.statefulset.volumeClaimTemplate.accessMode | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.statefulset.volumeClaimTemplate.size | quote }}
+        {{- if .Values.statefulset.volumeClaimTemplate.storageClass }}
+        storageClassName: {{ .Values.statefulset.volumeClaimTemplate.storageClass | quote }}
         {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "devops-info-service.fullname" . }}
-      previewService: {{ include "devops-info-service.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
-      {{- end }}
-      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
-    {{- else }}
-    canary:
-      steps:
-        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
-    {{- end }}
 {{- end }}
 

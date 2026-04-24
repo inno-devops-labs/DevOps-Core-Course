@@ -1,0 +1,21 @@
+# Lab 15 profile — StatefulSet with per-pod PVCs and headless service.
+# This profile disables Argo Rollouts and enables StatefulSet resources.
+
+rollout:
+  enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  volumeClaimTemplate:
+    name: data
+    accessMode: ReadWriteOnce
+    size: 100Mi
+    storageClass: ""
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30084
+

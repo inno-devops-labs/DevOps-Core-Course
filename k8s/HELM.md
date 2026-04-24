@@ -1,3 +1,4 @@
+
 # Helm chart — DevOps Info Service
 
 ## 1. Chart Overview
@@ -16,6 +17,8 @@ The chart lives at `k8s/devops-info-service/` and packages the Lab 9 workload as
 | `templates/service.yaml` | Service template; `type`, ports, and optional `nodePort` from values. |
 | `templates/rollout.yaml` | Argo Rollouts template (`kind: Rollout`) supporting canary and blue-green strategies (Lab 14). |
 | `templates/service-preview.yaml` | Preview service for blue-green strategy (Lab 14). |
+| `templates/statefulset.yaml` | StatefulSet template with `volumeClaimTemplates` for per-pod persistent volumes (Lab 15). |
+| `templates/service-headless.yaml` | Headless Service (`clusterIP: None`) for stable StatefulSet pod DNS (Lab 15). |
 | `templates/_helpers.tpl` | Shared helpers: `fullname`, chart name, labels, selector labels. |
 | `templates/NOTES.txt` | Post-install hints (NodePort URL, LoadBalancer wait, or port-forward). |
 | `templates/hooks/pre-install-job.yaml` | `pre-install` Job (validation placeholder). |
@@ -42,6 +45,7 @@ The chart lives at `k8s/devops-info-service/` and packages the Lab 9 workload as
 | `credentialsSecret` | Helm-rendered **Secret**; keys become env vars via `envFrom.secretRef` in the Deployment (Lab 11). |
 | `serviceAccount` / `vault.injector` | Optional **ServiceAccount** and **Vault Agent Injector** annotations (Lab 11); see `values-vault.yaml` and `k8s/SECRETS.md`. |
 | `rollout` | Progressive delivery settings (`enabled`, `strategy`, canary steps, blue-green promotion options) for Argo Rollouts (Lab 14). |
+| `statefulset` | Stateful workload mode (`enabled`, pod management policy, per-pod claim template settings) for Lab 15. |
 
 **Customize per environment**
 
