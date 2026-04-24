@@ -1,184 +1,193 @@
-# Lab Report #7 — Observability & Logging with Loki Stack
+# LAB07 - Loki Stack Observability
 
-## 1. Solution Architecture
+## Architecture
 
-A centralized log collection and visualization system has been implemented based on the **PLG stack (Promtail, Loki, Grafana)**.
+Centralized logging stack is deployed with Docker Compose:
 
-* **Loki 3.0** – Log storage engine using the modern TSDB backend for efficient indexing and compression.
-* **Promtail** – Log collection agent configured for automatic Docker Service Discovery via `/var/run/docker.sock`.
-* **Grafana 12.3** – Visualization platform used for LogQL queries and dashboards.
-* **Python App** – Application emitting structured JSON logs for easier analysis.
-
-The architecture allows collecting logs from containers, storing them in Loki, and visualizing them through Grafana dashboards.
-
----
-
-## 2. Component Configuration
-
-### 2.1 Loki (Storage)
-
-The `loki/config.yml` configuration includes:
-
-* **Retention:** Logs are stored for **7 days (168h)**.
-* **Storage:** Uses **TSDB index** and **local filesystem** for chunks.
-* **Compactor:** Enabled for automatic cleanup of old data according to the retention policy.
-
-This configuration ensures efficient storage and automatic removal of outdated logs.
-
----
-
-### 2.2 Promtail (Log Collector)
-
-The `promtail/config.yml` file implements **Docker service discovery** and **relabeling**.
-
-Relabeling configuration:
-
-* **Source label:** `__meta_docker_container_name`
-* **Transformation:** Remove leading `/` from the container name
-* **Result label:** `container`
-
-Example transformation:
-
-```
-/monitoring-app-python-1 → monitoring-app-python-1
+```text
+app-python ----\
+                \
+app-go ----------> Promtail -> Loki -> Grafana Explore/Dashboard
+                /
+Docker logs ----/
 ```
 
-This label is then used in Grafana queries for filtering logs.
+Components:
+- `Loki` stores logs (index + chunks), optimized for labels and LogQL.
+- `Promtail` discovers Docker containers and ships logs to Loki.
+- `Grafana` queries Loki and visualizes logs/metrics.
+- `app_python` and `app_go` generate application logs.
 
----
+## Stack Study (Task 1.1)
 
-### 2.3 Docker Compose (Production Readiness)
+- **Loki vs Elasticsearch:** Loki indexes only metadata labels, not full log bodies. This reduces storage/index costs and works well for high-volume container logs.
+- **Log labels:** labels (for example `app`, `container`, `job`) identify log streams. Good labels make LogQL queries fast and precise.
+- **Promtail container discovery:** Promtail uses Docker service discovery (`docker_sd_configs`) through `/var/run/docker.sock`, receives container metadata labels, and maps them with `relabel_configs`.
 
-The `docker-compose.yml` configuration was improved to follow **production-ready practices**.
+## Setup Guide
 
-**Resource Limits**
+1. Go to monitoring folder:
+   ```bash
+   cd monitoring
+   ```
+2. Create local secrets file from template:
+   ```bash
+   cp .env.example .env
+   # set GF_ADMIN_PASSWORD in .env
+   ```
+3. Start stack:
+   ```bash
+   docker compose up -d
+   docker compose ps
+   ```
+4. Verify endpoints:
+   ```bash
+   curl http://localhost:3100/ready
+   curl http://localhost:9080/targets
+   curl http://localhost:3000/api/health
+   ```
+5. Grafana login: `http://localhost:3000` (anonymous access disabled).
 
-CPU and memory limits were configured to prevent resource exhaustion:
+## Configuration
 
+### Loki (`monitoring/loki/config.yml`)
+
+Key settings:
+- HTTP server on port `3100`.
+- TSDB storage backend with filesystem.
+- Schema `v13`.
+- Retention `168h` (7 days).
+
+Snippet:
+```yaml
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+limits_config:
+  retention_period: 168h
 ```
-deploy:
-  resources:
-    limits:
-      cpus: '1.0'
-      memory: 1G
-    reservations:
-      cpus: '0.5'
-      memory: 512M
+
+### Promtail (`monitoring/promtail/config.yml`)
+
+Key settings:
+- Loki client endpoint: `http://loki:3100/loki/api/v1/push`.
+- Docker service discovery from socket.
+- Keep only containers with label `logging=promtail`.
+- Extract labels `container` and `app`.
+
+Snippet:
+```yaml
+docker_sd_configs:
+  - host: unix:///var/run/docker.sock
+relabel_configs:
+  - source_labels: ['__meta_docker_container_label_logging']
+    regex: promtail
+    action: keep
+  - source_labels: ['__meta_docker_container_name']
+    target_label: container
+    regex: '/?(.*)'
+  - source_labels: ['__meta_docker_container_label_app']
+    target_label: app
 ```
 
-**Health Checks**
+### Docker Compose (`monitoring/docker-compose.yml`)
 
-Health checks were implemented to verify service availability.
+- Services: `loki`, `promtail`, `grafana`, `app-python`, `app-go`.
+- Shared network: `logging`.
+- Persistent volumes: `loki-data`, `grafana-data`.
+- Resource limits/reservations added for all services.
+- Health checks for Loki and Grafana.
+- Grafana security via `.env` (`GF_ADMIN_PASSWORD`), anonymous auth disabled.
 
-Loki:
+## Application Logging
 
-```
-wget --spider http://127.0.0.1:3100/ready
-```
+Python app (`app_python/app.py`) uses `logging` + `python-json-logger`.
 
-Grafana:
+Implemented:
+- JSON output with `timestamp`, `level`, `message`.
+- Request context fields: `method`, `path`, `status`, `ip`.
+- Important events: startup, incoming request, response, 404/500 errors.
 
-```
-curl -f http://127.0.0.1:3000/api/health
-```
-
-**Security**
-
-* Anonymous access in Grafana was disabled.
-* Admin password is injected via environment variables.
-* Secrets are stored in a `.env` file.
-
----
-
-## 3. Application and Structured Logs
-
-The application was configured to produce **JSON structured logs**.
-
-Example log entry:
-
+Example JSON log:
 ```json
-{"timestamp": "2024-05-20T10:00:00.123Z", "level": "INFO", "method": "GET", "path": "/", "ip": "172.18.0.5", "message": "Request received"}
+{"timestamp":"2026-04-24 19:20:01,124","level":"INFO","message":"Request received","method":"GET","path":"/health","status":null,"ip":"172.20.0.1"}
 ```
 
-This allows advanced parsing using **LogQL**.
+## Dashboard
 
-Example query:
+Dashboard includes 4 required panels:
 
+1. **Logs Table** (Logs)  
+   Query:
+   ```logql
+   {app=~"devops-.*"}
+   ```
+2. **Request Rate** (Time series)  
+   Query:
+   ```logql
+   sum by (app) (rate({app=~"devops-.*"}[1m]))
+   ```
+3. **Error Logs** (Logs)  
+   Query:
+   ```logql
+   {app=~"devops-.*"} | json | level="ERROR"
+   ```
+4. **Log Level Distribution** (Pie/Stat)  
+   Query:
+   ```logql
+   sum by (level) (count_over_time({app=~"devops-.*"} | json [5m]))
+   ```
+
+Screenshots:
+- `monitoring/docs/screenshots/dashboard.png`
+- `monitoring/docs/screenshots/logs.png`
+- `monitoring/docs/screenshots/error logs.png`
+- `monitoring/docs/screenshots/json.png`
+- `monitoring/docs/screenshots/login.png`
+- `monitoring/docs/screenshots/app-python.png`
+
+## Production Config
+
+- **Security:** anonymous Grafana access disabled; admin password in `.env`.
+- **Resources:** CPU/memory limits and reservations set in Compose.
+- **Retention:** Loki keeps logs for 7 days (`168h`).
+- **Health checks:** readiness/health endpoints for Loki and Grafana.
+
+## Testing
+
+Generate logs:
+```bash
+for i in {1..20}; do curl http://localhost:8000/; done
+for i in {1..20}; do curl http://localhost:8000/health; done
+for i in {1..20}; do curl http://localhost:8001/; done
 ```
-{container="devops-python"} | json | level="INFO"
+
+Validate in Grafana Explore:
+```logql
+{app="devops-python"}
+{app="devops-python"} |= "ERROR"
+{app="devops-python"} | json | method="GET"
+{app=~"devops-.*"}
 ```
 
----
-
-## 4. Visualization (Grafana Dashboard)
-
-A dashboard was created in Grafana containing **four panels**.
-
-**Logs Table**
-
-Displays a real-time stream of logs from `devops-*` services.
-
-**Request Rate**
-
-Shows the number of logs per second (RPS) grouped by container.
-
-**Error Logs**
-
-Filters log entries with `ERROR` level from the JSON payload.
-
-**Log Level Distribution**
-
-A pie chart visualizing the distribution of log levels (INFO, WARNING, ERROR).
-
----
-
-## 5. Health Status Verification
-
-Service health was verified using:
-
-```
+Service checks:
+```bash
 docker compose ps
+curl http://localhost:3100/ready
+curl http://localhost:9080/targets
+curl http://localhost:3000/api/health
 ```
 
-Example output:
+## Challenges
 
-```
-loki: healthy
-grafana: healthy
-promtail: running
-app-python: running
-```
+1. **Loki/Grafana healthcheck command compatibility**  
+   Some images may not include `curl`. Switched checks to `wget --spider`.
 
-This confirms that all components of the logging stack are operational.
+2. **Missing `app` labels in Loki streams**  
+   Added Promtail relabel rules from Docker labels (`__meta_docker_container_label_app`).
 
----
-
-## 6. Challenges & Solutions
-
-**Problem**
-
-The default Loki health check using `curl` failed, causing the container status to remain `starting`.
-
-**Cause**
-
-The official `grafana/loki:3.0.0` image does not include the `curl` utility.
-
-**Solution**
-
-The health check was changed to:
-
-```
-wget --spider http://127.0.0.1:3100/ready
-```
-
-`wget` is available in the image and successfully verifies Loki readiness.
-
----
-
-## Conclusion
-
-The PLG logging stack was successfully deployed using Docker Compose.
-
-Logs from the Python application are collected by Promtail, stored in Loki, and visualized in Grafana dashboards. The system supports structured logs, LogQL queries, health checks, and production-ready configuration.
-
-The environment is ready for centralized logging and monitoring of containerized applications.
+3. **Secret handling for Grafana admin password**  
+   Added `.env.example` and moved password source to `.env` file.

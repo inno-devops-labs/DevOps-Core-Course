@@ -41,6 +41,14 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   grafana:
     image: grafana/grafana:12.3.1
@@ -49,6 +57,8 @@ services:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
+    env_file:
+      - .env
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD}
@@ -56,10 +66,19 @@ services:
     networks:
       - logging
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/api/health"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   app-python:
     build: ../app_python
@@ -69,11 +88,35 @@ services:
     labels:
       logging: "promtail"
       app: "devops-python"
+    networks:
+      - logging
     deploy:
       resources:
         limits:
           cpus: '0.5'
           memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  app-go:
+    build: ../app_go
+    container_name: monitoring-app-go-1
+    ports:
+      - "8001:8080"
+    labels:
+      logging: "promtail"
+      app: "devops-go"
+    networks:
+      - logging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 volumes:
   loki-data:

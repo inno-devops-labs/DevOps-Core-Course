@@ -27,11 +27,13 @@ app = Flask(__name__)
 # ✅ JSON Logging setup
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+logger.handlers.clear()
 
 logHandler = logging.StreamHandler()
 
 formatter = jsonlogger.JsonFormatter(
-    "%(asctime)s %(levelname)s %(message)s %(method)s %(path)s %(status)s %(ip)s"
+    "%(asctime)s %(levelname)s %(message)s %(method)s %(path)s %(status)s %(ip)s",
+    rename_fields={"asctime": "timestamp", "levelname": "level"},
 )
 
 logHandler.setFormatter(formatter)
