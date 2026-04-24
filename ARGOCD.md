@@ -99,15 +99,6 @@ Verify resources are created:
 Verify that 1 replica:
 ![after_change_2_to_1](/docs_lab13/screenshots/after_change_2_to_1.png)
 
-### GitOps Workflow Explanation
-
-1. A change is made in the Git repository (e.g., replica count updated)
-2. ArgoCD detects that the cluster state differs from Git (OutOfSync)
-3. Manual sync is triggered
-4. Cluster state is reconciled to match Git
-
-This demonstrates the GitOps principle where Git is the single source of truth.
-
 
 ## Task 3 — Multi-environment deployment (dev/prod)
 
@@ -119,8 +110,6 @@ This demonstrates the GitOps principle where Git is the single source of truth.
 
 ```bash
 kubectl apply -f k8s/argocd/applicationset.yaml
-kubectl apply -f k8s/argocd/application-dev.yaml
-kubectl apply -f k8s/argocd/application-prod.yaml
 ```
 
 App list:
@@ -137,65 +126,7 @@ argocd app sync devops-info-service-prod
 *If apps show `OutOfSync` + `Missing`, it only means resources are not created yet.*
 
 ### 3.3 Dev vs Prod differences
-
-The development (dev) and production (prod) environments are configured differently to reflect their distinct purposes.
-
-**Replica count:**
-
-* Dev uses `replicaCount: 1` to minimize resource usage and allow quick iterations.
-* Prod uses `replicaCount: 3` to ensure high availability and fault tolerance.
-
-**Image configuration:**
-
-* Dev uses the `latest` tag with `Always` pull policy to quickly test new changes.
-* Prod uses a fixed version (`1.0`) with `IfNotPresent` to ensure stability and reproducibility.
-
-**Resources:**
-
-* Dev has lower CPU and memory limits (`200m / 256Mi`) to conserve resources.
-* Prod allocates higher resources (`500m / 512Mi`) to handle real workloads reliably.
-
-**Health checks:**
-
-* Dev uses faster probes (shorter delays and intervals) for quicker feedback during development.
-* Prod uses more conservative probe settings to avoid false positives and unnecessary restarts.
-
-**Logging:**
-
-* Dev uses `logLevel: debug` for detailed troubleshooting.
-* Prod uses `logLevel: warn` to reduce noise and improve performance.
-
-**Environment variables:**
-
-* Dev explicitly sets `env: development`
-* Prod sets `env: production` to reflect runtime context.
-
-**High availability:**
-
-* Prod includes a PodDisruptionBudget (`minAvailable: 2`) to maintain service availability during disruptions.
-* Dev does not include this, as availability is not critical.
-
-These differences demonstrate how the same application can be tuned for different environments using Helm values.
-
 ### 3.4 Why prod stays manual
-
-The production environment is configured to use manual synchronization instead of automatic sync, which is a common best practice in GitOps workflows.
-
-**Reasons for manual sync in production:**
-
-* **Controlled deployments:** Changes are only applied when explicitly approved, reducing the risk of accidental updates.
-* **Stability:** Prevents unstable or untested changes (e.g., from `latest` images) from being deployed automatically.
-* **Review process:** Allows teams to review changes in Git before syncing them to the cluster.
-* **Rollback planning:** Manual control enables better handling of failures and rollback strategies.
-* **Compliance and auditing:** Many production environments require approval steps before deployment.
-
-**Why dev uses auto-sync:**
-
-* Faster feedback loop for developers
-* Immediate reflection of changes from Git
-* Useful for testing GitOps workflows and self-healing
-
-In summary, dev prioritizes speed and experimentation, while prod prioritizes stability and control.
 
 ## Task 4 — Self-healing & drift tests (dev)
 
@@ -264,43 +195,3 @@ kubectl get deploy -n dev python-app-dev-mychart \
 ```
 
 ### 4.4 When does ArgoCD sync and how often it checks Git?
-ArgoCD synchronization behavior depends on its configuration.
-
-By default, ArgoCD checks the Git repository every **3 minutes** for changes.
-
-Sync can be triggered in several ways:
-
-- **Manual sync** via UI or CLI
-- **Automatic sync** (if enabled in syncPolicy)
-- **Webhook trigger** for immediate updates
-
-**Key difference between ArgoCD and Kubernetes:**
-
-- Kubernetes ensures runtime state (e.g., pod count via ReplicaSet)
-- ArgoCD ensures configuration state matches Git
-
-Thus:
-- Kubernetes handles infrastructure self-healing
-- ArgoCD handles configuration drift reconciliation
-
-## Bonus — ApplicationSet
-
-ApplicationSet allows generating multiple applications from a single template.
-
-### Benefits:
-- Eliminates duplication of manifests
-- Scales better for multiple environments
-- Centralized configuration
-
-### Why used here:
-Instead of maintaining separate `application-dev.yaml` and `application-prod.yaml`,
-ApplicationSet dynamically generates them using environment-specific parameters.
-
-### When to use:
-- Multi-environment setups
-- Multi-cluster deployments
-- Monorepos with multiple apps
-
-
-Additional Screenshots:
-![app_web](/docs_lab13/screenshots/app_web.png)
