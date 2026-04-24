@@ -1,0 +1,26 @@
+# Task 2 — initial single-environment deploy (manual sync).
+# Replace repoURL and targetRevision with your fork/branch before applying.
+# If you use application-dev.yaml + application-prod.yaml instead, skip this file
+# to avoid overlapping intent (this one targets namespace "default").
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-python
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_USER/YOUR_REPO.git
+    targetRevision: main
+    path: k8s/devops-python
+    helm:
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

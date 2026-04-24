@@ -1,0 +1,46 @@
+# Bonus — ApplicationSet (List generator + goTemplate for per-env sync policy).
+# Do not apply together with application-dev.yaml / application-prod.yaml (same app names).
+# Requires Argo CD with ApplicationSet controller (default in argo-cd Helm install).
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: devops-python
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+            auto: true
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+            auto: false
+  template:
+    metadata:
+      name: "devops-python-{{ .env }}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/YOUR_GITHUB_USER/YOUR_REPO.git
+        targetRevision: main
+        path: k8s/devops-python
+        helm:
+          valueFiles:
+            - "{{ .valuesFile }}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .namespace }}"
+      syncPolicy:
+        {{- if .auto }}
+        automated:
+          prune: true
+          selfHeal: true
+        {{- end }}
+        syncOptions:
+          - CreateNamespace=true

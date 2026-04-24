@@ -1,0 +1,23 @@
+# Task 3 — prod: manual sync only (no automated block).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-python-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_USER/YOUR_REPO.git
+    targetRevision: main
+    path: k8s/devops-python
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,16 @@
+# Optional: apply before Argo CD apps, or rely on sync option CreateNamespace=true.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+  labels:
+    app.kubernetes.io/part-of: devops-python
+    environment: dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod
+  labels:
+    app.kubernetes.io/part-of: devops-python
+    environment: prod

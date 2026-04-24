@@ -1,0 +1,26 @@
+# Task 3 — dev: auto-sync + self-heal + prune.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-python-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_GITHUB_USER/YOUR_REPO.git
+    targetRevision: main
+    path: k8s/devops-python
+    helm:
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
