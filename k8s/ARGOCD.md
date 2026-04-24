@@ -265,4 +265,4 @@ Sync interval:
 - Fixes drift (manual changes)
 - Requires selfHeal: true
 
-[a](./img/argocd.png)
+![alt text](./img/argocd.png)
