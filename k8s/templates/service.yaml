@@ -14,6 +14,7 @@ spec:
       protocol: TCP
       name: http
 {{- if eq .Values.rollout.strategy "blueGreen" }}
+{{- if eq .Values.workload.kind "rollout" }}
 ---
 apiVersion: v1
 kind: Service
@@ -30,4 +31,5 @@ spec:
       targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
       name: http
+{{- end }}
 {{- end }}

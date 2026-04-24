@@ -1,5 +1,8 @@
 replicaCount: 5
 
+workload:
+  kind: statefulset
+
 image:
   repository: danielambda/devops-app
   tag: latest

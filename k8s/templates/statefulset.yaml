@@ -1,11 +1,12 @@
-{{- if eq .Values.workload.kind "rollout" }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if eq .Values.workload.kind "statefulset" }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "my-python-app.fullname" . }}
   labels:
     {{- include "my-python-app.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "my-python-app.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
@@ -37,11 +38,6 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "my-python-app.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "my-python-app.fullname" . }}-data
-        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -69,32 +65,23 @@ spec:
               mountPath: /config
               readOnly: true
             {{- if .Values.persistence.enabled }}
-            - name: data-volume
+            - name: data
               mountPath: /data
             {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "my-python-app.fullname" . }}
-      previewService: {{ include "my-python-app.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
-      {{- end }}
-    {{- else }}
-    canary:
-      steps:
-        - setWeight: 20
-        - pause: {}
-        - setWeight: 40
-        - pause:
-            duration: 30s
-        - setWeight: 60
-        - pause:
-            duration: 30s
-        - setWeight: 80
-        - pause:
-            duration: 30s
-        - setWeight: 100
-    {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "my-python-app.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+        {{- end }}
+  {{- end }}
 {{- end }}

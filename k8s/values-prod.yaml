@@ -1,5 +1,8 @@
 replicaCount: 5
 
+workload:
+  kind: statefulset
+
 image:
   tag: "1.0.0"
 
