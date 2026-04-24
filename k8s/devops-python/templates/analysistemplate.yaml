@@ -1,0 +1,19 @@
+{{- if and (eq .Values.rollout.strategy "canary") .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "devops-python.analysisTemplateName" . }}
+  labels:
+    {{- include "devops-python.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: health-status
+      provider:
+        web:
+          url: http://{{ include "devops-python.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}{{ .Values.rollout.analysis.healthPath }}
+          jsonPath: "{$.status}"
+      successCondition: result == "healthy"
+      interval: 10s
+      count: 3
+      failureLimit: 1
+{{- end }}

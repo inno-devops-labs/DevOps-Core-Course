@@ -38,7 +38,7 @@ k8s/devops-python/
 ├── values-prod.yaml
 └── templates/
     ├── _helpers.tpl
-    ├── deployment.yaml
+    ├── rollout.yaml
     ├── service.yaml
     ├── NOTES.txt
     └── hooks/

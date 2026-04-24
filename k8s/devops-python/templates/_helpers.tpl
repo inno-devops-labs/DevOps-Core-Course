@@ -78,3 +78,7 @@ Stable checksum input for env ConfigMap (Lab 12 bonus — pod restart on change)
 {{- printf "%s|%s|%v" .Values.config.environment .Values.config.logLevel .Values.config.featureDebug -}}
 {{- end -}}
 
+{{- define "devops-python.analysisTemplateName" -}}
+{{- printf "%s-health" (include "devops-python.fullname" .) -}}
+{{- end -}}
+

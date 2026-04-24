@@ -33,7 +33,7 @@ The chart `k8s/devops-python` defines two ConfigMaps when **`config.enabled`** i
 
 ### File mount
 
-The Deployment mounts the file ConfigMap at **`/config`**, so the app reads **`/config/config.json`** (see `load_config_file()` in `app_python/app.py`). The JSON is included in **GET /** under **`config.file`** when the file exists.
+The Rollout (or Deployment) mounts the file ConfigMap at **`/config`**, so the app reads **`/config/config.json`** (see `load_config_file()` in `app_python/app.py`). The JSON is included in **GET /** under **`config.file`** when the file exists.
 
 ### Environment variables
 
@@ -70,7 +70,7 @@ persistentvolumeclaim/<release>-devops-python-data   Bound    pvc-...   100Mi   
 - **Size:** `persistence.size` (default `100Mi`).
 - **Storage class:** omitted if `persistence.storageClass` is empty (cluster default).
 
-The Deployment mounts this PVC at **`/data`**, matching **`VISITS_DATA_PATH=/data/visits`** in chart values.
+The Rollout mounts this PVC at **`/data`**, matching **`VISITS_DATA_PATH=/data/visits`** in chart values.
 
 ### RWO and replicas
 
@@ -84,7 +84,7 @@ With **ReadWriteOnce**, only **one** pod can attach the volume on many multi-nod
 ### Persistence test (pod delete)
 
 1. Note **`visits_total`** from **GET /visits** (via port-forward or Ingress).
-2. Delete only the pod (Deployment will recreate it):
+2. Delete only the pod (ReplicaSet / Rollout will recreate it):
 
    ```bash
    kubectl delete pod -n <namespace> -l app.kubernetes.io/instance=<release>
@@ -119,7 +119,7 @@ When **`configMapChecksum.enabled`** and **`config.enabled`** are true, the Pod 
 - **`checksum/config-file`** — SHA-256 of `files/config.json`
 - **`checksum/config-env`** — SHA-256 of a string derived from **`config.environment`**, **`config.logLevel`**, and **`config.featureDebug`**
 
-Changing those inputs changes the annotation values, which updates the Deployment spec and triggers a **rolling restart** so the app sees new env vars and file content immediately (without relying on kubelet sync alone).
+Changing those inputs changes the annotation values, which updates the pod template and triggers a **rolling restart** so the app sees new env vars and file content immediately (without relying on kubelet sync alone).
 
 To simulate a change, run **`helm upgrade`** after editing **`values.yaml`** or **`files/config.json`**, then observe a new ReplicaSet and rolled pods:
 

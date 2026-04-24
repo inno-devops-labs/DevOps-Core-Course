@@ -16,6 +16,8 @@ service:
   port: 80
   targetPort: 5000
   nodePort: 30080
+  # Second NodePort for blue-green preview (Lab 14); set in values-bluegreen.yaml
+  previewNodePort: 30081
 
 containerPort: 5000
 
@@ -89,10 +91,20 @@ probes:
     timeoutSeconds: 2
     failureThreshold: 3
 
-strategy:
-  rollingUpdate:
-    maxSurge: 1
+# Lab 14 — Argo Rollouts (replaces apps/v1 Deployment; install controller: see k8s/rollouts/)
+# strategy: canary (default) or blueGreen — set rollout.strategy (see values-bluegreen.yaml)
+rollout:
+  strategy: canary
+  canary:
+    maxSurge: "25%"
     maxUnavailable: 0
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewReplicaCount: 1
+  analysis:
+    enabled: false
+    healthPath: /health
 
 # Service account (required for Vault Kubernetes auth — Lab 11)
 serviceAccount:

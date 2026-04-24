@@ -140,7 +140,7 @@ kubectl get deploy -n dev -w
 argocd app get devops-python-dev
 ```
 
-Record **time before** the manual scale and **time after** the Deployment spec matches Git again. Exact timing depends on sync interval and controller latency.
+Record **time before** the manual scale and **time after** the Rollout (or Deployment) spec matches Git again. Exact timing depends on sync interval and controller latency.
 
 **Difference from Kubernetes “self-healing”:**  
 

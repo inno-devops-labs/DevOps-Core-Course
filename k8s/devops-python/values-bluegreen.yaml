@@ -1,0 +1,15 @@
+# Lab 14 — blue-green: use with helm install/upgrade -f values-bluegreen.yaml
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewReplicaCount: 1
+
+# Enough replicas to run active + preview stack during promotion
+replicaCount: 2
+
+service:
+  type: NodePort
+  nodePort: 30080
+  previewNodePort: 30081

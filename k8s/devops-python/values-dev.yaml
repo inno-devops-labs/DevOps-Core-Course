@@ -1,5 +1,6 @@
 # Development overrides (Task 3)
-replicaCount: 1
+# Lab 14 canary: use at least 2 replicas so setWeight percentages can schedule canary pods
+replicaCount: 2
 
 image:
   tag: latest

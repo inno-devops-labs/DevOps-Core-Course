@@ -40,7 +40,7 @@ echo "<base64-string>" | base64 -d
 |------|---------|
 | `templates/secrets.yaml` | `Secret` with `stringData` from `.Values.secrets.stringData` |
 | `templates/serviceaccount.yaml` | ServiceAccount for Vault Kubernetes auth |
-| `templates/deployment.yaml` | `envFrom.secretRef` when secrets enabled; Vault pod annotations when enabled |
+| `templates/rollout.yaml` | `envFrom.secretRef` when secrets enabled; Vault pod annotations when enabled (Argo Rollouts Lab 14) |
 | `templates/_helpers.tpl` | `devops-python.secretName`, `devops-python.serviceAccountName`, `devops-python.envVars` (DRY) |
 
 ### Default values (placeholders only — do not commit real passwords)
