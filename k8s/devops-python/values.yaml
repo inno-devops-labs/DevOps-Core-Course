@@ -88,6 +88,9 @@ persistence:
   storageClass: ""
   accessMode: ReadWriteOnce
 
+workload:
+  type: rollout
+
 rollout:
   revisionHistoryLimit: 2
   strategy: canary
@@ -123,3 +126,9 @@ rollout:
     count: 3
     failureLimit: 1
     path: /health
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    partition: null

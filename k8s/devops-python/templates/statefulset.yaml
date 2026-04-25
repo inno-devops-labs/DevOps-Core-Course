@@ -1,16 +1,23 @@
-{{- if ne .Values.workload.type "statefulset" }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if eq .Values.workload.type "statefulset" }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "common.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
-  revisionHistoryLimit: {{ .Values.rollout.revisionHistoryLimit }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
   selector:
     matchLabels:
       {{- include "common.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if and (eq .Values.statefulset.updateStrategy.type "RollingUpdate") (ne .Values.statefulset.updateStrategy.partition nil) }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.partition }}
+    {{- end }}
   template:
     metadata:
       labels:
@@ -28,11 +35,6 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "common.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "common.fullname" . }}-data
-        {{- end }}
       {{- if .Values.persistence.enabled }}
       initContainers:
         - name: volume-permissions
@@ -81,22 +83,20 @@ spec:
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "common.fullname" . }}
-      previewService: {{ include "common.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
-      {{- end }}
-      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
-      previewReplicaCount: {{ .Values.rollout.blueGreen.previewReplicaCount }}
-    {{- else }}
-    canary:
-      maxSurge: {{ .Values.rollout.canary.maxSurge | quote }}
-      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
-      steps:
-        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
-    {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+        labels:
+          {{- include "common.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+  {{- end }}
 {{- end }}

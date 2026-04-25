@@ -1,0 +1,35 @@
+workload:
+  type: statefulset
+
+replicaCount: 3
+
+image:
+  tag: "lab15"
+
+service:
+  type: NodePort
+  nodePort: 32150
+
+configFile:
+  environment: "statefulset-ondelete"
+
+configEnv:
+  APP_ENV: "statefulset-ondelete"
+  LOG_LEVEL: "warning"
+
+hooks:
+  preInstall:
+    enabled: false
+  postInstall:
+    enabled: false
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: OnDelete

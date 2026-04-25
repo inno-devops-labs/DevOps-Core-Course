@@ -1,0 +1,36 @@
+workload:
+  type: statefulset
+
+replicaCount: 3
+
+image:
+  tag: "lab15"
+
+service:
+  type: NodePort
+  nodePort: 32150
+
+configFile:
+  environment: "statefulset"
+
+configEnv:
+  APP_ENV: "statefulset"
+  LOG_LEVEL: "info"
+
+hooks:
+  preInstall:
+    enabled: false
+  postInstall:
+    enabled: false
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    partition: null

@@ -1,4 +1,4 @@
-{{- if .Values.rollout.analysis.enabled }}
+{{- if and .Values.rollout.analysis.enabled (ne .Values.workload.type "statefulset") }}
 apiVersion: argoproj.io/v1alpha1
 kind: AnalysisTemplate
 metadata:
