@@ -81,3 +81,20 @@ persistence:
   enabled: true
   size: 100Mi
   storageClass: ""
+
+initContainers:
+  enabled: true
+  sharedVolume:
+    name: init-workdir
+    mountPath: /init-data
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: https://example.com
+    outputFile: index.html
+  waitForService:
+    enabled: true
+    image: busybox:1.36
+    # Use a DNS name that is expected to exist in every cluster.
+    serviceDNS: kubernetes.default.svc.cluster.local
+    checkIntervalSeconds: 2

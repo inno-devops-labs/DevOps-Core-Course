@@ -37,11 +37,43 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "my-python-app.fullname" . }}-config
+        {{- if .Values.initContainers.enabled }}
+        - name: {{ .Values.initContainers.sharedVolume.name }}
+          emptyDir: {}
+        {{- end }}
         {{- if .Values.persistence.enabled }}
         - name: data-volume
           persistentVolumeClaim:
             claimName: {{ include "my-python-app.fullname" . }}-data
         {{- end }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              until nslookup {{ .Values.initContainers.waitForService.serviceDNS | quote }}; do
+                echo "waiting for {{ .Values.initContainers.waitForService.serviceDNS }}";
+                sleep {{ .Values.initContainers.waitForService.checkIntervalSeconds }};
+              done
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image | quote }}
+          command:
+            - sh
+            - -c
+            - >
+              wget -O {{ .Values.initContainers.sharedVolume.mountPath }}/{{ .Values.initContainers.download.outputFile }}
+              {{ .Values.initContainers.download.url | quote }}
+          volumeMounts:
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.mountPath }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -71,6 +103,10 @@ spec:
             {{- if .Values.persistence.enabled }}
             - name: data-volume
               mountPath: /data
+            {{- end }}
+            {{- if .Values.initContainers.enabled }}
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.mountPath }}
             {{- end }}
   strategy:
     {{- if eq .Values.rollout.strategy "blueGreen" }}
