@@ -486,7 +486,7 @@ Replicas:
 
 ![](/k8s/screenshots/blueg.png)
 
-![](/k8s/screenshots/image.png)
+![](/k8s/screenshots/boo.png)
 
 This is the important blue-green screenshot for the report. It clearly shows:
 - revision 1 remained stable and active;
