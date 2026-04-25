@@ -1,0 +1,8 @@
+replicaCount: 5
+
+service:
+  type: ClusterIP
+
+rollout:
+  enabled: true
+  strategy: canary

@@ -1,0 +1,6 @@
+rollout:
+  analysis:
+    enabled: true
+    interval: 10s
+    count: 3
+    failureLimit: 1

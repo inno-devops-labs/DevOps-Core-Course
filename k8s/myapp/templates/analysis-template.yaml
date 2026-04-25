@@ -1,0 +1,21 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "canary") .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "myapp.fullname" . }}-success-rate
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: health-status
+      interval: {{ .Values.rollout.analysis.interval }}
+      count: {{ .Values.rollout.analysis.count }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit }}
+      successCondition: result == 'healthy'
+      provider:
+        web:
+          url: "http://{{ "{{args.service-name}}" }}/health"
+          jsonPath: "{$.status}"
+{{- end }}

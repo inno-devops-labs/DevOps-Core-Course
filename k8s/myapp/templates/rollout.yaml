@@ -1,20 +1,16 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "myapp.fullname" . }}
   labels:
     {{- include "myapp.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.rollout.revisionHistoryLimit }}
   selector:
     matchLabels:
       {{- include "myapp.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -51,7 +47,6 @@ spec:
       {{- end }}
       containers:
         - name: {{ include "myapp.name" . }}
-          # image: zsalavat/devops-info-service-python:latest
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -64,14 +59,12 @@ spec:
             - name: data-volume
               mountPath: {{ .Values.persistence.mountPath }}
             {{- end }}
-
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 10
             periodSeconds: 5
-
           readinessProbe:
             httpGet:
               path: /health
@@ -90,4 +83,37 @@ spec:
             limits:
               memory: {{ .Values.resources.limits.memory }}
               cpu: {{ .Values.resources.limits.cpu }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "myapp.fullname" . }}-service
+      previewService: {{ include "myapp.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+    {{- else }}
+    canary:
+      maxSurge: {{ .Values.rollout.canary.maxSurge }}
+      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
+      steps:
+        - setWeight: 20
+        - pause: {}
+        {{- if .Values.rollout.analysis.enabled }}
+        - analysis:
+            templates:
+              - templateName: {{ include "myapp.fullname" . }}-success-rate
+            args:
+              - name: service-name
+                value: {{ printf "%s-service.%s.svc.cluster.local" (include "myapp.fullname" .) .Release.Namespace | quote }}
+        {{- end }}
+        - setWeight: 40
+        - pause:
+            duration: 30s
+        - setWeight: 60
+        - pause:
+            duration: 30s
+        - setWeight: 80
+        - pause:
+            duration: 30s
+        - setWeight: 100
+    {{- end }}
 {{- end }}
