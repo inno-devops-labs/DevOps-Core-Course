@@ -1,11 +1,12 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "common.fullname" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.rollout.revisionHistoryLimit }}
   selector:
     matchLabels:
       {{- include "common.selectorLabels" . | nindent 6 }}
@@ -79,3 +80,21 @@ spec:
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "common.fullname" . }}
+      previewService: {{ include "common.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
+      {{- end }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      previewReplicaCount: {{ .Values.rollout.blueGreen.previewReplicaCount }}
+    {{- else }}
+    canary:
+      maxSurge: {{ .Values.rollout.canary.maxSurge | quote }}
+      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
+      steps:
+        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
+    {{- end }}

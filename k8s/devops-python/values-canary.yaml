@@ -1,0 +1,39 @@
+replicaCount: 5
+
+service:
+  type: NodePort
+  nodePort: 32080
+
+configFile:
+  environment: "canary-stable"
+
+configEnv:
+  APP_ENV: "canary-stable"
+  LOG_LEVEL: "info"
+
+hooks:
+  preInstall:
+    enabled: false
+  postInstall:
+    enabled: false
+
+rollout:
+  strategy: canary
+  analysis:
+    enabled: false
+  canary:
+    maxSurge: 25%
+    maxUnavailable: 0
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100

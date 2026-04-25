@@ -1,0 +1,39 @@
+replicaCount: 5
+
+service:
+  type: NodePort
+  nodePort: 32080
+
+configFile:
+  environment: "canary-analysis-fail"
+
+configEnv:
+  APP_ENV: "canary-analysis-fail"
+  LOG_LEVEL: "warning"
+
+hooks:
+  preInstall:
+    enabled: false
+  postInstall:
+    enabled: false
+
+rollout:
+  strategy: canary
+  analysis:
+    enabled: true
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    path: /missing
+  canary:
+    maxSurge: 25%
+    maxUnavailable: 0
+    steps:
+      - setWeight: 20
+      - analysis:
+          templates:
+            - templateName: lab14-canary-devops-python-success-rate
+      - setWeight: 50
+      - pause:
+          duration: 30s
+      - setWeight: 100

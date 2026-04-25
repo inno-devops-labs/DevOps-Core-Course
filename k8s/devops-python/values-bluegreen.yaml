@@ -1,0 +1,33 @@
+replicaCount: 4
+
+service:
+  type: NodePort
+  nodePort: 32090
+
+configFile:
+  environment: "blue-active"
+
+configEnv:
+  APP_ENV: "blue-active"
+  LOG_LEVEL: "info"
+
+hooks:
+  preInstall:
+    enabled: false
+  postInstall:
+    enabled: false
+
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+    previewReplicaCount: 2
+    previewService:
+      type: NodePort
+      port: 80
+      targetPort: 5000
+      nodePort: 32091
+  analysis:
+    enabled: false

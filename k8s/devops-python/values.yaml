@@ -87,3 +87,39 @@ persistence:
   size: 100Mi
   storageClass: ""
   accessMode: ReadWriteOnce
+
+rollout:
+  revisionHistoryLimit: 2
+  strategy: canary
+  canary:
+    maxSurge: 25%
+    maxUnavailable: 0
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+    previewReplicaCount: 1
+    previewService:
+      type: NodePort
+      port: 80
+      targetPort: 5000
+      nodePort: null
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    path: /health
