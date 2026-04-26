@@ -35,6 +35,12 @@ spec:
             - secretRef:
                 name: {{ include "simple-app.fullname" . }}-secret
   strategy:
+    {{- if eq .Values.strategy "bluegreen" }}
+    blueGreen:
+      activeService: {{ include "simple-app.fullname" . }}
+      previewService: {{ include "simple-app.fullname" . }}-preview
+      autoPromotionEnabled: false
+    {{- else }}
     canary:
       steps:
         - setWeight: 20
