@@ -88,3 +88,25 @@ PersistentVolumeClaim name.
 {{- printf "%s-data" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
+
+{{/*
+Active Service name used by Rollout blue-green strategy.
+*/}}
+{{- define "devops-info.activeServiceName" -}}
+{{- if .Values.rollout.blueGreen.activeService }}
+{{- .Values.rollout.blueGreen.activeService | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- include "devops-info.fullname" . }}
+{{- end }}
+{{- end }}
+
+{{/*
+Preview Service name used by Rollout blue-green strategy.
+*/}}
+{{- define "devops-info.previewServiceName" -}}
+{{- if .Values.rollout.blueGreen.previewService }}
+{{- .Values.rollout.blueGreen.previewService | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-preview" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}

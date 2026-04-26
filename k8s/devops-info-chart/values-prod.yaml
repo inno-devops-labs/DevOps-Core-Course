@@ -22,6 +22,16 @@ resources:
 service:
   type: LoadBalancer
 
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    activeService: ""
+    previewService: ""
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+
 livenessProbe:
   initialDelaySeconds: 30
   periodSeconds: 5
