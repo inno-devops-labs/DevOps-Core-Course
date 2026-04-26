@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/TheVex/DevOps-Core-Course.git
-    targetRevision: lab13
+    targetRevision: lab14
     path: labs/k8s/simple-app-chart
     helm:
       valueFiles:
