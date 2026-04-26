@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: python-app-set
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: devops-lab13
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - list:
+        elements:
+          - env: dev
+            namespace: dev
+            valuesFile: values-dev.yaml
+            replicas: "1"
+            autoSync: "true"
+          - env: prod
+            namespace: prod
+            valuesFile: values-prod.yaml
+            replicas: "2"
+            autoSync: "false"
+  template:
+    metadata:
+      name: 'python-app-{{ .env }}'
+      labels:
+        app.kubernetes.io/part-of: devops-lab13
+        environment: '{{ .env }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/ellilin/DevOps.git
+        targetRevision: feature/lab13
+        path: k8s/python-app
+        helm:
+          releaseName: 'python-app-{{ .env }}'
+          valueFiles:
+            - '{{ .valuesFile }}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{ .namespace }}'
+  templatePatch: |
+    spec:
+      syncPolicy:
+        {{- if eq .autoSync "true" }}
+        automated:
+          prune: true
+          selfHeal: true
+        {{- end }}
+        syncOptions:
+          - CreateNamespace=true

@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-app-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: devops-lab13
+    environment: dev
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ellilin/DevOps.git
+    targetRevision: feature/lab13
+    path: k8s/python-app
+    helm:
+      releaseName: python-app-dev
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

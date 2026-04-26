@@ -4,8 +4,8 @@ image:
   tag: latest
 
 service:
-  type: NodePort
-  nodePort: 30080
+  type: ClusterIP
+  nodePort: null
 
 resources:
   requests:
