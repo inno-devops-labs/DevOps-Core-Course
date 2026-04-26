@@ -6,8 +6,10 @@ metadata:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
+  {{- if not (and .Values.rollout.enabled (eq .Values.rollout.strategyType "blueGreen")) }}
   selector:
     {{- include "devops-info-service.selectorLabels" . | nindent 4 }}
+  {{- end }}
   ports:
     - protocol: TCP
       port: {{ .Values.service.port }}
@@ -15,3 +17,18 @@ spec:
       {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
       nodePort: {{ .Values.service.nodePort }}
       {{- end }}
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategyType "blueGreen") .Values.rollout.blueGreen.previewService.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ default (printf "%s-preview" (include "devops-info-service.fullname" .)) .Values.rollout.blueGreen.previewServiceName }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.rollout.blueGreen.previewService.type }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.rollout.blueGreen.previewService.port }}
+      targetPort: {{ .Values.rollout.blueGreen.previewService.targetPort }}
+{{- end }}

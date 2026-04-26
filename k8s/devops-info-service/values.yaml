@@ -73,6 +73,36 @@ strategy:
     maxSurge: 1
     maxUnavailable: 0
 
+rollout:
+  enabled: true
+  strategyType: canary
+  revisionHistoryLimit: 3
+  canary:
+    maxSurge: "25%"
+    maxUnavailable: 0
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewServiceName: ""
+    previewService:
+      enabled: true
+      type: ClusterIP
+      port: 80
+      targetPort: 5001
+
 # Liveness probe — restarts the container if Flask becomes unresponsive
 livenessProbe:
   httpGet:

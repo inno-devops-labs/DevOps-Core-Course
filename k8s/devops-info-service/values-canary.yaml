@@ -1,0 +1,33 @@
+# Canary rollout profile for Lab 14.
+# Usage:
+# helm upgrade --install devops-rollouts k8s/devops-info-service -f k8s/devops-info-service/values-canary.yaml
+
+replicaCount: 3
+
+persistence:
+  enabled: false
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5001
+
+rollout:
+  enabled: true
+  strategyType: canary
+  canary:
+    maxSurge: "25%"
+    maxUnavailable: 0
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100

@@ -1,0 +1,24 @@
+# Blue-green rollout profile for Lab 14.
+# Usage:
+# helm upgrade --install devops-rollouts k8s/devops-info-service -f k8s/devops-info-service/values-bluegreen.yaml
+
+replicaCount: 2
+persistence:
+  enabled: false
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5001
+
+rollout:
+  enabled: true
+  strategyType: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewService:
+      enabled: true
+      type: ClusterIP
+      port: 80
+      targetPort: 5001
