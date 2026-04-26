@@ -1,10 +1,8 @@
 replicaCount: 1
 image:
-  tag: latest
+  tag: "latest"
 service:
   type: NodePort
-  port: 80
-  targetPort: 8000
 resources:
   limits:
     cpu: 100m
