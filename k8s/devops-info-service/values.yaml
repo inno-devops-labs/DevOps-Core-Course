@@ -32,6 +32,7 @@ configEnv:
 
 persistence:
   enabled: true
+  accessMode: ReadWriteOnce
   size: 100Mi
   storageClass: ""
 
@@ -102,6 +103,11 @@ rollout:
       type: ClusterIP
       port: 80
       targetPort: 5001
+
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  headlessServiceSuffix: headless
 
 # Liveness probe — restarts the container if Flask becomes unresponsive
 livenessProbe:
