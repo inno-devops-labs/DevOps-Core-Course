@@ -1,0 +1,15 @@
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+
+replicaCount: 3
+
+image:
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: NodePort
+  nodePort: 30088

@@ -1,0 +1,13 @@
+rollout:
+  enabled: true
+  strategy: canary
+
+replicaCount: 3
+
+image:
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: NodePort
+  nodePort: 30087

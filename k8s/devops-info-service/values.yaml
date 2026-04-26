@@ -37,6 +37,13 @@ persistence:
   mountPath: /data
   fileName: visits
 
+rollout:
+  enabled: false
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+
 podAnnotations: {}
 
 podLabels: {}
