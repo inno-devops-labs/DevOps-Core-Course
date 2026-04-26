@@ -1,0 +1,13 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "local",
+  "features": {
+    "visitsCounter": true,
+    "configHotReload": true,
+    "structuredLogging": true
+  },
+  "settings": {
+    "message": "Local Docker Compose configuration",
+    "owner": "ellilin"
+  }
+}

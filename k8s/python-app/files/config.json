@@ -1,0 +1,15 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "dev",
+  "features": {
+    "visitsCounter": true,
+    "configHotReload": true,
+    "structuredLogging": true,
+    "prometheusMetrics": true
+  },
+  "settings": {
+    "owner": "ellilin",
+    "course": "DevOps Engineering",
+    "lab": "lab12"
+  }
+}

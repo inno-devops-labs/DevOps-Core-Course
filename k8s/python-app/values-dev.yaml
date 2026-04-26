@@ -18,6 +18,16 @@ resources:
 env:
   RELEASE_TRACK: dev
 
+appConfig:
+  environment: dev
+  logLevel: debug
+  features:
+    visitsCounter: "true"
+    configHotReload: "true"
+
+persistence:
+  size: 100Mi
+
 vault:
   enabled: true
 

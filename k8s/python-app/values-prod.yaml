@@ -1,4 +1,4 @@
-replicaCount: 3
+replicaCount: 1
 
 image:
   tag: latest
@@ -17,6 +17,16 @@ resources:
 
 env:
   RELEASE_TRACK: prod
+
+appConfig:
+  environment: prod
+  logLevel: info
+  features:
+    visitsCounter: "true"
+    configHotReload: "true"
+
+persistence:
+  size: 1Gi
 
 vault:
   enabled: true

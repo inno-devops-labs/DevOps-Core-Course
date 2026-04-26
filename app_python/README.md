@@ -51,7 +51,7 @@ pip install -r requirements.txt
 ```bash
 python app.py
 ```
-The service will start on `http://0.0.0.0:5000`
+The service will start on `http://0.0.0.0:8000`
 
 ### Custom Configuration
 ```bash
@@ -93,7 +93,8 @@ xdg-open htmlcov/index.html  # Linux
 
 ### GET /
 
-Returns comprehensive service and system information.
+Returns comprehensive service and system information. Each successful request to this
+endpoint increments the persisted visits counter stored in `VISITS_FILE`.
 
 **Response:**
 ```json
@@ -104,6 +105,11 @@ Returns comprehensive service and system information.
     "description": "DevOps course info service",
     "framework": "Flask"
   },
+  "configuration": {
+    "applicationName": "devops-info-service",
+    "environment": "dev"
+  },
+  "visits": 42,
   "system": {
     "hostname": "my-laptop",
     "platform": "Linux",
@@ -126,7 +132,10 @@ Returns comprehensive service and system information.
   },
   "endpoints": [
     {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"}
+    {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/visits", "method": "GET", "description": "Current visit count"},
+    {"path": "/config", "method": "GET", "description": "Current application config"},
+    {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"}
   ]
 }
 ```
@@ -144,6 +153,35 @@ Simple health check endpoint for monitoring and Kubernetes probes.
 }
 ```
 
+### GET /visits
+
+Returns the current persisted root endpoint visit count without incrementing it.
+
+**Response:**
+```json
+{
+  "visits": 42,
+  "file": "/data/visits"
+}
+```
+
+### GET /config
+
+Returns the current JSON configuration loaded from `CONFIG_FILE`. The application
+checks the file modification time and reloads changed ConfigMap content without a
+process restart when Kubernetes updates the mounted file.
+
+**Response:**
+```json
+{
+  "config": {
+    "applicationName": "devops-info-service",
+    "environment": "dev"
+  },
+  "file": "/config/config.json"
+}
+```
+
 ## Configuration
 
 The application can be configured via environment variables:
@@ -151,26 +189,34 @@ The application can be configured via environment variables:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `HOST` | `0.0.0.0` | Host to bind the server to |
-| `PORT` | `5000` | Port number for the server |
+| `PORT` | `8000` | Port number for the server |
 | `DEBUG` | `False` | Enable debug mode |
+| `VISITS_FILE` | `/data/visits` | File used to persist root endpoint visit count |
+| `CONFIG_FILE` | `/config/config.json` | JSON configuration file, usually mounted from a ConfigMap |
 
 ## Examples
 
 ### Testing with curl
 ```bash
 # Main endpoint
-curl http://localhost:5000/
+curl http://localhost:8000/
 
 # Health check
-curl http://localhost:5000/health
+curl http://localhost:8000/health
+
+# Current visits counter
+curl http://localhost:8000/visits
+
+# Current app configuration
+curl http://localhost:8000/config
 
 # Pretty print JSON
-curl http://localhost:5000/ | jq
+curl http://localhost:8000/ | jq
 ```
 
 ### Testing with Python
 ```bash
-python -c "import requests; print(requests.get('http://localhost:5000/').json())"
+python -c "import requests; print(requests.get('http://localhost:8000/').json())"
 ```
 
 ## Docker
@@ -195,14 +241,32 @@ Run the container with port mapping to access the service:
 
 ```bash
 # Run with default port mapping
-docker run -d -p 5000:5000 --name devops-info devops-info-service:latest
+docker run -d -p 8000:8000 --name devops-info devops-info-service:latest
 
 # Run with custom environment variables
-docker run -d -p 8080:5000 -e PORT=5000 --name devops-info devops-info-service:latest
+docker run -d -p 8080:8000 -e PORT=8000 --name devops-info devops-info-service:latest
 
 # Run in the background and view logs
-docker run -d -p 5000:5000 --name devops-info devops-info-service:latest
+docker run -d -p 8000:8000 --name devops-info devops-info-service:latest
 docker logs -f devops-info
+```
+
+### Running with Docker Compose and Persistent Visits
+
+The Lab 12 Docker Compose file mounts `./data` to `/data`, so the visits counter
+survives container restarts. It also mounts `./config/config.json` at
+`/config/config.json` for local config reload testing.
+
+```bash
+cd app_python
+docker compose up --build -d
+curl http://localhost:8000/
+curl http://localhost:8000/
+curl http://localhost:8000/visits
+cat data/visits
+docker compose restart
+curl http://localhost:8000/visits
+docker compose down
 ```
 
 ### Pulling from Docker Hub
@@ -217,7 +281,7 @@ docker pull <your-dockerhub-username>/devops-info-service:latest
 docker pull <your-dockerhub-username>/devops-info-service:v1.0.0
 
 # Run the pulled image
-docker run -d -p 5000:5000 <your-dockerhub-username>/devops-info-service:latest
+docker run -d -p 8000:8000 <your-dockerhub-username>/devops-info-service:latest
 ```
 
 ### Docker Benefits

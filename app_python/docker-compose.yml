@@ -1,0 +1,19 @@
+services:
+  devops-info-python:
+    build: .
+    image: ellilin/devops-info-service:lab12
+    container_name: devops-info-python-lab12
+    ports:
+      - "8000:8000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8000"
+      DEBUG: "false"
+      VISITS_FILE: /data/visits
+      CONFIG_FILE: /config/config.json
+      APP_ENV: local
+      LOG_LEVEL: info
+      FEATURE_VISITS_COUNTER: "true"
+    volumes:
+      - ./data:/data
+      - ./config:/config:ro

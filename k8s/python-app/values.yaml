@@ -4,7 +4,7 @@ fullnameOverride: ""
 global:
   partOf: devops-lab11
 
-replicaCount: 3
+replicaCount: 1
 
 image:
   repository: ellilin/devops-info-service
@@ -25,6 +25,25 @@ env:
   PORT: "8000"
   DEBUG: "false"
   RELEASE_TRACK: stable
+  VISITS_FILE: /data/visits
+  CONFIG_FILE: /config/config.json
+
+appConfig:
+  environment: dev
+  logLevel: info
+  features:
+    visitsCounter: "true"
+    configHotReload: "true"
+
+configMount:
+  path: /config
+
+persistence:
+  enabled: true
+  size: 100Mi
+  accessMode: ReadWriteOnce
+  storageClass: ""
+  mountPath: /data
 
 secret:
   create: true

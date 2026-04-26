@@ -9,10 +9,17 @@ import os
 import platform
 import socket
 import sys
+import threading
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
 
 app = Flask(__name__)
 
@@ -20,6 +27,8 @@ app = Flask(__name__)
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", 8000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
+CONFIG_FILE = os.getenv("CONFIG_FILE", "/config/config.json")
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
@@ -50,6 +59,11 @@ DEVOPS_INFO_SYSTEM_COLLECTION_SECONDS = Histogram(
     "Time spent collecting system information",
     buckets=(0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1),
 )
+
+visits_lock = threading.Lock()
+config_lock = threading.Lock()
+config_cache = {}
+config_mtime = None
 
 
 class JSONFormatter(logging.Formatter):
@@ -98,7 +112,7 @@ def setup_logging():
     logging.root.addHandler(json_handler)
 
     # Configure werkzeug logger
-    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger = logging.getLogger("werkzeug")
     werkzeug_logger.setLevel(logging.INFO)
     werkzeug_logger.handlers = [json_handler]
 
@@ -122,6 +136,65 @@ def should_track_metrics():
     return request.path != "/metrics"
 
 
+def read_visits():
+    """Read the persisted visits counter from disk."""
+    try:
+        with open(VISITS_FILE, encoding="utf-8") as counter_file:
+            return int(counter_file.read().strip() or "0")
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        logger.warning("Visits file contains invalid data; resetting counter to 0")
+        return 0
+
+
+def write_visits(value):
+    """Persist the visits counter using an atomic replace."""
+    visits_dir = os.path.dirname(VISITS_FILE)
+    if visits_dir:
+        os.makedirs(visits_dir, exist_ok=True)
+
+    temp_path = f"{VISITS_FILE}.tmp"
+    with open(temp_path, "w", encoding="utf-8") as counter_file:
+        counter_file.write(f"{value}\n")
+    os.replace(temp_path, VISITS_FILE)
+
+
+def increment_visits():
+    """Increment and persist the visits counter."""
+    with visits_lock:
+        visits = read_visits() + 1
+        write_visits(visits)
+        return visits
+
+
+def load_app_config():
+    """Load ConfigMap-backed JSON config and refresh when the file changes."""
+    global config_cache, config_mtime
+
+    with config_lock:
+        try:
+            current_mtime = os.path.getmtime(CONFIG_FILE)
+        except FileNotFoundError:
+            config_cache = {
+                "applicationName": "devops-info-service",
+                "environment": os.getenv("APP_ENV", "local"),
+                "features": {"visitsCounter": True, "configHotReload": True},
+                "settings": {"source": "defaults"},
+            }
+            config_mtime = None
+            return config_cache
+
+        if config_mtime == current_mtime:
+            return config_cache
+
+        with open(CONFIG_FILE, encoding="utf-8") as config_file:
+            config_cache = json.load(config_file)
+        config_mtime = current_mtime
+        logger.info("Reloaded application config from %s", CONFIG_FILE)
+        return config_cache
+
+
 @app.before_request
 def log_request():
     """Log incoming requests."""
@@ -138,7 +211,9 @@ def log_request():
 @app.after_request
 def log_response(response):
     """Log response information."""
-    duration_ms = (datetime.now(timezone.utc) - request.start_time).total_seconds() * 1000
+    duration_ms = (
+        datetime.now(timezone.utc) - request.start_time
+    ).total_seconds() * 1000
     endpoint_label = getattr(request, "endpoint_label", get_endpoint_label())
 
     if getattr(request, "metrics_enabled", False):
@@ -157,11 +232,7 @@ def log_response(response):
         ).dec()
 
     log_record = logger.makeRecord(
-        logger.name,
-        logging.INFO,
-        "", 0,
-        f"{request.method} {request.path}",
-        (), None
+        logger.name, logging.INFO, "", 0, f"{request.method} {request.path}", (), None
     )
     log_record.method = request.method
     log_record.path = request.path
@@ -222,6 +293,8 @@ def get_request_info():
 def index():
     """Main endpoint - service and system information."""
     DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/").inc()
+    visits = increment_visits()
+    app_config = load_app_config()
     uptime = get_uptime()
     now = datetime.now(timezone.utc)
 
@@ -232,6 +305,8 @@ def index():
             "description": "DevOps course info service",
             "framework": "Flask",
         },
+        "configuration": app_config,
+        "visits": visits,
         "system": get_system_info(),
         "runtime": {
             "uptime_seconds": uptime["seconds"],
@@ -243,6 +318,12 @@ def index():
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Current visit count"},
+            {
+                "path": "/config",
+                "method": "GET",
+                "description": "Current application config",
+            },
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
@@ -265,6 +346,22 @@ def health():
     )
 
 
+@app.route("/visits")
+def visits():
+    """Return the current persisted visit count."""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/visits").inc()
+    with visits_lock:
+        current_visits = read_visits()
+    return jsonify({"visits": current_visits, "file": VISITS_FILE})
+
+
+@app.route("/config")
+def config():
+    """Return the current application configuration."""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/config").inc()
+    return jsonify({"config": load_app_config(), "file": CONFIG_FILE})
+
+
 @app.route("/metrics")
 def metrics():
     """Prometheus metrics endpoint."""
@@ -275,11 +372,7 @@ def metrics():
 def not_found(error):
     """Handle 404 errors."""
     log_record = logger.makeRecord(
-        logger.name,
-        logging.WARNING,
-        "", 0,
-        f"Not Found: {request.path}",
-        (), None
+        logger.name, logging.WARNING, "", 0, f"Not Found: {request.path}", (), None
     )
     log_record.method = request.method
     log_record.path = request.path

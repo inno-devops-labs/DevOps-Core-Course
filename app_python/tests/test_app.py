@@ -12,12 +12,18 @@ Tests cover:
 from datetime import datetime
 
 import pytest
-from app import app
+import app as app_module
+
+app = app_module.app
 
 
 @pytest.fixture
-def client():
+def client(tmp_path, monkeypatch):
     """Create a test client for the Flask application."""
+    monkeypatch.setattr(app_module, "VISITS_FILE", str(tmp_path / "visits"))
+    monkeypatch.setattr(app_module, "CONFIG_FILE", str(tmp_path / "config.json"))
+    monkeypatch.setattr(app_module, "config_cache", {})
+    monkeypatch.setattr(app_module, "config_mtime", None)
     app.config["TESTING"] = True
     with app.test_client() as client:
         yield client
@@ -43,6 +49,8 @@ class TestMainEndpoint:
 
         # Verify all top-level keys exist
         assert "service" in data
+        assert "configuration" in data
+        assert "visits" in data
         assert "system" in data
         assert "runtime" in data
         assert "request" in data
@@ -132,6 +140,19 @@ class TestMainEndpoint:
         assert health_endpoint is not None
         assert health_endpoint["method"] == "GET"
 
+        visits_endpoint = next((e for e in endpoints if e["path"] == "/visits"), None)
+        assert visits_endpoint is not None
+        assert visits_endpoint["method"] == "GET"
+
+    def test_main_endpoint_increments_visits(self, client):
+        """Test that root requests increment the persisted visits counter."""
+        response1 = client.get("/")
+        response2 = client.get("/")
+
+        assert response1.get_json()["visits"] == 1
+        assert response2.get_json()["visits"] == 2
+        assert client.get("/visits").get_json()["visits"] == 2
+
 
 class TestHealthEndpoint:
     """Tests for the /health endpoint."""
@@ -204,10 +225,63 @@ class TestMetricsEndpoint:
         response = client.get("/metrics")
         body = response.get_data(as_text=True)
 
-        assert 'http_requests_total{endpoint="/",method="GET",status_code="200"}' in body
-        assert 'http_requests_total{endpoint="/health",method="GET",status_code="200"}' in body
+        assert (
+            'http_requests_total{endpoint="/",method="GET",status_code="200"}' in body
+        )
+        assert (
+            'http_requests_total{endpoint="/health",method="GET",status_code="200"}'
+            in body
+        )
         assert 'devops_info_endpoint_calls_total{endpoint="/"}' in body
         assert 'devops_info_endpoint_calls_total{endpoint="/health"}' in body
+
+
+class TestVisitsEndpoint:
+    """Tests for the /visits endpoint."""
+
+    def test_visits_endpoint_returns_current_count(self, client):
+        """Test that /visits returns the persisted counter without incrementing it."""
+        client.get("/")
+        client.get("/")
+
+        response = client.get("/visits")
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data["visits"] == 2
+        assert data["file"].endswith("visits")
+
+
+class TestConfigEndpoint:
+    """Tests for the /config endpoint and file reload behavior."""
+
+    def test_config_endpoint_returns_defaults_without_file(self, client):
+        """Test default config when the ConfigMap file is absent."""
+        response = client.get("/config")
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data["config"]["applicationName"] == "devops-info-service"
+        assert data["config"]["features"]["configHotReload"] is True
+
+    def test_config_endpoint_reloads_changed_file(self, client, tmp_path):
+        """Test that config changes are loaded from disk without restarting."""
+        config_file = tmp_path / "config.json"
+        config_file.write_text(
+            '{"applicationName":"devops-info-service","environment":"dev"}',
+            encoding="utf-8",
+        )
+        app_module.CONFIG_FILE = str(config_file)
+
+        assert client.get("/config").get_json()["config"]["environment"] == "dev"
+
+        config_file.write_text(
+            '{"applicationName":"devops-info-service","environment":"prod"}',
+            encoding="utf-8",
+        )
+        app_module.config_mtime = None
+
+        assert client.get("/config").get_json()["config"]["environment"] == "prod"
 
 
 class TestErrorHandling:

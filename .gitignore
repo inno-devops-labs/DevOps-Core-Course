@@ -29,6 +29,10 @@ __pycache__/
 *.so
 .Python
 *.egg-info/
+.coverage
+coverage.xml
+htmlcov/
+app_python/data/
 
 # Credentials
 *.pem
