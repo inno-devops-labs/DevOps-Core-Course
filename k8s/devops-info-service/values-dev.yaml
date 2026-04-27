@@ -1,6 +1,11 @@
 # Development: single replica, relaxed resources, NodePort, persistence + ConfigMap checksum (Lab 12)
 replicaCount: 2
 
+# Lab 14: use canary strategy in dev (auto promotion with pauses)
+rollouts:
+  enabled: true
+  strategy: canary
+
 config:
   checksumAnnotation: true
   mountPath: /config/config.json

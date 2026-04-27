@@ -1,6 +1,6 @@
-{{- if not .Values.rollouts.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollouts.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "common-lib.fullname" . }}
   labels:
@@ -10,8 +10,7 @@ metadata:
     {{- end }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  strategy:
-    {{- toYaml .Values.strategy | nindent 4 }}
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       {{- include "common-lib.selectorLabels" . | nindent 6 }}
@@ -93,4 +92,26 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
+  strategy:
+    {{- if eq .Values.rollouts.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "common-lib.fullname" . }}
+      previewService: {{ include "common-lib.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollouts.blueGreen.autoPromotionEnabled }}
+    {{- else }}
+    canary:
+      maxSurge: 1
+      maxUnavailable: 0
+      steps:
+        - setWeight: 20
+        - pause: {} # manual promotion required
+        - setWeight: 40
+        - pause: { duration: 30s }
+        - setWeight: 60
+        - pause: { duration: 30s }
+        - setWeight: 80
+        - pause: { duration: 30s }
+        - setWeight: 100
+    {{- end }}
 {{- end }}
+

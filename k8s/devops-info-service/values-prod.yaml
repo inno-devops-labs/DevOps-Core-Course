@@ -1,6 +1,13 @@
 # Production: HA replicas, tighter resources, LoadBalancer-ready service type
 replicaCount: 2
 
+# Lab 14: use blue-green strategy in prod (manual promotion)
+rollouts:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+
 image:
   tag: latest
 

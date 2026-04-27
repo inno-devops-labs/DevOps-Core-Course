@@ -110,3 +110,11 @@ hooks:
   postInstall:
     image: busybox:1.36
     weight: "5"
+
+# Lab 14: Argo Rollouts (Progressive Delivery)
+rollouts:
+  enabled: false
+  # canary | blueGreen
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
