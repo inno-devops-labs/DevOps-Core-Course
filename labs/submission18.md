@@ -55,6 +55,7 @@ rsync -av --delete \
   --exclude '.pytest_cache' \
   --exclude '.ruff_cache' \
   --exclude '.coverage' \
+  --exclude 'data' \
   app_python/ labs/lab18/app_python/
 ```
 
@@ -131,7 +132,7 @@ let
     src = ./.;
     filter = path: type:
       let
-        name = baseNameOf path;
+        name = builtins.baseNameOf path;
       in
         !(name == "result"
           || name == ".git"
@@ -139,7 +140,9 @@ let
           || name == "__pycache__"
           || name == ".pytest_cache"
           || name == ".ruff_cache"
-          || name == ".coverage");
+          || name == ".coverage"
+          || name == "data"
+          || name == "visits");
   };
 in
 
@@ -564,7 +567,7 @@ zagur@LAPTOP-JONCQBVT:/mnt/c/Users/zagur/DevOps/DevOps-Core-Course/labs/lab18/ap
 Hash 2: fb91b434cfa968bc8d3eb7143d949872c77f120bcc34f4beb9f6a744a6044733
 ```
 
-### 6.3 Forced rebuild attempt
+### 6.3 Forced rebuild attempt and cache behavior
 
 ```bash
 STORE_PATH=$(readlink -f result)
@@ -600,6 +603,41 @@ Store path after forced rebuild: /nix/store/5xa9zc9hps38wbrlllfr8wisn026ah3r-dev
 zagur@LAPTOP-JONCQBVT:/mnt/c/Users/zagur/DevOps/DevOps-Core-Course/labs/lab18/app_python$ echo "Hash after forced rebuild: $HASH_3"
 Hash after forced rebuild: fb91b434cfa968bc8d3eb7143d949872c77f120bcc34f4beb9f6a744a6044733
 ```
+
+```bash
+zagur@LAPTOP-JONCQBVT:/mnt/c/Users/zagur/DevOps/DevOps-Core-Course/labs/lab18/app_python$ nix-build --check
+checking outputs of '/nix/store/w10m54snjvyjqiyvg9znq3zff1c6k559-devops-info-service-1.0.0.drv'...
+Sourcing python-remove-tests-dir-hook
+Sourcing python-catch-conflicts-hook.sh
+Sourcing python-remove-bin-bytecode-hook.sh
+Sourcing python-imports-check-hook.sh
+Using pythonImportsCheckPhase
+Sourcing python-namespaces-hook
+Running phase: unpackPhase
+unpacking source archive /nix/store/vsyv67b056zkw37i1vdrw9qc0wih6rnz-source
+source root is source
+setting SOURCE_DATE_EPOCH to timestamp 315619200 of file "source/tests/test_app.py"
+Running phase: patchPhase
+Running phase: updateAutotoolsGnuConfigScriptsPhase
+Running phase: configurePhase
+no configure script, doing nothing
+Running phase: installPhase
+Running phase: fixupPhase
+shrinking RPATHs of ELF executables and libraries in /nix/store/dmi8lnqa79zi5cb446hqa13515rfrb1a-devops-info-service-1.0.0
+checking for references to /build/ in /nix/store/dmi8lnqa79zi5cb446hqa13515rfrb1a-devops-info-service-1.0.0...
+patching script interpreter paths in /nix/store/dmi8lnqa79zi5cb446hqa13515rfrb1a-devops-info-service-1.0.0
+stripping (with command strip and flags -S -p) in  /nix/store/dmi8lnqa79zi5cb446hqa13515rfrb1a-devops-info-service-1.0.0/bin
+Rewriting #! /nix/store/v8sa6r6q037ihghxfbwzjj4p59v2x0pv-bash-5.3p9/bin/bash -e to #!/nix/store/pzdalg368npikvpq4ncz2saxnz19v53k-python3-3.13.12
+Executing pythonRemoveTestsDir
+Finished executing pythonRemoveTestsDir
+Running phase: pythonCatchConflictsPhase
+Running phase: pythonRemoveBinBytecodePhase
+Running phase: pythonImportsCheckPhase
+Executing pythonImportsCheckPhase
+/nix/store/dmi8lnqa79zi5cb446hqa13515rfrb1a-devops-info-service-1.0.0
+```
+
+The explicit store deletion was blocked because the output path was still referenced by a Nix GC root. Therefore, this part should be interpreted as a forced rebuild attempt rather than a successful deletion from the store. The repeated `nix-build` commands still demonstrate that the same inputs resolve to the same store path and the same output hash.
 
 ### 6.4 Result
 
@@ -1342,7 +1380,7 @@ devops-info-service-nix          1.0.0            fe19294e58dc   56 years ago   
 
 | Metric | Lab 2 Dockerfile | Lab 18 Nix dockerTools |
 |---|---:|---:|
-| Image size | TODO: paste size | TODO: paste size |
+| Image size | 166MB | 207MB |
 | Reproducibility | Different hashes between builds | Identical hashes between builds |
 | Base image | `python:3.13-slim` | No traditional base image |
 | Timestamp behavior | Build timestamp changes | Fixed timestamp |
@@ -1351,6 +1389,8 @@ devops-info-service-nix          1.0.0            fe19294e58dc   56 years ago   
 | Runtime command | `python app.py` | Nix wrapper command |
 
 The Nix image is assembled from the application closure rather than a mutable base image tag. This improves reproducibility and makes the runtime dependency set more explicit.
+
+In this run, the Nix image is larger than the traditional Docker image. The main benefit of the Nix image in this lab is not minimal size, but deterministic construction and explicit dependency closure.
 
 ---
 
