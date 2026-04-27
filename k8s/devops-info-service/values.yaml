@@ -29,6 +29,7 @@ persistence:
   enabled: false
   size: 100Mi
   storageClass: ""
+  accessMode: ReadWriteOnce
 
 resources:
   requests:
@@ -107,3 +108,12 @@ vault:
   enabled: false
   role: devops-info-service
   secretPath: secret/data/devops-info-service/config
+
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  revisionHistoryLimit: 3
+
+  updateStrategy:
+    type: RollingUpdate
+    partition: 0

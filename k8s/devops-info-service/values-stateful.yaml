@@ -1,0 +1,93 @@
+replicaCount: 3
+
+image:
+  repository: egorlazutkin/devops-info-service
+  tag: "lab12"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30084
+
+containerPort: 5000
+
+env:
+  HOST: "0.0.0.0"
+  PORT: "5000"
+  DEBUG: "true"
+  RELEASE_VERSION: "lab15-stateful"
+
+config:
+  environment: "stateful"
+  logLevel: "debug"
+  featureVisitsEnabled: true
+  featureMetricsEnabled: true
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"
+
+readinessProbe:
+  path: /health
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+livenessProbe:
+  path: /health
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+secret:
+  username: "user-stateful"
+  password: "StatefulPass12345"
+
+deployment:
+  enabled: false
+
+rollout:
+  enabled: false
+  strategy: canary
+  revisionHistoryLimit: 3
+
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    timeoutSeconds: 5
+    expectedStatus: "healthy"
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  revisionHistoryLimit: 3
+
+  updateStrategy:
+    type: RollingUpdate
+    partition: 0
+
+previewService:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+
+vault:
+  enabled: false
+  role: devops-info-service
+  secretPath: secret/data/devops-info-service/config
