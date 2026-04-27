@@ -19,6 +19,8 @@ resources:
     cpu: 200m
     memory: 256Mi
 
+podAnnotations:
+  rollouts-demo: "2026-04-27"
 service:
   type: LoadBalancer
 
