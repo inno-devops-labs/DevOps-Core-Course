@@ -12,7 +12,7 @@ let
     src = ./.;
     filter = path: type:
       let
-        name = baseNameOf path;
+        name = builtins.baseNameOf path;
       in
         !(name == "result"
           || name == ".git"
@@ -20,7 +20,9 @@ let
           || name == "__pycache__"
           || name == ".pytest_cache"
           || name == ".ruff_cache"
-          || name == ".coverage");
+          || name == ".coverage"
+          || name == "data"
+          || name == "visits");
   };
 in
 
