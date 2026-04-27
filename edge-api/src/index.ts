@@ -6,7 +6,7 @@ export interface Env {
 	SETTINGS: KVNamespace;
 }
 
-const VERSION = "v1";
+const VERSION = "v2";
 
 const routes = [
 	"GET /",

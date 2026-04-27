@@ -53,3 +53,4 @@ __pycache__/
 actions-runner/
 argocd.exe
 kubectl-argo-rollouts.exe
+.dev.vars
