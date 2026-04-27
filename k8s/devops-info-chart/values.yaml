@@ -101,6 +101,12 @@ deployment:
       maxSurge: 1
       maxUnavailable: 0
 
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+
 rollout:
   enabled: true
   strategy: canary

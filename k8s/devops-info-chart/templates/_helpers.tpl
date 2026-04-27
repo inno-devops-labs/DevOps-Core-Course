@@ -90,6 +90,13 @@ PersistentVolumeClaim name.
 {{- end }}
 
 {{/*
+Headless Service name used by StatefulSet.
+*/}}
+{{- define "devops-info.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Active Service name used by Rollout blue-green strategy.
 */}}
 {{- define "devops-info.activeServiceName" -}}

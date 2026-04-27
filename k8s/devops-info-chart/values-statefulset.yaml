@@ -1,0 +1,36 @@
+replicaCount: 3
+
+service:
+  type: NodePort
+  nodePort: 30082
+
+rollout:
+  enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+
+persistence:
+  enabled: true
+  size: 100Mi
+  accessMode: ReadWriteOnce
+  storageClass: ""
+  mountPath: /data
+
+image:
+  tag: "latest"
+
+appConfig:
+  environment: "lab15"
+  logLevel: "INFO"
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "150m"
+    memory: "192Mi"
