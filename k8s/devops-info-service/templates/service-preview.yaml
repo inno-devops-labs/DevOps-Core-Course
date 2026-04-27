@@ -1,0 +1,22 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
+{{- $previewName := printf "%s-preview" (include "devops-info-service.fullname" .) -}}
+{{- $existingPreviewService := lookup "v1" "Service" .Release.Namespace $previewName -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $previewName }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.previewService.type }}
+  selector:
+    {{- if $existingPreviewService }}
+    {{- toYaml $existingPreviewService.spec.selector | nindent 4 }}
+    {{- else }}
+    {{- include "devops-info-service.selectorLabels" . | nindent 4 }}
+    {{- end }}
+  ports:
+    - port: {{ .Values.previewService.port }}
+      targetPort: {{ .Values.previewService.targetPort }}
+      protocol: TCP
+{{- end }}

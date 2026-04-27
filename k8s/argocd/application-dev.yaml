@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/Boogyy/DevOps-Core-Course.git
-    targetRevision: lab13
+    targetRevision: lab14
     path: k8s/devops-info-service
     helm:
       valueFiles:

@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 5
 
 image:
   repository: egorlazutkin/devops-info-service
@@ -26,7 +26,7 @@ config:
   featureMetricsEnabled: true
 
 persistence:
-  enabled: true
+  enabled: false
   size: 100Mi
   storageClass: ""
 
@@ -77,3 +77,33 @@ hooks:
 secret:
   username: "change-me"
   password: "change-me"
+
+deployment:
+  enabled: false
+
+rollout:
+  enabled: true
+  strategy: canary
+  revisionHistoryLimit: 3
+
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    timeoutSeconds: 5
+    expectedStatus: "healthy"
+
+previewService:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+
+vault:
+  enabled: false
+  role: devops-info-service
+  secretPath: secret/data/devops-info-service/config

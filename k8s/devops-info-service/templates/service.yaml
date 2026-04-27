@@ -1,13 +1,19 @@
+{{- $fullname := include "devops-info-service.fullname" . -}}
+{{- $existingService := lookup "v1" "Service" .Release.Namespace $fullname -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "devops-info-service.fullname" . }}
+  name: {{ $fullname }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   selector:
+    {{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") $existingService }}
+    {{- toYaml $existingService.spec.selector | nindent 4 }}
+    {{- else }}
     {{- include "devops-info-service.selectorLabels" . | nindent 4 }}
+    {{- end }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
