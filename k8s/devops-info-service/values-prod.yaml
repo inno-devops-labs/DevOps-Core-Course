@@ -20,7 +20,7 @@ resources:
     memory: 256Mi
 
 podAnnotations:
-  rollouts-demo: "2026-04-27"
+  rollouts-demo: "2026-04-27update"
 service:
   type: LoadBalancer
 
