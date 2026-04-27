@@ -6,7 +6,9 @@ metadata:
   labels:
     {{- include "common-lib.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  # Preview service should be internal-only to avoid LoadBalancer/NodePort quirks
+  # (especially in local clusters like minikube) and to become Healthy immediately.
+  type: ClusterIP
   selector:
     {{- include "common-lib.selectorLabels" . | nindent 4 }}
   ports:
@@ -14,8 +16,5 @@ spec:
       protocol: TCP
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
-      {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
-      nodePort: {{ .Values.service.nodePort }}
-      {{- end }}
 {{- end }}
 
