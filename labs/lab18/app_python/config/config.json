@@ -1,0 +1,11 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "local",
+  "settings": {
+    "featureFlags": {
+      "debugEndpoints": true,
+      "showVisitsInRoot": true
+    },
+    "logLevel": "INFO"
+  }
+}

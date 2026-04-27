@@ -1,0 +1,4 @@
+
+# Keep Nix files with Unix line endings
+*.nix text eol=lf
+flake.lock text eol=lf

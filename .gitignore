@@ -54,3 +54,18 @@ actions-runner/
 argocd.exe
 kubectl-argo-rollouts.exe
 .dev.vars
+
+# Lab 18 / Nix build outputs and runtime data
+labs/lab18/app_python/result
+labs/lab18/app_python/result-*
+labs/lab18/app_python/data/
+
+# Runtime data
+app_python/data/
+labs/lab18/app_python/data/
+
+# Nix build outputs
+result
+result-*
+labs/lab18/app_python/result
+labs/lab18/app_python/result-*

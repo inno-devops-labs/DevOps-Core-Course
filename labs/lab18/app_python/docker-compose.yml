@@ -1,0 +1,21 @@
+services:
+  devops-info-service:
+    build: .
+    container_name: devops-info-service
+    ports:
+      - "5000:5000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 5000
+      DEBUG: "false"
+      SERVICE_NAME: devops-info-service
+      SERVICE_VERSION: "1.0.0"
+      SERVICE_DESCRIPTION: "DevOps course info service"
+      APP_ENV: local
+      LOG_LEVEL: INFO
+      DATA_DIR: /app/data
+      VISITS_FILE: /app/data/visits
+      CONFIG_FILE: /app/config/config.json
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config:ro
