@@ -9,7 +9,7 @@ rollouts:
     autoPromotionEnabled: false
 
 image:
-  tag: latest
+  tag: v1.0.0
 
 resources:
   limits:
