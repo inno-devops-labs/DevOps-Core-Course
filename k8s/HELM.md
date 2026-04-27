@@ -19,7 +19,8 @@ The chart lives at `k8s/devops-info-service/` and packages the Lab 9 workload as
 | `templates/service-preview.yaml` | Preview service for blue-green strategy (Lab 14). |
 | `templates/statefulset.yaml` | StatefulSet template with `volumeClaimTemplates` for per-pod persistent volumes (Lab 15). |
 | `templates/service-headless.yaml` | Headless Service (`clusterIP: None`) for stable StatefulSet pod DNS (Lab 15). |
-| `templates/_helpers.tpl` | Shared helpers: `fullname`, chart name, labels, selector labels. |
+| `templates/_helpers.tpl` | Shared helpers: `fullname`, chart name, labels, selector labels, init-container blocks (Lab 16). |
+| `values-monitoring-lab16.yaml` | Turns on Lab 16 init containers (`wait-for-DNS` + `wget` into shared `emptyDir`). |
 | `templates/NOTES.txt` | Post-install hints (NodePort URL, LoadBalancer wait, or port-forward). |
 | `templates/hooks/pre-install-job.yaml` | `pre-install` Job (validation placeholder). |
 | `templates/hooks/post-install-job.yaml` | `post-install` Job (smoke-check placeholder). |
@@ -46,6 +47,7 @@ The chart lives at `k8s/devops-info-service/` and packages the Lab 9 workload as
 | `serviceAccount` / `vault.injector` | Optional **ServiceAccount** and **Vault Agent Injector** annotations (Lab 11); see `values-vault.yaml` and `k8s/SECRETS.md`. |
 | `rollout` | Progressive delivery settings (`enabled`, `strategy`, canary steps, blue-green promotion options) for Argo Rollouts (Lab 14). |
 | `statefulset` | Stateful workload mode (`enabled`, pod management policy, per-pod claim template settings) for Lab 15. |
+| `initContainers` | Lab 16: optional wait-for-DNS and wget-to-shared-volume inits; default `enabled: false`; use `values-monitoring-lab16.yaml` to enable. |
 
 **Customize per environment**
 

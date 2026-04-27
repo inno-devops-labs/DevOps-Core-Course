@@ -1,6 +1,6 @@
 # Kubernetes deployment — DevOps Info Service
 
-The same application is packaged as a **Helm chart** under `k8s/devops-info-service/` (Lab 10). Install with Helm or render manifests with `helm template`; see `k8s/HELM.md` for chart documentation. **Lab 11** (Secrets, Vault) is documented in `k8s/SECRETS.md`, **Lab 12** (ConfigMaps/PVC) in `k8s/CONFIGMAPS.md`, **Lab 13** (ArgoCD GitOps) in `k8s/ARGOCD.md`, **Lab 14** (Argo Rollouts) in `k8s/ROLLOUTS.md`, and **Lab 15** (StatefulSet) in `k8s/STATEFULSET.md`.
+The same application is packaged as a **Helm chart** under `k8s/devops-info-service/` (Lab 10). Install with Helm or render manifests with `helm template`; see `k8s/HELM.md` for chart documentation. **Lab 11** (Secrets, Vault) is documented in `k8s/SECRETS.md`, **Lab 12** (ConfigMaps/PVC) in `k8s/CONFIGMAPS.md`, **Lab 13** (ArgoCD GitOps) in `k8s/ARGOCD.md`, **Lab 14** (Argo Rollouts) in `k8s/ROLLOUTS.md`, **Lab 15** (StatefulSet) in `k8s/STATEFULSET.md`, and **Lab 16** (monitoring, kube-prometheus-stack, init containers) in `k8s/MONITORING.md`.
 
 ## 1. Architecture Overview
 

@@ -31,6 +31,7 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "devops-info-service.initContainersBlock" . }}
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -55,6 +56,7 @@ spec:
             - name: data-volume
               mountPath: /data
           {{- end }}
+          {{- include "devops-info-service.initWorkAppVolumeMount" . }}
           ports:
             - name: {{ .Values.containerPortName }}
               containerPort: {{ .Values.containerPort }}
@@ -74,6 +76,7 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "devops-info-service.fullname" . }}-data
         {{- end }}
+        {{- include "devops-info-service.initWorkVolume" . }}
   strategy:
     {{- if eq .Values.rollout.strategy "blueGreen" }}
     blueGreen:

@@ -1,0 +1,21 @@
+# Optional overrides for: helm install <release> prometheus-community/kube-prometheus-stack -n monitoring --create-namespace -f k8s/monitoring/kube-prometheus-stack-values.yaml
+# Lab 16 — kube-prometheus-stack (chart major versions differ; see chart README for your Helm version)
+grafana:
+  adminPassword: prom-operator
+  # Reduce footprint on small clusters (tune for production separately)
+  persistence:
+    enabled: false
+
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    # scrapeInterval, resources: adjust per environment
+
+defaultRules:
+  create: true
+
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true

@@ -142,6 +142,20 @@ rollout:
     autoPromotionSeconds: null
     scaleDownDelaySeconds: 30
 
+# Lab 16 — init containers (off by default; use values-monitoring-lab16.yaml to enable for the lab)
+initContainers:
+  enabled: false
+  waitFor:
+    enabled: true
+    image: busybox:1.36
+    host: kubernetes.default.svc.cluster.local
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: "https://www.example.com/index.html"
+    destName: "index.html"
+    appMountPath: /data/init
+
 # Lab 15 — StatefulSet mode (replaces Deployment/Rollout when enabled)
 statefulset:
   enabled: false

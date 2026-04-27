@@ -26,6 +26,7 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- include "devops-info-service.initContainersBlock" . }}
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -48,6 +49,7 @@ spec:
               readOnly: true
             - name: {{ .Values.statefulset.volumeClaimTemplate.name }}
               mountPath: /data
+          {{- include "devops-info-service.initWorkAppVolumeMount" . }}
           ports:
             - name: {{ .Values.containerPortName }}
               containerPort: {{ .Values.containerPort }}
@@ -62,6 +64,7 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
+        {{- include "devops-info-service.initWorkVolume" . }}
   volumeClaimTemplates:
     - metadata:
         name: {{ .Values.statefulset.volumeClaimTemplate.name }}
