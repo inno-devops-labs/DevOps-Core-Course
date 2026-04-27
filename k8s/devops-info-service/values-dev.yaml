@@ -20,7 +20,7 @@ persistence:
   storageClass: ""
 
 image:
-  tag: latest
+  tag: latest-canary-1
 
 resources:
   limits:
