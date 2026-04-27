@@ -1,0 +1,30 @@
+replicaCount: 3
+
+image:
+  repository: devops-info-service
+  tag: "lab15-local"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30084
+
+env:
+  RELEASE_VERSION: "stateful-v1"
+
+rollout:
+  enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition:
+  headlessService:
+    enabled: true
+    name: ""
+    publishNotReadyAddresses: true

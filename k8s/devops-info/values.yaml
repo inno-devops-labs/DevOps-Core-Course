@@ -114,3 +114,15 @@ rollout:
     previewServiceType: ClusterIP
     autoPromotionEnabled: false
     scaleDownDelaySeconds: 30
+
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition:
+  headlessService:
+    enabled: true
+    name: ""
+    publishNotReadyAddresses: true

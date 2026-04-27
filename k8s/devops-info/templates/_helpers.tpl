@@ -97,3 +97,12 @@ app: {{ include "devops-info.name" . }}
 {{- printf "%s-preview" (include "devops-info.fullname" .) }}
 {{- end }}
 {{- end }}
+
+{{/* Headless service name for StatefulSet. */}}
+{{- define "devops-info.headlessServiceName" -}}
+{{- if .Values.statefulset.headlessService.name }}
+{{- .Values.statefulset.headlessService.name }}
+{{- else }}
+{{- printf "%s-headless" (include "devops-info.fullname" .) }}
+{{- end }}
+{{- end }}
