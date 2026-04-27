@@ -19,6 +19,8 @@ persistence:
   size: 100Mi
   storageClass: ""
 
+podAnnotations:
+  rollouts-demo: "2026-04-27"
 image:
   tag: latest
 
