@@ -79,3 +79,21 @@ app: {{ include "devops-info.name" . }}
 {{- printf "%s-data" (include "devops-info.fullname" .) }}
 {{- end }}
 {{- end }}
+
+{{/* Active service name for rollout strategies. */}}
+{{- define "devops-info.activeServiceName" -}}
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") .Values.rollout.blueGreen.activeService }}
+{{- .Values.rollout.blueGreen.activeService }}
+{{- else }}
+{{- include "devops-info.fullname" . }}
+{{- end }}
+{{- end }}
+
+{{/* Preview service name for blue-green strategy. */}}
+{{- define "devops-info.previewServiceName" -}}
+{{- if .Values.rollout.blueGreen.previewService }}
+{{- .Values.rollout.blueGreen.previewService }}
+{{- else }}
+{{- printf "%s-preview" (include "devops-info.fullname" .) }}
+{{- end }}
+{{- end }}

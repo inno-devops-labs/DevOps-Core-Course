@@ -1,0 +1,24 @@
+replicaCount: 3
+
+image:
+  repository: j0cos/devops-info-service
+  tag: "lab02"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+  nodePort: null
+
+env:
+  RELEASE_VERSION: "blue-v1"
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    activeService: ""
+    previewService: ""
+    previewServiceType: ClusterIP
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30

@@ -87,3 +87,30 @@ hooks:
   postInstall:
     weight: 5
     command: "echo post-install smoke test start && sleep 8 && echo post-install smoke test done"
+
+rollout:
+  enabled: true
+  strategy: canary
+  revisionHistoryLimit: 2
+  canary:
+    maxSurge: "25%"
+    maxUnavailable: 0
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  blueGreen:
+    activeService: ""
+    previewService: ""
+    previewServiceType: ClusterIP
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30

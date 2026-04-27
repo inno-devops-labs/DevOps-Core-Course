@@ -1,0 +1,18 @@
+replicaCount: 3
+
+image:
+  repository: j0cos/devops-info-service
+  tag: "lab02"
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30082
+
+env:
+  RELEASE_VERSION: "canary-v1"
+
+rollout:
+  enabled: true
+  strategy: canary
