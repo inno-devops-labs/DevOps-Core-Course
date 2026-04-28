@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab16-init
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: source-content
+  namespace: lab16-init
+data:
+  index.html: |
+    lab16 init container download success
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: source-web
+  namespace: lab16-init
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: source-web
+  template:
+    metadata:
+      labels:
+        app: source-web
+    spec:
+      containers:
+        - name: source-web
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /www
+              cp /config/index.html /www/index.html
+              exec httpd -f -p 8080 -h /www
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: source-content
+              mountPath: /config
+      volumes:
+        - name: source-content
+          configMap:
+            name: source-content
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: source-web
+  namespace: lab16-init
+spec:
+  selector:
+    app: source-web
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-download-demo
+  namespace: lab16-init
+spec:
+  restartPolicy: Always
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          wget -qO /work-dir/index.html http://source-web.lab16-init.svc.cluster.local:8080/index.html
+          echo "download complete"
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "main container started"
+          ls -l /data
+          cat /data/index.html
+          sleep 3600
+      volumeMounts:
+        - name: workdir
+          mountPath: /data
+  volumes:
+    - name: workdir
+      emptyDir: {}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-for-service-demo
+  namespace: lab16-init
+spec:
+  restartPolicy: Always
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          until nslookup source-web.lab16-init.svc.cluster.local >/dev/null 2>&1; do
+            echo "waiting for service DNS..."
+            sleep 2
+          done
+          until wget -qO- http://source-web.lab16-init.svc.cluster.local:8080/index.html >/dev/null; do
+            echo "waiting for service HTTP..."
+            sleep 2
+          done
+          echo "service is ready"
+  containers:
+    - name: app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "dependency ready, main container started"
+          sleep 3600
