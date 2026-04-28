@@ -1,6 +1,6 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
@@ -10,8 +10,45 @@ spec:
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
+  {{- if eq .Values.rollout.strategy "canary" }}
   strategy:
-{{ toYaml .Values.strategy | nindent 4 }}
+    canary:
+      maxSurge: {{ .Values.rollout.canary.maxSurge }}
+      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
+      steps:
+        {{- range .Values.rollout.canary.steps }}
+        {{- if hasKey . "setWeight" }}
+        - setWeight: {{ .setWeight }}
+        {{- else if hasKey . "pause" }}
+          {{- if hasKey .pause "duration" }}
+        - pause:
+            duration: {{ .pause.duration }}
+          {{- else }}
+        - pause: {}
+          {{- end }}
+        {{- else if hasKey . "analysis" }}
+        - analysis:
+            templates:
+              {{- if .analysis.templates }}
+              {{- range .analysis.templates }}
+              - templateName: {{ .templateName }}
+              {{- end }}
+              {{- else }}
+              - templateName: {{ include "devops-info-service.analysisTemplateName" $ }}
+              {{- end }}
+        {{- end }}
+        {{- end }}
+  {{- else if eq .Values.rollout.strategy "blueGreen" }}
+  strategy:
+    blueGreen:
+      activeService: {{ include "devops-info-service.fullname" . }}
+      previewService: {{ include "devops-info-service.previewServiceName" . }}
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
+      {{- end }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+  {{- end }}
   template:
     metadata:
       labels:

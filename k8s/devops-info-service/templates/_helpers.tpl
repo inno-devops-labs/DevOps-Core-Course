@@ -87,6 +87,20 @@ PVC name.
 {{- end -}}
 
 {{/*
+Preview service name for blue-green strategy.
+*/}}
+{{- define "devops-info-service.previewServiceName" -}}
+{{- printf "%s-preview" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{/*
+Analysis template name for canary verification.
+*/}}
+{{- define "devops-info-service.analysisTemplateName" -}}
+{{- printf "%s-success-rate" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{/*
 Common environment variables.
 */}}
 {{- define "devops-info-service.commonEnv" -}}
