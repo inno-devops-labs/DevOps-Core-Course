@@ -48,6 +48,27 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d
 ```
 
+### ArgoCD CLI
+
+The ArgoCD CLI was installed:
+
+```bash
+curl -sSL -o argocd \
+https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+
+chmod +x argocd
+sudo mv argocd /usr/local/bin/
+```
+
+Login via CLI:
+
+argocd login localhost:8083 --insecure
+
+Verification:
+
+argocd app list
+argocd app get devops-info-app-dev
+
 ## 2. Application Configuration
 
 ArgoCD Application manifests were created in:
@@ -284,3 +305,16 @@ self-healing tested
 Kubernetes pod recovery tested
 
 Git is now the source of truth for Kubernetes application deployment.
+
+## 11. Screenshots
+
+The following screenshots were captured from ArgoCD UI:
+
+- `labs/lab13/screenshots/argocd-overview.png` — all applications (dev, prod)
+- `labs/lab13/screenshots/dev-app.png` — dev application details
+- `labs/lab13/screenshots/prod-app.png` — prod application details
+
+These screenshots show:
+- Sync status (Synced)
+- Health status (Healthy)
+- Deployed resources
