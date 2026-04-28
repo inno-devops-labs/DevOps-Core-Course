@@ -7,6 +7,7 @@ image:
 
 service:
   type: NodePort
+  portName: http
   port: 80
   targetPort: 5000
   nodePort: 30080
@@ -117,3 +118,31 @@ statefulset:
   updateStrategy:
     type: RollingUpdate
     partition: 0
+
+
+initContainers:
+  enabled: false
+  image: busybox:1.36
+
+  waitForService:
+    enabled: true
+    host: monitoring-grafana.monitoring.svc.cluster.local
+    sleepSeconds: 2
+
+  download:
+    enabled: true
+    url: http://monitoring-grafana.monitoring.svc.cluster.local
+    filename: index.html
+
+  mountPath: /init-data
+
+
+monitoring:
+  serviceMonitor:
+    enabled: false
+    namespace: monitoring
+    releaseLabel: monitoring
+    portName: http
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s

@@ -15,7 +15,8 @@ spec:
     {{- include "devops-info-service.selectorLabels" . | nindent 4 }}
     {{- end }}
   ports:
-    - port: {{ .Values.service.port }}
+    - name: {{ .Values.service.portName | default "http" }}
+      port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
       {{- if eq .Values.service.type "NodePort" }}

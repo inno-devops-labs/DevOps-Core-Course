@@ -44,6 +44,43 @@ spec:
       securityContext:
         fsGroup: 10001
 
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for service: {{ .Values.initContainers.waitForService.host }}"
+              until nslookup {{ .Values.initContainers.waitForService.host }}; do
+                echo "Service {{ .Values.initContainers.waitForService.host }} is not ready yet"
+                sleep {{ .Values.initContainers.waitForService.sleepSeconds }}
+              done
+              echo "Service {{ .Values.initContainers.waitForService.host }} is resolvable"
+        {{- end }}
+
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Downloading file from {{ .Values.initContainers.download.url }}"
+              mkdir -p /work-dir
+              wget -O /work-dir/{{ .Values.initContainers.download.filename }} {{ .Values.initContainers.download.url | quote }}
+              echo "Downloaded file:"
+              ls -la /work-dir
+              echo "File preview:"
+              head -n 5 /work-dir/{{ .Values.initContainers.download.filename }} || true
+          volumeMounts:
+            - name: init-workdir
+              mountPath: /work-dir
+        {{- end }}
+      {{- end }}
+
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -77,6 +114,11 @@ spec:
             - name: data
               mountPath: /data
             {{- end }}
+            {{- if .Values.initContainers.enabled }}
+            - name: init-workdir
+              mountPath: {{ .Values.initContainers.mountPath }}
+              readOnly: true
+            {{- end }}
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -99,6 +141,10 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
+        {{- if .Values.initContainers.enabled }}
+        - name: init-workdir
+          emptyDir: {}
+        {{- end }}
 
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:

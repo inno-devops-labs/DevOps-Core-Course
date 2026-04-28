@@ -8,6 +8,7 @@ image:
 service:
   type: NodePort
   port: 80
+  portName: http
   targetPort: 5000
   nodePort: 30084
 
@@ -91,3 +92,31 @@ vault:
   enabled: false
   role: devops-info-service
   secretPath: secret/data/devops-info-service/config
+
+
+initContainers:
+  enabled: true
+  image: busybox:1.36
+
+  waitForService:
+    enabled: true
+    host: monitoring-grafana.monitoring.svc.cluster.local
+    sleepSeconds: 2
+
+  download:
+    enabled: true
+    url: http://monitoring-grafana.monitoring.svc.cluster.local
+    filename: index.html
+
+  mountPath: /init-data
+
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    releaseLabel: monitoring
+    portName: http
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
