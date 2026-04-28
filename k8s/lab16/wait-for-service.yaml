@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dependency-svc-backend
+  namespace: default
+  labels:
+    app: dependency-svc-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dependency-svc-backend
+  template:
+    metadata:
+      labels:
+        app: dependency-svc-backend
+    spec:
+      containers:
+        - name: http
+          image: hashicorp/http-echo:1.0
+          args:
+            - "-listen=:5678"
+            - "-text=dependency-ready"
+          ports:
+            - containerPort: 5678
+              name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dependency-svc
+  namespace: default
+spec:
+  selector:
+    app: dependency-svc-backend
+  ports:
+    - name: http
+      port: 5678
+      targetPort: http
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-for-service-demo
+  namespace: default
+  labels:
+    app: wait-for-service-demo
+spec:
+  restartPolicy: Never
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          set -eu
+          until nslookup dependency-svc.default.svc.cluster.local >/dev/null 2>&1; do
+            echo "Waiting for dependency-svc DNS..."
+            sleep 2
+          done
+          until wget -qO- http://dependency-svc:5678 >/dev/null 2>&1; do
+            echo "Waiting for dependency-svc HTTP endpoint..."
+            sleep 2
+          done
+          echo "Dependency is reachable."
+  containers:
+    - name: app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Main container started after dependency became ready";
+          wget -qO- http://dependency-svc:5678;
+          sleep 3600
