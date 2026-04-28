@@ -1,3 +1,8 @@
 test
 **/__pycache__/
 helm-bin
+
+# Cloudflare Workers / Node
+edge-api/node_modules/
+edge-api/.wrangler/
+edge-api/dist/
