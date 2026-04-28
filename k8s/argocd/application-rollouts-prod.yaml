@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-rollouts-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mpasgat/DevOps-Core-Course.git
+    targetRevision: lab14
+    path: k8s/devops-python
+    helm:
+      valueFiles:
+        - values-prod.yaml
+      parameters:
+        - name: hooks.enabled
+          value: "false"
+        - name: vault.enabled
+          value: "false"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

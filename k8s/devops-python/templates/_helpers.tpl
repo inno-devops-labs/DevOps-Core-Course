@@ -48,3 +48,11 @@
 {{- define "devops-python.pvcName" -}}
 {{- printf "%s-data" (include "devops-python.fullname" .) -}}
 {{- end -}}
+
+{{- define "devops-python.previewServiceName" -}}
+{{- printf "%s-preview" (include "devops-python.fullname" .) -}}
+{{- end -}}
+
+{{- define "devops-python.analysisTemplateName" -}}
+{{- printf "%s-health-analysis" (include "devops-python.fullname" .) -}}
+{{- end -}}

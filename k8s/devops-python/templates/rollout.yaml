@@ -1,17 +1,13 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "devops-python.fullname" . }}
   labels:
     {{- include "devops-python.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+  revisionHistoryLimit: {{ .Values.rollout.revisionHistoryLimit }}
   selector:
     matchLabels:
       {{- include "devops-python.selectorLabels" . | nindent 6 }}
@@ -98,4 +94,40 @@ spec:
             claimName: {{ include "devops-python.pvcName" . }}
         {{- end }}
       {{- end }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "devops-python.fullname" . }}
+      previewService: {{ include "devops-python.previewServiceName" . }}
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
+      {{- end }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+    {{- else }}
+    canary:
+      canaryService: {{ include "devops-python.previewServiceName" . }}
+      stableService: {{ include "devops-python.fullname" . }}
+      steps:
+        - setWeight: 20
+        - pause: {}
+        {{- if .Values.rollout.analysis.enabled }}
+        - analysis:
+            templates:
+              - templateName: {{ include "devops-python.analysisTemplateName" . }}
+            args:
+              - name: service-name
+                value: {{ include "devops-python.fullname" . }}
+        {{- end }}
+        - setWeight: 40
+        - pause:
+            duration: 30s
+        - setWeight: 60
+        - pause:
+            duration: 30s
+        - setWeight: 80
+        - pause:
+            duration: 30s
+        - setWeight: 100
+    {{- end }}
 {{- end }}

@@ -19,6 +19,17 @@ service:
   targetPort: 8080
   nodePort: 30080
 
+rollout:
+  enabled: true
+  strategy: canary
+  revisionHistoryLimit: 2
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+  analysis:
+    enabled: true
+
 resources:
   requests:
     cpu: 100m

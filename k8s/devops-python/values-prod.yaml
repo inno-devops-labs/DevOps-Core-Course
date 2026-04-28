@@ -4,8 +4,16 @@ image:
   tag: latest
 
 service:
-  type: LoadBalancer
+  type: ClusterIP
   nodePort: null
+
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+  analysis:
+    enabled: false
 
 resources:
   requests:

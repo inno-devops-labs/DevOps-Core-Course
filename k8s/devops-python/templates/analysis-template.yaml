@@ -1,0 +1,22 @@
+{{- if and .Values.rollout.enabled .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "devops-python.analysisTemplateName" . }}
+  labels:
+    {{- include "devops-python.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: health-endpoint-check
+      interval: 10s
+      count: 3
+      failureLimit: 1
+      provider:
+        web:
+          url: http://{{`{{args.service-name}}`}}.{{ .Release.Namespace }}.svc.cluster.local/health
+          timeoutSeconds: 5
+          jsonPath: "{$.status}"
+      successCondition: result == "healthy"
+{{- end }}
