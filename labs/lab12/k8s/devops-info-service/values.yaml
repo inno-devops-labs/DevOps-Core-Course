@@ -6,7 +6,7 @@ fullnameOverride: ""
 image:
   repository: fayzullin/devops-info-service
   tag: "latest"
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
 
 service:
   type: NodePort
