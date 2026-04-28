@@ -248,4 +248,350 @@ Important concepts:
 
 ---
 
+# Task 2 — Build and Deploy a Worker API
+
+## 2.1 Objective
+
+The goal of this task was to build a small HTTP JSON API with Cloudflare Workers, run it locally, deploy it to Cloudflare, and verify the public `workers.dev` URL.
+
+## 2.2 Implemented Routes
+
+The default Hello World Worker was replaced with a TypeScript API in:
+
+```text
+edge-api/src/index.ts
+```
+
+Implemented endpoints:
+
+* `/` — general service information
+* `/health` — health check endpoint
+* `/deployment` — deployment metadata endpoint
+* `/edge` — edge metadata endpoint
+
+Error handling was also added:
+
+* unknown routes return `404 Not Found`
+* unsupported methods return `405 Method Not Allowed`
+
+## 2.3 Local Development Verification
+
+The Worker was started locally with:
+
+```bash
+npm run dev
+```
+
+Output:
+
+```text
+Ready on http://localhost:8787
+```
+
+Local routes were tested with `curl`.
+
+Health endpoint:
+
+```bash
+curl -i http://localhost:8787/health
+```
+
+Output:
+
+```text
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+
+{"status":"healthy","service":"edge-api","timestamp":"2026-04-28T13:35:26.566Z"}
+```
+
+Deployment metadata endpoint:
+
+```bash
+curl -i http://localhost:8787/deployment
+```
+
+Output:
+
+```text
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+
+{"application":"edge-api","platform":"Cloudflare Workers","language":"TypeScript","environment":"workers.dev","version":"lab17-task2","deployedWith":"Wrangler","publicUrlFormat":"https://<worker-name>.<subdomain>.workers.dev","timestamp":"2026-04-28T13:35:30.264Z"}
+```
+
+Edge endpoint:
+
+```bash
+curl -s http://localhost:8787/edge | python3 -m json.tool
+```
+
+Output:
+
+```json
+{
+    "colo": "RIX",
+    "country": "LV",
+    "city": "Riga",
+    "asn": 43513,
+    "httpProtocol": "HTTP/1.1",
+    "tlsVersion": "TLSv1.3",
+    "note": "Cloudflare edge metadata is available after deployment.",
+    "timestamp": "2026-04-28T13:35:56.376Z"
+}
+```
+
+Error responses were verified:
+
+```bash
+curl -i http://localhost:8787/not-found
+curl -i -X POST http://localhost:8787/health
+```
+
+Results:
+
+```text
+/not-found       -> 404 Not Found
+POST /health     -> 405 Method Not Allowed
+```
+
+## 2.4 Tests
+
+The tests were updated to match the new JSON API.
+
+Command:
+
+```bash
+npm test -- --run
+```
+
+Output:
+
+```text
+✓ test/index.spec.ts (5 tests) 39ms
+
+Test Files  1 passed (1)
+Tests       5 passed (5)
+```
+
+## 2.5 Deployment
+
+The Worker was deployed with Wrangler:
+
+```bash
+npx wrangler deploy
+```
+
+Output:
+
+```text
+Uploaded edge-api
+Deployed edge-api triggers
+https://edge-api.<user-name>.workers.dev
+Current Version ID: 60c067a3-3760-45dd-a583-eaf71e3ff60f
+```
+
+Public Worker URL:
+
+```text
+https://edge-api.<user-name>.workers.dev
+```
+
+## 2.6 Public URL Verification
+
+The deployed Worker was tested through the public `workers.dev` URL:
+
+```bash
+WORKER_URL="https://edge-api.<user-name>.workers.dev"
+
+curl -i "$WORKER_URL/"
+curl -i "$WORKER_URL/health"
+curl -i "$WORKER_URL/deployment"
+curl -i "$WORKER_URL/edge"
+curl -i "$WORKER_URL/not-found"
+```
+
+Results:
+
+```text
+/              -> HTTP/2 200
+/health        -> HTTP/2 200
+/deployment    -> HTTP/2 200
+/edge          -> HTTP/2 200
+/not-found     -> HTTP/2 404
+```
+
+Example deployed `/edge` response:
+
+```json
+{
+    "colo": "RIX",
+    "country": "LV",
+    "city": "Riga",
+    "asn": 43513,
+    "httpProtocol": "HTTP/2",
+    "tlsVersion": "TLSv1.3",
+    "note": "Cloudflare edge metadata is available after deployment.",
+    "timestamp": "2026-04-28T13:38:29.382Z"
+}
+```
+
+## 2.7 Source Control
+
+The Worker project was committed to Git:
+
+```bash
+git add edge-api/.
+git commit -m "feat: add Cloudflare Workers API"
+```
+
+Output:
+
+```text
+[lab17 906c207] feat: add Cloudflare Workers API
+```
+
+---
+
+
+# Task 3 — Global Edge Behavior
+
+## 3.1 Objective
+
+The goal of this task was to inspect how the deployed Worker behaves on Cloudflare's global edge network and verify that Cloudflare provides request metadata at runtime.
+
+## 3.2 Edge Metadata Endpoint
+
+The Worker includes an `/edge` endpoint that reads metadata from the incoming request context.
+
+Implemented fields:
+
+- `colo`
+- `country`
+- `city`
+- `asn`
+- `httpProtocol`
+- `tlsVersion`
+
+Code check:
+
+```bash
+grep -A15 'url.pathname === "/edge"' src/index.ts
+```
+
+Important implementation:
+
+```ts
+if (url.pathname === "/edge") {
+	return jsonResponse({
+		colo: request.cf?.colo ?? "local-dev",
+		country: request.cf?.country ?? "local-dev",
+		city: request.cf?.city ?? "local-dev",
+		asn: request.cf?.asn ?? "local-dev",
+		httpProtocol: request.cf?.httpProtocol ?? "local-dev",
+		tlsVersion: request.cf?.tlsVersion ?? "local-dev",
+		note: "Cloudflare edge metadata is available after deployment.",
+		timestamp,
+	});
+}
+```
+
+## 3.3 Public Edge Verification
+
+The deployed Worker was called through the public `workers.dev` URL:
+
+```bash
+WORKER_URL="https://edge-api.<user-name>.workers.dev"
+
+curl -s "$WORKER_URL/edge" | python3 -m json.tool
+```
+
+Output:
+
+```json
+{
+    "colo": "HEL",
+    "country": "FI",
+    "city": "Helsinki",
+    "asn": 215730,
+    "httpProtocol": "HTTP/2",
+    "tlsVersion": "TLSv1.3",
+    "note": "Cloudflare edge metadata is available after deployment.",
+    "timestamp": "2026-04-28T17:33:03.176Z"
+}
+```
+
+This confirms that the Worker executed on Cloudflare's edge network and received Cloudflare-provided request metadata.
+
+## 3.4 Header Verification
+
+The deployed endpoint was also checked with response headers:
+
+```bash
+curl -i "$WORKER_URL/edge"
+```
+
+Important output:
+
+```text
+HTTP/2 200
+server: cloudflare
+cf-ray: 9f37cf7feec38ddb-HEL
+```
+
+The `server: cloudflare` header confirms that the response was served through Cloudflare. The `cf-ray` suffix `HEL` matches the Cloudflare edge location.
+
+## 3.5 Global Distribution Explanation
+
+Cloudflare Workers run on Cloudflare's global edge network. After deployment, the Worker is available globally without manually choosing VM regions or provisioning regional infrastructure.
+
+In a VM, Kubernetes, or traditional PaaS setup, global deployment usually requires:
+
+* choosing target regions
+* deploying infrastructure in each region
+* configuring load balancing
+* managing regional failover
+
+With Cloudflare Workers, there is no separate `deploy to 3 regions` step. The Worker is deployed to Cloudflare's platform, and Cloudflare automatically routes requests to an appropriate nearby edge location.
+
+## 3.6 Routing Concepts
+
+Cloudflare Workers can be exposed in several ways.
+
+### workers.dev
+
+`workers.dev` provides a built-in public URL for a Worker without requiring a custom domain.
+
+Used in this lab:
+
+```text
+https://edge-api.<user-name>.workers.dev
+```
+
+### Routes
+
+Routes attach a Worker to traffic for an existing Cloudflare-managed zone.
+
+Example:
+
+```text
+example.com/api/*
+```
+
+This is useful when only specific paths on an existing domain should be handled by a Worker.
+
+### Custom Domains
+
+Custom Domains expose a Worker directly on a custom hostname.
+
+Example:
+
+```text
+api.example.com
+```
+
+This is useful for production APIs, but it was not required for this lab.
+
+---
+
 
