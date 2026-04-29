@@ -61,6 +61,13 @@ rollingUpdate:
   maxSurge: 1
   maxUnavailable: 0
 
+# Argo Rollouts progressive delivery settings
+# strategy: canary | blueGreen
+rollout:
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
+
 # Secret values — use placeholders here, inject real values with --set at deploy time
 # NEVER commit real credentials to version control
 secret:
