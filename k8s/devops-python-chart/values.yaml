@@ -68,6 +68,15 @@ rollout:
   blueGreen:
     autoPromotionEnabled: false
 
+# StatefulSet settings (Lab 15)
+statefulset:
+  enabled: false
+  partition: 0
+
+persistence:
+  size: 100Mi
+  storageClass: ""
+
 # Secret values — use placeholders here, inject real values with --set at deploy time
 # NEVER commit real credentials to version control
 secret:
