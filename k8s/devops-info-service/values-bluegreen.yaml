@@ -1,0 +1,7 @@
+# Blue-green rollout overrides for Lab 14.
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
