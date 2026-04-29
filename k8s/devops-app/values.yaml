@@ -1,6 +1,13 @@
 # Default values for devops-app.
 
 replicaCount: 3
+rollout:
+  strategy: canary
+  blueGreen:
+    activeService: ""
+    previewService: ""
+    autoPromotionEnabled: false
+    autoPromotionSeconds: 30
 
 image:
   repository: ray326sq/devops-info-python

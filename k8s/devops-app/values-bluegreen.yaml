@@ -1,0 +1,13 @@
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    activeService: devops-app-active
+    previewService: devops-app-preview
+    autoPromotionEnabled: false
+    autoPromotionSeconds: 30
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8080
+  nodePort: 30083
