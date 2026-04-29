@@ -104,3 +104,10 @@ rollout:
     interval: 10s
     count: 3
     failureLimit: 1
+
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    # partition: 0  # uncomment to freeze pods with ordinal < N

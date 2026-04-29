@@ -1,0 +1,5 @@
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: OnDelete
