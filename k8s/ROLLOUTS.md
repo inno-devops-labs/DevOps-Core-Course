@@ -224,6 +224,35 @@ replicaset.apps/devops-info-devops-info-service-6d5ccfc6bb   3         3        
 replicaset.apps/devops-info-devops-info-service-f54d6bb9c    0         0         0       55m
 ```
 
+Additional canary evidence from a later rollout:
+
+```powershell
+PS> & "$HOME\bin\kubectl-argo-rollouts.exe" get rollout devops-info-devops-info-service
+Status:          Paused
+Message:         CanaryPauseStep
+Strategy:        Canary
+  Step:          1/9
+  SetWeight:     20
+  ActualWeight:  25
+Images:          linktur/devops-lab2:latest (stable)
+                 linktur/devops-lab2:v1 (canary)
+Replicas:
+  Desired:       3
+  Current:       4
+  Updated:       1
+  Ready:         4
+  Available:     4
+
+NAME                                                         KIND        STATUS        AGE    INFO
+devops-info-devops-info-service                              Rollout     Paused        10h
+revision:4                                                   ReplicaSet  Healthy       3m50s  canary
+revision:3                                                   ReplicaSet  Healthy       10h    stable
+revision:2                                                   ReplicaSet  ScaledDown    10h
+revision:1                                                   ReplicaSet  ScaledDown    10h
+```
+
+This proves the rollout really reached the first manual canary gate and shifted traffic to the new ReplicaSet before full promotion.
+
 ---
 
 ## 4. Blue-Green Deployment
@@ -346,6 +375,37 @@ revision:1                                                     ReplicaSet  Healt
 
 Revision 1 is back to `stable,active` and revision 2 is scaled down.
 
+Updated live evidence from the cluster:
+
+```powershell
+PS> & "$HOME\bin\kubectl-argo-rollouts.exe" promote devops-info-bg-devops-info-service
+rollout 'devops-info-bg-devops-info-service' promoted
+
+PS> & "$HOME\bin\kubectl-argo-rollouts.exe" get rollout devops-info-bg-devops-info-service
+Name:            devops-info-bg-devops-info-service
+Namespace:       default
+Status:          Healthy
+Strategy:        BlueGreen
+Images:          linktur/devops-lab2:v1 (stable, active)
+Replicas:
+  Desired:       3
+  Current:       3
+  Updated:       3
+  Ready:         3
+  Available:     3
+
+NAME                                                           KIND        STATUS        AGE  INFO
+devops-info-bg-devops-info-service                             Rollout     Healthy       9h
+revision:2                                                     ReplicaSet  Healthy       9h  stable,active
+revision:1                                                     ReplicaSet  ScaledDown    9h
+
+PS> kubectl get rs | findstr devops-info-bg
+devops-info-bg-devops-info-service-d8bdfb766   3         3         3       9h
+devops-info-bg-devops-info-service-f4684bcdb   0         0         0       9h
+```
+
+This is the strongest confirmed blue-green evidence in the report: promotion was executed successfully, the preview revision became `stable,active`, and the previous active revision was scaled down. A separate rollback execution was not captured in this report.
+
 ### 4.5 Evidence
 
 The rollout paused before promotion with both revisions running at the same time (6 pods total — 3 blue + 3 green):
@@ -403,6 +463,29 @@ The chart deploys an `AnalysisTemplate` that does HTTP health checks on the cana
 - **Total checks**: 3
 - **Failure limit**: 1 (rollback triggers after 1 failed check)
 
+Live cluster evidence for the bonus setup:
+
+```powershell
+PS> helm upgrade --install devops-info-analysis k8s/devops-info-service \
+  -f k8s/devops-info-service/values.yaml \
+  -f k8s/devops-info-service/values-rollouts-canary.yaml \
+  -f k8s/devops-info-service/values-rollouts-canary-analysis.yaml
+Release "devops-info-analysis" does not exist. Installing it now.
+NAME: devops-info-analysis
+LAST DEPLOYED: Wed Apr 29 10:24:01 2026
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+
+PS> kubectl get analysistemplate
+NAME                                                    AGE
+devops-info-analysis-devops-info-service-success-rate   8s
+
+PS> kubectl get analysisrun
+No resources found in default namespace.
+```
+
 ### 5.2 How automatic rollback works
 
 After the canary reaches 20% traffic, Argo Rollouts starts running the analysis checks automatically. If the `/health` endpoint returns something unexpected or the pod is crashing, the check fails. Once failures exceed the limit, the `AnalysisRun` is marked as failed and Argo Rollouts aborts the rollout without any manual action.
@@ -414,7 +497,9 @@ kubectl get analysisrun
 kubectl describe analysisrun <name>
 ```
 
-When analysis fails and rollback is triggered, the rollout status looks like this:
+At the time of writing, the `AnalysisTemplate` was created successfully, but no `AnalysisRun` had started yet because no new canary revision was triggered for `devops-info-analysis` after installation. So the bonus is implemented in the chart, but not yet fully validated end-to-end.
+
+When analysis fails and rollback is triggered, the rollout status is expected to look like this:
 
 ```text
 Name:            devops-info-devops-info-service
