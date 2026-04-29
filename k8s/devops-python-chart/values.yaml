@@ -77,6 +77,10 @@ persistence:
   size: 100Mi
   storageClass: ""
 
+# Init containers demo pod (Lab 16)
+initContainers:
+  enabled: false
+
 # Secret values — use placeholders here, inject real values with --set at deploy time
 # NEVER commit real credentials to version control
 secret:

@@ -1,0 +1,52 @@
+{{- if .Values.initContainers.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "devops-python-chart.fullname" . }}-init-demo
+  labels:
+    {{- include "devops-python-chart.labels" . | nindent 4 }}
+spec:
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - wget -O /work-dir/index.html https://example.com && echo "Download complete"
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          until nslookup {{ include "devops-python-chart.fullname" . }}.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do
+            echo "Waiting for service {{ include "devops-python-chart.fullname" . }}..."
+            sleep 2
+          done
+          echo "Service is ready"
+
+  containers:
+    - name: main
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "=== Downloaded file content (first 5 lines) ==="
+          head -5 /data/index.html
+          echo "=== Init containers completed successfully ==="
+          sleep 3600
+      volumeMounts:
+        - name: workdir
+          mountPath: /data
+
+  volumes:
+    - name: workdir
+      emptyDir: {}
+
+  restartPolicy: Never
+{{- end }}
