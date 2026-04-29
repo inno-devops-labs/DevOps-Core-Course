@@ -122,11 +122,13 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  subgraph VM1[🖥️ VM 1 - 15GB]
+  subgraph VM1["🖥️ VM 1 - 15GB"]
+    direction TD
     App1[📱 App] --> OS1[🖥️ Full OS]
     OS1 --> Kernel1[🧠 Kernel]
   end
-  subgraph VM2[🖥️ VM 2 - 15GB]
+  subgraph VM2["🖥️ VM 2 - 15GB"]
+    direction TD
     App2[📱 App] --> OS2[🖥️ Full OS]
     OS2 --> Kernel2[🧠 Kernel]
   end
@@ -226,12 +228,12 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  subgraph Host[🖥️ Host System]
-    subgraph NS1[📦 Container 1 Namespace]
+  subgraph Host["🖥️ Host System"]
+    subgraph NS1["📦 Container 1 Namespace"]
       P1[PID 1: app]
       Net1[eth0: 172.17.0.2]
     end
-    subgraph NS2[📦 Container 2 Namespace]
+    subgraph NS2["📦 Container 2 Namespace"]
       P2[PID 1: app]
       Net2[eth0: 172.17.0.3]
     end
@@ -275,12 +277,12 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  subgraph Image[📦 Image Layers - Read Only]
+  subgraph Image["📦 Image Layers - Read Only"]
     L1[🐧 Layer 1: Base OS]
     L2[📦 Layer 2: Dependencies]
     L3[📁 Layer 3: App Code]
   end
-  subgraph Container[🏃 Container Layer - Read/Write]
+  subgraph Container["🏃 Container Layer - Read/Write"]
     L4[✏️ Layer 4: Runtime Changes]
   end
   L1 --> L2 --> L3 --> L4
@@ -297,13 +299,13 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  subgraph Docker[🐳 Docker Engine]
+  subgraph Docker["🐳 Docker Engine"]
     CLI[🖥️ Docker CLI]
     Daemon[⚙️ dockerd]
     Containerd[📦 containerd]
     Runc[🏃 runc]
   end
-  subgraph Kernel[🐧 Linux Kernel]
+  subgraph Kernel["🐧 Linux Kernel"]
     NS[🔒 Namespaces]
     CG[🎛️ cgroups]
     UFS[📂 overlay2]
@@ -694,11 +696,11 @@ tests/
 
 ```mermaid
 flowchart LR
-  subgraph Stage1[🔨 Builder Stage]
+  subgraph Stage1["🔨 Builder Stage"]
     SDK[📦 Full SDK]
     Compile[⚙️ Compile]
   end
-  subgraph Stage2[🚀 Runtime Stage]
+  subgraph Stage2["🚀 Runtime Stage"]
     Binary[📦 Binary Only]
     Minimal[🐧 Minimal OS]
   end

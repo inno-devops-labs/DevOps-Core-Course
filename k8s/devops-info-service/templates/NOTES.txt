@@ -30,16 +30,16 @@ Port-forward locally:
 Useful checks:
 {{- if .Values.statefulset.enabled }}
   kubectl exec {{ include "devops-info-service.fullname" . }}-0 -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.configFilePath" . }}
-  kubectl exec {{ include "devops-info-service.fullname" . }}-0 -n {{ .Release.Namespace }} -- printenv | grep APP_
+  kubectl exec {{ include "devops-info-service.fullname" . }}-0 -n {{ .Release.Namespace }} -- sh -c "printenv | grep APP_"
   kubectl exec {{ include "devops-info-service.fullname" . }}-0 -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.visitsFilePath" . }}
+  kubectl exec {{ include "devops-info-service.fullname" . }}-1 -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.visitsFilePath" . }}
+{{- else if .Values.rollout.enabled }}
+  kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }}
+  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}
+  kubectl exec -n {{ .Release.Namespace }} $(kubectl get pod -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }} -o jsonpath='{.items[0].metadata.name}') -- cat {{ include "devops-info-service.configFilePath" . }}
+  kubectl exec -n {{ .Release.Namespace }} $(kubectl get pod -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }} -o jsonpath='{.items[0].metadata.name}') -- sh -c "printenv | grep APP_"
 {{- else }}
   kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.configFilePath" . }}
-  kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- printenv | grep APP_
+  kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- sh -c "printenv | grep APP_"
   kubectl exec deploy/{{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.visitsFilePath" . }}
-{{- end }}
-{{- if .Values.rollout.enabled }}
-  kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }} -n {{ .Release.Namespace }}
-{{- end }}
-{{- if .Values.statefulset.enabled }}
-  kubectl exec {{ include "devops-info-service.fullname" . }}-1 -n {{ .Release.Namespace }} -- cat {{ include "devops-info-service.visitsFilePath" . }}
 {{- end }}
