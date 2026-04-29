@@ -83,3 +83,23 @@ vault:
   enabled: false
   role: "devops-info-service"
   secretPath: "secret/data/devops-info-service/config"
+
+rollouts:
+  enabled: false
+  strategy: canary
+  useEnvFrom: true
+  probesEnabled: true
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: { duration: 30s }
+      - setWeight: 60
+      - pause: { duration: 30s }
+      - setWeight: 80
+      - pause: { duration: 30s }
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30

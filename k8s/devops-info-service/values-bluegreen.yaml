@@ -1,0 +1,28 @@
+replicaCount: 3
+
+image:
+  repository: argoproj/rollouts-demo
+  tag: "blue"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+env:
+  APP_HOST: "0.0.0.0"
+  APP_PORT: "8080"
+  LOG_FORMAT: "json"
+
+persistence:
+  enabled: false
+
+rollouts:
+  enabled: true
+  strategy: blueGreen
+  useEnvFrom: false
+  probesEnabled: false
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30

@@ -1,0 +1,36 @@
+replicaCount: 5
+
+image:
+  repository: argoproj/rollouts-demo
+  tag: "blue"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+env:
+  APP_HOST: "0.0.0.0"
+  APP_PORT: "8080"
+  LOG_FORMAT: "json"
+
+persistence:
+  enabled: false
+
+rollouts:
+  enabled: true
+  strategy: canary
+  useEnvFrom: false
+  probesEnabled: false
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: { duration: 30s }
+      - setWeight: 60
+      - pause: { duration: 30s }
+      - setWeight: 80
+      - pause: { duration: 30s }
+      - setWeight: 100
