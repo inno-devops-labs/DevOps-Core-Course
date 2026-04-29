@@ -1,5 +1,18 @@
 # Lab 14 — Progressive Delivery with Argo Rollouts
 
+## Screenshots
+
+### Rollouts list (default namespace)
+![Rollouts list](docs/image.png)
+
+### Blue-Green rollout details
+![Canary rollout](docs/image%20copy.png)
+
+###  Canary rollout details
+![Blue-Green rollout](docs/image%20copy%202.png)
+
+---
+
 ## 1. Argo Rollouts Setup
 
 ### Installation
