@@ -6,6 +6,9 @@ persistence:
 service:
   type: ClusterIP
 
+hooks:
+  enabled: false
+
 rollout:
   enabled: true
   strategy: blueGreen
