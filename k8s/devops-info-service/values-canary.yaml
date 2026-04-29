@@ -1,0 +1,20 @@
+replicaCount: 3
+
+rollout:
+  enabled: true
+  strategy: canary
+
+image:
+  repository: 1sarmatt/devops-info-service
+  tag: "latest"
+  pullPolicy: Always
+
+env:
+  - name: PORT
+    value: "5000"
+  - name: HOST
+    value: "0.0.0.0"
+  - name: DEBUG
+    value: "False"
+  - name: APP_VERSION
+    value: "v2"

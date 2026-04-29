@@ -43,6 +43,10 @@ readinessProbe:
   periodSeconds: 5
   failureThreshold: 3
 
+rollout:
+  enabled: false
+  strategy: canary  # canary or blueGreen
+
 appEnv: "production"
 logLevel: "INFO"
 

@@ -1,0 +1,26 @@
+replicaCount: 3
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+
+image:
+  repository: 1sarmatt/devops-info-service
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30083
+
+env:
+  - name: PORT
+    value: "5000"
+  - name: HOST
+    value: "0.0.0.0"
+  - name: DEBUG
+    value: "False"
+  - name: APP_VERSION
+    value: "green-v2"
