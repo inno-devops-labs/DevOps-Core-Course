@@ -98,12 +98,12 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  subgraph 🐶 Pets
+  subgraph Pets["🐶 Pets"]
     P1[web-prod-01]
     P2[db-master]
     P3[app-legacy]
   end
-  subgraph 🐄 Cattle
+  subgraph Cattle["🐄 Cattle"]
     C1[instance-001]
     C2[instance-002]
     C3[instance-003]
@@ -223,11 +223,13 @@ flowchart LR
 ```mermaid
 flowchart TD
   subgraph Declarative
+    direction TD
     D1[📝 Define desired state]
     D2[🤖 Tool figures out how]
     D1 --> D2
   end
   subgraph Imperative
+    direction TD
     I1[📝 Define exact steps]
     I2[🔧 Execute step by step]
     I1 --> I2
@@ -602,16 +604,18 @@ flowchart TD
 ## 📍 Slide 30 – 🌊 From Snowflakes to Cattle
 
 ```mermaid
-flowchart LR
-  subgraph 😱 Snowflakes
+flowchart TD
+  subgraph Snowflakes["😱 Snowflakes"]
     Manual[🔧 Manual Setup]
     Unique[❄️ Unique Servers]
     Drift[📋 Configuration Drift]
+    Manual --> Unique --> Drift
   end
-  subgraph 🐄 Cattle
+  subgraph Cattle["🐄 Cattle"]
     Code[📝 Code-Defined]
     Identical[🔄 Identical Servers]
     Reproducible[✅ Reproducible]
+    Code --> Identical --> Reproducible
   end
   Snowflakes -->|🚀 IaC| Cattle
 ```

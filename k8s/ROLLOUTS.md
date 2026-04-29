@@ -1,56 +1,60 @@
 # Lab 14 - Progressive Delivery with Argo Rollouts
 
-Run date: April 15, 2026
+Run date: April 29, 2026
 
-Resource-saving note:
-I did not install Argo Rollouts into a live cluster or open the dashboard in this session. Instead, I extended the Helm chart with a switchable Rollout path, rendered the chart in default, canary, and blue-green modes, and documented the exact commands required for a live run.
+## Review Result
 
-## Files Added
+The Lab 14 chart implementation is valid after cleanup:
+
+- the normal chart path still renders a Kubernetes `Deployment`
+- the canary profile renders an Argo `Rollout` plus `AnalysisTemplate`
+- the blue-green profile renders an Argo `Rollout` plus active and preview services
+- rollout-specific values disable the older Helm install hooks, because those hooks can run before Argo Rollout pods are ready and make a valid rollout install look failed
+
+Live Argo Rollouts controller/dashboard actions were not executed in this review environment. The evidence below is based on Helm lint and manifest rendering, with exact commands for a live cluster run.
+
+## Files
+
+Lab 14 resources:
 
 - `k8s/devops-info-service/templates/rollout.yaml`
 - `k8s/devops-info-service/templates/preview-service.yaml`
 - `k8s/devops-info-service/templates/analysis-template.yaml`
 - `k8s/devops-info-service/values-rollout-canary.yaml`
 - `k8s/devops-info-service/values-rollout-bluegreen.yaml`
-- `k8s/ROLLOUTS.md`
 
-Files updated:
+Supporting updates:
 
-- `k8s/devops-info-service/templates/deployment.yaml`
 - `k8s/devops-info-service/templates/NOTES.txt`
 - `k8s/devops-info-service/templates/_helpers.tpl`
 - `k8s/devops-info-service/values.yaml`
-- `k8s/argocd/application.yaml`
-- `k8s/argocd/application-dev.yaml`
-- `k8s/argocd/application-prod.yaml`
-- `k8s/argocd/applicationset.yaml`
 
-## Validation Summary
+## Validation
 
-The chart still renders in default Deployment mode:
+Commands run locally:
 
-```text
+```powershell
 .\.tools\helm.exe lint .\k8s\devops-info-service
-1 chart(s) linted, 0 chart(s) failed
-
 .\.tools\helm.exe template devops-info-service .\k8s\devops-info-service
-```
-
-Canary and blue-green rollout profiles also render successfully:
-
-```text
 .\.tools\helm.exe template devops-info-service-canary .\k8s\devops-info-service -f .\k8s\devops-info-service\values-rollout-canary.yaml --namespace canary
 .\.tools\helm.exe template devops-info-service-bluegreen .\k8s\devops-info-service -f .\k8s\devops-info-service\values-rollout-bluegreen.yaml --namespace bluegreen
 ```
 
-This means:
+Result:
 
-- previous labs keep working because rollout support is opt-in
-- the chart can now emit `Rollout`, `Preview Service`, and `AnalysisTemplate` resources without breaking the existing Deployment path
+```text
+1 chart(s) linted, 0 chart(s) failed
+```
+
+The rendered manifests include the expected Lab 14 objects:
+
+- default profile: `Deployment`
+- canary profile: `Rollout`, `AnalysisTemplate`, `Service`
+- blue-green profile: `Rollout`, active `Service`, preview `Service`
 
 ## Argo Rollouts Setup
 
-Prepared live install commands:
+Install controller and dashboard in a live cluster:
 
 ```powershell
 kubectl create namespace argo-rollouts
@@ -60,7 +64,7 @@ kubectl get pods -n argo-rollouts
 kubectl port-forward svc/argo-rollouts-dashboard -n argo-rollouts 3100:3100
 ```
 
-Prepared CLI commands:
+CLI plugin checks:
 
 ```powershell
 kubectl argo rollouts version
@@ -70,38 +74,33 @@ kubectl argo rollouts abort <name> -n <namespace>
 kubectl argo rollouts retry rollout <name> -n <namespace>
 ```
 
-These were not executed in this run because the cluster and plugin were not installed to conserve resources.
+## Rollout vs Deployment
 
-## Rollout Design
+The chart supports both workload modes.
 
-The chart now supports two workload modes:
-
-- default: Kubernetes `Deployment`
-- progressive delivery: Argo `Rollout`
-
-This is controlled by:
+Default mode:
 
 ```yaml
 rollout:
   enabled: false
-  strategy: canary
 ```
 
-Important design choice:
+This renders `apps/v1 Deployment` and preserves behavior from earlier labs.
 
-- the Lab 12 chart defaults to persistent storage
-- that storage is `ReadWriteOnce`
-- weighted canary steps need multiple replicas
-- therefore the rollout-specific values disable persistence and treat the service as stateless for progressive delivery
+Lab 14 mode:
 
-This keeps both labs valid:
+```yaml
+rollout:
+  enabled: true
+```
 
-- Lab 12 still demonstrates PVC-backed persistence
-- Lab 14 demonstrates safe multi-replica rollout strategies
+This renders `argoproj.io/v1alpha1 Rollout`, which adds canary steps, blue-green promotion, manual pauses, aborts, retries, and analysis.
+
+The rollout values also set `persistence.enabled: false`. Progressive delivery profiles need multiple replicas, while the earlier lab's default PVC is `ReadWriteOnce`; disabling persistence keeps the rollout examples stateless and schedulable.
 
 ## Canary Deployment
 
-Canary profile:
+Canary values:
 
 ```yaml
 replicaCount: 5
@@ -112,6 +111,9 @@ persistence:
 service:
   type: ClusterIP
 
+hooks:
+  enabled: false
+
 rollout:
   enabled: true
   strategy: canary
@@ -119,38 +121,32 @@ rollout:
     enabled: true
 ```
 
-Rendered canary rollout excerpt:
+Rendered strategy:
 
 ```yaml
-kind: Rollout
-spec:
-  strategy:
-    canary:
-      steps:
-        - setWeight: 20
-        - pause: {}
-        - analysis:
-            templates:
-              - templateName: devops-info-service-canary-health
-        - setWeight: 40
-        - pause:
-            duration: 30s
-        - setWeight: 60
-        - pause:
-            duration: 30s
-        - setWeight: 80
-        - pause:
-            duration: 30s
-        - setWeight: 100
+strategy:
+  canary:
+    maxSurge: "25%"
+    maxUnavailable: "0"
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - analysis:
+          templates:
+            - templateName: devops-info-service-canary-health
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
 ```
 
-This matches the lab progression:
-
-- 20% with a manual pause
-- 40%, 60%, and 80% with timed pauses
-- 100% final promotion
-
-Live commands for a real run:
+Live run:
 
 ```powershell
 .\.tools\helm.exe upgrade --install devops-info-service-canary .\k8s\devops-info-service --namespace canary --create-namespace -f .\k8s\devops-info-service\values-rollout-canary.yaml
@@ -158,7 +154,7 @@ kubectl argo rollouts get rollout devops-info-service-canary -n canary -w
 kubectl argo rollouts promote devops-info-service-canary -n canary
 ```
 
-Rollback test prepared for live execution:
+Rollback test:
 
 ```powershell
 kubectl argo rollouts abort devops-info-service-canary -n canary
@@ -166,15 +162,9 @@ kubectl argo rollouts get rollout devops-info-service-canary -n canary -w
 kubectl argo rollouts retry rollout devops-info-service-canary -n canary
 ```
 
-Expected behavior:
-
-- abort immediately stops progression
-- traffic returns to the stable ReplicaSet
-- retry resumes the rollout after the issue is fixed
-
 ## Blue-Green Deployment
 
-Blue-green profile:
+Blue-green values:
 
 ```yaml
 replicaCount: 4
@@ -185,6 +175,9 @@ persistence:
 service:
   type: ClusterIP
 
+hooks:
+  enabled: false
+
 rollout:
   enabled: true
   strategy: blueGreen
@@ -192,142 +185,90 @@ rollout:
     autoPromotionEnabled: false
 ```
 
-Rendered blue-green excerpt:
+Rendered strategy:
 
 ```yaml
-kind: Service
-metadata:
-  name: devops-info-service-bluegreen-preview
----
-kind: Rollout
-spec:
-  strategy:
-    blueGreen:
-      activeService: devops-info-service-bluegreen
-      previewService: devops-info-service-bluegreen-preview
-      autoPromotionEnabled: false
+strategy:
+  blueGreen:
+    activeService: devops-info-service-bluegreen
+    previewService: devops-info-service-bluegreen-preview
+    autoPromotionEnabled: false
 ```
 
-Operational model:
-
-- the existing chart service becomes the active service
-- a second preview service exposes the new version
-- promotion is manual, which fits the lab requirement
-
-Prepared live flow:
+Live run:
 
 ```powershell
 .\.tools\helm.exe upgrade --install devops-info-service-bluegreen .\k8s\devops-info-service --namespace bluegreen --create-namespace -f .\k8s\devops-info-service\values-rollout-bluegreen.yaml
+kubectl argo rollouts get rollout devops-info-service-bluegreen -n bluegreen -w
 kubectl port-forward svc/devops-info-service-bluegreen 8080:80 -n bluegreen
 kubectl port-forward svc/devops-info-service-bluegreen-preview 8081:80 -n bluegreen
-kubectl argo rollouts get rollout devops-info-service-bluegreen -n bluegreen -w
 kubectl argo rollouts promote devops-info-service-bluegreen -n bluegreen
 ```
 
-Expected behavior:
+Expected behavior in a live cluster:
 
-- `8080` serves the active version
-- `8081` serves the preview version
-- promotion switches traffic to the preview ReplicaSet instantly
-- rollback after promotion is faster than canary because it is an all-at-once service switch
+- port `8080` serves the active version
+- port `8081` serves the preview version before promotion
+- promotion switches the active service to the preview ReplicaSet
+- rollback is an immediate service selector switch
 
-## Bonus - Automated Analysis
+## Automated Analysis
 
-The chart now renders an `AnalysisTemplate` when canary analysis is enabled.
+Canary analysis is enabled in `values-rollout-canary.yaml`.
 
-Rendered excerpt:
+Rendered template:
 
 ```yaml
-successCondition: result == "healthy"
-provider:
-  web:
-    url: http://devops-info-service-canary.canary.svc.cluster.local:80/health
-    jsonPath: "{$.status}"
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+spec:
+  metrics:
+    - name: web-healthcheck
+      interval: "10s"
+      count: 3
+      failureLimit: 1
+      successCondition: result == "healthy"
+      provider:
+        web:
+          url: http://devops-info-service-canary.canary.svc.cluster.local:80/health
+          jsonPath: "{$.status}"
 ```
 
-How it works:
+The template calls `/health` and expects:
 
-- the canary rollout performs a web check against the service `/health` endpoint
-- it expects the JSON field `status` to equal `healthy`
-- failures past `failureLimit` can stop or fail the rollout
+```json
+{"status": "healthy"}
+```
 
-Benefits:
-
-- no Prometheus dependency is required for the first analysis lab
-- health-driven rollback logic is still demonstrated
-- the chart is ready for Prometheus-based analysis later if needed
-
-## Rollout vs Deployment
-
-Why `Rollout` instead of `Deployment` for this lab:
-
-- `Rollout` supports step-based canaries and blue-green promotions
-- `Deployment` only supports standard rolling updates
-- `Rollout` exposes pause, promote, abort, and analysis primitives
-
-Why the chart keeps both:
-
-- earlier labs and ArgoCD examples still use the Deployment path by default
-- rollout behavior is enabled only in rollout-specific values files
-- this avoids regressions across labs
+This demonstrates automated analysis without requiring Prometheus. Prometheus-based analysis can be added later when the monitoring lab stack is running.
 
 ## Strategy Comparison
 
-### Canary
+Use canary when:
 
-Best when:
+- risk should be reduced by gradual exposure
+- behavior should be observed before full rollout
+- metrics or manual gates should control promotion
 
-- you want gradual exposure
-- you want to observe behavior before full rollout
-- rollback decisions may depend on metrics or analysis
+Use blue-green when:
 
-Tradeoffs:
-
-- slower than blue-green
-- more operational steps
-- percentage-based rollout is harder to reason about when replicas are low
-
-### Blue-Green
-
-Best when:
-
-- you need a fast promotion and rollback
-- you want a clean preview environment before switching traffic
-- you can afford double capacity during rollout
-
-Tradeoffs:
-
-- requires active and preview capacity at the same time
-- traffic switch is immediate rather than incremental
+- a full preview environment is useful
+- promotion and rollback must be instant
+- temporary double capacity is acceptable
 
 Recommendation:
 
-- use canary for high-risk changes or behavior changes
-- use blue-green when validation is strong and rollback speed matters most
+- canary is the better default for normal application changes
+- blue-green fits larger changes where preview validation and fast switching matter more than gradual exposure
 
-## Dashboard and Evidence
+## Notes for Screenshots
 
-The dashboard was not started in this run, so screenshots were not collected. For a live run, capture:
+For final lab evidence in a live cluster, capture:
 
-- dashboard view of the canary rollout paused at 20%
-- dashboard view during 40% / 60% / 80% progression
-- abort state and retry state
-- blue-green preview and active services before and after promotion
-
-## Command Reference
-
-Useful commands for the live lab run:
-
-```powershell
-kubectl create namespace argo-rollouts
-kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
-kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/dashboard-install.yaml
-.\.tools\helm.exe upgrade --install devops-info-service-canary .\k8s\devops-info-service --namespace canary --create-namespace -f .\k8s\devops-info-service\values-rollout-canary.yaml
-.\.tools\helm.exe upgrade --install devops-info-service-bluegreen .\k8s\devops-info-service --namespace bluegreen --create-namespace -f .\k8s\devops-info-service\values-rollout-bluegreen.yaml
-kubectl argo rollouts get rollout devops-info-service-canary -n canary -w
-kubectl argo rollouts promote devops-info-service-canary -n canary
-kubectl argo rollouts abort devops-info-service-canary -n canary
-kubectl argo rollouts retry rollout devops-info-service-canary -n canary
-kubectl argo rollouts get rollout devops-info-service-bluegreen -n bluegreen -w
-kubectl argo rollouts promote devops-info-service-bluegreen -n bluegreen
-```
+- controller pods running in `argo-rollouts`
+- dashboard at `http://localhost:3100`
+- canary paused at 20%
+- canary progressing through 40%, 60%, and 80%
+- canary abort and retry
+- blue-green active and preview services before promotion
+- blue-green active service after promotion
