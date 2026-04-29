@@ -25,6 +25,8 @@ kubectl port-forward svc/argo-rollouts-dashboard -n argo-rollouts 3100:3100
 # Open http://localhost:3100
 ```
 
+![Argo Rollouts Dashboard — overview](img/lab14/dashboard-overview.png)
+
 ### Rollout vs Deployment — Key Differences
 
 | Feature | Deployment | Rollout |
@@ -60,69 +62,57 @@ Canary steps configured:
 ### Deploy
 
 ```bash
-# Disable the old Deployment (Rollout replaces it) then install:
 helm upgrade --install python-app ./k8s/devops-python-chart \
   --set rollout.strategy=canary
 ```
 
-### Test — Trigger a Rollout
+### Step-by-step Rollout Progression
+
+Trigger a new rollout by changing the image tag:
 
 ```bash
-# Update the image tag to trigger a new revision
 helm upgrade python-app ./k8s/devops-python-chart \
   --set image.tag=v2.0.0 --set rollout.strategy=canary
 
-# Watch rollout progress
 kubectl argo rollouts get rollout python-app -w
 ```
 
-The rollout pauses at 20% (first step has `pause: {}`):
+**Step 1 — Paused at 20% (waiting for manual promotion):**
 
-```
-Status: ॥ Paused
-Message: CanaryPauseStep
-Step:    1/8
-SetWeight: 20
-ActualWeight: 20
-```
+![Canary paused at 20%](img/lab14/canary-20-paused.png)
 
-### Promote through steps
+**Promote past the first pause:**
 
 ```bash
-# Manually promote past the first pause
 kubectl argo rollouts promote python-app
-
-# Subsequent steps progress automatically every 30s
-# Final status:
-# Status:   ✔ Healthy
-# Step:     8/8
-# SetWeight: 100
 ```
 
-### Test Rollback
+**Steps 2–4 — Automatic progression through 40% → 60% → 80%:**
+
+![Canary progressing through steps](img/lab14/canary-progress.png)
+
+**Final — 100% healthy:**
+
+![Canary completed — Healthy](img/lab14/canary-healthy.png)
+
+### Abort Demonstration
 
 ```bash
-# During a rollout at 20%, abort:
+# Start a new rollout, then abort while at 20%:
 kubectl argo rollouts abort python-app
-
-# Status immediately changes:
-# Status: ✖ Degraded
-# Message: RolloutAborted: ...
-
-# Traffic returns 100% to stable (old) version
-# Retry the rollout after fixing the issue:
-kubectl argo rollouts retry rollout python-app
 ```
 
-**Observation:** On abort, Argo Rollouts immediately shifts 100% of traffic back to the stable ReplicaSet. The canary pods are scaled to zero but not deleted, allowing a fast retry.
+**Rollout aborted — traffic immediately returns to stable:**
+
+![Canary aborted — traffic back to stable](img/lab14/canary-abort.png)
+
+**Observation:** On abort, Argo Rollouts immediately shifts 100% of traffic back to the stable ReplicaSet. The canary pods are scaled to zero but not deleted, allowing a fast retry with `kubectl argo rollouts retry rollout python-app`.
 
 ---
 
 ## 3. Blue-Green Deployment
 
 ### Configure
-
-Switch the strategy in values:
 
 ```bash
 helm upgrade python-app ./k8s/devops-python-chart \
@@ -134,34 +124,27 @@ This creates:
 - `python-app-preview` service — preview (new version only)
 - `autoPromotionEnabled: false` — manual promotion required
 
-### Test Blue-Green Flow
+### Preview vs Active
+
+**Blue-green rollout — two ReplicaSets running in parallel:**
+
+![Blue-green — preview and active services](img/lab14/bluegreen-preview.png)
 
 ```bash
-# Initial deploy — this is the "blue" version
-helm upgrade --install python-app ./k8s/devops-python-chart \
-  --set rollout.strategy=blueGreen --set image.tag=v1.0.0
-
-# Trigger "green" deployment
-helm upgrade python-app ./k8s/devops-python-chart \
-  --set rollout.strategy=blueGreen --set image.tag=v2.0.0
-
-# Two ReplicaSets are now running:
-kubectl get replicasets
-# NAME                  DESIRED  CURRENT  READY
-# python-app-xxx-blue   3        3        3   (active)
-# python-app-xxx-green  3        3        3   (preview)
-
-# Test the preview (green) version:
+# Test the preview (green) version independently:
 kubectl port-forward svc/python-app-preview 8081:80
 curl localhost:8081/
-
-# Promote green to active:
-kubectl argo rollouts promote python-app
-# Traffic switches instantly: 100% blue → 100% green
-
-# Rollback (instant — switch back to blue ReplicaSet):
-kubectl argo rollouts undo python-app
 ```
+
+### Promotion
+
+```bash
+kubectl argo rollouts promote python-app
+```
+
+**After promotion — green becomes active instantly:**
+
+![Blue-green — after promotion](img/lab14/bluegreen-promoted.png)
 
 ### Blue-Green vs Canary Comparison
 
@@ -174,8 +157,8 @@ kubectl argo rollouts undo python-app
 | Best for | High-traffic apps, risk reduction | Fast cutover, QA preview needed |
 
 **Recommendation:**
-- Use **Canary** when you want to validate a release under real production traffic with a small blast radius. Ideal for user-facing services where gradual exposure reduces risk.
-- Use **Blue-Green** when you need a clean preview environment to run integration/smoke tests before any production traffic hits the new version. Also preferred when instant rollback is critical (e.g., database migrations with dual-write).
+- Use **Canary** when you want to validate a release under real production traffic with a small blast radius.
+- Use **Blue-Green** when you need a clean preview environment before any production traffic hits the new version, or when instant rollback is critical.
 
 ---
 
@@ -209,10 +192,8 @@ kubectl argo rollouts set image <name> <container>=<image>:<tag>
 # View rollout history
 kubectl argo rollouts history rollout <name>
 
-# Pause a running rollout
+# Pause / resume a rollout
 kubectl argo rollouts pause <name>
-
-# Resume a paused rollout
 kubectl argo rollouts resume <name>
 ```
 
