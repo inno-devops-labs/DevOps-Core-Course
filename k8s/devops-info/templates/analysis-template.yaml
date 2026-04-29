@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate
+spec:
+  metrics:
+    - name: webcheck
+      provider:
+        web:
+          url: http://{{ include "devops-info.fullname" . }}.{{ .Release.Namespace }}.svc/health
+          jsonPath: "{$.status}"
+      successCondition: result == "healthy"
+      interval: 10s
+      count: 3
+      failureLimit: 1

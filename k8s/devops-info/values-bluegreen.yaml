@@ -1,0 +1,50 @@
+replicaCount: 3
+
+image:
+  repository: devops-info-service
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+labels:
+  app.kubernetes.io/part-of: devops-core-course
+
+podAnnotations: {}
+
+serviceAccount:
+  create: true
+  name: ""
+
+secrets:
+  create: true
+  name: ""
+  username: "change-me"
+  password: "change-me"
+
+vault:
+  enabled: false
+  role: "devops-info-role"
+  secretPath: "kv/data/devops-lab11/devops-info"
+  injectFileName: "app-config"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+  nodePort: 30080
+
+containerPort: 8000
+
+env:
+  PORT: "8000"
+  LOG_FORMAT: "json"
+  RELEASE_VERSION: "v1"
+  VISITS_FILE: "/data/visits"
+
+configEnv:
+  appName: "devops-info-service"
+  environment: "dev"
+  featureVisits: "true"
+  logLevel: "info"
