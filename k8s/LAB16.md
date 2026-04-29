@@ -27,17 +27,7 @@ helm install monitoring prometheus-community/kube-prometheus-stack \
 kubectl get pods -n monitoring
 ```
 
-Expected output — all pods `Running`:
-
-```
-NAME                                                    READY   STATUS
-alertmanager-monitoring-kube-prometheus-alertmanager-0  2/2     Running
-monitoring-grafana-xxx                                  3/3     Running
-monitoring-kube-prometheus-operator-xxx                 1/1     Running
-monitoring-kube-state-metrics-xxx                       1/1     Running
-monitoring-prometheus-node-exporter-xxx                 1/1     Running
-prometheus-monitoring-kube-prometheus-prometheus-0      2/2     Running
-```
+![All monitoring pods running](img/lab16/monitoring-pods.png)
 
 ---
 
@@ -47,94 +37,47 @@ prometheus-monitoring-kube-prometheus-prometheus-0      2/2     Running
 
 ```bash
 kubectl port-forward svc/monitoring-grafana -n monitoring 3000:80
-# Open http://localhost:3000
-# Login: admin / admin  (or the password set above)
+# Open http://localhost:3000  —  admin / admin
 ```
 
-### Q1 — CPU/Memory of the StatefulSet
+### Q1 — CPU/Memory usage of the StatefulSet pod
 
-Dashboard: **Kubernetes / Compute Resources / Pod**
+Dashboard: **Kubernetes / Compute Resources / Pod** → select `python-app-sts-0`
 
-Navigate to the pod `python-app-sts-0`:
+![StatefulSet pod CPU and memory usage](img/lab16/grafana-pod-resources.png)
 
-| Metric | Value |
-|--------|-------|
-| CPU usage | ~2m (0.002 cores) |
-| CPU limit | 200m |
-| Memory usage | ~28 MiB |
-| Memory limit | 256 MiB |
+### Q2 — Which pods use most/least CPU in `default` namespace?
 
-The app is well within its limits; the CPU throttle rate is 0%.
+Dashboard: **Kubernetes / Compute Resources / Namespace (Pods)** → namespace: `default`
 
-### Q2 — Which Pods Use Most/Least CPU in `default` Namespace?
+![CPU usage per pod in default namespace](img/lab16/grafana-namespace-cpu.png)
 
-Dashboard: **Kubernetes / Compute Resources / Namespace (Pods)**
-
-Select namespace: `default`
-
-| Pod | CPU Usage |
-|-----|-----------|
-| `python-app-sts-0` | highest (~2m) |
-| `python-app-sts-1` | ~1.5m |
-| `python-app-sts-2` | ~1.5m |
-| `python-app-init-demo` | ~0m (sleeping) |
-
-The StatefulSet pods use the most CPU in the namespace. The init demo pod is effectively idle.
-
-### Q3 — Node Metrics
+### Q3 — Node memory usage (% and MB) and CPU cores
 
 Dashboard: **Node Exporter / Nodes**
 
-| Metric | Value |
-|--------|-------|
-| Memory usage | ~62% |
-| Memory used | ~1.8 GiB of 2.9 GiB |
-| CPU cores | 4 |
-| CPU usage | ~15% average |
-| Disk read | ~120 KiB/s |
-| Disk write | ~80 KiB/s |
+![Node memory and CPU metrics](img/lab16/grafana-node-metrics.png)
 
-Minikube runs as a single node; all cluster workloads are consolidated here.
-
-### Q4 — Kubelet: Pods and Containers Managed
+### Q4 — How many pods/containers does Kubelet manage?
 
 Dashboard: **Kubernetes / Kubelet**
 
-| Metric | Value |
-|--------|-------|
-| Running pods | ~20 |
-| Running containers | ~38 |
-| Pod start rate | ~0.03/s |
+![Kubelet pod and container count](img/lab16/grafana-kubelet.png)
 
-The kubelet manages all pods on the node, including system pods in `kube-system` and monitoring pods in `monitoring`.
+### Q5 — Network traffic for pods in `default` namespace
 
-### Q5 — Network Traffic for `default` Namespace
+Dashboard: **Kubernetes / Compute Resources / Namespace (Pods)** → Network tab → namespace: `default`
 
-Dashboard: **Kubernetes / Compute Resources / Namespace (Pods)** → Network tab
+![Network receive/transmit per pod](img/lab16/grafana-network.png)
 
-| Pod | Receive | Transmit |
-|-----|---------|----------|
-| `python-app-sts-0` | ~2 KiB/s | ~1 KiB/s |
-| `python-app-sts-1` | ~500 B/s | ~400 B/s |
-| `python-app-sts-2` | ~500 B/s | ~400 B/s |
-
-Traffic is minimal — only health checks and the occasional manual request.
-
-### Q6 — Active Alerts in Alertmanager
+### Q6 — How many active alerts? Alertmanager UI
 
 ```bash
 kubectl port-forward svc/monitoring-kube-prometheus-alertmanager -n monitoring 9093:9093
 # Open http://localhost:9093
 ```
 
-Default active alerts after fresh install:
-
-| Alert | Severity | Reason |
-|-------|----------|--------|
-| `Watchdog` | None | Intentional always-firing alert to confirm Alertmanager is working |
-| `InfoInhibitor` | None | Suppresses info-level noise |
-
-The `Watchdog` alert is by design — its presence confirms the full alerting pipeline (Prometheus → Alertmanager) is operational.
+![Alertmanager — active alerts](img/lab16/alertmanager-alerts.png)
 
 ---
 
@@ -165,36 +108,26 @@ initContainers:
         mountPath: /work-dir
 ```
 
-**Verification:**
+Watch the pod go through init stages:
 
 ```bash
-# Watch init container run:
 kubectl get pods python-app-init-demo -w
-# NAME                    READY   STATUS       RESTARTS
-# python-app-init-demo    0/1     Init:0/2     0   ← init-download running
-# python-app-init-demo    0/1     Init:1/2     0   ← wait-for-service running
-# python-app-init-demo    1/1     Running      0   ← main container started
-
-# Check init-download logs:
-kubectl logs python-app-init-demo -c init-download
-# Connecting to example.com (93.184.216.34:80)
-# saving to '/work-dir/index.html'
-# index.html           100% |...| 1256  0:00:00 ETA
-# 'index.html' saved
-# Download complete
-
-# Verify main container received the file:
-kubectl exec python-app-init-demo -- head -5 /data/index.html
-# <!doctype html>
-# <html>
-# <head>
-#     <title>Example Domain</title>
-#     <meta charset="utf-8" />
 ```
+
+![Pod transitioning through Init:0/2 → Init:1/2 → Running](img/lab16/init-pod-status.png)
+
+Verify the file was downloaded and is accessible in the main container:
+
+```bash
+kubectl logs python-app-init-demo -c init-download
+kubectl exec python-app-init-demo -- head -5 /data/index.html
+```
+
+![init-download logs and file content in main container](img/lab16/init-download-verify.png)
 
 ### Init Container 2 — Wait-for-Service Pattern
 
-Blocks the main container from starting until the app's Kubernetes Service is resolvable via DNS:
+Blocks the main container from starting until the app's Service is resolvable via DNS:
 
 ```yaml
   - name: wait-for-service
@@ -210,22 +143,15 @@ Blocks the main container from starting until the app's Kubernetes Service is re
         echo "Service is ready"
 ```
 
-**Behavior:** While the Service does not yet have endpoints, `nslookup` returns `NXDOMAIN` and the init container retries every 2 seconds. Once the Service is created and resolves, the init container exits 0 and the main container starts.
-
-**Verification:**
+Verify the wait-for-service init container logs:
 
 ```bash
 kubectl logs python-app-init-demo -c wait-for-service
-# Waiting for service python-app...
-# Waiting for service python-app...
-# Server: 10.96.0.10
-# Address: 10.96.0.10#53
-# Name: python-app.default.svc.cluster.local
-# Address: 10.109.42.7
-# Service is ready
 ```
 
-**Use case:** Prevents the main application from starting before its database, cache, or API dependency is available, eliminating startup race conditions.
+![wait-for-service logs showing retry then success](img/lab16/init-wait-verify.png)
+
+**Use case:** Prevents the main application from starting before its dependency is available, eliminating startup race conditions.
 
 ---
 
@@ -239,21 +165,6 @@ The manifest `k8s/monitoring/servicemonitor.yaml` configures Prometheus to scrap
 kubectl apply -f k8s/monitoring/servicemonitor.yaml
 ```
 
-### Expose `/metrics` in the App
-
-Add the `prometheus_client` library to the Python app and expose a metrics endpoint:
-
-```python
-from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
-from flask import Response
-
-REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'path', 'status'])
-
-@app.route('/metrics')
-def metrics():
-    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
-```
-
 ### Verify in Prometheus UI
 
 ```bash
@@ -262,7 +173,7 @@ kubectl port-forward svc/monitoring-kube-prometheus-prometheus -n monitoring 909
 # Query: http_requests_total
 ```
 
-Expected result: the metric appears in Prometheus with labels `{method="GET", path="/", status="200"}` and a rate that increases with each request.
+![Custom app metrics visible in Prometheus](img/lab16/prometheus-metrics.png)
 
 ---
 
