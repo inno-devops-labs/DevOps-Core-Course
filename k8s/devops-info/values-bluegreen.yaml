@@ -1,0 +1,11 @@
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+  analysis:
+    enabled: false
+
+env:
+  SERVICE_VARIANT: "blue-green"
+  SERVICE_DESCRIPTION: "Blue-green deployment of the DevOps info service"

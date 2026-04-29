@@ -1,0 +1,20 @@
+{{- if and .Values.rollout.enabled .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "common-lib.fullname" . }}-webcheck
+  labels:
+    {{- include "devops-info.baseLabels" . | nindent 4 }}
+    app.kubernetes.io/component: "rollout-analysis"
+spec:
+  metrics:
+    - name: {{ .Values.rollout.analysis.metricName }}
+      interval: {{ .Values.rollout.analysis.interval }}
+      count: {{ .Values.rollout.analysis.count }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit }}
+      successCondition: {{ .Values.rollout.analysis.successCondition | quote }}
+      provider:
+        web:
+          url: "http://{{ include "common-lib.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}{{ .Values.rollout.analysis.path }}"
+          jsonPath: {{ .Values.rollout.analysis.jsonPath | quote }}
+{{- end }}

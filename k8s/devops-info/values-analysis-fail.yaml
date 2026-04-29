@@ -1,0 +1,7 @@
+rollout:
+  analysis:
+    path: /missing
+    successCondition: result == "ready"
+
+env:
+  SERVICE_DESCRIPTION: "Intentional failed-analysis deployment for Argo Rollouts"

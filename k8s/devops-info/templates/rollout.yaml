@@ -1,6 +1,6 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "common-lib.fullname" . }}
   labels:
@@ -10,11 +10,6 @@ spec:
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   minReadySeconds: {{ .Values.minReadySeconds }}
   progressDeadlineSeconds: {{ .Values.progressDeadlineSeconds }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       {{- include "common-lib.selectorLabels" . | nindent 6 }}
@@ -87,4 +82,35 @@ spec:
           {{- end }}
           securityContext:
             {{- include "common-lib.containerSecurityContext" .Values.securityContext.container | nindent 12 }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "canary" }}
+    canary:
+      steps:
+        {{- $weights := .Values.rollout.canary.weights }}
+        - setWeight: {{ index $weights 0 }}
+        - pause: {}
+        {{- if .Values.rollout.analysis.enabled }}
+        - analysis:
+            templates:
+              - templateName: {{ include "common-lib.fullname" . }}-webcheck
+        {{- end }}
+        {{- range $weight := rest $weights }}
+        - setWeight: {{ $weight }}
+        {{- if ne (int $weight) 100 }}
+        - pause:
+            duration: {{ $.Values.rollout.canary.pauseDuration }}
+        {{- end }}
+        {{- end }}
+    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ default (include "common-lib.fullname" .) .Values.rollout.blueGreen.activeServiceName }}
+      previewService: {{ default (printf "%s-preview" (include "common-lib.fullname" .)) .Values.rollout.blueGreen.previewServiceName }}
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      {{- with .Values.rollout.blueGreen.previewReplicaCount }}
+      previewReplicaCount: {{ . }}
+      {{- end }}
+    {{- else }}
+    {{- fail "rollout.strategy must be either canary or blueGreen" }}
+    {{- end }}
 {{- end }}

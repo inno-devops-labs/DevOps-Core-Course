@@ -31,6 +31,35 @@ strategy:
     maxSurge: 1
     maxUnavailable: 0
 
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    weights:
+      - 20
+      - 40
+      - 60
+      - 80
+      - 100
+    pauseDuration: 30s
+  blueGreen:
+    activeServiceName: ""
+    previewServiceName: ""
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewReplicaCount: null
+    previewService:
+      type: ClusterIP
+  analysis:
+    enabled: true
+    metricName: webcheck
+    path: /ready
+    jsonPath: "{$.status}"
+    successCondition: result == "ready"
+    interval: 10s
+    count: 3
+    failureLimit: 1
+
 resources:
   requests:
     cpu: 100m
