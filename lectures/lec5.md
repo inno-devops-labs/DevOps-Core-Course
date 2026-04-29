@@ -330,11 +330,12 @@ ansible-playbook -i inventory/hosts.ini playbook.yml
 
 ```mermaid
 flowchart TD
-  subgraph ❌ Without Roles
+  subgraph "❌ Without Roles"
+    direction TD
     P1[📝 One huge playbook]
     P1 --> Problem[😰 Hard to maintain]
   end
-  subgraph ✅ With Roles
+  subgraph "✅ With Roles"
     R1[📦 common role]
     R2[📦 docker role]
     R3[📦 app role]
@@ -623,15 +624,17 @@ server1 : ok=15  changed=0  unreachable=0  failed=0
 
 ```mermaid
 flowchart LR
-  subgraph 😱 Manual
+  subgraph Manual["😱 Manual"]
     SSH[🔌 SSH Sessions]
     Commands[💻 Run Commands]
     Hope[🙏 Hope It Works]
+    SSH --> Commands --> Hope
   end
-  subgraph 🤖 Automated
+  subgraph Automated["🤖 Automated"]
     Playbook[📝 Playbooks]
     Roles[📦 Roles]
     Consistent[✅ Consistent]
+    Playbook --> Roles --> Consistent
   end
   Manual -->|🚀 Ansible| Automated
 ```
