@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api-alsstarikova",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-04-28",
+  "workers_dev": true,
+  "vars": {
+    "APP_NAME": "edge-api-alsstarikova",
+    "COURSE_NAME": "devops-core"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "0a04a9cdac2d404ea875188665aec3bb"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
