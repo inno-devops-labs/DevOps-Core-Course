@@ -1,0 +1,71 @@
+---
+- name: Manage baseline packages and timezone
+  become: true
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Force apt failure for rescue testing
+      ansible.builtin.command: /bin/false
+      when: common_force_apt_failure | bool
+      changed_when: false
+
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+    - name: Set /etc/localtime link
+      ansible.builtin.file:
+        src: "/usr/share/zoneinfo/{{ common_timezone }}"
+        dest: /etc/localtime
+        state: link
+        force: true
+
+    - name: Set /etc/timezone content
+      ansible.builtin.copy:
+        dest: /etc/timezone
+        content: "{{ common_timezone }}\n"
+        mode: "0644"
+
+  rescue:
+    - name: Retry apt cache update with fix-missing
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+
+    - name: Reinstall common packages after cache recovery
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+        update_cache: true
+
+  always:
+    - name: Log package block completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible-common-packages.log
+        mode: "0644"
+        content: "common packages block completed\n"
+
+  tags:
+    - common
+    - packages
+
+- name: Manage system users
+  become: true
+  block:
+    - name: Ensure managed users are present
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        groups: "{{ item.groups | join(',') }}"
+        append: true
+        shell: "{{ item.shell | default('/bin/bash') }}"
+        create_home: true
+        state: present
+      loop: "{{ common_users }}"
+      loop_control:
+        label: "{{ item.name }}"
+  tags:
+    - common
+    - users

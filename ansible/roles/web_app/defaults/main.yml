@@ -1,0 +1,26 @@
+---
+# App identity and image settings.
+app_name: devops-app
+app_container_name: "{{ app_name }}"
+dockerhub_username: lanebo1
+dockerhub_password: ""
+dockerhub_login_enabled: false
+docker_image: "{{ dockerhub_username }}/devops-info-service"
+# Keep docker_image_tag for backward compatibility with Lab 5 vars.
+docker_image_tag: latest
+docker_tag: "{{ docker_image_tag }}"
+app_port: 5000
+app_internal_port: 5000
+app_restart_policy: unless-stopped
+app_environment: {}
+app_secret_key: ""
+app_healthcheck_url: "http://127.0.0.1:{{ app_port }}/health"
+
+compose_project_dir: "/opt/{{ app_name }}"
+docker_compose_version: "3.8"
+
+# Wipe Logic Control:
+# Wipe only:      ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install:  ansible-playbook playbooks/deploy.yml -e "web_app_wipe=true"
+web_app_wipe: false
+web_app_remove_image_on_wipe: false

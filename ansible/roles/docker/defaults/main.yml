@@ -1,0 +1,14 @@
+---
+docker_user: "{{ ansible_user }}"
+docker_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  - python3-docker
+
+docker_force_gpg_retry: false

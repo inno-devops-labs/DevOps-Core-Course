@@ -1,0 +1,29 @@
+# Template variables:
+# - app_name: compose service name
+# - docker_image/docker_tag: container image reference
+# - app_container_name: explicit container name
+# - app_port/app_internal_port: host->container port mapping
+# - app_secret_key: optional application secret injected as APP_SECRET_KEY
+# - app_environment: extra env vars map appended to defaults
+# - app_restart_policy: docker restart policy
+services:
+  {{ app_name }}:
+    image: "{{ docker_image }}:{{ docker_tag }}"
+    container_name: "{{ app_container_name }}"
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+    environment:
+      PORT: "{{ app_internal_port }}"
+{% if app_secret_key is defined and app_secret_key | length > 0 %}
+      APP_SECRET_KEY: "{{ app_secret_key }}"
+{% endif %}
+{% for key, value in app_environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    restart: "{{ app_restart_policy }}"
+    networks:
+      - "{{ app_name }}_net"
+
+networks:
+  {{ app_name }}_net:
+    driver: bridge

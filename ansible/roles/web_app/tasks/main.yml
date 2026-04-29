@@ -1,0 +1,90 @@
+---
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app
+    - web_app_wipe
+
+- name: Deploy web application with Docker Compose
+  become: true
+  block:
+    - name: Login to Docker Hub when credentials are enabled
+      community.docker.docker_login:
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+      no_log: true
+      when:
+        - dockerhub_login_enabled | bool
+        - dockerhub_password | length > 0
+
+    - name: Ensure compose project directory exists
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Render docker-compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Pull application image
+      community.docker.docker_image:
+        name: "{{ docker_image }}"
+        tag: "{{ docker_tag }}"
+        source: pull
+
+    - name: Inspect existing container matching compose container_name
+      community.docker.docker_container_info:
+        name: "{{ app_container_name }}"
+      register: existing_named_container
+      failed_when: false
+
+    - name: Remove legacy standalone container before compose migration
+      community.docker.docker_container:
+        name: "{{ app_container_name }}"
+        state: absent
+      when:
+        - existing_named_container.exists | default(false)
+        - (existing_named_container.container.Config.Labels | default({})).get('com.docker.compose.project', '') != app_name
+
+    - name: Start services with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        state: present
+        pull: missing
+        remove_orphans: true
+
+    - name: Wait for application port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ app_port }}"
+        timeout: 60
+
+    - name: Verify health endpoint
+      ansible.builtin.uri:
+        url: "{{ app_healthcheck_url }}"
+        method: GET
+        status_code: 200
+      register: app_health_response
+      retries: 5
+      delay: 3
+      until: app_health_response.status == 200
+
+  rescue:
+    - name: Show deployment failure details
+      ansible.builtin.debug:
+        msg: "Compose deployment failed for {{ app_name }} in {{ compose_project_dir }}"
+
+  always:
+    - name: Log deployment completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible-web-app-deploy.log
+        mode: "0644"
+        content: "web_app deploy block completed\n"
+
+  tags:
+    - web_app
+    - app_deploy
+    - compose

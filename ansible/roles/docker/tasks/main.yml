@@ -1,0 +1,101 @@
+---
+- name: Install Docker engine from official repository
+  become: true
+  block:
+    - name: Install Docker repository prerequisites
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Ensure apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Force Docker GPG retry path for testing
+      ansible.builtin.command: /bin/false
+      when: docker_force_gpg_retry | bool
+      changed_when: false
+
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+      notify: Restart Docker
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_arch_map.get(ansible_architecture, ansible_architecture) }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        state: present
+        filename: docker
+      notify: Restart Docker
+
+    - name: Install Docker engine and dependencies
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
+      notify: Restart Docker
+
+  rescue:
+    - name: Wait before retrying Docker apt metadata
+      ansible.builtin.pause:
+        seconds: 10
+
+    - name: Retry apt cache update
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Retry Docker GPG key download
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Retry Docker apt repository configuration
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_arch_map.get(ansible_architecture, ansible_architecture) }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        state: present
+        filename: docker
+
+    - name: Retry Docker package installation
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
+
+  always:
+    - name: Ensure Docker service is enabled and started
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+  tags:
+    - docker
+    - docker_install
+
+- name: Configure Docker access for deployment user
+  become: true
+  block:
+    - name: Add deployment user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true
+  tags:
+    - docker
+    - docker_config

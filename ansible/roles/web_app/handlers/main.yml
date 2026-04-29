@@ -1,0 +1,6 @@
+---
+- name: Restart Web Application
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ compose_project_dir }}"
+    state: restarted

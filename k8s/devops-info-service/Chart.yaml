@@ -1,0 +1,14 @@
+apiVersion: v2
+name: devops-info-service
+description: FastAPI DevOps Info Service — exposes system/runtime metadata via HTTP
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - python
+  - fastapi
+  - devops
+maintainers:
+  - name: lanebo1
+sources:
+  - https://github.com/lanebo1/DevOps-Core-Course

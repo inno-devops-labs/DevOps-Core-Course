@@ -1,0 +1,8 @@
+---
+- name: Full server setup and app deployment
+  hosts: webservers
+  become: true
+
+  roles:
+    - common
+    - web_app

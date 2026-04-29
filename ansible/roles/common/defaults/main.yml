@@ -1,0 +1,17 @@
+---
+common_packages:
+  - ca-certificates
+  - curl
+  - git
+  - vim
+  - htop
+  - python3-pip
+common_timezone: UTC
+
+common_users:
+  - name: "{{ ansible_user | default('devops') }}"
+    groups:
+      - sudo
+    shell: /bin/bash
+
+common_force_apt_failure: false

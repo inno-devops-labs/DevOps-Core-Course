@@ -1,0 +1,55 @@
+# Production environment overrides
+# Usage: helm install myapp-prod k8s/devops-info-service -f k8s/devops-info-service/values-prod.yaml
+
+replicaCount: 5
+
+environment: prod
+
+persistence:
+  enabled: false
+
+image:
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 5000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+# Conservative probe settings for prod — avoid false-positive restarts
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+hooks:
+  preInstall:
+    enabled: true
+    image: busybox
+    weight: "-5"
+  postInstall:
+    enabled: true
+    image: busybox
+    weight: "5"

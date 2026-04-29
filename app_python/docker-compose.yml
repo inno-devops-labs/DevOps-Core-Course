@@ -1,0 +1,15 @@
+services:
+  devops-info-service:
+    build: .
+    image: devops-info-service:lab12
+    ports:
+      - "5000:5000"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "5000"
+      VISITS_FILE_PATH: "/data/visits"
+    volumes:
+      - visits_data:/data
+
+volumes:
+  visits_data:

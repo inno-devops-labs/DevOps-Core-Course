@@ -1,0 +1,8 @@
+---
+skip_list:
+  # Lab requires explicit variable names like app_name, docker_image, etc.
+  - var-naming
+  # Keep task structure readable with block/rescue/always grouping.
+  - key-order
+  # Required by lab: explicit apt-get update --fix-missing in rescue path.
+  - command-instead-of-module

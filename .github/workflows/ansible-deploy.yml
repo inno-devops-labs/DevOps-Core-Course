@@ -1,0 +1,101 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: 
+      - "**" 
+    paths:
+      - "ansible/**"
+      - "!ansible/docs/**"
+      - ".github/workflows/ansible-deploy.yml"
+  pull_request:
+    branches:
+      - "**" 
+    paths:
+      - "ansible/**"
+      - "!ansible/docs/**"
+      - ".github/workflows/ansible-deploy.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint
+
+      - name: Install required collections
+        run: |
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/*.yml roles/*/tasks/*.yml
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    if: github.event_name == 'push' && secrets.ANSIBLE_VAULT_PASSWORD != ''
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Install required collections
+        run: |
+          ansible-galaxy collection install -r ansible/requirements.yml
+
+      - name: Optionally configure SSH key from secret
+        if: secrets.SSH_PRIVATE_KEY != ''
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Prepare Vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Run Ansible deployment
+        env:
+          ANSIBLE_BECOME_PASS: ${{ secrets.VM_SUDO_PASSWORD }}
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy.yml \
+            --vault-password-file /tmp/vault_pass
+
+      - name: Verify deployment endpoints
+        run: |
+          cd ansible
+          ansible webservers -m ansible.builtin.uri -a "url=http://127.0.0.1:5000/health method=GET status_code=200"
+          ansible webservers -m ansible.builtin.uri -a "url=http://127.0.0.1:5000/ method=GET status_code=200"
+
+      - name: Remove temporary vault password file
+        if: always()
+        run: rm -f /tmp/vault_pass

@@ -1,0 +1,11 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "dev",
+  "features": {
+    "metricsEnabled": true,
+    "verboseErrors": false
+  },
+  "settings": {
+    "maxRequestLogLength": 2048
+  }
+}
