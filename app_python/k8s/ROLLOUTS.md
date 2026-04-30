@@ -158,21 +158,95 @@ NAME                                          KIND        STATUS        AGE  INF
 
 ### Strategy configuration explained
 
+The blue-green strategy uses two environments: active and preview. The preview service runs the new version while the active service continues serving production traffic. After testing, the active service is switched to the new version instantly when promoted. This allows safe testing before release and quick rollback if needed.
+
 ### Preview vs active service
 
+The active service is used by users in production and always points to the stable version. The preview service is used to test the new version before it is promoted. This separation ensures the new version can be verified without affecting real users.
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl port-forward svc/myapp-app-python-preview 8081:80 -n argo-rollouts
+Forwarding from 127.0.0.1:8081 -> 12345
+Forwarding from [::1]:8081 -> 12345
+Handling connection for 8081
+Handling connection for 8081
+```
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl port-forward svc/myapp-app-python-service 8080:80 -n argo-rollouts
+Forwarding from 127.0.0.1:8080 -> 12345
+Forwarding from [::1]:8080 -> 12345
+Handling connection for 8080
+Handling connection for 8080
+```
+
 ### Promotion process
+
+Promotion
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air app_python % helm upgrade --install myapp . -n argo-rollouts
+Release "myapp" has been upgraded. Happy Helming!
+NAME: myapp
+LAST DEPLOYED: Thu Apr 30 23:12:57 2026
+NAMESPACE: argo-rollouts
+STATUS: deployed
+REVISION: 9
+DESCRIPTION: Upgrade complete
+TEST SUITE: None
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl get pods -n argo-rollouts
+kubectl get svc -n argo-rollouts
+NAME                                      READY   STATUS    RESTARTS   AGE
+argo-rollouts-5f64f8d68-zxx5z             1/1     Running   0          6h24m
+argo-rollouts-dashboard-755bbc64c-pnkl6   1/1     Running   0          6h12m
+myapp-app-python-76b59b6c66-7cwr4         1/1     Running   0          37m
+myapp-app-python-76b59b6c66-pgtgq         1/1     Running   0          43m
+myapp-app-python-76b59b6c66-skfdd         1/1     Running   0          37m
+myapp-app-python-f7cddd7c7-5nvtx          1/1     Running   0          12m
+myapp-app-python-f7cddd7c7-xng4z          1/1     Running   0          12m
+myapp-app-python-f7cddd7c7-zjfpv          1/1     Running   0          12m
+NAME                       TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+argo-rollouts-dashboard    ClusterIP   10.106.240.192   <none>        3100/TCP       6h12m
+argo-rollouts-metrics      ClusterIP   10.109.176.51    <none>        8090/TCP       6h24m
+myapp-app-python-preview   ClusterIP   10.97.144.248    <none>        80/TCP         16m
+myapp-app-python-service   NodePort    10.101.217.107   <none>        80:30009/TCP   59m
+```
+
+![](./../docs/screenshots/lab14-shots/blue-green-1.png)
+![](./../docs/screenshots/lab14-shots/bg-2.png)
+![](./../docs/screenshots/lab14-shots/bg-4.png)
+
+Rollback
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl argo rollouts undo myapp-app-python -n argo-rollouts
+rollout 'myapp-app-python' undo
+```
+![](./../docs/screenshots/lab14-shots/bg-5.png)
+
 
 ## Strategy Comparison
 
 ### When to use canary vs blue-green
 
+canary is used when you want to slowly roll out changes to users and reduce risk step by step. blue-green is used when you want an instant switch between versions after testing
+
 ### Pros and cons of each
+
+- canary is safer for production because it exposes changes gradually, but it takes longer and is more complex to monitor
+
+- blue-green is faster and simpler at switch time, but requires double resources and has less gradual control.
 
 ### Your recommendation for different scenarios
 
+use canary for production systems where stability is critical. use blue-green for fast releases or when you want quick testing and instant rollback.
+
 ## CLI Commands Reference
 
-### Useful commands you used
+### Commands you used
+
+```kubectl argo rollouts get rollout -w``` is used to watch rollout progress. ```kubectl argo rollouts promote``` is used to move to the next step in canary or switch in blue-green. ```kubectl argo rollouts undo``` is used to rollback to the previous version.
 
 ### Monitoring and troubleshooting
 
+```kubectl get pods```, ```kubectl get svc```, and ```kubectl describe rollout``` are used to check cluster state and debug issues. dashboard is used to visually monitor rollout progress and traffic changes.

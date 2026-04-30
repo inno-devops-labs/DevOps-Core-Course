@@ -80,14 +80,7 @@ spec:
             claimName: {{ include "mychart.fullname" . }}-data
 
   strategy:
-    canary:
-      steps:
-        - setWeight: 20
-        - pause: {}
-        - setWeight: 40
-        - pause: { duration: 30s }
-        - setWeight: 60
-        - pause: { duration: 30s }
-        - setWeight: 80
-        - pause: { duration: 30s }
-        - setWeight: 100
+    blueGreen:
+      activeService: {{ include "mychart.fullname" . }}-service
+      previewService: {{ include "mychart.fullname" . }}-preview
+      autoPromotionEnabled: false
