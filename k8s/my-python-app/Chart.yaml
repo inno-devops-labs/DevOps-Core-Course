@@ -1,12 +1,13 @@
 apiVersion: v2
 name: my-python-app
-description: DevOps Info Service - Python application Helm chart
+description: DevOps Info Service - Python application Helm chart with progressive delivery
 type: application
-version: 0.1.0
+version: 0.2.0
 appVersion: "1.0.0"
 keywords:
   - python
   - devops
+  - progressive-delivery
 maintainers:
   - name: Your Name
     email: your.email@example.com

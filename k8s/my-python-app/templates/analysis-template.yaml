@@ -1,0 +1,17 @@
+{{- if and .Values.analysis.enabled (eq .Values.strategy "canary") }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ .Values.analysis.templateName }}
+spec:
+  metrics:
+    - name: web-check
+      provider:
+        web:
+          url: http://{{ include "my-python-app.fullname" . }}.default.svc/health
+          jsonPath: "{$.status}"
+      successCondition: result == "{{ .Values.analysis.successCondition }}"
+      interval: {{ .Values.analysis.interval }}
+      count: {{ .Values.analysis.count }}
+      failureLimit: {{ .Values.analysis.failureLimit }}
+{{- end }}

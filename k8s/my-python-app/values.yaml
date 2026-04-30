@@ -1,9 +1,15 @@
+strategy: "canary"
+
 replicaCount: 3
 
 image:
   repository: acecution/devops-info-service
-  tag: metrics
+  tag: "metrics"
   pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
 
 service:
   type: NodePort
@@ -11,27 +17,13 @@ service:
   targetPort: 8000
   nodePort: 30080
 
-environment: "production"
-logLevel: "info"
-features:
-  visits: true
-
-secrets:
-  username: placeholder-user
-  password: placeholder-password
-
-persistence:
-  enabled: true
-  size: 100Mi
-  storageClass: ""
-
 resources:
-  requests:
-    memory: "64Mi"
-    cpu: "100m"
   limits:
-    memory: "128Mi"
-    cpu: "200m"
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
 livenessProbe:
   httpGet:
@@ -57,3 +49,26 @@ env:
     value: "8000"
   - name: HOST
     value: "0.0.0.0"
+
+canary:
+  steps:
+    - setWeight: 20
+    - pause: {}
+    - setWeight: 40
+    - pause: { duration: 30s }
+    - setWeight: 60
+    - pause: { duration: 30s }
+    - setWeight: 80
+    - pause: { duration: 30s }
+    - setWeight: 100
+
+blueGreen:
+  autoPromotionEnabled: false
+
+analysis:
+  enabled: false
+  templateName: webcheck
+  successCondition: "healthy"
+  interval: 10s
+  count: 3
+  failureLimit: 1
