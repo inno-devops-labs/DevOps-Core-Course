@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Values.persistence.name | default (include "testiks.fullname" .) }}-data
+  name: {{ .Values.persistence.name | default (include "devops-info-service.fullname" .) }}-data
   labels:
-    {{- include "testiks.labels" . | nindent 4 }}
+    {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
   accessModes:
     - {{ .Values.persistence.accessMode }}

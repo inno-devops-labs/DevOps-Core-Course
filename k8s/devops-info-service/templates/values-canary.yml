@@ -1,0 +1,30 @@
+replicaCount: 5
+
+image:
+  repository: cacucoh/testiks
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 5000
+
+rollout:
+  enabled: true
+  strategy: canary
+  trigger: "v1"
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "100m"
+
+erviceAccount:
+  create: false
+  name: ""
+
+vault:
+  enabled: false

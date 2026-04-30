@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "testiks.fullname" . }}
+  name: {{ include "devops-info-service.fullname" . }}
   labels:
-    {{- include "testiks.labels" . | nindent 4 }}
+    {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "testiks.selectorLabels" . | nindent 6 }}
+      {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,7 +17,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "testiks.selectorLabels" . | nindent 8 }}
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
         app.kubernetes.io/component: web
       annotations:
@@ -32,7 +32,7 @@ spec:
         vault.hashicorp.com/agent-inject-command-{{ .Values.vault.fileName }}: {{ .Values.vault.injectCommand | quote }}
         {{- end }}
     spec:
-      serviceAccountName: {{ include "testiks.serviceAccountName" . }}
+      serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -41,12 +41,12 @@ spec:
         {{- if .Values.configMap.file.enabled }}
         - name: config-volume
           configMap:
-            name: {{ .Values.configMap.file.name | default (include "testiks.fullname" .) }}-config
+            name: {{ .Values.configMap.file.name | default (include "devops-info-service.fullname" .) }}-config
         {{- end }}
         {{- if .Values.persistence.enabled }}
         - name: data-volume
           persistentVolumeClaim:
-            claimName: {{ .Values.persistence.name | default (include "testiks.fullname" .) }}-data
+            claimName: {{ .Values.persistence.name | default (include "devops-info-service.fullname" .) }}-data
         {{- end }}
       containers:
         - name: {{ .Chart.Name }}
@@ -58,14 +58,14 @@ spec:
               protocol: TCP
           envFrom:
             - secretRef:
-                name: {{ .Values.secret.name | default (include "testiks.fullname" .) }}-secret
+                name: {{ .Values.secret.name | default (include "devops-info-service.fullname" .) }}-secret
                 optional: true
             {{- if .Values.configMap.env.enabled }}
             - configMapRef:
-                name: {{ .Values.configMap.env.name | default (include "testiks.fullname" .) }}-env
+                name: {{ .Values.configMap.env.name | default (include "devops-info-service.fullname" .) }}-env
             {{- end }}
           env:
-            {{- include "testiks.envVars" . | nindent 12 }}
+            {{- include "devops-info-service.envVars" . | nindent 12 }}
             {{- if .Values.extraEnv }}
             {{- toYaml .Values.extraEnv | nindent 12 }}
             {{- end }}
