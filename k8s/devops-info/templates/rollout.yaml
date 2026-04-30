@@ -1,4 +1,4 @@
-{{- if eq .Values.workload.type "rollout" }}
+{{- if .Values.rollout.enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
@@ -7,7 +7,7 @@ metadata:
     {{- include "devops-info.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .Values.rollout.revisionHistoryLimit }}
   selector:
     matchLabels:
       {{- include "devops-info.selectorLabels" . | nindent 6 }}
@@ -90,21 +90,17 @@ spec:
         {{- end }}
       {{- end }}
   strategy:
-    {{- if eq .Values.rollout.strategy "canary" }}
-    canary:
-      steps:
-        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
-    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
     blueGreen:
       activeService: {{ include "devops-info.fullname" . }}
       previewService: {{ include "devops-info.previewServiceName" . }}
       autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      {{- if ne .Values.rollout.blueGreen.autoPromotionSeconds nil }}
-      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
+      {{- with .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ . }}
       {{- end }}
     {{- else }}
     canary:
       steps:
-        - setWeight: 100
+        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
     {{- end }}
 {{- end }}

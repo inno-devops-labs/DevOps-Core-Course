@@ -100,15 +100,8 @@ PVC resource name
 {{- end }}
 
 {{/*
-Preview service name (blue-green rollouts)
+Preview service name for blue-green rollouts
 */}}
 {{- define "devops-info.previewServiceName" -}}
-{{- printf "%s-%s" (include "devops-info.fullname" .) .Values.service.preview.suffix | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Headless service name (stateful workloads)
-*/}}
-{{- define "devops-info.headlessServiceName" -}}
-{{- printf "%s-headless" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- printf "%s-preview" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}

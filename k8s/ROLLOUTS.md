@@ -1,224 +1,268 @@
-# Lab 14 — Progressive Delivery with Argo Rollouts
+# Lab 14 Report: Progressive Delivery with Argo Rollouts
 
-## 1. Argo Rollouts setup
+## Environment and Setup
 
-### Controller + CRDs
+Local tools:
+
 ```bash
-kubectl create namespace argo-rollouts
-kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+helm version --short
+# v4.1.3+gc94d381
+
+kubectl version --client=true
+# Client Version: v1.32.2
+# Kustomize Version: v5.5.0
+
+kubectl argo rollouts version
+# kubectl-argo-rollouts: v1.8.3+49fa151
 ```
 
-Installed resources include CRDs:
-- `rollouts.argoproj.io`
-- `analysisruns.argoproj.io`
-- `analysistemplates.argoproj.io`
-- `experiments.argoproj.io`
+The implementation was validated with Helm rendering for both rollout strategies. The commands below document the setup, deployment flow, promotion, abort, and rollback operations used for this lab.
 
-### Dashboard
+## Argo Rollouts Setup
+
+Install the controller:
+
 ```bash
-kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/dashboard-install.yaml
+kubectl create namespace argo-rollouts
+kubectl apply -n argo-rollouts \
+  -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+kubectl get pods -n argo-rollouts
+```
+
+Install and access the dashboard:
+
+```bash
+kubectl apply -n argo-rollouts \
+  -f https://github.com/argoproj/argo-rollouts/releases/latest/download/dashboard-install.yaml
 kubectl port-forward svc/argo-rollouts-dashboard -n argo-rollouts 3100:3100
 ```
 
-### CLI plugin
-```bash
-brew install argoproj/tap/kubectl-argo-rollouts
-kubectl argo rollouts version
+Dashboard URL:
+
+```text
+http://localhost:3100
 ```
 
-Result:
-```bash
-kubectl-argo-rollouts: v1.8.3+49fa151
+## Rollout vs Deployment
+
+`Deployment` supports rolling updates with `maxSurge` and `maxUnavailable`, but it does not model release stages, manual pauses, preview services, or abort/promotion operations.
+
+`Rollout` keeps the familiar `replicas`, `selector`, and pod `template` fields, and adds progressive delivery under `spec.strategy`. In this lab the chart supports:
+
+- `strategy.canary.steps` for staged rollout weights and pauses.
+- `strategy.blueGreen.activeService` for production traffic.
+- `strategy.blueGreen.previewService` for testing the new ReplicaSet before promotion.
+- CLI operations such as `promote`, `abort`, `retry`, and `undo`.
+
+## Chart Changes
+
+Implemented files:
+
+- `k8s/devops-info/templates/rollout.yaml`
+- `k8s/devops-info/templates/service-preview.yaml`
+- `k8s/devops-info/values-canary.yaml`
+- `k8s/devops-info/values-bluegreen.yaml`
+
+Updated files:
+
+- `k8s/devops-info/templates/deployment.yaml`
+- `k8s/devops-info/templates/_helpers.tpl`
+- `k8s/devops-info/values.yaml`
+
+The default chart now deploys an Argo Rollout. The legacy Deployment is kept as an explicit fallback and renders only when:
+
+```yaml
+deployment:
+  enabled: true
+rollout:
+  enabled: false
 ```
 
-### Rollout vs Deployment (key differences)
-- `kind: Rollout` instead of `kind: Deployment`.
-- `spec.strategy` supports `canary` and `blueGreen` with explicit progressive steps.
-- Rollout tracks stable/canary/preview ReplicaSets and can `promote`, `abort`, `undo`.
-- Deployment only supports standard rolling update without progressive traffic control semantics.
+## Canary Deployment
 
-## 2. Helm chart changes
+The canary strategy is configured in `values.yaml` and repeated in `values-canary.yaml`:
 
-Implemented in chart `k8s/devops-info`:
-- Added `templates/rollout.yaml` (canary and blue-green strategies).
-- Added `templates/service-preview.yaml` for blue-green preview traffic.
-- Added strategy controls in `values.yaml` under `workload` and `rollout`.
-- Added scenario files:
-  - `values-canary.yaml`
-  - `values-bluegreen.yaml`
-- Kept `templates/deployment.yaml` under conditional rendering (`workload.type: deployment`) for compatibility.
-
-## 3. Canary deployment
-
-### Canary strategy configured
-In `values.yaml` (default canary steps):
-- `20%` -> `pause: {}` (manual)
-- `40%` -> `pause: 30s`
-- `60%` -> `pause: 30s`
-- `80%` -> `pause: 30s`
-- `100%`
-
-### Install and update
-```bash
-helm upgrade --install rollouts-demo k8s/devops-info \
-  -n rollouts-demo -f k8s/devops-info/values-canary.yaml \
-  --set service.nodePort=30090
-
-helm upgrade rollouts-demo k8s/devops-info \
-  -n rollouts-demo -f k8s/devops-info/values-canary.yaml \
-  --set service.nodePort=30090 --set image.tag=latest
+```yaml
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
 ```
 
-Observed during rollout:
+Install canary rollout:
+
 ```bash
-Status: ◌ Progressing
-Step: 0/9
-SetWeight: 20
-Images: devops_lab02:cilc (stable), devops_lab02:latest (canary)
+helm upgrade --install devops-info ./k8s/devops-info \
+  -f ./k8s/devops-info/values-canary.yaml
 ```
 
-Manual promotion test:
+Trigger a new rollout:
+
 ```bash
-kubectl argo rollouts promote rollouts-demo-devops-info -n rollouts-demo
+helm upgrade devops-info ./k8s/devops-info \
+  -f ./k8s/devops-info/values-canary.yaml \
+  --set image.tag=v1.0.1
 ```
 
-After promote:
+Observe and promote:
+
 ```bash
-Status: ॥ Paused
-Step: 3/9
-SetWeight: 40
-ActualWeight: 33
+kubectl argo rollouts get rollout devops-info -w
+kubectl argo rollouts promote devops-info
 ```
 
-Auto progression snapshot (timed pauses):
+Abort and rollback:
+
 ```bash
-Status: ॥ Paused
-Step: 7/9
-SetWeight: 80
-ActualWeight: 75
+kubectl argo rollouts abort devops-info
+kubectl argo rollouts get rollout devops-info
 ```
 
-### Abort test (rollback)
-Triggered new revision and aborted:
-```bash
-helm upgrade rollouts-demo ... --set image.tag=v1.0.0
-kubectl argo rollouts abort rollouts-demo-devops-info -n rollouts-demo
+Expected progression:
+
+1. New ReplicaSet receives 20% canary weight.
+2. Rollout pauses until manual promotion.
+3. After promotion it proceeds to 40%, 60%, and 80%, pausing 30 seconds at each stage.
+4. At 100%, the new ReplicaSet becomes stable.
+5. If aborted during rollout, Argo Rollouts returns traffic/replicas to the stable ReplicaSet.
+
+The dashboard shows the same progression visually: a stable ReplicaSet, a canary ReplicaSet, the active step, and the current pause or promotion state. Screenshots are omitted from this report.
+
+## Blue-Green Deployment
+
+Blue-green strategy is configured in `values-bluegreen.yaml`:
+
+```yaml
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    previewService:
+      enabled: true
+      type: ClusterIP
 ```
 
-Result:
-```bash
-Status: ✖ Degraded
-Message: RolloutAborted: Rollout aborted update to revision 3
+The active service is the existing service:
+
+```text
+devops-info
 ```
 
-Stable ReplicaSet remained active (traffic rolled back to stable).
+The preview service is:
 
-## 4. Blue-green deployment
-
-### Strategy
-`values-bluegreen.yaml` uses:
-- `rollout.strategy: blueGreen`
-- `autoPromotionEnabled: false`
-- preview service enabled (`<release>-devops-info-preview`)
-
-### Deploy and trigger green revision
-```bash
-helm upgrade --install rollouts-bg k8s/devops-info \
-  -n rollouts-bg -f k8s/devops-info/values-bluegreen.yaml
-
-helm upgrade rollouts-bg k8s/devops-info \
-  -n rollouts-bg -f k8s/devops-info/values-bluegreen.yaml \
-  --set image.tag=latest --server-side=false
+```text
+devops-info-preview
 ```
 
-Note: on Helm v4, `--server-side=false` is needed here to avoid SSA conflicts on Service selectors managed by Rollouts controller.
+Install blue-green rollout:
 
-State before promotion:
 ```bash
-Status: ॥ Paused
-Message: BlueGreenPause
-Images: devops_lab02:cilc (stable, active), devops_lab02:latest (preview)
+helm upgrade --install devops-info ./k8s/devops-info \
+  -f ./k8s/devops-info/values-bluegreen.yaml
 ```
 
-Service selector proof before promotion:
+Trigger green version:
+
 ```bash
-active hash:  b899b5bdf
-preview hash: 575d44bd7f
+helm upgrade devops-info ./k8s/devops-info \
+  -f ./k8s/devops-info/values-bluegreen.yaml \
+  --set image.tag=v1.0.2
 ```
 
-### Promote green -> active
+Access active and preview services:
+
 ```bash
-kubectl argo rollouts promote rollouts-bg-devops-info -n rollouts-bg
+kubectl port-forward svc/devops-info 8080:80
+kubectl port-forward svc/devops-info-preview 8081:80
 ```
 
-After promotion:
+Promote green to active:
+
 ```bash
-Status: ✔ Healthy
-Images: devops_lab02:latest (stable, active)
+kubectl argo rollouts promote devops-info
+kubectl argo rollouts get rollout devops-info
 ```
 
-Service selector proof after promotion:
+Rollback after promotion:
+
 ```bash
-active hash:  575d44bd7f
-preview hash: 575d44bd7f
+kubectl argo rollouts undo devops-info
 ```
 
-### Instant rollback test
+Expected behavior:
+
+- Active service continues serving the stable ReplicaSet.
+- Preview service points to the new ReplicaSet.
+- Manual promotion switches active traffic to the new ReplicaSet almost instantly.
+- Rollback is faster than canary because it is a service selector switch rather than staged progression.
+
+## Strategy Comparison
+
+| Strategy | Best for | Pros | Cons |
+| --- | --- | --- | --- |
+| Canary | User-facing services where gradual exposure reduces risk | Limits blast radius, supports staged observation, good for high-traffic services | Slower rollout, users may hit mixed versions, percentage traffic is approximate without an ingress/service-mesh traffic router |
+| Blue-green | Releases that need full pre-production validation and instant switch | Simple mental model, preview environment, fast promotion and rollback | Needs extra capacity for both versions, all-or-nothing after promotion |
+
+Recommendation:
+
+- Use canary for normal application releases where risk should be reduced gradually.
+- Use blue-green for database-compatible releases, demos, critical cutovers, or releases that must be tested through a preview endpoint before exposure.
+- For this Flask service, canary is the default because it is resource-efficient and gives controlled exposure. Blue-green is useful when validating the exact new version through `devops-info-preview` before switching all traffic.
+
+## CLI Reference
+
+Controller and dashboard:
+
 ```bash
-kubectl argo rollouts undo rollouts-bg-devops-info -n rollouts-bg
+kubectl get pods -n argo-rollouts
+kubectl port-forward svc/argo-rollouts-dashboard -n argo-rollouts 3100:3100
 ```
 
-After undo:
+Rollout monitoring:
+
 ```bash
-Status: ✔ Healthy
-Images: devops_lab02:cilc (stable, active)
+kubectl argo rollouts list rollouts
+kubectl argo rollouts get rollout devops-info
+kubectl argo rollouts get rollout devops-info -w
+kubectl describe rollout devops-info
 ```
 
-Rollback is effectively instant traffic switching between active ReplicaSets (blue-green behavior).
-
-## 5. Strategy comparison
-
-### Canary
-Pros:
-- Gradual exposure to reduce blast radius.
-- Easy to pause for manual verification.
-- Better fit when partial traffic progression is needed.
-
-Cons:
-- Slower release path.
-- More operational steps and states to observe.
-
-### Blue-green
-Pros:
-- Very fast cutover and rollback.
-- Clear separation of active vs preview revision.
-
-Cons:
-- Requires extra capacity (two full stacks during switch).
-- Less granular than canary.
-
-### Recommendation
-- Use canary for risky/high-impact changes requiring staged verification.
-- Use blue-green for fast reversible releases where extra capacity is acceptable.
-
-## 6. Useful CLI commands
+Promotion, abort, retry, rollback:
 
 ```bash
-# Observe rollout
-kubectl argo rollouts get rollout <name> -n <ns>
+kubectl argo rollouts promote devops-info
+kubectl argo rollouts abort devops-info
+kubectl argo rollouts retry rollout devops-info
+kubectl argo rollouts undo devops-info
+```
 
-# Watch live status
-kubectl argo rollouts get rollout <name> -n <ns> -w
+Helm validation used in this lab:
 
-# Manual promotion
-kubectl argo rollouts promote <name> -n <ns>
+```bash
+helm lint k8s/devops-info
+helm template devops-info k8s/devops-info -f k8s/devops-info/values-canary.yaml
+helm template devops-info k8s/devops-info -f k8s/devops-info/values-bluegreen.yaml
+```
 
-# Abort current rollout
-kubectl argo rollouts abort <name> -n <ns>
+Validation result:
 
-# Roll back to previous revision
-kubectl argo rollouts undo <name> -n <ns>
-
-# Dashboard
-kubectl argo rollouts dashboard
+```text
+helm lint: 1 chart(s) linted, 0 chart(s) failed
+canary render: Rollout rendered with 20/40/60/80/100 canary steps
+blue-green render: Rollout rendered with active service devops-info and preview service devops-info-preview
 ```
