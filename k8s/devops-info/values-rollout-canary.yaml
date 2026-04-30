@@ -1,0 +1,60 @@
+fullnameOverride: lab14-devops-info-canary
+
+replicaCount: 5
+
+image:
+  repository: sofiakulagina/devops-info
+  tag: lab2
+  pullPolicy: IfNotPresent
+
+service:
+  enabled: true
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30087
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5002"
+  - name: CONFIG_PATH
+    value: /config/config.json
+  - name: VISITS_FILE
+    value: /data/visits
+  - name: APP_ENV
+    value: lab14-canary
+  - name: APP_REVISION
+    value: canary-v1
+
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - analysis:
+          templates:
+            - templateName: lab14-devops-info-canary-healthcheck
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  analysis:
+    enabled: true
+    url: ""
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    successCondition: result == "healthy"
+
+hookJobs:
+  enabled: false
