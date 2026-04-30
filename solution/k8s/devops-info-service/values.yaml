@@ -6,6 +6,9 @@ component: web
 replicaCount: 1
 revisionHistoryLimit: 5
 
+workload:
+  kind: Deployment
+
 image:
   repository: xrixis/devops-i-lobazov
   tag: "0.1.0"
@@ -90,6 +93,39 @@ updateStrategy:
   rollingUpdate:
     maxSurge: 1
     maxUnavailable: 0
+
+rollout:
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+    analysis:
+      enabled: false
+      path: /health
+      jsonPath: "{$.status}"
+      successCondition: result == "healthy"
+      interval: 10s
+      count: 3
+      failureLimit: 1
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+    previewService:
+      type: NodePort
+      port: 80
+      nodePort: 30082
 
 serviceAccount:
   create: true

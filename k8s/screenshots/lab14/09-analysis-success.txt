@@ -1,0 +1,2 @@
+﻿NAME                                 STATUS       AGE
+devops-info-service-7fcd7d4b69-2-1   Successful   64s

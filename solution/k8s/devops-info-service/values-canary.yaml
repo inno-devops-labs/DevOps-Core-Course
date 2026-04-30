@@ -1,0 +1,16 @@
+workload:
+  kind: Rollout
+
+replicaCount: 3
+
+env:
+  releaseVersion: "canary-v1"
+
+rollout:
+  strategy: canary
+  canary:
+    analysis:
+      enabled: false
+
+hooks:
+  enabled: false

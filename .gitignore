@@ -7,3 +7,4 @@ solution/monitoring/.env
 *.exe
 *.tgz
 **/data/**
+.local/

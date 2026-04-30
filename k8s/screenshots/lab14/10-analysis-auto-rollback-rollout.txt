@@ -1,0 +1,29 @@
+﻿Name:            devops-info-service
+Namespace:       default
+Status:          [31m✖[0m Degraded
+Message:         RolloutAborted: Rollout aborted update to revision 3: Step-based analysis phase error/failed: Metric "health-endpoint" assessed Failed due to failed (2) > failureLimit (1)
+Strategy:        Canary
+  Step:          0/5
+  SetWeight:     0
+  ActualWeight:  0
+Images:          xrixis/devops-i-lobazov:0.1.0 ([32mstable[0m)
+Replicas:
+  Desired:       3
+  Current:       3
+  Updated:       0
+  Ready:         3
+  Available:     3
+
+NAME                                             KIND         STATUS        AGE    INFO
+⟳ devops-info-service                            Rollout      [31m✖[0m Degraded    3m6s   
+├──# revision:3                                                                    
+│  ├──⧉ [33mdevops-info-service-78d69cbdd9[0m           ReplicaSet   [0m•[0m ScaledDown  90s    [33mcanary[0m
+│  └──α [0mdevops-info-service-78d69cbdd9-3-1[0m       AnalysisRun  [31m✖[0m Failed      82s    [31m✖[0m 2
+├──# revision:2                                                                    
+│  ├──⧉ [32mdevops-info-service-7fcd7d4b69[0m           ReplicaSet   [32m✔[0m Healthy     2m54s  [32mstable[0m
+│  │  ├──□ devops-info-service-7fcd7d4b69-jjjhr  Pod          [32m✔[0m Running     2m53s  ready:1/1
+│  │  ├──□ devops-info-service-7fcd7d4b69-5jg7j  Pod          [32m✔[0m Running     2m26s  ready:1/1
+│  │  └──□ devops-info-service-7fcd7d4b69-jpkkk  Pod          [32m✔[0m Running     109s   ready:1/1
+│  └──α [0mdevops-info-service-7fcd7d4b69-2-1[0m       AnalysisRun  [32m✔[0m Successful  2m46s  [32m✔[0m 3
+└──# revision:1                                                                    
+   └──⧉ devops-info-service-774b6f7648           ReplicaSet   [0m•[0m ScaledDown  3m6s   

@@ -1,3 +1,4 @@
+{{- if eq .Values.workload.kind "Deployment" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -13,61 +14,5 @@ spec:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
   template:
-    metadata:
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-        {{- if .Values.secret.create }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
-        {{- end }}
-        {{- if .Values.vault.enabled }}
-        {{- include "devops-info-service.vaultAnnotations" . | nindent 8 }}
-        {{- end }}
-      labels:
-        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
-        {{- with .Values.extraLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
-    spec:
-      serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
-      automountServiceAccountToken: {{ or .Values.automountServiceAccountToken .Values.vault.enabled }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      volumes:
-        - name: config-volume
-          configMap:
-            name: {{ include "devops-info-service.configFileMapName" . }}
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-service.pvcName" . }}
-        {{- end }}
-      containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.targetPort }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "devops-info-service.envConfigMapName" . }}
-            - secretRef:
-                name: {{ include "devops-info-service.secretName" . }}
-          env:
-            {{- include "devops-info-service.envVars" . | nindent 12 }}
-          volumeMounts:
-            - name: config-volume
-              mountPath: {{ .Values.configMaps.file.mountPath | quote }}
-              readOnly: true
-            {{- if .Values.persistence.enabled }}
-            - name: data-volume
-              mountPath: {{ .Values.persistence.mountPath | quote }}
-            {{- end }}
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          readinessProbe:
-            {{- include "common.httpProbe" .Values.readinessProbe | nindent 12 }}
-          livenessProbe:
-            {{- include "common.httpProbe" .Values.livenessProbe | nindent 12 }}
-          securityContext:
-            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+    {{- include "devops-info-service.podTemplate" . | nindent 4 }}
+{{- end }}

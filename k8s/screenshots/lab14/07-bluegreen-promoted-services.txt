@@ -1,0 +1,3 @@
+﻿NAME                          TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR
+devops-info-service           NodePort   10.96.99.249   <none>        80:30080/TCP   57s   app.kubernetes.io/instance=devops-info-service,app.kubernetes.io/name=devops-info-service,rollouts-pod-template-hash=564bc5c6d6
+devops-info-service-preview   NodePort   10.96.42.98    <none>        80:30082/TCP   57s   app.kubernetes.io/instance=devops-info-service,app.kubernetes.io/name=devops-info-service,rollouts-pod-template-hash=564bc5c6d6

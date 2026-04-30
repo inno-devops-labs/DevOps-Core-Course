@@ -1,0 +1,17 @@
+workload:
+  kind: Rollout
+
+replicaCount: 3
+
+env:
+  releaseVersion: "canary-analysis-fail"
+
+rollout:
+  strategy: canary
+  canary:
+    analysis:
+      enabled: true
+      successCondition: result == 'broken'
+
+hooks:
+  enabled: false

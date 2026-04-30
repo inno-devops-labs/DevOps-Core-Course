@@ -1,0 +1,46 @@
+{{- if eq .Values.workload.kind "Rollout" }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
+  template:
+    {{- include "devops-info-service.podTemplate" . | nindent 4 }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "canary" }}
+    canary:
+      steps:
+        {{- if .Values.rollout.canary.analysis.enabled }}
+        - setWeight: 20
+        - analysis:
+            templates:
+              - templateName: {{ include "devops-info-service.fullname" . }}-health-check
+        - setWeight: 50
+        - pause:
+            duration: 30s
+        - setWeight: 100
+        {{- else }}
+        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
+        {{- end }}
+    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "devops-info-service.serviceName" . }}
+      previewService: {{ include "devops-info-service.serviceName" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- with .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ . }}
+      {{- end }}
+      {{- with .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      scaleDownDelaySeconds: {{ . }}
+      {{- end }}
+    {{- else }}
+    {{- fail "rollout.strategy must be either canary or blueGreen" }}
+    {{- end }}
+{{- end }}

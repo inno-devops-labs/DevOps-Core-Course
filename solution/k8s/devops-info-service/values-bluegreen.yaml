@@ -1,0 +1,16 @@
+workload:
+  kind: Rollout
+
+replicaCount: 2
+
+env:
+  releaseVersion: "bluegreen-v1"
+
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+
+hooks:
+  enabled: false
