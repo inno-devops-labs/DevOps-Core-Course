@@ -1,0 +1,17 @@
+{{- if ne .Values.rollout.strategy "blueGreen" }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "devops-app.fullname" . }}-health-check
+spec:
+  metrics:
+    - name: health-check
+      interval: 10s
+      count: 3
+      failureLimit: 1
+      successCondition: result == "healthy"
+      provider:
+        web:
+          url: http://{{ include "devops-app.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local{{ .Values.rollout.analysis.path }}
+          jsonPath: "$.status"
+{{- end }}

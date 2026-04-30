@@ -3,6 +3,8 @@
 replicaCount: 3
 rollout:
   strategy: canary
+  analysis:
+    path: /health
   blueGreen:
     activeService: ""
     previewService: ""

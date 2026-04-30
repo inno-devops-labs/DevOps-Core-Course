@@ -19,6 +19,9 @@ spec:
     canary:
       steps:
         - setWeight: 20
+        - analysis:
+            templates:
+              - templateName: {{ include "devops-app.fullname" . }}-health-check
         - pause: {}
         - setWeight: 40
         - pause:
