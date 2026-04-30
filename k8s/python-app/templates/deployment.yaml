@@ -35,6 +35,36 @@ spec:
       serviceAccountName: {{ include "python-app.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if or .Values.initContainers.download.enabled .Values.initContainers.waitForService.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image | quote }}
+          command:
+            - sh
+            - -c
+            - >-
+              until nslookup {{ .Values.initContainers.waitForService.host }};
+              do echo "waiting for {{ .Values.initContainers.waitForService.host }}";
+              sleep {{ .Values.initContainers.waitForService.intervalSeconds }};
+              done
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image | quote }}
+          command:
+            - sh
+            - -c
+            - >-
+              set -eu;
+              wget -O {{ .Values.initContainers.sharedVolume.mountPath }}/{{ .Values.initContainers.download.fileName }}
+              {{ .Values.initContainers.download.url | quote }};
+              ls -l {{ .Values.initContainers.sharedVolume.mountPath }}/{{ .Values.initContainers.download.fileName }}
+          volumeMounts:
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.mountPath | quote }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -57,6 +87,11 @@ spec:
               readOnly: true
             - name: data-volume
               mountPath: {{ .Values.persistence.mountPath | quote }}
+            {{- if .Values.initContainers.download.enabled }}
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.appMountPath | quote }}
+              readOnly: true
+            {{- end }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           livenessProbe:
@@ -76,4 +111,8 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: {{ .Values.initContainers.sharedVolume.name }}
+          emptyDir: {}
+        {{- end }}
 {{- end }}

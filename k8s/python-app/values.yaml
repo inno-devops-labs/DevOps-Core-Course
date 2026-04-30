@@ -2,7 +2,7 @@ nameOverride: devops-info-python
 fullnameOverride: ""
 
 global:
-  partOf: devops-lab15
+  partOf: devops-lab16
 
 replicaCount: 3
 
@@ -16,6 +16,15 @@ service:
   port: 80
   targetPort: 8000
   nodePort: null
+
+serviceMonitor:
+  enabled: true
+  scrapeLabel: "true"
+  labels:
+    release: monitoring
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
 
 container:
   port: 8000
@@ -37,6 +46,22 @@ appConfig:
 
 configMount:
   path: /config
+
+initContainers:
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: http://example.com
+    fileName: index.html
+  waitForService:
+    enabled: true
+    image: busybox:1.36
+    host: kubernetes.default.svc.cluster.local
+    intervalSeconds: 2
+  sharedVolume:
+    name: init-workdir
+    mountPath: /work-dir
+    appMountPath: /data/init
 
 persistence:
   enabled: true

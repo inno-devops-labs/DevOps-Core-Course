@@ -4,6 +4,9 @@ metadata:
   name: {{ include "common.fullname" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
+    {{- if .Values.serviceMonitor.enabled }}
+    monitoring.devops-labs.io/scrape: {{ .Values.serviceMonitor.scrapeLabel | quote }}
+    {{- end }}
 spec:
   type: {{ .Values.service.type }}
   {{- if not (and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") (not .Values.statefulset.enabled)) }}
