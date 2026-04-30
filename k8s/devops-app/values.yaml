@@ -83,6 +83,24 @@ serviceAccount:
 
 podAnnotations: {}
 
+rollouts:
+  enabled: false
+  strategy: canary # can be 'canary' or 'blueGreen'
+  canary:
+    steps:
+      - setWeight: 20
+      - pauseManual: true
+      - setWeight: 40
+      - pause: 30s
+      - setWeight: 60
+      - pause: 30s
+      - setWeight: 80
+      - pause: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    previewService: "{{ include \"devops-app.fullname\" . }}-preview"
+
 configMap:
   enabled: true
   mountPath: /config

@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rollouts-demo-bg
+  labels:
+    app: rollouts-demo-bg
+spec:
+  ports:
+    - port: 80
+      targetPort: 5000
+  selector:
+    app: rollouts-demo-bg
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rollouts-demo-preview
+  labels:
+    app: rollouts-demo-preview
+spec:
+  ports:
+    - port: 80
+      targetPort: 5000
+  selector:
+    app: rollouts-demo-bg
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: rollouts-demo-bluegreen
+  labels:
+    app: rollouts-demo-bg
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rollouts-demo-bg
+  template:
+    metadata:
+      labels:
+        app: rollouts-demo-bg
+        color: rollouts-demo-bg-green
+    spec:
+      containers:
+        - name: devops-app
+          image: devops-app:lab12
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: VISITS_FILE
+              value: "/tmp/visits"
+          volumeMounts:
+            - name: visits-storage
+              mountPath: /data
+              readOnly: false
+      volumes:
+        - name: visits-storage
+          emptyDir: {}
+  strategy:
+    blueGreen:
+      activeService: rollouts-demo-bg
+      previewService: rollouts-demo-preview
+      autoPromotionEnabled: false

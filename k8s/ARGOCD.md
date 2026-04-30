@@ -192,18 +192,6 @@ Observed final state:
 - `dev` has a running pod
 - `prod` has running pods
 
----
-
-## 6. Screenshots to include
-
-Add screenshots of:
-1. ArgoCD UI showing all three applications
-2. Application details for `lab13-dev`
-3. Sync status after manual scale test
-4. Pod recreation after deletion in `dev`
-
----
-
 ## 7. Summary
 
 Completed tasks:
@@ -212,4 +200,3 @@ Completed tasks:
 - Task 3 — Multi-environment deployment
 - Task 4 — Self-healing and sync policies
 
-Bonus task not completed.
