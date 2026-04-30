@@ -1,0 +1,20 @@
+replicaCount: 5
+
+rollout:
+  enabled: true
+  strategy: canary
+  analysis:
+    enabled: true
+  canary:
+    steps:
+      - setWeight: 20
+      - pause:
+          duration: 30s
+      - analysis:
+          templates:
+            - templateName: python-app-devops-info-service-health
+          args:
+            - name: service-name
+              value: python-app-devops-info-service
+      - setWeight: 60
+      - setWeight: 100
