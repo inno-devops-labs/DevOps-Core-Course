@@ -1,0 +1,9 @@
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2
+
+rollout:
+  enabled: false

@@ -1,0 +1,8 @@
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: OnDelete
+    rollingUpdate: null
+
+rollout:
+  enabled: false

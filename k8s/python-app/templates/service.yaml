@@ -6,7 +6,7 @@ metadata:
     {{- include "common.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
-  {{- if not (and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen")) }}
+  {{- if not (and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") (not .Values.statefulset.enabled)) }}
   selector:
     {{- include "common.selectorLabels" . | nindent 4 }}
   {{- end }}
