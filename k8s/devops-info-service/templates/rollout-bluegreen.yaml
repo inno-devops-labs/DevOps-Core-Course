@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "devops-service.name" . }}
+  labels:
+    {{- include "devops-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "devops-service.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops-service.labels" . | nindent 8 }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "myapp-role"
+        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
+    spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-service.name" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-service.name" . }}-data
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "{{ .Values.service.targetPort }}"
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-service.name" . }}-secret
+            - configMapRef:
+                name: {{ include "devops-service.name" . }}-env
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: data-volume
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+  strategy:
+    blueGreen:
+      activeService: {{ include "devops-service.name" . }}
+      previewService: {{ include "devops-service.name" . }}-preview
+      autoPromotionEnabled: false
