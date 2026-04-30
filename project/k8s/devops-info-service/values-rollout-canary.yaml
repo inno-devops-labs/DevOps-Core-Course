@@ -1,0 +1,13 @@
+# Lab 14 — Canary rollout overlay
+# Render with: helm install app . -f values.yaml -f values-rollout-canary.yaml
+
+rollout:
+  enabled: true
+  strategy: canary
+
+# 4 replicas so the 20/40/60/80/100 weights map cleanly to whole pods.
+replicaCount: 4
+
+# RWO PVC pins to a single node; keep it disabled while replicas > 1.
+persistence:
+  enabled: false

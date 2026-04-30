@@ -78,3 +78,36 @@ strategy:
   rollingUpdate:
     maxSurge: 1
     maxUnavailable: 0
+
+# Argo Rollouts (Lab 14). When rollout.enabled is true, templates/rollout.yaml
+# renders an argoproj.io/v1alpha1 Rollout and templates/deployment.yaml is
+# skipped. rollout.strategy switches between canary and blueGreen.
+rollout:
+  enabled: false
+  strategy: canary  # canary | blueGreen
+
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: { duration: 30s }
+      - setWeight: 60
+      - pause: { duration: 30s }
+      - setWeight: 80
+      - pause: { duration: 30s }
+      - setWeight: 100
+    analysis:
+      enabled: false
+      atStep: 0   # 0 = inject analysis right after the first setWeight (before pause)
+
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+
+  analysis:
+    enabled: false
+    name: success-rate
+    interval: 10s
+    count: 3
+    failureLimit: 1
