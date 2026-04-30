@@ -1,14 +1,6 @@
 apiVersion: v2
-name: testiks
-description: Helm chart
+name: devops-info-service
+description: DevOps Python application Helm chart
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
-dependencies:
-  - name: common-lib
-    version: 0.1.0
-    repository: "file://../common-lib"
-keywords:
-  - kubernetes
-  - devops
-  - fastapi

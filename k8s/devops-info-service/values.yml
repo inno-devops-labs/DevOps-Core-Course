@@ -31,7 +31,7 @@ configMap:
     enabled: true
     name: ""
     data:
-      APP_NAME: testiks-info
+      APP_NAME: devops-info-service
       FEATURE_VISITS_COUNTER: "true"
 
 persistence:
