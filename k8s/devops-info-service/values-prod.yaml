@@ -47,8 +47,13 @@ env:
 
 podLabels:
   project: devops-course
-  lab: lab10
+  lab: lab14
   environment: production
+
+# Production uses blue-green for instant rollback capability
+rollout:
+  enabled: true
+  strategy: blueGreen
 
 # Production-specific settings
 strategy:

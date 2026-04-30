@@ -81,7 +81,7 @@ serviceAccount:
 podAnnotations: {}
 podLabels:
   project: devops-course
-  lab: lab11
+  lab: lab14
 
 podSecurityContext: {}
 
@@ -115,3 +115,35 @@ vault:
   enabled: false
   role: "devops-info-service"
   secretPath: "secret/data/devops-info/config"
+
+# Argo Rollouts configuration
+rollout:
+  enabled: true
+  strategy: canary  # canary or blueGreen
+
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}  # manual promotion
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: 0
+    scaleDownDelaySeconds: 30
+
+  analysis:
+    enabled: false
+    webUrl: ""  # defaults to http://<release-name>.<namespace>.svc/health
+    interval: 10s
+    count: 3
+    failureLimit: 1

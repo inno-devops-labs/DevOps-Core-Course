@@ -1,7 +1,8 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "devops-info-service.fullname" . }}
+  name: {{ include "devops-info-service.fullname" . }}-preview
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
     {{- with .Values.podLabels }}
@@ -15,9 +16,6 @@ spec:
       targetPort: {{ .Values.service.targetPort }}
       protocol: TCP
       {{- if eq .Values.service.type "NodePort" }}
-      nodePort: {{ .Values.service.nodePort }}
+      nodePort: {{ .Values.service.nodePort | int | add 1 }}
       {{- end }}
-  {{- if not (and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen")) }}
-  selector:
-    {{- include "devops-info-service.selectorLabels" . | nindent 4 }}
-  {{- end }}
+{{- end }}

@@ -47,5 +47,10 @@ env:
 
 podLabels:
   project: devops-course
-  lab: lab10
+  lab: lab14
   environment: development
+
+# Development uses canary strategy for gradual rollout testing
+rollout:
+  enabled: true
+  strategy: canary
