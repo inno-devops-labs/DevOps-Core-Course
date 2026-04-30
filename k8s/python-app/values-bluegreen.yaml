@@ -1,0 +1,14 @@
+# Blue-green strategy: use with the same chart path, e.g.
+#   helm upgrade --install myapp k8s/python-app -f k8s/python-app/values.yaml -f k8s/python-app/values-bluegreen.yaml
+#
+# Two pods may run during promotion; disable RWO persistence or use RWX storage.
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+
+persistence:
+  enabled: false
+
+replicaCount: 2

@@ -37,5 +37,14 @@ Namespace:    {{ .Release.Namespace }}
   # Rollback
   helm rollback {{ .Release.Name }} 1
 
+{{- if .Values.rollout.enabled }}
+  # Argo Rollouts (progressive delivery)
+  kubectl argo rollouts get rollout {{ include "python-app.fullname" . }} -n {{ .Release.Namespace }}
+  kubectl argo rollouts get rollout {{ include "python-app.fullname" . }} -n {{ .Release.Namespace }} -w
+  kubectl argo rollouts promote {{ include "python-app.fullname" . }} -n {{ .Release.Namespace }}
+  kubectl argo rollouts abort {{ include "python-app.fullname" . }} -n {{ .Release.Namespace }}
+  kubectl argo rollouts undo {{ include "python-app.fullname" . }} -n {{ .Release.Namespace }}
+{{- end }}
+
   # Uninstall
   helm uninstall {{ .Release.Name }}

@@ -1,0 +1,8 @@
+# Bonus: metrics-style web analysis after 20% canary weight.
+# Install: merge with default values, e.g.
+#   helm upgrade --install myapp k8s/python-app \
+#     -f k8s/python-app/values.yaml -f k8s/python-app/values-rollout-analysis.yaml
+rollout:
+  strategy: canary
+  analysis:
+    enabled: true

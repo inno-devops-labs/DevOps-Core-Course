@@ -32,12 +32,29 @@ service:
   targetPort: 8000
   nodePort: 30080
 
-# Rolling update strategy
+# Rolling update strategy (used only when rollout.enabled is false)
 strategy:
   type: RollingUpdate
   rollingUpdate:
     maxSurge: 1
     maxUnavailable: 0
+
+# Argo Rollouts: progressive delivery (replaces Deployment when enabled)
+rollout:
+  enabled: true
+  # canary — gradual weights; blueGreen — active + preview Services
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
+    # autoPromotionSeconds: 30  # optional: auto-promote after N seconds when enabled
+    scaleDownDelaySeconds: 30
+    # previewNodePort: 30081  # optional: set when service.type is NodePort
+  # Web health analysis after 20% canary (requires Argo Rollouts analysis controller)
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
 
 # Container resource requests and limits
 resources:
