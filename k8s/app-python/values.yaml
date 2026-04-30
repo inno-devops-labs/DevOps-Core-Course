@@ -75,3 +75,7 @@ persistence:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+rollout:
+  enabled: false
+  strategy: canary # canary or blueGreen
