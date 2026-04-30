@@ -51,3 +51,5 @@ persistence:
   enabled: true
   size: 100Mi
   storageClass: ""
+
+rolloutVersion: "v7"

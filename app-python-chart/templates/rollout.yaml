@@ -16,10 +16,7 @@ spec:
       labels:
         {{- include "app-python-chart.selectorLabels" . | nindent 8 }}
       annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "app-role"
-        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
-
+        rollout.argoproj.io/version: {{ .Values.rolloutVersion | quote }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
