@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisRun
+metadata:
+  name: failing-analysis-demo
+spec:
+  metrics:
+    - name: unreachable-endpoint
+      provider:
+        web:
+          url: http://does-not-exist.default.svc.cluster.local:80/health
+          jsonPath: "{$.status}"
+      successCondition: result == "healthy"
+      interval: 5s
+      count: 2
+      failureLimit: 0

@@ -92,6 +92,27 @@ strategy:
 
 revisionHistoryLimit: 3
 
+rollout:
+  enabled: false
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: { duration: 30s }
+      - setWeight: 60
+      - pause: { duration: 30s }
+      - setWeight: 80
+      - pause: { duration: 30s }
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: 0
+    scaleDownDelaySeconds: 30
+  analysis:
+    enabled: false
+
 vault:
   enabled: false
   role: "devops-info-role"

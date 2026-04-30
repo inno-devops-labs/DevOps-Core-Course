@@ -1,0 +1,27 @@
+=== Rollouts ===
+NAMESPACE   NAME                                 DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+default     rollout-bg-devops-info-service       3         3         3            3           6m11s
+default     rollout-canary-devops-info-service   4         4         4            4           11m
+
+=== AnalysisTemplates ===
+NAMESPACE   NAME                                              AGE
+default     rollout-canary-devops-info-service-health-check   4m21s
+
+=== AnalysisRuns ===
+NAMESPACE   NAME                                                  STATUS       AGE
+default     failing-analysis-demo                                 Running      31s
+default     rollout-canary-devops-info-service-675cf97897-4-2     Successful   3m51s
+default     rollout-canary-devops-info-service-767f8988d8-5-2     Failed       3m14s
+default     rollout-canary-devops-info-service-767f8988d8-5-2.1   Successful   105s
+
+=== Services ===
+NAME                                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+kubernetes                               ClusterIP   10.96.0.1       <none>        443/TCP        14m
+rollout-bg-devops-info-service           NodePort    10.98.157.74    <none>        80:31489/TCP   6m11s
+rollout-bg-devops-info-service-preview   ClusterIP   10.106.70.44    <none>        80/TCP         6m11s
+rollout-canary-devops-info-service       NodePort    10.105.176.93   <none>        80:32098/TCP   11m
+
+=== Argo Rollouts pods ===
+NAME                                       READY   STATUS    RESTARTS   AGE
+argo-rollouts-79b89d8856-f2zxd             1/1     Running   0          13m
+argo-rollouts-dashboard-7b7bf46775-d6dmc   1/1     Running   0          12m

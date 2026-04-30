@@ -1,0 +1,24 @@
+replicaCount: 3
+
+image:
+  repository: devops-info-service
+  tag: "lab14-v1"
+  pullPolicy: IfNotPresent
+
+env:
+  appEnv: "blue-green"
+  logLevel: "info"
+  extra:
+    appName: "devops-info-service"
+    featureVisitsCounter: true
+
+persistence:
+  enabled: false
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: 0
+    scaleDownDelaySeconds: 30

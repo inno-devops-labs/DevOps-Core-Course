@@ -1,0 +1,30 @@
+Name:            rollout-canary-devops-info-service
+Namespace:       default
+Status:          ✔ Healthy
+Strategy:        Canary
+  Step:          6/6
+  SetWeight:     100
+  ActualWeight:  100
+Images:          devops-info-service:lab14-v3 (stable)
+Replicas:
+  Desired:       4
+  Current:       4
+  Updated:       4
+  Ready:         4
+  Available:     4
+
+NAME                                                            KIND         STATUS        AGE    INFO
+⟳ rollout-canary-devops-info-service                            Rollout      ✔ Healthy     11m    
+├──# revision:5                                                                                   
+│  ├──⧉ rollout-canary-devops-info-service-767f8988d8           ReplicaSet   ✔ Healthy     2m57s  stable
+│  │  ├──□ rollout-canary-devops-info-service-767f8988d8-vnl4t  Pod          ✔ Running     88s    ready:1/1
+│  │  ├──□ rollout-canary-devops-info-service-767f8988d8-rqd5v  Pod          ✔ Running     39s    ready:1/1
+│  │  ├──□ rollout-canary-devops-info-service-767f8988d8-bnznd  Pod          ✔ Running     10s    ready:1/1
+│  │  └──□ rollout-canary-devops-info-service-767f8988d8-m5fqc  Pod          ✔ Running     10s    ready:1/1
+│  ├──α rollout-canary-devops-info-service-767f8988d8-5-2       AnalysisRun  ✖ Failed      2m28s  ✖ 2
+│  └──α rollout-canary-devops-info-service-767f8988d8-5-2.1     AnalysisRun  ✔ Successful  59s    ✔ 3
+├──# revision:4                                                                                   
+│  ├──⧉ rollout-canary-devops-info-service-675cf97897           ReplicaSet   • ScaledDown  3m35s  
+│  └──α rollout-canary-devops-info-service-675cf97897-4-2       AnalysisRun  ✔ Successful  3m5s   ✖ 1
+├──# revision:3                                                                                   
+│  └──⧉ rollout-canary-devops-info-service-689d744446           ReplicaSet   • ScaledDown  6m28s  

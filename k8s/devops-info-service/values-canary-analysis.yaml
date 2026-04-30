@@ -1,0 +1,32 @@
+replicaCount: 4
+
+image:
+  repository: devops-info-service
+  tag: "lab14-v1"
+  pullPolicy: IfNotPresent
+
+env:
+  appEnv: "canary-analysis"
+  logLevel: "info"
+  extra:
+    appName: "devops-info-service"
+    featureVisitsCounter: true
+
+persistence:
+  enabled: false
+
+rollout:
+  enabled: true
+  strategy: canary
+  analysis:
+    enabled: true
+  canary:
+    steps:
+      - setWeight: 25
+      - pause: { duration: 20s }
+      - analysis:
+          templates:
+            - templateName: rollout-canary-devops-info-service-health-check
+      - setWeight: 50
+      - pause: { duration: 20s }
+      - setWeight: 100

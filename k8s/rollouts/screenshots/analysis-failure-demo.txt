@@ -1,0 +1,25 @@
+    successCondition: result == "healthy"
+status:
+  dryRunSummary: {}
+  metricResults:
+  - consecutiveError: 2
+    error: 2
+    measurements:
+    - finishedAt: "2026-04-30T20:10:24Z"
+      message: 'Get "http://does-not-exist.default.svc.cluster.local:80/health": dial
+        tcp: lookup does-not-exist.default.svc.cluster.local on 10.96.0.10:53: no
+        such host'
+      phase: Error
+      startedAt: "2026-04-30T20:10:24Z"
+    - finishedAt: "2026-04-30T20:10:34Z"
+      message: 'Get "http://does-not-exist.default.svc.cluster.local:80/health": dial
+        tcp: lookup does-not-exist.default.svc.cluster.local on 10.96.0.10:53: no
+        such host'
+      phase: Error
+      startedAt: "2026-04-30T20:10:34Z"
+    name: unreachable-endpoint
+    phase: Running
+  phase: Running
+  runSummary:
+    count: 1
+  startedAt: "2026-04-30T20:10:24Z"

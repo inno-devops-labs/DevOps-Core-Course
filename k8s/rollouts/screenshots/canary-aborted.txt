@@ -1,0 +1,25 @@
+Name:            rollout-canary-devops-info-service
+Namespace:       default
+Status:          ✖ Degraded
+Message:         RolloutAborted: Rollout aborted update to revision 3
+Strategy:        Canary
+  Step:          0/9
+  SetWeight:     0
+  ActualWeight:  0
+Images:          devops-info-service:lab14-v2 (stable)
+Replicas:
+  Desired:       5
+  Current:       5
+  Updated:       0
+  Ready:         4
+  Available:     4
+
+NAME                                                            KIND        STATUS         AGE    INFO
+⟳ rollout-canary-devops-info-service                            Rollout     ✖ Degraded     5m18s  
+├──# revision:3                                                                                   
+│  └──⧉ rollout-canary-devops-info-service-689d744446           ReplicaSet  • ScaledDown   44s    canary
+├──# revision:2                                                                                   
+│  └──⧉ rollout-canary-devops-info-service-78bbc9674f           ReplicaSet  ◌ Progressing  4m15s  stable
+│     ├──□ rollout-canary-devops-info-service-78bbc9674f-bxbvk  Pod         ✔ Running      4m15s  ready:1/1
+│     ├──□ rollout-canary-devops-info-service-78bbc9674f-4gdzv  Pod         ✔ Running      3m25s  ready:1/1
+│     ├──□ rollout-canary-devops-info-service-78bbc9674f-2txps  Pod         ✔ Running      2m45s  ready:1/1
