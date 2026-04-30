@@ -1,0 +1,19 @@
+{{- if and .Values.rollout.enabled .Values.rollout.canary.analysis.enabled (eq .Values.rollout.strategy "canary") }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "common-lib.fullname" . }}-health-check
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: webcheck
+      interval: {{ .Values.rollout.canary.analysis.interval }}
+      count: {{ .Values.rollout.canary.analysis.count }}
+      failureLimit: {{ .Values.rollout.canary.analysis.failureLimit }}
+      successCondition: result == {{ .Values.rollout.canary.analysis.expectedStatus | quote }}
+      provider:
+        web:
+          url: http://{{ include "common-lib.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}{{ .Values.rollout.canary.analysis.path }}
+          jsonPath: "{$.status}"
+{{- end }}

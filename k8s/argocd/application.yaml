@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/hikariatama/DevOps-Core-Course.git
-    targetRevision: lab13
+    targetRevision: lab14
     path: k8s/devops-info-service
     helm:
       releaseName: devops-info-service
@@ -18,7 +18,7 @@ spec:
           value: "30081"
   destination:
     server: https://kubernetes.default.svc
-    namespace: lab13
+    namespace: lab14
   syncPolicy:
     syncOptions:
       - CreateNamespace=true

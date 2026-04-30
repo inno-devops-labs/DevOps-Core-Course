@@ -1,6 +1,6 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "common-lib.fullname" . }}
   labels:
@@ -13,7 +13,44 @@ spec:
     matchLabels:
       {{- include "common-lib.selectorLabels" . | nindent 6 }}
   strategy:
-    {{- toYaml .Values.deploymentStrategy | nindent 4 }}
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "common-lib.fullname" . }}
+      previewService: {{ include "common-lib.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
+      {{- end }}
+      {{- if .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      {{- end }}
+    {{- else }}
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {}
+        {{- if .Values.rollout.canary.analysis.enabled }}
+        - analysis:
+            templates:
+              - templateName: {{ include "common-lib.fullname" . }}-health-check
+        {{- end }}
+        - setWeight: 40
+        - pause:
+            duration: {{ .Values.rollout.canary.pauseDuration }}
+        - setWeight: 60
+        - pause:
+            duration: {{ .Values.rollout.canary.pauseDuration }}
+        - setWeight: 80
+        - pause:
+            duration: {{ .Values.rollout.canary.pauseDuration }}
+        - setWeight: 100
+      {{- if .Values.rollout.canary.maxSurge }}
+      maxSurge: {{ .Values.rollout.canary.maxSurge }}
+      {{- end }}
+      {{- if hasKey .Values.rollout.canary "maxUnavailable" }}
+      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
+      {{- end }}
+    {{- end }}
   template:
     metadata:
       labels:

@@ -12,11 +12,29 @@ service:
   targetPort: http
   containerPort: 5000
   nodePort: 30080
-strategy:
+deploymentStrategy:
   type: RollingUpdate
   rollingUpdate:
     maxSurge: 1
     maxUnavailable: 0
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    pauseDuration: 30s
+    maxSurge: 1
+    maxUnavailable: 0
+    analysis:
+      enabled: true
+      path: /health
+      expectedStatus: healthy
+      interval: 10s
+      count: 3
+      failureLimit: 1
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
 env:
   port: "5000"
   serviceName: devops-info-service

@@ -1,0 +1,14 @@
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    pauseDuration: 30s
+    maxSurge: 1
+    maxUnavailable: 0
+    analysis:
+      enabled: true
+      path: /health
+      expectedStatus: healthy
+      interval: 10s
+      count: 3
+      failureLimit: 1
