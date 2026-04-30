@@ -1,0 +1,20 @@
+{{- if .Values.rollout.canary.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.fullname" . }}-canary
+  labels:
+    app: {{ include "common.legacyAppLabel" . }}
+    component: api
+    purpose: canary-traffic
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type | default "ClusterIP" }}
+  ports:
+    - port: {{ .Values.service.port | default 80 }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ include "common.legacyAppLabel" . }}
+{{- end }}

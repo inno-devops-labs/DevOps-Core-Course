@@ -12,8 +12,7 @@ resources:
     memory: 128Mi
 
 service:
-  type: NodePort
-  nodePort: 30080
+  type: ClusterIP
 
 livenessProbe:
   httpGet:

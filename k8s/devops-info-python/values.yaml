@@ -67,10 +67,9 @@ resources:
     memory: 256Mi
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 80
   targetPort: 5000
-  nodePort: 30080
 
 livenessProbe:
   httpGet:
@@ -114,3 +113,18 @@ persistence:
   size: 100Mi
   storageClass: ""
   mountPath: /data
+
+rollout:
+  canary:
+    enabled: false
+    pauseDuration: 30s
+  blueGreen:
+    enabled: false
+    autoPromotionEnabled: false
+    autoPromotionSeconds: 30
+    previewReplicaCount: 1
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1

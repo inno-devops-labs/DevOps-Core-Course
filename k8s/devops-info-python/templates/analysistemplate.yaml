@@ -1,0 +1,20 @@
+{{- if .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "common.fullname" . }}-success-rate
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: webcheck
+      provider:
+        web:
+          url: "http://{{ include "common.fullname" . }}.{{ .Release.Namespace }}.svc/health"
+          jsonPath: "{$.status}"
+      successCondition: result == "ok"
+      failureCondition: result == "error"
+      interval: {{ .Values.rollout.analysis.interval | quote }}
+      count: {{ .Values.rollout.analysis.count }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit }}
+{{- end }}
