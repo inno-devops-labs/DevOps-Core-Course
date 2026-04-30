@@ -1,0 +1,15 @@
+replicaCount: 5
+
+image:
+  digest: "sha256:4a2569b6d23d2504dedd35294930d96d633cd796df5e3cb2b533462b1318c32d"
+
+service:
+  type: ClusterIP
+
+rollout:
+  enabled: true
+  strategy: canary
+  trigger: "v1"
+
+vault:
+  enabled: false

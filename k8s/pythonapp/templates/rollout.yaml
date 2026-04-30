@@ -1,6 +1,6 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "pythonapp.fullname" . }}
   labels:
@@ -10,15 +10,11 @@ spec:
   selector:
     matchLabels:
       {{- include "pythonapp.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
-      {{- if .Values.vault.enabled }}
       annotations:
+        lab14.devops/trigger: "{{ .Values.rollout.trigger }}"
+      {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "myapp"
         vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
@@ -65,4 +61,26 @@ spec:
         - name: code-volume
           configMap:
             name: {{ include "pythonapp.fullname" . }}-code
+  strategy:
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "pythonapp.fullname" . }}
+      previewService: {{ include "pythonapp.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+    {{- else }}
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {}
+        - setWeight: 40
+        - pause:
+            duration: 30s
+        - setWeight: 60
+        - pause:
+            duration: 30s
+        - setWeight: 80
+        - pause:
+            duration: 30s
+        - setWeight: 100
+    {{- end }}
 {{- end }}

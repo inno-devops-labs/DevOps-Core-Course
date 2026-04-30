@@ -55,3 +55,10 @@ persistence:
 
 vault:
   enabled: false
+
+rollout:
+  enabled: false
+  strategy: canary
+  trigger: "v1"
+  blueGreen:
+    autoPromotionEnabled: false
