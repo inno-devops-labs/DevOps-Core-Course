@@ -56,3 +56,9 @@ imagePullSecrets: []
 persistence:
   enabled: false
   size: 1Gi
+
+rollout:
+  enabled: true
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
