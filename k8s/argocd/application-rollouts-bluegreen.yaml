@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: devops-info-service-prod
+  name: devops-info-service-rollouts-bluegreen
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -12,12 +12,12 @@ spec:
     targetRevision: lab14
     path: k8s/devops-info-service
     helm:
-      releaseName: devops-info-prod
+      releaseName: devops-info-bluegreen
       valueFiles:
-        - values-prod.yaml
+        - values-bluegreen.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: prod
+    namespace: rollouts-bluegreen
   syncPolicy:
     syncOptions:
       - CreateNamespace=true

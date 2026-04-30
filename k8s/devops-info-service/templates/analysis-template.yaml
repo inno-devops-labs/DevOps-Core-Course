@@ -1,0 +1,19 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "canary") .Values.rollout.canary.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ .Values.rollout.canary.analysis.templateName }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: {{ .Values.rollout.canary.analysis.metricName }}
+      interval: {{ .Values.rollout.canary.analysis.interval }}
+      count: {{ .Values.rollout.canary.analysis.count }}
+      failureLimit: {{ .Values.rollout.canary.analysis.failureLimit }}
+      successCondition: {{ .Values.rollout.canary.analysis.successCondition | quote }}
+      provider:
+        web:
+          url: http://{{ include "devops-info-service.fullname" . }}.{{ .Release.Namespace }}.svc{{ .Values.rollout.canary.analysis.path }}
+          jsonPath: {{ .Values.rollout.canary.analysis.jsonPath | quote }}
+{{- end }}

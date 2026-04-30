@@ -27,7 +27,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/egraPA006/DevOps-Core-Course.git
-        targetRevision: lab13
+        targetRevision: lab14
         path: k8s/devops-info-service
         helm:
           releaseName: '{{ .releaseName }}'

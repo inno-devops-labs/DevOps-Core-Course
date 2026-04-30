@@ -1,0 +1,16 @@
+replicaCount: 3
+
+service:
+  type: ClusterIP
+  nodePort: null
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewService:
+      type: ClusterIP
+      port: 80
+      targetPort: http
