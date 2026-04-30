@@ -22,3 +22,8 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 3
+
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
