@@ -1,6 +1,6 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "common.fullname" . }}
   labels:
@@ -8,8 +8,6 @@ metadata:
 spec:
   replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
-  strategy:
-    {{- toYaml .Values.updateStrategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "common.selectorLabels" . | nindent 6 }}
@@ -76,4 +74,27 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "common.fullname" . }}
+      previewService: {{ include "common.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- with .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ . }}
+      {{- end }}
+      {{- with .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      scaleDownDelaySeconds: {{ . }}
+      {{- end }}
+    {{- else }}
+    canary:
+      {{- with .Values.rollout.canary.maxSurge }}
+      maxSurge: {{ . }}
+      {{- end }}
+      {{- if hasKey .Values.rollout.canary "maxUnavailable" }}
+      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
+      {{- end }}
+      steps:
+        {{- tpl (toYaml .Values.rollout.canary.steps) . | nindent 8 }}
+    {{- end }}
 {{- end }}

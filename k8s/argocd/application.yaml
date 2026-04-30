@@ -4,12 +4,12 @@ metadata:
   name: python-app
   namespace: argocd
   labels:
-    app.kubernetes.io/part-of: devops-lab13
+    app.kubernetes.io/part-of: devops-lab14
 spec:
   project: default
   source:
     repoURL: https://github.com/ellilin/DevOps.git
-    targetRevision: feature/lab13
+    targetRevision: lab14
     path: k8s/python-app
     helm:
       releaseName: python-app

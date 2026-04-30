@@ -4,7 +4,7 @@ metadata:
   name: python-app-set
   namespace: argocd
   labels:
-    app.kubernetes.io/part-of: devops-lab13
+    app.kubernetes.io/part-of: devops-lab14
 spec:
   goTemplate: true
   goTemplateOptions:
@@ -26,13 +26,13 @@ spec:
     metadata:
       name: 'python-app-{{ .env }}'
       labels:
-        app.kubernetes.io/part-of: devops-lab13
+        app.kubernetes.io/part-of: devops-lab14
         environment: '{{ .env }}'
     spec:
       project: default
       source:
         repoURL: https://github.com/ellilin/DevOps.git
-        targetRevision: feature/lab13
+        targetRevision: lab14
         path: k8s/python-app
         helm:
           releaseName: 'python-app-{{ .env }}'

@@ -1,0 +1,10 @@
+rollout:
+  enabled: true
+  strategy: canary
+  analysis:
+    enabled: true
+    failureLimit: 1
+    successCondition: result == "intentional-failure"
+
+env:
+  RELEASE_TRACK: failed-canary

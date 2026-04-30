@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: dev
   labels:
-    app.kubernetes.io/part-of: devops-lab13
+    app.kubernetes.io/part-of: devops-lab14
     environment: dev
 ---
 apiVersion: v1
@@ -11,5 +11,5 @@ kind: Namespace
 metadata:
   name: prod
   labels:
-    app.kubernetes.io/part-of: devops-lab13
+    app.kubernetes.io/part-of: devops-lab14
     environment: prod

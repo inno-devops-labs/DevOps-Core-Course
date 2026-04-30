@@ -1,0 +1,16 @@
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+  analysis:
+    enabled: true
+
+service:
+  type: ClusterIP
+  nodePort: null
+
+env:
+  RELEASE_TRACK: bluegreen

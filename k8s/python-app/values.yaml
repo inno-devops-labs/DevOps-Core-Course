@@ -2,7 +2,7 @@ nameOverride: devops-info-python
 fullnameOverride: ""
 
 global:
-  partOf: devops-lab11
+  partOf: devops-lab14
 
 replicaCount: 1
 
@@ -12,10 +12,10 @@ image:
   pullPolicy: Always
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 80
   targetPort: 8000
-  nodePort: 30080
+  nodePort: null
 
 container:
   port: 8000
@@ -92,6 +92,42 @@ updateStrategy:
   rollingUpdate:
     maxSurge: 1
     maxUnavailable: 0
+
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    maxSurge: 1
+    maxUnavailable: 0
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - analysis:
+          templates:
+            - templateName: '{{ include "common.fullname" . }}-success-rate'
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+  analysis:
+    enabled: true
+    interval: 10s
+    count: 3
+    failureLimit: 1
+    successCondition: result == "healthy"
+    web:
+      url: ""
+      jsonPath: "{$.status}"
 
 revisionHistoryLimit: 5
 
