@@ -1,0 +1,9 @@
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    previewServiceType: ClusterIP
+
+image:
+  tag: "v2"
