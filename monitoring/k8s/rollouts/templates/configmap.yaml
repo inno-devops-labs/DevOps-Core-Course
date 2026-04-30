@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devops-info-config
+  labels:
+    app: devops-info
+data:
+  config.json: |-
+{{ .Files.Get "files/config.json" | nindent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devops-info-env
+  labels:
+    app: devops-info
+data:
+  APP_NAME: {{ .Values.config.appName | quote }}
+  APP_ENV: {{ .Values.config.environment | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  DATA_DIR: {{ .Values.persistence.mountPath | quote }}
+  VISITS_FILE: {{ .Values.persistence.visitsFile | quote }}
+  APP_CONFIG_FILE: {{ printf "%s/%s" .Values.appConfig.mountPath .Values.appConfig.fileName | quote }}

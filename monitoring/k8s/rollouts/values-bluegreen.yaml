@@ -1,0 +1,15 @@
+replicaCount: 2
+
+image:
+  repository: hiksol/devops-info-service
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+config:
+  appName: devops-info-service
+  environment: bluegreen
+  logLevel: INFO
+
+persistence:
+  mountPath: /data
+  visitsFile: /data/visits

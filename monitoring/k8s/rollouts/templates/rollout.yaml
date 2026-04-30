@@ -1,0 +1,77 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: devops-info
+  labels:
+    app: devops-info
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 2
+
+  selector:
+    matchLabels:
+      app: devops-info
+
+  template:
+    metadata:
+      labels:
+        app: devops-info
+    spec:
+      containers:
+        - name: devops-info
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - containerPort: 5000
+              name: http
+
+          envFrom:
+            - configMapRef:
+                name: devops-info-env
+
+          volumeMounts:
+            - name: app-config
+              mountPath: /config
+              readOnly: true
+            - name: app-data
+              mountPath: /data
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 3
+
+      volumes:
+        - name: app-config
+          configMap:
+            name: devops-info-config
+
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: devops-info-data
+
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {}   # manual
+        - setWeight: 40
+        - pause:
+            duration: 30s
+        - setWeight: 60
+        - pause:
+            duration: 30s
+        - setWeight: 80
+        - pause:
+            duration: 30s
+        - setWeight: 100
