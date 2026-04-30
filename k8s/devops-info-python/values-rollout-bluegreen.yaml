@@ -1,0 +1,42 @@
+replicaCount: 2
+
+app:
+  environment: blue-green
+
+persistence:
+  enabled: false
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    previewReplicaCount: 1
+    scaleDownDelaySeconds: 30
+
+previewService:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: http
+
+analysis:
+  enabled: true
+  metricName: preview-health-check
+  interval: 10s
+  count: 3
+  failureLimit: 1
+  timeoutSeconds: 5
+  jsonPath: "{$.status}"
+  successCondition: "result == 'healthy'"
+
+service:
+  type: ClusterIP
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi

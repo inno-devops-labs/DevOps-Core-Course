@@ -15,6 +15,23 @@ Validate chart values early so Helm fails before any Pod is created.
 {{- if .Values.persistence.enabled -}}
 {{- $persistenceSize := required "persistence.size must be set when persistence.enabled=true" .Values.persistence.size -}}
 {{- end -}}
+{{- if and .Values.analysis.enabled (not .Values.rollout.enabled) -}}
+{{- fail "analysis.enabled=true requires rollout.enabled=true" -}}
+{{- end -}}
+{{- if .Values.rollout.enabled -}}
+{{- $rolloutStrategy := required "rollout.strategy must be set when rollout.enabled=true" .Values.rollout.strategy -}}
+{{- if not (has $rolloutStrategy (list "canary" "blueGreen")) -}}
+{{- fail "rollout.strategy must be either canary or blueGreen" -}}
+{{- end -}}
+{{- if .Values.analysis.enabled -}}
+{{- $analysisMetricName := required "analysis.metricName must be set when analysis.enabled=true" .Values.analysis.metricName -}}
+{{- $analysisInterval := required "analysis.interval must be set when analysis.enabled=true" .Values.analysis.interval -}}
+{{- $analysisCount := required "analysis.count must be set when analysis.enabled=true" .Values.analysis.count -}}
+{{- $analysisFailureLimit := required "analysis.failureLimit must be set when analysis.enabled=true" .Values.analysis.failureLimit -}}
+{{- $analysisJsonPath := required "analysis.jsonPath must be set when analysis.enabled=true" .Values.analysis.jsonPath -}}
+{{- $analysisSuccessCondition := required "analysis.successCondition must be set when analysis.enabled=true" .Values.analysis.successCondition -}}
+{{- end -}}
+{{- end -}}
 {{- $appName := required "app.name must be set" .Values.app.name -}}
 {{- $appEnvironment := required "app.environment must be set" .Values.app.environment -}}
 {{- $configMountPath := required "app.configMountPath must be set" .Values.app.configMountPath -}}
@@ -93,6 +110,46 @@ Resolve the PersistentVolumeClaim used for visit persistence.
 {{- .Values.persistence.existingClaim | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{- printf "%s-data" (include "common.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve the preview Service name used by blue-green Rollouts.
+*/}}
+{{- define "devops-info-python.previewServiceName" -}}
+{{- printf "%s-preview" (include "common.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Resolve the AnalysisTemplate name used by Rollout analysis steps.
+*/}}
+{{- define "devops-info-python.analysisTemplateName" -}}
+{{- default (printf "%s-success-rate" (include "common.fullname" .)) .Values.analysis.templateName | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Preserve a live Service selector after Argo Rollouts adds the blue-green pod hash.
+Helm 4 uses server-side apply, so re-applying the static selector would conflict
+with the rollouts-controller field manager on subsequent upgrades.
+*/}}
+{{- define "devops-info-python.activeServiceSelector" -}}
+{{- $service := lookup "v1" "Service" .Release.Namespace (include "common.fullname" .) -}}
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") $service $service.spec $service.spec.selector -}}
+{{- toYaml $service.spec.selector -}}
+{{- else -}}
+{{- include "common.selectorLabels" . -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Preserve a live preview Service selector after Argo Rollouts owns it.
+*/}}
+{{- define "devops-info-python.previewServiceSelector" -}}
+{{- $service := lookup "v1" "Service" .Release.Namespace (include "devops-info-python.previewServiceName" .) -}}
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") $service $service.spec $service.spec.selector -}}
+{{- toYaml $service.spec.selector -}}
+{{- else -}}
+{{- include "common.selectorLabels" . -}}
 {{- end -}}
 {{- end -}}
 

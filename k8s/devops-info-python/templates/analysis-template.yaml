@@ -1,0 +1,22 @@
+{{- if .Values.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "devops-info-python.analysisTemplateName" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: service-url
+  metrics:
+    - name: {{ .Values.analysis.metricName }}
+      interval: {{ .Values.analysis.interval }}
+      count: {{ .Values.analysis.count }}
+      failureLimit: {{ .Values.analysis.failureLimit }}
+      successCondition: {{ .Values.analysis.successCondition | quote }}
+      provider:
+        web:
+          url: "{{ "{{" }} args.service-url {{ "}}" }}"
+          timeoutSeconds: {{ .Values.analysis.timeoutSeconds }}
+          jsonPath: {{ .Values.analysis.jsonPath | quote }}
+{{- end }}

@@ -109,8 +109,8 @@ Shared helpers extracted into `common-lib`:
 Values organization strategy:
 
 - defaults in `values.yaml` preserve the Lab 9 runtime behavior, including Python `NodePort 30080`;
-- `values-dev.yaml` is optimized for a light local deployment and moves the Python service to deterministic `NodePort 30081` to avoid clashing with an existing Lab 9 service on `30080`;
-- `values-prod.yaml` raises replica count and resource requests, switches the Python service to `LoadBalancer`, disables load-balancer node ports, and explicitly clears the old dev `nodePort` during upgrade.
+- `values-dev.yaml` is optimized for a light local deployment and moves the Python service to deterministic `NodePort 30091` to avoid clashing with existing lab services in the cluster;
+- `values-prod.yaml` raises replica count and resource requests, keeps the service internal as `ClusterIP`, and disables persistence because the Lab 12 single-writer `ReadWriteOnce` PVC design is not safe for a multi-replica Deployment.
 - `k8s/devops-info-go/values-kind.yaml` mirrors the default bonus image settings as an explicit local-kind profile.
 
 ## Configuration Guide
@@ -119,8 +119,8 @@ Important values in `k8s/devops-info-python/values.yaml`:
 
 | Value | Purpose | Default |
 | --- | --- | --- |
-| `image.repository` / `image.tag` | Python container image | `pepegx/devops-info-service:lab02` |
-| `replicaCount` | Deployment size | `3` |
+| `image.repository` / `image.tag` | Python container image | `pepegx/devops-info-service:lab12` |
+| `replicaCount` | Deployment size | `1` |
 | `service.type` | Exposed Service type | `NodePort` |
 | `service.port` | Service port | `80` |
 | `service.targetPort` | Backend target port | `http` |
@@ -135,11 +135,10 @@ Environment-specific overrides for the Python chart:
 
 | Setting | `values-dev.yaml` | `values-prod.yaml` |
 | --- | --- | --- |
-| `replicaCount` | `1` | `4` |
-| `service.type` | `NodePort` | `LoadBalancer` |
-| `service.nodePort` | `30081` | not set |
-| `service.allocateLoadBalancerNodePorts` | not set | `false` |
-| `service.clearNodePort` | not set | `true` |
+| `replicaCount` | `1` | `2` |
+| `service.type` | `NodePort` | `ClusterIP` |
+| `service.nodePort` | `30091` | not set |
+| `persistence.enabled` | `true` | `false` |
 | `resources.requests.cpu` | `50m` | `150m` |
 | `resources.limits.cpu` | `100m` | `500m` |
 | `resources.requests.memory` | `64Mi` | `192Mi` |

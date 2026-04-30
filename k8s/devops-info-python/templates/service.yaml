@@ -10,7 +10,7 @@ spec:
   allocateLoadBalancerNodePorts: {{ .Values.service.allocateLoadBalancerNodePorts | toJson }}
   {{- end }}
   selector:
-    {{- include "common.selectorLabels" . | nindent 4 }}
+    {{- include "devops-info-python.activeServiceSelector" . | nindent 4 }}
   ports:
     - name: http
       port: {{ .Values.service.port }}

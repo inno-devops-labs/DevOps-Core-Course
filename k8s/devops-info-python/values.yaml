@@ -77,6 +77,34 @@ strategy:
     maxSurge: 1
     maxUnavailable: 0
 
+rollout:
+  enabled: false
+  strategy: canary
+  canary:
+    maxSurge: 1
+    maxUnavailable: 0
+  blueGreen:
+    autoPromotionEnabled: false
+    previewReplicaCount: 1
+    scaleDownDelaySeconds: 30
+
+previewService:
+  enabled: true
+  type: ClusterIP
+  port: 80
+  targetPort: http
+
+analysis:
+  enabled: false
+  templateName: ""
+  metricName: health-check
+  interval: 10s
+  count: 3
+  failureLimit: 1
+  timeoutSeconds: 5
+  jsonPath: "{$.status}"
+  successCondition: "result == 'healthy'"
+
 service:
   type: NodePort
   port: 80

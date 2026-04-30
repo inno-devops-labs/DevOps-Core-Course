@@ -1,5 +1,8 @@
 1. Check the core Lab 12 resources:
    kubectl get svc,configmap,pvc -n {{ .Release.Namespace }}
+{{- if .Values.rollout.enabled }}
+   kubectl get rollouts,analysisruns,analysistemplates -n {{ .Release.Namespace }}
+{{- else }}
 
 2. Verify the mounted config file:
    kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
@@ -30,3 +33,25 @@
 6. Trigger a rollout when ConfigMap values change through Helm:
    helm upgrade {{ .Release.Name }} <same-chart-reference> -n {{ .Release.Namespace }} --reuse-values --set config.logLevel=INFO
    kubectl rollout status deployment/{{ include "common.fullname" . }} -n {{ .Release.Namespace }}
+{{- end }}
+{{- if .Values.rollout.enabled }}
+
+2. Verify the active service endpoint:
+   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "common.fullname" . }} 8080:{{ .Values.service.port }}
+   curl http://127.0.0.1:8080/health
+
+3. Watch and control the Argo Rollout:
+   kubectl argo rollouts get rollout {{ include "common.fullname" . }} -n {{ .Release.Namespace }} -w
+   kubectl argo rollouts promote {{ include "common.fullname" . }} -n {{ .Release.Namespace }}
+   kubectl argo rollouts abort {{ include "common.fullname" . }} -n {{ .Release.Namespace }}
+
+4. Trigger a progressive delivery update:
+   helm upgrade {{ .Release.Name }} <same-chart-reference> -n {{ .Release.Namespace }} --reuse-values --set config.logLevel=DEBUG
+   kubectl argo rollouts get rollout {{ include "common.fullname" . }} -n {{ .Release.Namespace }}
+{{- if eq .Values.rollout.strategy "blueGreen" }}
+
+5. Test the blue-green preview service before promotion:
+   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "devops-info-python.previewServiceName" . }} 8081:{{ .Values.previewService.port }}
+   curl http://127.0.0.1:8081/health
+{{- end }}
+{{- end }}

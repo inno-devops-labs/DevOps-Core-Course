@@ -1,7 +1,7 @@
+{{- if .Values.rollout.enabled }}
 {{- include "devops-info-python.validateValues" . -}}
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "common.fullname" . }}
   labels:
@@ -14,7 +14,51 @@ spec:
     matchLabels:
       {{- include "common.selectorLabels" . | nindent 6 }}
   strategy:
-    {{- toYaml .Values.strategy | nindent 4 }}
+    {{- if eq .Values.rollout.strategy "canary" }}
+    canary:
+      maxSurge: {{ .Values.rollout.canary.maxSurge | quote }}
+      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable | quote }}
+      steps:
+        - setWeight: 20
+        - pause: {}
+        {{- if .Values.analysis.enabled }}
+        - analysis:
+            templates:
+              - templateName: {{ include "devops-info-python.analysisTemplateName" . }}
+            args:
+              - name: service-url
+                value: {{ printf "http://%s.%s.svc.cluster.local%s" (include "common.fullname" .) .Release.Namespace .Values.readinessProbe.path | quote }}
+        {{- end }}
+        - setWeight: 40
+        - pause:
+            duration: 30s
+        - setWeight: 60
+        - pause:
+            duration: 30s
+        - setWeight: 80
+        - pause:
+            duration: 30s
+        - setWeight: 100
+    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "common.fullname" . }}
+      previewService: {{ include "devops-info-python.previewServiceName" . }}
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- with .Values.rollout.blueGreen.previewReplicaCount }}
+      previewReplicaCount: {{ . }}
+      {{- end }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      {{- if .Values.analysis.enabled }}
+      prePromotionAnalysis:
+        templates:
+          - templateName: {{ include "devops-info-python.analysisTemplateName" . }}
+        args:
+          - name: service-url
+            value: {{ printf "http://%s.%s.svc.cluster.local%s" (include "devops-info-python.previewServiceName" .) .Release.Namespace .Values.readinessProbe.path | quote }}
+      {{- end }}
+    {{- else }}
+    {{- fail "rollout.strategy must be either canary or blueGreen" }}
+    {{- end }}
   template:
     metadata:
       labels:
