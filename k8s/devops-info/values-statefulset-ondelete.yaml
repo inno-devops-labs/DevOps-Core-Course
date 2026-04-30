@@ -1,0 +1,10 @@
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: OnDelete
+
+rollout:
+  enabled: false
+
+env:
+  SERVICE_DESCRIPTION: "OnDelete StatefulSet update-strategy deployment"

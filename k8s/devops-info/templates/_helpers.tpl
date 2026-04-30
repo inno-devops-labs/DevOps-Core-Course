@@ -16,6 +16,10 @@ app.kubernetes.io/component: "api"
 app.kubernetes.io/component: "service"
 {{- end -}}
 
+{{- define "devops-info.headlessServiceName" -}}
+{{- default (printf "%s-headless" (include "common-lib.fullname" .)) .Values.statefulset.serviceName -}}
+{{- end -}}
+
 {{- define "devops-info.hookLabels" -}}
 {{ include "devops-info.baseLabels" . }}
 app.kubernetes.io/component: "hook"

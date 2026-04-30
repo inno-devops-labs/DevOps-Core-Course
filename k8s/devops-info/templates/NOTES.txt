@@ -14,5 +14,11 @@
 {{- end }}
 
 4. Verify ConfigMap and PVC mounts:
+{{- if .Values.statefulset.enabled }}
+   kubectl exec sts/{{ include "common-lib.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ .Values.configMap.mountPath }}/{{ .Values.configMap.fileName }}
+   kubectl exec {{ include "common-lib.fullname" . }}-0 -n {{ .Release.Namespace }} -- cat {{ .Values.persistence.mountPath }}/visits
+   kubectl get pvc -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- else }}
    kubectl exec deploy/{{ include "common-lib.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ .Values.configMap.mountPath }}/{{ .Values.configMap.fileName }}
    kubectl exec deploy/{{ include "common-lib.fullname" . }} -n {{ .Release.Namespace }} -- cat {{ .Values.persistence.mountPath }}/visits
+{{- end }}

@@ -1,4 +1,8 @@
+statefulset:
+  enabled: false
+
 rollout:
+  enabled: true
   analysis:
     path: /missing
     successCondition: result == "ready"

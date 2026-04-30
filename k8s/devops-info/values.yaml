@@ -1,7 +1,7 @@
 nameOverride: ""
 fullnameOverride: ""
 
-partOf: devops-lab12
+partOf: devops-lab15
 
 podLabels: {}
 podAnnotations: {}
@@ -31,8 +31,19 @@ strategy:
     maxSurge: 1
     maxUnavailable: 0
 
-rollout:
+statefulset:
   enabled: true
+  serviceName: ""
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+
+headlessService:
+  port: null
+
+rollout:
+  enabled: false
   strategy: canary
   canary:
     weights:

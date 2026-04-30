@@ -1,0 +1,12 @@
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2
+
+rollout:
+  enabled: false
+
+env:
+  SERVICE_DESCRIPTION: "Partitioned StatefulSet rolling-update deployment"
