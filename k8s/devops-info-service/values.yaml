@@ -115,6 +115,12 @@ readinessProbe:
 
 revisionHistoryLimit: 10
 
+rollout:
+  enabled: false
+  strategy: canary
+  blueGreen:
+    autoPromotionEnabled: false
+
 strategy:
   type: RollingUpdate
   rollingUpdate:

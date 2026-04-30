@@ -1,0 +1,45 @@
+nameOverride: ""
+fullnameOverride: ""
+component: api
+partOf: devops-core-course
+
+replicaCount: 3
+
+image:
+  repository: devops-app
+  tag: "lab12"
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+  targetPort: 5000
+
+env:
+  PORT: "5000"
+  VISITS_FILE: "/tmp/visits"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+rollouts:
+  enabled: false
+  strategy: canary # can be 'canary' or 'blueGreen'
+  canary:
+    steps:
+      - setWeight: 20
+      - pauseManual: true
+      - setWeight: 40
+      - pause: 30s
+      - setWeight: 60
+      - pause: 30s
+      - setWeight: 80
+      - pause: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    previewService: "{{ include \"devops-app.fullname\" . }}-preview"

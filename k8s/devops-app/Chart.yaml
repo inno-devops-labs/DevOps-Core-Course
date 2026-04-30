@@ -1,0 +1,6 @@
+apiVersion: v2
+name: devops-app
+version: 0.1.0
+appVersion: "lab12"
+description: DevOps app for Argo Rollouts lab
+type: application
