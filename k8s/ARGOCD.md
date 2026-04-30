@@ -52,9 +52,11 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 Login credentials: **Username:** `admin` | **Password:** output of the command above (without the trailing `%`).
 
-**Screenshot — ArgoCD UI dashboard (after login):**
+**Screenshot — ArgoCD UI dashboard (after login, empty):**
 
-![ArgoCD UI dashboard](img2.png)
+![ArgoCD UI dashboard empty](img2.png)
+
+![ArgoCD UI dashboard no apps](img3.png)
 
 ### CLI Configuration
 

@@ -18,6 +18,13 @@ Create a default fully qualified app name.
 {{- end }}
 
 {{/*
+Preview service name for blue-green strategy.
+*/}}
+{{- define "devops-info-service.previewServiceName" -}}
+{{- printf "%s-preview" (include "devops-info-service.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "devops-info-service.chart" -}}
