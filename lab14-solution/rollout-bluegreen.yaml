@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: lab14-rollouts-bluegreen
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lab14-rollouts
+  template:
+    metadata:
+      labels:
+        app: lab14-rollouts
+    spec:
+      containers:
+        - name: app
+          image: hashicorp/http-echo:0.2.3
+          args:
+            - "-text=Hello from blue-green v1"
+            - "-listen=:8000"
+          ports:
+            - containerPort: 8000
+  strategy:
+    blueGreen:
+      activeService: lab14-rollouts
+      previewService: lab14-rollouts-preview
+      autoPromotionEnabled: false

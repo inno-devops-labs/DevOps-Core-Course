@@ -1,0 +1,16 @@
+{{- if and .Values.analysis.enabled (eq .Values.strategy "canary") }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "lab14-rollouts.fullname" . }}-analysis
+spec:
+  metrics:
+    - name: response-check
+      provider:
+        web:
+          url: http://{{ include "lab14-rollouts.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}/
+      successCondition: result == "{{ .Values.analysis.successString }}"
+      interval: {{ .Values.analysis.interval }}
+      count: {{ .Values.analysis.count }}
+      failureLimit: {{ .Values.analysis.failureLimit }}
+{{- end }}

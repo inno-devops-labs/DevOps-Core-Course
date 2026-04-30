@@ -1,0 +1,19 @@
+replicaCount: 2
+strategy: canary
+image:
+  repository: hashicorp/http-echo
+  tag: "0.2.3"
+  pullPolicy: IfNotPresent
+  args:
+    - "-text=Hello from v1"
+    - "-listen=:8000"
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+analysis:
+  enabled: true
+  successString: "Hello from v1"
+  interval: 10s
+  count: 3
+  failureLimit: 1

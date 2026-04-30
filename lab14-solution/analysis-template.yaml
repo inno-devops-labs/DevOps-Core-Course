@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: lab14-rollouts-analysis
+spec:
+  metrics:
+    - name: response-check
+      provider:
+        web:
+          url: http://lab14-rollouts.default.svc:80/
+      successCondition: result == "Hello from canary v1"
+      interval: 10s
+      count: 3
+      failureLimit: 1

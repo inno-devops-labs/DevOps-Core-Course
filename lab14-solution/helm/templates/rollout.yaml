@@ -1,0 +1,49 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "lab14-rollouts.fullname" . }}
+  labels:
+    {{- include "lab14-rollouts.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "lab14-rollouts.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "lab14-rollouts.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+{{ toYaml .Values.image.args | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+  strategy:
+    {{- if eq .Values.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "lab14-rollouts.fullname" . }}
+      previewService: {{ include "lab14-rollouts.fullname" . }}-preview
+      autoPromotionEnabled: false
+    {{- else }}
+    canary:
+      steps:
+        - setWeight: 20
+        - analysis:
+            templates:
+              - templateName: {{ include "lab14-rollouts.fullname" . }}-analysis
+        - pause: {}
+        - setWeight: 40
+        - pause:
+            duration: 30s
+        - setWeight: 60
+        - pause:
+            duration: 30s
+        - setWeight: 80
+        - pause:
+            duration: 30s
+        - setWeight: 100
+    {{- end }}
