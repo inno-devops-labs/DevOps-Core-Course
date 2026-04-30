@@ -1,3 +1,4 @@
+{{- if .Values.rollout.enabled }}
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
@@ -15,8 +16,8 @@ spec:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
         app.kubernetes.io/component: web
+      {{- if .Values.vault.enabled }}
       annotations:
-        {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
         vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.fileName }}: {{ .Values.vault.secretPath | quote }}
@@ -25,7 +26,7 @@ spec:
           {{ .Values.vault.template | nindent 10 }}
           {{`{{- end -}}`}}
         vault.hashicorp.com/agent-inject-command-{{ .Values.vault.fileName }}: {{ .Values.vault.injectCommand | quote }}
-        {{- end }}
+      {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       securityContext:
@@ -101,10 +102,24 @@ spec:
               drop:
                 - ALL
   strategy:
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "devops-info-service.fullname" . }}
+      previewService: {{ include "devops-info-service.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
+      {{- end }}
+    {{- else }}
     canary:
       steps:
         - setWeight: 20
-        - pause: {}                       # Manual promotion
+        - pause: {}
+        {{- if .Values.rollout.analysis.enabled }}
+        - analysis:
+            templates:
+              - templateName: {{ include "devops-info-service.fullname" . }}-success-rate
+        {{- end }}
         - setWeight: 40
         - pause: { duration: 30s }
         - setWeight: 60
@@ -112,3 +127,5 @@ spec:
         - setWeight: 80
         - pause: { duration: 30s }
         - setWeight: 100
+    {{- end }}
+{{- end }}

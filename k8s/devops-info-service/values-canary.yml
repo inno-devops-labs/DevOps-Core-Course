@@ -13,6 +13,8 @@ rollout:
   enabled: true
   strategy: canary
   trigger: "v1"
+  analysis:
+    enabled: true
 
 resources:
   requests:
@@ -22,7 +24,7 @@ resources:
     memory: "128Mi"
     cpu: "100m"
 
-erviceAccount:
+serviceAccount:
   create: false
   name: ""
 

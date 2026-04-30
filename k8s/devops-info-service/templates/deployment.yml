@@ -1,3 +1,4 @@
+{{- if not .Values.rollout.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -20,8 +21,8 @@ spec:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
         app.kubernetes.io/component: web
+      {{- if .Values.vault.enabled }}
       annotations:
-        {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
         vault.hashicorp.com/agent-inject-secret-{{ .Values.vault.fileName }}: {{ .Values.vault.secretPath | quote }}
@@ -30,7 +31,7 @@ spec:
           {{ .Values.vault.template | nindent 10 }}
           {{`{{- end -}}`}}
         vault.hashicorp.com/agent-inject-command-{{ .Values.vault.fileName }}: {{ .Values.vault.injectCommand | quote }}
-        {{- end }}
+      {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       securityContext:
@@ -105,3 +106,4 @@ spec:
             capabilities:
               drop:
                 - ALL
+{{- end }}
