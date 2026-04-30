@@ -76,7 +76,7 @@ Implemented:
 - `k8s/devops-info/templates/secrets.yaml`
 - `k8s/devops-info/templates/serviceaccount.yaml`
 - Updates in:
-  - `k8s/devops-info/templates/deployment.yaml`
+  - `k8s/devops-info/templates/rollout.yaml`
   - `k8s/devops-info/templates/_helpers.tpl`
   - `k8s/devops-info/values.yaml`
 

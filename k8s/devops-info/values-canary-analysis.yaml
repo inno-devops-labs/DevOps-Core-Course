@@ -1,0 +1,5 @@
+# Enables bonus AnalysisTemplate + analysis step in canary (merge last).
+# Example: helm upgrade --install devops-info . -f values.yaml -f values-canary-analysis.yaml
+rollout:
+  analysis:
+    enabled: true

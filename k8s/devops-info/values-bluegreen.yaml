@@ -1,0 +1,5 @@
+# Merge with values.yaml (or values-prod.yaml) for Lab 14 blue-green, e.g.:
+#   helm upgrade --install devops-info . -f values.yaml -f values-bluegreen.yaml
+# Argo CD: add this file to spec.source.helm.valueFiles after the base file.
+rollout:
+  strategy: blueGreen

@@ -62,6 +62,30 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Canary steps for Rollout (Lab 14): optional web analysis after first canary slice when rollout.analysis.enabled.
+*/}}
+{{- define "devops-info.canarySteps" -}}
+{{- if .Values.rollout.analysis.enabled }}
+- setWeight: 20
+- analysis:
+    templates:
+      - templateName: {{ include "devops-info.fullname" . }}-health
+- setWeight: 40
+- pause:
+    duration: 30s
+- setWeight: 60
+- pause:
+    duration: 30s
+- setWeight: 80
+- pause:
+    duration: 30s
+- setWeight: 100
+{{- else }}
+{{- toYaml .Values.rollout.canary.steps }}
+{{- end }}
+{{- end }}
+
+{{/*
 Common environment variables for DRY templates.
 */}}
 {{- define "devops-info.envVars" -}}

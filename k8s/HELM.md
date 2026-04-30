@@ -14,7 +14,8 @@ k8s/devops-info/
 ├── values-prod.yaml
 └── templates/
     ├── _helpers.tpl
-    ├── deployment.yaml
+    ├── rollout.yaml
+    ├── service-preview.yaml
     ├── service.yaml
     ├── hooks-pre-install-job.yaml
     └── hooks-post-install-job.yaml
@@ -22,8 +23,9 @@ k8s/devops-info/
 
 ### Key templates
 
-- `templates/deployment.yaml`: main workload; replicas, image, resources, env vars, readiness/liveness probes.
-- `templates/service.yaml`: service exposure with configurable type and ports.
+- `templates/rollout.yaml`: Argo Rollouts `Rollout` (Lab 14); canary by default, optional blue-green via `values-bluegreen.yaml`.
+- `templates/service-preview.yaml`: preview Service for blue-green only.
+- `templates/service.yaml`: production Service (active in blue-green).
 - `templates/_helpers.tpl`: reusable naming and label helpers.
 - `templates/hooks-pre-install-job.yaml`: pre-install validation hook.
 - `templates/hooks-post-install-job.yaml`: post-install smoke-test hook.
@@ -64,12 +66,13 @@ Helm packages Kubernetes manifests as versioned charts and uses templating plus 
 
 Important values in `values.yaml`:
 
-- `replicaCount`: deployment replica count.
+- `replicaCount`: rollout replica count.
 - `image.repository`, `image.tag`, `image.pullPolicy`: container image configuration.
 - `service.type`, `service.port`, `service.targetPort`: service exposure model.
 - `resources.requests` / `resources.limits`: CPU and memory controls.
 - `livenessProbe` / `readinessProbe`: health check behavior (kept enabled and configurable).
-- `strategy.maxSurge` / `strategy.maxUnavailable`: rolling update behavior.
+- `strategy.maxSurge` / `strategy.maxUnavailable`: reserved for non-Helm raw manifests; the chart workload uses `rollout.strategy` (canary / blue-green) instead of Deployment rolling parameters.
+- `rollout`: progressive delivery settings; see `k8s/ROLLOUTS.md`.
 
 Environment customization examples:
 
@@ -324,9 +327,9 @@ spec:
     app.kubernetes.io/name: devops-info
     app.kubernetes.io/instance: devops-info-dev
 ---
-# Source: devops-info/templates/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
+# Source: devops-info/templates/rollout.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: devops-info-dev
   labels:
@@ -337,11 +340,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app.kubernetes.io/name: devops-info
@@ -355,41 +354,22 @@ spec:
       containers:
         - name: devops-info
           image: "devops-info-service-python:latest"
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: http
-              containerPort: 5000
-              protocol: TCP
-          env:
-            - name: HOST
-              value: "0.0.0.0"
-            - name: PORT
-              value: "5000"
-            - name: DEBUG
-              value: "false"
-          livenessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /health
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 2
-          readinessProbe:
-            failureThreshold: 3
-            httpGet:
-              path: /health
-              port: 5000
-            initialDelaySeconds: 3
-            periodSeconds: 5
-            timeoutSeconds: 2
-          resources:
-            limits:
-              cpu: 100m
-              memory: 128Mi
-            requests:
-              cpu: 50m
-              memory: 64Mi
+          # … probes, resources, env omitted for brevity
+  strategy:
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {}
+        - setWeight: 40
+        - pause:
+            duration: 30s
+        - setWeight: 60
+        - pause:
+            duration: 30s
+        - setWeight: 80
+        - pause:
+            duration: 30s
+        - setWeight: 100
 ```
 
 Live install evidence (after loading local image into minikube):
@@ -402,6 +382,7 @@ helm install devops-info-dev k8s/devops-info -f k8s/devops-info/values-dev.yaml 
 helm list
 kubectl get all
 kubectl get jobs
+kubectl get rollout
 ```
 
 ```text
@@ -410,7 +391,7 @@ devops-info-dev default   1        deployed devops-info-0.1.0 1.0.0
 
 pod/devops-info-dev-...            1/1 Running
 service/devops-info-dev            NodePort 80:31890/TCP
-deployment.apps/devops-info-dev    1/1 available
+rollout.argoproj.io/devops-info-dev    1/1 available
 replicaset.apps/devops-info-dev-... 1/1
 
 No resources found in default namespace.  # kubectl get jobs
@@ -462,4 +443,4 @@ $ helm lint k8s/devops-info
 
 - computed values from `values-dev.yaml`
 - rendered pre/post install hook Jobs with annotations, weights, and deletion policy
-- rendered Deployment and Service manifests with expected dev configuration
+- rendered Rollout and Service manifests with expected dev configuration

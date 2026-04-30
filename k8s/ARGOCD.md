@@ -75,7 +75,7 @@ All manifests are in `k8s/argocd/`:
 ### 2.1 Source configuration
 
 - `repoURL`: `https://github.com/ilyalinhnguyen/DevOps-Core-Course.git`
-- `targetRevision`: `lab13`
+- `targetRevision`: `lab14`
 - `path`: `k8s/devops-info`
 - Helm values:
   - `values-dev.yaml` for dev
@@ -139,8 +139,8 @@ Current verification output:
 
 ```text
 NAME                     CLUSTER                         NAMESPACE  PROJECT  STATUS  HEALTH       SYNCPOLICY  CONDITIONS  REPO                                                      PATH             TARGET
-argocd/devops-info-dev   https://kubernetes.default.svc  dev        default  Synced  Healthy      Auto-Prune  <none>      https://github.com/ilyalinhnguyen/DevOps-Core-Course.git  k8s/devops-info  lab13
-argocd/devops-info-prod  https://kubernetes.default.svc  prod       default  Synced  Healthy      Manual      <none>      https://github.com/ilyalinhnguyen/DevOps-Core-Course.git  k8s/devops-info  lab13
+argocd/devops-info-dev   https://kubernetes.default.svc  dev        default  Synced  Healthy      Auto-Prune  <none>      https://github.com/ilyalinhnguyen/DevOps-Core-Course.git  k8s/devops-info  lab14
+argocd/devops-info-prod  https://kubernetes.default.svc  prod       default  Synced  Healthy      Manual      <none>      https://github.com/ilyalinhnguyen/DevOps-Core-Course.git  k8s/devops-info  lab14
 ```
 
 ```text
@@ -165,11 +165,11 @@ devops-info-prod   NodePort   10.111.241.242   <none>        80:32316/TCP   14m
 ### 4.1 Manual scale drift test (ArgoCD self-healing)
 
 1. Confirm desired replica count is from `values-dev.yaml`.
-2. Scale deployment manually:
+2. Scale the Rollout manually:
 
 ```bash
-kubectl scale deployment devops-info-dev -n dev --replicas=5
-kubectl get deploy -n dev devops-info-dev -w
+kubectl scale rollout devops-info-dev -n dev --replicas=5
+kubectl argo rollouts get rollout devops-info-dev -n dev --watch
 ```
 
 3. Observe ArgoCD mark app `OutOfSync`, then auto-reconcile back to Git value.
@@ -187,7 +187,7 @@ This behavior is native Kubernetes reconciliation, not ArgoCD sync.
 ### 4.3 Configuration drift test (ArgoCD self-healing)
 
 ```bash
-kubectl label deployment devops-info-dev -n dev drift-test=true --overwrite
+kubectl label rollout devops-info-dev -n dev drift-test=true --overwrite
 argocd app diff devops-info-dev
 argocd app get devops-info-dev
 ```
