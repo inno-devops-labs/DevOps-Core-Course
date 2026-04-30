@@ -10,10 +10,17 @@ spec:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
   strategy:
-    blueGreen:
-      activeService: {{ include "devops-info-service.fullname" . }}
-      previewService: {{ include "devops-info-service.fullname" . }}-preview
-      autoPromotionEnabled: false
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {}
+        - setWeight: 40
+        - pause: { duration: 30s }
+        - setWeight: 60
+        - pause: { duration: 30s }
+        - setWeight: 80
+        - pause: { duration: 30s }
+        - setWeight: 100
   template:
     metadata:
       annotations:

@@ -10,15 +10,16 @@ env:
     value: "0.0.0.0"
   - name: PORT
     value: "5000"
+  - name: MARKER
+    value: "This is the production environment with update"
 
 nameOverride: ""
 fullnameOverride: ""
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 80
   targetPort: 5000
-  nodePort: 30080
 
 strategy:
   rollingUpdate:
