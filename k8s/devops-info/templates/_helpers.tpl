@@ -98,3 +98,10 @@ PVC resource name
 {{- define "devops-info.pvcName" -}}
 {{- printf "%s-data" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
+
+{{/*
+Preview service name for blue-green rollouts
+*/}}
+{{- define "devops-info.previewServiceName" -}}
+{{- printf "%s-preview" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}

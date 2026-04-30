@@ -1,0 +1,9 @@
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    previewService:
+      enabled: true
+      type: ClusterIP
