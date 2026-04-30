@@ -1,0 +1,21 @@
+replicaCount: 2
+
+image:
+  repository: nginx
+  tag: alpine
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+strategy: bluegreen

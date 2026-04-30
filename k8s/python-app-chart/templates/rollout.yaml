@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "python-app.fullname" . }}
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "python-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "python-app.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.targetPort }}
+          name: http
+        env:
+        - name: VERSION
+          value: "{{ .Values.image.tag }}"
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+  strategy:
+    canary:
+      steps:
+      - setWeight: 20
+      - pause: {}                    # Manual promotion required
+      - setWeight: 40
+      - pause: { duration: 30s }
+      - setWeight: 60
+      - pause: { duration: 30s }
+      - setWeight: 80
+      - pause: { duration: 30s }
+      - setWeight: 100

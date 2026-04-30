@@ -1,14 +1,14 @@
-replicaCount: 2
+replicaCount: 1
 
 image:
-  repository: gpshfrd/devops-info-python
-  tag: latest
+  repository: nginx
+  tag: alpine
   pullPolicy: IfNotPresent
 
 service:
   type: NodePort
   port: 80
-  targetPort: 5000
+  targetPort: 80
 
 resources:
   requests:
@@ -20,15 +20,15 @@ resources:
 
 livenessProbe:
   httpGet:
-    path: /health
-    port: 5000
+    path: /
+    port: 80
   initialDelaySeconds: 10
   periodSeconds: 15
 
 readinessProbe:
   httpGet:
-    path: /ready
-    port: 5000
+    path: /
+    port: 80
   initialDelaySeconds: 5
   periodSeconds: 10
 
@@ -36,7 +36,17 @@ env:
   APP_ENV: "development"
   LOG_LEVEL: "debug"
 
-secrets:
-  username: "app-user"
-  password: "changeme123"
-  apiKey: "dev-api-key-123"
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: { duration: 30s }
+      - setWeight: 60
+      - pause: { duration: 30s }
+      - setWeight: 80
+      - pause: { duration: 30s }
+      - setWeight: 100
