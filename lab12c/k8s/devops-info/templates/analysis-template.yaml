@@ -1,0 +1,19 @@
+{{- if and .Values.rollouts.enabled .Values.rollouts.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "devops-info.fullname" . }}-success-rate
+  labels:
+    {{- include "devops-info.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: health-check
+      interval: {{ .Values.rollouts.analysis.interval }}
+      count: {{ .Values.rollouts.analysis.count }}
+      failureLimit: {{ .Values.rollouts.analysis.failureLimit }}
+      successCondition: result == "healthy"
+      provider:
+        web:
+          url: http://{{ include "devops-info.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local/health
+          jsonPath: "{$.status}"
+{{- end }}

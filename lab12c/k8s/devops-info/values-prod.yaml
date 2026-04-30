@@ -22,3 +22,11 @@ resources:
 vault:
   injector:
     enabled: false
+
+rollouts:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
