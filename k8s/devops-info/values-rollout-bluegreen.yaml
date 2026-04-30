@@ -1,0 +1,41 @@
+fullnameOverride: lab14-devops-info-bg
+
+replicaCount: 3
+
+image:
+  repository: sofiakulagina/devops-info
+  tag: lab2
+  pullPolicy: IfNotPresent
+
+service:
+  enabled: true
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30088
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5002"
+  - name: CONFIG_PATH
+    value: /config/config.json
+  - name: VISITS_FILE
+    value: /data/visits
+  - name: APP_ENV
+    value: lab14-bluegreen
+  - name: APP_REVISION
+    value: blue-v1
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+  analysis:
+    enabled: false
+
+hookJobs:
+  enabled: false
