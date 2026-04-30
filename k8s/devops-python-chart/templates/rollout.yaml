@@ -36,7 +36,7 @@ spec:
   strategy:
     {{- if eq .Values.rollout.strategy "blueGreen" }}
     blueGreen:
-      activeService: {{ include "devops-python-chart.fullname" . }}
+      activeService: {{ include "devops-python-chart.fullname" . }}-service
       previewService: {{ include "devops-python-chart.fullname" . }}-preview
       autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
     {{- else }}
