@@ -24,6 +24,47 @@ strategy:
     maxSurge: 1
     maxUnavailable: 0
 
+rollout:
+  enabled: true
+  strategy: canary
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 600
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - analysis:
+          templates:
+            - templateName: success-rate
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+    analysis:
+      enabled: true
+      templateName: success-rate
+      metricName: webcheck
+      path: /health
+      jsonPath: "{$.status}"
+      successCondition: result == "healthy"
+      interval: 10s
+      count: 3
+      failureLimit: 1
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewService:
+      type: ClusterIP
+      port: 80
+      targetPort: http
+      annotations: {}
+
 podAnnotations: {}
 podLabels: {}
 

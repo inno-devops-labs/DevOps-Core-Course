@@ -19,3 +19,21 @@
   curl http://127.0.0.1:8080/
   curl http://127.0.0.1:8080/visits
   kubectl delete pod --namespace {{ .Release.Namespace }} $POD
+
+{{- if .Values.rollout.enabled }}
+
+4. Watch the Argo Rollout:
+  kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }} --namespace {{ .Release.Namespace }} -w
+
+{{- if eq .Values.rollout.strategy "canary" }}
+5. Promote or abort the canary:
+  kubectl argo rollouts promote {{ include "devops-info-service.fullname" . }} --namespace {{ .Release.Namespace }}
+  kubectl argo rollouts abort {{ include "devops-info-service.fullname" . }} --namespace {{ .Release.Namespace }}
+{{- end }}
+
+{{- if eq .Values.rollout.strategy "blueGreen" }}
+5. Test the preview service, then promote:
+  kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "devops-info-service.fullname" . }}-preview 8081:{{ .Values.rollout.blueGreen.previewService.port }}
+  kubectl argo rollouts promote {{ include "devops-info-service.fullname" . }} --namespace {{ .Release.Namespace }}
+{{- end }}
+{{- end }}

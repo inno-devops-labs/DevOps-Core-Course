@@ -1,0 +1,21 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-preview
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+  {{- with .Values.rollout.blueGreen.previewService.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.rollout.blueGreen.previewService.type }}
+  selector:
+    {{- include "devops-info-service.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.rollout.blueGreen.previewService.port }}
+      targetPort: {{ .Values.rollout.blueGreen.previewService.targetPort }}
+{{- end }}
