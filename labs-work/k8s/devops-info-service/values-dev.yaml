@@ -1,5 +1,12 @@
 replicaCount: 1
 
+environment: "dev"
+logLevel: "DEBUG"
+
+persistence:
+  enabled: true
+  size: 100Mi
+
 image:
   tag: "latest"
   pullPolicy: Never
