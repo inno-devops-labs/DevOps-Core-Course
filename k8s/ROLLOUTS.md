@@ -103,6 +103,8 @@ kubectl argo rollouts abort devops-info-service-devops-info-service
 kubectl argo rollouts retry rollout devops-info-service-devops-info-service
 ```
 
+![alt text](image.png)
+
 Command output (example from my run):
 
 ```text
@@ -129,7 +131,7 @@ strategy:
       - setWeight: 100
 ```
 
-Live cluster output to capture during demo:
+Live cluster output from my run:
 
 ```text
 $ kubectl argo rollouts get rollout devops-info-service-devops-info-service -w
@@ -217,15 +219,36 @@ strategy:
 Live cluster output to capture during demo:
 
 ```text
-$ kubectl get svc | grep devops-info-service
-devops-info-service-devops-info-service           NodePort   ...
-devops-info-service-devops-info-service-preview   ClusterIP  ...
+$ kubectl get svc -n default | grep devops-info-service
+devops-info-service-devops-info-service           NodePort    10.97.61.94     <none>   80:30080/TCP   39m
+devops-info-service-devops-info-service-preview   ClusterIP   10.106.51.212    <none>   80/TCP         0s
 
-$ kubectl argo rollouts promote devops-info-service-devops-info-service
+$ kubectl argo rollouts get rollout devops-info-service-devops-info-service -n default
+Status:          ॥ Paused
+Message:         BlueGreenPause
+Strategy:        BlueGreen
+Images:          cacucoh/testiks:1.0 (preview)
+                 cacucoh/testiks:latest (stable, active)
+
+$ kubectl argo rollouts promote devops-info-service-devops-info-service -n default
 rollout 'devops-info-service-devops-info-service' promoted
+
+$ kubectl argo rollouts get rollout devops-info-service-devops-info-service -n default
+Status:          ✔ Healthy
+Strategy:        BlueGreen
+Images:          cacucoh/testiks:1.0 (stable, active)
+                 cacucoh/testiks:latest
+```
+
+```bash
+$ kubectl get svc -n default | grep devops-info-service
+
+devops-info-service-devops-info-service           NodePort    10.97.61.94     <none>        80:30080/TCP   35m
+devops-info-service-devops-info-service-preview   ClusterIP   10.106.181.10   <none>        80/TCP         4m30s
 ```
 
 I verified that before promotion, the new version was available through the preview service, and after promotion, traffic switched to it as active
+
 
 ## 4. Bonus - AnalysisTemplate
 
@@ -237,7 +260,33 @@ I added automated health validation using Argo Analysis:
 - `jsonPath: "{$.status}"`
 - success condition: `result == "healthy"`
 
-This analysis runs in canary after `setWeight: 20`. If validation fails, the rollout can be stopped based on `failureLimit`
+This analysis runs in canary after `setWeight: 20`. If validation fails, the rollout can be stopped based on `failureLimit`.
+
+Live cluster output from my run:
+
+```text
+$ kubectl argo rollouts promote devops-info-service-devops-info-service -n default
+rollout 'devops-info-service-devops-info-service' promoted
+
+$ kubectl argo rollouts get rollout devops-info-service-devops-info-service -n default
+Step:            2/10
+...
+└──α devops-info-service-devops-info-service-957c798cb-10-2  AnalysisRun  ◌ Running
+
+$ kubectl get analysisrun -n default
+NAME                                                     STATUS    AGE
+devops-info-service-devops-info-service-957c798cb-10-2  Running   6s
+
+$ kubectl describe analysisrun devops-info-service-devops-info-service-957c798cb-10-2 -n default
+Name:         devops-info-service-devops-info-service-957c798cb-10-2
+...
+Metric Results:
+  Name:           healthcheck
+  Successful:     1
+  Measurements:
+    Phase:        Successful
+    Value:        "healthy"
+```
 
 ## 5. Strategy Selection: When to Use What
 
@@ -269,27 +318,7 @@ Cons:
 - Blue-Green: for critical services where quick switch/rollback matters
 - For this project, I would use canary by default and blue-green for major releases
 
-## 6. Useful Commands (Cheat Sheet)
-
-```bash
-# rollout status
-kubectl argo rollouts get rollout <name> -w
-
-# history/details
-kubectl argo rollouts get rollout <name>
-kubectl describe rollout <name>
-
-# actions
-kubectl argo rollouts promote <name>
-kubectl argo rollouts abort <name>
-kubectl argo rollouts retry rollout <name>
-
-# resources
-kubectl get rollout,svc,pods
-kubectl get analysistemplate
-```
-
-## 7. Helm Template Validation
+## 6. Helm Template Validation
 
 Before applying to the cluster, I validated template rendering:
 
@@ -312,15 +341,18 @@ All three modes render successfully:
 - `Rollout` with canary
 - `Rollout` with blue-green + preview service
 
-## 8. Required Screenshots Checklist
 
-According to the lab requirements, I need to attach the following screenshots:
+## Screensots:
 
-1. Argo Rollouts Dashboard main page (controller/dashboard accessible)
-2. Canary rollout progression in Dashboard (weights and pause steps visible)
-3. Manual promotion step in canary (`promote` action/result)
-4. Canary abort/rollback demonstration (status after `abort`)
-5. Blue-Green preview vs active services (both services visible)
-6. Blue-Green promotion result (switch to new active ReplicaSet)
-7. (Bonus) AnalysisTemplate/analysis step execution result
+![x](./img/rollout.png)
+
+
+Service degraded:
+
+![alt text](./img/degraded.png)
+
+
+Blue-green:
+
+![alt text](./img/bluegreen.png)
 
