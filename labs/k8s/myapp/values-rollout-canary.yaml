@@ -1,0 +1,19 @@
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+  steps:
+    - setWeight: 20
+    - pause: {}
+    - setWeight: 40
+    - pause:
+        duration: 30s
+    - setWeight: 60
+    - pause:
+        duration: 30s
+    - setWeight: 80
+    - pause:
+        duration: 30s
+    - setWeight: 100
+image:
+  tag: "v1"
