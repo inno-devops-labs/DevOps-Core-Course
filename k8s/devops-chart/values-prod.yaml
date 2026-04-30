@@ -1,10 +1,43 @@
-replicaCount: 5
+replicaCount: 3
 
 image:
-  tag: "v2"
+  repository: aserova/devops-info-service
+  tag: "v3"
+  pullPolicy: IfNotPresent
 
 service:
   type: NodePort
   port: 80
   targetPort: 5000
-  nodePort: 30008
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+secret:
+  enabled: true
+  name: ""
+  username: "prod-user"
+  password: "prod-password"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-app"
+  secretPath: "secret/data/myapp/config"
+
+config:
+  appEnv: "prod"
+  logLevel: "info"
+
+persistence:
+  enabled: true
+  size: 200Mi
+  storageClass: ""
