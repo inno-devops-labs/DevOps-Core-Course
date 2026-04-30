@@ -2,6 +2,8 @@
 
 This document describes how Argo Rollouts is set up for the `devops-info` Helm chart, how canary and blue-green strategies work, and how to operate them from the CLI and Argo CD.
 
+**Evidence note:** CLI output in §1.4 was captured **2026-04-30** on minikube **`lab09`**, alongside the Argo CD evidence in `ARGOCD.md`.
+
 ## 1. Argo Rollouts setup
 
 ### 1.1 Install the controller
@@ -27,7 +29,27 @@ kubectl port-forward svc/argo-rollouts-dashboard -n argo-rollouts 3100:3100
 
 Open [http://localhost:3100](http://localhost:3100) and select the namespace where the app is installed (for example `default`, `dev`, or `prod`).
 
-### 1.4 Rollout vs Deployment
+### 1.4 Verification (captured)
+
+```bash
+kubectl get pods -n argo-rollouts
+kubectl get rollout -A
+```
+
+```text
+NAME                                      READY   STATUS    RESTARTS   AGE
+argo-rollouts-5f64f8d68-xh5pt             1/1     Running   0          23m
+argo-rollouts-dashboard-755bbc64c-r7dk5   1/1     Running   0          23m
+```
+
+```text
+NAMESPACE   NAME               DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+default     devops-info        3         3         3            3           12m
+dev         devops-info-dev    1         1         1            1           15m
+prod        devops-info-prod   3         3         3            3           13m
+```
+
+### 1.5 Rollout vs Deployment
 
 | Aspect | `Deployment` | `Rollout` |
 |--------|----------------|-----------|
@@ -106,9 +128,9 @@ kubectl argo rollouts abort <rollout-name> -n <ns>
 
 Observe stable traffic returning to the previous ReplicaSet revision; then `kubectl argo rollouts get rollout …` shows aborted state (`retry rollout` when you want another attempt).
 
-### 3.4 Dashboard checkpoints (placeholders)
+### 3.4 Dashboard checkpoints
 
-Add screenshots under `k8s/assets/` showing: paused at 20%, mid-canary, and healthy steady state—then reference them here (same style as `ARGOCD.md`).
+For UI screenshots, capture the Rollouts dashboard at **pause** steps and **healthy** steady state (`kubectl port-forward svc/argo-rollouts-dashboard -n argo-rollouts 3100:3100`). Store PNGs under `k8s/assets/` and link them here. CLI corroboration: `kubectl argo rollouts get rollout <name> -n <ns>` or the cluster snapshot in `ROLLOUTS.md` §1.4 / `ARGOCD.md` §3.4.
 
 ---
 
@@ -187,3 +209,6 @@ kubectl get rollout -A
 ```
 
 Troubleshooting: `kubectl describe rollout NAME -n NS`, controller logs in `argo-rollouts` namespace, and Rollouts dashboard events for step progression.
+
+![alt](/k8s/assets/Screenshot%202026-04-30%20at%2012.30.30.png)
+![alt](/k8s/assets/Screenshot%202026-04-30%20at%2012.30.21.png)
