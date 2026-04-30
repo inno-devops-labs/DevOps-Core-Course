@@ -1,0 +1,3 @@
+rollout:
+  analysis:
+    path: /does-not-exist

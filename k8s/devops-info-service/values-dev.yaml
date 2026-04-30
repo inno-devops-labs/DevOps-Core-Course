@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 
 image:
   tag: lab12-python
@@ -41,6 +41,14 @@ resources:
   limits:
     cpu: 100m
     memory: 128Mi
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    previewReplicaCount: 1
+    scaleDownDelaySeconds: 30
 
 probes:
   liveness:

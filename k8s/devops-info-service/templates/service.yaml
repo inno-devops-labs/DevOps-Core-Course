@@ -1,3 +1,4 @@
+{{- $primaryService := lookup "v1" "Service" .Release.Namespace (include "common-lib.fullname" .) -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -7,7 +8,11 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   selector:
+    {{- if and .Values.rollout.enabled $primaryService $primaryService.spec $primaryService.spec.selector }}
+    {{- toYaml $primaryService.spec.selector | nindent 4 }}
+    {{- else }}
     {{- include "common-lib.selectorLabels" . | nindent 4 }}
+    {{- end }}
   ports:
     - name: http
       port: {{ .Values.service.port }}
@@ -16,3 +21,71 @@ spec:
       {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
       nodePort: {{ .Values.service.nodePort }}
       {{- end }}
+
+{{ if and .Values.rollout.enabled (eq .Values.rollout.strategy "canary") }}
+{{- $stableService := lookup "v1" "Service" .Release.Namespace (include "devops-info-service.stableServiceName" .) -}}
+{{- $canaryService := lookup "v1" "Service" .Release.Namespace (include "devops-info-service.canaryServiceName" .) -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-info-service.stableServiceName" . }}
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- if and $stableService $stableService.spec $stableService.spec.selector }}
+    {{- toYaml $stableService.spec.selector | nindent 4 }}
+    {{- else }}
+    {{- include "common-lib.selectorLabels" . | nindent 4 }}
+    {{- end }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.targetPort }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-info-service.canaryServiceName" . }}
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- if and $canaryService $canaryService.spec $canaryService.spec.selector }}
+    {{- toYaml $canaryService.spec.selector | nindent 4 }}
+    {{- else }}
+    {{- include "common-lib.selectorLabels" . | nindent 4 }}
+    {{- end }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}
+{{ if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
+{{- $previewService := lookup "v1" "Service" .Release.Namespace (include "devops-info-service.previewServiceName" .) -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-info-service.previewServiceName" . }}
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.rollout.blueGreen.previewService.type }}
+  selector:
+    {{- if and $previewService $previewService.spec $previewService.spec.selector }}
+    {{- toYaml $previewService.spec.selector | nindent 4 }}
+    {{- else }}
+    {{- include "common-lib.selectorLabels" . | nindent 4 }}
+    {{- end }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}

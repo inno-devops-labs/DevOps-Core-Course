@@ -27,6 +27,14 @@ spec:
             - -c
             - >
               echo "{{ .Values.hooks.postInstall.message }}";
-              sleep 5;
-              wget -qO- http://{{ include "common-lib.fullname" . }}:{{ .Values.service.port }}/health;
+              i=0;
+              until wget -qO- http://{{ include "common-lib.fullname" . }}:{{ .Values.service.port }}/health; do
+                i=$((i+1));
+                if [ "$i" -ge 24 ]; then
+                  echo "Smoke test failed after ${i} attempts";
+                  exit 1;
+                fi;
+                echo "Waiting for service readiness (attempt ${i}/24)...";
+                sleep 5;
+              done;
 {{- end }}

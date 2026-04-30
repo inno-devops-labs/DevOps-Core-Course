@@ -74,3 +74,26 @@ vault.hashicorp.com/agent-inject-template-config: |
 vault.hashicorp.com/agent-inject-command-config: {{ .Values.vault.agentInjectCommand | quote }}
 {{- end }}
 {{- end -}}
+
+{{/*
+Resolve Argo Rollouts-related resource names.
+*/}}
+{{- define "devops-info-service.rolloutName" -}}
+{{- include "common-lib.fullname" . -}}
+{{- end -}}
+
+{{- define "devops-info-service.canaryServiceName" -}}
+{{- printf "%s-%s" (include "common-lib.fullname" .) .Values.rollout.canary.canaryServiceSuffix -}}
+{{- end -}}
+
+{{- define "devops-info-service.stableServiceName" -}}
+{{- printf "%s-%s" (include "common-lib.fullname" .) .Values.rollout.canary.stableServiceSuffix -}}
+{{- end -}}
+
+{{- define "devops-info-service.previewServiceName" -}}
+{{- printf "%s-%s" (include "common-lib.fullname" .) .Values.rollout.blueGreen.previewServiceSuffix -}}
+{{- end -}}
+
+{{- define "devops-info-service.analysisTemplateName" -}}
+{{- printf "%s-%s" (include "common-lib.fullname" .) .Values.rollout.analysis.templateSuffix -}}
+{{- end -}}

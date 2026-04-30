@@ -1,16 +1,25 @@
 1. Get the release status:
    helm status {{ .Release.Name }} --namespace {{ .Release.Namespace }}
+{{- if .Values.rollout.enabled }}
+   kubectl argo rollouts get rollout {{ include "devops-info-service.rolloutName" . }} --namespace {{ .Release.Namespace }}
+{{- end }}
 
 2. Inspect the application service:
    kubectl get svc {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }}
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "canary") }}
+   kubectl get svc {{ include "devops-info-service.stableServiceName" . }} {{ include "devops-info-service.canaryServiceName" . }} --namespace {{ .Release.Namespace }}
+{{- end }}
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
+   kubectl get svc {{ include "devops-info-service.previewServiceName" . }} --namespace {{ .Release.Namespace }}
+{{- end }}
 
 3. Inspect Lab 12 configuration resources:
    kubectl get configmap {{ include "devops-info-service.fileConfigMapName" . }} {{ include "devops-info-service.envConfigMapName" . }} --namespace {{ .Release.Namespace }}
    kubectl get pvc {{ include "devops-info-service.pvcName" . }} --namespace {{ .Release.Namespace }}
 
 4. Verify mounted configuration and persistence:
-   kubectl exec deploy/{{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }} -- cat {{ .Values.config.file.mountPath }}/{{ .Values.config.file.fileName }}
-   kubectl exec deploy/{{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }} -- printenv | grep -E 'APP_|LOG_LEVEL|VISITS'
+   kubectl exec $(kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/name={{ include "common-lib.name" . }} -o name | head -n 1) --namespace {{ .Release.Namespace }} -- cat {{ .Values.config.file.mountPath }}/{{ .Values.config.file.fileName }}
+   kubectl exec $(kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/name={{ include "common-lib.name" . }} -o name | head -n 1) --namespace {{ .Release.Namespace }} -- printenv | grep -E 'APP_|LOG_LEVEL|VISITS'
 
 5. For NodePort access:
    kubectl get svc {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }} -o wide

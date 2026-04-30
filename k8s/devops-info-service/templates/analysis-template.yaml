@@ -1,0 +1,21 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "canary") .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "devops-info-service.analysisTemplateName" . }}
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: service-url
+  metrics:
+    - name: canary-health
+      interval: {{ .Values.rollout.analysis.interval }}
+      count: {{ .Values.rollout.analysis.count }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit }}
+      successCondition: {{ .Values.rollout.analysis.successCondition | quote }}
+      provider:
+        web:
+          url: "{{`{{ args.service-url }}`}}"
+          jsonPath: {{ .Values.rollout.analysis.jsonPath | quote }}
+{{- end }}

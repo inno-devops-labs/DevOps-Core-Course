@@ -1,18 +1,13 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
-  name: {{ include "common-lib.fullname" . }}
+  name: {{ include "devops-info-service.rolloutName" . }}
   labels:
     {{- include "common-lib.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
   selector:
     matchLabels:
       {{- include "common-lib.selectorLabels" . | nindent 6 }}
@@ -116,4 +111,34 @@ spec:
             claimName: {{ include "devops-info-service.pvcName" . }}
         {{- end }}
       {{- end }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "canary" }}
+    canary:
+      maxSurge: {{ .Values.rollout.canary.maxSurge }}
+      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
+      stableService: {{ include "devops-info-service.stableServiceName" . }}
+      canaryService: {{ include "devops-info-service.canaryServiceName" . }}
+      steps:
+        {{- range $index, $step := .Values.rollout.canary.steps }}
+        {{- if and $.Values.rollout.analysis.enabled (eq $index ($.Values.rollout.analysis.stepIndex | int)) }}
+        - analysis:
+            templates:
+              - templateName: {{ include "devops-info-service.analysisTemplateName" $ }}
+            args:
+              - name: service-url
+                value: http://{{ include "devops-info-service.canaryServiceName" $ }}.{{ $.Release.Namespace }}.svc.cluster.local:{{ $.Values.service.port }}{{ $.Values.rollout.analysis.path }}
+        {{- end }}
+{{ toYaml (list $step) | nindent 8 }}
+        {{- end }}
+    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "common-lib.fullname" . }}
+      previewService: {{ include "devops-info-service.previewServiceName" . }}
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      previewReplicaCount: {{ .Values.rollout.blueGreen.previewReplicaCount }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
+      {{- end }}
+    {{- end }}
 {{- end }}

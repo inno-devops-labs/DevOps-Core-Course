@@ -1,0 +1,24 @@
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5000"
+  - name: SERVICE_NAME
+    value: "devops-info-service"
+  - name: SERVICE_VERSION
+    value: "1.1.0"
+  - name: SERVICE_DESCRIPTION
+    value: "Production deployment of the Python DevOps Info Service"
+  - name: RELEASE_TRACK
+    value: "prod-canary-v2"
+
+config:
+  application:
+    name: "devops-info-service"
+    environment: "prod"
+    description: "Production deployment of the Python DevOps Info Service"
+  env:
+    APP_ENV: "prod"
+    LOG_LEVEL: "INFO"
+  settings:
+    releaseTrack: "prod-canary-v2"

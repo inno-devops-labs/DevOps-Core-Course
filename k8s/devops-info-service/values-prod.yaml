@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 5
 
 image:
   tag: lab12-python
@@ -41,6 +41,12 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
+
+rollout:
+  enabled: true
+  strategy: canary
+  analysis:
+    enabled: true
 
 probes:
   liveness:
