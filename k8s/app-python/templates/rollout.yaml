@@ -1,6 +1,6 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "app-python.fullname" . }}
   labels:
@@ -10,21 +10,14 @@ spec:
   selector:
     matchLabels:
       {{- include "app-python.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    {{- if eq .Values.strategy.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
-    {{- end }}
   template:
     metadata:
+      {{- if .Values.vault.enabled }}
       annotations:
-        {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
         vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPath | quote }}
-        {{- end }}
+      {{- end }}
       labels:
         {{- include "app-python.selectorLabels" . | nindent 8 }}
     spec:
@@ -112,4 +105,19 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "app-python.fullname" . }}-data
         {{- end }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "canary" }}
+    canary:
+      steps:
+        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
+    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "app-python.fullname" . }}
+      previewService: {{ include "app-python.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
+      {{- end }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+    {{- end }}
 {{- end }}

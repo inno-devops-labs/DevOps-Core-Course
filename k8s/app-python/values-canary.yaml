@@ -1,0 +1,24 @@
+replicaCount: 4
+persistence:
+  enabled: false
+
+rollout:
+  enabled: true
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause: { duration: 30s }
+      - setWeight: 60
+      - pause: { duration: 30s }
+      - setWeight: 80
+      - pause: { duration: 30s }
+      - setWeight: 100
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
+  nodePort: 30091

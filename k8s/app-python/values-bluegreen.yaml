@@ -1,0 +1,17 @@
+replicaCount: 2
+persistence:
+  enabled: false
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: 0
+    scaleDownDelaySeconds: 30
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
+  nodePort: 30092
