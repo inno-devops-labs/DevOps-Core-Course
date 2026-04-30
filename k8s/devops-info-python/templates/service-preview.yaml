@@ -16,5 +16,5 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: {{ include "common.legacyAppLabel" . }}-bg
+    app: {{ include "common.legacyAppLabel" . }}
 {{- end }}

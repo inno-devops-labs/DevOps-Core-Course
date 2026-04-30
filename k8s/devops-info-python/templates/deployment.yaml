@@ -87,7 +87,7 @@ spec:
         {{- if .Values.config.file.enabled }}
         - name: config-volume
           configMap:
-            name: {{ include "common.fullname" . }}-config
+            name: {{ include "common.fullname" . }}-file
         {{- end }}
         {{- if .Values.persistence.enabled }}
         - name: data-volume

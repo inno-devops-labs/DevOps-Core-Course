@@ -7,25 +7,28 @@
 Installed Argo Rollouts controller and dashboard to namespace `argo-rollouts`.
 
 **Verification outputs:**
+
 - Controller running: `kubectl get pods -n argo-rollouts`
 - kubectl plugin installed: `kubectl argo rollouts version`
 - Dashboard accessible: `kubectl port-forward svc/argo-rollouts-dashboard -n argo-rollouts 3100:3100`
 
-![task1-controller](screenshots/lab14/task1-controller.png)
-![task1-dashboard](screenshots/lab14/task1-dashboard.png)
+![Create AnalysisTemplate](screenshots/lab14/task1a.png)
+![Plugin Verification](screenshots/lab14/task1b.png)
+![Dashboard access](screenshots/lab14/task1c.png)
 
-### 1.2 Rollout vs Deployment comparison
+### 1.2 Rollout vs Deployment
 
-| Feature | Deployment | Rollout |
-|---------|-----------|---------|
-| **Kind** | `apps/v1` | `argoproj.io/v1alpha1` |
-| **Progressive Delivery** | ❌ RollingUpdate only | ✅ Canary, Blue-Green |
-| **Traffic Management** | ❌ Not supported | ✅ Native support |
-| **Automatic Rollback** | ❌ Manual | ✅ Metrics-based |
-| **Pod Replacement** | Gradual (uncontrolled) | Controlled steps |
-| **Use Case** | Standard updates | Safe, gradual releases |
+| Feature                  | Deployment             | Rollout                |
+| ------------------------ | ---------------------- | ---------------------- |
+| **Kind**                 | `apps/v1`              | `argoproj.io/v1alpha1` |
+| **Progressive Delivery** | ❌ RollingUpdate only  | ✅ Canary, Blue-Green  |
+| **Traffic Management**   | ❌ Not supported       | ✅ Native support      |
+| **Automatic Rollback**   | ❌ Manual              | ✅ Metrics-based       |
+| **Pod Replacement**      | Gradual (uncontrolled) | Controlled steps       |
+| **Use Case**             | Standard updates       | Safe, gradual releases |
 
 **Key additions in Rollout:**
+
 - `strategy` field with `canary` or `blueGreen` options
 - Traffic weight control (`setWeight`)
 - Pause points (manual or timed)
@@ -40,11 +43,13 @@ Installed Argo Rollouts controller and dashboard to namespace `argo-rollouts`.
 File: `k8s/devops-info-python/templates/rollout-canary.yaml`
 
 Created Rollout with progressive traffic shifting:
+
 ```
-20% → pause (manual) → 40% → pause 30s → 60% → pause 30s → 80% → pause 30s → 100%
+20% -> pause (manual) -> 40% -> pause 30s -> 60% -> pause 30s -> 80% -> pause 30s -> 100%
 ```
 
 Configuration:
+
 - `canaryService`: Routes traffic to canary version
 - `stableService`: Routes traffic to stable version
 - Steps define traffic weight and pause duration
@@ -59,6 +64,7 @@ Service routes traffic to canary rollout pods, separate from stable production t
 ### 2.3 Deployment and testing
 
 1. **Enable canary rollout** in values.yaml:
+
    ```yaml
    rollout:
      canary:
@@ -66,6 +72,7 @@ Service routes traffic to canary rollout pods, separate from stable production t
    ```
 
 2. **Deploy:**
+
    ```bash
    helm upgrade --install lab14 ./k8s/devops-info-python -n default
    ```
@@ -75,6 +82,7 @@ Service routes traffic to canary rollout pods, separate from stable production t
    - CLI: `kubectl argo rollouts get rollout devops-info-python -w`
 
 4. **Trigger canary** by updating image tag:
+
    ```bash
    kubectl set image rollout/devops-info-python \
      devops-info-python=olesianov/devops-info-python:lab03 -n default
@@ -85,22 +93,29 @@ Service routes traffic to canary rollout pods, separate from stable production t
    - Subsequent pauses: auto-proceed after 30 seconds
    - Dashboard shows percentage breakdown live
 
-![task2-canary-progression](screenshots/lab14/task2-canary-progression.png)
-![task2-canary-dashboard](screenshots/lab14/task2-canary-dashboard.png)
+Evidence:
+
+![Deploy Canary Rollout](screenshots/lab14/task2a.png)
+![Canary Service Created](screenshots/lab14/task2b.png)
+![Trigger Canary Rollout](screenshots/lab14/task2c.png)
+![Promotion](screenshots/lab14/task2d.png)
+![Canary Rollback Testing](screenshots/lab14/task2e.png)
 
 ### 2.4 Rollback testing
 
 **Abort during canary:**
+
 ```bash
 kubectl argo rollouts abort rollout/devops-info-python
 ```
 
 Observed:
+
 - Traffic instantly returns to stable version (0% canary)
 - All canary pods cleaned up
 - Production unaffected during abort
 
-![task2-rollback](screenshots/lab14/task2-rollback.png)
+![Rollout after abort - traffic back to stable](screenshots/lab14/task2f.png)
 
 ---
 
@@ -111,6 +126,7 @@ Observed:
 File: `k8s/devops-info-python/templates/rollout-bluegreen.yaml`
 
 Blue-Green strategy:
+
 - **Blue**: Current production version (activeService)
 - **Green**: New version for testing (previewService)
 - **Switch**: Instant traffic toggle from blue to green
@@ -125,6 +141,7 @@ Service routes to green (preview) version for testing before promotion.
 ### 3.3 Blue-Green deployment flow
 
 1. **Enable blue-green rollout** in values.yaml:
+
    ```yaml
    rollout:
      blueGreen:
@@ -132,23 +149,27 @@ Service routes to green (preview) version for testing before promotion.
    ```
 
 2. **Deploy initial version (blue):**
+
    ```bash
    helm upgrade --install lab14-bg ./k8s/devops-info-python -n default
    ```
 
 3. **Access production (blue):**
+
    ```bash
    kubectl port-forward svc/devops-info-python 8080:80
    # Visit http://localhost:8080
    ```
 
 4. **Trigger green deployment** by updating image:
+
    ```bash
    kubectl set image rollout/devops-info-python-bg \
      devops-info-python=olesianov/devops-info-python:lab03 -n default
    ```
 
 5. **Access preview (green):**
+
    ```bash
    kubectl port-forward svc/devops-info-python-preview 8081:80
    # Visit http://localhost:8081 to test new version
@@ -160,6 +181,7 @@ Service routes to green (preview) version for testing before promotion.
    - No downtime between them
 
 7. **Promote green to production:**
+
    ```bash
    kubectl argo rollouts promote rollout/devops-info-python-bg
    ```
@@ -168,22 +190,30 @@ Service routes to green (preview) version for testing before promotion.
    - Old blue version kept for quick rollback
    - Instant switch (no gradual traffic shift)
 
-![task3-bluegreen-setup](screenshots/lab14/task3-bluegreen-setup.png)
-![task3-bluegreen-dashboard](screenshots/lab14/task3-bluegreen-dashboard.png)
+
+![Deploy Blue-Green Rollout](screenshots/lab14/task3a.png)
+![Verify Services Created](screenshots/lab14/task3b.png)
+![Active service (Blue) response](screenshots/lab14/task3c.png)
+![Access Preview Service (Green)](screenshots/lab14/task3d.png)
+![Trigger Green Deployment](screenshots/lab14/task3e.png)
+![Verify Instant Switch](screenshots/lab14/task3h.png)
+
 
 ### 3.4 Instant rollback capability
 
 **Abort after promotion:**
+
 ```bash
 kubectl argo rollouts abort rollout/devops-info-python-bg
 ```
 
 Result:
+
 - Active service reverts to blue instantly
 - Zero downtime rollback
 - Faster than canary abort (no traffic shifting needed)
 
-![task3-rollback](screenshots/lab14/task3-rollback.png)
+![Blue-Green Instant Rollback](screenshots/lab14/task3i.png)
 
 ---
 
@@ -191,26 +221,28 @@ Result:
 
 ### 4.1 Canary vs Blue-Green
 
-| Aspect | Canary | Blue-Green |
-|--------|--------|-----------|
-| **Traffic Switch** | Gradual (%) | Instant (all-or-nothing) |
-| **Duration** | Minutes to hours | Seconds |
-| **Resource Usage** | Shared | 2x during deployment |
-| **Rollback Time** | Fast (traffic shift back) | Instant |
-| **Testing Depth** | Real users (small %) | Full environment |
-| **Risk** | Lower (% exposure) | Higher (full switch) |
-| **Detection** | Built-in metrics | Manual verification |
-| **Infrastructure** | Less resources needed | More resources needed |
+| Aspect             | Canary                    | Blue-Green               |
+| ------------------ | ------------------------- | ------------------------ |
+| **Traffic Switch** | Gradual (%)               | Instant (all-or-nothing) |
+| **Duration**       | Minutes to hours          | Seconds                  |
+| **Resource Usage** | Shared                    | 2x during deployment     |
+| **Rollback Time**  | Fast (traffic shift back) | Instant                  |
+| **Testing Depth**  | Real users (small %)      | Full environment         |
+| **Risk**           | Lower (% exposure)        | Higher (full switch)     |
+| **Detection**      | Built-in metrics          | Manual verification      |
+| **Infrastructure** | Less resources needed     | More resources needed    |
 
 ### 4.2 When to use each
 
 **Use Canary when:**
+
 - You want built-in metrics analysis
 - Resources are limited
 - Gradual validation with real users needed
 - Risk must be minimized per step
 
 **Use Blue-Green when:**
+
 - You need instant rollback capability
 - Full environment testing required
 - Deployment speed is critical
@@ -370,6 +402,7 @@ strategy:
 ```
 
 **Flow:**
+
 1. Set 40% traffic to canary
 2. Run analysis (check `/health` endpoint)
 3. If all checks pass: continue
@@ -378,11 +411,13 @@ strategy:
 ### 6.3 Metrics-based promotion
 
 **Automatic promotion on success:**
+
 - Analysis runs 3 times at 10s intervals
 - If all 3 succeed → proceed to next step
 - If any fails → abort and rollback
 
 **Manual verification:**
+
 ```bash
 # Check analysis status
 kubectl get analysis
@@ -406,14 +441,7 @@ kubectl logs <analysis-pod>
    - Rollout aborts automatically
    - Traffic reverts to stable version
 
-3. **Evidence:**
-   ```bash
-   kubectl argo rollouts get rollout devops-info-python -w
-   # Status shows: "AnalysisFailed → Degraded → Aborting"
-   ```
-
-![bonus-analysis-template](screenshots/lab14/bonus-analysis-template.png)
-![bonus-auto-rollback](screenshots/lab14/bonus-auto-rollback.png)
+![AnalysisTemplate created](screenshots/lab14/bonus1a.png)
 
 ---
 
@@ -485,26 +513,6 @@ rollout:
     count: 3
     failureLimit: 1
 ```
-
----
-
-## 8. Required outputs checklist
-
-- [ ] Argo Rollouts controller running in argo-rollouts namespace
-- [ ] Dashboard accessible on http://localhost:3100
-- [ ] Canary rollout created and progressing through steps
-- [ ] Traffic percentage visible in dashboard during canary
-- [ ] Manual promotion tested (`kubectl argo rollouts promote`)
-- [ ] Canary rollback tested (`kubectl argo rollouts abort`)
-- [ ] Blue-green rollout deployed
-- [ ] Preview service accessible and showing new version
-- [ ] Active service showing current version
-- [ ] Promotion from preview to active tested
-- [ ] Blue-green instant rollback verified
-- [ ] AnalysisTemplate created
-- [ ] Analysis integrated with canary strategy
-- [ ] Auto-rollback on analysis failure demonstrated
-
 ---
 
 ## 9. Key learnings

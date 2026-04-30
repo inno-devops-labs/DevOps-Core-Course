@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
-  name: {{ include "common.fullname" . }}-bg
+  name: {{ include "common.fullname" . }}
   labels:
     app: {{ include "common.legacyAppLabel" . }}
     component: api
@@ -12,11 +12,11 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "common.legacyAppLabel" . }}-bg
+      app: {{ include "common.legacyAppLabel" . }}
   template:
     metadata:
       labels:
-        app: {{ include "common.legacyAppLabel" . }}-bg
+        app: {{ include "common.legacyAppLabel" . }}
         component: api
         {{- include "common.selectorLabels" . | nindent 8 }}
       annotations:
@@ -81,7 +81,7 @@ spec:
         {{- end }}
   strategy:
     blueGreen:
-      activeService: {{ include "common.fullname" . }}
+      activeService: {{ include "common.serviceName" . }}
       previewService: {{ include "common.fullname" . }}-preview
       autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
       {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}

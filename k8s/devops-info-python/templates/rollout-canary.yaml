@@ -95,7 +95,7 @@ spec:
             duration: {{ .Values.rollout.canary.pauseDuration | quote }}
         - setWeight: 100
       canaryService: {{ include "common.fullname" . }}-canary
-      stableService: {{ include "common.fullname" . }}
+      stableService: {{ include "common.serviceName" . }}
       maxSurge: "25%"
       maxUnavailable: 0
 {{- end }}

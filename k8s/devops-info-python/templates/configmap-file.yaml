@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "common.fullname" . }}-config
+  name: {{ include "common.fullname" . }}-file
   labels:
     app: {{ include "common.legacyAppLabel" . }}
     component: api
