@@ -73,9 +73,86 @@ Additional fields for progressive delivery
 
 ### Strategy configuration explained
 
+The rollout uses a canary strategy to gradually shift traffic from the old version to the new one. It is configured in steps (20%, 40%, 60%, 80%, 100%) with pauses to allow validation and manual control. This approach reduces risk by exposing the new version to a small part of users before full deployment.
+
 ### Step-by-step rollout progression (screenshots from dashboard)
 
+![](./../docs/screenshots/lab14-shots/canary-prom-1.png)
+![](./../docs/screenshots/lab14-shots/canary-prom-2.png)
+![](./../docs/screenshots/lab14-shots/canary-prom-3.png)
+
 ### Promotion and abort demonstration
+
+Promotion (screenshots can be seen in the prev step)
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl argo rollouts get rollout myapp-app-python -n argo-rollouts 
+Name:            myapp-app-python
+Namespace:       argo-rollouts
+Status:          ॥ Paused
+Message:         CanaryPauseStep
+Strategy:        Canary
+  Step:          1/9
+  SetWeight:     20
+  ActualWeight:  25
+Images:          fountainer/my-app:16-04 (canary, stable)
+Replicas:
+  Desired:       3
+  Current:       4
+  Updated:       1
+  Ready:         4
+  Available:     4
+
+NAME                                          KIND        STATUS     AGE  INFO
+⟳ myapp-app-python                            Rollout     ॥ Paused   17m  
+├──# revision:2                                                           
+│  └──⧉ myapp-app-python-76b59b6c66           ReplicaSet  ✔ Healthy  69s  canary
+│     └──□ myapp-app-python-76b59b6c66-pgtgq  Pod         ✔ Running  68s  ready:1/1
+└──# revision:1                                                           
+   └──⧉ myapp-app-python-5bc87cfdf6           ReplicaSet  ✔ Healthy  17m  stable
+      ├──□ myapp-app-python-5bc87cfdf6-2tzkc  Pod         ✔ Running  17m  ready:1/1
+      ├──□ myapp-app-python-5bc87cfdf6-bnpd6  Pod         ✔ Running  17m  ready:1/1
+      └──□ myapp-app-python-5bc87cfdf6-qfg9s  Pod         ✔ Running  17m  ready:1/1
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl argo rollouts promote myapp-app-python -n argo-rollouts
+rollout 'myapp-app-python' promoted
+```
+
+Abort
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl get rollouts -n argo-rollouts
+NAME               DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+myapp-app-python   3         4         1            4           31m
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl argo rollouts abort myapp-app-python -n argo-rollouts
+rollout 'myapp-app-python' aborted
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl argo rollouts get rollout myapp-app-python -n argo-rollouts
+Name:            myapp-app-python
+Namespace:       argo-rollouts
+Status:          ✖ Degraded
+Message:         RolloutAborted: Rollout aborted update to revision 3
+Strategy:        Canary
+  Step:          0/9
+  SetWeight:     0
+  ActualWeight:  0
+Images:          fountainer/my-app:16-04 (stable)
+Replicas:
+  Desired:       3
+  Current:       3
+  Updated:       0
+  Ready:         3
+  Available:     3
+
+NAME                                          KIND        STATUS        AGE  INFO
+⟳ myapp-app-python                            Rollout     ✖ Degraded    32m  
+├──# revision:3                                                              
+│  └──⧉ myapp-app-python-5bc87cfdf6           ReplicaSet  • ScaledDown  32m  canary
+└──# revision:2                                                              
+   └──⧉ myapp-app-python-76b59b6c66           ReplicaSet  ✔ Healthy     16m  stable
+      ├──□ myapp-app-python-76b59b6c66-pgtgq  Pod         ✔ Running     16m  ready:1/1
+      ├──□ myapp-app-python-76b59b6c66-7cwr4  Pod         ✔ Running     10m  ready:1/1
+      └──□ myapp-app-python-76b59b6c66-skfdd  Pod         ✔ Running     10m  ready:1/1
+```
+![](./../docs/screenshots/lab14-shots/canary-abort.png)
 
 ## Blue-Green Deployment
 
