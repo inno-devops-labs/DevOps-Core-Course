@@ -1,0 +1,19 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ default (printf "%s-preview" (include "myapp.fullname" .)) .Values.rollout.blueGreen.previewService }}
+  labels:
+    {{- include "myapp.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.rollout.blueGreen.previewServiceType | default "ClusterIP" }}
+  selector:
+    {{- include "myapp.selectorLabels" . | nindent 4 }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      {{- if and (eq (.Values.rollout.blueGreen.previewServiceType | default "ClusterIP") "NodePort") .Values.rollout.blueGreen.previewNodePort }}
+      nodePort: {{ .Values.rollout.blueGreen.previewNodePort }}
+      {{- end }}
+{{- end }}
