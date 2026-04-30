@@ -52,3 +52,52 @@ Resolve container image with optional digest.
 {{- printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) -}}
 {{- end -}}
 {{- end }}
+
+{{/*
+Standard env vars passed to the application container.
+*/}}
+{{- define "devops-info-service.envVars" -}}
+- name: HOST
+  value: {{ .Values.appConfig.host | quote }}
+- name: PORT
+  value: {{ .Values.appConfig.port | quote }}
+- name: DEBUG
+  value: {{ .Values.appConfig.debug | quote }}
+- name: APP_ENV
+  value: {{ .Values.appConfig.appEnv | quote }}
+- name: LOG_LEVEL
+  value: {{ .Values.appConfig.logLevel | quote }}
+- name: VISITS_FILE
+  value: {{ printf "%s/%s" .Values.persistence.mountPath .Values.persistence.visitsFileName | quote }}
+{{- end }}
+
+{{/*
+ConfigMap names.
+*/}}
+{{- define "devops-info-service.configFileConfigMapName" -}}
+{{ .Values.configMap.file.name | default (include "devops-info-service.fullname" .) }}-config
+{{- end }}
+
+{{- define "devops-info-service.configEnvMapName" -}}
+{{ .Values.configMap.env.name | default (include "devops-info-service.fullname" .) }}-env
+{{- end }}
+
+{{/*
+Service account name helper.
+*/}}
+{{- define "devops-info-service.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+{{ .Values.serviceAccount.name | default (include "devops-info-service.fullname" .) }}
+{{- else -}}
+{{ .Values.serviceAccount.name | default "default" }}
+{{- end -}}
+{{- end }}
+
+{{/*
+Validation placeholder for optional persistence checks.
+*/}}
+{{- define "devops-info-service.persistenceValidation" -}}
+{{- if and .Values.persistence.enabled (not .Values.persistence.mountPath) -}}
+{{- fail "persistence.mountPath must be set when persistence is enabled" -}}
+{{- end -}}
+{{- end }}
