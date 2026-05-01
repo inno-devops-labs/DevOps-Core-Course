@@ -33,3 +33,9 @@
   echo "Visit http://127.0.0.1:8080 to use your application"
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
 {{- end }}
+
+{{- if eq .Values.rollout.strategy "blueGreen" }}
+
+Blue-green preview endpoint:
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "mychart.previewServiceName" . }} 8081:{{ .Values.service.port }}
+{{- end }}

@@ -1,0 +1,22 @@
+replicaCount: 5
+
+image:
+  repository: daniil20xx/myapp
+  tag: "latest"
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 8080
+
+environment: canary
+logLevel: info
+
+rollout:
+  strategy: canary
+  canary:
+    maxSurge: 1
+    maxUnavailable: 0
+  analysis:
+    enabled: true
+    expectedStatus: healthy

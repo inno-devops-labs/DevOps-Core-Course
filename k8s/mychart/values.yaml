@@ -10,6 +10,7 @@ containerPort: 5000
 image:
   repository: myapp
   tag: "1.0"
+  pullPolicy: IfNotPresent
 
 environment: dev
 logLevel: info
@@ -160,6 +161,27 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
+
+rollout:
+  strategy: canary
+  revisionHistoryLimit: 2
+  progressDeadlineSeconds: 600
+  canary:
+    maxSurge: 25%
+    maxUnavailable: 0
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewServiceSuffix: preview
+  analysis:
+    enabled: true
+    templateName: success-rate
+    path: /health
+    jsonPath: "{$.status}"
+    expectedStatus: healthy
+    interval: 10s
+    count: 3
+    failureLimit: 1
 
 # Additional volumes on the output Deployment definition.
 volumes: []

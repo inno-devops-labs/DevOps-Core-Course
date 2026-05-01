@@ -1,0 +1,19 @@
+{{- if and (eq .Values.rollout.strategy "canary") .Values.rollout.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ .Values.rollout.analysis.templateName }}
+  labels:
+    {{- include "mychart.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: webcheck
+      interval: {{ .Values.rollout.analysis.interval }}
+      count: {{ .Values.rollout.analysis.count }}
+      failureLimit: {{ .Values.rollout.analysis.failureLimit }}
+      successCondition: result == "{{ .Values.rollout.analysis.expectedStatus }}"
+      provider:
+        web:
+          url: http://{{ include "mychart.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local{{ .Values.rollout.analysis.path }}
+          jsonPath: "{{ .Values.rollout.analysis.jsonPath }}"
+{{- end }}

@@ -60,3 +60,10 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create preview service name for blue-green rollouts.
+*/}}
+{{- define "mychart.previewServiceName" -}}
+{{- printf "%s-%s" (include "mychart.fullname" .) (.Values.rollout.blueGreen.previewServiceSuffix | default "preview") | trunc 63 | trimSuffix "-" }}
+{{- end }}
