@@ -1,0 +1,21 @@
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+
+rollout:
+  enabled: false
+
+replicaCount: 3
+
+service:
+  type: NodePort
+  nodePort: 30089
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data
+  fileName: visits

@@ -37,6 +37,12 @@ persistence:
   mountPath: /data
   fileName: visits
 
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+
 rollout:
   enabled: false
   strategy: canary
