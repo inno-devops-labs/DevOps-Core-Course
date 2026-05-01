@@ -170,3 +170,7 @@ Example production response (colo, country, and extra `request.cf` fields; value
   ```
 
   Or rollback from the Workers dashboard (Versions / Deployments).
+
+## Cloudfare screenshots
+![alt](/assets/Screenshot%202026-05-01%20at%2011.50.03.png)
+![alt](/assets/Screenshot%202026-05-01%20at%2011.50.12.png)
