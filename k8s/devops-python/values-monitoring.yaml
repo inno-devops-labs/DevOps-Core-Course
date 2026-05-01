@@ -1,0 +1,57 @@
+workload:
+  type: statefulset
+
+replicaCount: 3
+
+image:
+  tag: "lab15"
+
+service:
+  type: NodePort
+  nodePort: 32160
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
+
+configFile:
+  environment: "monitoring"
+
+configEnv:
+  APP_ENV: "monitoring"
+  LOG_LEVEL: "info"
+
+hooks:
+  preInstall:
+    enabled: false
+  postInstall:
+    enabled: false
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+initContainers:
+  enabled: true
+  sharedMountPath: /init-data
+  waitForService:
+    enabled: true
+    image: busybox:1.36.1
+    host: monitoring-grafana.monitoring.svc.cluster.local
+  download:
+    enabled: true
+    image: busybox:1.36.1
+    url: http://monitoring-grafana.monitoring.svc/login
+    outputFile: grafana-login.html
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    partition: null

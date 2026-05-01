@@ -14,6 +14,14 @@ service:
   targetPort: 5000
   nodePort: null
 
+serviceMonitor:
+  enabled: false
+  labels:
+    release: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+  path: /metrics
+
 container:
   port: 5000
 
@@ -90,6 +98,19 @@ persistence:
 
 workload:
   type: rollout
+
+initContainers:
+  enabled: false
+  sharedMountPath: /init-data
+  waitForService:
+    enabled: false
+    image: busybox:1.36.1
+    host: monitoring-grafana.monitoring.svc.cluster.local
+  download:
+    enabled: false
+    image: busybox:1.36.1
+    url: http://monitoring-grafana.monitoring.svc/login
+    outputFile: index.html
 
 rollout:
   revisionHistoryLimit: 2

@@ -35,6 +35,10 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "common.fullname" . }}-config
+        {{- if .Values.initContainers.enabled }}
+        - name: init-workdir
+          emptyDir: {}
+        {{- end }}
       {{- if .Values.persistence.enabled }}
       initContainers:
         - name: volume-permissions
@@ -46,6 +50,46 @@ spec:
           volumeMounts:
             - name: data-volume
               mountPath: /data
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image }}
+          command:
+            - sh
+            - -c
+            - until nslookup {{ .Values.initContainers.waitForService.host }}; do echo waiting for {{ .Values.initContainers.waitForService.host }}; sleep 2; done
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image }}
+          command:
+            - sh
+            - -c
+            - wget -O {{ .Values.initContainers.sharedMountPath }}/{{ .Values.initContainers.download.outputFile }} {{ .Values.initContainers.download.url }}
+          volumeMounts:
+            - name: init-workdir
+              mountPath: {{ .Values.initContainers.sharedMountPath }}
+        {{- end }}
+      {{- else if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image }}
+          command:
+            - sh
+            - -c
+            - until nslookup {{ .Values.initContainers.waitForService.host }}; do echo waiting for {{ .Values.initContainers.waitForService.host }}; sleep 2; done
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image }}
+          command:
+            - sh
+            - -c
+            - wget -O {{ .Values.initContainers.sharedMountPath }}/{{ .Values.initContainers.download.outputFile }} {{ .Values.initContainers.download.url }}
+          volumeMounts:
+            - name: init-workdir
+              mountPath: {{ .Values.initContainers.sharedMountPath }}
+        {{- end }}
       {{- end }}
       containers:
         - name: app
@@ -62,6 +106,10 @@ spec:
             {{- if .Values.persistence.enabled }}
             - name: data-volume
               mountPath: /data
+            {{- end }}
+            {{- if .Values.initContainers.enabled }}
+            - name: init-workdir
+              mountPath: {{ .Values.initContainers.sharedMountPath }}
             {{- end }}
           envFrom:
             - configMapRef:

@@ -1,0 +1,9 @@
+prometheusOperator:
+  admissionWebhooks:
+    enabled: true
+  tls:
+    enabled: true
+  livenessProbe:
+    timeoutSeconds: 5
+  readinessProbe:
+    timeoutSeconds: 5
