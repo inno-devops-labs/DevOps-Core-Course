@@ -1,0 +1,19 @@
+replicaCount: 3
+
+statefulset:
+  enabled: true
+  partition: 0
+
+# Disable deployment and rollout
+rollout:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
+image:
+  repository: 1sarmatt/devops-info-service
+  tag: "latest"
+  pullPolicy: Always
