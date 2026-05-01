@@ -1,0 +1,4 @@
+# Copy to `.dev.vars` for local development (never commit `.dev.vars`).
+# Values here simulate Wrangler secrets during `npx wrangler dev`.
+API_TOKEN=local-dev-token-change-me
+ADMIN_EMAIL=you@example.com

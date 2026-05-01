@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-05-01",
+  // Plaintext vars (not secrets — visible in dashboard and bundle metadata).
+  "vars": {
+    "APP_NAME": "edge-api",
+    "COURSE_NAME": "devops-core"
+  },
+  // Replace id after: npx wrangler kv namespace create SETTINGS
+  // Optional preview_id after: npx wrangler kv namespace create SETTINGS --preview
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ]
+}
