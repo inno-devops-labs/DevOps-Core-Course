@@ -25,6 +25,28 @@ spec:
       securityContext:
         runAsNonRoot: {{ .Values.podSecurityContext.runAsNonRoot }}
         runAsUser: {{ .Values.podSecurityContext.runAsUser }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image }}
+          command:
+            - sh
+            - -c
+            - until nslookup {{ .Values.initContainers.waitForService.host }}; do echo "waiting for {{ .Values.initContainers.waitForService.host }}"; sleep {{ .Values.initContainers.waitForService.intervalSeconds }}; done
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image }}
+          command:
+            - sh
+            - -c
+            - wget -O /work-dir/{{ .Values.initContainers.download.fileName }} {{ .Values.initContainers.download.url }}
+          volumeMounts:
+            - name: init-workdir
+              mountPath: /work-dir
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ include "python-app.imageTag" . }}"
@@ -54,6 +76,10 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /config
+            {{- if .Values.initContainers.enabled }}
+            - name: init-workdir
+              mountPath: /init-data
+            {{- end }}
             {{- if .Values.persistence.enabled }}
             - name: data-volume
               mountPath: /data
@@ -76,6 +102,10 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "python-app.fullname" . }}-config
+        {{- if .Values.initContainers.enabled }}
+        - name: init-workdir
+          emptyDir: {}
+        {{- end }}
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:
