@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo
+  namespace: default
+spec:
+  clusterIP: None
+  selector:
+    app: demo
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: demo
+  namespace: default
+spec:
+  serviceName: demo
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      initContainers:
+        - name: download-html
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              wget -O /work/test.html http://example.com
+          volumeMounts:
+            - name: shared-data
+              mountPath: /work
+      containers:
+        - name: app
+          image: nginx:stable
+          volumeMounts:
+            - name: shared-data
+              mountPath: /work
+      volumes:
+        - name: shared-data
+          emptyDir: {}

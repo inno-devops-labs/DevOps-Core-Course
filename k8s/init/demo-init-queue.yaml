@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-queue-demo
+  namespace: default
+spec:
+  restartPolicy: Never
+  initContainers:
+    - name: step-1
+      image: busybox:1.36
+      command: ["sh", "-c", "echo line1 > /shared/queue.txt"]
+      volumeMounts:
+        - name: shared
+          mountPath: /shared
+    - name: step-2
+      image: busybox:1.36
+      command: ["sh", "-c", "echo line2 >> /shared/queue.txt"]
+      volumeMounts:
+        - name: shared
+          mountPath: /shared
+    - name: step-3
+      image: busybox:1.36
+      command: ["sh", "-c", "echo line3 >> /shared/queue.txt"]
+      volumeMounts:
+        - name: shared
+          mountPath: /shared
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "sleep 3600"]
+      volumeMounts:
+        - name: shared
+          mountPath: /shared
+  volumes:
+    - name: shared
+      emptyDir: {}
