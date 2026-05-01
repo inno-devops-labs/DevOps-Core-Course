@@ -2,11 +2,16 @@ replicaCount: 3
 
 image:
   repository: fountainer/my-app
-  tag: "16-04"
+  tag: "2026.05.01"
   pullPolicy: Always
 
 container:
   port: 12345
+
+persistence:
+  size: 1Gi
+
+storageClass: ""
 
 resources:
   requests:
