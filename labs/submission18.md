@@ -206,14 +206,7 @@ Combined workflow: `nix build .#dockerImage` → load → push by digest → ref
 
 ---
 
-## PR checklist (course instructions)
+## Screenshots
 
-```text
-Platform: GitHub
-
-- [x] Task 1 — Build Reproducible Artifacts from Scratch (6 pts)
-- [x] Task 2 — Reproducible Docker Images with Nix (4 pts)
-- [x] Bonus Task — Modern Nix with Flakes (2 pts)
-```
-
-Screenshots of browsers hitting `/` and `/health` were omitted here; run the service in Docker or `nix run`/`result/bin/...` and capture if your instructor requires pixels. **Cross-machine check:** clone on a second machine with Nix, run the same `nix build` with the committed `flake.lock`, and compare `readlink result`.
+![alt](/assets/Screenshot%202026-05-01%20at%2012.44.49.png)
+![alt](/assets/Screenshot%202026-05-01%20at%2012.45.30.png)
