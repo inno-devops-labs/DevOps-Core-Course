@@ -10,3 +10,6 @@ __pycache__/
 *.key
 *.tgz
 *.lock
+!labs/lab18/app_python/flake.lock
+result
+result-*
