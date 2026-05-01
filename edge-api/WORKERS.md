@@ -1,5 +1,31 @@
 # Lab 17 — Cloudflare Workers deployment (`edge-api`)
 
+## 0. Manual steps (Cloudflare account — run on your machine)
+
+1. **Sign up / log in** at [Cloudflare](https://dash.cloudflare.com/) and confirm **Workers & Pages** is available.
+2. **CLI login:**  
+   `cd edge-api && npx wrangler login`  
+   Verify: `npx wrangler whoami`
+3. **KV namespace:**  
+   `npx wrangler kv namespace create SETTINGS`  
+   Copy the **`id`** into `wrangler.jsonc` (replace `REPLACE_WITH_KV_NAMESPACE_ID`).  
+   Optional for safer local testing:  
+   `npx wrangler kv namespace create SETTINGS --preview`  
+   and add `"preview_id": "<preview-id>"` on the same KV object in `wrangler.jsonc`.
+4. **Secrets (≥2 — never commit values):**  
+   `npx wrangler secret put API_TOKEN`  
+   `npx wrangler secret put ADMIN_EMAIL`
+5. **Local dev:** Copy `.dev.vars.example` → `.dev.vars`, edit values to match your secrets for local use; run `npm run dev`. Test with curl/browser on `http://127.0.0.1:8787`.
+6. **Deploy:** `npm run deploy`. Save the printed **`workers.dev`** URL.
+7. **Prod checks:** `curl .../health`, `curl .../edge`, `curl .../counter` twice (KV persists).
+8. **`/admin`:**  
+   `curl -sS -H "Authorization: Bearer YOUR_API_TOKEN" "https://.../admin"`
+9. **Observability:** `npm run tail`; trigger traffic and capture one log line (or use dashboard metrics).
+10. **Two deployments + rollback:** Change a small string or var, deploy again, run `npx wrangler deployments list`, then `npx wrangler rollback` (or use the dashboard).
+11. **Evidence:** Fill §2 in this file (paste `/edge` JSON), add screenshots, commit updates if your instructor expects them in-repo.
+
+---
+
 ## 1. Deployment summary
 
 | Item | Value |
