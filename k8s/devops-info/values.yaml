@@ -101,3 +101,12 @@ persistence:
   enabled: true
   size: 100Mi
   storageClass: ""
+
+# Lab 15: StatefulSet with per-pod PVCs and headless service. When enabled, Rollout and shared PVC are not rendered.
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0

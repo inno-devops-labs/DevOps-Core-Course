@@ -1,0 +1,8 @@
+# Lab 15 — deploy devops-info as a StatefulSet (stable identities + volumeClaimTemplates).
+statefulset:
+  enabled: true
+
+replicaCount: 3
+
+persistence:
+  enabled: true
