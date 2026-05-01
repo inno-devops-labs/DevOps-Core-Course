@@ -1,6 +1,6 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "info-service.fullname" . }}
   labels:
@@ -10,13 +10,6 @@ spec:
   selector:
     matchLabels:
       {{- include "info-service.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    {{- if eq .Values.strategy.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
-    {{- end }}
   template:
     metadata:
       labels:
@@ -55,4 +48,18 @@ spec:
         persistentVolumeClaim:
           claimName: {{ include "info-service.fullname" . }}-data
       {{- end }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "canary" }}
+    canary:
+      steps:
+        {{- range .Values.rollout.canary.steps }}
+        - {{ toYaml . | nindent 10 | trim }}
+        {{- end }}
+    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "info-service.fullname" . }}
+      previewService: {{ include "info-service.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+    {{- end }}
 {{- end }}
