@@ -46,7 +46,7 @@ After `nix-build default.nix` (Docker workflow above), the output was linked as:
 
 Repeated builds with unchanged sources reuse this path (cache hit) or reproduce it after garbage collection (same path hash).
 
-Repeated `nix-build default.nix` with the same nixpkgs reproduces the same store path; `nix-hash --type sha256 result` is therefore identical across rebuilds (verify locally with the command block above).
+Example: after `nix-build default.nix` in `nixos/nix` (Linux **aarch64**), `nix-hash --type sha256 result` reported **`509707673e7ce13d4dbf9948749337e1ac5ebec70c263e75a2ffb20d5e5fb1e7`**, with `readlink result` → `/nix/store/bdp6afdbidkgdrdi43nwqyiy1cjplwgc-devops-info-service-1.0.0`. Rebuilding with the same nixpkgs reproduces the same path and hash.
 
 **Practical check:** `readlink result` twice after `nix-collect-garbage` / `nix-store --delete` should return the **same path** if nothing in the derivation inputs changed.
 
