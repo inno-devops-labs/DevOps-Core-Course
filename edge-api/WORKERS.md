@@ -22,7 +22,7 @@
    `curl -sS -H "Authorization: Bearer YOUR_API_TOKEN" "https://.../admin"`
 9. **Observability:** `npm run tail`; trigger traffic and capture one log line (or use dashboard metrics).
 10. **Two deployments + rollback:** Change a small string or var, deploy again, run `npx wrangler deployments list`, then `npx wrangler rollback` (or use the dashboard).
-11. **Evidence:** Fill §2 in this file (paste `/edge` JSON), add screenshots, commit updates if your instructor expects them in-repo.
+11. **Evidence:** Fill section 2 in this file (paste `/edge` JSON), add screenshots, commit updates if your instructor expects them in-repo.
 
 ---
 
