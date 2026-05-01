@@ -8,6 +8,11 @@ image:
 container:
   port: 12345
 
+persistence:
+  size: 1Gi
+
+storageClass: ""
+
 resources:
   requests:
     cpu: "100m"
