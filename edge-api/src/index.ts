@@ -25,7 +25,7 @@ export default {
       return Response.json({
         app: env.APP_NAME,
         course: env.COURSE_NAME,
-        message: "Hello from Cloudflare Workers",
+        message: "Hello from Cloudflare Workers (lab17)",
         timestamp: new Date().toISOString(),
       });
     }
