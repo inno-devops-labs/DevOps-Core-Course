@@ -23,6 +23,21 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       serviceAccountName: {{ include "devops-info-service.fullname" . }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        - name: init-wait
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for DNS to be ready..."
+              until nslookup kubernetes.default.svc.cluster.local; do
+                echo "DNS not ready, retrying..."
+                sleep 2
+              done
+              echo "DNS ready, starting main container."
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

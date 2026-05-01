@@ -47,9 +47,15 @@ rollout:
   enabled: false
   strategy: canary  # canary or blueGreen
 
+serviceMonitor:
+  enabled: false
+
 statefulset:
   enabled: false
   partition: 0
+
+initContainers:
+  enabled: false
 
 appEnv: "production"
 logLevel: "INFO"
