@@ -93,10 +93,76 @@ persistentvolumeclaim/myapp-app-python-data            Bound    pvc-22a66b4f-e1f
 
 ### DNS resolution outputs
 
+the naming pattern is ```<pod-name>.<headless-service-name>```
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air app_python % kubectl exec -it myapp-app-python-0 -- /bin/sh
+$ getent hosts myapp-app-python-0.myapp-app-python-headless    
+10.244.0.177    myapp-app-python-0.myapp-app-python-headless.default.svc.cluster.local
+$ getent hosts myapp-app-python-1.myapp-app-python-headless
+10.244.0.179    myapp-app-python-1.myapp-app-python-headless.default.svc.cluster.local
+$ getent hosts myapp-app-python-2.myapp-app-python-headless
+10.244.0.180    myapp-app-python-2.myapp-app-python-headless.default.svc.cluster.local
+```
+
 ## Per-Pod Storage Evidence 
 
 ### Different visit counts per pod
 
+```bash
+(devops) fountainer@Veronicas-MacBook-Air DevOps-Core-Course % kubectl port-forward pod/myapp-app-python-0 8080:12345
+Forwarding from 127.0.0.1:8080 -> 12345
+Forwarding from [::1]:8080 -> 12345
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+Handling connection for 8080
+```
+
+```bash
+fountainer@Veronicas-MacBook-Air DevOps-Core-Course %  pyenv shell devops
+(devops) fountainer@Veronicas-MacBook-Air DevOps-Core-Course % kubectl port-forward pod/myapp-app-python-1 8081:12345
+Forwarding from 127.0.0.1:8081 -> 12345
+Forwarding from [::1]:8081 -> 12345
+Handling connection for 8081
+Handling connection for 8081
+Handling connection for 8081
+Handling connection for 8081
+Handling connection for 8081
+```
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air DevOps-Core-Course % kubectl port-forward pod/myapp-app-python-2 8082:12345
+Forwarding from 127.0.0.1:8082 -> 12345
+Forwarding from [::1]:8082 -> 12345
+Handling connection for 8082
+Handling connection for 8082
+Handling connection for 8082
+Handling connection for 8082
+```
+```bash
+(devops) fountainer@Veronicas-MacBook-Air app_python % curl localhost:8080/visits
+{
+  "visits": 13
+}
+(devops) fountainer@Veronicas-MacBook-Air app_python % curl localhost:8081/visits
+{
+  "visits": 7
+}
+(devops) fountainer@Veronicas-MacBook-Air app_python % curl localhost:8082/visits
+{
+  "visits": 2
+}
+```
+
+![](./../docs/screenshots/lab15-shots/visits-diff.png)
+
 ## Persistence Test
 
 ### data survives pod deletion
+
+![](./../docs/screenshots/lab15-shots/pers_test.png)
