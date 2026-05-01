@@ -1,16 +1,17 @@
-{{- if and (eq .Values.workload.type "rollout") (eq .Values.rollout.strategy "blueGreen") }}
+{{- if eq .Values.workload.type "statefulset" }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "python-app.fullname" . }}-preview
+  name: {{ include "python-app.fullname" . }}-headless
   labels:
     {{- include "python-app.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.rollout.blueGreen.previewServiceType }}
+  clusterIP: None
   selector:
     {{- include "python-app.selectorLabels" . | nindent 4 }}
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
 {{- end }}

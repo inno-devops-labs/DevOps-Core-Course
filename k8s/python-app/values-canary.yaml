@@ -2,6 +2,9 @@
 
 replicaCount: 4
 
+workload:
+  type: rollout
+
 service:
   type: NodePort
   port: 80

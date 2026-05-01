@@ -3,6 +3,9 @@
 
 replicaCount: 3
 
+workload:
+  type: statefulset
+
 image:
   repository: aliyasag/devops-info-service
   tag: "latest"
