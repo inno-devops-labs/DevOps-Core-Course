@@ -1,4 +1,6 @@
 test
+!edge-api/test/
+!edge-api/test/**
 *.retry
 .vault_pass
 ansible/inventory/*.pyc
