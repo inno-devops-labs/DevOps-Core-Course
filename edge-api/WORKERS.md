@@ -30,7 +30,7 @@
 
 | Item | Value |
 |------|-------|
-| **Public URL** | `https://edge-api.<your-subdomain>.workers.dev` — replace `<your-subdomain>` after first deploy (`npx wrangler deploy` prints the URL). |
+| **Public URL** | `https://edge-api.carrycsgo787.workers.dev` |
 | **Worker name** | `edge-api` (see `wrangler.jsonc`) |
 
 ### Routes
@@ -65,13 +65,20 @@ Paste or screenshot the following for grading:
 After deploy, run:
 
 ```bash
-curl -sS "https://edge-api.<your-subdomain>.workers.dev/edge"
+curl -sS "https://edge-api.carrycsgo787.workers.dev/edge"
 ```
 
-Paste one real response below (colo/country prove edge metadata):
+Example production response (colo, country, and extra `request.cf` fields; values depend on where the request enters Cloudflare):
 
 ```json
-[PASTE_YOUR_RESPONSE_HERE]
+{
+  "colo": "ARN",
+  "country": "FI",
+  "city": "Helsinki",
+  "asn": 56594,
+  "httpProtocol": "HTTP/2",
+  "tlsVersion": "TLSv1.3"
+}
 ```
 
 ### Logs or metrics
