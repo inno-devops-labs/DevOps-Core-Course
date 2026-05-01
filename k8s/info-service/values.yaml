@@ -69,3 +69,8 @@ persistence:
   enabled: true
   size: 100Mi
   storageClass: ""
+
+statefulset:
+  enabled: false
+  updateStrategy:
+    type: RollingUpdate

@@ -1,15 +1,18 @@
-{{- if and .Values.rollout.enabled (not .Values.statefulset.enabled) }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "info-service.fullname" . }}
   labels:
     {{- include "info-service.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "info-service.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       {{- include "info-service.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
   template:
     metadata:
       labels:
@@ -31,10 +34,8 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
+        - name: data
           mountPath: /data
-        {{- end }}
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 10 }}
         readinessProbe:
@@ -43,23 +44,15 @@ spec:
       - name: config-volume
         configMap:
           name: {{ include "info-service.fullname" . }}-config
-      {{- if .Values.persistence.enabled }}
-      - name: data-volume
-        persistentVolumeClaim:
-          claimName: {{ include "info-service.fullname" . }}-data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      {{- if .Values.persistence.storageClass }}
+      storageClassName: {{ .Values.persistence.storageClass }}
       {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "canary" }}
-    canary:
-      steps:
-        {{- range .Values.rollout.canary.steps }}
-        - {{ toYaml . | nindent 10 | trim }}
-        {{- end }}
-    {{- else if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "info-service.fullname" . }}
-      previewService: {{ include "info-service.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
-    {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size }}
 {{- end }}
