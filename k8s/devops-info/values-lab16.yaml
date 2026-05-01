@@ -1,0 +1,15 @@
+# Lab 16 — StatefulSet + init containers + ServiceMonitor (install kube-prometheus-stack first).
+statefulset:
+  enabled: true
+
+initContainers:
+  enabled: true
+
+serviceMonitor:
+  enabled: true
+  prometheusRelease: monitoring
+
+replicaCount: 3
+
+persistence:
+  enabled: true

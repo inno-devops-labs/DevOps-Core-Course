@@ -110,3 +110,21 @@ statefulset:
     type: RollingUpdate
     rollingUpdate:
       partition: 0
+
+# Lab 16 — init containers (shared emptyDir + wait-for-Service DNS). Enable via values-lab16.yaml.
+initContainers:
+  enabled: false
+  download:
+    image: busybox:1.36
+    url: https://example.com
+    filename: index.html
+  waitForService:
+    image: busybox:1.36
+    host: ""
+
+# Lab 16 bonus — Prometheus Operator scrape config (requires kube-prometheus-stack + CRDs). Must match Helm release name of that stack.
+serviceMonitor:
+  enabled: false
+  prometheusRelease: monitoring
+  interval: 30s
+  scrapeTimeout: 10s

@@ -86,6 +86,46 @@ Canary steps for Rollout (Lab 14): optional web analysis after first canary slic
 {{- end }}
 
 {{/*
+Lab 16: optional DNS host for wait-for-Service init (defaults to this chart's ClusterIP Service).
+*/}}
+{{- define "devops-info.waitForServiceHost" -}}
+{{- if .Values.initContainers.waitForService.host }}
+{{- .Values.initContainers.waitForService.host }}
+{{- else }}
+{{- printf "%s.%s.svc.cluster.local" (include "devops-info.fullname" .) .Release.Namespace }}
+{{- end }}
+{{- end }}
+
+{{/*
+Lab 16: initContainers — wget to shared emptyDir, then wait until Service DNS resolves.
+*/}}
+{{- define "devops-info.initContainers" -}}
+- name: init-download
+  image: {{ .Values.initContainers.download.image | quote }}
+  command:
+    - sh
+    - -c
+    - >-
+      wget -q -O /work-dir/{{ .Values.initContainers.download.filename }}
+      {{ .Values.initContainers.download.url | quote }}
+      && echo "downloaded to /work-dir/{{ .Values.initContainers.download.filename }}"
+  volumeMounts:
+    - name: init-workdir
+      mountPath: /work-dir
+- name: init-wait-service
+  image: {{ .Values.initContainers.waitForService.image | quote }}
+  command:
+    - sh
+    - -c
+    - |
+      set -eu
+      HOST="{{ include "devops-info.waitForServiceHost" . }}"
+      echo "waiting for DNS: ${HOST}"
+      until nslookup "${HOST}" >/dev/null 2>&1; do sleep 2; done
+      echo "DNS ready for ${HOST}"
+{{- end }}
+
+{{/*
 Common environment variables for DRY templates.
 */}}
 {{- define "devops-info.envVars" -}}
