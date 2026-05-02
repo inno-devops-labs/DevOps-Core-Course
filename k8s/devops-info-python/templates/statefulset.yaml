@@ -45,6 +45,38 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if and .Values.initContainers.enabled (or .Values.initContainers.download.enabled .Values.initContainers.waitForService.enabled) }}
+      initContainers:
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image | quote }}
+          command:
+            - sh
+            - -c
+            - wget -O {{ printf "%s/%s" .Values.initContainers.sharedVolume.mountPath .Values.initContainers.download.destinationFile | quote }} {{ .Values.initContainers.download.url | quote }}
+          volumeMounts:
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.mountPath }}
+        {{- end }}
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image | quote }}
+          command:
+            - sh
+            - -c
+            - >
+              i=0;
+              until nslookup {{ .Values.initContainers.waitForService.host | quote }};
+              do
+                i=$((i+{{ .Values.initContainers.waitForService.sleepSeconds }}));
+                if [ "$i" -ge {{ .Values.initContainers.waitForService.timeoutSeconds }} ]; then
+                  echo "timeout waiting for service {{ .Values.initContainers.waitForService.host }}";
+                  exit 1;
+                fi;
+                sleep {{ .Values.initContainers.waitForService.sleepSeconds }};
+              done
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -72,6 +104,10 @@ spec:
               readOnly: true
             - name: data-volume
               mountPath: {{ .Values.app.dataMountPath }}
+            {{- if and .Values.initContainers.enabled (or .Values.initContainers.download.enabled .Values.initContainers.waitForService.enabled) }}
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.mountPath }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -84,6 +120,10 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-python.configMapName" . }}
+        {{- if and .Values.initContainers.enabled (or .Values.initContainers.download.enabled .Values.initContainers.waitForService.enabled) }}
+        - name: {{ .Values.initContainers.sharedVolume.name }}
+          emptyDir: {}
+        {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: data-volume

@@ -1,0 +1,30 @@
+statefulset:
+  enabled: true
+
+service:
+  type: ClusterIP
+
+initContainers:
+  enabled: true
+  sharedVolume:
+    name: init-shared
+    mountPath: /init-data
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: https://example.com
+    destinationFile: index.html
+  waitForService:
+    enabled: true
+    image: busybox:1.36
+    host: kubernetes.default.svc.cluster.local
+    timeoutSeconds: 120
+    sleepSeconds: 2
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+  path: /metrics
