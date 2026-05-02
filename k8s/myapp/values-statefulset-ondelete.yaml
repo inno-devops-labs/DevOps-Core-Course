@@ -1,0 +1,3 @@
+statefulset:
+  updateStrategy:
+    type: OnDelete

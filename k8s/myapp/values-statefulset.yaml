@@ -1,0 +1,17 @@
+replicaCount: 3
+
+image:
+  tag: lab15
+
+service:
+  type: ClusterIP
+
+config:
+  environment: statefulset
+
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0

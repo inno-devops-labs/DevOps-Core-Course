@@ -35,6 +35,7 @@ persistence:
   enabled: true
   mountPath: /data
   fileName: visits
+  accessMode: ReadWriteOnce
   size: 100Mi
   storageClass: ""
 
@@ -50,6 +51,14 @@ vault:
   enabled: false
   role: myapp
   secretPath: secret/data/myapp/config
+
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
 
 rollout:
   enabled: false

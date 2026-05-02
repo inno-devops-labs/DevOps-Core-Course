@@ -1,20 +1,23 @@
-{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "myapp.fullname" . }}
   labels:
     {{- include "myapp.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "myapp.headlessServiceName" . }}
   replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
   selector:
     matchLabels:
       {{- include "myapp.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: RollingUpdate
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if eq .Values.statefulset.updateStrategy.type "RollingUpdate" }}
     rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
+    {{- end }}
   template:
     metadata:
       labels:
@@ -35,11 +38,6 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "myapp.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "myapp.fullname" . }}-data
-        {{- end }}
       {{- if .Values.persistence.enabled }}
       initContainers:
         - name: volume-permissions
@@ -51,7 +49,6 @@ spec:
       {{- end }}
       containers:
         - name: {{ include "myapp.name" . }}
-          # image: zsalavat/devops-info-service-python:latest
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
@@ -64,14 +61,12 @@ spec:
             - name: data-volume
               mountPath: {{ .Values.persistence.mountPath }}
             {{- end }}
-
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 10
             periodSeconds: 5
-
           readinessProbe:
             httpGet:
               path: /health
@@ -90,4 +85,20 @@ spec:
             limits:
               memory: {{ .Values.resources.limits.memory }}
               cpu: {{ .Values.resources.limits.cpu }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+        labels:
+          {{- include "myapp.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+  {{- end }}
 {{- end }}
