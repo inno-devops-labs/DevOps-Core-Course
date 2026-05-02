@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-02",
+
+  // Local/static variables for non-sensitive config.
+  "vars": {
+    "APP_NAME": "DevOps Core Edge API",
+    "ENVIRONMENT": "local"
+  },
+
+  // Best practice: declare required secret names for local validation/type generation.
+  // Values are still created and stored via `wrangler secret put <NAME>`.
+  "secrets": {
+    "required": ["API_TOKEN", "ADMIN_EMAIL"]
+  },
+
+  // Create KV namespaces first, then replace IDs with your real values.
+  // Example:
+  // npx wrangler kv namespace create COUNTER_KV
+  // npx wrangler kv namespace create COUNTER_KV --preview
+  "kv_namespaces": [
+    {
+      "binding": "COUNTER_KV",
+      "id": "ddf1891f7a4a4bd0af1df04da4cd53c3",
+      "preview_id": "f77ad273c5924293a2ea6bc015a271e2"
+    }
+  ]
+}

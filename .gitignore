@@ -10,3 +10,7 @@ __pycache__/
 
 # Lab 7
 monitoring/.env
+
+# Lab 17 (Cloudflare Worker local artifacts)
+edge-api/node_modules/
+edge-api/.wrangler/
