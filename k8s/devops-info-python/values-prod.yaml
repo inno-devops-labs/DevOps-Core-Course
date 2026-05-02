@@ -3,6 +3,9 @@ replicaCount: 2
 app:
   environment: prod
 
+statefulset:
+  enabled: false
+
 persistence:
   # Lab 12 uses a single-writer file-backed counter on an RWO PVC.
   # For the multi-replica prod profile in Lab 13, disable persistence to avoid PVC multi-attach failures.

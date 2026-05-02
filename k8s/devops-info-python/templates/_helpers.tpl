@@ -18,6 +18,15 @@ Validate chart values early so Helm fails before any Pod is created.
 {{- if and .Values.analysis.enabled (not .Values.rollout.enabled) -}}
 {{- fail "analysis.enabled=true requires rollout.enabled=true" -}}
 {{- end -}}
+{{- if and .Values.rollout.enabled .Values.statefulset.enabled -}}
+{{- fail "rollout.enabled=true is incompatible with statefulset.enabled=true; disable one workload mode" -}}
+{{- end -}}
+{{- if and .Values.statefulset.enabled (not .Values.persistence.enabled) -}}
+{{- fail "statefulset.enabled=true requires persistence.enabled=true for per-pod volumeClaimTemplates" -}}
+{{- end -}}
+{{- if and .Values.statefulset.enabled .Values.persistence.existingClaim -}}
+{{- fail "statefulset.enabled=true is incompatible with persistence.existingClaim; StatefulSet uses per-pod volumeClaimTemplates and must not reuse a single PVC" -}}
+{{- end -}}
 {{- if .Values.rollout.enabled -}}
 {{- $rolloutStrategy := required "rollout.strategy must be set when rollout.enabled=true" .Values.rollout.strategy -}}
 {{- if not (has $rolloutStrategy (list "canary" "blueGreen")) -}}

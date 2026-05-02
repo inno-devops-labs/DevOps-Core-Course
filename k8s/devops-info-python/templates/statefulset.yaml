@@ -1,27 +1,32 @@
 {{- include "devops-info-python.validateValues" . -}}
-{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+{{- if and (not .Values.rollout.enabled) .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ printf "%s-headless" (include "common.fullname" .) }}
   replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   minReadySeconds: {{ .Values.minReadySeconds }}
   selector:
     matchLabels:
       {{- include "common.selectorLabels" . | nindent 6 }}
-  strategy:
-    {{- toYaml .Values.strategy | nindent 4 }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if eq .Values.statefulset.updateStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
+    {{- end }}
   template:
     metadata:
       labels:
         {{- include "common.labels" . | nindent 8 }}
       {{- $hasSecretChecksum := and .Values.secret.create (not .Values.secret.existingSecret) }}
       {{- $hasVaultAnnotations := .Values.vault.enabled }}
-      {{- $hasPodAnnotations := gt (len .Values.podAnnotations) 0 }}
       annotations:
         checksum/config-file: {{ include "devops-info-python.renderedConfigFile" . | sha256sum }}
         checksum/config-env: {{ dict "appName" .Values.app.name "environment" .Values.app.environment "appMessage" (printf "Lab 12 release %s in %s" .Release.Name .Values.app.environment) "host" .Values.config.host "port" .Values.config.port "logLevel" .Values.config.logLevel "configFilePath" (include "devops-info-python.configFilePath" .) "visitsFilePath" (include "devops-info-python.visitsFilePath" .) "featureFlags" .Values.featureFlags | toJson | sha256sum }}
@@ -79,11 +84,18 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-python.configMapName" . }}
-        - name: data-volume
-          {{- if .Values.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-python.persistenceClaimName" . }}
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+        labels:
+          {{- include "common.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          {{- toYaml .Values.persistence.accessModes | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- with .Values.persistence.storageClass }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
 {{- end }}

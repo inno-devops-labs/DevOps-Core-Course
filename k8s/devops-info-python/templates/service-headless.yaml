@@ -1,0 +1,17 @@
+{{- if and (not .Values.rollout.enabled) .Values.statefulset.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "%s-headless" (include "common.fullname" .) }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "common.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+{{- end }}

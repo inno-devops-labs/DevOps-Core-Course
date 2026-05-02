@@ -1,5 +1,5 @@
-# Keep a single writer for the Lab 12 file-backed counter on one PVC.
-replicaCount: 1
+# Lab 15: run multiple replicas to demonstrate stable pod identity in StatefulSet.
+replicaCount: 3
 
 nameOverride: ""
 fullnameOverride: ""
@@ -65,6 +65,14 @@ persistence:
   storageClass: ""
   accessModes:
     - ReadWriteOnce
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
 
 containerPort: 3000
 revisionHistoryLimit: 5

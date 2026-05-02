@@ -3,6 +3,9 @@ replicaCount: 5
 app:
   environment: canary
 
+statefulset:
+  enabled: false
+
 persistence:
   enabled: false
 

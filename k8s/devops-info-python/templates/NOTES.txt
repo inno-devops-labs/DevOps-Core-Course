@@ -1,57 +1,38 @@
-1. Check the core Lab 12 resources:
-   kubectl get svc,configmap,pvc -n {{ .Release.Namespace }}
+1. Check core resources:
+   kubectl get po,svc,pvc -n {{ .Release.Namespace }}
+{{- if .Values.statefulset.enabled }}
+   kubectl get sts -n {{ .Release.Namespace }}
+{{- end }}
 {{- if .Values.rollout.enabled }}
    kubectl get rollouts,analysisruns,analysistemplates -n {{ .Release.Namespace }}
-{{- else }}
+{{- end }}
 
-2. Verify the mounted config file:
-   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
-     -c {{ include "common.name" . }} \
-     -- cat {{ include "devops-info-python.configFilePath" . }}
-
-3. Verify the injected environment variables:
-   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
-     -c {{ include "common.name" . }} \
-     -- sh -lc "env | grep -E '^(APP_NAME|APP_ENV|APP_MESSAGE|HOST|PORT|LOG_LEVEL|APP_CONFIG_PATH|VISITS_FILE_PATH|FEATURE_.*)=' | sort"
-
-4. Verify the application endpoints:
+2. Verify endpoints:
    kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "common.fullname" . }} 8080:{{ .Values.service.port }}
-   curl http://127.0.0.1:8080/
    curl http://127.0.0.1:8080/health
-   curl http://127.0.0.1:8080/visits
 
-5. Verify persistent storage survives a pod restart:
-   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
-     -c {{ include "common.name" . }} \
-     -- cat {{ include "devops-info-python.visitsFilePath" . }}
-   kubectl delete pod -n {{ .Release.Namespace }} $(kubectl get pod -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }} -o jsonpath='{.items[0].metadata.name}')
+{{- if and (not .Values.rollout.enabled) .Values.statefulset.enabled }}
+3. Verify StatefulSet DNS identity:
+   kubectl exec -n {{ .Release.Namespace }} {{ include "common.fullname" . }}-0 -- nslookup {{ include "common.fullname" . }}-1.{{ include "common.fullname" . }}-headless
+
+4. Verify per-pod storage isolation:
+   kubectl port-forward -n {{ .Release.Namespace }} pod/{{ include "common.fullname" . }}-0 8081:{{ .Values.containerPort }}
+   kubectl port-forward -n {{ .Release.Namespace }} pod/{{ include "common.fullname" . }}-1 8082:{{ .Values.containerPort }}
+   curl http://127.0.0.1:8081/visits
+   curl http://127.0.0.1:8082/visits
+
+5. Verify persistence after pod recreation:
+   kubectl exec -n {{ .Release.Namespace }} {{ include "common.fullname" . }}-0 -- cat {{ include "devops-info-python.visitsFilePath" . }}
+   kubectl delete pod -n {{ .Release.Namespace }} {{ include "common.fullname" . }}-0
+   kubectl rollout status statefulset/{{ include "common.fullname" . }} -n {{ .Release.Namespace }} --timeout=180s
+   kubectl exec -n {{ .Release.Namespace }} {{ include "common.fullname" . }}-0 -- cat {{ include "devops-info-python.visitsFilePath" . }}
+{{- end }}
+{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+3. Verify Deployment workload:
    kubectl rollout status deployment/{{ include "common.fullname" . }} -n {{ .Release.Namespace }} --timeout=180s
-   kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "common.fullname" . }} \
-     -c {{ include "common.name" . }} \
-     -- cat {{ include "devops-info-python.visitsFilePath" . }}
-
-6. Trigger a rollout when ConfigMap values change through Helm:
-   helm upgrade {{ .Release.Name }} <same-chart-reference> -n {{ .Release.Namespace }} --reuse-values --set config.logLevel=INFO
-   kubectl rollout status deployment/{{ include "common.fullname" . }} -n {{ .Release.Namespace }}
 {{- end }}
 {{- if .Values.rollout.enabled }}
-
-2. Verify the active service endpoint:
-   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "common.fullname" . }} 8080:{{ .Values.service.port }}
-   curl http://127.0.0.1:8080/health
-
-3. Watch and control the Argo Rollout:
+3. Watch and control Argo Rollout:
    kubectl argo rollouts get rollout {{ include "common.fullname" . }} -n {{ .Release.Namespace }} -w
    kubectl argo rollouts promote {{ include "common.fullname" . }} -n {{ .Release.Namespace }}
-   kubectl argo rollouts abort {{ include "common.fullname" . }} -n {{ .Release.Namespace }}
-
-4. Trigger a progressive delivery update:
-   helm upgrade {{ .Release.Name }} <same-chart-reference> -n {{ .Release.Namespace }} --reuse-values --set config.logLevel=DEBUG
-   kubectl argo rollouts get rollout {{ include "common.fullname" . }} -n {{ .Release.Namespace }}
-{{- if eq .Values.rollout.strategy "blueGreen" }}
-
-5. Test the blue-green preview service before promotion:
-   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "devops-info-python.previewServiceName" . }} 8081:{{ .Values.previewService.port }}
-   curl http://127.0.0.1:8081/health
-{{- end }}
 {{- end }}

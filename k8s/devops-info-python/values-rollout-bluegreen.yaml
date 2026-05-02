@@ -3,6 +3,9 @@ replicaCount: 2
 app:
   environment: blue-green
 
+statefulset:
+  enabled: false
+
 persistence:
   enabled: false
 
