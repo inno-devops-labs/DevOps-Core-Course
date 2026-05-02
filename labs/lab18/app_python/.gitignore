@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+env/
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Test / coverage
+.coverage
+htmlcov/
