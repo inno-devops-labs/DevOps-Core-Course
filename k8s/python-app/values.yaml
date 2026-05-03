@@ -76,6 +76,17 @@ strategy:
 
 containerPort: 5000
 
+statefulset:
+  enabled: false
+  storageSize: 100Mi
+  accessMode: ReadWriteOnce
+  storageClass: ""
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
 rollout:
   enabled: false
   strategy: canary

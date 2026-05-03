@@ -1,0 +1,18 @@
+{{- if .Values.statefulset.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "python-app.fullname" . }}-headless
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    {{- include "python-app.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.service.targetPort }}
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}

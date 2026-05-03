@@ -1,0 +1,19 @@
+replicaCount: 3
+
+statefulset:
+  enabled: true
+  storageSize: 100Mi
+  accessMode: ReadWriteOnce
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+
+persistence:
+  enabled: false
