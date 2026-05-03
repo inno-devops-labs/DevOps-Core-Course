@@ -28,6 +28,35 @@ spec:
         checksum/config-env: {{ include (print $.Template.BasePath "/configmap-env.yaml") . | sha256sum }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name | default "default" }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image }}
+          command:
+            - sh
+            - -c
+            - |
+              until nslookup {{ .Values.initContainers.waitForService.host }}; do
+                echo "Waiting for {{ .Values.initContainers.waitForService.host }}..."
+                sleep 2
+              done
+              echo "{{ .Values.initContainers.waitForService.host }} is available"
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image }}
+          command:
+            - sh
+            - -c
+            - |
+              wget -O {{ .Values.initContainers.sharedVolume.initMountPath }}/{{ .Values.initContainers.download.outputFile }} {{ .Values.initContainers.download.url }}
+              ls -l {{ .Values.initContainers.sharedVolume.initMountPath }}
+          volumeMounts:
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.initMountPath }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -53,6 +82,10 @@ spec:
             {{- if .Values.persistence.enabled }}
             - name: data-volume
               mountPath: /data
+            {{- end }}
+            {{- if .Values.initContainers.enabled }}
+            - name: {{ .Values.initContainers.sharedVolume.name }}
+              mountPath: {{ .Values.initContainers.sharedVolume.appMountPath }}
             {{- end }}
           resources:
             requests:
@@ -82,6 +115,10 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-chart.fullname" . }}-config
+        {{- if .Values.initContainers.enabled }}
+        - name: {{ .Values.initContainers.sharedVolume.name }}
+          emptyDir: {}
+        {{- end }}
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:

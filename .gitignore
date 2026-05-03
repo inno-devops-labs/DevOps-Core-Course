@@ -37,5 +37,6 @@ ansible/inventory/*.pyc
 .argocd-screenshot.js
 .edge-argocd-profile/
 .npm-cache/
+.helm-local*/
 .chrome-test*/
 .edge-test/

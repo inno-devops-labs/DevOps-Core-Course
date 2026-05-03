@@ -4,6 +4,7 @@ metadata:
   name: {{ include "common.fullname" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app-service
 spec:
   type: {{ .Values.service.type }}
   selector:
