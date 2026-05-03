@@ -1,0 +1,20 @@
+# StatefulSet deployment strategy override.
+# Each replica gets a stable name and its own PVC.
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+rollout:
+  enabled: false
+
+replicaCount: 3
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  visitsFile: "/data/visits"

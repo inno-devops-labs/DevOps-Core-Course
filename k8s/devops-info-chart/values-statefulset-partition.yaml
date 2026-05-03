@@ -1,0 +1,11 @@
+# Bonus: partitioned StatefulSet rolling update.
+# With partition: 2 and replicaCount: 3, only pod ordinal 2 updates.
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2
+
+rollout:
+  enabled: false

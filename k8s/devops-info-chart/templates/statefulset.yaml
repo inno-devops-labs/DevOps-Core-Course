@@ -1,15 +1,23 @@
-{{- if and .Values.rollout.enabled (not .Values.statefulset.enabled) }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "common.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
   selector:
     matchLabels:
       {{- include "common.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if eq .Values.statefulset.updateStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
+    {{- end }}
   template:
     metadata:
       labels:
@@ -74,36 +82,20 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-chart.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-chart.fullname" . }}-data
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+        labels:
+          {{- include "common.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
         {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "canary" }}
-    canary:
-      steps:
-        - setWeight: 20
-        - pause: {}
-        {{- if and .Values.rollout.analysis.enabled }}
-        - analysis:
-            templates:
-              - templateName: {{ include "devops-info-chart.fullname" . }}-success-rate
-        {{- end }}
-        - setWeight: 40
-        - pause: {duration: 30s}
-        - setWeight: 60
-        - pause: {duration: 30s}
-        - setWeight: 80
-        - pause: {duration: 30s}
-        - setWeight: 100
-    {{- else if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "common.fullname" . }}
-      previewService: {{ include "common.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
-      {{- end }}
-    {{- end }}
+  {{- end }}
 {{- end }}

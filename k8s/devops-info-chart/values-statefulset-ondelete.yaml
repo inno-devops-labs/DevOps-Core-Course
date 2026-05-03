@@ -1,0 +1,9 @@
+# Bonus: OnDelete update strategy.
+# Pods keep the old template until they are deleted manually.
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: OnDelete
+
+rollout:
+  enabled: false

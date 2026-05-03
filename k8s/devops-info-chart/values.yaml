@@ -89,6 +89,16 @@ persistence:
   storageClass: ""       # empty string = use cluster default
   visitsFile: "/data/visits"
 
+# StatefulSet mode - use for workloads that need stable pod identities and
+# separate persistent storage per replica.
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate   # RollingUpdate | OnDelete
+    rollingUpdate:
+      partition: 0
+
 # Argo Rollouts — progressive delivery (replaces Deployment when enabled)
 rollout:
   enabled: false
