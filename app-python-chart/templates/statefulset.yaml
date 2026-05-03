@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app-python-chart.fullname" . }}
+  labels:
+    {{- include "app-python-chart.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "app-python-chart.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+
+  selector:
+    matchLabels:
+      {{- include "app-python-chart.selectorLabels" . | nindent 6 }}
+
+  template:
+    metadata:
+      labels:
+        {{- include "app-python-chart.selectorLabels" . | nindent 8 }}
+
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          envFrom:
+            - secretRef:
+                name: {{ include "app-python-chart.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "app-python-chart.fullname" . }}-env
+
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+
+          volumeMounts:
+            - name: data
+              mountPath: /data
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
