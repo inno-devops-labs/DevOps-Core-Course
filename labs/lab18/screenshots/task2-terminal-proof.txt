@@ -1,0 +1,16 @@
+$ docker ps --format "table {{.Names}}	{{.Image}}	{{.Ports}}"
+NAMES                       IMAGE                           PORTS
+optimistic_kalam            nixos/nix:2.24.8                
+nix-container               devops-info-service-nix:1.1.0   0.0.0.0:18081->5000/tcp, [::]:18081->5000/tcp
+lab2-container              lab2-app:final                  0.0.0.0:18080->3000/tcp, [::]:18080->3000/tcp
+lab2-audit                  lab2-app:test1                  0.0.0.0:5010->3000/tcp, [::]:5010->3000/tcp
+lab11-nginx-1               nginx:stable-alpine             0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp, 0.0.0.0:8443->8443/tcp, [::]:8443->8443/tcp
+lab11-juice-1               bkimminich/juice-shop:v19.0.0   3000/tcp
+lab08-registry              registry:3                      0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+
+$ curl -s http://localhost:18080/health
+{"status":"healthy","timestamp":"2026-05-02T12:11:40.203425+00:00","uptime_seconds":112}
+
+$ curl -s http://localhost:18081/health
+{"status":"healthy","timestamp":"2026-05-02T12:11:40.396144+00:00","uptime_seconds":112}
+

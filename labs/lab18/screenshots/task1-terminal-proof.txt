@@ -1,0 +1,5 @@
+$ cd labs/lab18/app_python
+$ nix build .#default
+$ PORT=5055 ./result/bin/devops-info-service
+$ curl http://localhost:5055/health
+{"status":"healthy","timestamp":"2026-05-02T11:18:41.732741+00:00","uptime_seconds":1}
