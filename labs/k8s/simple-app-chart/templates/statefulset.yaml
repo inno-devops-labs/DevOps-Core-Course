@@ -35,7 +35,7 @@ spec:
             - -c
             - |
               echo "Waiting for headless service to be resolvable..."
-              until nslookup {{ include "simple-app.fullname" . }}-headless; do
+              until nslookup {{ include "simple-app.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local; do
                 echo "Not yet, sleeping..."
                 sleep 2
               done
