@@ -540,19 +540,160 @@
             color: var(--accent-tertiary);
         }
 
-        /* Responsive */
+        /* Hamburger Menu */
+        .nav-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 44px;
+            height: 44px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            gap: 5px;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-toggle span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--text-primary);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            transform-origin: center;
+        }
+
+        .nav-toggle.active span:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .nav-toggle.active span:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        .nav-toggle.active span:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 65px;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 15, 0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+            z-index: 999;
+            transform: translateY(-10px);
+            opacity: 0;
+            transition: all 0.25s ease;
+        }
+
+        .mobile-menu.active {
+            display: block;
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .mobile-menu ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .mobile-menu a {
+            display: block;
+            padding: 0.875rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.2s ease, background 0.2s ease;
+            min-height: 44px;
+        }
+
+        .mobile-menu a:active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        /* ── 768px ── */
         @media (max-width: 768px) {
+            .container {
+                padding: 0 1.25rem;
+            }
+
+            nav {
+                padding: 0.875rem 1.25rem;
+            }
+
             .nav-links {
                 display: none;
             }
 
+            .nav-toggle {
+                display: flex;
+            }
+
+            section {
+                padding: 4rem 0;
+            }
+
+            .hero {
+                padding-top: 70px;
+                min-height: calc(100svh - 0px);
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .hero-buttons .btn {
+                width: 100%;
+                max-width: 320px;
+                justify-content: center;
+            }
+
             .stats {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+                padding: 3rem 0;
+                margin: 3rem 0;
+            }
+
+            .section-header {
+                margin-bottom: 2.5rem;
+            }
+
+            .section-header h2 {
+                font-size: 2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 1.25rem;
+            }
+
+            .labs-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
             }
 
             .phase {
                 grid-template-columns: 1fr;
                 text-align: center;
+                gap: 1.25rem;
+                padding: 1.5rem;
             }
 
             .phase-number {
@@ -564,13 +705,129 @@
             }
 
             .cta {
-                padding: 2rem;
+                padding: 2rem 1.5rem;
+                border-radius: 16px;
+            }
+
+            .cta h2 {
+                font-size: 1.5rem;
+            }
+
+            .cta .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .footer-links {
+                flex-wrap: wrap;
+                gap: 1rem;
             }
 
             .deployed-badge {
                 bottom: 1rem;
                 right: 1rem;
                 left: 1rem;
+                justify-content: center;
+            }
+        }
+
+        /* ── 480px ── */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .hero-badge {
+                font-size: 0.78rem;
+                padding: 0.4rem 0.75rem;
+                text-align: center;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+
+            .section-header h2 {
+                font-size: 1.75rem;
+            }
+
+            .feature-card {
+                padding: 1.5rem;
+            }
+
+            .lab-card {
+                padding: 1.25rem;
+            }
+
+            .phase-number {
+                width: 64px;
+                height: 64px;
+            }
+
+            .phase-number strong {
+                font-size: 1.4rem;
+            }
+
+            .cta {
+                padding: 1.75rem 1rem;
+            }
+
+            footer {
+                padding: 2rem 0;
+            }
+        }
+
+        /* ── 360px ── */
+        @media (max-width: 360px) {
+            .stats {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
+            }
+
+            .hero-badge {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .btn {
+                padding: 0.75rem 1.25rem;
+                font-size: 0.95rem;
+            }
+        }
+
+        /* Touch: ensure min 44px targets */
+        @media (hover: none) and (pointer: coarse) {
+            .btn {
+                min-height: 44px;
+            }
+
+            .nav-links a {
+                padding: 0.5rem 0;
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+            }
+
+            .feature-card:hover,
+            .lab-card:hover {
+                transform: none;
+            }
+
+            .btn-primary:hover {
+                transform: none;
             }
         }
     </style>
@@ -585,8 +842,22 @@
                 <li><a href="#roadmap">Roadmap</a></li>
                 <li><a href="https://github.com/inno-devops-labs/S25-core-course-labs">GitHub</a></li>
             </ul>
+            <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </nav>
     </header>
+
+    <nav class="mobile-menu" id="mobileMenu" aria-hidden="true">
+        <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#labs">Labs</a></li>
+            <li><a href="#roadmap">Roadmap</a></li>
+            <li><a href="https://github.com/inno-devops-labs/S25-core-course-labs">GitHub</a></li>
+        </ul>
+    </nav>
 
     <main>
         <section class="hero">
@@ -923,5 +1194,45 @@
             <strong>IPFS via 4EVERLAND</strong>
         </div>
     </div>
+
+    <script>
+        (function () {
+            const toggle = document.querySelector('.nav-toggle');
+            const menu = document.getElementById('mobileMenu');
+
+            function closeMenu() {
+                toggle.classList.remove('active');
+                toggle.setAttribute('aria-expanded', 'false');
+                menu.classList.remove('active');
+                menu.setAttribute('aria-hidden', 'true');
+            }
+
+            toggle.addEventListener('click', function () {
+                const open = menu.classList.contains('active');
+                if (open) {
+                    closeMenu();
+                } else {
+                    toggle.classList.add('active');
+                    toggle.setAttribute('aria-expanded', 'true');
+                    menu.classList.add('active');
+                    menu.setAttribute('aria-hidden', 'false');
+                }
+            });
+
+            menu.querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', closeMenu);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!toggle.contains(e.target) && !menu.contains(e.target)) {
+                    closeMenu();
+                }
+            });
+
+            window.addEventListener('resize', function () {
+                if (window.innerWidth > 768) closeMenu();
+            });
+        })();
+    </script>
 </body>
 </html>

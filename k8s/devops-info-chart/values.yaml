@@ -88,3 +88,13 @@ persistence:
   size: 100Mi
   storageClass: ""       # empty string = use cluster default
   visitsFile: "/data/visits"
+
+# Argo Rollouts — progressive delivery (replaces Deployment when enabled)
+rollout:
+  enabled: false
+  strategy: canary   # canary | blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+  analysis:
+    enabled: false

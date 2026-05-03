@@ -28,6 +28,7 @@ venv/
 ansible/inventory/*.pyc
 
 # Local Kubernetes tooling
+/kubectl-argo-rollouts.exe
 .minikube-home/
 .kube/
 .minikube-docker-home/

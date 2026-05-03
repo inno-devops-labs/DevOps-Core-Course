@@ -1,3 +1,4 @@
+{{- if not .Values.rollout.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -87,3 +88,4 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "devops-info-chart.fullname" . }}-data
         {{- end }}
+{{- end }}

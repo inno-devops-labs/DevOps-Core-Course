@@ -1,0 +1,4 @@
+# Canary deployment strategy override
+rollout:
+  enabled: true
+  strategy: canary

@@ -1,0 +1,7 @@
+# Blue-green deployment strategy override
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null

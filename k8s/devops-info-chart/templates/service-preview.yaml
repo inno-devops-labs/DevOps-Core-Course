@@ -1,0 +1,18 @@
+{{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "blueGreen") }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.fullname" . }}-preview
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+    app.kubernetes.io/component: preview
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "common.selectorLabels" . | nindent 4 }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      name: http
+{{- end }}
