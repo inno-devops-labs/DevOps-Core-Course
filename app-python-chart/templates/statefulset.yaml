@@ -18,6 +18,16 @@ spec:
         {{- include "app-python-chart.selectorLabels" . | nindent 8 }}
 
     spec:
+      initContainers:
+        - name: wait-for-headless-service
+          image: busybox:1.28
+          command: ['sh', '-c', 'until nslookup {{ include "app-python-chart.fullname" . }}-headless; do echo waiting for headless service; sleep 2; done']
+        - name: init-myservice
+          image: busybox:1.28
+          command: ['sh', '-c', 'echo "Hello from init container" > /data/init.txt']
+          volumeMounts:
+            - name: data
+              mountPath: /data
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
