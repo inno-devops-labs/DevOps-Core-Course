@@ -1,0 +1,10 @@
+{
+  "app_name": "devops-info-service",
+  "environment": "dev",
+  "description": "DevOps course info service",
+  "features": {
+    "health": true,
+    "metrics": true,
+    "visits_counter": true
+  }
+}

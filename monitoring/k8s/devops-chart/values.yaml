@@ -181,5 +181,5 @@ tolerations: []
 affinity: {}
 
 secret:
-  username: "admin"
-  password: "123890"
+  username: ""
+  password: ""

@@ -1,0 +1,25 @@
+replicaCount: 3
+
+image:
+  repository: hiksol/devops-info-service
+  pullPolicy: IfNotPresent
+  tag: latest
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+
+headlessService:
+  port: 5000
+
+persistence:
+  size: 100Mi
+  accessMode: ReadWriteOnce
+  storageClass: ""
+  mountPath: /data
+  visitsFile: /data/visits
+
+secret:
+  username: ""
+  password: ""
