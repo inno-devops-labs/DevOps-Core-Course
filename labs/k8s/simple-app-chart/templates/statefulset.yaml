@@ -15,6 +15,31 @@ spec:
       labels:
         {{- include "simple-app.selectorLabels" . | nindent 8 }}
     spec:
+      initContainers:
+        - name: init-download
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Downloading file..."
+              wget -O /work-dir/index.html https://example.com
+              echo "Done: $(cat /work-dir/index.html | head -c 100)..."
+          volumeMounts:
+            - name: shared-data
+              mountPath: /work-dir
+        - name: wait-for-headless
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for headless service to be resolvable..."
+              until nslookup {{ include "simple-app.fullname" . }}-headless; do
+                echo "Not yet, sleeping..."
+                sleep 2
+              done
+              echo "Headless service is ready!"
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -34,6 +59,11 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: shared-data
+              mountPath: /shared 
+      volumes:
+        - name: shared-data
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: data
