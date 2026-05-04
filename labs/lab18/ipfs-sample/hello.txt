@@ -1,0 +1,4 @@
+Hello IPFS from DevOps Core Course Lab 18.
+
+This file is used to test content addressing, local IPFS add, gateway access,
+and 4EVERLAND Bucket pinning.

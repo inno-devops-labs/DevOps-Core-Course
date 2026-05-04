@@ -1,0 +1,11 @@
+{
+  "course": "DevOps Core Course",
+  "lab": 18,
+  "topic": "Decentralized Hosting with 4EVERLAND and IPFS",
+  "deployment": "IPFS",
+  "gatewayExamples": [
+    "https://ipfs.4everland.io/ipfs/<CID>",
+    "https://ipfs.io/ipfs/<CID>",
+    "https://dweb.link/ipfs/<CID>"
+  ]
+}

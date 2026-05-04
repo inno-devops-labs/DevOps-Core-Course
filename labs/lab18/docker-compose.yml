@@ -1,0 +1,16 @@
+services:
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: lab18-ipfs
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+      - "8080:8080"
+      - "5001:5001"
+    volumes:
+      - ipfs-export:/export
+      - ipfs-data:/data/ipfs
+
+volumes:
+  ipfs-export:
+  ipfs-data:
