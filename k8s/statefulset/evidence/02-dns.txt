@@ -1,0 +1,4 @@
+=== DNS Resolution ===
+devops-info-sts-0 -> 10.244.0.118
+devops-info-sts-1 -> 10.244.0.119
+devops-info-sts-2 -> 10.244.0.115
