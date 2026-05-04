@@ -60,3 +60,17 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Common application environment variables (named template — DRY principle).
+*/}}
+{{- define "devops-info.commonEnv" -}}
+- name: PORT
+  value: "5000"
+- name: HOST
+  value: "0.0.0.0"
+- name: CHART_NAME
+  value: {{ .Chart.Name | quote }}
+- name: CHART_VERSION
+  value: {{ .Chart.Version | quote }}
+{{- end }}
