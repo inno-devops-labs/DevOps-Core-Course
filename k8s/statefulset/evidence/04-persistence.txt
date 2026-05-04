@@ -1,0 +1,7 @@
+=== Persistence Test ===
+Pod 0 visits before deletion: {"visits":5}
+pod "devops-info-sts-0" deleted
+
+--- After restart ---
+Pod 0 visits after restart: 5
+Data preserved — PVC data-devops-info-sts-0 reattached automatically

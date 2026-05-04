@@ -68,3 +68,10 @@ rollout:
   strategy: "canary"
   analysis:
     enabled: false
+
+statefulset:
+  enabled: false
+  storageSize: "50Mi"
+  storageClass: ""
+  updateStrategy:
+    type: RollingUpdate

@@ -1,0 +1,4 @@
+=== Per-pod visit counts ===
+Pod 0: {"visits":5} (after 5 hits to pod 0)
+Pod 1: 3 visits (was 3 before, pod-0 hits do not affect it)
+Pod 2: 3 visits
