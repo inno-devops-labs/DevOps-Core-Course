@@ -1,0 +1,20 @@
+=== Rollout history ===
+deployment.apps/devops-info 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+3         <none>
+
+
+=== Get pods ===
+NAME                           READY   STATUS        RESTARTS   AGE
+devops-info-688d78468c-6d72g   1/1     Running       0          35s
+devops-info-688d78468c-pb9jc   1/1     Running       0          14s
+devops-info-688d78468c-rnxgh   1/1     Running       0          28s
+devops-info-688d78468c-rs9kd   1/1     Running       0          7s
+devops-info-688d78468c-zx7sd   1/1     Running       0          21s
+devops-info-68bb99f9df-64x4p   1/1     Terminating   0          67s
+devops-info-68bb99f9df-nhfq8   1/1     Terminating   0          80s
+devops-info-68bb99f9df-q9gbz   1/1     Terminating   0          42s
+devops-info-68bb99f9df-qz9cb   1/1     Terminating   0          42s
+devops-info-68bb99f9df-xp4zk   1/1     Terminating   0          74s
