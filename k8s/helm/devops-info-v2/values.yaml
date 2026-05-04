@@ -1,0 +1,35 @@
+replicaCount: 2
+
+image:
+  repository: merkulovlr05/devops-info
+  tag: "v1"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+env:
+  - name: PORT
+    value: "5000"
+  - name: APP_VARIANT
+    value: "v2"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "96Mi"
+  limits:
+    cpu: "200m"
+    memory: "192Mi"
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 3
+  periodSeconds: 5

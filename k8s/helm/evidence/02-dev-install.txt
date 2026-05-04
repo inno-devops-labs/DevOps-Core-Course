@@ -1,0 +1,48 @@
+=== helm list ===
+NAME           	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
+devops-info-dev	default  	1       	2026-05-04 14:54:12.793751 +0300 MSK	deployed	devops-info-0.1.0	1.0.0      
+
+=== kubectl get all ===
+NAME                                  READY   STATUS    RESTARTS   AGE
+pod/devops-info-dev-69664cfd9-5hrtb   1/1     Running   0          19s
+
+NAME                      TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+service/devops-info-dev   NodePort   10.100.191.212   <none>        80:30081/TCP   20s
+
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/devops-info-dev   1/1     1            1           20s
+
+NAME                                        DESIRED   CURRENT   READY   AGE
+replicaset.apps/devops-info-dev-69664cfd9   1         1         1       20s
+
+=== helm get values devops-info-dev ===
+USER-SUPPLIED VALUES:
+image:
+  tag: latest
+livenessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 15
+  timeoutSeconds: 3
+readinessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 2
+  periodSeconds: 10
+  timeoutSeconds: 2
+replicaCount: 1
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 25m
+    memory: 64Mi
+service:
+  nodePort: 30081
+  type: NodePort
