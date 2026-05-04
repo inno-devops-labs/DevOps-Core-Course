@@ -1,5 +1,6 @@
 """DevOps Info Service - A Flask web application for Lab 01."""
 
+import fcntl
 import json
 import logging
 import os
@@ -17,6 +18,33 @@ START_TIME = time.time()
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
+
+VISITS_FILE = os.environ.get("VISITS_FILE", "/data/visits")
+
+
+def _read_visits() -> int:
+    try:
+        with open(VISITS_FILE) as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def _increment_visits() -> int:
+    os.makedirs(os.path.dirname(VISITS_FILE), exist_ok=True)
+    with open(VISITS_FILE, "a+") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.seek(0)
+        try:
+            count = int(f.read().strip())
+        except ValueError:
+            count = 0
+        count += 1
+        f.seek(0)
+        f.truncate()
+        f.write(str(count))
+        fcntl.flock(f, fcntl.LOCK_UN)
+    return count
 
 
 class JSONFormatter(logging.Formatter):
@@ -92,10 +120,18 @@ def index():
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service info and metadata"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Visit counter"},
         ],
+        "visits": _increment_visits(),
     }
 
     return jsonify(response)
+
+
+@app.route("/visits")
+def visits():
+    """Return the current visit count."""
+    return jsonify({"visits": _read_visits()}), 200
 
 
 @app.route("/health")

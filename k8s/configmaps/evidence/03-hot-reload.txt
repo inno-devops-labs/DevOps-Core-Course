@@ -1,0 +1,7 @@
+=== APP_ENV after upgrade to production ===
+production
+
+=== subPath behavior ===
+env vars from configmapRef DO NOT auto-update in running pods.
+The checksum/config annotation on pod template forces pod restart when ConfigMap changes.
+Volumes (dir mounts, not subPath) would update automatically with ~1-2 min kubelet delay.

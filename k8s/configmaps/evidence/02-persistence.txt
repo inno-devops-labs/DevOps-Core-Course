@@ -1,0 +1,6 @@
+=== Visits before pod deletion: 3 ===
+Deleting pod devops-info-7f6955c96f-mfx45...
+pod "devops-info-7f6955c96f-mfx45" deleted from default namespace
+deployment "devops-info" successfully rolled out
+=== Visits after new pod started (devops-info-7f6955c96f-mlxpp): 3 ===
+Persistence verified: 3 → 3 (should be >= 3)

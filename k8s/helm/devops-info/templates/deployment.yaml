@@ -18,6 +18,8 @@ spec:
     metadata:
       labels:
         {{- include "devops-info.labels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
@@ -32,9 +34,27 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "devops-info.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "devops-info.fullname" . }}-env
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: /data
+            {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info.fullname" . }}-data
+        {{- end }}

@@ -1,0 +1,29 @@
+=== kubectl get configmap,pvc ===
+NAME                           DATA   AGE
+configmap/devops-info-config   1      51s
+configmap/devops-info-env      3      51s
+configmap/kube-root-ca.crt     1      66m
+
+NAME                                     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/devops-info-data   Bound    pvc-4e00079d-476a-4ffb-a290-bee5aa0647d5   100Mi      RWO            standard       <unset>                 51s
+
+=== config.json in pod ===
+{
+  "app_name": "DevOps Info Service",
+  "environment": "development",
+  "version": "1.0.0",
+  "features": {
+    "visits_counter": true,
+    "structured_logging": true,
+    "health_endpoint": true
+  },
+  "server": {
+    "port": 5000,
+    "host": "0.0.0.0",
+    "debug": false
+  }
+}
+=== env vars from configmap ===
+APP_ENV=development
+LOG_LEVEL=INFO
+VISITS_FILE=/data/visits
