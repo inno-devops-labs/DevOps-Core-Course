@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 {{- if and .Values.persistence.enabled (ne .Values.workload.type "statefulset") }}
+=======
+{{- if and .Values.persistence.enabled (not .Values.statefulset.enabled) }}
+>>>>>>> Stashed changes
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 {{- if eq .Values.workload.type "deployment" }}
+=======
+{{- if and .Values.deployment.enabled (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+>>>>>>> Stashed changes
 apiVersion: apps/v1
 kind: Deployment
 metadata:

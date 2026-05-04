@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 {{- if eq .Values.workload.type "statefulset" }}
+=======
+{{- if .Values.statefulset.enabled }}
+>>>>>>> Stashed changes
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -55,6 +59,10 @@ spec:
           {{- end }}
           env:
             {{- toYaml .Values.container.env | nindent 12 }}
+<<<<<<< Updated upstream
+=======
+          {{- if or .Values.configMaps.file.enabled .Values.persistence.enabled }}
+>>>>>>> Stashed changes
           volumeMounts:
             {{- if .Values.configMaps.file.enabled }}
             - name: config-volume
@@ -62,12 +70,19 @@ spec:
               readOnly: true
             {{- end }}
             {{- if .Values.persistence.enabled }}
+<<<<<<< Updated upstream
             - name: data
               mountPath: {{ .Values.persistence.mountPath }}
             {{- else }}
             - name: data
               mountPath: {{ .Values.persistence.mountPath }}
             {{- end }}
+=======
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+          {{- end }}
+>>>>>>> Stashed changes
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -80,6 +95,7 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+<<<<<<< Updated upstream
       volumes:
         {{- if .Values.configMaps.file.enabled }}
         - name: config-volume
@@ -94,6 +110,18 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
+=======
+      {{- if .Values.configMaps.file.enabled }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-info.configFileMapName" . }}
+      {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+>>>>>>> Stashed changes
         labels:
           {{- include "devops-info.labels" . | nindent 10 }}
       spec:

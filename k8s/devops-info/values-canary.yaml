@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 workload:
   type: rollout
+=======
+statefulset:
+  enabled: false
+>>>>>>> Stashed changes
 
 rollout:
   strategy: canary

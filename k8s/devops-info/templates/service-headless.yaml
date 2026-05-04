@@ -1,12 +1,23 @@
+<<<<<<< Updated upstream
 {{- if and (eq .Values.workload.type "statefulset") .Values.headlessService.enabled }}
+=======
+{{- if .Values.statefulset.enabled }}
+>>>>>>> Stashed changes
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "devops-info.headlessServiceName" . }}
   labels:
     {{- include "devops-info.labels" . | nindent 4 }}
+<<<<<<< Updated upstream
 spec:
   clusterIP: None
+=======
+    app.kubernetes.io/service-role: headless
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: {{ .Values.statefulset.headlessService.publishNotReadyAddresses }}
+>>>>>>> Stashed changes
   ports:
     - name: http
       port: {{ .Values.service.port }}

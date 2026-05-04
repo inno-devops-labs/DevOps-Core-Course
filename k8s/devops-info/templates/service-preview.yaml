@@ -1,4 +1,8 @@
+<<<<<<< Updated upstream
 {{- if and (eq .Values.workload.type "rollout") (eq .Values.rollout.strategy "blueGreen") .Values.service.preview.enabled }}
+=======
+{{- if and .Values.rollout.enabled (not .Values.statefulset.enabled) (eq .Values.rollout.strategy "blueGreen") .Values.rollout.blueGreen.previewService.enabled }}
+>>>>>>> Stashed changes
 apiVersion: v1
 kind: Service
 metadata:

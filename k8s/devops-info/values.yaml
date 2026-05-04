@@ -55,7 +55,21 @@ deployment:
       maxSurge: 1
       maxUnavailable: 0
 
+<<<<<<< Updated upstream
 rollout:
+=======
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  headlessService:
+    publishNotReadyAddresses: true
+
+rollout:
+  enabled: false
+  revisionHistoryLimit: 5
+>>>>>>> Stashed changes
   strategy: canary
   canary:
     steps:

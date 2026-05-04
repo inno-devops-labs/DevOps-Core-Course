@@ -100,7 +100,18 @@ PVC resource name
 {{- end }}
 
 {{/*
+<<<<<<< Updated upstream
 Preview service name (blue-green rollouts)
+=======
+Headless service name for StatefulSet pod identity
+*/}}
+{{- define "devops-info.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-info.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+Preview service name for blue-green rollouts
+>>>>>>> Stashed changes
 */}}
 {{- define "devops-info.previewServiceName" -}}
 {{- printf "%s-%s" (include "devops-info.fullname" .) .Values.service.preview.suffix | trunc 63 | trimSuffix "-" }}
