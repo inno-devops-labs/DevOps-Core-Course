@@ -62,3 +62,9 @@ persistence:
   enabled: true
   size: "100Mi"
   storageClass: ""
+
+rollout:
+  enabled: false
+  strategy: "canary"
+  analysis:
+    enabled: false

@@ -1,0 +1,29 @@
+Name:            devops-info-canary
+Namespace:       rollout-test
+Status:          [31m✖[0m Degraded
+Message:         RolloutAborted: Rollout aborted update to revision 3
+Strategy:        Canary
+  Step:          0/8
+  SetWeight:     0
+  ActualWeight:  0
+Images:          merkulovlr05/devops-info:v2 ([32mstable[0m)
+Replicas:
+  Desired:       2
+  Current:       2
+  Updated:       0
+  Ready:         2
+  Available:     2
+
+NAME                                           KIND         STATUS         AGE    INFO
+⟳ devops-info-canary                           Rollout      [31m✖[0m Degraded     2m53s  
+├──# revision:3                                                                   
+│  ├──⧉ [33mdevops-info-canary-98f5f7966[0m           ReplicaSet   [0m•[0m ScaledDown   26s    [33mcanary[0m
+│  │  └──□ devops-info-canary-98f5f7966-j7krv  Pod          [94m◌[0m Terminating  26s    ready:1/1
+│  └──α [0mdevops-info-canary-98f5f7966-3[0m         AnalysisRun  [32m✔[0m Successful   19s    [32m✔[0m 1
+├──# revision:2                                                                   
+│  ├──⧉ [32mdevops-info-canary-565574cb7[0m           ReplicaSet   [32m✔[0m Healthy      2m24s  [32mstable[0m
+│  │  ├──□ devops-info-canary-565574cb7-6r8wb  Pod          [32m✔[0m Running      2m24s  ready:1/1
+│  │  └──□ devops-info-canary-565574cb7-tkqw6  Pod          [32m✔[0m Running      97s    ready:1/1
+│  └──α [0mdevops-info-canary-565574cb7-2[0m         AnalysisRun  [32m✔[0m Successful   2m18s  [32m✔[0m 3
+└──# revision:1                                                                   
+   └──⧉ devops-info-canary-557664d95d          ReplicaSet   [0m•[0m ScaledDown   2m53s  
