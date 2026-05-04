@@ -185,11 +185,13 @@ flowchart LR
 ```mermaid
 flowchart TD
   subgraph Declarative
+    direction TD
     D1[📝 Define: 3 replicas]
     D2[☸️ K8s makes it happen]
     D1 --> D2
   end
   subgraph Imperative
+    direction TD
     I1[💻 Run: create pod 1]
     I2[💻 Run: create pod 2]
     I3[💻 Run: create pod 3]
@@ -209,17 +211,17 @@ flowchart TD
 ## 📍 Slide 13 – 🏗️ Kubernetes Architecture
 
 ```mermaid
-flowchart TD
-  subgraph Control Plane
+flowchart LR
+  subgraph "Worker Nodes"
+    Kubelet[🤖 kubelet]
+    Proxy[🌐 kube-proxy]
+    Runtime[🐳 Container Runtime]
+  end
+  subgraph "Control Plane"
     API[📡 API Server]
     Scheduler[📊 Scheduler]
     Controller[🔄 Controller Manager]
     ETCD[💾 etcd]
-  end
-  subgraph Worker Nodes
-    Kubelet[🤖 kubelet]
-    Proxy[🌐 kube-proxy]
-    Runtime[🐳 Container Runtime]
   end
   API --> Scheduler
   API --> Controller
@@ -644,15 +646,17 @@ spec:
 
 ```mermaid
 flowchart LR
-  subgraph 😱 Manual
+  subgraph Manual["😱 Manual"]
     SSH[🔌 SSH to servers]
     Docker[🐳 docker run]
     Restart[🔄 Manual restart]
+    SSH --- Docker --- Restart
   end
-  subgraph ☸️ Orchestrated
+  subgraph Orchestrated["☸️ Orchestrated"]
     Manifest[📝 YAML Manifest]
     Apply[kubectl apply]
     AutoHeal[🏥 Auto-healing]
+    Manifest --- Apply --- AutoHeal
   end
   Manual -->|🚀 Kubernetes| Orchestrated
 ```
