@@ -1,0 +1,13 @@
+kubectl-argo-rollouts: v1.8.3+49fa151
+  BuildDate: 2025-06-04T22:19:21Z
+  GitCommit: 49fa1516cf71672b69e265267da4e1d16e1fe114
+  GitTreeState: clean
+  GoVersion: go1.23.9
+  Compiler: gc
+  Platform: darwin/amd64
+NAME                                      READY   STATUS    RESTARTS   AGE
+argo-rollouts-5f64f8d68-dm4lp             1/1     Running   0          6m54s
+argo-rollouts-dashboard-755bbc64c-w56lr   1/1     Running   0          6m49s
+NAME                      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+argo-rollouts-dashboard   ClusterIP   10.96.232.3      <none>        3100/TCP   6m49s
+argo-rollouts-metrics     ClusterIP   10.105.110.169   <none>        8090/TCP   6m54s
