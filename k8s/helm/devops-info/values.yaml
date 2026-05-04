@@ -54,3 +54,11 @@ rollingUpdate:
 secret:
   username: "app-user"
   password: "changeme"
+
+appEnv: "development"
+logLevel: "INFO"
+
+persistence:
+  enabled: true
+  size: "100Mi"
+  storageClass: ""

@@ -1,0 +1,38 @@
+=== ArgoCD installation ===
+NAME                                               READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                    1/1     Running   0          6m40s
+argocd-applicationset-controller-566c45fd7-cml86   1/1     Running   0          6m41s
+argocd-dex-server-6fcb5c7dcf-78656                 1/1     Running   0          6m41s
+argocd-notifications-controller-5559b58f59-x888c   1/1     Running   0          6m41s
+argocd-redis-65fb9d8555-m98fc                      1/1     Running   0          6m41s
+argocd-repo-server-5679798fbd-mb5cw                1/1     Running   0          6m41s
+argocd-server-d78dc6ccf-npprw                      1/1     Running   0          6m40s
+
+=== ArgoCD version ===
+argocd: v3.3.9+1b1bb48.dirty
+  BuildDate: 2026-04-30T20:22:47Z
+  GitCommit: 1b1bb48f981385cf40b282e965cf63419be3d93f
+  GitTreeState: dirty
+  GitTag: v3.3.9
+  GoVersion: go1.26.2
+  Compiler: gc
+  Platform: darwin/arm64
+
+=== argocd app list ===
+NAME                     CLUSTER                         NAMESPACE  PROJECT  STATUS   HEALTH       SYNCPOLICY  CONDITIONS       REPO                                                   PATH                  TARGET
+argocd/devops-info       https://kubernetes.default.svc  default    default  Unknown  Healthy      Manual      ComparisonError  https://github.com/merkulovleo/DevOps-Core-Course.git  k8s/helm/devops-info  lab13
+argocd/devops-info-dev   https://kubernetes.default.svc  dev        default  Synced   Healthy      Auto-Prune  <none>           https://github.com/merkulovleo/DevOps-Core-Course.git  k8s/helm/devops-info  lab13
+argocd/devops-info-prod  https://kubernetes.default.svc  prod       default  Synced   Progressing  Manual      <none>           https://github.com/merkulovleo/DevOps-Core-Course.git  k8s/helm/devops-info  lab13
+
+=== pods in dev ===
+NAME                               READY   STATUS    RESTARTS   AGE
+devops-info-dev-5df8c895c9-q9bg7   1/1     Running   0          2m53s
+
+=== pods in prod ===
+NAME                                 READY   STATUS      RESTARTS   AGE
+devops-info-prod-564999fd95-56fz7    1/1     Running     0          2m10s
+devops-info-prod-564999fd95-6mvkj    1/1     Running     0          2m10s
+devops-info-prod-564999fd95-djhlm    1/1     Running     0          2m10s
+devops-info-prod-564999fd95-r6sd7    1/1     Running     0          2m10s
+devops-info-prod-564999fd95-z59cp    1/1     Running     0          2m10s
+devops-info-prod-pre-install-mb6nw   0/1     Completed   0          2m15s

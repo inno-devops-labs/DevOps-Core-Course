@@ -1,0 +1,9 @@
+=== ApplicationSet created ===
+NAME              AGE
+devops-info-set   10s
+
+=== Generated apps ===
+NAME                     CLUSTER                         NAMESPACE  PROJECT  STATUS   HEALTH       SYNCPOLICY  CONDITIONS       REPO                                                   PATH                  TARGET
+argocd/devops-info       https://kubernetes.default.svc  default    default  Unknown  Healthy      Manual      ComparisonError  https://github.com/merkulovleo/DevOps-Core-Course.git  k8s/helm/devops-info  lab13
+argocd/devops-info-dev   https://kubernetes.default.svc  dev        default  Synced   Healthy      Manual      <none>           https://github.com/merkulovleo/DevOps-Core-Course.git  k8s/helm/devops-info  lab13
+argocd/devops-info-prod  https://kubernetes.default.svc  prod       default  Synced   Progressing  Manual      <none>           https://github.com/merkulovleo/DevOps-Core-Course.git  k8s/helm/devops-info  lab13
