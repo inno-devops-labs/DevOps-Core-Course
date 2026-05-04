@@ -1,0 +1,15 @@
+{
+  "app_name": "DevOps Info Service",
+  "environment": "development",
+  "version": "1.0.0",
+  "features": {
+    "visits_counter": true,
+    "structured_logging": true,
+    "health_endpoint": true
+  },
+  "server": {
+    "port": 5000,
+    "host": "0.0.0.0",
+    "debug": false
+  }
+}
