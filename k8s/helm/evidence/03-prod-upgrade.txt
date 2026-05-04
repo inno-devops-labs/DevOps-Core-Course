@@ -1,0 +1,45 @@
+=== After upgrade to prod ===
+NAME           	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
+devops-info-dev	default  	2       	2026-05-04 14:54:40.902421 +0300 MSK	deployed	devops-info-0.1.0	1.0.0      
+
+NAME                               READY   STATUS        RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+devops-info-dev-69664cfd9-5hrtb    1/1     Terminating   0          85s   10.244.0.28   minikube   <none>           <none>
+devops-info-dev-69664cfd9-q4cbr    1/1     Terminating   0          61s   10.244.0.35   minikube   <none>           <none>
+devops-info-dev-69664cfd9-thp6h    1/1     Terminating   0          61s   10.244.0.30   minikube   <none>           <none>
+devops-info-dev-76b8498c67-7m686   1/1     Running       0          37s   10.244.0.37   minikube   <none>           <none>
+devops-info-dev-76b8498c67-mqzp6   1/1     Running       0          13s   10.244.0.39   minikube   <none>           <none>
+devops-info-dev-76b8498c67-slwq6   1/1     Running       0          61s   10.244.0.31   minikube   <none>           <none>
+devops-info-dev-76b8498c67-xlgz9   1/1     Running       0          25s   10.244.0.38   minikube   <none>           <none>
+devops-info-dev-76b8498c67-zpt97   1/1     Running       0          49s   10.244.0.36   minikube   <none>           <none>
+
+USER-SUPPLIED VALUES:
+image:
+  tag: v1
+livenessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+readinessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+replicaCount: 5
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+service:
+  port: 80
+  targetPort: 5000
+  type: LoadBalancer
