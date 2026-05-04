@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-info
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/merkulovleo/DevOps-Core-Course.git
+    targetRevision: lab13
+    path: k8s/helm/devops-info
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: "v2"
+        - name: replicaCount
+          value: "2"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
