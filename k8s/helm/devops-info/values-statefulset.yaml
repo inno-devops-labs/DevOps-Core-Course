@@ -1,0 +1,11 @@
+replicaCount: 3
+
+statefulset:
+  enabled: true
+  storageSize: "50Mi"
+  storageClass: ""
+  updateStrategy:
+    type: RollingUpdate
+
+persistence:
+  enabled: false

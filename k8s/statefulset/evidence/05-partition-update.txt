@@ -1,0 +1,4 @@
+devops-info-sts-0: merkulovlr05/devops-info:latest
+devops-info-sts-1: merkulovlr05/devops-info:latest
+devops-info-sts-2: merkulovlr05/devops-info:v4
+=== Only sts-2 (ordinal >= partition 2) got v4, sts-0 and sts-1 unchanged ===

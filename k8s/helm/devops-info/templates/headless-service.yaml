@@ -1,0 +1,17 @@
+{{- if .Values.statefulset.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-info.fullname" . }}-headless
+  labels:
+    {{- include "devops-info.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "devops-info.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}
