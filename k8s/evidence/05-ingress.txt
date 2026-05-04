@@ -1,0 +1,21 @@
+=== Deployments ===
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+devops-info      5/5     5            5           7m46s
+devops-info-v2   2/2     2            2           22s
+=== Services ===
+NAME             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+devops-info      NodePort    10.103.28.214    <none>        80:30080/TCP   7m46s
+devops-info-v2   ClusterIP   10.111.129.192   <none>        80/TCP         22s
+kubernetes       ClusterIP   10.96.0.1        <none>        443/TCP        9m36s
+=== Ingress ===
+NAME           CLASS   HOSTS               ADDRESS   PORTS     AGE
+apps-ingress   nginx   local.example.com             80, 443   15s
+=== Pods ===
+NAME                             READY   STATUS    RESTARTS   AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+devops-info-68bb99f9df-4czkf     1/1     Running   0          109s    10.244.0.20   minikube   <none>           <none>
+devops-info-68bb99f9df-mfnsv     1/1     Running   0          116s    10.244.0.19   minikube   <none>           <none>
+devops-info-68bb99f9df-p5tmb     1/1     Running   0          2m3s    10.244.0.18   minikube   <none>           <none>
+devops-info-68bb99f9df-tvjhm     1/1     Running   0          2m17s   10.244.0.16   minikube   <none>           <none>
+devops-info-68bb99f9df-vknr7     1/1     Running   0          2m10s   10.244.0.17   minikube   <none>           <none>
+devops-info-v2-74cfcbd6d-jx6kw   1/1     Running   0          22s     10.244.0.25   minikube   <none>           <none>
+devops-info-v2-74cfcbd6d-lts6d   1/1     Running   0          22s     10.244.0.24   minikube   <none>           <none>

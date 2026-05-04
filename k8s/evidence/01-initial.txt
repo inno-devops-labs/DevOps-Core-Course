@@ -1,0 +1,90 @@
+=== kubectl cluster-info ===
+Kubernetes control plane is running at https://127.0.0.1:63126
+CoreDNS is running at https://127.0.0.1:63126/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+
+=== kubectl get nodes ===
+NAME       STATUS   ROLES           AGE     VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION     CONTAINER-RUNTIME
+minikube   Ready    control-plane   6m29s   v1.35.1   192.168.49.2   <none>        Debian GNU/Linux 12 (bookworm)   6.12.76-linuxkit   docker://29.2.1
+
+=== kubectl get all -l app=devops-info ===
+NAME                               READY   STATUS        RESTARTS   AGE
+pod/devops-info-68bb99f9df-64x4p   1/1     Running       0          16s
+pod/devops-info-68bb99f9df-nhfq8   1/1     Running       0          29s
+pod/devops-info-68bb99f9df-xp4zk   1/1     Running       0          23s
+pod/devops-info-784b99fc68-9dxh2   1/1     Terminating   0          4m38s
+pod/devops-info-784b99fc68-gcrfv   1/1     Terminating   0          4m38s
+
+NAME                  TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/devops-info   NodePort   10.103.28.214   <none>        80:30080/TCP   4m38s
+
+NAME                          READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/devops-info   3/3     3            3           4m38s
+
+NAME                                     DESIRED   CURRENT   READY   AGE
+replicaset.apps/devops-info-68bb99f9df   3         3         3       29s
+replicaset.apps/devops-info-784b99fc68   0         0         0       4m38s
+
+=== kubectl get pods,svc ===
+NAME                               READY   STATUS        RESTARTS   AGE     IP           NODE       NOMINATED NODE   READINESS GATES
+pod/devops-info-68bb99f9df-64x4p   1/1     Running       0          17s     10.244.0.8   minikube   <none>           <none>
+pod/devops-info-68bb99f9df-nhfq8   1/1     Running       0          30s     10.244.0.6   minikube   <none>           <none>
+pod/devops-info-68bb99f9df-xp4zk   1/1     Running       0          24s     10.244.0.7   minikube   <none>           <none>
+pod/devops-info-784b99fc68-9dxh2   1/1     Terminating   0          4m39s   10.244.0.3   minikube   <none>           <none>
+pod/devops-info-784b99fc68-gcrfv   1/1     Terminating   0          4m39s   10.244.0.5   minikube   <none>           <none>
+
+NAME                  TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+service/devops-info   NodePort   10.103.28.214   <none>        80:30080/TCP   4m39s   app=devops-info
+
+=== kubectl describe deployment ===
+Name:                   devops-info
+Namespace:              default
+CreationTimestamp:      Mon, 04 May 2026 14:35:59 +0300
+Labels:                 app=devops-info
+                        tier=backend
+Annotations:            deployment.kubernetes.io/revision: 2
+Selector:               app=devops-info
+Replicas:               3 desired | 3 updated | 3 total | 3 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  0 max unavailable, 1 max surge
+Pod Template:
+  Labels:       app=devops-info
+                tier=backend
+  Annotations:  kubectl.kubernetes.io/restartedAt: 2026-05-04T14:40:08+03:00
+  Containers:
+   devops-info:
+    Image:      merkulovlr05/devops-info:latest
+    Port:       5000/TCP (http)
+    Host Port:  0/TCP (http)
+    Limits:
+      cpu:     200m
+      memory:  192Mi
+    Requests:
+      cpu:      50m
+      memory:   96Mi
+    Liveness:   http-get http://:http/health delay=10s timeout=3s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:http/health delay=3s timeout=2s period=5s #success=1 #failure=3
+    Environment:
+      PORT:        5000
+      HOST:        0.0.0.0
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  devops-info-784b99fc68 (0/0 replicas created)
+NewReplicaSet:   devops-info-68bb99f9df (3/3 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  4m39s  deployment-controller  Scaled up replica set devops-info-784b99fc68 from 0 to 3
+  Normal  ScalingReplicaSet  30s    deployment-controller  Scaled up replica set devops-info-68bb99f9df from 0 to 1
+  Normal  ScalingReplicaSet  24s    deployment-controller  Scaled down replica set devops-info-784b99fc68 from 3 to 2
+  Normal  ScalingReplicaSet  24s    deployment-controller  Scaled up replica set devops-info-68bb99f9df from 1 to 2
+  Normal  ScalingReplicaSet  17s    deployment-controller  Scaled down replica set devops-info-784b99fc68 from 2 to 1
