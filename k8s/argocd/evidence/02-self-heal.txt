@@ -1,0 +1,20 @@
+=== Before self-heal: dev replicas ===
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE
+devops-info-dev   1/1     1            1           2m53s
+
+=== Scaling dev to 5 manually ===
+deployment.apps/devops-info-dev scaled
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE
+devops-info-dev   1/5     5            1           2m53s
+
+Time: Mon May  4 16:03:51 MSK 2026
+=== After ArgoCD self-heal (back to 1 replica) ===
+NAME              READY   UP-TO-DATE   AVAILABLE   AGE
+devops-info-dev   1/1     1            1           3m2s
+
+Time: Mon May  4 16:04:00 MSK 2026
+
+=== App sync history ===
+SOURCE  https://github.com/merkulovleo/DevOps-Core-Course.git
+ID      DATE                           REVISION
+0       2026-05-04 16:01:16 +0300 MSK  lab13 (32a4e3b)
