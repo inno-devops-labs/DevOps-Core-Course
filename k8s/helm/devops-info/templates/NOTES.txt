@@ -1,0 +1,14 @@
+DevOps Info Service deployed!
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Image:     {{ .Values.image.repository }}:{{ .Values.image.tag }}
+Replicas:  {{ .Values.replicaCount }}
+
+{{- if eq .Values.service.type "NodePort" }}
+Access the service:
+  minikube service {{ include "devops-info.fullname" . }} --url
+  OR: kubectl port-forward svc/{{ include "devops-info.fullname" . }} 8080:{{ .Values.service.port }}
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  kubectl get svc {{ include "devops-info.fullname" . }} -w
+{{- end }}

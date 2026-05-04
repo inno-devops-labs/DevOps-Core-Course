@@ -1,0 +1,22 @@
+=== helm list (all releases) ===
+NAME           	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART               	APP VERSION
+devops-info-dev	default  	3       	2026-05-04 14:58:10.142449 +0300 MSK	deployed	devops-info-0.1.0   	1.0.0      
+devops-info-v2 	default  	1       	2026-05-04 15:02:30.159744 +0300 MSK	deployed	devops-info-v2-0.1.0	1.0.0      
+
+=== all pods ===
+NAME                              READY   STATUS    RESTARTS   AGE
+devops-info-dev-69664cfd9-lv662   1/1     Running   0          4m27s
+devops-info-v2-5449d69c55-b6vx9   1/1     Running   0          7s
+devops-info-v2-5449d69c55-pz6xw   1/1     Running   0          7s
+
+=== library chart bonus ===
+        app.kubernetes.io/instance: v2test
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: devops-info-v2
+        app.kubernetes.io/version: "1.0.0"
+      app.kubernetes.io/instance: v2test
+      app.kubernetes.io/name: devops-info-v2
+    app.kubernetes.io/instance: v2test
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: devops-info-v2
+    app.kubernetes.io/version: "1.0.0"
