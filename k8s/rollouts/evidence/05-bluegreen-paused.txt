@@ -1,0 +1,24 @@
+Name:            devops-info-bg
+Namespace:       rollout-test
+Status:          [0m॥[0m Paused
+Message:         BlueGreenPause
+Strategy:        BlueGreen
+Images:          merkulovlr05/devops-info:latest ([32mstable[0m, [32mactive[0m)
+                 merkulovlr05/devops-info:v2 ([94mpreview[0m)
+Replicas:
+  Desired:       2
+  Current:       4
+  Updated:       2
+  Ready:         2
+  Available:     2
+
+NAME                                        KIND        STATUS     AGE  INFO
+⟳ devops-info-bg                            Rollout     [0m॥[0m Paused   86s  
+├──# revision:2                                                         
+│  └──⧉ [94mdevops-info-bg-6c7f97d548[0m           ReplicaSet  [32m✔[0m Healthy  34s  [94mpreview[0m
+│     ├──□ devops-info-bg-6c7f97d548-7qp5w  Pod         [32m✔[0m Running  34s  ready:1/1
+│     └──□ devops-info-bg-6c7f97d548-s6v5f  Pod         [32m✔[0m Running  34s  ready:1/1
+└──# revision:1                                                         
+   └──⧉ [32m[32mdevops-info-bg-57668fd5b9[0m[0m           ReplicaSet  [32m✔[0m Healthy  78s  [32mstable[0m,[32mactive[0m
+      ├──□ devops-info-bg-57668fd5b9-64fq8  Pod         [32m✔[0m Running  70s  ready:1/1
+      └──□ devops-info-bg-57668fd5b9-n8gj4  Pod         [32m✔[0m Running  70s  ready:1/1
