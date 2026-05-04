@@ -1,0 +1,4 @@
+devops-info-sts-0: merkulovlr05/devops-info:latest
+devops-info-sts-1: merkulovlr05/devops-info:latest
+devops-info-sts-2: merkulovlr05/devops-info:v4
+=== Spec has v2 but running pods keep old image until manually deleted ===

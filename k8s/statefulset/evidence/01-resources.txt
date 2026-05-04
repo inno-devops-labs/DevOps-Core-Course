@@ -1,0 +1,16 @@
+NAME                    READY   STATUS    RESTARTS   AGE
+pod/devops-info-sts-0   1/1     Running   0          21s
+pod/devops-info-sts-1   1/1     Running   0          14s
+pod/devops-info-sts-2   1/1     Running   0          6m52s
+
+NAME                               READY   AGE
+statefulset.apps/devops-info-sts   3/3     8m56s
+
+NAME                               TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+service/devops-info-sts            ClusterIP   10.104.220.245   <none>        80/TCP    8m48s
+service/devops-info-sts-headless   ClusterIP   None             <none>        80/TCP    8m56s
+
+NAME                                           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-devops-info-sts-0   Bound    pvc-cda66d1b-e2ff-453e-8407-41af5b79f1c0   50Mi       RWO            standard       <unset>                 8m56s
+persistentvolumeclaim/data-devops-info-sts-1   Bound    pvc-09a7e740-2f6c-4e95-a030-88215971b543   50Mi       RWO            standard       <unset>                 8m49s
+persistentvolumeclaim/data-devops-info-sts-2   Bound    pvc-668d9fdb-e776-4f41-a742-908d47adda52   50Mi       RWO            standard       <unset>                 8m42s
