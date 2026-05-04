@@ -32,3 +32,8 @@ readinessProbe:
   periodSeconds: 10
   timeoutSeconds: 2
   failureThreshold: 3
+
+persistence:
+  enabled: true
+  size: "100Mi"
+  storageClass: ""
