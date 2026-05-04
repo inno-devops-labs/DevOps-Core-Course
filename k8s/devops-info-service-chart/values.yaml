@@ -1,15 +1,17 @@
 replicaCount: 3
 
 image:
-  repository: chaleshka/devops-info-service
+  repository: devops-info-service
   pullPolicy: IfNotPresent
-  tag: "latest"
+  tag: "local"
 
 env:
   - name: HOST
     value: "0.0.0.0"
   - name: PORT
     value: "5000"
+  - name: DATA_DIR
+    value: "/data"
 
 nameOverride: ""
 fullnameOverride: ""
