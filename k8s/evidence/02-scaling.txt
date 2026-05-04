@@ -1,0 +1,8 @@
+=== Scaled to 5 ===
+NAME                           READY   STATUS        RESTARTS   AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+devops-info-68bb99f9df-64x4p   1/1     Running       0          32s     10.244.0.8    minikube   <none>           <none>
+devops-info-68bb99f9df-nhfq8   1/1     Running       0          45s     10.244.0.6    minikube   <none>           <none>
+devops-info-68bb99f9df-q9gbz   1/1     Running       0          7s      10.244.0.9    minikube   <none>           <none>
+devops-info-68bb99f9df-qz9cb   1/1     Running       0          7s      10.244.0.10   minikube   <none>           <none>
+devops-info-68bb99f9df-xp4zk   1/1     Running       0          39s     10.244.0.7    minikube   <none>           <none>
+devops-info-784b99fc68-9dxh2   1/1     Terminating   0          4m54s   10.244.0.3    minikube   <none>           <none>
