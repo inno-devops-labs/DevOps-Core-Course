@@ -71,4 +71,10 @@ fullnameOverride: "my-python-app"
 persistence:
   enabled: true
   size: 100Mi
-  storageClass: ""  # Use default storage class (works in Minikube)
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+updateStrategy:
+  type: OnDelete
+  rollingUpdate:
+    partition: 0
