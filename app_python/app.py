@@ -6,6 +6,7 @@ import logging
 import os
 import platform
 import socket
+import tempfile
 import time
 from datetime import datetime, timezone
 
@@ -19,7 +20,10 @@ HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
 
-VISITS_FILE = os.environ.get("VISITS_FILE", "/data/visits")
+VISITS_FILE = os.environ.get(
+    "VISITS_FILE",
+    os.path.join(tempfile.gettempdir(), "devops_visits"),
+)
 
 
 def _read_visits() -> int:
