@@ -1,0 +1,44 @@
+# fly.toml app configuration file generated for Lab 17.
+#
+# Replace the app name if it is already taken in Fly.io.
+
+app = "devops-info-vlad1mirzhidkov"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "8080"
+  VISITS_FILE = "/data/visits"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+[metrics]
+  port = 8080
+  path = "/metrics"
+
+[mounts]
+  source = "devops_info_data"
+  destination = "/data"
+  initial_size = "1GB"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpus = 1
+  cpu_kind = "shared"
