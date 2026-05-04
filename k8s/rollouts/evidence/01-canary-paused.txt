@@ -1,0 +1,27 @@
+Name:            devops-info-canary
+Namespace:       rollout-test
+Status:          [0m॥[0m Paused
+Message:         CanaryPauseStep
+Strategy:        Canary
+  Step:          1/8
+  SetWeight:     20
+  ActualWeight:  33
+Images:          merkulovlr05/devops-info:latest ([32mstable[0m)
+                 merkulovlr05/devops-info:v2 ([33mcanary[0m)
+Replicas:
+  Desired:       2
+  Current:       3
+  Updated:       1
+  Ready:         3
+  Available:     3
+
+NAME                                            KIND         STATUS     AGE  INFO
+⟳ devops-info-canary                            Rollout      [0m॥[0m Paused   44s  
+├──# revision:2                                                              
+│  ├──⧉ [33mdevops-info-canary-565574cb7[0m            ReplicaSet   [32m✔[0m Healthy  15s  [33mcanary[0m
+│  │  └──□ devops-info-canary-565574cb7-6r8wb   Pod          [32m✔[0m Running  15s  ready:1/1
+│  └──α [94mdevops-info-canary-565574cb7-2[0m          AnalysisRun  [94m◌[0m Running  9s   [32m✔[0m 1
+└──# revision:1                                                              
+   └──⧉ [32mdevops-info-canary-557664d95d[0m           ReplicaSet   [32m✔[0m Healthy  44s  [32mstable[0m
+      ├──□ devops-info-canary-557664d95d-h5qgp  Pod          [32m✔[0m Running  44s  ready:1/1
+      └──□ devops-info-canary-557664d95d-rcxb9  Pod          [32m✔[0m Running  44s  ready:1/1
