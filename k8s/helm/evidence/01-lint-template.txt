@@ -1,0 +1,67 @@
+=== helm lint ===
+==> Linting k8s/helm/devops-info
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+
+=== helm template (first 60 lines) ===
+---
+# Source: devops-info/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-info
+  labels:
+    helm.sh/chart: devops-info-0.1.0
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/instance: devops-info
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 5000
+      nodePort: 30080
+  selector:
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/instance: devops-info
+---
+# Source: devops-info/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-info
+  labels:
+    helm.sh/chart: devops-info-0.1.0
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/instance: devops-info
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-info
+      app.kubernetes.io/instance: devops-info
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: devops-info-0.1.0
+        app.kubernetes.io/name: devops-info
+        app.kubernetes.io/instance: devops-info
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      containers:
+        - name: devops-info
+          image: "merkulovlr05/devops-info:latest"
+          imagePullPolicy: IfNotPresent
+          ports:

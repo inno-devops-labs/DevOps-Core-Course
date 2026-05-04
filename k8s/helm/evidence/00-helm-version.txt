@@ -1,0 +1,25 @@
+v4.1.4+g05fa379
+"prometheus-community" has been added to your repositories
+Hang tight while we grab the latest from your chart repositories...
+...Successfully got an update from the "prometheus-community" chart repository
+Update Complete. ⎈Happy Helming!⎈
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/links: |
+    - name: Chart Source
+      url: https://github.com/prometheus-community/helm-charts
+    - name: Upstream Project
+      url: https://github.com/prometheus/prometheus
+apiVersion: v2
+appVersion: v3.11.3
+dependencies:
+- condition: alertmanager.enabled
+  name: alertmanager
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 1.35.*
+- condition: kube-state-metrics.enabled
+  name: kube-state-metrics
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 7.3.*
+- condition: prometheus-node-exporter.enabled
+  name: prometheus-node-exporter
