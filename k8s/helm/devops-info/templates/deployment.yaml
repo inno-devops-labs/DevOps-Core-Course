@@ -29,6 +29,9 @@ spec:
               protocol: TCP
           env:
             {{- toYaml .Values.env | nindent 12 }}
+          envFrom:
+            - secretRef:
+                name: {{ include "devops-info.fullname" . }}-secret
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:

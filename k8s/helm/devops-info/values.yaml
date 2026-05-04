@@ -49,3 +49,8 @@ readinessProbe:
 rollingUpdate:
   maxSurge: 1
   maxUnavailable: 0
+
+# Placeholder values — override with --set or external secret manager in production
+secret:
+  username: "app-user"
+  password: "changeme"
