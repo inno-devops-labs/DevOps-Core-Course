@@ -1,0 +1,98 @@
+=== helm history ===
+REVISION	UPDATED                 	STATUS    	CHART            	APP VERSION	DESCRIPTION     
+1       	Mon May  4 14:54:12 2026	superseded	devops-info-0.1.0	1.0.0      	Install complete
+2       	Mon May  4 14:54:40 2026	superseded	devops-info-0.1.0	1.0.0      	Upgrade complete
+3       	Mon May  4 14:58:10 2026	deployed  	devops-info-0.1.0	1.0.0      	Rollback to 1   
+
+=== kubectl get jobs (hooks) ===
+No resources found in default namespace.
+
+=== check hook logs ===
+=== hook-test install output ===
+NAME           	NAMESPACE	REVISION	UPDATED                             	STATUS  	CHART            	APP VERSION
+devops-info-dev	default  	3       	2026-05-04 14:58:10.142449 +0300 MSK	deployed	devops-info-0.1.0	1.0.0      
+hook-test      	default  	1       	2026-05-04 14:58:35.96108 +0300 MSK 	deployed	devops-info-0.1.0	1.0.0      
+
+=== helm history hook-test ===
+REVISION	UPDATED                 	STATUS  	CHART            	APP VERSION	DESCRIPTION     
+1       	Mon May  4 14:58:35 2026	deployed	devops-info-0.1.0	1.0.0      	Install complete
+=== dry-run showing hooks ===
+# Source: devops-info/templates/hooks/post-install-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "test-devops-info-post-install"
+  labels:
+    helm.sh/chart: devops-info-0.1.0
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "test-devops-info-post-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "Post-install: running smoke test..."
+              echo "Release test deployed successfully."
+              echo "Image: merkulovlr05/devops-info:latest"
+              echo "Replicas: 3"
+              echo "Smoke test passed."
+---
+# Source: devops-info/templates/hooks/pre-install-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "test-devops-info-pre-install"
+  labels:
+    helm.sh/chart: devops-info-0.1.0
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "test-devops-info-pre-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "Pre-install: validating environment..."
+              echo "Chart: devops-info v1.0.0"
+              echo "Release: test in namespace default"
+              echo "Pre-install checks passed."
+MANIFEST:
+---
+# Source: devops-info/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-devops-info
+  labels:
+    helm.sh/chart: devops-info-0.1.0
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/instance: test
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
