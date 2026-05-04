@@ -1,0 +1,7 @@
+replicaCount: 2
+
+rollout:
+  enabled: true
+  strategy: "blueGreen"
+  analysis:
+    enabled: false
