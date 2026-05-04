@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+venv/
+__MACOSX/
+*.log
+
+.vscode/
+.idea/
+
+.obsidian
+
+.DS_Store
+.env

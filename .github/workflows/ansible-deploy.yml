@@ -1,0 +1,97 @@
+name: Ansible Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - lab6
+      - lab06
+      - lab7
+      - lab07
+    paths:
+      - "ansible/**"
+      - ".github/workflows/ansible-deploy.yml"
+  pull_request:
+    paths:
+      - "ansible/**"
+      - ".github/workflows/ansible-deploy.yml"
+
+concurrency:
+  group: ansible-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Write vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.vault_pass.txt
+          chmod 600 ~/.vault_pass.txt
+
+      - name: Show Ansible version
+        run: ansible --version
+
+      - name: Syntax check provision playbook
+        working-directory: ansible
+        run: ansible-playbook -i inventory/hosts.ini playbooks/provision.yml --syntax-check --vault-password-file ~/.vault_pass.txt
+
+      - name: Syntax check deploy playbook
+        working-directory: ansible
+        run: ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml --syntax-check --vault-password-file ~/.vault_pass.txt
+
+  deploy:
+    needs: syntax-check
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Write vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.vault_pass.txt
+          chmod 600 ~/.vault_pass.txt
+
+      - name: Write inventory from secrets
+        run: |
+          cat > ansible/inventory/hosts.ini <<INVENTORY
+          [webservers]
+          app-server ansible_host=${{ secrets.SERVER_HOST }} ansible_user=${{ secrets.SERVER_USER }} ansible_ssh_private_key_file=~/.ssh/id_rsa
+          INVENTORY
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Run provision playbook
+        working-directory: ansible
+        run: ansible-playbook -i inventory/hosts.ini playbooks/provision.yml --vault-password-file ~/.vault_pass.txt
+
+      - name: Run deploy playbook
+        working-directory: ansible
+        run: ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml --vault-password-file ~/.vault_pass.txt

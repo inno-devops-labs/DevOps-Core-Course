@@ -1,0 +1,92 @@
+---
+- name: Docker | Install Docker engine
+  block:
+
+    - name: Install prerequisites for Docker repo
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: true
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ 'arm64' if ansible_architecture in ['aarch64', 'arm64'] else 'amd64' }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+        state: present
+        filename: docker
+
+    - name: Update apt cache after adding Docker repo
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+      notify: restart docker
+
+  rescue:
+
+    - name: Retry Docker repo update
+      ansible.builtin.apt:
+        update_cache: true
+
+  always:
+
+    - name: Ensure Docker service is enabled and running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+  become: true
+  tags:
+    - docker
+    - docker_install
+
+
+- name: Docker | Configure Docker
+  block:
+
+    - name: Add user to docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true
+
+    - name: Install Python Docker SDK for Ansible modules
+      ansible.builtin.apt:
+        name: python3-docker
+        state: present
+
+  always:
+
+    - name: Log Docker config completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible-docker-config.log
+        content: "Docker configuration completed at {{ ansible_date_time.iso8601 }}\n"
+      changed_when: false
+
+  become: true
+  tags:
+    - docker
+    - docker_config

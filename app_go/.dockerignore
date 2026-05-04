@@ -1,0 +1,13 @@
+# Build outputs
+devops-info-service
+*.exe
+*.out
+
+# Git / editor / OS
+.git/
+.DS_Store
+.idea/
+.vscode/
+
+# Docs/tests not needed in image build context (optional)
+docs/

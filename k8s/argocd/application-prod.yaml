@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-python-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ostxxp/DevOps-Core-Course
+    targetRevision: lab13
+    path: app-python-chart
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,10 @@
+services:
+  app-python:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app-python-local
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./data:/data

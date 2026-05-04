@@ -1,0 +1,15 @@
+replicaCount: 3
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30010
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 384Mi
+  requests:
+    cpu: 150m
+    memory: 128Mi

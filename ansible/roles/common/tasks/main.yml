@@ -1,0 +1,66 @@
+---
+- name: Common | Package setup
+  block:
+
+    - name: Wait for apt lock to be released
+      ansible.builtin.shell: |
+        set -o pipefail
+        while fuser /var/lib/apt/lists/lock >/dev/null 2>&1 || \
+              fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
+              fuser /var/cache/apt/archives/lock >/dev/null 2>&1; do
+          echo "Waiting for apt/dpkg lock..."
+          sleep 3
+        done
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+        update_cache: false
+
+  rescue:
+
+    - name: Retry apt update after failure
+      ansible.builtin.command: apt-get update --fix-missing
+      changed_when: false
+
+  always:
+
+    - name: Log common packages completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible-common-packages.log
+        content: "Common packages setup completed at {{ ansible_date_time.iso8601 }}\n"
+
+  become: true
+  tags:
+    - common
+    - packages
+
+
+- name: Common | System configuration
+  block:
+
+    - name: Set timezone (idempotent)
+      ansible.builtin.command: "timedatectl set-timezone {{ common_timezone }}"
+      changed_when: false
+      when: common_timezone is defined and common_timezone | length > 0
+
+  always:
+
+    - name: Log timezone completion
+      ansible.builtin.copy:
+        dest: /tmp/ansible-common-timezone.log
+        content: "Timezone setup completed at {{ ansible_date_time.iso8601 }}\n"
+
+  become: true
+  tags:
+    - common
+    - config
