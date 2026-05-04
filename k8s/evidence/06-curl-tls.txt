@@ -1,0 +1,17 @@
+=== HTTPS app1 ===
+{"endpoints":[{"description":"Service info and metadata","method":"GET","path":"/"},{"description":"Health check","method":"GET","path":"/health"}],"request":{"client_ip":"10.244.0.23","method":"GET","path":"/","user_agent":"curl/8.7.1"},"runtime":{"current_time":"2026-05-04T11:44:48.480671+00:00","python_version":"3.13.13","timezone":"UTC","uptime_seconds":183.6},"service":{"description":"A web service providing system and runtime information","name":"DevOps Info Service","version":"1.0.0"},"system":{"architecture":"aarch64","cpu_count":12,"hostname":"devops-info-68bb99f9df-p5tmb","platform":"Linux","platform_version":"#1 SMP Sun Mar  8 14:41:59 UTC 2026"}}
+
+=== HTTPS app2 ===
+{"endpoints":[{"description":"Service info and metadata","method":"GET","path":"/"},{"description":"Health check","method":"GET","path":"/health"}],"request":{"client_ip":"10.244.0.23","method":"GET","path":"/","user_agent":"curl/8.7.1"},"runtime":{"current_time":"2026-05-04T11:44:48.513703+00:00","python_version":"3.13.13","timezone":"UTC","uptime_seconds":82.52},"service":{"description":"A web service providing system and runtime information","name":"DevOps Info Service","version":"1.0.0"},"system":{"architecture":"aarch64","cpu_count":12,"hostname":"devops-info-v2-74cfcbd6d-lts6d","platform":"Linux","platform_version":"#1 SMP Sun Mar  8 14:41:59 UTC 2026"}}
+
+=== HTTP redirect ===
+HTTP/1.1 308 Permanent Redirect
+Date: Mon, 04 May 2026 11:44:48 GMT
+Content-Type: text/html
+Content-Length: 164
+Connection: keep-alive
+Location: https://local.example.com/app1
+
+<html>
+<head><title>308 Permanent Redirect</title></head>
+<body>
