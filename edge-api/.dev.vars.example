@@ -1,0 +1,7 @@
+# Local development secrets template
+# Copy this file to .dev.vars and fill in real values.
+# .dev.vars is gitignored and used ONLY by `npx wrangler dev`.
+# For production, set secrets with: npx wrangler secret put <NAME>
+
+API_TOKEN=your-api-token-here
+ADMIN_EMAIL=admin@example.com

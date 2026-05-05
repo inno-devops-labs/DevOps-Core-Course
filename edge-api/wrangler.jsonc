@@ -1,0 +1,32 @@
+{
+  // Cloudflare Workers configuration — Lab 17
+  // https://developers.cloudflare.com/workers/wrangler/configuration/
+  "name": "edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-05-01",
+
+  // Plaintext environment variables (non-sensitive)
+  // These are visible in wrangler.jsonc and in the dashboard.
+  // Do NOT store secrets here — use `npx wrangler secret put` instead.
+  "vars": {
+    "APP_NAME": "edge-api",
+    "COURSE_NAME": "devops-core",
+    "APP_VERSION": "1.0.0",
+    "ENVIRONMENT": "production"
+  },
+
+  // Workers KV namespace binding
+  // Run: npx wrangler kv namespace create SETTINGS
+  // Then replace <your-namespace-id> with the returned ID.
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "b64518fa77e44fe2bd9406e2e008a299"
+    }
+  ],
+
+  // Observability — enable Workers Logs in the dashboard
+  "observability": {
+    "enabled": true
+  }
+}

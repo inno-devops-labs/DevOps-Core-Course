@@ -1,0 +1,13 @@
+# Node
+node_modules/
+
+# Wrangler build output
+.wrangler/
+dist/
+
+# Local secrets file — NEVER commit this
+# Contains plaintext secret values for local `wrangler dev` only
+.dev.vars
+
+# OS
+.DS_Store
