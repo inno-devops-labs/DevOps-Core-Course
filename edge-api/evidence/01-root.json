@@ -1,0 +1,1 @@
+{"app":"edge-api","course":"devops-core","description":"Edge API running on Cloudflare Workers","uptime_ms":1777971604686,"timestamp":"2026-05-05T09:00:04.686Z","endpoints":["/","/health","/edge","/counter"]}
