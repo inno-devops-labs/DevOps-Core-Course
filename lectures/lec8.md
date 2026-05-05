@@ -93,12 +93,12 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  subgraph 📋 Logs
+  subgraph Logs
     L1[What happened?]
     L2[Detailed events]
     L3[High cardinality]
   end
-  subgraph 📊 Metrics
+  subgraph Metrics
     M1[How much/fast?]
     M2[Aggregated numbers]
     M3[Low cardinality]
@@ -187,11 +187,11 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  subgraph Pull (Prometheus)
+  subgraph "Pull Prometheus"
     P1[💾 Prometheus] -->|🔄 Scrape| T1[📦 Target]
     P1 -->|🔄 Scrape| T2[📦 Target]
   end
-  subgraph Push (StatsD)
+  subgraph "Push StatsD"
     S1[📦 App] -->|📤 Push| D1[💾 Collector]
     S2[📦 App] -->|📤 Push| D1
   end
@@ -584,15 +584,17 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  subgraph 😱 Guessing
+  subgraph Guessing["😱 Guessing"]
     NoData[🤷 No Data]
     Reactive[🔥 Reactive]
     Slow[⏱️ Slow Detection]
+    NoData --- Reactive --- Slow
   end
-  subgraph 📊 Measuring
+  subgraph Measuring["📊 Measuring"]
     Metrics[📈 Real Metrics]
     Proactive[⚡ Proactive]
     Fast[🚀 Instant Detection]
+    Metrics --- Proactive --- Fast
   end
   Guessing -->|🚀 Prometheus| Measuring
 ```

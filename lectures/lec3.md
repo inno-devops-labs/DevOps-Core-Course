@@ -233,7 +233,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  subgraph Pyramid[🔺 Testing Pyramid]
+  subgraph Pyramid["🔺 Testing Pyramid"]
     E2E[🌐 E2E Tests<br/>Few, Slow, Expensive]
     INT[🔗 Integration Tests<br/>Some, Moderate]
     UNIT[🧪 Unit Tests<br/>Many, Fast, Cheap]
