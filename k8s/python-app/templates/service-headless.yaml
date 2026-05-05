@@ -1,0 +1,37 @@
+{{- if .Values.statefulset.enabled }}
+# Headless Service — required by StatefulSet for stable pod DNS identities.
+#
+# clusterIP: None means Kubernetes does NOT assign a virtual IP.
+# Instead, DNS queries for this service return the individual pod IPs directly.
+#
+# Each pod gets a stable DNS A-record in the form:
+#   <pod-name>.<service-name>.<namespace>.svc.cluster.local
+# e.g.:
+#   python-app-0.python-app-headless.default.svc.cluster.local
+#   python-app-1.python-app-headless.default.svc.cluster.local
+#   python-app-2.python-app-headless.default.svc.cluster.local
+#
+# This enables pods to discover and communicate with each other directly,
+# which is essential for clustered databases, consensus protocols, etc.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "python-app.fullname" . }}-headless
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: headless
+spec:
+  # clusterIP: None makes this a headless service — no load-balancing VIP,
+  # DNS returns individual pod IPs instead.
+  clusterIP: None
+  # publishNotReadyAddresses: true ensures DNS records are created even for
+  # pods that are not yet Ready. Useful during initial cluster formation.
+  publishNotReadyAddresses: true
+  selector:
+    {{- include "python-app.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}

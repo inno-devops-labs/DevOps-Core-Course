@@ -73,24 +73,29 @@ env:
     value: "8000"
   - name: DEBUG
     value: "False"
+  # Path where the visits counter file is stored.
+  # When StatefulSet is enabled, each pod writes to its own /data/visits
+  # on its dedicated PVC — demonstrating per-pod storage isolation.
+  - name: VISITS_FILE
+    value: "/data/visits"
 
 # Liveness probe configuration — NEVER comment this out
 livenessProbe:
   httpGet:
     path: /health
     port: 8000
-  initialDelaySeconds: 10
-  periodSeconds: 5
+  initialDelaySeconds: 30
+  periodSeconds: 10
   timeoutSeconds: 3
-  failureThreshold: 3
+  failureThreshold: 5
 
 # Readiness probe configuration — NEVER comment this out
 readinessProbe:
   httpGet:
     path: /health
     port: 8000
-  initialDelaySeconds: 5
-  periodSeconds: 3
+  initialDelaySeconds: 15
+  periodSeconds: 5
   timeoutSeconds: 2
   failureThreshold: 3
 
@@ -128,7 +133,44 @@ vault:
 
 # Persistent storage configuration for visits counter
 # NOTE: ReadWriteOnce requires replicaCount=1 (single node access)
+# When statefulset.enabled=true, this PVC is NOT created standalone —
+# instead each pod gets its own PVC via volumeClaimTemplates automatically.
 persistence:
   enabled: true
   size: 100Mi
   storageClass: ""  # Empty string = use cluster default storage class
+
+# ─────────────────────────────────────────────────────────────────────────────
+# StatefulSet configuration
+#
+# StatefulSets vs Deployments:
+#   Deployment  → stateless apps, random pod names, shared or no PVC
+#   StatefulSet → stateful apps (DBs, queues), stable pod names (pod-0, pod-1),
+#                 per-pod PVC via volumeClaimTemplates, ordered start/stop
+#
+# When to use StatefulSet:
+#   - Databases (MySQL, PostgreSQL, MongoDB)
+#   - Message queues (Kafka, RabbitMQ)
+#   - Distributed systems (Elasticsearch, Cassandra)
+#   - Any app that needs stable network identity or per-instance storage
+#
+# Headless Service (clusterIP: None):
+#   Creates individual DNS A-records for each pod:
+#   <pod-name>.<headless-svc>.<namespace>.svc.cluster.local
+#   e.g. python-app-0.python-app-headless.default.svc.cluster.local
+#
+# Update Strategies:
+#   RollingUpdate (default) — pods updated in reverse ordinal order (N-1 → 0)
+#     partition: N — only pods with ordinal >= N are updated; lower pods keep
+#                    the old version (useful for staged / canary rollouts)
+#   OnDelete — pods are only updated when manually deleted; gives full control
+#              over when each instance is restarted (useful for databases)
+# ─────────────────────────────────────────────────────────────────────────────
+statefulset:
+  enabled: true          # Set false to fall back to Rollout/Deployment
+  replicaCount: 3        # Each replica gets its own PVC via volumeClaimTemplates
+  updateStrategy:
+    type: RollingUpdate  # RollingUpdate | OnDelete
+    rollingUpdate:
+      partition: 0       # Only pods with ordinal >= partition are updated
+                         # Set to 2 to update only pod-2 (staged rollout demo)

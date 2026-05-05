@@ -1,21 +1,30 @@
-{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "python-app.fullname" . }}
   labels:
     {{- include "python-app.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  # serviceName links this StatefulSet to the headless Service.
+  # Kubernetes uses it to build stable DNS names for each pod:
+  #   <pod-name>.<serviceName>.<namespace>.svc.cluster.local
+  serviceName: {{ include "python-app.fullname" . }}-headless
+  replicas: {{ .Values.statefulset.replicaCount }}
   selector:
     matchLabels:
       {{- include "python-app.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    {{- if eq .Values.strategy.type "RollingUpdate" }}
+  # ── Update Strategy ────────────────────────────────────────────────────────
+  # RollingUpdate (default): pods updated in reverse ordinal order (N-1 → 0).
+  #   partition: N — only pods with ordinal >= N are updated; lower pods keep
+  #              the old version. Useful for staged / canary-style rollouts.
+  # OnDelete: pods are only updated when manually deleted. Gives full control
+  #           over when each instance restarts (useful for databases).
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if eq .Values.statefulset.updateStrategy.type "RollingUpdate" }}
     rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
     {{- end }}
   template:
     metadata:
@@ -45,11 +54,9 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "python-app.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "python-app.fullname" . }}-data
-        {{- end }}
+        # NOTE: the "data" volume is intentionally NOT listed here.
+        # It is provided per-pod via volumeClaimTemplates below, which
+        # automatically creates a dedicated PVC for each pod ordinal.
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -73,10 +80,9 @@ spec:
             - name: config-volume
               mountPath: /config
               readOnly: true
-            {{- if .Values.persistence.enabled }}
-            - name: data-volume
+            # "data" is mounted from the per-pod PVC created by volumeClaimTemplates
+            - name: data
               mountPath: /data
-            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -97,4 +103,23 @@ spec:
             failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+  # ── VolumeClaimTemplates ───────────────────────────────────────────────────
+  # Kubernetes automatically creates one PVC per pod using this template.
+  # PVC names follow the pattern: <template-name>-<pod-name>
+  #   e.g. data-python-app-0, data-python-app-1, data-python-app-2
+  # These PVCs persist independently — deleting a pod does NOT delete its PVC.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "python-app.selectorLabels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+        {{- end }}
 {{- end }}
