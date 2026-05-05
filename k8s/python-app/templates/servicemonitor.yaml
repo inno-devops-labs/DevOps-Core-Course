@@ -1,0 +1,40 @@
+{{- if .Values.serviceMonitor.enabled }}
+# ServiceMonitor — tells Prometheus Operator to scrape this app's /metrics endpoint.
+#
+# The Prometheus Operator watches for ServiceMonitor resources and automatically
+# generates scrape configs for Prometheus. The `release: monitoring` label must
+# match the Prometheus Operator's serviceMonitorSelector (set by kube-prometheus-stack).
+#
+# Prerequisites:
+#   - kube-prometheus-stack installed in the monitoring namespace
+#   - serviceMonitor.enabled: true in values.yaml
+#
+# Verify:
+#   kubectl port-forward svc/monitoring-kube-prometheus-prometheus -n monitoring 9090:9090
+#   # Open http://localhost:9090/targets — look for python-app
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "python-app.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "python-app.labels" . | nindent 4 }}
+    # This label is required by the default kube-prometheus-stack Prometheus Operator
+    # selector. Without it, the operator will not pick up this ServiceMonitor.
+    release: {{ .Values.serviceMonitor.release | default "monitoring" }}
+spec:
+  # Select the Service that exposes /metrics.
+  # Matches app.kubernetes.io/name: python-app on the python-app-svc Service.
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "python-app.name" . }}
+  # Namespace where the target Service lives.
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: {{ .Values.serviceMonitor.path | default "/metrics" }}
+      interval: {{ .Values.serviceMonitor.interval | default "30s" }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout | default "10s" }}
+{{- end }}

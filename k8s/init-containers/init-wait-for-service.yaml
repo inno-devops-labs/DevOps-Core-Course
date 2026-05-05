@@ -1,0 +1,99 @@
+# Init Container Pattern 2 — Wait for Service
+#
+# The init container polls DNS until a named Service becomes resolvable.
+# The main container only starts once the dependency is ready.
+#
+# This pattern is essential for microservices where one pod must not start
+# until a database, cache, or API it depends on is available.
+#
+# Lifecycle:
+#   Init:0/1  → init-wait-for-service is looping (nslookup failing)
+#   Running   → myservice resolved, main container starts
+#
+# Demo flow:
+#   1. Apply this file — pod stays in Init:0/1 because myservice doesn't exist yet
+#   2. Apply the Service below — init container resolves DNS and exits
+#   3. Main container starts
+#
+# Verify:
+#   kubectl apply -f init-wait-for-service.yaml
+#   kubectl get pods -w                                    # watch Init:0/1
+#   kubectl logs init-wait-demo -c init-wait-for-service   # see nslookup attempts
+#   # In another terminal, create the service:
+#   kubectl apply -f - <<EOF
+#   apiVersion: v1
+#   kind: Service
+#   metadata:
+#     name: myservice
+#   spec:
+#     selector:
+#       app: myservice-backend
+#     ports:
+#       - port: 80
+#   EOF
+#   kubectl get pods -w                                    # watch → Running
+---
+# The dependency Service — apply this AFTER the pod to demonstrate the wait
+apiVersion: v1
+kind: Service
+metadata:
+  name: myservice
+  labels:
+    app: myservice-backend
+spec:
+  selector:
+    app: myservice-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+# The Pod that waits for myservice to be resolvable
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-wait-demo
+  labels:
+    app: init-wait-demo
+spec:
+  # ── Init Containers ──────────────────────────────────────────────────────────
+  # Polls DNS every 2 seconds until myservice resolves.
+  # Uses nslookup which is available in busybox.
+  # The loop exits (status 0) only when nslookup succeeds.
+  initContainers:
+    - name: init-wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "=== Waiting for myservice to become available ==="
+          until nslookup myservice; do
+            echo "myservice not yet available — retrying in 2s..."
+            sleep 2
+          done
+          echo "=== myservice is ready! Starting main container ==="
+
+  # ── Main Container ───────────────────────────────────────────────────────────
+  # Starts only after init-wait-for-service exits with code 0.
+  # In a real scenario this would be your application container.
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Main container started — dependency was ready!"
+          echo "Service myservice resolved successfully."
+          # Keep running so we can inspect the pod
+          sleep 3600
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "32Mi"
+        limits:
+          cpu: "100m"
+          memory: "64Mi"
+
+  restartPolicy: Never

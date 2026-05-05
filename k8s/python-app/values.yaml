@@ -174,3 +174,24 @@ statefulset:
     rollingUpdate:
       partition: 0       # Only pods with ordinal >= partition are updated
                          # Set to 2 to update only pod-2 (staged rollout demo)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ServiceMonitor — Prometheus Operator scrape configuration (Bonus Task)
+#
+# Requires kube-prometheus-stack to be installed in the monitoring namespace.
+# The `release` label must match the Prometheus Operator's serviceMonitorSelector.
+#
+# Enable with:
+#   helm upgrade python-app ./k8s/python-app --set serviceMonitor.enabled=true
+#
+# Verify in Prometheus UI:
+#   kubectl port-forward svc/monitoring-kube-prometheus-prometheus \
+#     -n monitoring 9090:9090
+#   # Status → Targets → look for python-app
+# ─────────────────────────────────────────────────────────────────────────────
+serviceMonitor:
+  enabled: false          # Set true after kube-prometheus-stack is installed
+  release: monitoring     # Must match Prometheus Operator's serviceMonitorSelector label
+  path: /metrics          # Metrics endpoint path (already exposed by prometheus-fastapi-instrumentator)
+  interval: 30s           # How often Prometheus scrapes this target
+  scrapeTimeout: 10s      # Timeout for each scrape request

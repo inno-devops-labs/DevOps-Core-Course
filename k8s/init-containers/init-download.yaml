@@ -1,0 +1,70 @@
+# Init Container Pattern 1 — Download File
+#
+# The init container runs BEFORE the main container starts.
+# It downloads index.html from example.com into a shared emptyDir volume.
+# The main nginx container then serves that file.
+#
+# Lifecycle:
+#   Init:0/1  → init-download is running (wget in progress)
+#   Running   → init finished, nginx starts and serves the downloaded file
+#
+# Verify:
+#   kubectl apply -f init-download.yaml
+#   kubectl get pods -w                          # watch Init:0/1 → Running
+#   kubectl logs <pod> -c init-download          # see wget output
+#   kubectl exec <pod> -- cat /usr/share/nginx/html/index.html
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-download-demo
+  labels:
+    app: init-download-demo
+spec:
+  # ── Init Containers ──────────────────────────────────────────────────────────
+  # Init containers run sequentially and must complete successfully before
+  # any regular container starts. They share volumes with the main container.
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "=== Init container starting ==="
+          echo "Downloading index.html from example.com..."
+          wget -O /work-dir/index.html https://example.com
+          echo "Download complete. File size: $(wc -c < /work-dir/index.html) bytes"
+          echo "=== Init container done ==="
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+
+  # ── Main Container ───────────────────────────────────────────────────────────
+  # Only starts after ALL init containers have completed successfully.
+  # Mounts the same volume to serve the downloaded file.
+  containers:
+    - name: main-app
+      image: nginx:alpine
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: workdir
+          mountPath: /usr/share/nginx/html
+      resources:
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+
+  # ── Shared Volume ────────────────────────────────────────────────────────────
+  # emptyDir is created when the pod is assigned to a node.
+  # It is shared between init containers and regular containers.
+  # Deleted when the pod is removed from the node.
+  volumes:
+    - name: workdir
+      emptyDir: {}
+
+  restartPolicy: Never
