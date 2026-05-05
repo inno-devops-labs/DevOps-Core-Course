@@ -75,3 +75,8 @@ statefulset:
   storageClass: ""
   updateStrategy:
     type: RollingUpdate
+
+serviceMonitor:
+  enabled: false
+
+initContainers: []

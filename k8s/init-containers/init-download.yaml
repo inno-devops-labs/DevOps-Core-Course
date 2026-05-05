@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-download-demo
+  namespace: default
+spec:
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Downloading example page..."
+          wget -O /work-dir/index.html https://example.com
+          echo "Download complete. File size: $(wc -c < /work-dir/index.html) bytes"
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Main app started. File from init container:"
+          wc -l /data/index.html
+          tail -5 /data/index.html
+          sleep 3600
+      volumeMounts:
+        - name: workdir
+          mountPath: /data
+  volumes:
+    - name: workdir
+      emptyDir: {}
+  restartPolicy: Never
