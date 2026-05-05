@@ -11,8 +11,10 @@ import time
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, request
+from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
 
 START_TIME = time.time()
 

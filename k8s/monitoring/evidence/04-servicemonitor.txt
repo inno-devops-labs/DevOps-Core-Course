@@ -1,0 +1,30 @@
+NAME          AGE
+devops-info   108s
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations:
+    meta.helm.sh/release-name: devops-info
+    meta.helm.sh/release-namespace: default
+  creationTimestamp: "2026-05-05T08:52:29Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/instance: devops-info
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: devops-info
+    app.kubernetes.io/version: 1.0.0
+    helm.sh/chart: devops-info-0.1.0
+    release: monitoring
+  name: devops-info
+  namespace: default
+  resourceVersion: "78389"
+  uid: 91552c02-20a1-4945-beca-940fc68574bc
+spec:
+  endpoints:
+  - interval: 15s
+    path: /metrics
+    port: http
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: devops-info
+      app.kubernetes.io/name: devops-info
