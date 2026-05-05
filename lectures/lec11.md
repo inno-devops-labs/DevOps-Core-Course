@@ -76,11 +76,11 @@ Section 5: Production Patterns    → 📝 POST Quiz
 
 ```mermaid
 flowchart LR
-  subgraph 😰 Developer
+  subgraph "😰 Developer"
     D1[🚀 Ship Fast]
     D2[🔧 Easy Access]
   end
-  subgraph 🔐 Security
+  subgraph "🔐 Security"
     S1[🛡️ Protect Data]
     S2[📋 Audit Access]
   end
@@ -333,7 +333,7 @@ resources:
 
 ```mermaid
 flowchart TD
-  subgraph 😰 Limitations
+  subgraph "😰 Limitations"
     A[🔄 No Rotation]
     B[📊 Limited Audit]
     C[🌍 K8s Only]
@@ -359,7 +359,7 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-  subgraph 🏰 Vault
+  subgraph "🏰 Vault"
     A[🔐 Secret Engine]
     B[🔑 Auth Methods]
     C[📋 Policies]
@@ -377,18 +377,18 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  subgraph 👥 Clients
+  subgraph "👥 Clients"
     K8s[☸️ K8s Pods]
     CLI[💻 CLI]
     API[🔌 API]
   end
-  subgraph 🏰 Vault Server
+  subgraph "🏰 Vault Server"
     Auth[🔑 Auth Methods]
     Policy[📋 Policies]
     Secrets[🔐 Secret Engines]
     Audit[📊 Audit Device]
   end
-  subgraph 💾 Storage
+  subgraph "💾 Storage"
     Backend[🗄️ Storage Backend]
   end
   K8s --> Auth
@@ -460,12 +460,12 @@ path "secret/data/admin/*" {
 
 ```mermaid
 flowchart LR
-  subgraph 📦 Pod
+  Vault[🏰 Vault Server]
+  subgraph "📦 Pod"
     App[🚀 App Container]
     Agent[🔐 Vault Agent]
     Vol[📁 Shared Volume]
   end
-  Vault[🏰 Vault Server]
   Agent -->|🔑 Auth| Vault
   Vault -->|🔐 Secrets| Agent
   Agent -->|📝 Write| Vol
@@ -561,17 +561,17 @@ vault read database/creds/readonly
 
 ```mermaid
 flowchart TD
-  subgraph 🏗️ Foundation
+  subgraph "🏗️ Foundation"
     L2[📦 Lab 2: Docker]
     L10[⛵ Lab 10: Helm]
   end
-  subgraph 🔐 Security
+  subgraph "🔐 Security"
     L11[🔒 Lab 11: Secrets]
   end
-  subgraph 📋 Config
+  subgraph "📋 Config"
     L12[📁 Lab 12: ConfigMaps]
   end
-  subgraph 🚀 Deployment
+  subgraph "🚀 Deployment"
     L13[🔄 Lab 13: ArgoCD]
   end
   L2 --> L10
