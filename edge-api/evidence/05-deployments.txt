@@ -1,0 +1,47 @@
+
+ ⛅️ wrangler 4.87.0
+───────────────────
+Created:     2026-05-05T08:59:23.930Z
+Author:      merkulovlr@gmail.com
+Source:      Upload
+Message:     Automatic deployment on upload.
+Version(s):  (100%) 987aee21-6a38-4d29-a329-db11f2a04c28
+                 Created:  2026-05-05T08:59:23.930Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-05-05T08:59:26.241Z
+Author:      merkulovlr@gmail.com
+Source:      Secret Change
+Message:     -
+Version(s):  (100%) 99e130f7-6448-4272-852a-5905a9b766f3
+                 Created:  2026-05-05T08:59:26.241Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-05-05T08:59:31.930Z
+Author:      merkulovlr@gmail.com
+Source:      Secret Change
+Message:     -
+Version(s):  (100%) 906b7382-9f5c-47f8-826e-aba61e6a15f5
+                 Created:  2026-05-05T08:59:31.930Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-05-05T08:59:46.202Z
+Author:      merkulovlr@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 8a897d24-26f3-42e4-9776-4ed7e6ff2f11
+                 Created:  2026-05-05T08:59:43.779Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-05-05T09:00:31.814Z
+Author:      merkulovlr@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 8bfb8833-deb7-4bf3-b85f-547aba37728d
+                 Created:  2026-05-05T09:00:28.915Z
+                     Tag:  -
+                 Message:  -
