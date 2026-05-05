@@ -1,0 +1,3 @@
+devops-info-service-nix:1.0.0         4a51375c652b        215MB             0B   U    
+lab2-app:v1                           0477edae7fe5        181MB             0B   U    
+lab2-app:v2                           0477edae7fe5        181MB             0B   U    

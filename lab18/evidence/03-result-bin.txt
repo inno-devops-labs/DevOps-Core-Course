@@ -1,0 +1,4 @@
+total 8
+dr-xr-xr-x@ 3 root  wheel    96B Jan  1  1970 .
+dr-xr-xr-x@ 5 root  wheel   160B Jan  1  1970 ..
+-r-xr-xr-x@ 1 root  wheel   1.7K Jan  1  1970 devops-info-service

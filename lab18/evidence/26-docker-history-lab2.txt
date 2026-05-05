@@ -1,0 +1,20 @@
+IMAGE          CREATED          CREATED BY                                      SIZE      COMMENT
+0477edae7fe5   34 minutes ago   CMD ["uvicorn" "app:app" "--host" "0.0.0.0" …   0B        buildkit.dockerfile.v0
+<missing>      34 minutes ago   EXPOSE [5000/tcp]                               0B        buildkit.dockerfile.v0
+<missing>      34 minutes ago   USER appuser                                    0B        buildkit.dockerfile.v0
+<missing>      34 minutes ago   RUN /bin/sh -c chown -R appuser:appuser /app…   2.37kB    buildkit.dockerfile.v0
+<missing>      34 minutes ago   COPY app.py . # buildkit                        2.33kB    buildkit.dockerfile.v0
+<missing>      34 minutes ago   RUN /bin/sh -c pip install --no-cache-dir -r…   38.5MB    buildkit.dockerfile.v0
+<missing>      35 minutes ago   COPY requirements.txt . # buildkit              43B       buildkit.dockerfile.v0
+<missing>      3 weeks ago      WORKDIR /app                                    0B        buildkit.dockerfile.v0
+<missing>      3 weeks ago      RUN /bin/sh -c useradd -m -u 10001 appuser #…   8.92kB    buildkit.dockerfile.v0
+<missing>      3 weeks ago      ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFER…   0B        buildkit.dockerfile.v0
+<missing>      3 months ago     CMD ["python3"]                                 0B        buildkit.dockerfile.v0
+<missing>      3 months ago     RUN /bin/sh -c set -eux;  for src in idle3 p…   36B       buildkit.dockerfile.v0
+<missing>      3 months ago     RUN /bin/sh -c set -eux;   savedAptMark="$(a…   38.5MB    buildkit.dockerfile.v0
+<missing>      3 months ago     ENV PYTHON_SHA256=16ede7bb7cdbfa895d11b0642f…   0B        buildkit.dockerfile.v0
+<missing>      3 months ago     ENV PYTHON_VERSION=3.13.11                      0B        buildkit.dockerfile.v0
+<missing>      3 months ago     ENV GPG_KEY=7169605F62C751356D054A26A821E680…   0B        buildkit.dockerfile.v0
+<missing>      3 months ago     RUN /bin/sh -c set -eux;  apt-get update;  a…   3.86MB    buildkit.dockerfile.v0
+<missing>      3 months ago     ENV PATH=/usr/local/bin:/usr/local/sbin:/usr…   0B        buildkit.dockerfile.v0
+<missing>      3 months ago     # debian.sh --arch 'arm64' out/ 'trixie' '@1…   100MB     debuerreotype 0.17
