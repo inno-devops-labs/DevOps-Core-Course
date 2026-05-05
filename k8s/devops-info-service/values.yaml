@@ -60,7 +60,7 @@ secret:
     api_key: __PLACEHOLDER_API_KEY__
 
 serviceAccount:
-  create: true
+  create: false
   name: ""
   annotations: {}
 
@@ -129,6 +129,13 @@ rollout:
     count: 3
     failureLimit: 1
     successValue: healthy
+
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
 
 nameOverride: ""
 fullnameOverride: ""
