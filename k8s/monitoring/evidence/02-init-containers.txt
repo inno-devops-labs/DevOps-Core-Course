@@ -1,0 +1,336 @@
+=== Init Download Pod ===
+NAME                 READY   STATUS    RESTARTS   AGE
+init-download-demo   1/1     Running   0          2m11s
+
+=== Init Container Logs ===
+Downloading example page...
+Connecting to example.com (104.20.23.154:443)
+wget: note: TLS certificate validation not implemented
+saving to '/work-dir/index.html'
+index.html           100% |********************************|   528  0:00:00 ETA
+'/work-dir/index.html' saved
+Download complete. File size: 528 bytes
+
+=== Main Container (file from init) ===
+Main app started. File from init container:
+1 /data/index.html
+<!doctype html><html lang="en"><head><title>Example Domain</title><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{background:#eee;width:60vw;margin:15vh auto;font-family:system-ui,sans-serif}h1{font-size:1.5em}div{opacity:0.8}a:link,a:visited{color:#348}</style></head><body><div><h1>Example Domain</h1><p>This domain is for use in documentation examples without needing permission. Avoid use in operations.</p><p><a href="https://iana.org/domains/example">Learn more</a></p></div></body></html>
+
+=== Wait-for-Service Pod ===
+NAME                    READY   STATUS    RESTARTS   AGE
+wait-for-service-demo   1/1     Running   0          113s
+
+=== Wait-for-service logs (resolved after devops-info deployed) ===
+Waiting for devops-info service to be resolvable...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+** server can't find devops-info.default.svc.cluster.local: NXDOMAIN
+
+Service not ready yet, retrying in 2s...
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+
+Name:	devops-info.default.svc.cluster.local
+Address: 10.105.92.189
+
+Service is ready! Starting main app.

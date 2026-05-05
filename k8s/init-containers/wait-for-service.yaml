@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-for-service-demo
+  namespace: default
+spec:
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for devops-info service to be resolvable..."
+          until nslookup devops-info.default.svc.cluster.local; do
+            echo "Service not ready yet, retrying in 2s..."
+            sleep 2
+          done
+          echo "Service is ready! Starting main app."
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Main app started after dependency became available."
+          sleep 3600
+  restartPolicy: Never

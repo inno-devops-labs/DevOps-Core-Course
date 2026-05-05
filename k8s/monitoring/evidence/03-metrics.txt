@@ -1,0 +1,15 @@
+# HELP flask_http_request_duration_seconds Flask HTTP request duration in seconds
+# TYPE flask_http_request_duration_seconds histogram
+flask_http_request_duration_seconds_bucket{le="0.005",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="0.01",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="0.025",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="0.05",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="0.075",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="0.1",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="0.25",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="0.5",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="0.75",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="1.0",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="2.5",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="5.0",method="GET",path="/health",status="200"} 15.0
+flask_http_request_duration_seconds_bucket{le="7.5",method="GET",path="/health",status="200"} 15.0
