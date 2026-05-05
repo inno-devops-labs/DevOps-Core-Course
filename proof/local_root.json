@@ -1,0 +1,19 @@
+{
+  "app": "edge-api",
+  "version": "1.0.0",
+  "course": "devops-core",
+  "runtime": "Cloudflare Workers",
+  "timestamp": "2026-05-05T16:31:44.744Z",
+  "config": {
+    "plaintextVarsConfigured": {
+      "APP_NAME": true,
+      "APP_VERSION": true,
+      "COURSE_NAME": true
+    },
+    "secretsConfigured": {
+      "API_TOKEN": false,
+      "ADMIN_EMAIL": false
+    },
+    "kvBindingConfigured": true
+  }
+}

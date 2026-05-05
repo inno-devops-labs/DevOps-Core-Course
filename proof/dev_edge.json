@@ -1,0 +1,10 @@
+{
+  "colo": "ARN",
+  "country": "RU",
+  "city": "Perm",
+  "asn": 12768,
+  "asOrganization": "Real IP pool for individual PPPoE customers",
+  "httpProtocol": "HTTP/2",
+  "tlsVersion": "TLSv1.3",
+  "timezone": "Asia/Yekaterinburg"
+}
