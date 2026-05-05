@@ -228,3 +228,4 @@ lab15-devops-info-service-2   lab15-devops-info-service-7b688cd857
 ```
 
 Interpretation: with `OnDelete`, pods update only when I manually recreate them
+
