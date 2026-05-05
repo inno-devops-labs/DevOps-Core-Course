@@ -137,5 +137,28 @@ statefulset:
     rollingUpdate:
       partition: 0
 
+initContainers:
+  enabled: true
+  waitForService:
+    enabled: true
+    host: kubernetes.default.svc.cluster.local
+    sleepSeconds: 2
+  download:
+    enabled: true
+    url: https://example.com
+    targetFile: /work-dir/index.html
+
+sharedWorkdir:
+  enabled: true
+  mountPath: /init-data
+
+serviceMonitor:
+  enabled: false
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
+  labels:
+    release: monitoring
+
 nameOverride: ""
 fullnameOverride: ""

@@ -1,0 +1,249 @@
+---
+# Source: devops-info-service/templates/configmap-env.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab16-devops-info-service-env
+  labels:
+    helm.sh/chart: devops-info-service-0.1.0
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/instance: lab16
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  APP_NAME: "devops-info-service"
+  FEATURE_VISITS_COUNTER: "true"
+---
+# Source: devops-info-service/templates/configmap-file.yml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab16-devops-info-service-config
+  labels:
+    helm.sh/chart: devops-info-service-0.1.0
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/instance: lab16
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  config.json: |-
+
+    {
+      "application": {
+        "name": "devops-info-service",
+        "environment": "development"
+      },
+      "settings": {
+        "featureFlags": {
+          "visitsEndpoint": "true",
+          "metricsEndpoint": "true"
+        }
+      }
+    }
+---
+# Source: devops-info-service/templates/headless-service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab16-devops-info-service-headless
+  labels:
+    helm.sh/chart: devops-info-service-0.1.0
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/instance: lab16
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/instance: lab16
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+      protocol: TCP
+---
+# Source: devops-info-service/templates/service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab16-devops-info-service
+  labels:
+    helm.sh/chart: devops-info-service-0.1.0
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/instance: lab16
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/instance: lab16
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+      protocol: TCP
+      nodePort: 30080
+---
+# Source: devops-info-service/templates/statefulset.yml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: lab16-devops-info-service
+  labels:
+    helm.sh/chart: devops-info-service-0.1.0
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/instance: lab16
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  serviceName: lab16-devops-info-service-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-info-service
+      app.kubernetes.io/instance: lab16
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: devops-info-service
+        app.kubernetes.io/instance: lab16
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: web
+    spec:
+      serviceAccountName: default
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      volumes:
+        - name: config-volume
+          configMap:
+            name: lab16-devops-info-service-config
+        - name: workdir
+          emptyDir: {}
+      initContainers:
+        - name: wait-for-service
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nslookup kubernetes.default.svc.cluster.local; do echo "waiting for kubernetes.default.svc.cluster.local"; sleep 2; done
+        - name: init-download
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - wget -O /work-dir/index.html https://example.com && echo "download complete"
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+      containers:
+        - name: devops-info-service
+          image: "cacucoh/testiks:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: lab16-devops-info-service-secret
+                optional: true
+            - configMapRef:
+                name: lab16-devops-info-service-env
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "5000"
+            - name: DEBUG
+              value: "false"
+            - name: APP_ENV
+              value: "development"
+            - name: LOG_LEVEL
+              value: "INFO"
+            - name: VISITS_FILE
+              value: "/data/visits"
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            - name: data-volume
+              mountPath: /data
+            - name: workdir
+              mountPath: /init-data
+          resources:
+            limits:
+              cpu: 250m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+            successThreshold: 1
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+        labels:
+          helm.sh/chart: devops-info-service-0.1.0
+          app.kubernetes.io/name: devops-info-service
+          app.kubernetes.io/instance: lab16
+          app.kubernetes.io/version: "1.0.0"
+          app.kubernetes.io/managed-by: Helm
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 100Mi
+---
+# Source: devops-info-service/templates/servicemonitor.yml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: lab16-devops-info-service
+  labels:
+    helm.sh/chart: devops-info-service-0.1.0
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/instance: lab16
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-info-service
+      app.kubernetes.io/instance: lab16
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s

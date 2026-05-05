@@ -48,6 +48,34 @@ spec:
           configMap:
             name: {{ .Values.configMap.file.name | default (include "devops-info-service.fullname" .) }}-config
         {{- end }}
+        {{- if .Values.sharedWorkdir.enabled }}
+        - name: workdir
+          emptyDir: {}
+        {{- end }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nslookup {{ .Values.initContainers.waitForService.host }}; do echo "waiting for {{ .Values.initContainers.waitForService.host }}"; sleep {{ .Values.initContainers.waitForService.sleepSeconds }}; done
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - wget -O {{ .Values.initContainers.download.targetFile }} {{ .Values.initContainers.download.url }} && echo "download complete"
+          {{- if .Values.sharedWorkdir.enabled }}
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+          {{- end }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -78,6 +106,10 @@ spec:
             {{- if .Values.persistence.enabled }}
             - name: data-volume
               mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+            {{- if .Values.sharedWorkdir.enabled }}
+            - name: workdir
+              mountPath: {{ .Values.sharedWorkdir.mountPath }}
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
