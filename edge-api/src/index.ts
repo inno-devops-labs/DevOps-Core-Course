@@ -23,6 +23,7 @@ export interface Env {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    console.log("path", url.pathname, "colo", request.cf?.colo);
 
     if (url.pathname === "/health") {
       return Response.json({ status: "ok" });
