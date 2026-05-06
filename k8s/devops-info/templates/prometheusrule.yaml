@@ -1,0 +1,60 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "devops-info.fullname" . }}-alerts
+  labels:
+    {{- include "devops-info.labels" . | nindent 4 }}
+    prometheus: monitoring
+spec:
+  groups:
+  - name: devops-info.rules
+    interval: 30s
+    rules:
+    - alert: StatefulSetReplicasMismatch
+      expr: |
+        kube_statefulset_status_replicas{statefulset="{{ include "devops-info.fullname" . }}"} != 
+        kube_statefulset_replicas{statefulset="{{ include "devops-info.fullname" . }}"}
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "StatefulSet {{ include "devops-info.fullname" . }} has mismatched replicas"
+        description: "StatefulSet replicas do not match desired replicas"
+    
+    - alert: PodRestartingTooOften
+      expr: rate(kube_pod_container_status_restarts_total{pod=~"{{ include "devops-info.fullname" . }}-.*"}[1h]) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pod restarting too frequently"
+        description: "Pod has restarted multiple times in last hour"
+    
+    - alert: PVCNearCapacity
+      expr: |
+        (kubelet_volume_stats_used_bytes{persistentvolumeclaim=~"data-{{ include "devops-info.fullname" . }}-.*"} / 
+         kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"data-{{ include "devops-info.fullname" . }}-.*"}) > 0.8
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "PVC is 80%+ full"
+        description: "Persistent volume claim usage is critical"
+    
+    - alert: HighHTTPErrorRate
+      expr: rate(http_requests_total{status_code=~"5..",pod=~"{{ include "devops-info.fullname" . }}-.*"}[5m]) > 0.01
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High 5xx error rate detected"
+        description: "5xx error rate exceeds threshold"
+    
+    - alert: ServiceDown
+      expr: up{job="{{ include "devops-info.fullname" . }}"} == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "{{ include "devops-info.fullname" . }} target is down"
+        description: "Service target has been unavailable for 2 minutes"

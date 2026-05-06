@@ -22,6 +22,34 @@ spec:
       {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ include "devops-info.serviceAccountName" . }}
       {{- end }}
+      initContainers:
+      - name: init-wait-service
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "Init: waiting for monitoring-grafana.monitoring.svc.cluster.local:80"
+          until nc -z monitoring-grafana.monitoring.svc.cluster.local 80; do
+            echo "Init: service not ready, retry in 2s"
+            sleep 2
+          done
+          echo "Init: service is reachable"
+      - name: init-download-file
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "Init: downloading bootstrap file"
+          wget -q -O /data/bootstrap.html http://monitoring-grafana.monitoring.svc.cluster.local/login || true
+          if [ ! -s /data/bootstrap.html ]; then
+            echo "fallback-bootstrap" > /data/bootstrap.html
+          fi
+          ls -lh /data/bootstrap.html
+        volumeMounts:
+        - name: data
+          mountPath: {{ .Values.persistence.mountPath }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
