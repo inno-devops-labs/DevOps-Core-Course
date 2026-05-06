@@ -34,6 +34,28 @@ Worker deployed successfully on: **May 6, 2026, 14:35 UTC**
 - Secrets: `API_TOKEN` and `ADMIN_EMAIL` configured
 - Edge Location: CDG (Paris, France) - automatically deployed globally
 
+### Screenshots
+
+**Cloudflare Dashboard (Overview)**
+
+![Cloudflare Dashboard Overview](screenshots/dashboard.png)
+
+**Edge Metadata Response (`/edge`)**
+
+![Edge Endpoint Response](screenshots/edge.png)
+
+**Deployment History**
+
+![Deployment History](screenshots/deployment.png)
+
+**Metrics / Observability**
+
+![Workers Metrics](screenshots/metrics.png)
+
+**Bindings (KV Namespace)**
+
+![Bindings and KV Namespace](screenshots/bindings.png)
+
 ### Route Tests
 
 **1. Home Endpoint (`/`)**
@@ -83,9 +105,9 @@ Worker deployed successfully on: **May 6, 2026, 14:35 UTC**
 - Request 1: `{"counter": "visits", "visits": 1, "persisted": true}`
 - Request 2: `{"counter": "visits", "visits": 2, "persisted": true}`
 - Request 3: `{"counter": "visits", "visits": 3, "persisted": true}`
-- ✅ KV persistence verified: counter survives across deployments
+- KV persistence verified: counter survives across deployments
 
----
+
 
 ## Kubernetes vs Cloudflare Workers
 
@@ -110,3 +132,24 @@ Worker deployed successfully on: **May 6, 2026, 14:35 UTC**
 - Workers feels easier for routing, deployment, and global access.
 - Workers feels more constrained because it is not a Docker host and has a narrower runtime model.
 - The biggest change is that you configure bindings and edge services instead of shipping an image to nodes.
+
+---
+
+### Checklist Coverage
+
+- [x] Cloudflare account created
+- [x] Workers project initialized
+- [x] Wrangler authenticated
+- [x] Worker deployed to workers.dev
+- [x] /health endpoint working
+- [x] Edge metadata endpoint implemented
+- [x] At least 1 plaintext variable configured
+- [x] At least 2 secrets configured
+- [x] KV namespace created and bound
+- [x] Persistence verified after redeploy
+- [x] Logs or metrics reviewed
+- [x] Deployment history viewed
+- [x] WORKERS.md documentation complete
+- [x] Kubernetes comparison documented
+
+---
