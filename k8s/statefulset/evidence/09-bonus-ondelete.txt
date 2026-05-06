@@ -1,0 +1,40 @@
+=== Switch to OnDelete strategy + new image tag (lab15) — pods should NOT auto-update ===
+Release "info" has been upgraded. Happy Helming!
+NAME: info
+LAST DEPLOYED: Wed May  6 13:51:12 2026
+NAMESPACE: default
+STATUS: deployed
+REVISION: 4
+TEST SUITE: None
+NOTES:
+DevOps Info Service has been deployed!
+
+Release: info
+Chart:   devops-info-service-0.1.0
+App:     1.0.0
+
+To access the service:
+
+=== Update strategy is now OnDelete ===
+{
+    "type": "OnDelete"
+}
+
+=== Pods STILL run lab15v2 — OnDelete waits for manual deletion ===
+pod-0 image: devops-info-service:lab15v2
+pod-1 image: devops-info-service:lab15v2
+pod-2 image: devops-info-service:lab15v2
+
+=== Manually delete pod-1 only ===
+pod "info-devops-info-service-1" deleted
+pod/info-devops-info-service-1 condition met
+
+=== After manual delete: only pod-1 picked up new template (lab15) ===
+pod-0 image: devops-info-service:lab15v2
+pod-1 image: devops-info-service:lab15
+pod-2 image: devops-info-service:lab15v2
+
+=== Visit counts preserved across OnDelete update ===
+pod-0: 5
+pod-1: 2
+pod-2: 9

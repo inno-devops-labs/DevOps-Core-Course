@@ -1,0 +1,45 @@
+=== nslookup pod-0 ===
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Name:	info-devops-info-service-0.info-devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.5
+
+
+=== nslookup pod-1 ===
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Name:	info-devops-info-service-1.info-devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.6
+
+
+=== nslookup pod-2 ===
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+
+Name:	info-devops-info-service-2.info-devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.7
+
+=== nslookup headless service (returns all pod IPs) ===
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+
+Name:	info-devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.7
+Name:	info-devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.6
+Name:	info-devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.5
+
+=== nslookup ClusterIP service ===
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+
+Name:	info-devops-info-service.default.svc.cluster.local
+Address: 10.106.247.32
+
+pod "dns-test" deleted

@@ -1,0 +1,55 @@
+Name:               info-devops-info-service
+Namespace:          default
+CreationTimestamp:  Wed, 06 May 2026 13:46:17 +0300
+Selector:           app.kubernetes.io/instance=info,app.kubernetes.io/name=devops-info-service
+Labels:             app.kubernetes.io/instance=info
+                    app.kubernetes.io/managed-by=Helm
+                    app.kubernetes.io/name=devops-info-service
+                    app.kubernetes.io/version=1.0.0
+                    helm.sh/chart=devops-info-service-0.1.0
+Annotations:        meta.helm.sh/release-name: info
+                    meta.helm.sh/release-namespace: default
+Replicas:           3 desired | 3 total
+Update Strategy:    RollingUpdate
+  Partition:        0
+  MaxUnavailable:   1
+Pods Status:        3 Running / 0 Waiting / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:           app.kubernetes.io/instance=info
+                    app.kubernetes.io/name=devops-info-service
+  Annotations:      checksum/config: b9d7896e10dfdd2b7381d04aae2112a01dc29cccac7a2867fa5aa9b59c4414fb
+                    checksum/secret: c2b170392e4054f011b5682d461d222034d5d2c2016a42aba7bc91be804e91aa
+  Service Account:  info-devops-info-service
+  Containers:
+   devops-info-service:
+    Image:      devops-info-service:lab15
+    Port:       5000/TCP
+    Host Port:  0/TCP
+    Limits:
+      cpu:     500m
+      memory:  256Mi
+    Requests:
+      cpu:      100m
+      memory:   128Mi
+    Liveness:   http-get http://:http/health delay=10s timeout=2s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:http/health delay=5s timeout=2s period=5s #success=1 #failure=3
+    Startup:    http-get http://:http/health delay=0s timeout=1s period=2s #success=1 #failure=30
+    Environment Variables from:
+      info-devops-info-service-secret  Secret     Optional: false
+      info-devops-info-service-env     ConfigMap  Optional: false
+    Environment:
+      APP_ENV:      development
+      LOG_LEVEL:    info
+      VISITS_FILE:  /data/visits
+      CONFIG_FILE:  /config/config.json
+    Mounts:
+      /config from config-volume (ro)
+      /data from data (rw)
+  Volumes:
+   config-volume:
+    Type:          ConfigMap (a volume populated by a ConfigMap)
+    Name:          info-devops-info-service-config
+    Optional:      false
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Volume Claims:

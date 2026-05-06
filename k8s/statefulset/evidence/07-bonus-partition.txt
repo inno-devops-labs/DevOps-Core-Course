@@ -1,0 +1,38 @@
+=== Helm upgrade with image tag lab15v2 + partition=2 (only pod-2 should update) ===
+Release "info" has been upgraded. Happy Helming!
+NAME: info
+LAST DEPLOYED: Wed May  6 13:49:50 2026
+NAMESPACE: default
+STATUS: deployed
+REVISION: 2
+TEST SUITE: None
+NOTES:
+DevOps Info Service has been deployed!
+
+Release: info
+Chart:   devops-info-service-0.1.0
+App:     1.0.0
+
+To access the service:
+
+=== Watch rollout briefly ===
+partitioned roll out complete: 1 new pods have been updated...
+
+=== Per-pod images (pod-2 should be lab15v2; pod-0 and pod-1 still lab15) ===
+pod-0: devops-info-service:lab15
+pod-1: devops-info-service:lab15
+pod-2: devops-info-service:lab15v2
+
+=== StatefulSet update strategy ===
+{
+    "rollingUpdate": {
+        "maxUnavailable": 1,
+        "partition": 2
+    },
+    "type": "RollingUpdate"
+}
+
+=== Visit counts unaffected (PVCs survived rollout) ===
+pod-0: 5
+pod-1: 2
+pod-2: 9

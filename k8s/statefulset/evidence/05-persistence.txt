@@ -1,0 +1,19 @@
+=== Before deletion ===
+pod-0 visits: 5
+pod-0 PVC: pvc-8e96da3d-bcb2-46c5-8d21-bd6337765d3a
+NAME                         READY   STATUS    RESTARTS   AGE     IP           NODE    NOMINATED NODE   READINESS GATES
+info-devops-info-service-0   1/1     Running   0          2m35s   10.244.0.5   lab15   <none>           <none>
+
+=== Deleting pod info-devops-info-service-0 ===
+pod "info-devops-info-service-0" deleted
+
+=== Waiting for pod to be Ready again ===
+pod/info-devops-info-service-0 condition met
+
+=== After restart (PVC should re-attach to new pod) ===
+NAME                         READY   STATUS    RESTARTS   AGE   IP           NODE    NOMINATED NODE   READINESS GATES
+info-devops-info-service-0   1/1     Running   0          9s    10.244.0.9   lab15   <none>           <none>
+pod-0 PVC still: pvc-8e96da3d-bcb2-46c5-8d21-bd6337765d3a
+pod-0 visits after restart: 5
+pod-1 visits (unchanged): 2
+pod-2 visits (unchanged): 9

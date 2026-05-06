@@ -1,0 +1,18 @@
+=== Increment pod-0 5 times via curl localhost:18080/ ===
+(done)
+
+=== Increment pod-1 2 times via curl localhost:18081/ ===
+(done)
+
+=== Increment pod-2 9 times via curl localhost:18082/ ===
+(done)
+
+=== Per-pod visit counts via /visits endpoint (no increment) ===
+pod-0: {"visits":5,"file":"/data/visits"}
+pod-1: {"visits":2,"file":"/data/visits"}
+pod-2: {"visits":9,"file":"/data/visits"}
+
+=== Direct file inspection (per-pod /data/visits backed by per-pod PVC) ===
+pod-0 /data/visits: 5
+pod-1 /data/visits: 2
+pod-2 /data/visits: 9

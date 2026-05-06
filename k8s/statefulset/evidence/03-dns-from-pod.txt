@@ -1,0 +1,12 @@
+=== hostname inside pod-0 ===
+info-devops-info-service-0
+
+=== getent hosts pod-1 (DNS lookup for stable name) ===
+10.244.0.6      info-devops-info-service-1.info-devops-info-service-headless.default.svc.cluster.local
+10.244.0.7      info-devops-info-service-2.info-devops-info-service-headless.default.svc.cluster.local
+
+=== http GET pod-1:5000/health (direct pod-to-pod via stable DNS) ===
+200 {"status":"healthy","timestamp":"2026-05-06T10:47:58.427571+00:00","uptime_seconds":89}
+
+=== http GET pod-2:5000/health ===
+200 {"status":"healthy","timestamp":"2026-05-06T10:47:58.724992+00:00","uptime_seconds":80}
