@@ -57,6 +57,9 @@ persistence:
   storageClass: ""
   mountPath: /data
 
+configmap:
+  enabled: true
+
 resources:
   requests:
     cpu: 100m
