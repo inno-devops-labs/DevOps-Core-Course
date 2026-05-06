@@ -1,6 +1,6 @@
 # Moscow Time App
 
-[![Python CI](https://github.com/SadPixels/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=s25)](https://github.com/SadPixels/DevOps-Core-Course/actions/workflows/python-ci.yml)
+[![Python CI](https://github.com/SadPixels/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=lab3)](https://github.com/SadPixels/DevOps-Core-Course/actions/workflows/python-ci.yml)
 
 ## Overview
 
