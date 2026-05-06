@@ -7,6 +7,11 @@ App version: {{ .Chart.AppVersion }}
 
 Service type: {{ .Values.service.type }}
 Replicas: {{ .Values.replicaCount }}
+{{- if .Values.statefulset.enabled }}
+Workload: StatefulSet ({{ include "devops-info-service.fullname" . }}-headless for stable pod DNS)
+{{- else }}
+Workload: Deployment
+{{- end }}
 
 {{- if eq .Values.service.type "NodePort" }}
 Access the application via NodePort:
@@ -17,6 +22,6 @@ Get the LoadBalancer IP:
   kubectl get service {{ include "devops-info-service.fullname" . }} --watch
 {{- end }}
 
-Check deployment status:
-  kubectl get pods -l "app.kubernetes.io/instance={{ .Release.Name }}"
+Check workload status:
+  kubectl get pods,sts -l "app.kubernetes.io/instance={{ .Release.Name }}"
   helm status {{ .Release.Name }}
