@@ -1,25 +1,26 @@
-{{- if ne (.Values.workload.kind | default "rollout") "statefulset" }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if eq (.Values.workload.kind | default "rollout") "statefulset" }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "mychart.fullname" . }}
   labels:
     {{- include "mychart.labels" . | nindent 4 }}
 spec:
-  revisionHistoryLimit: {{ .Values.rollout.revisionHistoryLimit }}
-  progressDeadlineSeconds: {{ .Values.rollout.progressDeadlineSeconds }}
-  {{- if not .Values.autoscaling.enabled }}
+  serviceName: {{ include "mychart.fullname" . }}-headless
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy | default "OrderedReady" }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "mychart.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type | default "RollingUpdate" }}
+    {{- if and (eq (.Values.statefulset.updateStrategy.type | default "RollingUpdate") "RollingUpdate") (hasKey .Values.statefulset.updateStrategy "partition") }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.partition }}
+    {{- end }}
   template:
     metadata:
       annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "myapp-role"
-        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp"
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -59,10 +60,6 @@ spec:
           readinessProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
-          volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
           envFrom:
             - secretRef:
                 name: {{ include "mychart.fullname" . }}-secret
@@ -70,24 +67,22 @@ spec:
                 name: {{ include "mychart.fullname" . }}-env
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.volumes }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+              readOnly: true
+            - name: data
+              mountPath: /data
+            {{- with .Values.statefulset.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
       volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "mychart.fullname" . }}-config
+        {{- with .Values.statefulset.extraVolumes }}
         {{- toYaml . | nindent 8 }}
-        - name: config-volume
-          configMap:
-            name: {{ include "mychart.fullname" . }}-config
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "mychart.fullname" . }}-data
-      {{- else }}
-      volumes:
-        - name: config-volume
-          configMap:
-            name: {{ include "mychart.fullname" . }}-config
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "mychart.fullname" . }}-data
-      {{- end }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -100,40 +95,20 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "mychart.fullname" . }}
-      previewService: {{ include "mychart.previewServiceName" . }}
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
-      {{- with .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ . }}
-      {{- end }}
-      {{- with .Values.rollout.blueGreen.previewReplicaCount }}
-      previewReplicaCount: {{ . }}
-      {{- end }}
-    {{- else }}
-    canary:
-      maxSurge: {{ .Values.rollout.canary.maxSurge | quote }}
-      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
-      steps:
-        - setWeight: 20
-        - pause: {}
-        {{- if .Values.rollout.analysis.enabled }}
-        - analysis:
-            templates:
-              - templateName: {{ .Values.rollout.analysis.templateName }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "mychart.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode | default "ReadWriteOnce" }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
         {{- end }}
-        - setWeight: 40
-        - pause:
-            duration: 30s
-        - setWeight: 60
-        - pause:
-            duration: 30s
-        - setWeight: 80
-        - pause:
-            duration: 30s
-        - setWeight: 100
-    {{- end }}
+  {{- end }}
 {{- end }}

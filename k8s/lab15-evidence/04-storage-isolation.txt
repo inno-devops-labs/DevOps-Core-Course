@@ -1,0 +1,10 @@
+Initial visits:
+{"visits":0}
+{"visits":0}
+{"visits":0}
+
+Generate different traffic per pod
+Visits after traffic:
+{"visits":3}
+{"visits":5}
+{"visits":2}

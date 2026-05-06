@@ -1,0 +1,4 @@
+Before pod delete: 3
+pod "lab15-mychart-0" deleted
+pod/lab15-mychart-0 condition met
+After pod recreate: 3

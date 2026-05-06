@@ -1,0 +1,16 @@
+NAME                  READY   STATUS    RESTARTS   AGE
+pod/lab15-mychart-0   1/1     Running   0          26s
+pod/lab15-mychart-1   1/1     Running   0          19s
+pod/lab15-mychart-2   1/1     Running   0          12s
+
+NAME                             READY   AGE
+statefulset.apps/lab15-mychart   3/3     26s
+
+NAME                             TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/lab15-mychart            ClusterIP   10.108.245.235   <none>        8080/TCP   26s
+service/lab15-mychart-headless   ClusterIP   None             <none>        8080/TCP   26s
+
+NAME                                         STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-lab15-mychart-0   Bound    pvc-49fb0d99-e997-41e3-9c3b-21947341bef7   100Mi      RWO            hostpath       <unset>                 26s
+persistentvolumeclaim/data-lab15-mychart-1   Bound    pvc-546aad9e-2980-4af2-a243-b8ce7c005d3b   100Mi      RWO            hostpath       <unset>                 19s
+persistentvolumeclaim/data-lab15-mychart-2   Bound    pvc-99a68562-20b7-4e2f-bd55-53b8eb66566c   100Mi      RWO            hostpath       <unset>                 12s

@@ -1,0 +1,17 @@
+{{- if eq (.Values.workload.kind | default "rollout") "statefulset" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mychart.fullname" . }}-headless
+  labels:
+    {{- include "mychart.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "mychart.selectorLabels" . | nindent 4 }}
+{{- end }}

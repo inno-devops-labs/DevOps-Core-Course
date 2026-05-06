@@ -1,0 +1,4 @@
+NAME              READY   STATUS    RESTARTS   AGE   IP          NODE             NOMINATED NODE   READINESS GATES
+lab15-mychart-0   1/1     Running   0          26s   10.1.2.9    docker-desktop   <none>           <none>
+lab15-mychart-1   1/1     Running   0          19s   10.1.2.10   docker-desktop   <none>           <none>
+lab15-mychart-2   1/1     Running   0          12s   10.1.2.11   docker-desktop   <none>           <none>
