@@ -19,7 +19,11 @@
 		"binding": "SETTINGS",
 		"id": "21bbed0ec4214bb5bb61268eb05ee6a2"
 		}
-	]
+	],
+	"vars": {
+		"APP_NAME": "edge-api",
+		"COURSE_NAME": "devops-core"
+	}
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

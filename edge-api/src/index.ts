@@ -13,6 +13,9 @@
 
 export interface Env {
   APP_NAME: string;
+  COURSE_NAME: string;
+  API_TOKEN: string;
+  ADMIN_EMAIL: string;
 
   SETTINGS: KVNamespace;
 }
@@ -41,13 +44,15 @@ export default {
     if (url.pathname === "/") {
       return Response.json({
         app: env.APP_NAME,
+        course: env.COURSE_NAME,
         message: "Hello from Cloudflare Workers",
         timestamp: new Date().toISOString(),
+        secretsLoaded: Boolean(env.API_TOKEN) && Boolean(env.ADMIN_EMAIL),
       });
     }
 
     return new Response("Not Found", { status: 404 });
-  },
+  }
 };
 
 async function Edge(request: Request): Promise<Response> {
