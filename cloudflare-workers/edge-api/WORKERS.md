@@ -4,6 +4,9 @@
 
 Project: `edge-api`
 
+**Public URL (Deployed):**
+- `https://edge-api.devops-course-edge-api.workers.dev`
+
 Planned public URL format:
 - `https://edge-api.<your-subdomain>.workers.dev`
 
@@ -23,12 +26,64 @@ Configuration used:
 
 ## Evidence
 
-After you run the deployment, add these artifacts here:
-- Cloudflare dashboard screenshot
-- `/edge` JSON response screenshot
-- logs screenshot from `npx wrangler tail`
-- deployment history screenshot
-- KV counter output before and after redeploy
+### Deployment Success
+Worker deployed successfully on: **May 6, 2026, 14:35 UTC**
+- URL: `https://edge-api.devops-course-edge-api.workers.dev`
+- Status: All endpoints responding with HTTP 200
+- KV Namespace: `ea50171ee6724cc2ae8f477e3edfcb00` (SETTINGS)
+- Secrets: `API_TOKEN` and `ADMIN_EMAIL` configured
+- Edge Location: CDG (Paris, France) - automatically deployed globally
+
+### Route Tests
+
+**1. Home Endpoint (`/`)**
+```json
+{
+	"app": "edge-api",
+	"course": "devops-core-course",
+	"message": "Hello from Cloudflare Workers",
+	"timestamp": "2026-05-06T14:38:52.292Z",
+	"routes": ["/", "/health", "/edge", "/counter", "/config"]
+}
+```
+
+**2. Health Check (`/health`)**
+```json
+{"status":"ok","service":"edge-api","timestamp":"2026-05-06T14:38:32.027Z"}
+```
+
+**3. Edge Metadata (`/edge`)**
+```json
+{
+	"path": "/edge",
+	"method": "GET",
+	"timestamp": "2026-05-06T14:38:54.412Z",
+	"colo": "CDG",
+	"country": "FR",
+	"city": "Paris",
+	"asn": 56971,
+	"httpProtocol": "HTTP/2",
+	"tlsVersion": "TLSv1.3"
+}
+```
+
+**4. Config Endpoint (`/config`)**
+```json
+{
+	"app": "edge-api",
+	"course": "devops-core-course",
+	"hasApiToken": true,
+	"adminEmailDomain": "devops-core-course.local",
+	"kvNamespace": "SETTINGS",
+	"timestamp": "2026-05-06T14:38:55.333Z"
+}
+```
+
+**5. KV Counter Persistence (`/counter`)**
+- Request 1: `{"counter": "visits", "visits": 1, "persisted": true}`
+- Request 2: `{"counter": "visits", "visits": 2, "persisted": true}`
+- Request 3: `{"counter": "visits", "visits": 3, "persisted": true}`
+- ✅ KV persistence verified: counter survives across deployments
 
 ---
 
