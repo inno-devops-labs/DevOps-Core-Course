@@ -1,14 +1,19 @@
 apiVersion: v1
 kind: Service
+
 metadata:
   name: python-app-service
+
   labels:
     app: python-app
+
 spec:
-  type: NodePort
+  type: {{ .Values.service.type }}
+
   selector:
     app: python-app
+
   ports:
-    - port: 80          # порт внутри кластера
-      targetPort: 5000  # порт контейнера (как в deployment)
-      nodePort: 30007   # внешний порт (30000–32767)
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      nodePort: {{ .Values.service.nodePort }}

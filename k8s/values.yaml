@@ -1,15 +1,18 @@
-replicaCount: 1
+replicaCount: 3
 
 image:
-  repository: your-dockerhub-username/your-app
+  repository: mariablood/python-app
   tag: latest
   pullPolicy: IfNotPresent
 
 service:
-  type: ClusterIP
+  type: NodePort
   port: 80
   targetPort: 5000
-  nodePort: null
+  nodePort: 30007
+
+headlessService:
+  port: 5000
 
 env:
   ENV: dev
@@ -26,3 +29,16 @@ probes:
   path: /health
   livenessDelay: 10
   readinessDelay: 5
+
+persistence:
+  enabled: true
+  size: 100Mi
+  accessMode: ReadWriteOnce
+  storageClass: ""
+
+statefulset:
+  podManagementPolicy: OrderedReady
+
+  updateStrategy:
+    type: RollingUpdate
+    partition: 0
