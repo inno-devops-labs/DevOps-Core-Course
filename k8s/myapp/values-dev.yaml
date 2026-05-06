@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: qobz1e/devops-info-service
-  tag: latest
+  tag: v2
   pullPolicy: IfNotPresent
 
 service:
