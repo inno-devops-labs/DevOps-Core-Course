@@ -1,5 +1,7 @@
 # Moscow Time App
 
+[![Python CI](https://github.com/SadPixels/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg?branch=s25)](https://github.com/SadPixels/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
 ## Overview
 
 This is a simple Python web application built with Flask.  
@@ -29,7 +31,7 @@ It displays the current time in Moscow and updates it every time the page is ref
 3. Launch application via Gunicorn:
 
     ```bash
-    gunicorn -b {IP}:{PORT} app:app
+    gunicorn -b 127.0.0.1:8080 app:app
     ```
 
 ## Usage
@@ -38,6 +40,47 @@ It displays the current time in Moscow and updates it every time the page is ref
 gunicorn -b 127.0.0.1:8080 app:app
 ```
 
+## Unit Tests
+
+The application includes automated unit tests written with pytest.
+
+The tests check:
+
+- Moscow time formatting.
+- Successful response from the main route.
+- Expected HTML content on the page.
+- Presence of the generated time value in the response.
+
+Run tests from the repository root:
+
+```bash
+pip install -r app_python/requirements.txt -r app_python/requirements-dev.txt
+python -m pytest app_python/tests -q
+```
+
+Run the linter from the repository root:
+
+```bash
+ruff check app_python
+```
+
+## CI Workflow
+
+The project uses GitHub Actions for continuous integration.
+
+The workflow includes:
+
+- Dependency installation.
+- Python linting with Ruff.
+- Unit tests with pytest.
+- Snyk vulnerability checks.
+- Docker image build.
+- Docker Hub login.
+- Docker image push.
+- Python dependency cache.
+- Docker build cache.
+
+The workflow runs only when files inside `app_python` or the workflow file itself are changed.
 
 ## Docker
 
@@ -85,13 +128,11 @@ Tag the image:
 docker tag moscow-time-app:1.0.0 <dockerhub_username>/moscow-time-app:1.0.0
 ```
 
-
 Push the image:
 
 ```bash
 docker push <dockerhub_username>/moscow-time-app:1.0.0
 ```
-
 
 Pull the image:
 
@@ -99,13 +140,11 @@ Pull the image:
 docker pull <dockerhub_username>/moscow-time-app:1.0.0
 ```
 
-
 Run the pulled image:
 
 ```bash
 docker run --rm -d --name moscow-time-app -p 8080:8080 <dockerhub_username>/moscow-time-app:1.0.0
 ```
-
 
 Check the pulled image:
 

@@ -2,3 +2,5 @@ venv/
 __pycache__/
 *.pyc
 gunicorn.ctl
+.pytest_cache/
+.ruff_cache/

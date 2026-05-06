@@ -6,9 +6,14 @@ from flask import Flask
 app = Flask(__name__)
 
 
+def get_moscow_time() -> str:
+    """Return the current time in Moscow in a stable display format."""
+    return datetime.now(ZoneInfo("Europe/Moscow")).strftime("%Y-%m-%d %H:%M:%S")
+
+
 @app.route("/")
 def index():
-    moscow_time = datetime.now(ZoneInfo("Europe/Moscow")).strftime("%Y-%m-%d %H:%M:%S")
+    moscow_time = get_moscow_time()
     return f"""
     <html>
         <head>
