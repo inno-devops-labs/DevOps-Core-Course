@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-06",
+  "vars": {
+    "APP_NAME": "edge-api",
+    "COURSE_NAME": "devops-core-course"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ]
+}
