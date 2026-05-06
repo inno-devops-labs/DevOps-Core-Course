@@ -1,6 +1,6 @@
 {
   "appName": "devops-info-service",
-  "environment": "dev",
+  "environment": "dev-v2",
   "featureFlags": {
     "enableVisits": true
   }

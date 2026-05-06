@@ -14,7 +14,7 @@ persistence:
   enabled: true
   size: 100Mi
 
-environment: dev-v2
+environment: dev
 
 secrets:
   username: admin
