@@ -15,8 +15,15 @@
 		"nodejs_compat"
 	],
 	"vars": {
-    	"APP_NAME": "My Edge API"
-  	}
+		"APP_NAME": "Edge API Demo 2",
+		"COURSE_NAME": "devops-core"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "c0bc56f130db470cb4c14abb3b4edd9d"
+		}
+	]
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
