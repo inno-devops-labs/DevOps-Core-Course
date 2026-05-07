@@ -1,0 +1,121 @@
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+image:
+  repository: tsixphoenix/devops-info-python
+  tag: "lab12"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30080
+
+env:
+  HOST: "0.0.0.0"
+  PORT: "5000"
+  RELEASE_ID: "lab12"
+
+visits:
+  file: "/data/visits"
+
+config:
+  appName: "devops-info-service"
+  environment: "development"
+  logLevel: "info"
+  injectEnv: true
+
+helmSecret:
+  enabled: false
+  username: "lab12-helm-demo-user"
+  password: "lab12-helm-demo-password"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "300m"
+    memory: "256Mi"
+
+livenessProbe:
+  path: /health
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  path: /health
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+
+vault:
+  injector:
+    enabled: false
+  role: "devops-info"
+  secretPath: "secret/data/devops-info/config"
+  secretFileName: "vault-config"
+  serviceAddr: "http://vault.vault.svc:8200"
+
+hooks:
+  image: busybox:1.36
+  preInstall:
+    enabled: false
+  postInstall:
+    enabled: false
+
+rollouts:
+  enabled: true
+  strategy: canary
+  canary:
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+  analysis:
+    enabled: true
+    interval: 10s
+    count: 3
+    failureLimit: 1
+
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: null

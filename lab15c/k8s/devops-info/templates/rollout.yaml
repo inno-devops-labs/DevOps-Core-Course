@@ -1,0 +1,107 @@
+{{- if and .Values.rollouts.enabled (not .Values.statefulset.enabled) }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "devops-info.fullname" . }}
+  labels:
+    {{- include "devops-info.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "devops-info.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info.labels" . | nindent 8 }}
+      {{- if .Values.vault.injector.enabled }}
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-vaultconfig: {{ .Values.vault.secretPath | quote }}
+        vault.hashicorp.com/service: {{ .Values.vault.serviceAddr | quote }}
+        vault.hashicorp.com/tls-skip-verify: "true"
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "devops-info.serviceAccountName" . }}
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ include "devops-info.fullname" . }}-file
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "devops-info.fullname" . }}-data
+        {{- else }}
+        - name: data
+          emptyDir: {}
+        {{- end }}
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env:
+            - name: HOST
+              value: {{ .Values.env.HOST | quote }}
+            - name: PORT
+              value: {{ .Values.env.PORT | quote }}
+            - name: RELEASE_ID
+              value: {{ .Values.env.RELEASE_ID | quote }}
+            - name: VISITS_FILE
+              value: {{ .Values.visits.file | quote }}
+          {{- if or .Values.helmSecret.enabled .Values.config.injectEnv }}
+          envFrom:
+            {{- if .Values.helmSecret.enabled }}
+            - secretRef:
+                name: {{ include "devops-info.helmSecretName" . }}
+            {{- end }}
+            {{- if .Values.config.injectEnv }}
+            - configMapRef:
+                name: {{ include "devops-info.fullname" . }}-env
+            {{- end }}
+          {{- end }}
+          volumeMounts:
+            - name: app-config
+              mountPath: /config
+            - name: data
+              mountPath: /data
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+  strategy:
+    {{- if eq .Values.rollouts.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "devops-info.fullname" . }}
+      previewService: {{ include "devops-info.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollouts.blueGreen.autoPromotionEnabled }}
+      {{- if .Values.rollouts.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ .Values.rollouts.blueGreen.autoPromotionSeconds }}
+      {{- end }}
+      scaleDownDelaySeconds: {{ .Values.rollouts.blueGreen.scaleDownDelaySeconds }}
+    {{- else }}
+    canary:
+      steps:
+        {{- toYaml .Values.rollouts.canary.steps | nindent 8 }}
+    {{- end }}
+{{- end }}

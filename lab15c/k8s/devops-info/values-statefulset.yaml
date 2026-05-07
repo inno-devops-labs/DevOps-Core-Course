@@ -1,0 +1,24 @@
+replicaCount: 3
+
+rollouts:
+  enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: null
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
+service:
+  type: ClusterIP
+  nodePort: null
+
+env:
+  RELEASE_ID: "lab15-statefulset"

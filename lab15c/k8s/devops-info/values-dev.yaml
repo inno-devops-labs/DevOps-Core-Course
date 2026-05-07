@@ -1,0 +1,28 @@
+replicaCount: 1
+
+service:
+  type: NodePort
+  # Use 30081 if another chart (e.g. lab11) already uses 30080 on the same cluster
+  nodePort: 30081
+
+env:
+  RELEASE_ID: "dev"
+
+config:
+  environment: "development"
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "128Mi"
+
+vault:
+  injector:
+    enabled: false
+
+rollouts:
+  enabled: true
+  strategy: canary

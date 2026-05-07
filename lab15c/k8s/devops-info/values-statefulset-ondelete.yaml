@@ -1,0 +1,7 @@
+rollouts:
+  enabled: false
+
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: OnDelete

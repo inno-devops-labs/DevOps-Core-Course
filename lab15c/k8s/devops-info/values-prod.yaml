@@ -1,0 +1,32 @@
+# ReadWriteOnce PVC: keep a single replica or use shared storage (RWX) instead.
+replicaCount: 1
+
+service:
+  type: LoadBalancer
+  nodePort: null
+
+env:
+  RELEASE_ID: "prod"
+
+config:
+  environment: "production"
+
+resources:
+  requests:
+    cpu: "150m"
+    memory: "192Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+vault:
+  injector:
+    enabled: false
+
+rollouts:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
