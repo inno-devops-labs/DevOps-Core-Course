@@ -1,0 +1,28 @@
+replicaCount: 3
+
+rollout:
+  enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+service:
+  type: ClusterIP
+  nodePort: null
+
+persistence:
+  enabled: true
+  size: 100Mi
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi

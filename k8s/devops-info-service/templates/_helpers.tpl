@@ -88,6 +88,13 @@ PersistentVolumeClaim name.
 {{- end -}}
 
 {{/*
+Headless service name for StatefulSet network identities.
+*/}}
+{{- define "devops-info-service.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{/*
 Vault agent annotations.
 */}}
 {{- define "devops-info-service.vaultAnnotations" -}}

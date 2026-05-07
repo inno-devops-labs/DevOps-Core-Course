@@ -20,6 +20,15 @@
   curl http://127.0.0.1:8080/visits
   kubectl delete pod --namespace {{ .Release.Namespace }} $POD
 
+{{- if .Values.statefulset.enabled }}
+
+4. Verify StatefulSet identity and per-pod storage:
+  kubectl get po,sts,svc,pvc --namespace {{ .Release.Namespace }}
+  kubectl exec --namespace {{ .Release.Namespace }} {{ include "devops-info-service.fullname" . }}-0 -- getent hosts {{ include "devops-info-service.fullname" . }}-1.{{ include "devops-info-service.headlessServiceName" . }}
+  kubectl exec --namespace {{ .Release.Namespace }} {{ include "devops-info-service.fullname" . }}-0 -- cat {{ .Values.persistence.mountPath }}/visits
+
+{{- end }}
+
 {{- if .Values.rollout.enabled }}
 
 4. Watch the Argo Rollout:
