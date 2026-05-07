@@ -56,3 +56,7 @@
 {{- define "devops-python.analysisTemplateName" -}}
 {{- printf "%s-health-analysis" (include "devops-python.fullname" .) -}}
 {{- end -}}
+
+{{- define "devops-python.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-python.fullname" .) -}}
+{{- end -}}

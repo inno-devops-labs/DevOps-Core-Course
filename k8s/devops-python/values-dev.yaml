@@ -8,9 +8,15 @@ service:
   nodePort: null
 
 rollout:
-  strategy: canary
-  analysis:
-    enabled: true
+  enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
 
 resources:
   requests:

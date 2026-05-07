@@ -8,12 +8,15 @@ service:
   nodePort: null
 
 rollout:
-  strategy: blueGreen
-  blueGreen:
-    autoPromotionEnabled: false
-    scaleDownDelaySeconds: 30
-  analysis:
-    enabled: false
+  enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2
 
 resources:
   requests:
