@@ -7,6 +7,19 @@ component: web
 replicaCount: 1
 revisionHistoryLimit: 5
 
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  headlessService:
+    publishNotReadyAddresses: false
+
 image:
   repository: devops-info-service
   tag: lab12-python
@@ -76,6 +89,7 @@ persistence:
   storageClass: ""
   accessModes:
     - ReadWriteOnce
+  claimName: "data-volume"
   mountPath: "/data"
   fileName: "visits"
 

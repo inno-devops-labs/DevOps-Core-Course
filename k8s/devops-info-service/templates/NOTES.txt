@@ -6,6 +6,9 @@
 
 2. Inspect the application service:
    kubectl get svc {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }}
+{{- if .Values.statefulset.enabled }}
+   kubectl get svc {{ include "devops-info-service.headlessServiceName" . }} --namespace {{ .Release.Namespace }}
+{{- end }}
 {{- if and .Values.rollout.enabled (eq .Values.rollout.strategy "canary") }}
    kubectl get svc {{ include "devops-info-service.stableServiceName" . }} {{ include "devops-info-service.canaryServiceName" . }} --namespace {{ .Release.Namespace }}
 {{- end }}
@@ -15,11 +18,20 @@
 
 3. Inspect Lab 12 configuration resources:
    kubectl get configmap {{ include "devops-info-service.fileConfigMapName" . }} {{ include "devops-info-service.envConfigMapName" . }} --namespace {{ .Release.Namespace }}
+{{- if .Values.statefulset.enabled }}
+   kubectl get statefulset {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }}
+   kubectl get pvc -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/name={{ include "common-lib.name" . }} --namespace {{ .Release.Namespace }}
+{{- else }}
    kubectl get pvc {{ include "devops-info-service.pvcName" . }} --namespace {{ .Release.Namespace }}
+{{- end }}
 
 4. Verify mounted configuration and persistence:
    kubectl exec $(kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/name={{ include "common-lib.name" . }} -o name | head -n 1) --namespace {{ .Release.Namespace }} -- cat {{ .Values.config.file.mountPath }}/{{ .Values.config.file.fileName }}
    kubectl exec $(kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/name={{ include "common-lib.name" . }} -o name | head -n 1) --namespace {{ .Release.Namespace }} -- printenv | grep -E 'APP_|LOG_LEVEL|VISITS'
+{{- if .Values.statefulset.enabled }}
+   kubectl exec {{ include "common-lib.fullname" . }}-0 --namespace {{ .Release.Namespace }} -- sh -c 'cat {{ .Values.persistence.mountPath }}/{{ .Values.persistence.fileName }} || true'
+   kubectl run dns-test --rm -i --tty --restart=Never --image=busybox:1.36 --namespace {{ .Release.Namespace }} -- nslookup {{ include "common-lib.fullname" . }}-1.{{ include "devops-info-service.headlessServiceName" . }}.{{ .Release.Namespace }}.svc.cluster.local
+{{- end }}
 
 5. For NodePort access:
    kubectl get svc {{ include "common-lib.fullname" . }} --namespace {{ .Release.Namespace }} -o wide

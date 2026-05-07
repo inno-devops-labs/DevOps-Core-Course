@@ -35,6 +35,13 @@ Resolve the PersistentVolumeClaim name for visits storage.
 {{- end -}}
 
 {{/*
+Resolve the headless Service name used by the StatefulSet.
+*/}}
+{{- define "devops-info-service.headlessServiceName" -}}
+{{- printf "%s-headless" (include "common-lib.fullname" .) -}}
+{{- end -}}
+
+{{/*
 Common environment variables shared by the application container.
 */}}
 {{- define "devops-info-service.envVars" -}}

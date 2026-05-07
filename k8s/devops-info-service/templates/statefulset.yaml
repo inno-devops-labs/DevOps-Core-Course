@@ -1,16 +1,29 @@
-{{- if and .Values.rollout.enabled (not .Values.statefulset.enabled) }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
-  name: {{ include "devops-info-service.rolloutName" . }}
+  name: {{ include "common-lib.fullname" . }}
   labels:
     {{- include "common-lib.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "devops-info-service.headlessServiceName" . }}
   replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
   selector:
     matchLabels:
       {{- include "common-lib.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if and (eq .Values.statefulset.updateStrategy.type "RollingUpdate") .Values.statefulset.updateStrategy.rollingUpdate }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
+    {{- end }}
+  {{- if .Values.persistence.enabled }}
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: {{ .Values.statefulset.persistentVolumeClaimRetentionPolicy.whenDeleted }}
+    whenScaled: {{ .Values.statefulset.persistentVolumeClaimRetentionPolicy.whenScaled }}
+  {{- end }}
   template:
     metadata:
       annotations:
@@ -76,7 +89,7 @@ spec:
               readOnly: true
             {{- end }}
             {{- if .Values.persistence.enabled }}
-            - name: data-volume
+            - name: {{ .Values.persistence.claimName }}
               mountPath: {{ .Values.persistence.mountPath }}
             {{- end }}
           {{- end }}
@@ -98,47 +111,28 @@ spec:
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
-      {{- if or .Values.config.enabled .Values.persistence.enabled }}
+      {{- if .Values.config.enabled }}
       volumes:
-        {{- if .Values.config.enabled }}
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fileConfigMapName" . }}
-        {{- end }}
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-service.pvcName" . }}
-        {{- end }}
       {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "canary" }}
-    canary:
-      maxSurge: {{ .Values.rollout.canary.maxSurge }}
-      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
-      stableService: {{ include "devops-info-service.stableServiceName" . }}
-      canaryService: {{ include "devops-info-service.canaryServiceName" . }}
-      steps:
-        {{- range $index, $step := .Values.rollout.canary.steps }}
-        {{- if and $.Values.rollout.analysis.enabled (eq $index ($.Values.rollout.analysis.stepIndex | int)) }}
-        - analysis:
-            templates:
-              - templateName: {{ include "devops-info-service.analysisTemplateName" $ }}
-            args:
-              - name: service-url
-                value: http://{{ include "devops-info-service.canaryServiceName" $ }}.{{ $.Release.Namespace }}.svc.cluster.local:{{ $.Values.service.port }}{{ $.Values.rollout.analysis.path }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ .Values.persistence.claimName }}
+        labels:
+          {{- include "common-lib.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          {{- range .Values.persistence.accessModes }}
+          - {{ . }}
+          {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
         {{- end }}
-{{ toYaml (list $step) | nindent 8 }}
-        {{- end }}
-    {{- else if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "common-lib.fullname" . }}
-      previewService: {{ include "devops-info-service.previewServiceName" . }}
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      previewReplicaCount: {{ .Values.rollout.blueGreen.previewReplicaCount }}
-      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
-      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
-      {{- end }}
-    {{- end }}
+  {{- end }}
 {{- end }}

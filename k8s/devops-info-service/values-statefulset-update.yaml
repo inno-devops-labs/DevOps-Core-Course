@@ -1,0 +1,24 @@
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5000"
+  - name: SERVICE_NAME
+    value: "devops-info-service-stateful"
+  - name: SERVICE_VERSION
+    value: "1.1.0-stateful"
+  - name: SERVICE_DESCRIPTION
+    value: "StatefulSet deployment of the Python DevOps Info Service"
+  - name: RELEASE_TRACK
+    value: "stateful-v2"
+
+config:
+  application:
+    name: "devops-info-service-stateful"
+    environment: "stateful"
+    description: "StatefulSet deployment of the Python DevOps Info Service"
+  env:
+    APP_ENV: "stateful"
+    LOG_LEVEL: "INFO"
+  settings:
+    releaseTrack: "stateful-v2"

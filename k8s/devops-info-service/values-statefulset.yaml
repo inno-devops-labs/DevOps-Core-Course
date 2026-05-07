@@ -1,0 +1,48 @@
+replicaCount: 3
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  headlessService:
+    publishNotReadyAddresses: true
+
+rollout:
+  enabled: false
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30092
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5000"
+  - name: SERVICE_NAME
+    value: "devops-info-service-stateful"
+  - name: SERVICE_VERSION
+    value: "1.0.0-stateful"
+  - name: SERVICE_DESCRIPTION
+    value: "StatefulSet deployment of the Python DevOps Info Service"
+  - name: RELEASE_TRACK
+    value: "stateful"
+
+config:
+  application:
+    name: "devops-info-service-stateful"
+    environment: "stateful"
+    description: "StatefulSet deployment of the Python DevOps Info Service"
+  env:
+    APP_ENV: "stateful"
+    LOG_LEVEL: "INFO"
+  settings:
+    releaseTrack: "stateful"
+
+hooks:
+  enabled: false

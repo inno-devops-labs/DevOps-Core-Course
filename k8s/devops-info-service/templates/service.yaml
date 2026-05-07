@@ -21,6 +21,25 @@ spec:
       {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
       nodePort: {{ .Values.service.nodePort }}
       {{- end }}
+{{- if and .Values.statefulset.enabled (not .Values.rollout.enabled) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-info-service.headlessServiceName" . }}
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: {{ .Values.statefulset.headlessService.publishNotReadyAddresses }}
+  selector:
+    {{- include "common-lib.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      protocol: TCP
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}
 
 {{ if and .Values.rollout.enabled (eq .Values.rollout.strategy "canary") }}
 {{- $stableService := lookup "v1" "Service" .Release.Namespace (include "devops-info-service.stableServiceName" .) -}}
