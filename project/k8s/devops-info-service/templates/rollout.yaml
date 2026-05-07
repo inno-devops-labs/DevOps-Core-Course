@@ -1,6 +1,6 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
@@ -11,10 +11,26 @@ spec:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
   strategy:
-    type: {{ .Values.strategy.type }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+    {{- if eq .Values.rollout.strategy "canary" }}
+    canary:
+      steps:
+        {{- $atStep := int .Values.rollout.canary.analysis.atStep }}
+        {{- $analysisEnabled := and .Values.rollout.canary.analysis.enabled .Values.rollout.analysis.enabled }}
+        {{- range $i, $step := .Values.rollout.canary.steps }}
+        {{- toYaml (list $step) | nindent 8 }}
+        {{- if and $analysisEnabled (eq $i $atStep) }}
+        - analysis:
+            templates:
+              - templateName: {{ $.Values.rollout.analysis.name }}
+        {{- end }}
+        {{- end }}
+    {{- else if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "devops-info-service.fullname" . }}
+      previewService: {{ include "devops-info-service.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+    {{- end }}
   template:
     metadata:
       labels:

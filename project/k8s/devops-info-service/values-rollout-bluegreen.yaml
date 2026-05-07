@@ -1,0 +1,14 @@
+# Lab 14 — Blue-green rollout overlay
+# Render with: helm install app . -f values.yaml -f values-rollout-bluegreen.yaml
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+
+replicaCount: 2
+
+persistence:
+  enabled: false
