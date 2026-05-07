@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 3
 
 image:
   repository: polinanime/devops-info-service
@@ -79,3 +79,7 @@ affinity: {}
 rollout:
   enabled: false
   strategy: canary # canary or blueGreen
+
+statefulset:
+  enabled: true
+  partition: 0

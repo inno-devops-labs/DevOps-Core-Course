@@ -1,17 +1,20 @@
-{{- if not .Values.statefulset.enabled }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "app-python.fullname" . }}
   labels:
     {{- include "app-python.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
+  serviceName: {{ include "app-python.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "app-python.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: {{ .Values.statefulset.partition }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -63,15 +66,12 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /config
-            - name: data-volume
+            - name: data
               mountPath: /data
       volumes:
         - name: config-volume
           configMap:
             name: {{ include "app-python.fullname" . }}-config
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "app-python.fullname" . }}-data
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -84,4 +84,16 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
 {{- end }}
