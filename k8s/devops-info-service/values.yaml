@@ -81,7 +81,7 @@ serviceAccount:
 podAnnotations: {}
 podLabels:
   project: devops-course
-  lab: lab14
+  lab: lab15
 
 podSecurityContext: {}
 
@@ -118,7 +118,7 @@ vault:
 
 # Argo Rollouts configuration
 rollout:
-  enabled: true
+  enabled: false
   strategy: canary  # canary or blueGreen
 
   canary:
@@ -147,3 +147,12 @@ rollout:
     interval: 10s
     count: 3
     failureLimit: 1
+
+# StatefulSet configuration
+statefulset:
+  enabled: true
+  # Update strategy: RollingUpdate or OnDelete
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0  # only pods with ordinal >= partition are updated
