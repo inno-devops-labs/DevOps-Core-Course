@@ -1,44 +1,19 @@
-replicaCount: 3
+apiVersion: v1
+kind: Service
 
-image:
-  repository: mariablood/python-app
-  tag: latest
-  pullPolicy: IfNotPresent
+metadata:
+  name: python-app-service
 
-service:
-  type: NodePort
-  port: 80
-  targetPort: 5000
-  nodePort: 30007
+  labels:
+    app: python-app
 
-headlessService:
-  port: 5000
+spec:
+  type: {{ .Values.service.type }}
 
-env:
-  ENV: dev
+  selector:
+    app: python-app
 
-resources:
-  requests:
-    memory: "128Mi"
-    cpu: "100m"
-  limits:
-    memory: "256Mi"
-    cpu: "500m"
-
-probes:
-  path: /health
-  livenessDelay: 10
-  readinessDelay: 5
-
-persistence:
-  enabled: true
-  size: 100Mi
-  accessMode: ReadWriteOnce
-  storageClass: ""
-
-statefulset:
-  podManagementPolicy: OrderedReady
-
-  updateStrategy:
-    type: RollingUpdate
-    partition: 0
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      nodePort: {{ .Values.service.nodePort }}

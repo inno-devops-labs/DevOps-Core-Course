@@ -1,18 +1,22 @@
 apiVersion: apps/v1
 kind: StatefulSet
+
 metadata:
   name: {{ include "python-app.fullname" . }}
+
   labels:
     {{- include "python-app.labels" . | nindent 4 }}
 
 spec:
-  serviceName: {{ include "python-app.fullname" . }}-headless
+  serviceName: {{ include "python-app.headlessServiceName" . }}
+
   replicas: {{ .Values.replicaCount }}
 
   podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
 
   updateStrategy:
     type: {{ .Values.statefulset.updateStrategy.type }}
+
     rollingUpdate:
       partition: {{ .Values.statefulset.updateStrategy.partition }}
 
@@ -26,6 +30,36 @@ spec:
         app: python-app
 
     spec:
+
+      initContainers:
+
+        - name: download-file
+
+          image: busybox
+
+          command:
+            - sh
+            - -c
+            - |
+              wget -O /shared/index.html https://example.com
+
+          volumeMounts:
+            - name: shared-data
+              mountPath: /shared
+
+        - name: wait-for-service
+
+          image: busybox
+
+          command:
+            - sh
+            - -c
+            - |
+              until nslookup kubernetes.default.svc.cluster.local; do
+                echo waiting for service;
+                sleep 2;
+              done
+
       containers:
         - name: python-app
 
@@ -47,17 +81,27 @@ spec:
             httpGet:
               path: {{ .Values.probes.path }}
               port: {{ .Values.service.targetPort }}
+
             initialDelaySeconds: {{ .Values.probes.livenessDelay }}
 
           readinessProbe:
             httpGet:
               path: {{ .Values.probes.path }}
               port: {{ .Values.service.targetPort }}
+
             initialDelaySeconds: {{ .Values.probes.readinessDelay }}
 
           volumeMounts:
+
+            - name: shared-data
+              mountPath: /shared
+
             - name: app-storage
               mountPath: /data
+
+      volumes:
+        - name: shared-data
+          emptyDir: {}
 
   volumeClaimTemplates:
     - metadata:

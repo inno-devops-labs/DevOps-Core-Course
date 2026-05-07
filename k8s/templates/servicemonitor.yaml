@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+
+metadata:
+  name: python-app-monitor
+
+  labels:
+    release: monitoring
+
+spec:
+  selector:
+    matchLabels:
+      app: python-app
+
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
