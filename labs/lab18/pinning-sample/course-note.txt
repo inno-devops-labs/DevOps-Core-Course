@@ -1,0 +1,2 @@
+Lab 18 — sample file for 4EVERLAND Bucket upload.
+Content-addressed: same bytes => same CID on any pinning service.

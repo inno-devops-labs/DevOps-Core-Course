@@ -1,0 +1,16 @@
+# Lab 18 — local IPFS node (Kubo). See README.md for usage.
+services:
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: ipfs
+    ports:
+      - "4001:4001" # Swarm
+      - "5001:5001" # API + Web UI
+      - "8080:8080" # Gateway
+    volumes:
+      - ipfs_staging:/export
+      - ipfs_data:/data/ipfs
+
+volumes:
+  ipfs_staging:
+  ipfs_data:
