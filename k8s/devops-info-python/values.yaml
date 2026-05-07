@@ -58,6 +58,13 @@ strategy:
     maxSurge: 1
     maxUnavailable: 0
 
+statefulset:
+  enabled: false
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
 resources:
   requests:
     cpu: 100m
@@ -72,21 +79,25 @@ service:
   targetPort: 5000
 
 livenessProbe:
-  httpGet:
-    path: /health
-    port: 5000
+  exec:
+    command:
+      - wget
+      - -qO-
+      - http://localhost:5000/health
   initialDelaySeconds: 15
   periodSeconds: 10
-  timeoutSeconds: 2
+  timeoutSeconds: 5
   failureThreshold: 3
 
 readinessProbe:
-  httpGet:
-    path: /health
-    port: 5000
+  exec:
+    command:
+      - wget
+      - -qO-
+      - http://localhost:5000/health
   initialDelaySeconds: 5
   periodSeconds: 5
-  timeoutSeconds: 2
+  timeoutSeconds: 5
   failureThreshold: 3
 
 hooks:
