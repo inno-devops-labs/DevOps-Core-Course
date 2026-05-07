@@ -102,7 +102,7 @@ livenessProbe:
   successThreshold: 1
 
 rollout:
-  enabled: true
+  enabled: false
   revisionHistoryLimit: 3
   strategy: canary
   canary:
@@ -122,6 +122,14 @@ rollout:
     autoPromotionSeconds: null
   analysis:
     enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
 
 hooks:
   enabled: true

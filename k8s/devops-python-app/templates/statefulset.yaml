@@ -1,13 +1,21 @@
-{{- if and .Values.rollout.enabled (not .Values.statefulset.enabled) }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "devops-python-app.fullname" . }}
   labels:
     {{- include "devops-python-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: statefulset
 spec:
+  serviceName: {{ include "devops-python-app.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
-  revisionHistoryLimit: {{ .Values.rollout.revisionHistoryLimit }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if eq .Values.statefulset.updateStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "devops-python-app.selectorLabels" . | nindent 6 }}
@@ -78,45 +86,26 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
-      {{- if or .Values.configMap.file.enabled .Values.persistence.enabled }}
+      {{- if .Values.configMap.file.enabled }}
       volumes:
-        {{- if .Values.configMap.file.enabled }}
         - name: app-config
           configMap:
             name: {{ include "devops-python-app.configFileConfigMapName" . }}
+      {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: app-data
+        labels:
+          {{- include "devops-python-app.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
         {{- end }}
-        {{- if .Values.persistence.enabled }}
-        - name: app-data
-          persistentVolumeClaim:
-            claimName: {{ include "devops-python-app.pvcName" . }}
-        {{- end }}
-      {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "canary" }}
-    canary:
-      {{- if .Values.rollout.canary.useAnalysis }}
-      steps:
-        - setWeight: 20
-        - analysis:
-            templates:
-              - templateName: {{ include "devops-python-app.fullname" . }}-health-check
-        - setWeight: 50
-        - pause: { duration: 30s }
-        - analysis:
-            templates:
-              - templateName: {{ include "devops-python-app.fullname" . }}-health-check
-        - setWeight: 100
-      {{- else }}
-      steps:
-        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
-      {{- end }}
-    {{- else if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "devops-python-app.fullname" . }}-service
-      previewService: {{ include "devops-python-app.fullname" . }}-service-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
-      {{- end }}
-    {{- end }}
+  {{- end }}
 {{- end }}
