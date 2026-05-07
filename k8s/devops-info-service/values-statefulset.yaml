@@ -1,0 +1,13 @@
+rollout:
+  enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+
+replicaCount: 3
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""

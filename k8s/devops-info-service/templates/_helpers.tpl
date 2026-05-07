@@ -65,3 +65,10 @@ Name of the Helm-managed credentials Secret (username / password keys).
 {{- define "devops-info-service.secretName" -}}
 {{- printf "%s-secret" (include "devops-info-service.fullname" .) }}
 {{- end }}
+
+{{/*
+Headless Service for StatefulSet stable pod DNS (clusterIP: None).
+*/}}
+{{- define "devops-info-service.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-info-service.fullname" .) }}
+{{- end }}
