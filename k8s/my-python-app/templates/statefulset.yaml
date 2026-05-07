@@ -1,6 +1,6 @@
-{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "my-python-app.fullname" . }}
   labels:
@@ -9,9 +9,8 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
+  serviceName: {{ include "my-python-app.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
-  strategy:
-    {{- toYaml .Values.strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "my-python-app.selectorLabels" . | nindent 6 }}
@@ -33,11 +32,6 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "my-python-app.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "my-python-app.fullname" . }}-data
-        {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -62,10 +56,8 @@ spec:
             - name: config-volume
               mountPath: /config
               readOnly: true
-            {{- if .Values.persistence.enabled }}
-            - name: data-volume
+            - name: data
               mountPath: /data
-            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -85,4 +77,16 @@ spec:
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+        {{- end }}
 {{- end }}
