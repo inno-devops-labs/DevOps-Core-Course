@@ -15,10 +15,20 @@ podAnnotations: {}
 podLabels: {}
 
 deployment:
+  enabled: false
   revisionHistoryLimit: 5
   strategy:
     maxSurge: 1
     maxUnavailable: 0
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  revisionHistoryLimit: 5
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
 
 rollout:
   enabled: false
@@ -75,6 +85,8 @@ config:
 persistence:
   enabled: true
   mountPath: /data
+  accessModes:
+    - ReadWriteOnce
   size: 100Mi
   storageClass: ""
 

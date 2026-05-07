@@ -59,6 +59,13 @@ Create the service name.
 {{- end }}
 
 {{/*
+Create the headless service name for StatefulSet pod identity.
+*/}}
+{{- define "devops-app-py.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-app-py.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
 Create the blue-green preview service name.
 */}}
 {{- define "devops-app-py.previewServiceName" -}}
@@ -118,6 +125,7 @@ Render the workload pod template shared by Deployments and Rollouts.
 {{- $envVars := include "devops-app-py.envVars" . | trim }}
 {{- $vaultAnnotations := include "devops-app-py.vaultAnnotations" . | trim }}
 {{- $configChecksums := include "devops-app-py.configChecksums" . | trim }}
+{{- $usesStatefulSet := and .Values.statefulset.enabled (not .Values.rollout.enabled) }}
 metadata:
   {{- if or $vaultAnnotations $configChecksums .Values.podAnnotations }}
   annotations:
@@ -186,14 +194,14 @@ spec:
       resources:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-  {{- if or .Values.config.file.enabled .Values.persistence.enabled }}
+  {{- if or .Values.config.file.enabled (and .Values.persistence.enabled (not $usesStatefulSet)) }}
   volumes:
     {{- if .Values.config.file.enabled }}
     - name: config-volume
       configMap:
         name: {{ include "devops-app-py.fileConfigMapName" . }}
     {{- end }}
-    {{- if .Values.persistence.enabled }}
+    {{- if and .Values.persistence.enabled (not $usesStatefulSet) }}
     - name: data-volume
       persistentVolumeClaim:
         claimName: {{ include "devops-app-py.pvcName" . }}
