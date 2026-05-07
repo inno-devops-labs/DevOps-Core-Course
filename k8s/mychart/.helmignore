@@ -21,3 +21,9 @@
 .idea/
 *.tmproj
 .vscode/
+
+
+# I want to disable rollouts for this lab
+
+templates/rollout.yaml
+templates/service-preview.yaml
