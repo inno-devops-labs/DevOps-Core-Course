@@ -2,32 +2,110 @@
 
 Run date: May 7, 2026
 
-This submission replaces the previous IPFS-based Lab 18 work with the current upstream assignment: Nix reproducible builds for the Lab 1 Python DevOps Info Service and a Nix-built Docker image.
+## Summary
 
-Local limitation: this Windows/PowerShell environment does not have `nix` installed, and WSL does not have `nix` either. The repository now contains the required Nix expressions and commands, but the Nix build outputs must be generated on WSL/Linux/macOS after installing Nix.
+I updated Lab 18 to match the current upstream assignment. The previous IPFS/4EVERLAND solution was removed because the lab now requires reproducible builds with Nix.
 
-## Files
+The solution packages the Lab 1 Python DevOps Info Service with:
 
-- `labs/lab18/app_python/app.py`
-- `labs/lab18/app_python/requirements.txt`
-- `labs/lab18/app_python/Dockerfile`
-- `labs/lab18/app_python/default.nix`
-- `labs/lab18/app_python/docker.nix`
-- `labs/lab18/app_python/flake.nix`
+- a Nix derivation in `default.nix`
+- a reproducible Docker image definition in `docker.nix`
+- a modern flake entrypoint in `flake.nix`
+- this written submission report
 
-The Python app is copied from Lab 1/2 so the Nix build works against the same FastAPI service used throughout the course.
+## Environment Note
+
+The repository was prepared and validated from Windows/PowerShell. `nix` is not installed in this local Windows environment, and the available WSL Ubuntu instance also does not have `nix`.
+
+Because of that, I did not fabricate Nix store paths, output hashes, Docker image hashes, or screenshots. The Nix expressions are committed and ready to run on WSL/Linux/macOS after installing Nix.
+
+Checked commands:
+
+```text
+nix --version
+```
+
+Result:
+
+```text
+nix: command not found
+```
+
+WSL check:
+
+```powershell
+wsl -e sh -lc "command -v nix && nix --version || true"
+```
+
+Result: no `nix` binary found.
+
+## Implemented Files
+
+| File | Purpose |
+| --- | --- |
+| `labs/lab18/app_python/app.py` | Lab 1 FastAPI DevOps Info Service |
+| `labs/lab18/app_python/requirements.txt` | Original pip-based dependency list for comparison |
+| `labs/lab18/app_python/Dockerfile` | Original Lab 2 Dockerfile for comparison |
+| `labs/lab18/app_python/default.nix` | Nix derivation for the Python app |
+| `labs/lab18/app_python/docker.nix` | Nix `dockerTools` image definition |
+| `labs/lab18/app_python/flake.nix` | Flake entrypoint and dev shell |
+| `labs/submission18.md` | Lab 18 report |
+
+Removed obsolete Lab 18 files:
+
+- `labs/lab18/docker-compose.yml`
+- `labs/lab18/ipfs-demo/*`
+
+## Local Non-Nix Validation
+
+The copied Python app still passes its test suite from the repository root:
+
+```powershell
+py -m pytest app_python\tests
+```
+
+Result:
+
+```text
+collected 40 items
+app_python\tests\test_app.py ........................................ [100%]
+40 passed
+```
+
+The Kubernetes chart still passes lint after the Lab 17 and Lab 18 branch chain merges:
+
+```powershell
+.\.tools\helm.exe lint .\k8s\devops-info-service
+```
+
+Result:
+
+```text
+1 chart(s) linted, 0 chart(s) failed
+```
+
+The inherited Lab 17 Workers project also still builds:
+
+```powershell
+cd .\labs\lab17\edge-api
+npm run typecheck
+npm run deploy:dry-run
+```
+
+Result:
+
+```text
+tsc --noEmit
+wrangler deploy --dry-run --outdir dist
+Total Upload: 3.57 KiB / gzip: 1.35 KiB
+--dry-run: exiting now.
+```
 
 ## Task 1 - Nix Python Application
 
-Build:
+The derivation is in `labs/lab18/app_python/default.nix`.
 
-```bash
-cd labs/lab18/app_python
-nix-build
-./result/bin/devops-info-service
-```
-
-The derivation uses:
+It uses:
 
 ```nix
 pythonPackages.buildPythonApplication {
@@ -38,16 +116,41 @@ pythonPackages.buildPythonApplication {
 }
 ```
 
-Runtime dependencies are declared through Nix packages:
+Runtime dependencies are declared as Nix packages:
 
 - `fastapi`
 - `uvicorn`
 - `prometheus-client`
 - `python-dotenv`
 
-This is stronger than the Lab 1 `requirements.txt` workflow because Nix pins the full closure: Python, transitive packages, build tools, and wrapper scripts. A `requirements.txt` file pins direct Python packages only and still depends on the system Python, pip behavior, indexes, wheels, and platform details.
+The derivation installs the source into `$out/share/devops-info-service` and creates a wrapped executable:
 
-Reproducibility commands:
+```nix
+makeWrapper ${pythonEnv}/bin/python $out/bin/devops-info-service \
+  --set PYTHONPATH "$out/share/devops-info-service" \
+  --set HOST "0.0.0.0" \
+  --set PORT "8000" \
+  --add-flags "-m uvicorn app:app --host 0.0.0.0 --port 8000"
+```
+
+Build commands for a Nix-enabled host:
+
+```bash
+cd labs/lab18/app_python
+nix-build
+./result/bin/devops-info-service
+curl http://127.0.0.1:8000/health
+```
+
+Expected health response:
+
+```json
+{
+  "status": "healthy"
+}
+```
+
+Reproducibility proof commands:
 
 ```bash
 nix-build
@@ -62,11 +165,37 @@ readlink result
 nix-hash --type sha256 result
 ```
 
-Expected result: the store path and output hash are identical for identical inputs.
+Expected result: identical store path and identical output hash for identical inputs.
+
+## Task 1 Comparison - Lab 1 vs Nix
+
+| Aspect | Lab 1 pip + venv | Lab 18 Nix |
+| --- | --- | --- |
+| Python version | Depends on host Python | Provided by nixpkgs |
+| Direct dependencies | Listed in `requirements.txt` | Declared as Nix packages |
+| Transitive dependencies | Resolved by pip/index behavior | Part of Nix closure |
+| Build environment | Host-dependent | Isolated Nix environment |
+| Rebuild behavior | Can drift over time | Same inputs produce same output |
+
+`requirements.txt` is useful, but it is weaker than Nix because it does not lock the whole build environment. Nix locks Python, libraries, build tools, and runtime closure through the package graph.
 
 ## Task 2 - Reproducible Docker Image
 
-Build Nix image tarball:
+The Docker image definition is in `labs/lab18/app_python/docker.nix`.
+
+It uses:
+
+```nix
+pkgs.dockerTools.buildLayeredImage {
+  name = "devops-info-service-nix";
+  tag = "1.0.0";
+  created = "1970-01-01T00:00:01Z";
+}
+```
+
+The fixed `created` timestamp is deliberate. A dynamic timestamp such as `created = "now"` would break bit-for-bit reproducibility.
+
+Build and run commands:
 
 ```bash
 cd labs/lab18/app_python
@@ -77,39 +206,48 @@ docker run --rm -p 8000:8000 devops-info-service-nix:1.0.0
 curl http://127.0.0.1:8000/health
 ```
 
-The Docker image uses:
+Repeat build proof:
 
-```nix
-pkgs.dockerTools.buildLayeredImage {
-  name = "devops-info-service-nix";
-  tag = "1.0.0";
-  created = "1970-01-01T00:00:01Z";
-}
+```bash
+rm result
+nix-build docker.nix
+sha256sum result
+
+rm result
+nix-build docker.nix
+sha256sum result
 ```
 
-The fixed `created` timestamp is important. `created = "now"` would make every image tarball differ even when the source code is unchanged.
+Expected result: identical tarball hashes.
 
-Comparison:
+## Task 2 Comparison - Lab 2 Dockerfile vs Nix dockerTools
 
 | Aspect | Lab 2 Dockerfile | Lab 18 Nix dockerTools |
 | --- | --- | --- |
-| Base runtime | Mutable image tag such as `python:3.13-slim` | Nix closure from pinned nixpkgs |
-| Dependency install | `pip install -r requirements.txt` during Docker build | Nix package graph |
-| Timestamps | Docker layers vary by build time | Fixed image timestamp |
-| Rebuild hash | Can differ with unchanged source | Expected to be identical |
-| Auditability | Image plus pip environment | Nix store closure |
+| Base runtime | `python:3.13-slim` tag | Nix store closure |
+| Dependency install | `pip install -r requirements.txt` | Nix package graph |
+| Timestamp behavior | Docker image metadata varies | Fixed timestamp |
+| Reproducibility | Not bit-for-bit by default | Designed for identical outputs |
+| Auditability | Docker layers and pip environment | Nix closure and store paths |
 
-Traditional Dockerfiles are excellent for packaging but do not guarantee bit-for-bit reproducibility by default. Base tags can move, timestamps change, package indexes change, and `pip` can resolve differently over time unless the whole environment is locked.
+Traditional Dockerfiles package applications well, but they do not guarantee identical image hashes across rebuilds unless every input is pinned and timestamps are controlled. Nix `dockerTools` builds the image from deterministic store paths.
 
 ## Bonus - Flakes
 
-`flake.nix` pins nixpkgs through:
+`labs/lab18/app_python/flake.nix` provides:
+
+- default package
+- Docker image package
+- development shell
+- multi-system output structure
+
+Flake input:
 
 ```nix
 inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
 ```
 
-Generate the lock file and build:
+Commands for a Nix-enabled host:
 
 ```bash
 cd labs/lab18/app_python
@@ -119,45 +257,45 @@ nix build .#dockerImage
 nix develop
 ```
 
-The generated `flake.lock` should be committed after running `nix flake update` in a Nix-enabled environment. It records the exact nixpkgs revision and content hash used for all dependencies.
+After `nix flake update`, `flake.lock` should be committed. It records the exact nixpkgs revision and content hash used for the build.
 
-## Lab 1, Lab 2, Lab 10 Comparison
+## Lab 10 Comparison - Helm Values vs Nix Flakes
 
-| Aspect | Lab 1 venv + requirements.txt | Lab 2 Dockerfile | Lab 10 Helm values | Lab 18 Nix |
-| --- | --- | --- | --- | --- |
-| Python version | Host-dependent | Image tag-dependent | Not controlled | Nix-controlled |
-| App dependencies | Direct pins only | pip install during build | Only image tag reference | Full Nix closure |
-| Build tools | Host-dependent | Image-dependent | Not controlled | Pinned by nixpkgs |
-| Output reproducibility | Approximate | Not bit-for-bit by default | Depends on image immutability | Content-addressed |
-| Rollback confidence | Manual | Image tag or digest | Helm release/image tag | Store path or image hash |
+| Aspect | Helm values | Nix Flakes |
+| --- | --- | --- |
+| Main purpose | Kubernetes deployment configuration | Dependency and build reproducibility |
+| Image versioning | Can pin tags or digests | Can build reproducible image output |
+| Dependency lock | Chart lock and image reference only | Full nixpkgs input lock |
+| Runtime dependency control | Outside Helm unless image is immutable | Inside the Nix build |
+| Best combined use | Deploy immutable image digest | Produce that immutable image |
 
-Helm values from Lab 10 can pin an image tag, but that tag can still be overwritten unless deployments use immutable digests. Nix can build the image reproducibly, then Helm can deploy it by digest. The strongest workflow combines both: Nix for reproducible image creation and Helm for Kubernetes rollout management.
+The strongest workflow is to build the app image with Nix, publish it by digest, then deploy that digest through Helm.
 
-## Evidence To Capture On Nix-Enabled Host
+## Evidence Checklist For Final Nix Run
 
-Required command outputs for final submission screenshots:
+Run these commands on a Nix-enabled host and add screenshots or output snippets:
 
 ```bash
 nix --version
+cd labs/lab18/app_python
 nix-build
 readlink result
 nix-hash --type sha256 result
 rm result && nix-build && readlink result
 nix-build docker.nix
 sha256sum result
+docker load < result
 docker images | grep devops-info-service-nix
 docker history devops-info-service-nix:1.0.0
+docker run --rm -p 8000:8000 devops-info-service-nix:1.0.0
 curl http://127.0.0.1:8000/health
-```
-
-Expected app health response:
-
-```json
-{
-  "status": "healthy"
-}
+nix flake update
+nix build
+nix build .#dockerImage
 ```
 
 ## Reflection
 
-Nix would have helped in Lab 1 by removing dependence on whatever Python and pip happened to be installed locally. It would have helped in Lab 2 by producing an image from declared store paths instead of mutable package indexes and timestamped Docker layers. The tradeoff is tooling complexity: Nix has a steeper learning curve and usually needs WSL/Linux/macOS setup before it becomes ergonomic.
+Nix would have improved Lab 1 by removing dependence on the local Python installation and the behavior of pip at install time. It would have improved Lab 2 by creating the container image from a declared closure instead of a mutable base image tag and timestamped Docker build layers.
+
+The tradeoff is setup complexity. Nix requires a dedicated installation and a different packaging model, but the benefit is much stronger reproducibility and clearer dependency auditing.
