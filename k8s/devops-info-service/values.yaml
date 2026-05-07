@@ -95,6 +95,14 @@ rollout:
     count: 3
     failureLimit: 1
 
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
 livenessProbe:
   enabled: true
   httpGet:

@@ -87,6 +87,13 @@ PVC name.
 {{- end -}}
 
 {{/*
+Headless service name for StatefulSet pod DNS.
+*/}}
+{{- define "devops-info-service.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
+{{/*
 Preview service name for blue-green strategy.
 */}}
 {{- define "devops-info-service.previewServiceName" -}}
