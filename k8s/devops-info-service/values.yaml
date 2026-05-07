@@ -63,6 +63,7 @@ deployment:
   enabled: false
 
 rollout:
+  enabled: false
   strategy: canary
   canary:
     steps:
@@ -79,3 +80,10 @@ rollout:
           duration: 30s
   blueGreen:
     autoPromotionEnabled: false
+
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
