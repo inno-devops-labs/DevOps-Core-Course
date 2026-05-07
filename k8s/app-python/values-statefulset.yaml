@@ -1,0 +1,20 @@
+statefulset:
+  enabled: true
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  persistence:
+    size: 100Mi
+    storageClass: "standard"
+
+persistence:
+  enabled: false
+
+rollout:
+  enabled: false
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000

@@ -1,21 +1,22 @@
-{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "app-python.fullname" . }}
   labels:
     {{- include "app-python.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ include "app-python.fullname" . }}-headless
+  replicas: {{ .Values.statefulset.replicas | default .Values.replicaCount }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy | default "OrderedReady" }}
   selector:
     matchLabels:
       {{- include "app-python.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    {{- if eq .Values.strategy.type "RollingUpdate" }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type | default "RollingUpdate" }}
+    {{- if and (eq (.Values.statefulset.updateStrategy.type | default "RollingUpdate") "RollingUpdate") (hasKey .Values.statefulset.updateStrategy "partition") }}
     rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+      partition: {{ .Values.statefulset.updateStrategy.partition }}
     {{- end }}
   template:
     metadata:
@@ -28,10 +29,8 @@ spec:
       labels:
         {{- include "app-python.selectorLabels" . | nindent 8 }}
     spec:
-      {{- if .Values.persistence.enabled }}
       securityContext:
         fsGroup: 1000
-      {{- end }}
       {{- if .Values.vault.enabled }}
       serviceAccountName: default
       initContainers:
@@ -72,10 +71,8 @@ spec:
             - name: app-config
               mountPath: /config
               readOnly: true
-            {{- if .Values.persistence.enabled }}
-            - name: app-data
+            - name: data
               mountPath: /data
-            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -107,9 +104,15 @@ spec:
         - name: app-config
           configMap:
             name: {{ include "app-python.fullname" . }}-app-config
-        {{- if .Values.persistence.enabled }}
-        - name: app-data
-          persistentVolumeClaim:
-            claimName: {{ include "app-python.fullname" . }}-data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        {{- if .Values.statefulset.persistence.storageClass }}
+        storageClassName: {{ .Values.statefulset.persistence.storageClass | quote }}
         {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.statefulset.persistence.size }}
 {{- end }}

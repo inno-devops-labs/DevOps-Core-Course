@@ -91,3 +91,13 @@ vault:
   enabled: false
   role: "app-python"
   secretPath: "secret/data/app-python/config"
+
+statefulset:
+  enabled: false
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  persistence:
+    size: 100Mi
+    storageClass: ""
