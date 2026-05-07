@@ -1,0 +1,35 @@
+# Lab 16: StatefulSet + per-pod PVC + init containers + ServiceMonitor (bonus).
+# Prerequisite: kube-prometheus-stack in namespace monitoring (release name = serviceMonitor.prometheusReleaseLabel).
+# If namespace default already has this chart under release "lab15", upgrade that release instead of creating "lab16":
+#   helm upgrade --install lab15 . -n default -f values-lab16.yaml
+# Then select pods with: -l app.kubernetes.io/instance=lab15
+fullnameOverride: devops-info-service
+
+statefulset:
+  enabled: true
+rollouts:
+  enabled: false
+
+replicaCount: 2
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
+initContainers:
+  enabled: true
+  busyboxImage: busybox:1.36
+  sharedVolumeMountPath: /init-shared
+  waitForService:
+    enabled: true
+    host: kubernetes.default.svc.cluster.local
+  download:
+    enabled: true
+    url: https://example.com
+    destFile: index.html
+
+serviceMonitor:
+  enabled: true
+  prometheusReleaseLabel: monitoring
+  interval: 30s
+  scrapeTimeout: 10s

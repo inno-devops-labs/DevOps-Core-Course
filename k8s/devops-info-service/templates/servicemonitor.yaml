@@ -1,0 +1,21 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "common-lib.fullname" . }}
+  labels:
+    {{- include "common-lib.labels" . | nindent 4 }}
+    release: {{ .Values.serviceMonitor.prometheusReleaseLabel | quote }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "common-lib.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.serviceMonitor.interval | quote }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout | quote }}
+{{- end }}

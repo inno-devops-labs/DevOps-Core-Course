@@ -128,3 +128,24 @@ statefulset:
     type: RollingUpdate
     rollingUpdate:
       partition: 0
+
+# Lab 16: init containers (shared volume + wait-for-service) and optional Prometheus ServiceMonitor.
+initContainers:
+  enabled: false
+  busyboxImage: busybox:1.36
+  sharedVolumeMountPath: /init-shared
+  waitForService:
+    enabled: true
+    host: kubernetes.default.svc.cluster.local
+  download:
+    enabled: true
+    url: https://example.com
+    destFile: index.html
+
+# Lab 16 bonus: scrape /metrics (requires Prometheus Operator + kube-prometheus-stack).
+# Set prometheusReleaseLabel to match your kube-prometheus-stack Helm release name (often "monitoring").
+serviceMonitor:
+  enabled: false
+  prometheusReleaseLabel: monitoring
+  interval: 30s
+  scrapeTimeout: 10s

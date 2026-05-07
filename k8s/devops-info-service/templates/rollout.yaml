@@ -43,7 +43,9 @@ spec:
       {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
       {{- end }}
+{{- include "devops-info-service.initContainers" . }}
       volumes:
+{{- include "devops-info-service.initVolume" . }}
         - name: app-config
           configMap:
             name: {{ include "common-lib.fullname" . }}-config-file
@@ -68,6 +70,7 @@ spec:
               readOnly: true
             - name: data
               mountPath: /data
+{{- include "devops-info-service.initVolumeMount" . }}
           env:
             {{- toYaml .Values.env | nindent 12 }}
             {{- include "devops-info-service.extraEnv" . | nindent 12 }}
