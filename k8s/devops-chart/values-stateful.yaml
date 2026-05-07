@@ -1,0 +1,23 @@
+replicaCount: 3
+
+image:
+  repository: aserova/devops-info-service
+  tag: v3
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+
+statefulset:
+  enabled: true
+
+rollout:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 1Gi
+  accessModes:
+    - ReadWriteOnce

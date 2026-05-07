@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "devops-chart.fullname" . }}
+  labels:
+    {{- include "devops-chart.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "devops-chart.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+
+  selector:
+    matchLabels:
+      {{- include "devops-chart.selectorLabels" . | nindent 6 }}
+
+  template:
+    metadata:
+      labels:
+        {{- include "devops-chart.selectorLabels" . | nindent 8 }}
+
+    spec:
+      serviceAccountName: {{ include "devops-chart.serviceAccountName" . }}
+
+      containers:
+        - name: devops-app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+
+          envFrom:
+            - configMapRef:
+                name: {{ include "devops-chart.fullname" . }}-env
+            {{- if .Values.secret.enabled }}
+            - secretRef:
+                name: {{ default (printf "%s-secret" (include "devops-chart.fullname" .)) .Values.secret.name }}
+            {{- end }}
+
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "5000"
+            - name: VISITS_FILE
+              value: "/data/visits"
+
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config-volume
+              mountPath: /config
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-chart.fullname" . }}-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "devops-chart.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
