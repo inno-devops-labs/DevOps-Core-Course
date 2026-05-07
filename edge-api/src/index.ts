@@ -1,4 +1,12 @@
-export interface Env {}
+export interface Env {
+	APP_NAME?: string;
+	COURSE_NAME?: string;
+	ENVIRONMENT?: string;
+	APP_VERSION?: string;
+	API_TOKEN?: string;
+	ADMIN_EMAIL?: string;
+	SETTINGS: KVNamespace;
+}
 
 type JsonBody = Record<string, unknown>;
 
@@ -11,16 +19,44 @@ function jsonResponse(body: JsonBody, status = 200): Response {
 	});
 }
 
+function configured(value: unknown): boolean {
+	return typeof value === "string" && value.length > 0;
+}
+
+function getRoutes(): string[] {
+	return [
+		"/",
+		"/health",
+		"/deployment",
+		"/edge",
+		"/config",
+		"/counter",
+		"/counter/read",
+	];
+}
+
 function notFound(pathname: string): Response {
 	return jsonResponse(
 		{
 			error: "Not Found",
 			message: "Endpoint does not exist",
 			path: pathname,
-			availableRoutes: ["/", "/health", "/deployment", "/edge"],
+			availableRoutes: getRoutes(),
 		},
 		404,
 	);
+}
+
+async function readCounter(env: Env): Promise<number> {
+	const raw = await env.SETTINGS.get("visits");
+	const parsed = Number.parseInt(raw ?? "0", 10);
+	return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function incrementCounter(env: Env): Promise<number> {
+	const visits = (await readCounter(env)) + 1;
+	await env.SETTINGS.put("visits", String(visits));
+	return visits;
 }
 
 export default {
@@ -48,12 +84,15 @@ export default {
 		if (url.pathname === "/") {
 			return jsonResponse({
 				service: {
-					name: "edge-api",
+					name: env.APP_NAME ?? "edge-api",
 					description: "Cloudflare Workers API for DevOps Core Course",
 					runtime: "Cloudflare Workers",
 				},
+				course: env.COURSE_NAME ?? "DevOps Core Course",
+				environment: env.ENVIRONMENT ?? "unknown",
+				version: env.APP_VERSION ?? "unknown",
 				message: "Hello from Cloudflare Workers",
-				routes: ["/", "/health", "/deployment", "/edge"],
+				routes: getRoutes(),
 				timestamp,
 			});
 		}
@@ -61,18 +100,18 @@ export default {
 		if (url.pathname === "/health") {
 			return jsonResponse({
 				status: "healthy",
-				service: "edge-api",
+				service: env.APP_NAME ?? "edge-api",
 				timestamp,
 			});
 		}
 
 		if (url.pathname === "/deployment") {
 			return jsonResponse({
-				application: "edge-api",
+				application: env.APP_NAME ?? "edge-api",
 				platform: "Cloudflare Workers",
 				language: "TypeScript",
-				environment: "workers.dev",
-				version: "lab17-task2",
+				environment: env.ENVIRONMENT ?? "workers.dev",
+				version: env.APP_VERSION ?? "lab17-task4",
 				deployedWith: "Wrangler",
 				publicUrlFormat: "https://<worker-name>.<subdomain>.workers.dev",
 				timestamp,
@@ -88,6 +127,48 @@ export default {
 				httpProtocol: request.cf?.httpProtocol ?? "local-dev",
 				tlsVersion: request.cf?.tlsVersion ?? "local-dev",
 				note: "Cloudflare edge metadata is available after deployment.",
+				timestamp,
+			});
+		}
+
+		if (url.pathname === "/config") {
+			return jsonResponse({
+				appName: env.APP_NAME ?? null,
+				courseName: env.COURSE_NAME ?? null,
+				environment: env.ENVIRONMENT ?? null,
+				version: env.APP_VERSION ?? null,
+				secrets: {
+					apiTokenConfigured: configured(env.API_TOKEN),
+					adminEmailConfigured: configured(env.ADMIN_EMAIL),
+				},
+				kv: {
+					settingsBindingAvailable: Boolean(env.SETTINGS),
+				},
+				note: "Secret values are not returned by this endpoint.",
+				timestamp,
+			});
+		}
+
+		if (url.pathname === "/counter") {
+			const visits = await incrementCounter(env);
+
+			return jsonResponse({
+				key: "visits",
+				visits,
+				storage: "Workers KV",
+				operation: "read-increment-write",
+				timestamp,
+			});
+		}
+
+		if (url.pathname === "/counter/read") {
+			const visits = await readCounter(env);
+
+			return jsonResponse({
+				key: "visits",
+				visits,
+				storage: "Workers KV",
+				operation: "read",
 				timestamp,
 			});
 		}
