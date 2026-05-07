@@ -1,15 +1,22 @@
-{{- if and .Values.rollout.enabled (not .Values.statefulset.enabled) }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "devops-info-service.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if eq .Values.statefulset.updateStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
+    {{- end }}
   template:
     metadata:
       annotations:
@@ -57,20 +64,18 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
-        {{- if .Values.persistence.enabled }}
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-service.fullname" . }}-data
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
         {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "canary" }}
-    canary:
-      steps:
-        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
-    {{- else if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "devops-info-service.fullname" . }}
-      previewService: {{ include "devops-info-service.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-    {{- end }}
+  {{- end }}
 {{- end }}

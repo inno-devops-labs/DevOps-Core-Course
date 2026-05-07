@@ -79,6 +79,13 @@ vault:
     PASSWORD={{ .Data.data.password }}
     {{- end -}}
 
+statefulset:
+  enabled: false
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
 rollout:
   enabled: false
   strategy: canary
