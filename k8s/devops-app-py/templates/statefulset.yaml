@@ -26,7 +26,11 @@ spec:
     - metadata:
         name: data-volume
         labels:
+          {{- if .Values.statefulset.volumeClaimTemplateLabels }}
+          {{- toYaml .Values.statefulset.volumeClaimTemplateLabels | nindent 10 }}
+          {{- else }}
           {{- include "devops-app-py.labels" . | nindent 10 }}
+          {{- end }}
       spec:
         accessModes:
           {{- toYaml .Values.persistence.accessModes | nindent 10 }}
