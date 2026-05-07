@@ -1,0 +1,20 @@
+{
+  "name": "edge-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "bun run typecheck && bun run test"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260507.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.45.0"
+  }
+}
