@@ -35,3 +35,13 @@ secrets:
 environment: "production"
 logLevel: "INFO"
 counterFile: "/data/visits"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+
+statefulset:
+  updateStrategy:
+    type: RollingUpdate
+    partition: 0
