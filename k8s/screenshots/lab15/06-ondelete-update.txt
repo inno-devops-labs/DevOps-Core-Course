@@ -1,0 +1,29 @@
+﻿OnDelete baseline after manual recreation
+{"type":"OnDelete"}
+
+NAME                    READY   STATUS    RESTARTS   AGE   CONTROLLER-REVISION-HASH
+devops-info-service-0   1/1     Running   0          25s   devops-info-service-779894fbb6
+devops-info-service-1   1/1     Running   0          17s   devops-info-service-779894fbb6
+devops-info-service-2   1/1     Running   0          9s    devops-info-service-779894fbb6
+RELEASE_VERSION baseline:
+devops-info-service-0=ondelete-v1
+devops-info-service-1=ondelete-v1
+devops-info-service-2=ondelete-v1
+After template update to ondelete-v2, before manual pod deletion:
+NAME                    READY   STATUS    RESTARTS   AGE   CONTROLLER-REVISION-HASH
+devops-info-service-0   1/1     Running   0          38s   devops-info-service-779894fbb6
+devops-info-service-1   1/1     Running   0          30s   devops-info-service-779894fbb6
+devops-info-service-2   1/1     Running   0          22s   devops-info-service-779894fbb6
+RELEASE_VERSION before manual delete:
+devops-info-service-0=ondelete-v1
+devops-info-service-1=ondelete-v1
+devops-info-service-2=ondelete-v1
+After deleting only devops-info-service-2:
+NAME                    READY   STATUS    RESTARTS   AGE   CONTROLLER-REVISION-HASH
+devops-info-service-0   1/1     Running   0          49s   devops-info-service-779894fbb6
+devops-info-service-1   1/1     Running   0          41s   devops-info-service-779894fbb6
+devops-info-service-2   1/1     Running   0          9s    devops-info-service-86b8cffb4f
+RELEASE_VERSION after manual delete:
+devops-info-service-0=ondelete-v1
+devops-info-service-1=ondelete-v1
+devops-info-service-2=ondelete-v2

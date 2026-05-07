@@ -1,0 +1,6 @@
+﻿Before deleting devops-info-service-0:
+2
+After StatefulSet recreated devops-info-service-0:
+2
+NAME                    READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+devops-info-service-0   1/1     Running   0          7s    10.244.0.69   minikube   <none>           <none>

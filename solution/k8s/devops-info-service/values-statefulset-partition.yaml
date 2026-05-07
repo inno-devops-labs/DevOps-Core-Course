@@ -1,0 +1,26 @@
+workload:
+  kind: StatefulSet
+
+replicaCount: 3
+
+image:
+  repository: devops-info-service
+  tag: "lab15"
+  pullPolicy: IfNotPresent
+
+env:
+  releaseVersion: "statefulset-partition-v1"
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2
+
+persistence:
+  enabled: true
+  size: 100Mi
+
+hooks:
+  enabled: false

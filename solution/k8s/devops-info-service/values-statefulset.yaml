@@ -1,0 +1,25 @@
+workload:
+  kind: StatefulSet
+
+replicaCount: 3
+
+image:
+  repository: devops-info-service
+  tag: "lab15"
+  pullPolicy: IfNotPresent
+
+env:
+  releaseVersion: "statefulset-v1"
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+
+persistence:
+  enabled: true
+  size: 100Mi
+
+hooks:
+  enabled: false

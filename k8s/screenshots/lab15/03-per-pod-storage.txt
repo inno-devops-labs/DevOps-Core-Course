@@ -1,0 +1,7 @@
+﻿Per-pod /visits responses:
+pod-0:
+{"count":2,"file_path":"/data/visits"}
+pod-1:
+{"count":1,"file_path":"/data/visits"}
+pod-2:
+{"count":3,"file_path":"/data/visits"}

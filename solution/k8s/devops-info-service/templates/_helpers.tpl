@@ -26,6 +26,10 @@
 {{- include "devops-info-service.fullname" . -}}
 {{- end -}}
 
+{{- define "devops-info-service.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-info-service.fullname" .) -}}
+{{- end -}}
+
 {{- define "devops-info-service.secretName" -}}
 {{- if .Values.secret.name -}}
 {{- .Values.secret.name -}}
@@ -105,7 +109,7 @@ spec:
     - name: config-volume
       configMap:
         name: {{ include "devops-info-service.configFileMapName" . }}
-    {{- if .Values.persistence.enabled }}
+    {{- if and .Values.persistence.enabled (ne .Values.workload.kind "StatefulSet") }}
     - name: data-volume
       persistentVolumeClaim:
         claimName: {{ include "devops-info-service.pvcName" . }}

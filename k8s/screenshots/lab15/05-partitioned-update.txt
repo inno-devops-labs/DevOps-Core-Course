@@ -1,0 +1,11 @@
+﻿Partitioned RollingUpdate, partition=2
+{"rollingUpdate":{"maxUnavailable":1,"partition":2},"type":"RollingUpdate"}
+
+NAME                    READY   STATUS    RESTARTS   AGE     CONTROLLER-REVISION-HASH
+devops-info-service-0   1/1     Running   0          56s     devops-info-service-86d4556fc4
+devops-info-service-1   1/1     Running   0          2m39s   devops-info-service-86d4556fc4
+devops-info-service-2   1/1     Running   0          29s     devops-info-service-58668f5bcf
+RELEASE_VERSION by pod:
+devops-info-service-0=statefulset-v1
+devops-info-service-1=statefulset-v1
+devops-info-service-2=partition-v2

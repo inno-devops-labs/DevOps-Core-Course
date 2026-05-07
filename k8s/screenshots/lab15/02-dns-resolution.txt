@@ -1,0 +1,14 @@
+﻿Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Name:	devops-info-service-1.devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.67
+
+
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+
+Name:	devops-info-service-2.devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.68
+

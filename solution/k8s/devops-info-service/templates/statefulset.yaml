@@ -1,0 +1,40 @@
+{{- if eq .Values.workload.kind "StatefulSet" }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "devops-info-service.headlessServiceName" . }}
+  replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if and (eq .Values.statefulset.updateStrategy.type "RollingUpdate") .Values.statefulset.updateStrategy.rollingUpdate }}
+    rollingUpdate:
+      {{- toYaml .Values.statefulset.updateStrategy.rollingUpdate | nindent 6 }}
+    {{- end }}
+  selector:
+    matchLabels:
+      {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
+  template:
+    {{- include "devops-info-service.podTemplate" . | nindent 4 }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+        labels:
+          {{- include "devops-info-service.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          {{- toYaml .Values.persistence.accessModes | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+  {{- end }}
+{{- end }}

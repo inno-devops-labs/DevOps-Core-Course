@@ -127,6 +127,14 @@ rollout:
       port: 80
       nodePort: 30082
 
+statefulset:
+  podManagementPolicy: OrderedReady
+  headlessService:
+    publishNotReadyAddresses: false
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+
 serviceAccount:
   create: true
   name: ""
