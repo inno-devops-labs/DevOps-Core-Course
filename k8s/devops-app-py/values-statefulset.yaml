@@ -1,0 +1,36 @@
+replicaCount: 3
+
+image:
+  tag: "1.12"
+
+deployment:
+  enabled: false
+  revisionHistoryLimit: 5
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  revisionHistoryLimit: 5
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+rollout:
+  enabled: false
+
+podAnnotations:
+  lab15-version: "stateful-v1"
+
+persistence:
+  enabled: true
+  mountPath: /data
+  accessModes:
+    - ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000

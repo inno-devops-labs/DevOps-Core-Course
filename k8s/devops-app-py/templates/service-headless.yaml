@@ -1,0 +1,17 @@
+{{- if and .Values.statefulset.enabled (not .Values.rollout.enabled) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-app-py.headlessServiceName" . }}
+  labels:
+    {{- include "devops-app-py.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+  selector:
+    {{- include "devops-app-py.selectorLabels" . | nindent 4 }}
+{{- end }}
