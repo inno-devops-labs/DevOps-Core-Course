@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-for-service-demo
+  namespace: lab16
+  labels:
+    app: wait-for-service-demo
+spec:
+  initContainers:
+    - name: wait-for-backend
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "waiting for service backend-svc.lab16.svc.cluster.local ..."
+          until nslookup backend-svc.lab16.svc.cluster.local; do
+            echo "  service not ready, retry in 2s"
+            sleep 2
+          done
+          echo "service is up, proceeding"
+  containers:
+    - name: app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo main container started; sleep 3600"]
+---
+# Backend that the init container is waiting for. Created with a short delay
+# in real demo by applying it AFTER the pod above (see MONITORING.md).
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-svc
+  namespace: lab16
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: lab16
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: hashicorp/http-echo:1.0.0
+          args: ["-listen=:8080", "-text=hello from backend"]
+          ports:
+            - containerPort: 8080

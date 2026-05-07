@@ -1,0 +1,49 @@
+# Bonus: expose python-app metrics to Prometheus via a ServiceMonitor.
+#
+# The existing Service `python-sts-python-app` (lab15) uses an unnamed port,
+# while ServiceMonitor refers to ports by name. We add a dedicated
+# metrics-only Service here with a named `http` port pointing at the
+# Flask app's /metrics endpoint, then point a ServiceMonitor at it.
+#
+# The `release: monitoring` label on ServiceMonitor matches the
+# kube-prometheus-stack Prometheus serviceMonitorSelector, so it is
+# auto-discovered without restarting Prometheus.
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-sts-metrics
+  namespace: lab15
+  labels:
+    app.kubernetes.io/name: python-app
+    app.kubernetes.io/instance: python-sts
+    monitoring: "true"
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: python-app
+    app.kubernetes.io/instance: python-sts
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+      protocol: TCP
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: python-sts-monitor
+  namespace: lab15
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      monitoring: "true"
+      app.kubernetes.io/name: python-app
+  namespaceSelector:
+    matchNames:
+      - lab15
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
