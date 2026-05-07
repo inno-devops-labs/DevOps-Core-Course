@@ -12,6 +12,13 @@ service:
   targetPort: http
   containerPort: 5000
   nodePort: 30080
+serviceMonitor:
+  enabled: false
+  path: /metrics
+  interval: 15s
+  scrapeTimeout: 10s
+  labels:
+    release: monitoring
 deploymentStrategy:
   type: RollingUpdate
   rollingUpdate:
@@ -96,6 +103,9 @@ livenessProbe:
   periodSeconds: 10
   timeoutSeconds: 2
   failureThreshold: 3
+initContainers: []
+extraVolumeMounts: []
+extraVolumes: []
 resources:
   requests:
     cpu: 100m

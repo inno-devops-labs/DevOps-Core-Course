@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab16-init
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab16-dependency
+  namespace: lab16-init
+  labels:
+    app.kubernetes.io/name: lab16-dependency
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lab16-dependency
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lab16-dependency
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - name: http
+              containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab16-dependency
+  namespace: lab16-init
+  labels:
+    app.kubernetes.io/name: lab16-dependency
+spec:
+  selector:
+    app.kubernetes.io/name: lab16-dependency
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lab16-init-demo
+  namespace: lab16-init
+  labels:
+    app.kubernetes.io/name: lab16-init-demo
+spec:
+  restartPolicy: Always
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - wget -O /work-dir/index.html https://example.com
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - until wget -qO- http://lab16-dependency >/dev/null; do sleep 2; done
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - while true; do test -s /data/index.html && sleep 3600; done
+      volumeMounts:
+        - name: workdir
+          mountPath: /data
+  volumes:
+    - name: workdir
+      emptyDir: {}
