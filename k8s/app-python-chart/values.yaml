@@ -64,3 +64,13 @@ persistence:
   size: 100Mi
   storageClass: ""
   mountPath: /data
+  accessModes:
+    - ReadWriteOnce
+
+headlessService:
+  enabled: true
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate

@@ -50,3 +50,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
   value: {{ .value | quote }}
 {{- end }}
 {{- end }}
+
+{{- define "app-python-chart.headlessServiceName" -}}
+{{- printf "%s-headless" (include "app-python-chart.fullname" .) }}
+{{- end }}
