@@ -1,8 +1,9 @@
 1. Check the release:
   helm status {{ .Release.Name }}
+  kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }}
 
 2. Inspect resources:
-  kubectl get deploy,svc,pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl get rollouts.argoproj.io,svc,pods -l app.kubernetes.io/instance={{ .Release.Name }}
 
 3. Access the application:
   {{- if eq .Values.service.type "NodePort" }}
@@ -11,6 +12,9 @@
   kubectl get svc {{ include "devops-info-service.fullname" . }} -w
   {{- else }}
   kubectl port-forward service/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+  {{- end }}
+  {{- if eq .Values.rollout.strategy "blueGreen" }}
+  kubectl port-forward service/{{ include "devops-info-service.previewServiceName" . }} 8081:{{ .Values.previewService.port }}
   {{- end }}
 
 4. Verify the health endpoint:

@@ -133,12 +133,21 @@ def get_request():
 
 
 def get_service():
-    return {
+    service = {
         "name": "devops-info-service",
-        "version": "1.0.0",
+        "version": os.getenv("DEVOPS_SERVICE_VERSION", "1.0.0"),
         "description": "DevOps course info service",
         "framework": "Flask",
     }
+    release_track = os.getenv("DEVOPS_RELEASE_TRACK")
+    release_color = os.getenv("DEVOPS_RELEASE_COLOR")
+
+    if release_track:
+        service["release_track"] = release_track
+    if release_color:
+        service["release_color"] = release_color
+
+    return service
 
 
 @app.route("/")

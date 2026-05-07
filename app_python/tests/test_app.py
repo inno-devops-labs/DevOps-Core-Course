@@ -43,6 +43,18 @@ def test_index_service_fields(client):
     assert isinstance(service["description"], str)
 
 
+def test_index_service_release_metadata_overrides(client, monkeypatch):
+    monkeypatch.setenv("DEVOPS_SERVICE_VERSION", "2.0.0-canary")
+    monkeypatch.setenv("DEVOPS_RELEASE_TRACK", "canary")
+    monkeypatch.setenv("DEVOPS_RELEASE_COLOR", "green")
+
+    service = client.get("/").get_json()["service"]
+
+    assert service["version"] == "2.0.0-canary"
+    assert service["release_track"] == "canary"
+    assert service["release_color"] == "green"
+
+
 def test_index_system_fields(client):
     data = client.get("/").get_json()
     system = data["system"]
