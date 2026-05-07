@@ -6,3 +6,4 @@ ansible/inventory/*.pyc
 __pycache__/
 *sln
 app_csharp/
+venv*
