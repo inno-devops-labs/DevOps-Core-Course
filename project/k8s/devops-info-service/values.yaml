@@ -111,3 +111,18 @@ rollout:
     interval: 10s
     count: 3
     failureLimit: 1
+
+# Lab 15. When statefulset.enabled is true, templates/statefulset.yaml renders
+# and templates/{deployment,rollout,pvc}.yaml are skipped. Each replica gets
+# its own PVC via volumeClaimTemplates; the standalone pvc.yaml is bypassed.
+statefulset:
+  enabled: false
+  replicas: 3
+  storage:
+    size: 100Mi
+    storageClass: ""        # "" = cluster default
+    accessMode: ReadWriteOnce
+  updateStrategy:
+    type: RollingUpdate     # RollingUpdate | OnDelete
+    rollingUpdate:
+      partition: 0          # only pods with ordinal >= partition update

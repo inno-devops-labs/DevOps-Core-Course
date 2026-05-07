@@ -1,35 +1,22 @@
-{{- if and .Values.rollout.enabled (not .Values.statefulset.enabled) }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ include "devops-info-service.fullname" . }}-headless
+  replicas: {{ .Values.statefulset.replicas }}
+  podManagementPolicy: OrderedReady
   selector:
     matchLabels:
       {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "canary" }}
-    canary:
-      steps:
-        {{- $atStep := int .Values.rollout.canary.analysis.atStep }}
-        {{- $analysisEnabled := and .Values.rollout.canary.analysis.enabled .Values.rollout.analysis.enabled }}
-        {{- range $i, $step := .Values.rollout.canary.steps }}
-        {{- toYaml (list $step) | nindent 8 }}
-        {{- if and $analysisEnabled (eq $i $atStep) }}
-        - analysis:
-            templates:
-              - templateName: {{ $.Values.rollout.analysis.name }}
-        {{- end }}
-        {{- end }}
-    {{- else if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "devops-info-service.fullname" . }}
-      previewService: {{ include "devops-info-service.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if eq .Values.statefulset.updateStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
     {{- end }}
   template:
     metadata:
@@ -59,13 +46,6 @@ spec:
         - name: app-config
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
-        - name: visits-data
-          {{- if .Values.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "devops-info-service.fullname" . }}-data
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -104,4 +84,18 @@ spec:
                 name: {{ include "devops-info-service.fullname" . }}-env
           env:
             {{- include "devops-info-service.containerEnv" . | nindent 12 }}
+  volumeClaimTemplates:
+    - metadata:
+        name: visits-data
+        labels:
+          {{- include "devops-info-service.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.statefulset.storage.accessMode }}
+        resources:
+          requests:
+            storage: {{ .Values.statefulset.storage.size }}
+        {{- if .Values.statefulset.storage.storageClass }}
+        storageClassName: {{ .Values.statefulset.storage.storageClass | quote }}
+        {{- end }}
 {{- end }}
