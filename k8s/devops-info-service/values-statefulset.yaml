@@ -1,0 +1,12 @@
+# Lab 15: helm upgrade --install devops-info . -f values-statefulset.yaml -n <namespace>
+replicaCount: 3
+
+statefulset:
+  enabled: true
+  updateStrategy: RollingUpdate
+  partition: 0
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""

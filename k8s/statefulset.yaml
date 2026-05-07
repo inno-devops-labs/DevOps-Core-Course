@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: visits-app
+spec:
+  serviceName: visits-app-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: visits-app
+  template:
+    metadata:
+      labels:
+        app: visits-app
+    spec:
+      containers:
+      - name: visits-app
+        image: abraham14711/visits-app:latest
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2

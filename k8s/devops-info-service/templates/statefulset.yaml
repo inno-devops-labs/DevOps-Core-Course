@@ -1,0 +1,54 @@
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "devops-service.name" . }}
+  labels:
+    {{- include "devops-service.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "devops-service.name" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "devops-service.selectorLabels" . | nindent 6 }}
+  updateStrategy:
+    {{- if eq .Values.statefulset.updateStrategy "OnDelete" }}
+    type: OnDelete
+    {{- else }}
+    type: RollingUpdate
+    rollingUpdate:
+      partition: {{ .Values.statefulset.partition }}
+    {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "devops-service.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env:
+            {{- include "devops-service.containerEnv" . | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "devops-service.name" . }}-env
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+        {{- end }}
+{{- end }}

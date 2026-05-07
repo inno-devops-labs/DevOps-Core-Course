@@ -37,3 +37,16 @@ persistence:
   enabled: true
   size: 100Mi
   storageClass: ""
+
+statefulset:
+  enabled: false
+  updateStrategy: RollingUpdate
+  partition: 0
+
+rollout:
+  strategy: canary
+  analysis:
+    enabled: false
+    interval: 10s
+    count: 3
+    failureLimit: 1
