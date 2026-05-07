@@ -1,17 +1,22 @@
-{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "common.fullname" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "common.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
-  progressDeadlineSeconds: {{ .Values.progressDeadlineSeconds }}
   minReadySeconds: {{ .Values.minReadySeconds }}
-  strategy:
-    {{- toYaml .Values.strategy | nindent 4 }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type }}
+    {{- if and (eq .Values.statefulset.updateStrategy.type "RollingUpdate") .Values.statefulset.updateStrategy.rollingUpdate }}
+    rollingUpdate:
+      {{- toYaml .Values.statefulset.updateStrategy.rollingUpdate | nindent 6 }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "common.selectorLabels" . | nindent 6 }}
@@ -96,17 +101,17 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-      {{- if or (and .Values.config.enabled .Values.config.file.enabled) .Values.persistence.enabled }}
+      {{- if or (and .Values.config.enabled .Values.config.file.enabled) (and .Values.persistence.enabled .Values.persistence.existingClaim) }}
       volumes:
         {{- if and .Values.config.enabled .Values.config.file.enabled }}
         - name: config-volume
           configMap:
             name: {{ include "devops-info.fileConfigMapName" . }}
         {{- end }}
-        {{- if .Values.persistence.enabled }}
+        {{- if and .Values.persistence.enabled .Values.persistence.existingClaim }}
         - name: data-volume
           persistentVolumeClaim:
-            claimName: {{ include "devops-info.pvcName" . }}
+            claimName: {{ .Values.persistence.existingClaim }}
         {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
@@ -121,4 +126,20 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+  {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+        labels:
+          {{- include "common.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+  {{- end }}
 {{- end }}

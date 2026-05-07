@@ -1,0 +1,10 @@
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  headlessService:
+    enabled: true
+    publishNotReadyAddresses: false
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2
