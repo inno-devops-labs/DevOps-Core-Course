@@ -3,8 +3,6 @@ import socket
 import platform
 import logging
 import time
-import json
-import threading
 from datetime import datetime, timezone
 from typing import Dict, Any
 
@@ -19,11 +17,7 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-# Visits file path
-VISITS_FILE = "/data/visits"
-lock = threading.Lock()
-
-# JSON logging
+# JSON logging setup
 logHandler = logging.StreamHandler()
 formatter = jsonlogger.JsonFormatter(
     fmt='%(asctime)s %(levelname)s %(name)s %(message)s',
@@ -35,6 +29,7 @@ root_logger.addHandler(logHandler)
 root_logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Application start time
 START_TIME = datetime.now(timezone.utc)
 
 # FastAPI app
@@ -52,7 +47,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ========== Prometheus Metrics ==========
+# Prometheus metrics
 http_requests_total = Counter(
     'http_requests_total',
     'Total HTTP requests',
@@ -73,33 +68,14 @@ endpoint_calls = Counter(
     'Total calls per endpoint',
     ['endpoint']
 )
-# ========================================
 
-# ========== Visits counter helpers ==========
-def read_visits() -> int:
-    """Read the current visit count from file."""
-    try:
-        with open(VISITS_FILE, "r") as f:
-            return int(f.read().strip())
-    except (FileNotFoundError, ValueError):
-        return 0
-
-def write_visits(count: int) -> None:
-    """Write the visit count to file atomically."""
-    with lock:
-        with open(VISITS_FILE, "w") as f:
-            f.write(str(count))
-# ===========================================
-
-# Middleware to log and measure requests
+# Middleware
 @app.middleware("http")
 async def monitor_requests(request: Request, call_next):
     method = request.method
     endpoint = request.url.path
-
     http_requests_in_progress.inc()
     start_time = time.time()
-
     try:
         response = await call_next(request)
         status = str(response.status_code)
@@ -112,16 +88,15 @@ async def monitor_requests(request: Request, call_next):
         http_request_duration_seconds.labels(method=method, endpoint=endpoint).observe(duration)
         http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
         endpoint_calls.labels(endpoint=endpoint).inc()
-
-    logger.info(
-        "HTTP Request",
-        extra={
-            "method": method,
-            "path": endpoint,
-            "client_ip": request.client.host if request.client else None,
-            "status_code": response.status_code,
-        }
-    )
+        logger.info(
+            "HTTP Request",
+            extra={
+                "method": method,
+                "path": endpoint,
+                "client_ip": request.client.host if request.client else None,
+                "status_code": status,
+            }
+        )
     return response
 
 # Helper functions
@@ -155,12 +130,10 @@ def get_request_info(request: Request) -> Dict[str, Any]:
         "path": request.url.path,
     }
 
-# ========== Endpoints ==========
+# Endpoints
 @app.get("/", response_model=Dict[str, Any])
 async def root(request: Request) -> Dict[str, Any]:
-    count = read_visits() + 1
-    write_visits(count)
-    logger.info(f"Visits incremented to {count}")
+    logger.debug("Root endpoint processing")
     return {
         "service": {
             "name": "devops-info-service",
@@ -180,7 +153,7 @@ async def root(request: Request) -> Dict[str, Any]:
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
-            {"path": "/visits", "method": "GET", "description": "Visit counter"},
+            {"path": "/visits", "method": "GET", "description": "Persistent visit counter"},
         ],
     }
 
@@ -196,11 +169,23 @@ async def health() -> Dict[str, Any]:
 async def metrics():
     return Response(content=generate_latest(REGISTRY), media_type="text/plain")
 
+# New endpoint for StatefulSet persistence demonstration
+VISITS_FILE = "/data/visits.txt"
+
 @app.get("/visits")
 async def visits():
-    count = read_visits()
-    return {"visits": count}
+    count = 0
+    try:
+        with open(VISITS_FILE, "r") as f:
+            count = int(f.read().strip())
+    except FileNotFoundError:
+        count = 0
+    count += 1
+    with open(VISITS_FILE, "w") as f:
+        f.write(str(count))
+    return {"count": count, "pod": socket.gethostname()}
 
+# Error handlers
 @app.exception_handler(404)
 async def not_found(request: Request, exc):
     logger.warning("404 Not Found", extra={"path": request.url.path})
@@ -226,7 +211,6 @@ async def internal_error(request: Request, exc):
 def main():
     logger.info("Starting DevOps Info Service", extra={"host": HOST, "port": PORT})
     logger.info(f"Debug mode: {DEBUG}")
-
     import uvicorn
     uvicorn.run(
         "app:app",

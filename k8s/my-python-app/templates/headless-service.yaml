@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "my-python-app.fullname" . }}-headless
+  labels:
+    {{- include "my-python-app.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "my-python-app.selectorLabels" . | nindent 4 }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}

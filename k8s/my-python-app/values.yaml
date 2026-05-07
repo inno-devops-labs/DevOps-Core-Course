@@ -1,10 +1,8 @@
-strategy: "canary"
-
 replicaCount: 3
 
 image:
   repository: acecution/devops-info-service
-  tag: "metrics"
+  tag: "visits"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -16,6 +14,10 @@ service:
   port: 80
   targetPort: 8000
   nodePort: 30080
+
+persistence:
+  size: 1Gi
+  storageClass: ""
 
 resources:
   limits:
@@ -50,25 +52,8 @@ env:
   - name: HOST
     value: "0.0.0.0"
 
-canary:
-  steps:
-    - setWeight: 20
-    - pause: {}
-    - setWeight: 40
-    - pause: { duration: 30s }
-    - setWeight: 60
-    - pause: { duration: 30s }
-    - setWeight: 80
-    - pause: { duration: 30s }
-    - setWeight: 100
-
-blueGreen:
-  autoPromotionEnabled: false
-
-analysis:
-  enabled: false
-  templateName: webcheck
-  successCondition: "healthy"
-  interval: 10s
-  count: 3
-  failureLimit: 1
+statefulset:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0

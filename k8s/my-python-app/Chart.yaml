@@ -1,13 +1,13 @@
 apiVersion: v2
 name: my-python-app
-description: DevOps Info Service - Python application Helm chart with progressive delivery
+description: DevOps Info Service - StatefulSet with persistent storage
 type: application
-version: 0.2.0
+version: 0.3.0
 appVersion: "1.0.0"
 keywords:
   - python
-  - devops
-  - progressive-delivery
+  - statefulset
+  - persistent-storage
 maintainers:
   - name: Your Name
     email: your.email@example.com
