@@ -2,18 +2,35 @@
 
 Run date: May 7, 2026
 
-This branch implements the updated Lab 17 assignment as a Cloudflare Workers TypeScript API in `labs/lab17/edge-api`.
-The previous Fly.io artifact was removed because the current upstream lab explicitly requires Workers and notes that this is not a Docker-hosted deployment.
+## Summary
 
-## Deployment Summary
+I updated Lab 17 to match the current upstream assignment. The old Fly.io configuration was removed because the lab now requires a Cloudflare Workers-native API, not a Docker-hosted service.
 
-Worker project:
+The solution is implemented as a TypeScript Worker in `labs/lab17/edge-api`.
 
-- name: `devops-edge-api`
-- source: `labs/lab17/edge-api/src/index.ts`
-- config: `labs/lab17/edge-api/wrangler.jsonc`
-- runtime: Cloudflare Workers
-- public route type: `workers.dev`
+## Implemented Files
+
+| File | Purpose |
+| --- | --- |
+| `labs/lab17/edge-api/src/index.ts` | Worker API routes and request handling |
+| `labs/lab17/edge-api/wrangler.jsonc` | Worker config, vars, observability, KV binding |
+| `labs/lab17/edge-api/package.json` | Wrangler and TypeScript scripts |
+| `labs/lab17/edge-api/tsconfig.json` | Strict TypeScript config |
+| `labs/lab17/edge-api/worker-configuration.d.ts` | Typed Worker bindings |
+| `labs/lab17/edge-api/package-lock.json` | Locked Node dependency versions |
+| `.gitignore` | Ignores `node_modules`, `.wrangler`, `.dev.vars`, `dist` |
+
+Removed obsolete file:
+
+- `app_python/fly.toml`
+
+## Worker API
+
+Worker name:
+
+```text
+devops-edge-api
+```
 
 Expected public URL after deployment:
 
@@ -26,36 +43,122 @@ Routes:
 | Route | Purpose |
 | --- | --- |
 | `/` | API summary, route list, app metadata |
-| `/health` | JSON health check |
-| `/edge` | Cloudflare request metadata such as `colo`, `country`, `city`, `asn`, `httpProtocol`, `tlsVersion` |
-| `/config` | Plaintext vars from `wrangler.jsonc` |
-| `/secrets` | Presence check for secret bindings without exposing values |
+| `/health` | Health check |
+| `/edge` | Cloudflare edge metadata: `colo`, `country`, `city`, `asn`, `httpProtocol`, `tlsVersion`, `timezone` |
+| `/config` | Plaintext Worker vars from `wrangler.jsonc` |
+| `/secrets` | Secret binding presence checks without exposing values |
 | `/counter` | KV-backed persistent visit counter |
 
-## Cloudflare Setup
+## Configuration
 
-Commands used for setup and verification:
+Plaintext variables are stored in `wrangler.jsonc`:
+
+```json
+"vars": {
+  "APP_NAME": "devops-edge-api",
+  "COURSE_NAME": "devops-core",
+  "DEPLOYMENT_ENV": "lab17"
+}
+```
+
+These are safe to commit because they are not secret. Sensitive values are read from Worker secret bindings:
+
+- `API_TOKEN`
+- `ADMIN_EMAIL`
+
+Secrets are intentionally not committed. They must be created with:
+
+```powershell
+npx wrangler secret put API_TOKEN
+npx wrangler secret put ADMIN_EMAIL
+```
+
+KV binding:
+
+```json
+"kv_namespaces": [
+  {
+    "binding": "SETTINGS",
+    "id": "replace-with-production-kv-namespace-id",
+    "preview_id": "replace-with-preview-kv-namespace-id"
+  }
+]
+```
+
+The placeholder IDs must be replaced with real IDs returned by:
+
+```powershell
+npx wrangler kv namespace create SETTINGS
+npx wrangler kv namespace create SETTINGS --preview
+```
+
+## Local Validation Evidence
+
+Environment:
+
+```text
+node --version -> v24.13.0
+npm --version  -> 11.9.0
+```
+
+Install dependencies:
 
 ```powershell
 cd .\labs\lab17\edge-api
 npm install
-npx wrangler login
-npx wrangler whoami
 ```
 
-`workers.dev` gives a Worker a public Cloudflare-managed URL without configuring a custom domain.
-`wrangler.jsonc` declares the Worker entrypoint, compatibility date, plaintext vars, observability, and KV binding names.
+Result:
 
-## Local Development
+```text
+added 36 packages, and audited 37 packages
+found 0 vulnerabilities
+```
 
-Run locally:
+TypeScript validation:
+
+```powershell
+npm run typecheck
+```
+
+Result:
+
+```text
+> devops-edge-api@1.0.0 typecheck
+> tsc --noEmit
+```
+
+Wrangler dry-run deployment:
+
+```powershell
+npm run deploy:dry-run
+```
+
+Result:
+
+```text
+wrangler 4.88.0
+Total Upload: 3.57 KiB / gzip: 1.35 KiB
+
+Binding                                                           Resource
+env.SETTINGS (replace-with-production-kv-namespace-id)            KV Namespace
+env.APP_NAME ("devops-edge-api")                                  Environment Variable
+env.COURSE_NAME ("devops-core")                                   Environment Variable
+env.DEPLOYMENT_ENV ("lab17")                                      Environment Variable
+
+--dry-run: exiting now.
+```
+
+This proves the Worker source builds and Wrangler accepts the project structure. A real deploy still requires Cloudflare authentication, real KV namespace IDs, and secrets.
+
+## Local Run Commands
 
 ```powershell
 cd .\labs\lab17\edge-api
 npm run dev
 ```
 
-Test local routes:
+Route checks:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8787/
@@ -66,53 +169,53 @@ Invoke-RestMethod http://127.0.0.1:8787/secrets
 Invoke-RestMethod http://127.0.0.1:8787/counter
 ```
 
-Validation:
-
-```text
-npm run typecheck
-npm run deploy:dry-run
-```
-
-## Configuration, Secrets, and KV
-
-Plaintext vars in `wrangler.jsonc`:
+Expected `/health` response:
 
 ```json
-"vars": {
-  "APP_NAME": "devops-edge-api",
-  "COURSE_NAME": "devops-core",
-  "DEPLOYMENT_ENV": "lab17"
+{
+  "status": "ok",
+  "service": "devops-edge-api"
 }
 ```
 
-Plaintext vars are committed to Git and are only suitable for non-sensitive values.
-Secret values must be created through Wrangler and must not be committed:
+## Deployment Procedure
+
+Authenticate:
 
 ```powershell
-npx wrangler secret put API_TOKEN
-npx wrangler secret put ADMIN_EMAIL
+npx wrangler login
+npx wrangler whoami
 ```
 
-KV namespace creation:
+Create KV:
 
 ```powershell
 npx wrangler kv namespace create SETTINGS
 npx wrangler kv namespace create SETTINGS --preview
 ```
 
-Paste the returned IDs into `wrangler.jsonc`:
+Create secrets:
 
-```json
-"kv_namespaces": [
-  {
-    "binding": "SETTINGS",
-    "id": "<production-id>",
-    "preview_id": "<preview-id>"
-  }
-]
+```powershell
+npx wrangler secret put API_TOKEN
+npx wrangler secret put ADMIN_EMAIL
 ```
 
-Persistence verification:
+Deploy:
+
+```powershell
+npx wrangler deploy
+```
+
+Verify public URL:
+
+```powershell
+Invoke-RestMethod https://devops-edge-api.<subdomain>.workers.dev/health
+Invoke-RestMethod https://devops-edge-api.<subdomain>.workers.dev/edge
+Invoke-RestMethod https://devops-edge-api.<subdomain>.workers.dev/counter
+```
+
+Persistence check:
 
 ```powershell
 Invoke-RestMethod https://devops-edge-api.<subdomain>.workers.dev/counter
@@ -120,11 +223,13 @@ npx wrangler deploy
 Invoke-RestMethod https://devops-edge-api.<subdomain>.workers.dev/counter
 ```
 
-The second response should continue incrementing the same `visits` key after redeploy because the value is stored in Workers KV, not in process memory.
+The counter should continue increasing after redeploy because it is stored in Workers KV.
 
-## Edge Metadata Evidence
+## Edge Metadata
 
-The `/edge` endpoint returns request metadata supplied by Cloudflare at the edge:
+The `/edge` endpoint returns Cloudflare request metadata supplied through `request.cf`.
+
+Example response shape:
 
 ```json
 {
@@ -138,19 +243,19 @@ The `/edge` endpoint returns request metadata supplied by Cloudflare at the edge
 }
 ```
 
-The exact values depend on the client network path and Cloudflare point of presence.
+Exact values depend on the client network path and Cloudflare point of presence.
 
-Workers are globally distributed by Cloudflare automatically. Unlike VM or PaaS deployments, there is no manual "deploy to three regions" step: Cloudflare routes requests to nearby edge locations and runs the Worker there.
+Workers run on Cloudflare's global edge automatically. I do not manually choose VM regions or deploy separate regional replicas; Cloudflare routes requests to an edge location and runs the Worker there.
 
 Routing concepts:
 
-- `workers.dev`: Cloudflare-managed public URL for a Worker
-- Routes: attach a Worker to URL patterns on an existing Cloudflare zone
-- Custom Domains: assign a domain or subdomain directly to a Worker
+- `workers.dev`: Cloudflare-managed public URL for fast deployment
+- Routes: URL patterns on an existing Cloudflare zone
+- Custom Domains: dedicated domain or subdomain assigned to a Worker
 
 ## Observability and Operations
 
-The Worker logs one structured entry per request:
+The Worker logs each request:
 
 ```ts
 console.log("request", {
@@ -166,33 +271,38 @@ Tail logs:
 npm run tail
 ```
 
-Inspect deployment history and rollback:
+Inspect deployments:
 
 ```powershell
 npx wrangler deployments list
+```
+
+Rollback:
+
+```powershell
 npx wrangler rollback
 ```
 
-Dashboard evidence to capture in a live account:
+Evidence to capture from a live Cloudflare account:
 
-- Worker request count
-- Worker error count
-- deployment history with at least two versions
-- log entry from a request to `/edge` or `/counter`
+- deployed `workers.dev` URL
+- `/edge` JSON response
+- `/counter` value before and after redeploy
+- `wrangler tail` log line
+- Cloudflare dashboard metrics or deployment history screenshot
 
 ## Kubernetes vs Cloudflare Workers
 
 | Aspect | Kubernetes | Cloudflare Workers |
 | --- | --- | --- |
 | Setup complexity | Cluster, manifests, networking, controllers | Account, Worker config, bindings |
-| Deployment speed | Depends on image build, pull, rollout | Usually seconds with Wrangler |
-| Global distribution | Manual multi-region design | Automatic Cloudflare edge distribution |
-| Cost for small apps | Cluster overhead exists even at low traffic | Low overhead, usage-based |
+| Deployment speed | Image build, image pull, rollout | Usually seconds with Wrangler |
+| Global distribution | Manual multi-region architecture | Automatic Cloudflare edge distribution |
+| Cost for small apps | Cluster overhead exists | Low overhead and usage-based |
 | State model | Volumes, databases, operators, services | KV, Durable Objects, D1, R2 bindings |
-| Control | High control over runtime and networking | More constrained runtime |
+| Control | High runtime and networking control | More constrained runtime |
 | Best use case | Long-running services and complex platforms | Lightweight APIs, routing, edge logic |
 
-Use Kubernetes when the workload needs custom runtimes, long-running containers, complex networking, or stateful platform components.
-Use Workers when the workload is an HTTP API or edge function that benefits from fast global distribution and low operational overhead.
+Kubernetes is better for long-running container workloads, custom runtimes, and complex stateful platforms. Workers are better for lightweight HTTP APIs, request routing, and globally distributed edge logic.
 
-Workers changed the Lab 2 mental model: there is no Docker image to deploy here. The source code targets the Workers runtime directly, while config, secrets, and state are injected through Cloudflare bindings.
+The main difference from Lab 2 is that this lab does not deploy a Docker image. The code targets the Workers runtime directly, and configuration, secrets, and state are provided through Cloudflare bindings.
