@@ -7,7 +7,9 @@ import logging
 import os
 import platform
 import socket
+import threading
 from datetime import datetime, timezone
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -61,9 +63,32 @@ SERVICE_NAME = os.getenv('SERVICE_NAME', 'devops-info-service')
 SERVICE_VERSION = os.getenv('SERVICE_VERSION', '1.0.0')
 SERVICE_DESCRIPTION = os.getenv('SERVICE_DESCRIPTION', 'DevOps course info service')
 SERVICE_FRAMEWORK = os.getenv('SERVICE_FRAMEWORK', 'FastAPI')
+VISITS_FILE = Path(os.getenv('VISITS_FILE', '/tmp/devops-info-service/visits'))
+VISITS_LOCK = threading.Lock()
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
+
+
+def read_visits() -> int:
+    try:
+        return int(VISITS_FILE.read_text(encoding="utf-8").strip() or "0")
+    except (FileNotFoundError, ValueError):
+        return 0
+
+
+def write_visits(count: int) -> None:
+    VISITS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp_file = VISITS_FILE.with_name(f"{VISITS_FILE.name}.tmp")
+    tmp_file.write_text(str(count), encoding="utf-8")
+    tmp_file.replace(VISITS_FILE)
+
+
+def increment_visits() -> int:
+    with VISITS_LOCK:
+        count = read_visits() + 1
+        write_visits(count)
+        return count
 
 
 def get_uptime():
@@ -126,6 +151,7 @@ async def request_log_middleware(request: Request, call_next):
 async def get_user_info(request: Request):
     """Main endpoint - service and system information."""
     uptime = get_uptime()
+    visits = increment_visits()
     return {
         "service": {
             "name": SERVICE_NAME,
@@ -147,12 +173,26 @@ async def get_user_info(request: Request):
             "current_time": datetime.now().isoformat(),
             "timezone": str(datetime.now().astimezone().tzinfo)
         },
+        "visits": {
+            "count": visits,
+            "file": str(VISITS_FILE),
+        },
         "request": {
             "client_ip": request.client.host,
             "user_agent": request.headers.get('user-agent'),
             "method": request.method,
             "path": request.url.path
         },
+    }
+
+
+@app.get("/visits")
+@app.get("/app1/visits")
+def visits():
+    return {
+        "visits": read_visits(),
+        "file": str(VISITS_FILE),
+        "hostname": socket.gethostname(),
     }
 
 

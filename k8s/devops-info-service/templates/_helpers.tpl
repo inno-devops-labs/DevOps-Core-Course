@@ -42,6 +42,8 @@ Chart-local aliases around the shared library helpers.
   value: {{ .Values.app.environment | quote }}
 - name: LOG_LEVEL
   value: {{ .Values.app.logLevel | quote }}
+- name: VISITS_FILE
+  value: {{ printf "%s/visits" .Values.persistence.mountPath | quote }}
 {{- with .Values.extraEnv }}
 {{ toYaml . }}
 {{- end }}

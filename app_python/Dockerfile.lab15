@@ -1,0 +1,3 @@
+FROM devops-info-service:lab09
+
+COPY app.py /app/app.py

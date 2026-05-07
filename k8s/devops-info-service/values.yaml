@@ -5,9 +5,12 @@ partOf: devops-core-course
 
 replicaCount: 3
 
+workload:
+  type: StatefulSet
+
 image:
   repository: devops-info-service
-  tag: "lab09"
+  tag: "lab15"
   pullPolicy: IfNotPresent
 
 podAnnotations: {}
@@ -30,7 +33,7 @@ service:
   type: NodePort
   port: 80
   targetPort: 5000
-  nodePort: 30080
+  nodePort: 30095
 
 containerPort: 5000
 
@@ -100,6 +103,19 @@ strategy:
   rollingUpdate:
     maxSurge: 1
     maxUnavailable: 0
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    partition: 0
+
+persistence:
+  mountPath: /data
+  accessModes:
+    - ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
 
 hooks:
   enabled: true
