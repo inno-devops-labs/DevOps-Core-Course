@@ -78,3 +78,6 @@ updateStrategy:
   type: OnDelete
   rollingUpdate:
     partition: 0
+
+serviceMonitor:
+  enabled: true
