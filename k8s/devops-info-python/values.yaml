@@ -81,24 +81,24 @@ service:
 livenessProbe:
   exec:
     command:
-      - wget
-      - -qO-
-      - http://localhost:5000/health
-  initialDelaySeconds: 15
-  periodSeconds: 10
+      - python
+      - -c
+      - import socket,sys;s=socket.socket();s.settimeout(3);r=s.connect_ex(("127.0.0.1",5000));s.close();sys.exit(0 if r==0 else 1)
+  initialDelaySeconds: 20
+  periodSeconds: 30
   timeoutSeconds: 5
-  failureThreshold: 3
+  failureThreshold: 10
 
 readinessProbe:
   exec:
     command:
-      - wget
-      - -qO-
-      - http://localhost:5000/health
-  initialDelaySeconds: 5
-  periodSeconds: 5
+      - python
+      - -c
+      - import socket,sys;s=socket.socket();s.settimeout(3);r=s.connect_ex(("127.0.0.1",5000));s.close();sys.exit(0 if r==0 else 1)
+  initialDelaySeconds: 10
+  periodSeconds: 10
   timeoutSeconds: 5
-  failureThreshold: 3
+  failureThreshold: 10
 
 hooks:
   preInstall:

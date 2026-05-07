@@ -96,10 +96,6 @@ kubectl exec -it devops-info-python-0 -- /bin/sh -c \
 
 Expected answer: `devops-info-python-1.devops-info-python-headless.default.svc.cluster.local` resolves to the pod IP.
 
-**Evidence**
-
-![DNS resolution](docs/screenshots/lab15/task3-dns.png)
-
 ### 3.2 Per-pod visit count
 
 Each pod has its own PVC and maintains an independent visits counter at `/data/visits`. Sending traffic to each pod separately shows different counts:
@@ -113,11 +109,6 @@ curl http://localhost:8080/visits
 curl http://localhost:8081/visits
 curl http://localhost:8082/visits
 ```
-
-**Evidence**
-
-![Per-pod visit counts](docs/screenshots/lab15/task3-visits.png)
-
 ### 3.3 Persistence after pod deletion
 
 The visit count survives pod deletion because the PVC is not deleted with the pod. StatefulSet recreates the pod with the same ordinal and reattaches the same PVC.
@@ -138,7 +129,7 @@ kubectl exec devops-info-python-0 -- cat /data/visits
 
 **Evidence**
 
-![Persistence after pod deletion](docs/screenshots/lab15/task3-persist.png)
+![Persistence after pod deletion](docs/screenshots/lab15/task3.png)
 
 ---
 
