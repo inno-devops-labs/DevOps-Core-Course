@@ -1,54 +1,61 @@
 # Lab 15: StatefulSets & Persistent Storage
 
-## 1. Why StatefulSet
+## 1. StatefulSet overview
 
-`Deployment` is still the right controller for stateless replicas, but this lab needed pod identity and one PVC per replica. That is exactly the StatefulSet use case.
+In this lab I changed my application from `Deployment` to `StatefulSet`.
 
-Key guarantees I used:
+A `Deployment` is good for stateless apps. A `StatefulSet` is better when pods need:
 
-- stable pod names: `...-0`, `...-1`, `...-2`
-- stable DNS records through a headless service
-- one persistent volume claim per pod via `volumeClaimTemplates`
-- ordered creation and updates
+- stable names
+- stable network identity
+- separate storage for each pod
+
+This is useful for:
+
+- databases
+- message brokers
+- distributed systems
 
 ### Deployment vs StatefulSet
 
 | Feature | Deployment | StatefulSet |
 |---|---|---|
-| Pod names | random suffix | stable ordinal suffix |
-| Storage | usually shared or external | per-pod PVC |
-| Network identity | ephemeral | stable DNS name |
-| Scaling/update order | not ordered | ordered by ordinal |
-| Best for | stateless web/API | databases, queues, clustered services |
+| Pod name | random suffix | fixed index like `pod-0`, `pod-1` |
+| Storage | shared or external | one PVC for each pod |
+| Network identity | not stable | stable DNS name |
+| Update order | no strict order | ordered |
 
-Typical stateful workloads:
+### Headless Service
 
-- PostgreSQL / MySQL
-- MongoDB
-- Kafka / RabbitMQ
-- Elasticsearch / Cassandra
+I added a headless service with:
 
-### Headless service
+```yaml
+clusterIP: None
+```
 
-For direct pod addressing I added a headless service with `clusterIP: None`.
+This service gives direct DNS names for StatefulSet pods.
 
-DNS pattern:
+DNS format:
 
 ```text
 <pod-name>.<headless-service>.<namespace>.svc.cluster.local
 ```
 
-For this release:
+Example from this lab:
 
 ```text
-devops-info-sts-devops-info-service-1.devops-info-sts-devops-info-service-headless.default.svc.cluster.local
+devops-info-sts-devops-info-service-1.devops-info-sts-devops-info-service-headless
 ```
 
-## 2. Chart changes
+## 2. What I changed in the Helm chart
 
-Chart path: `k8s/devops-info-service`
+Chart path:
 
-I added:
+```text
+k8s/devops-info-service
+```
+
+I added these files:
 
 - `templates/statefulset.yaml`
 - `templates/service-headless.yaml`
@@ -56,42 +63,32 @@ I added:
 - `values-statefulset-partition.yaml`
 - `values-statefulset-ondelete.yaml`
 
-I also changed existing templates:
+I also updated these files:
 
-- `templates/deployment.yaml` now renders only when `statefulset.enabled=false` and `rollout.enabled=false`
-- `templates/pvc.yaml` is skipped for StatefulSet mode because storage is created by `volumeClaimTemplates`
-- `templates/_helpers.tpl` got a helper for the headless service name
+- `templates/deployment.yaml`
+- `templates/pvc.yaml`
+- `templates/_helpers.tpl`
+- `values.yaml`
 
-### StatefulSet mode
+### Main idea
 
-Stateful mode is enabled with:
+- normal `Deployment` works only when `statefulset.enabled=false`
+- normal single PVC is disabled in StatefulSet mode
+- StatefulSet uses `volumeClaimTemplates`
+- each pod gets its own PVC automatically
+- external access still uses the normal service
+- pod-to-pod access uses the headless service
 
-```yaml
-statefulset:
-  enabled: true
-```
+## 3. Validation commands
 
-The normal service is still kept for application access, and the new headless service is used only for stable pod DNS.
-
-### Update strategies
-
-Bonus values files:
-
-- `values-statefulset-partition.yaml` -> `RollingUpdate` with `partition: 2`
-- `values-statefulset-ondelete.yaml` -> `OnDelete`
-
-While testing `OnDelete` I found a template bug: `rollingUpdate` was still rendered together with `type: OnDelete`. I fixed `templates/statefulset.yaml` so `rollingUpdate` is emitted only for `type: RollingUpdate`.
-
-## 3. Deployment
-
-I validated the chart with:
+I checked the chart with:
 
 ```bash
 helm lint k8s/devops-info-service
 helm template devops-info k8s/devops-info-service -f k8s/devops-info-service/values-statefulset.yaml
 ```
 
-For live verification in Minikube I deployed a separate release:
+I deployed StatefulSet with:
 
 ```bash
 helm upgrade --install devops-info-sts k8s/devops-info-service \
@@ -99,7 +96,7 @@ helm upgrade --install devops-info-sts k8s/devops-info-service \
   -f k8s/devops-info-service/values-statefulset.yaml
 ```
 
-The published image `linktur/devops-lab2:v1` did not expose `/visits`, so for StatefulSet validation I built the current app from `Lab-1/app_python` and upgraded the release to a local image:
+For live testing in Minikube I used a local image, because the old public image did not have the `/visits` endpoint:
 
 ```bash
 docker build -t devops-info-local:lab15 Lab-1/app_python
@@ -115,17 +112,10 @@ helm upgrade devops-info-sts k8s/devops-info-service \
 
 ## 4. Resource verification
 
-Rendered StatefulSet resources:
-
-- `StatefulSet/devops-info-sts-devops-info-service`
-- `Service/devops-info-sts-devops-info-service`
-- `Service/devops-info-sts-devops-info-service-headless`
-- `PVC/data-volume-devops-info-sts-devops-info-service-{0,1,2}`
-
-Live cluster output:
+I checked only the resources for this release:
 
 ```powershell
-PS> kubectl get po,sts,svc,pvc -l app.kubernetes.io/instance=devops-info-sts -o wide
+PS> kubectl get po,sts,svc,pvc -l app.kubernetes.io/instance=devops-info-sts
 NAME                                        READY   STATUS    RESTARTS   AGE
 pod/devops-info-sts-devops-info-service-0   1/1     Running   0          56m
 pod/devops-info-sts-devops-info-service-1   1/1     Running   0          58m
@@ -144,26 +134,27 @@ persistentvolumeclaim/data-volume-devops-info-sts-devops-info-service-1   Bound 
 persistentvolumeclaim/data-volume-devops-info-sts-devops-info-service-2   Bound    pvc-e2680a75-f981-4ac2-8a58-3d8fd37da441   100Mi      RWO            standard       <unset>                 61m
 ```
 
-This confirms the required StatefulSet behavior:
+This proves:
 
-- ordered pod names `-0/-1/-2`
-- separate PVC per pod
-- dedicated headless service
+- StatefulSet is running
+- pod names are stable: `-0`, `-1`, `-2`
+- headless service exists
+- each pod has its own PVC
 
 ## 5. Network identity
 
-DNS resolution from pod `-0`:
+I tested DNS from pod `0` to pod `1`:
 
 ```powershell
 PS> kubectl exec devops-info-sts-devops-info-service-0 -- python -c "import socket; print(socket.gethostbyname('devops-info-sts-devops-info-service-1.devops-info-sts-devops-info-service-headless'))"
 10.244.0.56
 ```
 
-This proves the stable naming pattern works: `pod-0` can resolve `pod-1` through the headless service DNS name.
+This proves the headless service DNS works.
 
-## 6. Per-pod storage isolation
+## 6. Per-pod storage
 
-I generated different numbers of requests on each pod and then checked `/visits` locally inside each container:
+I sent a different number of requests to each pod and checked `/visits`.
 
 ```powershell
 PS> kubectl exec devops-info-sts-devops-info-service-0 -- python -c "import urllib.request; [urllib.request.urlopen('http://127.0.0.1:5000/').read() for _ in range(2)]; print(urllib.request.urlopen('http://127.0.0.1:5000/visits').read().decode())"
@@ -176,45 +167,57 @@ PS> kubectl exec devops-info-sts-devops-info-service-2 -- python -c "import urll
 {"count":12,"storage_path":"/data/visits"}
 ```
 
-That is the expected isolation: each pod writes to its own PVC, so counters do not overlap.
+This proves each pod has separate data.
 
-## 7. Persistence after pod deletion
+- pod `0` has `4`
+- pod `1` has `8`
+- pod `2` has `12`
 
-Before deleting pod `-0`:
+If storage was shared, the values would be the same.
+
+## 7. Persistence test
+
+First I checked the value inside pod `0`:
 
 ```powershell
 PS> kubectl exec devops-info-sts-devops-info-service-0 -- cat /data/visits
 4
 ```
 
-Delete only the pod:
+Then I deleted only the pod:
 
-```bash
-kubectl delete pod devops-info-sts-devops-info-service-0
+```powershell
+PS> kubectl delete pod devops-info-sts-devops-info-service-0
+pod "devops-info-sts-devops-info-service-0" deleted from default namespace
 ```
 
-After recreation:
+I waited until the pod was ready again:
 
 ```powershell
 PS> kubectl wait --for=condition=ready pod/devops-info-sts-devops-info-service-0 --timeout=180s
 pod/devops-info-sts-devops-info-service-0 condition met
+```
 
+After restart I checked the file again:
+
+```powershell
 PS> kubectl exec devops-info-sts-devops-info-service-0 -- cat /data/visits
 4
 ```
 
-Even after the pod was deleted and recreated:
+The value stayed the same.
 
-- pod name stayed the same
-- counter value stayed the same
+This proves:
 
-That confirms persistent storage survived pod deletion.
+- the pod was recreated
+- the data was not lost
+- the same PVC was reused
 
 ## 8. Bonus: update strategies
 
-### 8.1 RollingUpdate with partition
+### RollingUpdate with partition
 
-I enabled:
+I also added support for:
 
 ```yaml
 statefulset:
@@ -224,33 +227,13 @@ statefulset:
       partition: 2
 ```
 
-Rendered verification:
+This strategy updates only pods with ordinal index greater than or equal to the partition value.
 
-```powershell
-PS> kubectl get statefulset devops-info-sts-devops-info-service -o jsonpath="{.spec.updateStrategy.type}{' partition='}{.spec.updateStrategy.rollingUpdate.partition}{'\n'}"
-RollingUpdate partition=2
-```
+In this case, Kubernetes can update pod `2` first and keep pods `0` and `1` unchanged.
 
-After upgrading image tag to `lab15b`, only pod `-2` moved to the new controller revision:
+### OnDelete
 
-```powershell
-PS> kubectl get statefulset devops-info-sts-devops-info-service -o jsonpath="image={.spec.template.spec.containers[0].image}{' current='}{.status.currentRevision}{' update='}{.status.updateRevision}{' updated='}{.status.updatedReplicas}{'\n'}"
-image=devops-info-local:lab15b current=devops-info-sts-devops-info-service-5dd88876fc update=devops-info-sts-devops-info-service-5bbd84576c updated=1
-
-PS> kubectl get pod devops-info-sts-devops-info-service-2 -o yaml
-metadata:
-  labels:
-    controller-revision-hash: devops-info-sts-devops-info-service-5bbd84576c
-spec:
-  containers:
-  - image: devops-info-local:lab15b
-```
-
-Use case: update only the highest ordinals first, keep lower ordinals untouched until manual verification is done.
-
-### 8.2 OnDelete
-
-I enabled:
+I added support for:
 
 ```yaml
 statefulset:
@@ -258,57 +241,50 @@ statefulset:
     type: OnDelete
 ```
 
-After upgrading to tag `lab15c`, the StatefulSet got a new `updateRevision`, but existing pods were not restarted automatically:
+With `OnDelete`, pods are not updated automatically.
 
-```powershell
-PS> kubectl get statefulset devops-info-sts-devops-info-service -o jsonpath="type={.spec.updateStrategy.type}{' image='}{.spec.template.spec.containers[0].image}{' current='}{.status.currentRevision}{' update='}{.status.updateRevision}{' updated='}{.status.updatedReplicas}{'\n'}"
-type=OnDelete image=devops-info-local:lab15c current=devops-info-sts-devops-info-service-5dd88876fc update=devops-info-sts-devops-info-service-c85c88b54 updated=
+They are updated only after manual deletion.
 
-PS> kubectl get pods -l app.kubernetes.io/instance=devops-info-sts -o jsonpath="{range .items[*]}{.metadata.name}{'  rev='}{.metadata.labels.controller-revision-hash}{'  spec='}{.spec.containers[0].image}{'\n'}{end}"
-devops-info-sts-devops-info-service-0  rev=devops-info-sts-devops-info-service-5dd88876fc  spec=devops-info-local:lab15
-devops-info-sts-devops-info-service-1  rev=devops-info-sts-devops-info-service-5dd88876fc  spec=devops-info-local:lab15
-devops-info-sts-devops-info-service-2  rev=devops-info-sts-devops-info-service-5bbd84576c  spec=devops-info-local:lab15b
-```
+During testing I found one template problem: `rollingUpdate` must not be rendered when strategy type is `OnDelete`. I fixed this in `templates/statefulset.yaml`.
 
-Then I deleted only pod `-2`, and it came back on the new revision:
+## 9. Useful commands
 
 ```bash
-kubectl delete pod devops-info-sts-devops-info-service-2
-```
-
-```powershell
-PS> kubectl get pods -l app.kubernetes.io/instance=devops-info-sts -o jsonpath="{range .items[*]}{.metadata.name}{'  rev='}{.metadata.labels.controller-revision-hash}{'  spec='}{.spec.containers[0].image}{'  created='}{.metadata.creationTimestamp}{'\n'}{end}"
-devops-info-sts-devops-info-service-0  rev=devops-info-sts-devops-info-service-5dd88876fc  spec=devops-info-local:lab15   created=2026-05-07T17:10:19Z
-devops-info-sts-devops-info-service-1  rev=devops-info-sts-devops-info-service-5dd88876fc  spec=devops-info-local:lab15   created=2026-05-07T17:08:11Z
-devops-info-sts-devops-info-service-2  rev=devops-info-sts-devops-info-service-c85c88b54   spec=devops-info-local:lab15c  created=2026-05-07T17:13:35Z
-```
-
-Use case: tightly controlled updates where an operator or automation explicitly decides when each replica should restart.
-
-## 9. Commands reference
-
-```bash
-# Chart validation
+# validate chart
 helm lint k8s/devops-info-service
 helm template devops-info k8s/devops-info-service -f k8s/devops-info-service/values-statefulset.yaml
 
-# Deploy StatefulSet
+# deploy
 helm upgrade --install devops-info-sts k8s/devops-info-service \
   -f k8s/devops-info-service/values.yaml \
   -f k8s/devops-info-service/values-statefulset.yaml
 
-# Check resources
+# check resources
 kubectl get po,sts,svc,pvc -l app.kubernetes.io/instance=devops-info-sts
-kubectl describe pod devops-info-sts-devops-info-service-0
-kubectl describe pvc data-volume-devops-info-sts-devops-info-service-0
 
-# DNS / identity
+# check DNS
 kubectl exec devops-info-sts-devops-info-service-0 -- python -c "import socket; print(socket.gethostbyname('devops-info-sts-devops-info-service-1.devops-info-sts-devops-info-service-headless'))"
 
-# Storage isolation
+# check visits
+kubectl exec devops-info-sts-devops-info-service-0 -- cat /data/visits
 kubectl exec devops-info-sts-devops-info-service-0 -- python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:5000/visits').read().decode())"
 
-# Persistence
+# persistence test
 kubectl delete pod devops-info-sts-devops-info-service-0
+kubectl wait --for=condition=ready pod/devops-info-sts-devops-info-service-0 --timeout=180s
 kubectl exec devops-info-sts-devops-info-service-0 -- cat /data/visits
 ```
+
+## 10. Result
+
+Lab 15 is complete.
+
+I implemented and tested:
+
+- StatefulSet
+- headless service
+- one PVC for each pod
+- stable pod DNS
+- separate storage for each replica
+- data persistence after pod deletion
+- bonus update strategies
