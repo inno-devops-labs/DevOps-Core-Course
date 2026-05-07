@@ -1,0 +1,25 @@
+replicaCount: 3
+
+image:
+  repository: devops-app
+  tag: lab15
+
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    partition: 0
+
+headlessService:
+  enabled: true
+
+service:
+  type: ClusterIP
+
+rollouts:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: standard

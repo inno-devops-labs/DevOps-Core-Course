@@ -14,12 +14,23 @@ service:
   targetPort: 5000
   nodePort: 30080
 
+statefulset:
+  enabled: false
+  updateStrategy:
+    type: RollingUpdate
+    partition: 0
+
+headlessService:
+  enabled: false
+  port: 80
+
 podLabels:
   component: web
 
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 1000
+  fsGroup: 1000
 
 containerSecurityContext:
   allowPrivilegeEscalation: false
@@ -128,6 +139,7 @@ persistence:
   mountPath: /data
   size: 100Mi
   storageClass: ""
+  accessMode: ReadWriteOnce
 
 vault:
   enabled: false

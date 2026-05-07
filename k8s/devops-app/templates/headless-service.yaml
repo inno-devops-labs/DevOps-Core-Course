@@ -1,0 +1,17 @@
+{{- if .Values.headlessService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-app.fullname" . }}-headless
+  labels:
+    {{- include "devops-app.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - port: {{ .Values.headlessService.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "devops-app.selectorLabels" . | nindent 4 }}
+{{- end }}
