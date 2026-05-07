@@ -12,6 +12,7 @@ releaseMetadata:
   color: ""
 
 rollout:
+  enabled: true
   strategy: canary
   canary:
     maxSurge: 1

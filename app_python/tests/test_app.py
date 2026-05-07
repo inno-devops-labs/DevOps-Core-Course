@@ -1,10 +1,15 @@
 from src.app import app
 import pytest
 import re
+from pathlib import Path
 
 
 @pytest.fixture
-def client():
+def client(tmp_path, monkeypatch):
+    monkeypatch.setenv("VISITS_FILE", str(tmp_path / "visits"))
+    monkeypatch.delenv("DEVOPS_SERVICE_VERSION", raising=False)
+    monkeypatch.delenv("DEVOPS_RELEASE_TRACK", raising=False)
+    monkeypatch.delenv("DEVOPS_RELEASE_COLOR", raising=False)
     app.config["TESTING"] = True
     with app.test_client() as client:
         yield client
@@ -30,6 +35,7 @@ def test_index_json_structure(client):
     assert "system" in data
     assert "request" in data
     assert "runtime" in data
+    assert "visits" in data
     assert "endpoints" in data
 
 
@@ -104,7 +110,55 @@ def test_index_endpoints_list(client):
     assert isinstance(endpoints, list)
     assert any(e["path"] == "/" for e in endpoints)
     assert any(e["path"] == "/health" for e in endpoints)
+    assert any(e["path"] == "/visits" for e in endpoints)
     assert any(e["path"] == "/metrics" for e in endpoints)
+
+
+def test_visits_starts_at_zero_when_file_is_missing(client):
+    response = client.get("/visits")
+
+    assert response.status_code == 200
+    assert response.get_json()["visits"] == 0
+
+
+def test_index_increments_persisted_visits_count(client):
+    first_response = client.get("/").get_json()
+    second_response = client.get("/").get_json()
+
+    assert first_response["visits"]["count"] == 1
+    assert second_response["visits"]["count"] == 2
+    assert second_response["visits"]["file"].endswith("visits")
+
+
+def test_visits_does_not_increment_counter(client):
+    client.get("/")
+    client.get("/")
+
+    response = client.get("/visits")
+
+    assert response.status_code == 200
+    assert response.get_json()["visits"] == 2
+
+
+def test_invalid_visits_file_contents_are_handled(client, monkeypatch, tmp_path):
+    visits_file = tmp_path / "invalid-visits"
+    visits_file.write_text("not-a-number", encoding="utf-8")
+    monkeypatch.setenv("VISITS_FILE", str(visits_file))
+
+    visits_response = client.get("/visits")
+    index_response = client.get("/")
+
+    assert visits_response.get_json()["visits"] == 0
+    assert index_response.get_json()["visits"]["count"] == 1
+
+
+def test_index_creates_visits_parent_directory(client, monkeypatch, tmp_path):
+    visits_file = tmp_path / "nested" / "directory" / "visits"
+    monkeypatch.setenv("VISITS_FILE", str(visits_file))
+
+    client.get("/")
+
+    assert Path(visits_file).exists()
 
 
 # ----------------------------
@@ -151,6 +205,7 @@ def test_metrics_success(client):
 def test_metrics_contains_http_and_app_specific_metrics(client):
     client.get("/")
     client.get("/health")
+    client.get("/visits")
     client.get("/non-existent")
 
     metrics_output = client.get("/metrics").get_data(as_text=True)
@@ -162,6 +217,7 @@ def test_metrics_contains_http_and_app_specific_metrics(client):
     assert "devops_info_system_info_collection_seconds" in metrics_output
     assert 'endpoint="/"' in metrics_output
     assert 'endpoint="/health"' in metrics_output
+    assert 'endpoint="/visits"' in metrics_output
 
 
 # ----------------------------

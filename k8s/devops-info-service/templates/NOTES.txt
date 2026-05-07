@@ -1,3 +1,4 @@
+{{- if .Values.rollout.enabled }}
 1. Check the release:
   helm status {{ .Release.Name }}
   kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }}
@@ -19,3 +20,22 @@
 
 4. Verify the health endpoint:
   curl http://127.0.0.1:8080/health
+{{- else }}
+1. Check the release:
+  helm status {{ .Release.Name }}
+  kubectl get statefulset {{ include "devops-info-service.fullname" . }}
+
+2. Inspect resources:
+  kubectl get sts,svc,pods,pvc -l app.kubernetes.io/instance={{ .Release.Name }}
+
+3. Access the application:
+  kubectl port-forward service/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
+
+4. Verify health and visits:
+  curl http://127.0.0.1:8080/health
+  curl http://127.0.0.1:8080/visits
+
+5. Inspect pod-specific state:
+  kubectl port-forward pod/{{ include "devops-info-service.fullname" . }}-0 8081:{{ .Values.containerPort }}
+  kubectl port-forward pod/{{ include "devops-info-service.fullname" . }}-1 8082:{{ .Values.containerPort }}
+{{- end }}

@@ -107,6 +107,13 @@ Return the preview Service name used by blue-green deployments.
 {{- end }}
 
 {{/*
+Return the headless Service name used by the StatefulSet.
+*/}}
+{{- define "devops-info-service.headlessServiceName" -}}
+{{- printf "%s-headless" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
 Return the AnalysisTemplate name used by canary deployments.
 */}}
 {{- define "devops-info-service.analysisTemplateName" -}}

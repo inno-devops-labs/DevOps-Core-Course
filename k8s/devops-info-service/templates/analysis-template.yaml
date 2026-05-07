@@ -1,4 +1,4 @@
-{{- if and .Values.analysis.enabled (eq .Values.rollout.strategy "canary") }}
+{{- if and .Values.rollout.enabled .Values.analysis.enabled (eq .Values.rollout.strategy "canary") }}
 apiVersion: argoproj.io/v1alpha1
 kind: AnalysisTemplate
 metadata:

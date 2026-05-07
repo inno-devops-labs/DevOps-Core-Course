@@ -17,6 +17,7 @@ releaseMetadata:
   color: "blue"
 
 rollout:
+  enabled: true
   strategy: blueGreen
   blueGreen:
     autoPromotionEnabled: false

@@ -2,7 +2,7 @@ replicaCount: 3
 
 image:
   repository: devops-info-service
-  tag: "lab09"
+  tag: "lab15"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -23,10 +23,12 @@ containerPort: 5000
 env:
   - name: PORT
     value: "5000"
+  - name: VISITS_FILE
+    value: "/data/visits"
 
 releaseMetadata:
-  version: "1.0.0"
-  track: "stable"
+  version: "1.0.0-stateful"
+  track: "stateful"
   color: ""
 
 secret:
@@ -53,12 +55,13 @@ vault:
     format: "env"
 
 service:
-  type: NodePort
+  type: ClusterIP
   port: 80
   targetPort: http
-  nodePort: 30081
+  nodePort: null
 
 rollout:
+  enabled: false
   strategy: canary
   canary:
     maxSurge: 1
@@ -84,12 +87,29 @@ analysis:
     path: /health
     jsonPath: "{$.status}"
 
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+persistence:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data
+
 minReadySeconds: 5
 revisionHistoryLimit: 5
 
 podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
+  fsGroup: 10001
+  fsGroupChangePolicy: OnRootMismatch
 
 securityContext:
   runAsUser: 10001

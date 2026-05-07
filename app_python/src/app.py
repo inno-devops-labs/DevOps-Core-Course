@@ -4,9 +4,11 @@ Main application module
 """
 
 import os
+import fcntl
 import socket
 import platform
 import logging
+from pathlib import Path
 from time import perf_counter
 from datetime import datetime, timezone
 from flask import Flask, Response, g, jsonify, request
@@ -52,6 +54,59 @@ PORT = int(os.getenv("PORT", 5000))
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
+
+
+def get_visits_file_path():
+    return Path(os.getenv("VISITS_FILE", "/data/visits"))
+
+
+def ensure_visits_parent_directory():
+    get_visits_file_path().parent.mkdir(parents=True, exist_ok=True)
+
+
+def parse_visits_count(raw_value):
+    raw_value = raw_value.strip()
+    if not raw_value:
+        return 0
+
+    try:
+        return int(raw_value)
+    except ValueError:
+        logger.warning("invalid_visits_file_contents", extra={"raw_value": raw_value})
+        return 0
+
+
+def read_visits_count():
+    visits_file_path = get_visits_file_path()
+    ensure_visits_parent_directory()
+
+    with visits_file_path.open("a+", encoding="utf-8") as visits_file:
+        fcntl.flock(visits_file.fileno(), fcntl.LOCK_EX)
+        try:
+            visits_file.seek(0)
+            return parse_visits_count(visits_file.read())
+        finally:
+            fcntl.flock(visits_file.fileno(), fcntl.LOCK_UN)
+
+
+def increment_visits_count():
+    visits_file_path = get_visits_file_path()
+    ensure_visits_parent_directory()
+
+    with visits_file_path.open("a+", encoding="utf-8") as visits_file:
+        fcntl.flock(visits_file.fileno(), fcntl.LOCK_EX)
+        try:
+            visits_file.seek(0)
+            current_count = parse_visits_count(visits_file.read())
+            next_count = current_count + 1
+            visits_file.seek(0)
+            visits_file.truncate()
+            visits_file.write(str(next_count))
+            visits_file.flush()
+            os.fsync(visits_file.fileno())
+            return next_count
+        finally:
+            fcntl.flock(visits_file.fileno(), fcntl.LOCK_UN)
 
 
 def normalize_endpoint():
@@ -155,14 +210,20 @@ def index():
     logger.debug(f"Request: {request.method} {request.path}")
     """Main endpoint - service and system information."""
     DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/").inc()
+    visit_count = increment_visits_count()
     return {
         "service": get_service(),
         "system": get_system_info(),
         "request": get_request(),
         "runtime": get_uptime(),
+        "visits": {
+            "count": visit_count,
+            "file": str(get_visits_file_path()),
+        },
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Current visit count"},
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
@@ -194,6 +255,18 @@ def health():
             "status": "healthy",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "uptime_seconds": get_uptime()["seconds"],
+        }
+    )
+
+
+@app.route("/visits")
+def visits():
+    logger.debug(f"Request: {request.method} {request.path}")
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/visits").inc()
+    return jsonify(
+        {
+            "visits": read_visits_count(),
+            "file": str(get_visits_file_path()),
         }
     )
 

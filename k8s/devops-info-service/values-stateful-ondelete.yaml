@@ -1,0 +1,9 @@
+releaseMetadata:
+  version: "1.2.0-ondelete"
+  track: "stateful"
+  color: ""
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: OnDelete

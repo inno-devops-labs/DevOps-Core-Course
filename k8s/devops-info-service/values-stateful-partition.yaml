@@ -1,0 +1,11 @@
+releaseMetadata:
+  version: "1.1.0-partition"
+  track: "stateful"
+  color: ""
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2
