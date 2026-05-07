@@ -32,3 +32,9 @@ __pycache__/
 k8s/lab09-kubeconfig
 k8s/lab10-kubeconfig
 k8s/certs/
+
+# ===== Node / Cloudflare Workers =====
+node_modules/
+.wrangler/
+.dev.vars
+dist/
