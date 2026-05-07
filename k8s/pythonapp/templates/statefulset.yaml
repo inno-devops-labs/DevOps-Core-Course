@@ -1,28 +1,19 @@
-{{- if and (not .Values.rollout.enabled) (not .Values.statefulset.enabled) }}
+{{- if .Values.statefulset.enabled }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "pythonapp.fullname" . }}
   labels:
     {{- include "pythonapp.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "pythonapp.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy }}
   selector:
     matchLabels:
       {{- include "pythonapp.selectorLabels" . | nindent 6 }}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
-      {{- if .Values.vault.enabled }}
-      annotations:
-        vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "myapp"
-        vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
-      {{- end }}
       labels:
         {{- include "pythonapp.selectorLabels" . | nindent 8 }}
     spec:
@@ -59,10 +50,21 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "pythonapp.fullname" . }}-config
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "pythonapp.fullname" . }}-data
         - name: code-volume
           configMap:
             name: {{ include "pythonapp.fullname" . }}-code
+  volumeClaimTemplates:
+    - metadata:
+        name: data-volume
+        labels:
+          {{- include "pythonapp.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+        {{- end }}
 {{- end }}

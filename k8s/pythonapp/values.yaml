@@ -62,3 +62,7 @@ rollout:
   trigger: "v1"
   blueGreen:
     autoPromotionEnabled: false
+
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady

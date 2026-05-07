@@ -16,5 +16,5 @@ spec:
       restartPolicy: Never
       containers:
         - name: post-install
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ include "pythonapp.image" . }}"
           command: ['python', '-c', 'print("Post-install: running smoke test..."); import time; time.sleep(3); print("Post-install: application deployed successfully")']
