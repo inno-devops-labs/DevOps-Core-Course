@@ -1,5 +1,9 @@
 replicaCount: 2
 
+# Lab 15: when true, deploy StatefulSet + headless Service + per-pod PVCs (Rollout disabled).
+statefulset:
+  enabled: true
+
 image:
   repository: netimaaaa/devops-info-service
   tag: "latest"
