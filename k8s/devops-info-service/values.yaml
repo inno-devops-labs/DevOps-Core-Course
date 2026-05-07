@@ -24,6 +24,11 @@ env:
   - name: PORT
     value: "5000"
 
+releaseMetadata:
+  version: "1.0.0"
+  track: "stable"
+  color: ""
+
 secret:
   enabled: true
   create: true
@@ -53,11 +58,31 @@ service:
   targetPort: http
   nodePort: 30081
 
-deploymentStrategy:
-  type: RollingUpdate
-  rollingUpdate:
+rollout:
+  strategy: canary
+  canary:
     maxSurge: 1
     maxUnavailable: 0
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+
+previewService:
+  type: ClusterIP
+  port: 80
+  targetPort: http
+  nodePort: null
+
+analysis:
+  enabled: true
+  interval: 10s
+  count: 3
+  failureLimit: 1
+  successCondition: "result == 'healthy'"
+  web:
+    path: /health
+    jsonPath: "{$.status}"
 
 minReadySeconds: 5
 revisionHistoryLimit: 5

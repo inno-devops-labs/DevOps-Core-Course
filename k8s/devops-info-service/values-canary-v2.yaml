@@ -1,0 +1,26 @@
+replicaCount: 5
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30081
+
+releaseMetadata:
+  version: "1.1.0-canary-v2"
+  track: "canary"
+  color: ""
+
+rollout:
+  strategy: canary
+  canary:
+    maxSurge: 1
+    maxUnavailable: 0
+
+analysis:
+  enabled: true
+
+secret:
+  stringData:
+    APP_USERNAME: "canary-user"
+    APP_PASSWORD: "replace-me-in-canary"

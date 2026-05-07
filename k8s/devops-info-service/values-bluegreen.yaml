@@ -1,0 +1,32 @@
+replicaCount: 3
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30082
+
+previewService:
+  type: ClusterIP
+  port: 80
+  targetPort: http
+
+releaseMetadata:
+  version: "1.0.0-blue"
+  track: "blue-green"
+  color: "blue"
+
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+
+analysis:
+  enabled: false
+
+secret:
+  stringData:
+    APP_USERNAME: "bluegreen-user"
+    APP_PASSWORD: "replace-me-in-bluegreen"

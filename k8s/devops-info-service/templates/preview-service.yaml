@@ -1,0 +1,20 @@
+{{- if eq .Values.rollout.strategy "blueGreen" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-info-service.previewServiceName" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.previewService.type }}
+  selector:
+    {{- include "devops-info-service.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.previewService.port }}
+      targetPort: {{ .Values.previewService.targetPort }}
+      {{- if and (eq .Values.previewService.type "NodePort") .Values.previewService.nodePort }}
+      nodePort: {{ .Values.previewService.nodePort }}
+      {{- end }}
+{{- end }}

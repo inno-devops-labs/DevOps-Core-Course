@@ -1,0 +1,19 @@
+{{- if and .Values.analysis.enabled (eq .Values.rollout.strategy "canary") }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "devops-info-service.analysisTemplateName" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: health-check
+      interval: {{ .Values.analysis.interval | quote }}
+      count: {{ .Values.analysis.count }}
+      failureLimit: {{ .Values.analysis.failureLimit }}
+      successCondition: {{ .Values.analysis.successCondition | quote }}
+      provider:
+        web:
+          url: {{ printf "http://%s.%s.svc.cluster.local:%v%s" (include "devops-info-service.fullname" .) .Release.Namespace .Values.service.port .Values.analysis.web.path | quote }}
+          jsonPath: {{ .Values.analysis.web.jsonPath | quote }}
+{{- end }}

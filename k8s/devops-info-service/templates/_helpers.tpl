@@ -86,6 +86,34 @@ Render static environment variables.
 {{- end }}
 
 {{/*
+Render release metadata environment variables that make rollout revisions visible in responses.
+*/}}
+{{- define "devops-info-service.releaseEnvVars" -}}
+- name: DEVOPS_SERVICE_VERSION
+  value: {{ .Values.releaseMetadata.version | quote }}
+- name: DEVOPS_RELEASE_TRACK
+  value: {{ .Values.releaseMetadata.track | quote }}
+{{- if .Values.releaseMetadata.color }}
+- name: DEVOPS_RELEASE_COLOR
+  value: {{ .Values.releaseMetadata.color | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
+Return the preview Service name used by blue-green deployments.
+*/}}
+{{- define "devops-info-service.previewServiceName" -}}
+{{- printf "%s-preview" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
+Return the AnalysisTemplate name used by canary deployments.
+*/}}
+{{- define "devops-info-service.analysisTemplateName" -}}
+{{- printf "%s-success-rate" (include "devops-info-service.fullname" .) }}
+{{- end }}
+
+{{/*
 Render the Vault Agent template used for bonus env-style secret files.
 */}}
 {{- define "devops-info-service.vaultAgentTemplate" -}}
