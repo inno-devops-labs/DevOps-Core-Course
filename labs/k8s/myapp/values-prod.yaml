@@ -31,3 +31,7 @@ persistence:
   enabled: true
   size: 1Gi
   storageClass: ""
+
+statefulset:
+  enabled: true
+  serviceName: ""
