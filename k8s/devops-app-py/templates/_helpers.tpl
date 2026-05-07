@@ -147,6 +147,10 @@ metadata:
     {{- end }}
 spec:
   serviceAccountName: {{ include "devops-app-py.serviceAccountName" . }}
+  {{- with .Values.initContainers }}
+  initContainers:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   containers:
     - name: {{ include "devops-app-py.name" . }}
       image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -155,7 +159,7 @@ spec:
         - name: http
           containerPort: {{ .Values.containerPort }}
           protocol: TCP
-      {{- if or .Values.config.file.enabled .Values.persistence.enabled }}
+      {{- if or .Values.config.file.enabled .Values.persistence.enabled .Values.extraVolumeMounts }}
       volumeMounts:
         {{- if .Values.config.file.enabled }}
         - name: config-volume
@@ -165,6 +169,9 @@ spec:
         {{- if .Values.persistence.enabled }}
         - name: data-volume
           mountPath: {{ .Values.persistence.mountPath | quote }}
+        {{- end }}
+        {{- with .Values.extraVolumeMounts }}
+        {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- end }}
       {{- if or .Values.config.env.enabled .Values.secrets.enabled }}
@@ -194,7 +201,7 @@ spec:
       resources:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-  {{- if or .Values.config.file.enabled (and .Values.persistence.enabled (not $usesStatefulSet)) }}
+  {{- if or .Values.config.file.enabled (and .Values.persistence.enabled (not $usesStatefulSet)) .Values.extraVolumes }}
   volumes:
     {{- if .Values.config.file.enabled }}
     - name: config-volume
@@ -205,6 +212,9 @@ spec:
     - name: data-volume
       persistentVolumeClaim:
         claimName: {{ include "devops-app-py.pvcName" . }}
+    {{- end }}
+    {{- with .Values.extraVolumes }}
+    {{- toYaml . | nindent 4 }}
     {{- end }}
   {{- end }}
 {{- end }}

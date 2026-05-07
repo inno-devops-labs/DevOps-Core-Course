@@ -1,0 +1,63 @@
+image:
+  tag: "1.12"
+
+podAnnotations:
+  lab15-version: "stateful-v1"
+  lab16-init-demo: "enabled"
+
+statefulset:
+  # Preserve the already-created Lab 15 volumeClaimTemplates metadata. Kubernetes
+  # rejects StatefulSet upgrades that change claim template labels.
+  volumeClaimTemplateLabels:
+    helm.sh/chart: devops-app-py-0.7.0
+    app.kubernetes.io/name: devops-app-py
+    app.kubernetes.io/instance: lab15
+    app.kubernetes.io/version: "1.12"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: devops-core-s26
+
+initContainers:
+  - name: wait-for-headless-service
+    image: busybox:1.37.0
+    imagePullPolicy: IfNotPresent
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        until nslookup lab15-devops-app-py-headless.lab15.svc.cluster.local; do
+          echo "waiting for headless service"
+          sleep 2
+        done
+        echo "headless service resolved"
+  - name: init-download
+    image: busybox:1.37.0
+    imagePullPolicy: IfNotPresent
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        wget -O /init-data/lab16-init.txt http://lab15-devops-app-py-service.lab15.svc.cluster.local/ready
+        echo >> /init-data/lab16-init.txt
+        echo "downloaded-by=init-download" >> /init-data/lab16-init.txt
+    volumeMounts:
+      - name: init-data
+        mountPath: /init-data
+
+extraVolumes:
+  - name: init-data
+    emptyDir: {}
+
+extraVolumeMounts:
+  - name: init-data
+    mountPath: /init-data
+    readOnly: true
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+  path: /metrics
+  interval: 15s
+  scrapeTimeout: 10s

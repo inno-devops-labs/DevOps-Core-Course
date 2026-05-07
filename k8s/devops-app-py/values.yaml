@@ -14,6 +14,17 @@ fullnameOverride: ""
 podAnnotations: {}
 podLabels: {}
 
+initContainers: []
+extraVolumes: []
+extraVolumeMounts: []
+
+serviceMonitor:
+  enabled: false
+  labels: {}
+  path: /metrics
+  interval: 30s
+  scrapeTimeout: 10s
+
 deployment:
   enabled: false
   revisionHistoryLimit: 5
@@ -25,6 +36,7 @@ statefulset:
   enabled: true
   podManagementPolicy: OrderedReady
   revisionHistoryLimit: 5
+  volumeClaimTemplateLabels: {}
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
