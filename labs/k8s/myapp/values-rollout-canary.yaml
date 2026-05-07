@@ -17,3 +17,7 @@ rollout:
     - setWeight: 100
 image:
   tag: "v1"
+
+statefulset:
+    enabled: false
+    serviceName: ""

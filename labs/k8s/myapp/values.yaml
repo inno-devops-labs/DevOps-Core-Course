@@ -64,6 +64,10 @@ rollout:
     previewServiceType: ClusterIP
     previewNodePort: null
 
+statefulset:
+  enabled: true
+  serviceName: ""
+
 persistence:
   enabled: true
   size: 100Mi
