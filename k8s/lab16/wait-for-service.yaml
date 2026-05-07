@@ -1,0 +1,56 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab16-backend
+  labels:
+    app: lab16-backend
+spec:
+  selector:
+    app: lab16-backend
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab16-backend
+  labels:
+    app: lab16-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lab16-backend
+  template:
+    metadata:
+      labels:
+        app: lab16-backend
+    spec:
+      containers:
+        - name: http
+          image: hashicorp/http-echo:1.0.0
+          args: ["-text=ok", "-listen=:8080"]
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lab16-wait-for-service
+  labels:
+    app: lab16-wait
+spec:
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - until nslookup lab16-backend.default.svc.cluster.local; do echo waiting for DNS; sleep 2; done
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command: ["sh", "-c", "echo dependency ready && sleep 3600"]
