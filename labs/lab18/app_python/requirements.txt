@@ -1,0 +1,19 @@
+# Web Framework
+fastapi==0.115.0
+
+# ASGI Server
+uvicorn[standard]==0.32.0
+
+# Metrics
+prometheus-client==0.23.1
+
+# Development tools
+python-dotenv==1.0.1
+
+# Testing
+pytest==8.3.4
+httpx==0.28.1
+pytest-cov==6.0.0
+
+# Linting
+flake8==7.1.1
