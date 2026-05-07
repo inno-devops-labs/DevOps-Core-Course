@@ -1,6 +1,14 @@
 # Default values for devops-app.
 
 replicaCount: 3
+workload:
+  type: statefulset
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
 rollout:
   strategy: canary
   analysis:
@@ -21,6 +29,9 @@ service:
   port: 80
   targetPort: 8080
   nodePort: 30080
+  headless:
+    enabled: true
+    name: ""
 
 resources:
   requests:

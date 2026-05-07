@@ -1,39 +1,19 @@
-{{- if eq .Values.workload.type "rollout" }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if eq .Values.workload.type "statefulset" }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "devops-app.fullname" . }}
   labels:
     {{- include "devops-app.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ .Values.service.headless.name | default (printf "%s-headless" (include "devops-app.fullname" .)) }}
   replicas: {{ .Values.replicaCount }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ .Values.rollout.blueGreen.activeService | default (printf "%s-active" (include "devops-app.fullname" .)) }}
-      previewService: {{ .Values.rollout.blueGreen.previewService | default (printf "%s-preview" (include "devops-app.fullname" .)) }}
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      {{- if .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ .Values.rollout.blueGreen.autoPromotionSeconds }}
-      {{- end }}
-    {{- else }}
-    canary:
-      steps:
-        - setWeight: 20
-        - analysis:
-            templates:
-              - templateName: {{ include "devops-app.fullname" . }}-health-check
-        - pause: {}
-        - setWeight: 40
-        - pause:
-            duration: 30s
-        - setWeight: 60
-        - pause:
-            duration: 30s
-        - setWeight: 80
-        - pause:
-            duration: 30s
-        - setWeight: 100
+  podManagementPolicy: {{ .Values.statefulset.podManagementPolicy | default "OrderedReady" }}
+  updateStrategy:
+    type: {{ .Values.statefulset.updateStrategy.type | default "RollingUpdate" }}
+    {{- if and (eq (.Values.statefulset.updateStrategy.type | default "RollingUpdate") "RollingUpdate") .Values.statefulset.updateStrategy.rollingUpdate }}
+    rollingUpdate:
+      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition | default 0 }}
     {{- end }}
   selector:
     matchLabels:
@@ -61,48 +41,45 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.targetPort }}
-          
-          # МОНТИРОВАНИЕ ТОМА В КОНТЕЙНЕР
           volumeMounts:
             - name: storage-volume
               mountPath: /data
             - name: config-volume
               mountPath: /config
               readOnly: true
-
           envFrom:
             - configMapRef:
                 name: {{ include "devops-app.fullname" . }}-env
             - secretRef:
                 name: {{ include "devops-app.fullname" . }}-credentials
-
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-
           livenessProbe:
             httpGet:
               path: {{ .Values.livenessProbe.path }}
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
-
           readinessProbe:
             httpGet:
               path: {{ .Values.readinessProbe.path }}
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
-
-      # ОПРЕДЕЛЕНИЕ ТОМА (ВНУТРИ SPEC ПОДА)
       volumes:
-        - name: storage-volume
-          {{- if .Values.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-data" (include "devops-app.fullname" .)) }}
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
         - name: config-volume
           configMap:
             name: {{ include "devops-app.fullname" . }}-config
+  volumeClaimTemplates:
+    - metadata:
+        name: storage-volume
+      spec:
+        accessModes:
+          - {{ .Values.persistence.accessMode | default "ReadWriteOnce" }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | default "1Gi" }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+        {{- end }}
 {{- end }}

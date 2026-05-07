@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ if eq .Values.rollout.strategy "blueGreen" }}{{ .Values.rollout.blueGreen.activeService | default (printf "%s-active" (include "devops-app.fullname" .)) }}{{ else }}{{ include "devops-app.fullname" . }}{{ end }}
+  name: {{ if and (eq .Values.workload.type "rollout") (eq .Values.rollout.strategy "blueGreen") }}{{ .Values.rollout.blueGreen.activeService | default (printf "%s-active" (include "devops-app.fullname" .)) }}{{ else }}{{ include "devops-app.fullname" . }}{{ end }}
   labels:
     {{- include "devops-app.labels" . | nindent 4 }}
 spec:
@@ -15,7 +15,7 @@ spec:
       {{- if .Values.service.nodePort }}
       nodePort: {{ .Values.service.nodePort }}
       {{- end }}
-{{- if eq .Values.rollout.strategy "blueGreen" }}
+{{- if and (eq .Values.workload.type "rollout") (eq .Values.rollout.strategy "blueGreen") }}
 ---
 apiVersion: v1
 kind: Service
@@ -25,6 +25,23 @@ metadata:
     {{- include "devops-app.labels" . | nindent 4 }}
 spec:
   type: ClusterIP
+  selector:
+    {{- include "devops-app.selectorLabels" . | nindent 4 }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}
+{{- if and (eq .Values.workload.type "statefulset") (.Values.service.headless.enabled) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.headless.name | default (printf "%s-headless" (include "devops-app.fullname" .)) }}
+  labels:
+    {{- include "devops-app.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
   selector:
     {{- include "devops-app.selectorLabels" . | nindent 4 }}
   ports:

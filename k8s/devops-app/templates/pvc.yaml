@@ -1,4 +1,4 @@
-{{- if .Values.persistence.enabled -}}
+{{- if and .Values.persistence.enabled (ne .Values.workload.type "statefulset") -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
