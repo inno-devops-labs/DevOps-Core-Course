@@ -65,6 +65,16 @@ rollout:
       targetPort: http
       annotations: {}
 
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  headlessService:
+    annotations: {}
+
 podAnnotations: {}
 podLabels: {}
 
