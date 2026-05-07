@@ -1,0 +1,9 @@
+{
+  "appName": "devops-info-service",
+  "environment": "dev",
+  "version": "1.1.0",
+  "features": {
+    "visitsCounter": true,
+    "jsonLogging": true
+  }
+}
