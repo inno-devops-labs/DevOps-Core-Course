@@ -1,3 +1,5 @@
+statefulset:
+  enabled: false
 rollout:
   enabled: true
   strategy: blueGreen

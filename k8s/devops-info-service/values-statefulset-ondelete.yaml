@@ -1,0 +1,13 @@
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: OnDelete
+rollout:
+  enabled: false
+replicaCount: 3
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
