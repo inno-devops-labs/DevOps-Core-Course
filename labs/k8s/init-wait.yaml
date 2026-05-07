@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wait-service-backend
+  labels:
+    app: wait-service-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wait-service-backend
+  template:
+    metadata:
+      labels:
+        app: wait-service-backend
+    spec:
+      containers:
+        - name: backend
+          image: nginx:1.27
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wait-service
+  labels:
+    app: wait-service-backend
+spec:
+  selector:
+    app: wait-service-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-client
+  labels:
+    app: wait-client
+spec:
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - until wget -qO- http://wait-service:80/ >/dev/null; do echo waiting; sleep 2; done
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command: ['sh', '-c', 'echo app started; sleep 3600']
