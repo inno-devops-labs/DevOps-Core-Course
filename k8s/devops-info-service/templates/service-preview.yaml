@@ -1,4 +1,4 @@
-{{- if and .Values.rollouts.enabled (eq .Values.rollouts.strategy "blueGreen") }}
+{{- if and (not .Values.statefulset.enabled) .Values.rollouts.enabled (eq .Values.rollouts.strategy "blueGreen") }}
 apiVersion: v1
 kind: Service
 metadata:

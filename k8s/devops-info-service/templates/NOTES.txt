@@ -11,6 +11,9 @@ Quick checks:
   kubectl get svc -n {{ .Release.Namespace }} {{ include "common-lib.fullname" . }} -w
 {{- end }}
 
-{{- if .Values.persistence.enabled }}
+{{- if and .Values.persistence.enabled (not .Values.statefulset.enabled) }}
 Lab 12: PVC uses ReadWriteOnce — keep replicaCount at 1 unless your storage class supports ReadWriteMany.
+{{- else if and .Values.statefulset.enabled .Values.persistence.enabled }}
+Lab 15: StatefulSet uses per-pod PVCs (volumeClaimTemplates) — multiple replicas are OK when each pod has its own ReadWriteOnce claim.
+Headless DNS: <pod-name>.{{ include "common-lib.fullname" . }}-headless.{{ .Release.Namespace }}.svc.cluster.local
 {{- end }}

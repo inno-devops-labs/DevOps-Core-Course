@@ -1,4 +1,4 @@
-{{- if not .Values.rollouts.enabled }}
+{{- if and (not .Values.rollouts.enabled) (not .Values.statefulset.enabled) }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

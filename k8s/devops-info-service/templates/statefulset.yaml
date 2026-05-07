@@ -1,6 +1,6 @@
-{{- if and .Values.rollouts.enabled (not .Values.statefulset.enabled) }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if .Values.statefulset.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "common-lib.fullname" . }}
   labels:
@@ -9,8 +9,16 @@ metadata:
     {{ $k }}: {{ $v | quote }}
     {{- end }}
 spec:
+  serviceName: {{ include "common-lib.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
-  revisionHistoryLimit: 3
+  {{- with .Values.statefulset.updateStrategy }}
+  updateStrategy:
+    type: {{ .type }}
+    {{- if eq .type "RollingUpdate" }}
+    rollingUpdate:
+      partition: {{ .rollingUpdate.partition | default 0 }}
+    {{- end }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "common-lib.selectorLabels" . | nindent 6 }}
@@ -47,13 +55,10 @@ spec:
         - name: app-config
           configMap:
             name: {{ include "common-lib.fullname" . }}-config-file
+        {{- if not .Values.persistence.enabled }}
         - name: data
-          {{- if .Values.persistence.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ include "common-lib.fullname" . }}-data
-          {{- else }}
           emptyDir: {}
-          {{- end }}
+        {{- end }}
       containers:
         - name: {{ include "common-lib.fullname" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -92,26 +97,20 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
-  strategy:
-    {{- if eq .Values.rollouts.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "common-lib.fullname" . }}
-      previewService: {{ include "common-lib.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollouts.blueGreen.autoPromotionEnabled }}
-    {{- else }}
-    canary:
-      maxSurge: 1
-      maxUnavailable: 0
-      steps:
-        - setWeight: 20
-        - pause: {} # manual promotion required
-        - setWeight: 40
-        - pause: { duration: 30s }
-        - setWeight: 60
-        - pause: { duration: 30s }
-        - setWeight: 80
-        - pause: { duration: 30s }
-        - setWeight: 100
-    {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "common-lib.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
+        {{- end }}
+  {{- end }}
 {{- end }}
-

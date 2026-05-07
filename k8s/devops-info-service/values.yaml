@@ -118,3 +118,13 @@ rollouts:
   strategy: canary
   blueGreen:
     autoPromotionEnabled: false
+
+# Lab 15: StatefulSet (stable identity + per-pod PVCs via volumeClaimTemplates).
+# When enabled, Deployment and Rollout manifests are not rendered; use a headless Service for pod DNS.
+statefulset:
+  enabled: false
+  # RollingUpdate (optional partition) or OnDelete — see k8s/STATEFULSET.md
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
