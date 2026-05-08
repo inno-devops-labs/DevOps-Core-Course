@@ -221,14 +221,16 @@ flowchart TD
 ## 📍 Slide 13 – 🛡️ Block Benefits
 
 ```mermaid
-flowchart LR
-  subgraph Without Blocks
-    T1[Task 1] --> T2[Task 2]
-    T2 -->|❌ Fail| Stop[😱 Playbook Stops]
-  end
-  subgraph With Blocks
+flowchart TD
+  subgraph "With Blocks"
+    direction TD
     B1[🧱 Block] -->|❌ Fail| R1[🔧 Rescue]
     R1 --> A1[✅ Always]
+  end
+  subgraph "Without Blocks"
+    direction TD
+    T1[Task 1] --> T2[Task 2]
+    T2 -->|❌ Fail| Stop[😱 Playbook Stops]
   end
 ```
 
@@ -651,15 +653,17 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-  subgraph 😱 Manual
+  subgraph Manual["😱 Manual"]
     SSH[🔌 SSH to servers]
     Commands[💻 Run commands]
     Hope[🙏 Hope it works]
+    SSH --> Commands --> Hope
   end
-  subgraph 🤖 Automated
+  subgraph Automated["🤖 Automated"]
     Push[📤 Git push]
     CI[🔄 CI/CD]
     Deploy[🚀 Ansible]
+    Push --> CI --> Deploy
   end
   Manual -->|🚀 Automate| Automated
 ```
