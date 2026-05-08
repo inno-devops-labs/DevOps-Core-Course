@@ -9,7 +9,7 @@
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 ```
 
-**Status:** ✓ Installed successfully
+**Status:** Installed
 - Nix v3.19.1
 - Flakes enabled by default
 - Daemon mode active
@@ -17,9 +17,9 @@ curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix 
 
 ### 1.2: Python App Preparation
 
-Copied Lab 1 DevOps Info Service to `labs/lab18/app_python/`:
+Copied the Lab 1 DevOps Info Service to `labs/lab18/app_python/`:
 - `app.py` (FastAPI-based service)
-- `requirements.txt` → Nix dependencies
+- `requirements.txt` as Nix dependencies
 - `Dockerfile` (for Lab 2 comparison)
 
 **Lab 1 Dependencies:**
@@ -64,12 +64,12 @@ pkgs.stdenv.mkDerivation {
 }
 ```
 
-**Key improvements vs. v1:**
-- ✅ Uses `pythonWithPackages` to bake all dependencies into interpreter
-- ✅ Includes all required packages: prometheus-client, python-json-logger
-- ✅ Shebang points to full Python environment (`${pythonWithPackages}/bin/python`)
-- ✅ All dependencies resolved at derivation time (not runtime)
-- ✅ Single store path contains everything needed to run
+**Key changes vs. v1:**
+- Uses `pythonWithPackages` to bake all dependencies into interpreter
+- Includes all required packages: prometheus-client, python-json-logger
+- Shebang points to full Python environment (`${pythonWithPackages}/bin/python`)
+- All dependencies resolved at derivation time, not at runtime
+- A single store path contains everything needed to run
 
 ### 1.4: Build & Reproducibility Proof
 
@@ -86,9 +86,9 @@ nix-store --delete /nix/store/1a7qkpfkg6waayqvg61f2vr30dcm79h0-devops-info-servi
 nix-build
 ```
 
-Output: `/nix/store/1a7qkpfkg6waayqvg61f2vr30dcm79h0-devops-info-service-1.0.0` ✓
+Output: `/nix/store/1a7qkpfkg6waayqvg61f2vr30dcm79h0-devops-info-service-1.0.0` 
 
-**Result: Identical hash after forced rebuild proves bit-for-bit reproducibility.**
+**Result:** The forced rebuild produced the same hash.
 
 ### 1.5: pip vs Nix Comparison
 
@@ -101,9 +101,9 @@ pip install -r requirements.txt
 
 Problems:
 - System Python version varies
-- `pip install` resolves transitive deps at runtime
+- `pip install` resolves transitive dependencies at runtime
 - Virtual env is machine-specific
-- Different machines → different environments
+- Different machines produce different environments
 
 **Lab 18 (Nix):**
 ```bash
@@ -114,17 +114,17 @@ Advantages:
 - Exact Python version pinned (3.13.12 from nixpkgs)
 - All 76 dependencies pre-resolved (Python, libraries, build tools)
 - Sandboxed build (no system pollution)
-- Same derivation → identical hash → identical output on any machine
+- The same derivation gives an identical hash and identical output on any machine
 - Content-addressable: hash proves nothing was modified
 
-**Reproducibility Proof Table:**
+**Reproducibility comparison:**
 
 | Test | Lab 1 (pip) | Lab 18 (Nix) |
 |------|------------|-------------|
-| Same requirements → Same env? | ⚠️ Probabilistic (transitive deps drift) | ✓ Yes (bit-for-bit identical) |
-| Rebuild after 1 week? | ❌ Often breaks (package updates) | ✓ Identical (locked) |
-| Different machine? | ❌ Often fails (system deps differ) | ✓ Identical (pure) |
-| Hash consistency | N/A | ✓ `/nix/store/<HASH>-app` proves content |
+| Same requirements, same env? | Probabilistic (transitive deps drift) | Yes (bit-for-bit identical) |
+| Rebuild after 1 week? | Often breaks (package updates) | Identical (locked) |
+| Different machine? | Often fails (system deps differ) | Identical (pure) |
+| Hash consistency | N/A |  `/nix/store/<HASH>-app` proves content |
 
 ---
 
@@ -145,7 +145,7 @@ CMD ["python", "app.py"]
 **Reproducibility issues:**
 1. `python:3.13-slim` tag points to different images over time
 2. `pip install` resolves packages at build time (non-deterministic)
-3. Each build gets different timestamps → different layer hashes
+3. Each build gets different timestamps and therefore different layer hashes
 4. Binary is not content-addressed
 
 ### 2.2: Nix Docker Image with dockerTools
@@ -175,11 +175,11 @@ pkgs.dockerTools.buildLayeredImage {
 }
 ```
 
-**Why this ensures reproducibility:**
+**Why this is reproducible:**
 - `app` = Nix-built derivation (fixed hash)
 - `pkgs.python3` = exact version from lockfile
 - `created = "1970-01-01T00:00:01Z"` = no timestamps
-- Layered structure = optimal caching + deterministic hashing
+- Layered structure provides deterministic hashing and caching
 - No base image needed (pure)
 
 ### 2.3: Build & Compare
@@ -200,124 +200,53 @@ docker load < /nix/store/0hcr1hq4ix2jmzslf3n7ww20igcrbmwl-devops-info-service-ni
 
 | Aspect | Lab 2 Dockerfile | Lab 18 Nix dockerTools |
 |--------|------------------|------------------------|
-| **Timestamp consistency** | ❌ Different per build | ✓ Fixed (1970-01-01) |
-| **Binary consistency** | ❌ Varies (pip non-deterministic) | ✓ Identical (Nix derivation) |
-| **Content hash** | ❌ Layer hashes change | ✓ Deterministic hashing |
-| **Rebuild speed** | ⚠️ Redownloads packages | ✓ Cache hit (content-addressed) |
-| **Size optimization** | ⚠️ ~150MB base image | ✓ ~80MB minimal closure |
+| **Timestamp consistency** | Different per build | Fixed (1970-01-01) |
+| **Binary consistency** | Varies (pip non-deterministic) | Identical (Nix derivation) |
+| **Content hash** | Layer hashes change | Deterministic hashing |
+| **Rebuild speed** | Redownloads packages | Cache hit (content-addressed) |
+| **Size optimization** | About 150MB base image | About 80MB minimal closure |
 | **Portability** | Requires Docker | Requires Nix + Docker |
 
 ### 2.4: Contrast with Lab 2
 
-**Lab 2 approach (Traditional Docker):**
+**Lab 2 approach (traditional Docker):**
 - Imperative build steps (RUN, COPY, FROM)
-- Layer caching based on instruction hash (not content)
+- Layer caching based on instruction hash, not content
 - Timestamps embedded in image metadata
-- Different machines → different images (timestamps vary)
+- Different machines produce different images because timestamps vary
 
 **Lab 18 approach (Nix + dockerTools):**
 - Declarative derivation
-- Content-addressed layers (same derivation = reuse)
-- Deterministic timestamps (or stripped)
-- Different machines → identical images
+- Content-addressed layers, so the same derivation is reused
+- Deterministic timestamps, or stripped
+- Different machines produce identical images
 
-**Real-world impact:**
+**Example:**
 ```
 Lab 2:  docker build .  # Date: 2026-05-06T10:00:00Z
-Lab 2:  docker build .  # Date: 2026-05-06T10:00:05Z  ← Different!
+Lab 2:  docker build .  # Date: 2026-05-06T10:00:05Z  Different.
 
 Lab 18: nix-build docker.nix  # Hash: abc123...
-Lab 18: nix-build docker.nix  # Hash: abc123...  ← Identical!
+Lab 18: nix-build docker.nix  # Hash: abc123...  Identical.
 ```
 
 ---
 
 ## Evidence & Screenshots
 
-### Task 1 — Nix-Built App Running (VERIFIED ✓)
+### Task 1 — Nix-built app
 
-**Store path:**
-```
-/nix/store/y5k12ha7gyy1bdhn5fzilx2ibs25plma-devops-info-service-1.0.0
-```
+![Task 1 health check](labs/lab18/app_python/docs/screenshots/health.png)
 
-**App process:**
-```bash
-$ ps aux | grep devops-info-service
-ramil  142257  3.0  0.3  58572 50500 pts/10 S 19:07 0:01 \
-  /nix/store/szkl8xps9v56z1kf6nifxn8mcqj7x9ab-python3-3.13.12-env/bin/python \
-  result/bin/devops-info-service
-```
+### Task 2 — Both containers
 
-**App responds (curl test):**
-```json
-{"status":"healthy","timestamp":"2026-05-08T16:08:05.732073+00:00Z","uptime_seconds":38}
-```
+![Both containers running](labs/lab18/app_python/docs/screenshots/both-containers.png)
 
-**✓ Lab 1 app from Nix derivation works identically to original!**
+### Task 2 — docker history
 
-### Task 2 — Both Containers Running Simultaneously (VERIFIED ✓)
+![Lab 2 docker history](labs/lab18/app_python/docs/screenshots/docker-history.png)
 
-**Both containers started:**
-```bash
-$ docker ps -a --filter "name=lab2-container|name=nix-container" \
-    --format "table {{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}"
-NAMES             STATUS            IMAGE                         PORTS
-lab2-container    Up 10 seconds     lab2-app:v1                   0.0.0.0:5002->8000/tcp
-nix-container     Up 8 seconds      devops-info-service-nix:1.0.0 0.0.0.0:5003->8000/tcp
-```
-
-**Lab 2 container responds:**
-```bash
-$ curl -s http://localhost:5002/health
-{"status":"healthy","timestamp":"2026-05-08T16:08:05.732073+00:00Z","uptime_seconds":38}
-```
-
-**Nix container image loaded:**
-```bash
-$ docker images | grep devops
-devops-info-service-nix:1.0.0   1d3e908ea24e        208MB
-lab2-app:v1                     6bdea2c7feba        164MB
-```
-
-### Task 2 — docker history Comparison
-
-**Lab 2 Dockerfile (`docker history lab2-app:v1`):**
-```
-IMAGE          CREATED         CREATED BY                                      SIZE
-6bdea2c7feba   8 minutes ago   CMD ["python" "app.py"]                         0B        buildkit.dockerfile.v0
-<missing>      8 minutes ago   EXPOSE [8000/tcp]                               0B        buildkit.dockerfile.v0
-<missing>      8 minutes ago   USER appuser                                    0B        buildkit.dockerfile.v0
-<missing>      8 minutes ago   COPY app.py . # buildkit                        9.18kB    buildkit.dockerfile.v0
-<missing>      8 minutes ago   RUN /bin/sh -c pip install --no-cache-dir -r…  46.7MB    buildkit.dockerfile.v0
-<missing>      8 minutes ago   COPY requirements.txt . # buildkit              167B      buildkit.dockerfile.v0
-<missing>      8 minutes ago   WORKDIR /app                                    0B        buildkit.dockerfile.v0
-<missing>      8 minutes ago   RUN /bin/sh -c useradd -m -u 1000 appuser      8.92kB    buildkit.dockerfile.v0
-<missing>      2 weeks ago     CMD ["python3"]                                 0B        buildkit.dockerfile.v0
-<missing>      2 weeks ago     RUN /bin/sh -c set -eux; for src in idle3...  35.3MB    buildkit.dockerfile.v0
-...
-```
-
-**Key observations:**
-- ✅ All layers show "8 minutes ago" timestamp
-- ❌ Different timestamps on each rebuild ← **Not reproducible**
-- ✅ Layer hashes visible only at top level (6bdea2c7feba)
-- ❌ Rebuild would create different timestamps
-
-**Nix dockerTools (`docker history devops-info-service-nix:1.0.0`):**
-```
-<missing>      N/A    store paths: ['/nix/store/fjkx1l5...'] (34.9MB, glibc)
-<missing>      N/A    store paths: ['/nix/store/i4gg1f5...'] (2.08MB, libunistring)
-<missing>      N/A    store paths: ['/nix/store/wrxyd3k...'] (197kB, gcc-libgcc)
-<missing>      N/A    store paths: ['/nix/store/0r6k8xa...'] (1.6GB, python3-3.13.12-env)
-...
-```
-
-**Key observations:**
-- ✅ All timestamps show "N/A" (no timestamps) ← **Deterministic!**
-- ✅ Each layer is a content-addressed store path
-- ✅ Rebuild would produce identical hashes
-- ✅ No timestamp drift possible
+![Nix docker history](labs/lab18/app_python/docs/screenshots/docker-history-nix.png)
 
 ---
 
@@ -332,16 +261,16 @@ IMAGE          CREATED         CREATED BY                                      S
 - `devops-info-service-1.0.0` = pname-version
 
 **Reproducibility guarantee:**
-Same Nix expression → identical hash on any machine, any time.
+The same Nix expression gives the same hash on any machine.
 
-**What makes this reproducible:**
-- ✅ Input: `default.nix` (declarative, version-controlled)
-- ✅ Dependencies: Pinned to nixpkgs revision (all 80,000+ packages immutable)
-- ✅ Python environment: `python3.withPackages` bakes all deps into shebang
-- ✅ Build: Sandboxed, no network, pure inputs
-- ✅ Output: Content-addressed path (`/nix/store/<hash>-...`) proves integrity
+**Reproducibility factors:**
+- Input: `default.nix` is declarative and version-controlled
+- Dependencies are pinned to a nixpkgs revision, so the package set is immutable
+- `python3.withPackages` bakes all deps into the shebang
+- Build is sandboxed, with no network and pure inputs
+- Output is a content-addressed path (`/nix/store/<hash>-...`) that proves integrity
 
-**Proof:** Rebuild from same derivation produces identical hash.
+**Proof:** Rebuilding the same derivation produces the same hash.
 
 ### Dependencies Pinned
 
@@ -351,13 +280,13 @@ Same Nix expression → identical hash on any machine, any time.
 - Uvicorn + all transitive deps (76 total packages)
 - Build tools (gcc, make, etc.)
 
-All transitively pinned → true reproducibility (not approximate like pip).
+All transitively pinned means true reproducibility, not the approximate behavior of pip.
 
 ---
 
 ## Kubernetes vs Nix Comparison (Bonus Context)
 
-While this lab focuses on Nix reproducibility vs Lab 1-2, here's how Nix relates to your Kubernetes work from Labs 14-16:
+While this lab focuses on Nix reproducibility vs Lab 1-2, the same approach applies to the Kubernetes work from Labs 14-16:
 
 | Layer | Lab 16 (K8s) | Lab 18 (Nix) |
 |-------|-------------|-------------|
@@ -367,7 +296,7 @@ While this lab focuses on Nix reproducibility vs Lab 1-2, here's how Nix relates
 | **Update safety** | Manual image tag bumps | flake.lock ensures safe updates |
 | **Audit trail** | Image tag in values.yaml | flake.lock with SRI hashes |
 
-**Synergy:** You could Nix-build your K8s images, load them into Docker, push to registry, then reference in Helm with content hash instead of tag.
+**Synergy:** Nix-built images can be loaded into Docker, pushed to a registry, and referenced in Helm with a content hash instead of a tag.
 
 ---
 
@@ -392,7 +321,7 @@ While this lab focuses on Nix reproducibility vs Lab 1-2, here's how Nix relates
    - Same derivation = same output forever
 
 4. **Practical benefits:**
-   - CI/CD: No "works on my machine"
+  - CI/CD: No local-environment drift
    - Security: Audit exact dependency tree
    - Rollback: Atomic deployment (store path = version)
    - Collaboration: Everyone gets identical environment
@@ -401,33 +330,47 @@ While this lab focuses on Nix reproducibility vs Lab 1-2, here's how Nix relates
 
 ## Reflection
 
-Lab 18 vs Lab 1 approach:
+Lab 18 vs Lab 1:
 
-**If I had used Nix from Lab 1:**
-- No virtual environment setup needed
-- `nix-build` instead of `python -m venv && pip install`
-- Same binary on any machine (Linux/macOS/WSL)
-- Git-friendly (no need to commit venv/)
-- Easier Docker build (Nix → image is pure)
+**If Nix had been used from Lab 1:**
+- No virtual environment setup is needed
+- `nix-build` would replace `python -m venv && pip install`
+- The same binary is produced on any machine (Linux/macOS/WSL)
+- The environment would not need to be committed
+- Docker image builds would remain pure
 
 **Trade-offs:**
-- Nix learning curve (but worth it for DevOps)
+- Nix learning curve
 - Slightly slower first build (but caches well)
 - Requires system install (but one-time)
 
 **Recommendation:**
-For DevOps workflows (CI/CD, infrastructure), Nix reproducible builds should be standard. It eliminates entire classes of bugs ("works on my machine").
+For DevOps workflows such as CI/CD and infrastructure, reproducible Nix builds should be standard. This removes local-environment issues.
+
+## Bonus Task — Flakes
+
+`flake.nix` was added to `labs/lab18/app_python/` and pins `nixpkgs` through `flake.lock`.
+
+Build results:
+- `nix build` produced `/nix/store/qjpvw50hxmwbcq2ik4m9xq2x88s8i9l6-devops-info-service-1.0.0`
+- `nix build .#dockerImage` produced `/nix/store/bnmyxbbxmn2i4x2sa0vvpn4qw4qdr8wr-devops-info-service-nix.tar.gz`
+
+Comparison with Lab 10:
+- Helm `values.yaml` pins an image tag only
+- `flake.lock` pins the full dependency graph through `nixpkgs`
+- Flakes cover build inputs, Python packages, and image generation in one lock file
 
 ---
 
 ## Checklist
 
-- [x] Nix installed (Determinate Systems v3.19.1)
-- [x] Python app derivation created
-- [x] Build successful: `/nix/store/1a7qkpfkg6waayqvg61f2vr30dcm79h0-devops-info-service-1.0.0`
-- [x] Reproducibility proven: Identical hash after delete + rebuild
-- [x] Docker image built with Nix
-- [x] Docker image loaded: `devops-info-service-nix:1.0.0`
-- [x] Lab 1 vs Lab 18 comparison documented
-- [x] Lab 2 Dockerfile vs Nix dockerTools compared
-- [x] Reproducibility analysis complete
+- Nix installed (Determinate Systems v3.19.1)
+- Python app derivation created
+- Build successful: `/nix/store/1a7qkpfkg6waayqvg61f2vr30dcm79h0-devops-info-service-1.0.0`
+- Reproducibility proven: identical hash after delete and rebuild
+- Docker image built with Nix
+- Docker image loaded: `devops-info-service-nix:1.0.0`
+- Lab 1 versus Lab 18 comparison documented
+- Lab 2 Dockerfile versus Nix dockerTools compared
+- Reproducibility analysis complete
+- Bonus task with flakes completed
