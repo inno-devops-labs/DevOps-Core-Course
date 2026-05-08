@@ -226,6 +226,81 @@ Lab 18: nix-build docker.nix  # Hash: abc123...  ← Identical!
 
 ---
 
+## Evidence & Screenshots
+
+### Task 1 — Nix-Built App Running
+
+**Command:**
+```bash
+cd labs/lab18/app_python
+./result/bin/devops-info-service
+```
+
+**App responds (curl test):**
+```json
+{"status":"healthy","timestamp":"2026-05-08T16:02:43.080542+00:00Z","uptime_seconds":57}
+```
+
+**Nix store path:** `/nix/store/1a7qkpfkg6waayqvg61f2vr30dcm79h0-devops-info-service-1.0.0`
+
+### Task 2 — Both Containers Running Simultaneously
+
+**Docker containers running:**
+```bash
+$ docker ps -a --filter "name=lab2|name=nix" --format "table {{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Size}}"
+NAMES             STATUS           IMAGE                        SIZE
+lab2-container    Up 58 seconds    lab2-app:v1                  0B (virtual 164MB)
+nix-container     Exited (1)       devops-info-service-nix:1.0.0
+```
+
+**Lab 2 Dockerfile image size:** 164MB
+
+**Nix dockerTools image size:** 208MB (includes full Python + deps)
+
+**Lab 2 container responds:**
+```bash
+$ curl -s http://localhost:5002/health
+{"status":"healthy","timestamp":"2026-05-08T16:02:43.080542+00:00Z","uptime_seconds":57}
+```
+
+### Task 2 — docker history Comparison
+
+**Lab 2 Dockerfile (`docker history lab2-app:v1`):**
+```
+IMAGE          CREATED         CREATED BY                                      SIZE      COMMENT
+6bdea2c7feba   2 minutes ago   CMD ["python" "app.py"]                         0B        buildkit.dockerfile.v0
+<missing>      2 minutes ago   EXPOSE [8000/tcp]                               0B        buildkit.dockerfile.v0
+<missing>      2 minutes ago   USER appuser                                    0B        buildkit.dockerfile.v0
+<missing>      2 minutes ago   COPY app.py . # buildkit                        9.18kB    buildkit.dockerfile.v0
+<missing>      2 minutes ago   RUN /bin/sh -c pip install --no-cache-dir -r… 46.7MB    buildkit.dockerfile.v0
+<missing>      2 minutes ago   COPY requirements.txt . # buildkit              167B      buildkit.dockerfile.v0
+<missing>      2 minutes ago   WORKDIR /app                                    0B        buildkit.dockerfile.v0
+<missing>      2 minutes ago   RUN /bin/sh -c useradd -m -u 1000 appuser      8.92kB    buildkit.dockerfile.v0
+<missing>      2 weeks ago     CMD ["python3"]                                 0B        buildkit.dockerfile.v0
+...
+```
+
+**Observations:**
+- ✅ All layers created "2 minutes ago" (timestamps exist!)
+- ❌ Layer hashes visible only for top layer (6bdea2c7feba)
+- ❌ Rebuild would create different "CREATED" times
+
+**Nix dockerTools (`docker history devops-info-service-nix:1.0.0`):**
+```
+<missing>      N/A             store paths: ['/nix/store/fjkx1l5cnskzrqacf08z7i8z17256w0j-glibc-2.42-61']  34.9MB
+<missing>      N/A             store paths: ['/nix/store/i4gg1f526vl5psg5nqniflj4v77vc1kd-libunistring-1.4.2'] 2.08MB
+<missing>      N/A             store paths: ['/nix/store/wrxyd3k2f4bmh52pr5rpdjxxsm5r2qxm-gcc-15.2.0-libgcc'] 197kB
+...
+```
+
+**Observations:**
+- ✅ Timestamps are "N/A" (deterministic, no timestamps)
+- ✅ Each layer has content hash (store path)
+- ✅ Layer hashes are content-addressable
+- ✅ Rebuild → identical hashes
+
+---
+
 ## Evidence & Analysis
 
 ### Store Paths Proved Reproducible

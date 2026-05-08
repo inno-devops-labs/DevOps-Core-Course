@@ -7,7 +7,7 @@ pkgs.dockerTools.buildLayeredImage {
   name = "devops-info-service-nix";
   tag = "1.0.0";
 
-  contents = [ app pkgs.python3 ];
+  contents = [ app pkgs.python3 pkgs.python3Packages.fastapi pkgs.python3Packages.uvicorn pkgs.coreutils ];
 
   config = {
     Cmd = [ "${app}/bin/devops-info-service" ];
