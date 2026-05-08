@@ -1,0 +1,6 @@
+# Web Framework
+Flask==3.1.0
+# WSGI HTTP server
+gunicorn==23.0.0
+# Prometheus instrumentation
+prometheus-client==0.23.1
