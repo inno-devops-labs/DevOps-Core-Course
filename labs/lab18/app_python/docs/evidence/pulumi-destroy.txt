@@ -1,0 +1,49 @@
+Previewing destroy (dev):
+
+ -  yandex:index:ComputeInstance web-vm delete 
+ -  pulumi:providers:yandex yc delete 
+ -  pulumi:pulumi:Stack devops-lab04-dev delete 
+ -  pulumi:pulumi:Stack devops-lab04-dev delete 
+Outputs:
+  - app_url              : "http://84.201.157.114:5000"
+  - external_ip          : "84.201.157.114"
+  - http_url             : "http://84.201.157.114"
+  - internal_ip          : "10.0.1.19"
+  - network_id           : "enp91ple956fcrfvjp1r"
+  - security_group_id    : "enp39efd0jcf2lok3d48"
+  - ssh_connection_string: "ssh -i /home/ramil/.ssh/id_ed25519 ubuntu@84.201.157.114"
+  - subnet_id            : "e9bkljbeonhq1mm0fo7d"
+  - vm_id                : "fhmc96siapihguvq4ld8"
+  - vm_name              : "lab04-pulumi-vm"
+
+Resources:
+    - 3 to delete
+
+Destroying (dev):
+
+ -  yandex:index:ComputeInstance web-vm deleting (0s) 
+@ destroying.....................................................................
+ -  yandex:index:ComputeInstance web-vm deleted (65s) 
+ -  pulumi:providers:yandex yc deleting (0s) 
+ -  pulumi:providers:yandex yc deleted (0.01s) 
+ -  pulumi:pulumi:Stack devops-lab04-dev deleting (0s) 
+ -  pulumi:pulumi:Stack devops-lab04-dev deleted (0.00s) 
+Outputs:
+  - app_url              : "http://84.201.157.114:5000"
+  - external_ip          : "84.201.157.114"
+  - http_url             : "http://84.201.157.114"
+  - internal_ip          : "10.0.1.19"
+  - network_id           : "enp91ple956fcrfvjp1r"
+  - security_group_id    : "enp39efd0jcf2lok3d48"
+  - ssh_connection_string: "ssh -i /home/ramil/.ssh/id_ed25519 ubuntu@84.201.157.114"
+  - subnet_id            : "e9bkljbeonhq1mm0fo7d"
+  - vm_id                : "fhmc96siapihguvq4ld8"
+  - vm_name              : "lab04-pulumi-vm"
+
+Resources:
+    - 3 deleted
+
+Duration: 1m6s
+
+The resources in the stack have been deleted, but the history and configuration associated with the stack are still maintained. 
+If you want to remove the stack completely, run `pulumi stack rm dev`.

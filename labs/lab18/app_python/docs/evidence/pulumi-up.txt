@@ -1,0 +1,63 @@
+Previewing update (dev):
+
+    pulumi:pulumi:Stack devops-lab04-dev  /home/ramil/Work/DevOps-Core-Course/.venv/lib/python3.12/site-packages/pulumi_yandex/_utilities.py:10: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    pulumi:pulumi:Stack devops-lab04-dev    import pkg_resources
+ +  pulumi:pulumi:Stack devops-lab04-dev create   import pkg_resources
+ +  pulumi:providers:yandex yc create 
+@ previewing update.......
+ +  yandex:index:ComputeInstance web-vm create 
+ +  pulumi:pulumi:Stack devops-lab04-dev create 2 messages
+Diagnostics:
+  pulumi:pulumi:Stack (devops-lab04-dev):
+    /home/ramil/Work/DevOps-Core-Course/.venv/lib/python3.12/site-packages/pulumi_yandex/_utilities.py:10: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+      import pkg_resources
+
+Outputs:
+    app_url              : [unknown]
+    external_ip          : [unknown]
+    http_url             : [unknown]
+    internal_ip          : [unknown]
+    network_id           : "enp91ple956fcrfvjp1r"
+    security_group_id    : "enp39efd0jcf2lok3d48"
+    ssh_connection_string: [unknown]
+    subnet_id            : "e9bkljbeonhq1mm0fo7d"
+    vm_id                : [unknown]
+    vm_name              : "lab04-pulumi-vm"
+
+Resources:
+    + 3 to create
+
+Updating (dev):
+
+    pulumi:pulumi:Stack devops-lab04-dev  /home/ramil/Work/DevOps-Core-Course/.venv/lib/python3.12/site-packages/pulumi_yandex/_utilities.py:10: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+    pulumi:pulumi:Stack devops-lab04-dev    import pkg_resources
+ +  pulumi:pulumi:Stack devops-lab04-dev creating (0s)   import pkg_resources
+ +  pulumi:providers:yandex yc creating (0s) 
+ +  pulumi:providers:yandex yc created (0.00s) 
+@ updating......
+ +  yandex:index:ComputeInstance web-vm creating (0s) 
+@ updating........................................
+ +  yandex:index:ComputeInstance web-vm created (36s) 
+ +  pulumi:pulumi:Stack devops-lab04-dev created (40s) 2 messages
+Diagnostics:
+  pulumi:pulumi:Stack (devops-lab04-dev):
+    /home/ramil/Work/DevOps-Core-Course/.venv/lib/python3.12/site-packages/pulumi_yandex/_utilities.py:10: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+      import pkg_resources
+
+Outputs:
+    app_url              : "http://84.201.157.114:5000"
+    external_ip          : "84.201.157.114"
+    http_url             : "http://84.201.157.114"
+    internal_ip          : "10.0.1.19"
+    network_id           : "enp91ple956fcrfvjp1r"
+    security_group_id    : "enp39efd0jcf2lok3d48"
+    ssh_connection_string: "ssh -i /home/ramil/.ssh/id_ed25519 ubuntu@84.201.157.114"
+    subnet_id            : "e9bkljbeonhq1mm0fo7d"
+    vm_id                : "fhmc96siapihguvq4ld8"
+    vm_name              : "lab04-pulumi-vm"
+
+Resources:
+    + 3 created
+
+Duration: 41s
+

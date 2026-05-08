@@ -1,0 +1,32 @@
+[0m[1mdata.yandex_compute_image.ubuntu: Reading...[0m[0m
+[0m[1myandex_vpc_network.lab_network: Refreshing state... [id=enp91ple956fcrfvjp1r][0m
+[0m[1mdata.yandex_compute_image.ubuntu: Read complete after 2s [id=fd8t9g30r3pc23et5krl][0m
+[0m[1myandex_vpc_subnet.lab_subnet: Refreshing state... [id=e9bkljbeonhq1mm0fo7d][0m
+[0m[1myandex_vpc_security_group.lab_sg: Refreshing state... [id=enp39efd0jcf2lok3d48][0m
+[0m[1myandex_compute_instance.web_vm: Refreshing state... [id=fhm3hpru7qnes65fso7v][0m
+
+[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m
+
+[0mTerraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.
+[0m[1m[32m
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0mapp_url = "http://93.77.186.203:5000"
+external_ip = "93.77.186.203"
+http_url = "http://93.77.186.203"
+instance_labels = tomap({
+  "env" = "learning"
+  "lab" = "lab04"
+  "purpose" = "devops-course"
+  "tool" = "terraform"
+})
+internal_ip = "10.0.1.17"
+network_id = "enp91ple956fcrfvjp1r"
+security_group_id = "enp39efd0jcf2lok3d48"
+ssh_connection_string = "ssh -i /home/ramil/.ssh/id_ed25519 ubuntu@93.77.186.203"
+subnet_id = "e9bkljbeonhq1mm0fo7d"
+vm_id = "fhm3hpru7qnes65fso7v"
+vm_name = "lab04-vm"

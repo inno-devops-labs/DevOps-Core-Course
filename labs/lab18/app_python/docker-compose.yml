@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    container_name: devops-info-app
+    network_mode: bridge
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: "8000"
+      LOG_FORMAT: "json"
+      VISITS_FILE: "/data/visits"
+    volumes:
+      - ./data:/data

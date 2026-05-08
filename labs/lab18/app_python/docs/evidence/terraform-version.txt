@@ -1,0 +1,6 @@
+Terraform v1.14.3
+on linux_amd64
++ provider registry.terraform.io/yandex-cloud/yandex v0.99.1
+
+Your version of Terraform is out of date! The latest version
+is 1.14.5. You can update by downloading from https://developer.hashicorp.com/terraform/install
