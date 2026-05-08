@@ -21,6 +21,15 @@
 
 ![](/edge-api/docs/screenshots/ui_metrics.png)
 
+## Routing Concepts
+- `workers.dev`: public URL provided by Cloudflare for quick access without a custom domain.
+- Routes: attach a Worker to paths on an existing Cloudflare-managed zone (for example, `example.com/api/*`).
+- Custom Domains: make the Worker the origin for your own domain or subdomain.
+
+## Persistence Verification
+- Stored value: KV key `visits` in namespace `SETTINGS` (counter for `/counter`).
+- Verification: call `/counter` to increase `visits`, redeploy the Worker, then call `/counter` again and confirm the counter continues increasing instead of resetting.
+
 ## Kubernetes vs Cloudflare Workers
 
 | Aspect | Kubernetes | Cloudflare Workers |
