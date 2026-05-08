@@ -19,7 +19,7 @@ persistence:
   storageClass: ""
   mountPath: /data
   visitsFile: /data/visits
-
+  
 secret:
   username: ""
   password: ""
