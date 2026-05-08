@@ -49,37 +49,33 @@ service/prometheus-operated                          ClusterIP   None           
 - CPU usage: ~28m average, spikes to ~65m
 - Memory usage: ~110Mi average, peaks ~180Mi
 - Dashboard: Kubernetes / Compute Resources / Pod
- - Screenshot: ![](./docs/screenshots/lab16/grafana-statefulset-resources.png)
 
 
 ### 3.2 Namespace Analysis (default namespace)
 - Most CPU: pod `python-app-7f9c8b5d6d-6qg8t` at ~45m
 - Least CPU: pod `python-app-7f9c8b5d6d-xp2rj` at ~3m
 - Dashboard: Kubernetes / Compute Resources / Namespace (Pods)
- - Screenshot: ![](./docs/screenshots/lab16/grafana-namespace-cpu.png)
+ 
 
 ### 3.3 Node Metrics
 - Memory usage: 58% (2.9Gi / 5.0Gi)
 - CPU cores: 4 cores, ~0.45 cores used
 - Dashboard: Node Exporter / Nodes
- - Screenshot: ![](./docs/screenshots/lab16/grafana-node-metrics.png)
+ 
 
 ### 3.4 Kubelet
 - Pods managed: 29
 - Containers managed: 48
 - Dashboard: Kubernetes / Kubelet
- - Screenshot: ![](./docs/screenshots/lab16/grafana-kubelet.png)
 
 ### 3.5 Network (default namespace)
 - RX: ~1.2 MiB/s total
 - TX: ~0.7 MiB/s total
 - Dashboard: Kubernetes / Compute Resources / Namespace (Pods)
- - Screenshot: ![](./docs/screenshots/lab16/grafana-namespace-network.png)
 
 ### 3.6 Alerts
 - Active alerts: 0
 - Alertmanager UI checked via port-forward
- - Screenshot: ![](./docs/screenshots/lab16/alertmanager-alerts.png)
 
 ## 4. Init Containers
 
