@@ -105,7 +105,10 @@ services:
           memory: 512M
 
   app-python:
-    image: versceana/devops-info-service:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: devops-info-service:lab8
     platform: linux/amd64
     container_name: app-python
     ports:
@@ -121,7 +124,32 @@ services:
       loki:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    labels:
+      logging: "promtail"
+      app: "prometheus"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -130,8 +158,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
-          memory: 512M
+          cpus: '1.0'
+          memory: 1G
         reservations:
           cpus: '0.5'
           memory: 512M
@@ -140,6 +168,7 @@ volumes:
   loki-data:
   grafana-data:
   promtail-positions:
+  prometheus-data:
 
 networks:
   logging:

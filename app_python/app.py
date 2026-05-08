@@ -2,15 +2,41 @@ import os
 import socket
 import platform
 import logging
+import fcntl
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 from pythonjsonlogger import jsonlogger
-import fcntl
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
 
 # ========== CONFIGURATION ==========
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+# ========== PROMETHEUS METRICS ==========
+REQUEST_COUNT = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+REQUEST_DURATION = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint']
+)
+
+REQUESTS_IN_PROGRESS = Gauge(
+    'http_requests_in_progress',
+    'HTTP requests currently being processed'
+)
+
+# Application-specific metrics
+ENDPOINT_CALLS = Counter(
+    'devops_info_endpoint_calls',
+    'Calls to specific endpoints',
+    ['endpoint']
+)
 
 # ========== APPLICATION SETUP ==========
 app = Flask(__name__)
@@ -53,22 +79,32 @@ def write_counter(value):
         f.write(str(value))
         fcntl.flock(f, fcntl.LOCK_UN)
 
+# ========== MIDDLEWARE FOR METRICS ==========
+@app.before_request
+def before_request():
+    REQUESTS_IN_PROGRESS.inc()
+
+@app.after_request
+def after_request(response):
+    REQUESTS_IN_PROGRESS.dec()
+    duration = datetime.now(timezone.utc) - request._start_time
+    REQUEST_DURATION.labels(method=request.method, endpoint=request.endpoint or request.path).observe(duration.total_seconds())
+    REQUEST_COUNT.labels(method=request.method, endpoint=request.endpoint or request.path, status=response.status_code).inc()
+    return response
+
+@app.before_request
+def start_timer():
+    request._start_time = datetime.now(timezone.utc)
+
 # ========== HELPER FUNCTIONS ==========
 def get_uptime():
-    """Calculate application uptime in seconds and human-readable format."""
     delta = datetime.now(timezone.utc) - START_TIME
     seconds = int(delta.total_seconds())
-    
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
-    
-    return {
-        'seconds': seconds,
-        'human': f"{hours} hours, {minutes} minutes"
-    }
+    return {'seconds': seconds, 'human': f"{hours} hours, {minutes} minutes"}
 
 def get_system_info():
-    """Collect system information."""
     return {
         'hostname': socket.gethostname(),
         'platform': platform.system(),
@@ -79,7 +115,6 @@ def get_system_info():
     }
 
 def get_request_info():
-    """Extract information about the current request."""
     return {
         'client_ip': request.remote_addr,
         'user_agent': request.headers.get('User-Agent', 'Unknown'),
@@ -94,7 +129,8 @@ def main_endpoint():
     count = read_counter() + 1
     write_counter(count)
     logger.info(f"Visit #{count} from {request.remote_addr}")
-    
+    ENDPOINT_CALLS.labels(endpoint='/').inc()
+
     response = {
         'service': {
             'name': 'devops-info-service',
@@ -113,46 +149,42 @@ def main_endpoint():
         'endpoints': [
             {'path': '/', 'method': 'GET', 'description': 'Service information'},
             {'path': '/health', 'method': 'GET', 'description': 'Health check'},
-            {'path': '/visits', 'method': 'GET', 'description': 'Visit counter'}
+            {'path': '/visits', 'method': 'GET', 'description': 'Visit counter'},
+            {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'}
         ]
     }
     return jsonify(response)
 
 @app.route('/health')
 def health_check():
-    """
-    Health check endpoint for monitoring.
-    Returns HTTP 200 when service is healthy.
-    """
     logger.debug("Health check requested")
-    
     response = {
         'status': 'healthy',
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'uptime_seconds': get_uptime()['seconds']
     }
-    
     return jsonify(response), 200
 
 @app.route('/visits')
 def visits():
-    """Return current visit count."""
     count = read_counter()
     return jsonify({'visits': count})
-    
+
+@app.route('/metrics')
+def metrics():
+    return generate_latest(REGISTRY), 200, {'Content-Type': 'text/plain; version=0.0.4'}
+
 # ========== ERROR HANDLERS ==========
 @app.errorhandler(404)
 def not_found(error):
-    """Handle 404 errors."""
     return jsonify({
         'error': 'Not Found',
         'message': 'The requested endpoint does not exist',
-        'available_endpoints': ['/', '/health']
+        'available_endpoints': ['/', '/health', '/visits', '/metrics']
     }), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    """Handle 500 errors."""
     logger.error(f"Internal server error: {error}")
     return jsonify({
         'error': 'Internal Server Error',
@@ -163,9 +195,4 @@ def internal_error(error):
 if __name__ == '__main__':
     logger.info(f"Starting DevOps Info Service on {HOST}:{PORT}")
     logger.info(f"Debug mode: {DEBUG}")
-    
-    app.run(
-        host=HOST,
-        port=PORT,
-        debug=DEBUG
-    )
+    app.run(host=HOST, port=PORT, debug=DEBUG)
