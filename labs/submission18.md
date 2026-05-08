@@ -360,6 +360,33 @@ Comparison with Lab 10:
 - `flake.lock` pins the full dependency graph through `nixpkgs`
 - Flakes cover build inputs, Python packages, and image generation in one lock file
 
+flake.lock snippet (nixpkgs entry):
+```
+"nixpkgs": {
+  "locked": {
+    "rev": "549bd84d6279f9852cae6225e372cc67fb91a4c1",
+    "narHash": "sha256-hGdgeU2Nk87RAuZyYjyDjFL6LK7dAZN5RE9+hrDTkDU="
+  }
+}
+```
+
+Developer commands (reproduce):
+```bash
+# build default package
+nix build
+
+# build docker image
+nix build .#dockerImage
+
+# use development shell
+nix develop
+# or run a one-off command in devShell
+nix develop --command python -c 'import fastapi; print(fastapi.__version__)'
+
+# build directly from GitHub (cross-machine reproducibility test)
+nix build github:yourusername/DevOps-Core-Course?dir=labs/lab18/app_python#default
+```
+
 ---
 
 ## Checklist
