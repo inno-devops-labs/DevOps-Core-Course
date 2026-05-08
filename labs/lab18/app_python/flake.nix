@@ -17,5 +17,9 @@
       };
 
       defaultPackage.${system} = self.packages.${system}.default;
+
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = with pkgs; [ python3 python3Packages.fastapi python3Packages.uvicorn ];
+      };
     };
 }
