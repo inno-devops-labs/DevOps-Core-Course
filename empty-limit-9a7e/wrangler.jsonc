@@ -10,15 +10,24 @@
 	"observability": {
 		"enabled": true
 	},
-	"triggers": {
-		"crons": [
-			"* * * * *"
-		]
-	},
+	// "triggers": {
+	// 	"crons": [
+	// 		"* * * * *"
+	// 	]
+	// },
 	"upload_source_maps": true,
 	"compatibility_flags": [
 		"nodejs_compat"
-	]
+	],
+	"vars": {
+		"ENVIRONMENT": "development"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "MY_KV",
+			"id": "ed6545d30fa748b6a6a0f2d745be8300"
+		}
+	],
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
