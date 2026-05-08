@@ -6,9 +6,13 @@ import socket
 import threading
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 
 app = Flask(__name__)
+
+VISITS_COUNTER = Counter('app_visits_total', 'Total visits to root endpoint')
+HEALTH_COUNTER = Counter('app_health_checks_total', 'Total health check requests')
 
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5173))
@@ -110,7 +114,8 @@ def get_endpoints_list():
     return [
         {'path': '/', 'method': 'GET', 'description': 'Service information'},
         {'path': '/health', 'method': 'GET', 'description': 'Health check'},
-        {'path': '/visits', 'method': 'GET', 'description': 'Visit counter'}
+        {'path': '/visits', 'method': 'GET', 'description': 'Visit counter'},
+        {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'}
     ]
 
 
@@ -130,6 +135,7 @@ def log_request(response):
 
 @app.route('/')
 def index():
+    VISITS_COUNTER.inc()
     with _visits_lock:
         count = _read_visits() + 1
         _write_visits(count)
@@ -162,6 +168,7 @@ def visits():
 
 @app.route('/health')
 def health():
+    HEALTH_COUNTER.inc()
     logger.debug("Health check requested")
 
     return jsonify({
@@ -169,6 +176,11 @@ def health():
         'timestamp': datetime.now(timezone.utc).isoformat(),
         'uptime_seconds': get_uptime()['seconds']
     })
+
+
+@app.route('/metrics')
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.errorhandler(404)

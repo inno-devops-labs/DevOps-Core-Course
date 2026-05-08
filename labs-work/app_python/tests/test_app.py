@@ -71,18 +71,19 @@ class TestIndexEndpoint:
         assert data['request']['path'] == '/'
 
     def test_index_contains_endpoints(self, client):
-        """Test that response contains endpoints list with at least 3 items."""
+        """Test that response contains endpoints list with at least 4 items."""
         response = client.get('/')
         data = json.loads(response.data)
 
         assert 'endpoints' in data
         assert isinstance(data['endpoints'], list)
-        assert len(data['endpoints']) >= 3
+        assert len(data['endpoints']) >= 4
 
         paths = [ep['path'] for ep in data['endpoints']]
         assert '/' in paths
         assert '/health' in paths
         assert '/visits' in paths
+        assert '/metrics' in paths
 
     def test_index_data_types(self, client):
         """Test that response fields have correct data types."""
@@ -206,3 +207,27 @@ class TestVisitsEndpoint:
         data = json.loads(response.data)
         assert 'visits' in data
         assert data['visits'] == 1
+
+
+class TestMetricsEndpoint:
+    """Tests for GET /metrics endpoint (Prometheus exposition)."""
+
+    def test_metrics_returns_200(self, client):
+        response = client.get('/metrics')
+        assert response.status_code == 200
+
+    def test_metrics_returns_prometheus_text(self, client):
+        response = client.get('/metrics')
+        assert response.content_type.startswith('text/plain')
+
+    def test_metrics_contains_visits_counter(self, client):
+        client.get('/')
+        response = client.get('/metrics')
+        body = response.data.decode()
+        assert 'app_visits_total' in body
+
+    def test_metrics_contains_health_counter(self, client):
+        client.get('/health')
+        response = client.get('/metrics')
+        body = response.data.decode()
+        assert 'app_health_checks_total' in body

@@ -79,6 +79,21 @@ vault:
     PASSWORD={{ .Data.data.password }}
     {{- end -}}
 
+initContainers:
+  download:
+    enabled: false
+    url: "https://raw.githubusercontent.com/kubernetes/website/main/README.md"
+    targetFile: "/work-dir/index.html"
+  waitFor:
+    enabled: false
+    service: ""
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  release: monitoring
+
 statefulset:
   enabled: false
   updateStrategy:
