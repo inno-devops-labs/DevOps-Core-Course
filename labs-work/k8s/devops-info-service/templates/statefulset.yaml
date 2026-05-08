@@ -33,6 +33,11 @@ spec:
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
     spec:
+      {{- $initContainers := include "devops-info-service.initContainers" . | trim }}
+      {{- if $initContainers }}
+      initContainers:
+        {{- $initContainers | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -60,10 +65,12 @@ spec:
             - name: data-volume
               mountPath: {{ .Values.dataDir }}
             {{- end }}
+            {{- include "devops-info-service.workdirMount" . | nindent 12 }}
       volumes:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
+        {{- include "devops-info-service.workdirVolume" . | nindent 8 }}
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:

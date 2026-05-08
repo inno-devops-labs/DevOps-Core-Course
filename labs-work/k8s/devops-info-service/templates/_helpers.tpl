@@ -48,3 +48,49 @@ Demonstrates DRY principle via named templates.
   value: {{ .value | quote }}
 {{- end }}
 {{- end }}
+
+{{/*
+Init containers - shared across all workload kinds.
+Renders empty when both download and waitFor are disabled.
+*/}}
+{{- define "devops-info-service.initContainers" -}}
+{{- if .Values.initContainers.download.enabled }}
+- name: init-download
+  image: busybox:1.36
+  command:
+    - sh
+    - -c
+    - 'wget -O {{ .Values.initContainers.download.targetFile }} {{ .Values.initContainers.download.url }}'
+  volumeMounts:
+    - name: workdir
+      mountPath: /work-dir
+{{- end }}
+{{- if .Values.initContainers.waitFor.enabled }}
+- name: wait-for-service
+  image: busybox:1.36
+  command:
+    - sh
+    - -c
+    - 'until nslookup {{ .Values.initContainers.waitFor.service }}; do echo "waiting for {{ .Values.initContainers.waitFor.service }}"; sleep 2; done'
+{{- end }}
+{{- end }}
+
+{{/*
+emptyDir workdir volume - only when download init container is enabled.
+*/}}
+{{- define "devops-info-service.workdirVolume" -}}
+{{- if .Values.initContainers.download.enabled }}
+- name: workdir
+  emptyDir: {}
+{{- end }}
+{{- end }}
+
+{{/*
+workdir volumeMount for the main application container.
+*/}}
+{{- define "devops-info-service.workdirMount" -}}
+{{- if .Values.initContainers.download.enabled }}
+- name: workdir
+  mountPath: /work-dir
+{{- end }}
+{{- end }}
