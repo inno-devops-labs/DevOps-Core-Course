@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-demo
+
+spec:
+  volumes:
+    - name: shared-data
+      emptyDir: {}
+
+  initContainers:
+    - name: downloader
+      image: busybox
+      command:
+        - sh
+        - -c
+        - |
+          wget -O /shared/index.html https://example.com
+
+      volumeMounts:
+        - name: shared-data
+          mountPath: /shared
+
+  containers:
+    - name: web
+      image: nginx
+
+      volumeMounts:
+        - name: shared-data
+          mountPath: /usr/share/nginx/html
+
+      ports:
+        - containerPort: 80

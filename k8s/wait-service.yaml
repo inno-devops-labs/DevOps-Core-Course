@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-demo
+
+spec:
+  initContainers:
+    - name: wait-for-backend
+      image: busybox
+
+      command:
+        - sh
+        - -c
+        - |
+          until nslookup backend-service.default.svc.cluster.local; do
+            echo waiting for backend service
+            sleep 2
+          done
+
+  containers:
+    - name: main
+      image: nginx
