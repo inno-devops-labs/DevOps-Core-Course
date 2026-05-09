@@ -1,0 +1,305 @@
+# DevOps Info Service
+
+[![Python CI/CD (FastAPI)](https://github.com/SinbadTheSailor2005/DevOps-Core-Course/actions/workflows/python-ci.yml/badge.svg)](https://github.com/SinbadTheSailor2005/DevOps-Core-Course/actions/workflows/python-ci.yml)
+
+## Overview
+
+A lightweight FastAPI-based service that provides comprehensive system and runtime information. This service exposes REST API endpoints to retrieve service metadata, system information, and health status. Ideal for monitoring, debugging, and DevOps observability in containerized environments.
+
+**Key Features:**
+- Real-time system information (CPU, platform, architecture)
+- Service uptime tracking and human-readable formatting
+- Request metadata capture (client IP, user agent, path)
+- Health check endpoint for load balancers and orchestrators
+- Persistent visits counter stored in a file
+- Environment-based configuration
+- FastAPI with automatic OpenAPI documentation
+
+---
+
+## Prerequisites
+
+- **Python:** 3.8 or higher
+- **pip:** Package manager (comes with Python)
+- **Virtual Environment:** Recommended for isolation
+
+**Core Dependencies:**
+- `fastapi` - Modern web framework
+- `uvicorn` - ASGI server
+
+---
+
+## Installation
+
+### 1. Create and Activate Virtual Environment
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+> On Windows, use: `venv\Scripts\activate`
+
+### 2. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Running the Application
+
+### Basic Usage
+
+```bash
+python app.py
+```
+
+The service starts on `http://localhost:8080` by default.
+
+### With Custom Configuration
+
+```bash
+# Custom port
+PORT=8080 python app.py
+
+# Custom host and port
+HOST=127.0.0.1 PORT=8080 python app.py
+
+# Enable debug mode with auto-reload
+DEBUG=true PORT=3000 python app.py
+```
+
+### Using Uvicorn Directly
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
+
+---
+
+## API Endpoints
+
+### GET `/`
+
+**Description:** Returns comprehensive service and system information
+
+**Response Example:**
+```json
+{
+  "service": {
+    "name": "devops-info-service",
+    "version": "1.0.0",
+    "description": "DevOps course info service",
+    "framework": "FastAPI"
+  },
+  "system": {
+    "hostname": "mycomputer",
+    "platform": "Darwin",
+    "platform_version": "23.1.0",
+    "architecture": "arm64",
+    "cpu_count": 8,
+    "python_version": "3.11.0"
+  },
+  "runtime": {
+    "uptime_seconds": 3600,
+    "uptime_human": "1 hour, 0 minutes",
+    "current_time": "2024-01-15T14:30:00.000000+00:00",
+    "timezone": "UTC"
+  },
+  "request": {
+    "client_ip": "127.0.0.1",
+    "user_agent": "curl/7.64.1",
+    "method": "GET",
+    "path": "/"
+  },
+  "endpoints": [
+    {
+      "path": "/",
+      "method": "GET",
+      "description": "Service information"
+    },
+    {
+      "path": "/health",
+      "method": "GET",
+      "description": "Health check"
+    }
+  ]
+}
+```
+
+### GET `/health`
+
+**Description:** Minimal health check endpoint for load balancers and monitoring systems
+
+**Response Example:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T14:30:00.000000+00:00",
+  "uptime_seconds": 3600
+}
+```
+
+**Use Cases:**
+- Kubernetes liveness probes
+- Load balancer health checks
+- Monitoring and alerting systems
+
+### GET `/visits`
+
+**Description:** Returns current visits counter value from the persistent file.
+
+**Response Example:**
+```json
+{
+  "visits": 12
+}
+```
+
+**How it works:**
+- Each request to `/` increments and saves the counter.
+- Counter is stored in `VISITS_FILE` (default: `./data/visits`).
+- `/visits` reads and returns current value.
+
+---
+
+## Configuration
+
+All configuration is done via environment variables. Set them before running the application:
+
+| Variable | Default | Type | Description |
+|----------|---------|------|-------------|
+| `HOST` | `0.0.0.0` | String | Bind address for the service |
+| `PORT` | `8080` | Integer | Service port |
+| `DEBUG` | `False` | Boolean | Enable debug mode with auto-reload (accepts `"true"` or `"false"`) |
+| `DATA_DIR` | `./data` | String | Directory where persistent counter data is stored |
+| `VISITS_FILE` | `./data/visits` | String | Full path to visits counter file |
+
+### Example Configuration
+
+```bash
+# Production setup
+HOST=0.0.0.0 PORT=8000 DEBUG=false python app.py
+
+# Development setup
+HOST=localhost PORT=3000 DEBUG=true python app.py
+
+# Docker/Kubernetes setup
+HOST=0.0.0.0 PORT=8080 python app.py
+```
+
+## Containerization
+How to run application in the docker:
+from the root
+```bash
+docker build -t app .
+docker run -p 8080:8080 app 
+
+```
+or 
+```bash
+docker run -p 8080:8080 reiterwurger/app:v1
+```
+
+### Local persistence with Docker Compose
+
+Use `docker-compose.yml` in this directory to persist visits data on the host:
+
+```bash
+docker compose up -d --build
+```
+
+The counter file is stored on host in `./data/visits` and survives container restarts.
+
+---
+
+## Testing
+
+### Testing Framework Choice
+
+**Chosen framework:** `pytest`
+
+**Why:**
+- Concise syntax and powerful assertions
+- Great ecosystem (fixtures, plugins, test discovery)
+- Works seamlessly with FastAPI’s `TestClient`
+
+### Test Structure
+
+Tests live in `tests/` and cover:
+- **GET `/`**: JSON structure and required fields
+- **GET `/health`**: health status and required fields
+- **Error cases**: 404 for unknown routes and 405 for invalid methods
+
+### Install Test Dependencies
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+### Run Tests Locally
+
+```bash
+pytest -q
+```
+![alt text](./docs/screenshots/lab-03-tests-pass.png)
+### Run Linting Locally
+
+```bash
+ruff check .
+```
+
+---
+
+## CI/CD Pipeline (GitHub Actions)
+
+### Workflow Triggers
+
+- **push** to `master` and `lab*` branches
+- **pull_request** to `master` and `lab*` branches
+- manual **workflow_dispatch**
+
+### Versioning Strategy
+
+**Chosen strategy:** Calendar Versioning (CalVer)
+
+**Format:** `YYYY.MM.DD` (UTC release date)
+![alt text](./docs/screenshots/lab-03-D-hub-tags.png)
+**Docker tags:**
+- `<username>/devops-info-service:YYYY.MM.DD`
+- `<username>/devops-info-service:latest`
+
+**Why:** simple, time-based releases for continuous delivery.
+
+[successful run](https://github.com/SinbadTheSailor2005/DevOps-Core-Course/actions/runs/21775115715/job/62830487398)
+
+### Workflow Stages
+
+1. **Lint & Test** (matrix on Python 3.11 and 3.12)
+2. **Security Scan** with Snyk
+3. **Docker Build & Push** (only on non-PR events)
+
+### Required Secrets
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `SNYK_TOKEN`
+
+---
+
+## CI Best Practices Applied
+
+1. **Dependency caching** (`actions/setup-python` pip cache) to speed up installs.
+2. **Matrix builds** across Python 3.11 and 3.12 for compatibility.
+3. **Least-privilege permissions** with `contents: read`.
+4. **Concurrency control** to cancel outdated runs on the same branch.
+5. **Pinned major versions** for Actions to reduce supply-chain risk.
+
+---
+
+## Security Scanning (Snyk)
+
+The workflow runs a Snyk dependency scan on every push/PR. Review results in the GitHub Actions run and address any high-severity findings before release.
+
