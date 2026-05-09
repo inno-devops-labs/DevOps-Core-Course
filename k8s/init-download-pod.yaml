@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-download-demo
+  labels:
+    app: init-demo
+spec:
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command: ['sh', '-c', 'wget -O /work-dir/index.html https://example.com']
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+  containers:
+    - name: main-app
+      image: nginx:alpine
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: workdir
+          mountPath: /usr/share/nginx/html
+  volumes:
+    - name: workdir
+      emptyDir: {}
