@@ -1,0 +1,10 @@
+# Lab 15 bonus — partition: only pods with ordinal >= partition get the new template on update
+# Example: 3 replicas (0,1,2); partition 2 updates pod-2 first; 0,1 keep old until partition lowered
+workload:
+  kind: statefulSet
+
+statefulSet:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 2

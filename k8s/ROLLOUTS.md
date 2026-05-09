@@ -1,6 +1,6 @@
 # Lab 14 — Argo Rollouts (progressive delivery)
 
-The `k8s/devops-python` Helm chart deploys the app with an Argo **Rollout** instead of a `Deployment`. The chart supports **canary** (default) and **blue-green** strategies.
+The `k8s/devops-python` chart uses **`workload.kind: rollout`** (default) for an Argo **Rollout** with **canary** or **blue-green** strategies. For **StatefulSet** + per-pod PVC (Lab 15), set **`workload.kind: statefulSet`** — see `k8s/STATEFULSET.md`.
 
 ## Prerequisites
 

@@ -39,7 +39,9 @@ k8s/devops-python/
 └── templates/
     ├── _helpers.tpl
     ├── rollout.yaml
+    ├── statefulset.yaml
     ├── service.yaml
+    ├── service-headless.yaml
     ├── NOTES.txt
     └── hooks/
         ├── pre-install-job.yaml
@@ -48,6 +50,7 @@ k8s/devops-python/
 
 ### Key templated values
 
+- **Workload**: `.Values.workload.kind` — `rollout` (Argo Rollouts, Lab 14) or `statefulSet` (Lab 15; `-f values-statefulset.yaml`)
 - **Image**: `.Values.image.repository` / `.Values.image.tag`
 - **Replicas**: `.Values.replicaCount`
 - **Resources**: `.Values.resources`
@@ -79,7 +82,7 @@ Evidence:
 ```bash
 helm list
 helm get values devops-dev
-kubectl get deploy,svc,pods
+kubectl get rollout,sts,svc,pods
 ```
 
 ---

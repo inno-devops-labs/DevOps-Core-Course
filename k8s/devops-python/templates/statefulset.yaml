@@ -1,13 +1,16 @@
-{{- if eq .Values.workload.kind "rollout" }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+{{- if eq .Values.workload.kind "statefulSet" }}
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "devops-python.fullname" . }}
   labels:
     {{- include "devops-python.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "devops-python.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
-  revisionHistoryLimit: 5
+  podManagementPolicy: {{ .Values.statefulSet.podManagementPolicy }}
+  updateStrategy:
+    {{- toYaml .Values.statefulSet.updateStrategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "devops-python.selectorLabels" . | nindent 6 }}
@@ -45,10 +48,9 @@ spec:
           configMap:
             name: {{ include "devops-python.fullname" . }}-file
         {{- end }}
-        {{- if .Values.persistence.enabled }}
+        {{- if not .Values.persistence.enabled }}
         - name: visits-data
-          persistentVolumeClaim:
-            claimName: {{ include "devops-python.fullname" . }}-data
+          emptyDir: {}
         {{- end }}
         - name: tmp
           emptyDir: {}
@@ -80,10 +82,8 @@ spec:
               mountPath: /config
               readOnly: true
             {{- end }}
-            {{- if .Values.persistence.enabled }}
             - name: visits-data
               mountPath: /data
-            {{- end }}
             - name: tmp
               mountPath: /tmp
           resources:
@@ -120,32 +120,20 @@ spec:
           {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext.container | nindent 12 }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "devops-python.fullname" . }}
-      previewService: {{ include "devops-python.fullname" . }}-preview
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
-      previewReplicaCount: {{ .Values.rollout.blueGreen.previewReplicaCount }}
-    {{- else }}
-    canary:
-      maxSurge: {{ .Values.rollout.canary.maxSurge | quote }}
-      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable | quote }}
-      steps:
-        - setWeight: 20
-        {{- if .Values.rollout.analysis.enabled }}
-        - analysis:
-            templates:
-              - templateName: {{ include "devops-python.analysisTemplateName" . }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: visits-data
+        labels:
+          {{- include "devops-python.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
         {{- end }}
-        - pause: {}
-        - setWeight: 40
-        - pause: { duration: 30s }
-        - setWeight: 60
-        - pause: { duration: 30s }
-        - setWeight: 80
-        - pause: { duration: 30s }
-        - setWeight: 100
-    {{- end }}
+  {{- end }}
 {{- end }}

@@ -1,0 +1,19 @@
+{{- if and .Values.service.enabled (eq .Values.workload.kind "statefulSet") }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-python.fullname" . }}-headless
+  labels:
+    {{- include "devops-python.labels" . | nindent 4 }}
+    app.kubernetes.io/component: headless
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    {{- include "devops-python.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+{{- end }}

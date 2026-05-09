@@ -1,0 +1,8 @@
+# Lab 15 bonus — OnDelete: pods adopt new spec only after manual pod delete
+# Install: helm upgrade --install ... -f k8s/devops-python/values-statefulset.yaml -f k8s/devops-python/values-statefulset-ondelete.yaml
+workload:
+  kind: statefulSet
+
+statefulSet:
+  updateStrategy:
+    type: OnDelete

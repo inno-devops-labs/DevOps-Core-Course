@@ -2,6 +2,18 @@
 
 replicaCount: 3
 
+# Lab 14 default: Argo Rollout. Lab 15: set workload.kind: statefulSet (see values-statefulset.yaml).
+workload:
+  kind: rollout
+
+# Lab 15 — StatefulSet pod management and update strategy (partition / OnDelete bonus)
+statefulSet:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
 image:
   repository: jambulancia/devops-info-service
   tag: latest

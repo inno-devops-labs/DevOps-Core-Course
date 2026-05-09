@@ -1,0 +1,7 @@
+# Lab 15 — StatefulSet with per-pod PVC + headless Service for stable DNS
+workload:
+  kind: statefulSet
+
+replicaCount: 3
+
+# Per-pod claims use persistence.size / storageClass from base values.yaml

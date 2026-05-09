@@ -1,4 +1,4 @@
-{{- if and .Values.service.enabled (eq .Values.rollout.strategy "blueGreen") }}
+{{- if and .Values.service.enabled (eq .Values.workload.kind "rollout") (eq .Values.rollout.strategy "blueGreen") }}
 apiVersion: v1
 kind: Service
 metadata:

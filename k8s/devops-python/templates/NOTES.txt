@@ -14,10 +14,16 @@ Generic (port-forward):
   kubectl get svc {{ include "devops-python.fullname" . }} -o wide
 {{- end }}
 
-2) This chart renders an Argo **Rollout** (Lab 14), not a Deployment. Install the controller: ./k8s/rollouts/install-argo-rollouts.sh
+2) Workload: {{ .Values.workload.kind }} (set workload.kind: statefulSet for Lab 15 — see values-statefulset.yaml + k8s/STATEFULSET.md).
+{{- if eq .Values.workload.kind "rollout" }}
+   Argo Rollouts: ./k8s/rollouts/install-argo-rollouts.sh
   kubectl argo rollouts get rollout {{ include "devops-python.fullname" . }} -n {{ .Release.Namespace }} -w
   kubectl argo rollouts promote {{ include "devops-python.fullname" . }} -n {{ .Release.Namespace }}
-  Blue-green preview Service (if strategy=blueGreen): {{ include "devops-python.fullname" . }}-preview
+  Blue-green preview (if strategy=blueGreen): {{ include "devops-python.fullname" . }}-preview
+{{- else }}
+   Headless Service (per-pod DNS): {{ include "devops-python.fullname" . }}-headless
+  kubectl get pods,pvc -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- end }}
 
 3) Useful Helm commands:
   helm get manifest {{ .Release.Name }}
