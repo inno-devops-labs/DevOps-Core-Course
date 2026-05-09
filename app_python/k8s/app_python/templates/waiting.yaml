@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-service-pod
+  namespace: default
+spec:
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - until wget -qO- http://myservice.default.svc.cluster.local; do echo waiting for service; sleep 2; done
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - echo Service found! && sleep 3600
