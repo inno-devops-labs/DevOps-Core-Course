@@ -84,6 +84,17 @@ def test_visits_counter_persists_in_file(client):
     assert visits_response.get_json()["count"] == 2
 
 
+def test_metrics_endpoint_exposes_prometheus_metrics(client):
+    client.get("/")
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "devops_info_http_requests_total" in body
+    assert "devops_info_visits_total" in body
+    assert "devops_info_uptime_seconds" in body
+
+
 def test_not_found_returns_404_json(client):
     response = client.get("/missing")
 

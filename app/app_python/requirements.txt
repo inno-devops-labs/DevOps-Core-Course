@@ -4,3 +4,5 @@ Flask==3.1.0
 flask-swagger-ui==4.11.1
 # Env support
 python-dotenv==1.0.1
+# Prometheus metrics
+prometheus-client==0.21.1

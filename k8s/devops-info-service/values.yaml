@@ -16,8 +16,29 @@ service:
   targetPort: 5000
   nodePort: null
 
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  labels:
+    release: monitoring
+  path: /metrics
+
 podAnnotations: {}
 podLabels: {}
+
+initContainers:
+  download:
+    enabled: false
+    image: busybox:1.36
+    url: "https://example.com"
+    outputFile: "index.html"
+    mountPath: "/init-data"
+  waitForService:
+    enabled: false
+    image: busybox:1.36
+    serviceName: ""
+    intervalSeconds: 2
 
 app:
   environment: "dev"

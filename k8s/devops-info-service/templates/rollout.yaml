@@ -74,6 +74,28 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
+      {{- if or .Values.initContainers.download.enabled .Values.initContainers.waitForService.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image | quote }}
+          command:
+            - sh
+            - -c
+            - until nslookup {{ default (include "devops-info-service.fullname" .) .Values.initContainers.waitForService.serviceName }}; do echo "waiting for service"; sleep {{ .Values.initContainers.waitForService.intervalSeconds }}; done
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image | quote }}
+          command:
+            - sh
+            - -c
+            - wget -O {{ .Values.initContainers.download.mountPath }}/{{ .Values.initContainers.download.outputFile }} {{ .Values.initContainers.download.url | quote }} && ls -l {{ .Values.initContainers.download.mountPath }}
+          volumeMounts:
+            - name: init-data
+              mountPath: {{ .Values.initContainers.download.mountPath | quote }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ include "devops-info-service.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -99,6 +121,10 @@ spec:
             - name: data-volume
               mountPath: {{ .Values.persistence.mountPath | quote }}
             {{- end }}
+            {{- if .Values.initContainers.download.enabled }}
+            - name: init-data
+              mountPath: {{ .Values.initContainers.download.mountPath | quote }}
+            {{- end }}
           resources:
 {{ toYaml .Values.resources | nindent 12 }}
           {{- if .Values.livenessProbe.enabled }}
@@ -117,5 +143,9 @@ spec:
         - name: data-volume
           persistentVolumeClaim:
             claimName: {{ include "devops-info-service.pvcName" . }}
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-data
+          emptyDir: {}
         {{- end }}
 {{- end }}

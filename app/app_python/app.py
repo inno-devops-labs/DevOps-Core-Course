@@ -14,6 +14,7 @@ from typing import Any
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_swagger_ui import get_swaggerui_blueprint
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, generate_latest
 
 app = Flask(__name__)
 
@@ -28,6 +29,19 @@ DEFAULT_VISITS_FILE_PATH = os.getenv('VISITS_FILE_PATH', os.path.join('data', 'v
 # start time
 START_TIME = datetime.now(timezone.utc)
 VISITS_LOCK = Lock()
+REQUEST_COUNT = Counter(
+    'devops_info_http_requests_total',
+    'Total HTTP requests handled by the DevOps Info Service.',
+    ['method', 'endpoint', 'status'],
+)
+VISITS_GAUGE = Gauge(
+    'devops_info_visits_total',
+    'Current persisted visit counter value.',
+)
+UPTIME_GAUGE = Gauge(
+    'devops_info_uptime_seconds',
+    'Application uptime in seconds.',
+)
 
 # Logging
 logging.basicConfig(
@@ -212,7 +226,8 @@ def get_endpoints() -> list[dict]:
     return [
         {'path': '/', 'method': 'GET', 'description': 'Service information'},
         {'path': '/health', 'method': 'GET', 'description': 'Health check'},
-        {'path': '/visits', 'method': 'GET', 'description': 'Current visits count'}
+        {'path': '/visits', 'method': 'GET', 'description': 'Current visits count'},
+        {'path': '/metrics', 'method': 'GET', 'description': 'Prometheus metrics'}
     ]
 
 #API
@@ -253,16 +268,33 @@ OPENAPI_SPEC = {
                     }
                 }
             }
+        },
+        '/metrics': {
+            'get': {
+                'summary': 'Prometheus metrics',
+                'responses': {
+                    '200': {
+                        'description': 'Prometheus exposition format metrics'
+                    }
+                }
+            }
         }
     }
 }
 
-initialize_visit_counter()
-
-
 @app.before_request
 def log_request() -> None:
     logger.debug('Request: %s %s', request.method, request.path)
+
+
+@app.after_request
+def record_request_metrics(response):
+    REQUEST_COUNT.labels(
+        method=request.method,
+        endpoint=request.endpoint or 'unknown',
+        status=str(response.status_code),
+    ).inc()
+    return response
 
 
 @app.route('/')
@@ -307,6 +339,13 @@ def visits():
         'count': get_visit_count(),
         'storage_path': str(get_visits_file_path())
     })
+
+
+@app.route('/metrics')
+def metrics():
+    UPTIME_GAUGE.set(get_uptime()['seconds'])
+    VISITS_GAUGE.set(get_visit_count())
+    return app.response_class(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 @app.route('/swagger.json')
