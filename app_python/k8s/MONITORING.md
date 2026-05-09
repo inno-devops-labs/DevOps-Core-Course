@@ -54,7 +54,43 @@ service/prometheus-operated                       ClusterIP   None             <
 
 ## Dashboard Answers
 
-### All 6 questions with screenshots
+### Pod Resources: CPU/memory usage of your StatefulSet
+
+Due to the pods and the app itself being very lightweight, CPU and memory usage never went higher than initially allocated resources (100m CPU and 128Mi memory). Even under high load (I used multiple loops with curl), the initial resources were enough.
+
+Example for pod 2:
+
+![](./../docs/screenshots/lab16-shots/pod%20cpu,%20memory.png)
+
+### Namespace Analysis: Which pods use most/least CPU in default namespace?
+
+I decided to use Prometheus for evidence, since the resource usage was really low, and didn't show up properly in Grafana.
+
+curl I used (the first count is much bigger since I previously tested only with pod 2)
+
+![](./../docs/screenshots/lab16-shots/curl.png)
+
+usage
+
+![](./../docs/screenshots/lab16-shots/namespace%20usage.png)
+
+As we can see, all statefulset pods used roughly the same amount of CPU and memory resources. This is anticipated, because load balancing is used for routing traffic to different pods. 
+
+### Node Metrics: Memory usage (% and MB), CPU cores
+
+![](./../docs/screenshots/lab16-shots/node%20cpu%20memory.png)
+
+### Kubelet: How many pods/containers managed?
+
+![](./../docs/screenshots/lab16-shots/pods%20managed.png)
+
+### Network: Traffic for pods in default namespace
+
+![](./../docs/screenshots/lab16-shots/network.png)
+
+### Alerts: How many active alerts? Check Alertmanager UI
+
+![](./../docs/screenshots/lab16-shots/alert.png)
 
 ## Init Containers
 
