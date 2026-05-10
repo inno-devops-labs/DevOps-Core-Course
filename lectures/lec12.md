@@ -93,18 +93,23 @@ By the end of this lecture, you will:
 
 ```mermaid
 flowchart TD
-  subgraph 😰 Hardcoded
-    A[app-dev.jar] --> D1[Dev DB]
-    B[app-staging.jar] --> D2[Staging DB]
-    C[app-prod.jar] --> D3[Prod DB]
+  subgraph "😰 Hardcoded"
+    A[app-dev.jar]
+    B[app-staging.jar]
+    C[app-prod.jar]
   end
-
-  subgraph 🚀 Externalized
+  subgraph "🚀 Externalized"
     E[app.jar] --> F{Config}
-    F --> D1
-    F --> D2
-    F --> D3
   end
+  D1[Dev DB]
+  D2[Staging DB]
+  D3[Prod DB]
+  F --> D1
+  F --> D2
+  F --> D3
+  A --> D1
+  B --> D2
+  C --> D3
 ```
 
 * 😰 **Hardcoded:** Different artifact per environment
@@ -155,7 +160,7 @@ COPY . /app
 **Stateless containers + persistent data = 💥**
 
 ```mermaid
-flowchart LR
+flowchart TD
   A[📦 Container v1] --> B[💾 /app/uploads]
   B --> C[🔄 Deployment]
   C --> D[📦 Container v2]
@@ -331,7 +336,7 @@ Your application:
 **Situation:** Developer accidentally deploys with staging database URL to production
 
 ```mermaid
-flowchart LR
+flowchart TD
   A[👨‍💻 Dev pushes] --> B[🔄 CI/CD]
   B --> C[📦 Deploy to Prod]
   C --> D[🔗 Connects to Staging DB]
