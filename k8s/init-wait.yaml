@@ -1,0 +1,85 @@
+# Task 3.2 — Init container: wait-for-service pattern
+#
+# Three resources are created:
+#   1. backend-service  — ClusterIP Service that selects the backend pod
+#   2. backend          — Simple nginx pod that the service routes to
+#   3. init-wait        — Pod whose init container loops until backend-service
+#                         resolves in DNS, then lets the main container start
+#
+# Apply:   kubectl apply -f k8s/init-wait.yaml
+# Watch:   kubectl get pods -w
+# Logs:    kubectl logs init-wait -c wait-for-service
+# Verify:  kubectl get pod init-wait   # should reach Running after backend is up
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  labels:
+    app: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  containers:
+    - name: backend
+      image: nginx:1.27-alpine
+      ports:
+        - containerPort: 80
+          name: http
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-wait
+  labels:
+    app: init-wait
+spec:
+  restartPolicy: Never
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for backend-service to be resolvable ..."
+          until nslookup backend-service; do
+            echo "backend-service not yet available, retrying in 2s ..."
+            sleep 2
+          done
+          echo "backend-service is ready. Starting main container."
+  containers:
+    - name: main-app
+      image: nginx:1.27-alpine
+      ports:
+        - containerPort: 80
+          name: http
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi

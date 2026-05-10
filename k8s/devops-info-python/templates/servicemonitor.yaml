@@ -1,0 +1,20 @@
+{{- if .Values.serviceMonitor.enabled }}
+# Bonus — ServiceMonitor for Prometheus to scrape /metrics from the app.
+# Requires kube-prometheus-stack installed in the monitoring namespace.
+# The label release: monitoring must match the Prometheus operator's selector.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    release: monitoring
+    {{- include "common.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "common.name" . }}
+  endpoints:
+    - port: http
+      path: {{ .Values.serviceMonitor.path }}
+      interval: {{ .Values.serviceMonitor.interval }}
+{{- end }}

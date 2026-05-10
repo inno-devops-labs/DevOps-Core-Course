@@ -139,3 +139,9 @@ rollout:
     interval: 10s
     count: 3
     failureLimit: 1
+
+# Bonus — Prometheus ServiceMonitor for scraping /metrics
+serviceMonitor:
+  enabled: false
+  path: /metrics
+  interval: 30s
