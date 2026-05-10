@@ -1,0 +1,13 @@
+# Nix build outputs — point into /nix/store, not for git tracking
+result
+result-*
+
+# Python venv junk from the pip-comparison experiment in §1.6
+.venv*
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# direnv state (if anyone uses `nix-direnv`)
+.direnv/
