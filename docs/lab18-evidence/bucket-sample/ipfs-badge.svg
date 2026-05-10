@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="120" viewBox="0 0 420 120" role="img" aria-labelledby="title desc">
+  <title id="title">IPFS Lab 18 Badge</title>
+  <desc id="desc">A simple badge used as Lab 18 IPFS upload evidence.</desc>
+  <rect width="420" height="120" rx="8" fill="#0a0a0f"/>
+  <rect x="16" y="16" width="388" height="88" rx="8" fill="#12121a" stroke="#2d2d3a"/>
+  <circle cx="64" cy="60" r="28" fill="#06b6d4"/>
+  <path d="M64 34 87 47v26L64 86 41 73V47z" fill="none" stroke="#f8fafc" stroke-width="4"/>
+  <path d="M41 47 64 60l23-13M64 60v26" fill="none" stroke="#f8fafc" stroke-width="4"/>
+  <text x="112" y="54" fill="#f8fafc" font-family="Arial, sans-serif" font-size="24" font-weight="700">Deployed on IPFS</text>
+  <text x="112" y="82" fill="#94a3b8" font-family="Arial, sans-serif" font-size="16">DevOps Core Course - Lab 18</text>
+</svg>

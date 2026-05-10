@@ -1,0 +1,127 @@
+Lab 18 local IPFS evidence
+Date: 2026-05-10
+Host timezone: Europe/Moscow
+
+Docker/Kubo setup
+-----------------
+
+Command:
+  docker run -d --name ipfs-lab18 -p 4001:4001 -p 8080:8080 -p 5001:5001 -v /home/egrapa/prog/DevOps-Core-Course/docs/lab18-evidence:/lab18:ro ipfs/kubo:latest
+
+Image pulled:
+  ipfs/kubo@sha256:0661819c2e0972f02d2c27759c217d7d739d461e52fc685e79113254af8f2f6b
+
+Container:
+  ipfs-lab18
+
+Command:
+  docker exec ipfs-lab18 ipfs version
+
+Output:
+  ipfs version 0.41.0
+
+Command:
+  docker ps --filter name=ipfs-lab18 --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'
+
+Output:
+  ipfs-lab18	Up (healthy)	0.0.0.0:4001->4001/tcp, 0.0.0.0:5001->5001/tcp, 0.0.0.0:8080->8080/tcp
+
+Command:
+  curl -sS -I http://127.0.0.1:5001/webui | head
+
+Output:
+  HTTP/1.1 307 Temporary Redirect
+  Location: /webui/
+
+Single file add/retrieve
+------------------------
+
+Command:
+  docker exec ipfs-lab18 ipfs add -Q /lab18/hello-ipfs.txt
+
+CID:
+  QmdHmdWf87goRYyrvXELqkPgbv8MZ6P7Uqq31fDuhmrUB5
+
+Command:
+  curl -sS http://127.0.0.1:8080/ipfs/QmdHmdWf87goRYyrvXELqkPgbv8MZ6P7Uqq31fDuhmrUB5
+
+Output:
+  Hello IPFS from the DevOps Core Course.
+
+  This file was added to a local Kubo/IPFS node for Lab 18 evidence.
+
+Public gateway checks:
+  https://dweb.link/ipfs/QmdHmdWf87goRYyrvXELqkPgbv8MZ6P7Uqq31fDuhmrUB5 - returned the file
+  https://ipfs.io/ipfs/QmdHmdWf87goRYyrvXELqkPgbv8MZ6P7Uqq31fDuhmrUB5 - returned the file
+  https://ipfs.4everland.io/ipfs/QmdHmdWf87goRYyrvXELqkPgbv8MZ6P7Uqq31fDuhmrUB5 - timed out without a 4EVERLAND-side pin/deploy
+
+Static site directory
+---------------------
+
+Command:
+  docker cp labs/lab18 ipfs-lab18:/tmp/lab18-site
+  docker exec ipfs-lab18 ipfs add -r -Q /tmp/lab18-site
+
+CID:
+  QmSAT1vb9LsfKiSGoptLgiTsjrzjnVfSb3GWpSbsiQNqNe
+
+Local gateway:
+  http://127.0.0.1:8080/ipfs/QmSAT1vb9LsfKiSGoptLgiTsjrzjnVfSb3GWpSbsiQNqNe/
+
+Verification command:
+  curl -sS -L http://127.0.0.1:8080/ipfs/QmSAT1vb9LsfKiSGoptLgiTsjrzjnVfSb3GWpSbsiQNqNe/ | rg -n '<title>|IPFS via 4EVERLAND|DevOps Core Course'
+
+Output excerpt:
+  <title>DevOps Core Course | Production-Grade Practices</title>
+  <strong>IPFS via 4EVERLAND</strong>
+
+Content update / new CID
+------------------------
+
+Command:
+  docker exec ipfs-lab18 sh -c 'cp -a /tmp/lab18-site /tmp/lab18-site-v2 && printf "Lab 18 redeploy marker: 2026-05-10T17:40:00+03:00\n" > /tmp/lab18-site-v2/deployment-version.txt && ipfs add -r -Q /tmp/lab18-site-v2'
+
+Updated CID:
+  QmdK78QRMu3C23kGqz3gmYcPvG8YkDh753Y3wGCPUnq9C2
+
+Observation:
+  Adding one file changed the directory CID from QmSAT1vb9LsfKiSGoptLgiTsjrzjnVfSb3GWpSbsiQNqNe to QmdK78QRMu3C23kGqz3gmYcPvG8YkDh753Y3wGCPUnq9C2. This demonstrates IPFS immutability: changed content produces a new content address.
+
+Bucket-style folder upload
+--------------------------
+
+Command:
+  docker exec ipfs-lab18 ipfs add -r -Q /lab18/bucket-sample
+
+Directory CID:
+  QmZ56vE89Uw1bZ5Hj2Y1qFHXzuN7uep5HcjbMXgDPtHNU1
+
+Files:
+  README.md
+  metadata.json
+  ipfs-badge.svg
+
+Local gateway examples:
+  http://127.0.0.1:8080/ipfs/QmZ56vE89Uw1bZ5Hj2Y1qFHXzuN7uep5HcjbMXgDPtHNU1/metadata.json
+  http://127.0.0.1:8080/ipfs/QmZ56vE89Uw1bZ5Hj2Y1qFHXzuN7uep5HcjbMXgDPtHNU1/ipfs-badge.svg
+
+Pinning evidence
+----------------
+
+Command:
+  docker exec ipfs-lab18 ipfs pin ls --type=recursive | sort
+
+Output:
+  QmSAT1vb9LsfKiSGoptLgiTsjrzjnVfSb3GWpSbsiQNqNe recursive
+  QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn recursive
+  QmZ56vE89Uw1bZ5Hj2Y1qFHXzuN7uep5HcjbMXgDPtHNU1 recursive
+  QmdHmdWf87goRYyrvXELqkPgbv8MZ6P7Uqq31fDuhmrUB5 recursive
+  QmdK78QRMu3C23kGqz3gmYcPvG8YkDh753Y3wGCPUnq9C2 recursive
+
+Screenshots captured
+--------------------
+
+  docs/lab18-evidence/ipfs-webui.png
+  docs/lab18-evidence/local-ipfs-site.png
+  docs/lab18-evidence/local-ipfs-bucket-file.png
+

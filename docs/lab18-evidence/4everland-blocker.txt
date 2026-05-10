@@ -1,0 +1,37 @@
+Lab 18 4EVERLAND external action note
+Date: 2026-05-10
+
+The local IPFS portion was completed with Docker/Kubo, but the 4EVERLAND cloud deployment could not be completed from this environment because:
+
+1. No 4EVERLAND account session, dashboard token, API key, or 4EVER Pin access token is available locally.
+2. The official 4EVERLAND Hosting CLI is not installed.
+3. Node.js/npm are not installed, so the official CLI install command cannot be run here without installing software first.
+
+Official CLI install command, if using the CLI path:
+  npm install -g @4everland/hosting-cli
+
+Official CLI auth/deploy commands:
+  4ever-hosting login
+  cd labs/lab18
+  4ever-hosting deploy -ipfs
+
+Dashboard path that requires no local install:
+  1. Open 4EVERLAND Dashboard -> Hosting -> New Project.
+  2. Import git@github.com:egraPA006/DevOps-Core-Course.git.
+  3. Select the current branch.
+  4. Framework preset: Other/None.
+  5. Build command: empty.
+  6. Output directory: labs/lab18.
+  7. Platform: IPFS.
+  8. Deploy.
+  9. Copy the assigned 4EVERLAND URL and IPFS CID into 4EVERLAND.md.
+
+Alternative dashboard path:
+  Create a deployment from existing IPFS hash QmSAT1vb9LsfKiSGoptLgiTsjrzjnVfSb3GWpSbsiQNqNe, then copy the assigned 4EVERLAND URL and CID into 4EVERLAND.md.
+
+Bucket/pinning completion in 4EVERLAND:
+  1. Dashboard -> Bucket -> Create bucket.
+  2. Upload docs/lab18-evidence/bucket-sample.
+  3. Copy the file/directory CIDs into 4EVERLAND.md.
+  4. Confirm access through 4EVERLAND gateway, ipfs.io, and dweb.link.
+

@@ -1,0 +1,3 @@
+Hello IPFS from the DevOps Core Course.
+
+This file was added to a local Kubo/IPFS node for Lab 18 evidence.
