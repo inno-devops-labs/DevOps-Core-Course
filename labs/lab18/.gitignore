@@ -1,0 +1,5 @@
+result
+result-*
+*.tar.gz
+.direnv
+__pycache__
