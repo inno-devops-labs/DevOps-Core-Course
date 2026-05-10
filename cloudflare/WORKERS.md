@@ -9,10 +9,15 @@
 ### Main routes
 
 / for general app info
+
 /health for health status
+
 /edge for cloudflare edge metadata
+
 /counter for a persistent KV-based request counter, which shows the number of visits for / route
+
 /admin-check is for checking if the requester is an admin, it uses secrets API_TOKEN and ADMIN_EMAIL, and the requester should provide valid token and email in the request headers
+
 and also there is "Not Found" response for non-existent route
 
 ### Configuration used
@@ -168,27 +173,43 @@ Current Version ID: 4844c942-5e05-4199-999f-b54af219ed99
 
 | Aspect | Kubernetes | Cloudflare Workers |
 |--------|------------|--------------------|
-| Setup complexity | blalallallla | blaldlalsdklas |
-| Deployment speed | | |
-| Global distribution | | |
-| Cost (for small apps) | | |
-| State/persistence model | | |
-| Control/flexibility | | |
-| Best use case | | |
+| Setup complexity | really high, you should create cluster setup, manifests, networking, monitoring, and scaling configuration yourself | much simpler, just write code and deploy with minimal config |
+| Deployment speed | slower, containers must build and start | very fast, seconds are enough |
+| Global distribution | usually requires manual configuration | automatic global edge distribution |
+| Cost (for small apps) | can become expensive due to always-running release | cheaper for lightweight APIs and low traffic apps |
+| State/persistence model | persistent volumes, databases, StatefulSets | stateless by default, persistence through KV |
+| Control/flexibility | very high control over runtime, networking, and storage | less low-level control, but much simpler to use |
+| Best use case | complex and heavy programs, projects that require customisation | edge APIs, lightweight services, and globally distributed low-latency apps |
 
 ## When to Use Each
 
 ### Scenarios favoring Kubernetes
 
+- complex applications with multiple services
+- custom configuration
+- long-running work processes
+
 ### Scenarios favoring Workers
 
+- lightweight APIs
+- edge services
+- globally distributed applications with low latency requirements
+
 ### Your recommendation
+
+I would use k8s and VMs for big projects that require heavy customisation, and Cloudflare Workers for lightweight apps that will benefit immensely from locating close to the users.
 
 ## Reflection
 
 ### What felt easier than Kubernetes?
 
+- to be honest, everything felt easier
+
 ### What felt more constrained?
 
+- no control over networking, no customisation, no manual resource distribution and controllable scaling.
+
 ### What changed because Workers is not a Docker host?
+
+- as opposed to docker, Workers provide serverless architecture, and Workers runtime model is forced. moreover, I didn't have to keep process running locally, like with docker containers, it was nice.
 
