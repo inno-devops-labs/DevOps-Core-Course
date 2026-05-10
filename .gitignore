@@ -17,3 +17,8 @@ ansible/inventory/*.pyc
 pw.b64
 .pytest-tmp/
 **/.wrangler/
+venv*/
+result
+*.txt.bak
+__pycache__/
+*.pyc
