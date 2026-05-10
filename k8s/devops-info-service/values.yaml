@@ -18,6 +18,14 @@ service:
   nodePort: 30080
   annotations: {}
 
+serviceMonitor:
+  enabled: false
+  labels:
+    release: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+  path: /metrics
+
 strategy:
   type: RollingUpdate
   rollingUpdate:
