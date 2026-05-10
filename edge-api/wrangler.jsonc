@@ -1,0 +1,39 @@
+/**
+ * Wrangler config for the edge-api Worker (Lab 17).
+ * Reference: https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "edge-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-05-10",
+	"compatibility_flags": ["nodejs_compat"],
+	"upload_source_maps": true,
+
+	// Workers Logs (Task 5 — observability) — keeps the last 24h of console.log()
+	// output queryable from the dashboard and via `wrangler tail`.
+	"observability": {
+		"enabled": true
+	},
+
+	// Plaintext variables (Task 4). Visible in the Cloudflare dashboard and bundled
+	// with the deploy — never put credentials here, use secrets instead.
+	"vars": {
+		"APP_NAME": "edge-api",
+		"COURSE_NAME": "devops-core"
+	},
+
+	// Workers KV namespace (Task 4). Replace `<TBD>` with the id returned by:
+	//   npx wrangler kv namespace create SETTINGS
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "d8acf08371ae47c0b0c848b0a0bbf0e2"
+		}
+	]
+
+	// Secrets (Task 4) are NOT declared here — set them at deploy time:
+	//   npx wrangler secret put API_TOKEN
+	//   npx wrangler secret put ADMIN_EMAIL
+	// Bound to env.API_TOKEN and env.ADMIN_EMAIL inside the Worker.
+}
