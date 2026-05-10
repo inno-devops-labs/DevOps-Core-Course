@@ -47,8 +47,6 @@ cloudflare workers are automatically executed on cloudflare edge locations aroun
 
 - custom domains allow exposing the worker directly through an owned custom domain, not through a provided workers.dev
 
-### Example log or metrics screenshot
-
 ## Configuration, Secrets & Persistence
 
 ### Explain why plaintext vars are not suitable for secrets
@@ -86,6 +84,85 @@ I stored the number of visits of the / endpoint. Each time / is visited, the cou
 The persistance verification:
 
 ![](./../app_python/docs/screenshots/lab17-shots/persistance.png)
+
+## Observability & Operations
+
+### Example log or metrics screenshot
+
+Logs
+
+![](./../app_python/docs/screenshots/lab17-shots/logs.png)
+
+Metrics
+
+![](./../app_python/docs/screenshots/lab17-shots/metrics.png)
+
+I looked at errors, requests, and request duration metrics for all deployed versions for the last 24 hours.
+
+requests: total of 192. this metrics shows how many http requests hit the Worker through all endpoints.
+
+errors: 0 errors. it can be confusing since I intentially hit invalid endpoint such as https://edge-api.v-levasheva.workers.dev/smth a lot of times to get error: "Not Found", but the case was that the Worker does not count 404 responses as errors, the real errors that are considered are runtime failures, which I did not have.
+
+request duration: 3.15 ms on average. this metric shows the latency - how much it takes to process a request and send back a response.
+
+### Multiple Deployments
+
+* I created about 10 deployments but put here last 2 for readability
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air edge-api % npx wrangler deployments list
+
+ ⛅️ wrangler 4.90.0
+Created:     2026-05-10T16:57:52.287Z
+Author:      v.levasheva@innopolis.university
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 4844c942-5e05-4199-999f-b54af219ed99
+                 Created:  2026-05-10T16:48:11.805Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-05-10T17:01:05.875Z
+Author:      v.levasheva@innopolis.university
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 9f0c5465-b3c2-462d-b199-bb1a6dc23d9f
+                 Created:  2026-05-10T17:01:03.267Z
+                     Tag:  -
+                 Message:  -
+```
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air edge-api % npx wrangler rollback
+
+ ⛅️ wrangler 4.90.0
+───────────────────
+├ Your current deployment has 1 version(s):
+│
+│ (100%) 9f0c5465-b3c2-462d-b199-bb1a6dc23d9f
+│       Created:  2026-05-10T17:01:03.267267Z
+│           Tag:  -
+│       Message:  -
+│
+✔ Please provide an optional message for this rollback (120 characters max) … test rollback
+│
+├  WARNING  You are about to rollback to Worker Version 4844c942-5e05-4199-999f-b54af219ed99.
+│ This will immediately replace the current deployment and become the active deployment across all your deployed triggers.
+│ However, your local development environment will not be affected by this rollback.
+│ Rolling back to a previous deployment will not rollback any of the bound resources (Durable Object, D1, R2, KV, etc).
+│
+│ (100%) 4844c942-5e05-4199-999f-b54af219ed99
+│       Created:  2026-05-10T16:48:11.805042Z
+│           Tag:  -
+│       Message:  -
+│
+✔ Are you sure you want to deploy this Worker Version to 100% of traffic? … yes
+Performing rollback...
+│
+╰  SUCCESS  Worker Version 4844c942-5e05-4199-999f-b54af219ed99 has been deployed to 100% of traffic.
+
+Current Version ID: 4844c942-5e05-4199-999f-b54af219ed99
+```
 
 ## Kubernetes vs Cloudflare Workers Comparison
 

@@ -12,92 +12,118 @@
  */
 
 export interface Env {
-  COURSE_NAME: string;
-  APP_NAME: string;
-  COUNTER_KV: KVNamespace;
-  API_TOKEN: string;
-  ADMIN_EMAIL: string;
+	COURSE_NAME: string;
+	APP_NAME: string;
+	COUNTER_KV: KVNamespace;
+	API_TOKEN: string;
+	ADMIN_EMAIL: string;
 }
 
 function jsonResponse(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data, null, 2), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+	return new Response(JSON.stringify(data, null, 2), {
+		status,
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
+	async fetch(request: Request, env: Env): Promise<Response> {
+		const url = new URL(request.url);
 
-    if (url.pathname === "/") {
-	  const current = await env.COUNTER_KV.get("visits");
-      let count = current ? parseInt(current) : 0;
-      count += 1;
-      await env.COUNTER_KV.put("visits", count.toString());
+		if (url.pathname === "/") {
+			const current = await env.COUNTER_KV.get("visits");
+			let count = current ? parseInt(current) : 0;
+			count += 1;
+			await env.COUNTER_KV.put("visits", count.toString());
 
-      return jsonResponse({
-        app: env.APP_NAME,
-		course: env.COURSE_NAME,
-        message: "Hello friend!",
-        framework: "Cloudflare Workers",
-        timestamp: new Date().toISOString(),
-		visits: count
-      });
-    }
+			console.log("request", {
+				path: url.pathname,
+				method: request.method,
+				colo: request.cf?.colo,
+			});
 
-    if (url.pathname === "/health") {
-      return jsonResponse({
-        status: "healthy",
-        timestamp: new Date().toISOString(),
-      });
-    }
+			return jsonResponse({
+				app: env.APP_NAME,
+				course: env.COURSE_NAME,
+				message: "Hello friend!",
+				framework: "Cloudflare Workers",
+				timestamp: new Date().toISOString(),
+				visits: count
+			});
+		}
 
-	if (url.pathname === "/admin-check") {
-		const token = request.headers.get("token");
-		const email = request.headers.get("email");
+		if (url.pathname === "/health") {
+			console.log("request", {
+				path: url.pathname,
+				method: request.method,
+				colo: request.cf?.colo,
+			});
+			return jsonResponse({
+				status: "healthy",
+				timestamp: new Date().toISOString(),
+			});
+		}
 
-		const valid =
-			token === env.API_TOKEN &&
-			email === env.ADMIN_EMAIL;
-		
-		return jsonResponse({
-			valid: valid,
-      	});
-	}
-	
+		if (url.pathname === "/admin-check") {
+			console.log("request", {
+				path: url.pathname,
+				method: request.method,
+				colo: request.cf?.colo,
+			});
+			const token = request.headers.get("token");
+			const email = request.headers.get("email");
 
-    if (url.pathname === "/edge") {
-      return jsonResponse({
-        colo: request.cf?.colo,
-        country: request.cf?.country,
-        city: request.cf?.city,
-		asn: request.cf?.asn,
-		httpProtocol: request.cf?.httpProtocol,
-        tlsVersion: request.cf?.tlsVersion,
-        userAgent: request.headers.get("User-Agent"),
-      });
-    }
+			const valid =
+				token === env.API_TOKEN &&
+				email === env.ADMIN_EMAIL;
 
-    if (url.pathname === "/counter") {
-      const current = await env.COUNTER_KV.get("visits");
-      let count = current ? parseInt(current) : 0;
-      count += 1;
+			return jsonResponse({
+				valid: valid,
+			});
+		}
 
-      return jsonResponse({
-        visits: count,
-      });
-    }
 
-    return jsonResponse(
-      {
-        error: "Not Found",
-      },
-      404
-    );
+		if (url.pathname === "/edge") {
+			console.log("request", {
+				path: url.pathname,
+				method: request.method,
+				colo: request.cf?.colo,
+			});
+			return jsonResponse({
+				colo: request.cf?.colo,
+				country: request.cf?.country,
+				city: request.cf?.city,
+				asn: request.cf?.asn,
+				httpProtocol: request.cf?.httpProtocol,
+				tlsVersion: request.cf?.tlsVersion,
+				userAgent: request.headers.get("User-Agent"),
+			});
+		}
 
-	
-  },
+		if (url.pathname === "/counter") {
+			console.log("request", {
+				path: url.pathname,
+				method: request.method,
+				colo: request.cf?.colo,
+			});
+			const current = await env.COUNTER_KV.get("visits");
+			let count = current ? parseInt(current) : 0;
+			count += 1;
+
+			return jsonResponse({
+				visits: count,
+			});
+		}
+
+		return jsonResponse(
+			{
+				error: "Not Found",
+			},
+			404
+		);
+
+
+	},
 };
