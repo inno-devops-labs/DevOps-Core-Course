@@ -86,12 +86,25 @@ Deployment result:
 
 | Item | Value |
 | --- | --- |
-| 4EVERLAND project URL | `TODO: paste 4EVERLAND URL here` |
-| IPFS gateway URL | `TODO: paste IPFS gateway URL here` |
-| First deployment CID | `TODO: paste first CID here` |
+| 4EVERLAND project URL | `https://devops-core-lab18-ijfvxwtc-linktur.ipfs.4everland.app` |
+| IPFS gateway URL | `https://ipfs.4everland.io/ipfs/bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq` |
+| First deployment CID | `bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq` |
 | Updated deployment CID | `TODO: paste second CID here after a small change` |
 
 The site URL should stay the same after redeploy. The CID should change when the site content changes.
+
+The deployment was successful:
+
+- Status: `Success`
+- Environment: `Production`
+- Duration: `6s`
+- IPFS URI: `ipfs://bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq`
+
+Gateway checks:
+
+- 4EVERLAND: `https://ipfs.4everland.io/ipfs/bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq`
+- dweb.link: `https://dweb.link/ipfs/bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq`
+- ipfs.io: `https://ipfs.io/ipfs/bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq`
 
 ## Task 4 - Bucket and Pinning
 
@@ -110,12 +123,13 @@ QmfEPoXQVtHTj3MK2jX23HW4Q7pJ2q2MD6HCnJEYgWqJSA
 
 | Item | Value |
 | --- | --- |
-| Bucket name | `TODO: paste bucket name here` |
-| Uploaded file CID | `TODO: paste file CID here` |
-| Uploaded folder CID | `TODO: paste folder/root CID here` |
-| 4EVERLAND gateway access | `TODO: paste URL here` |
-| dweb.link gateway access | `TODO: paste URL here` |
-| ipfs.io gateway access | `TODO: paste URL here` |
+| Bucket name | `bucket-sample` |
+| Uploaded `about.html` CID | `bafkreienvgdxqjih2cohzkxf7oco72jfohq5ryupl6f6wwk2hw3vbfbzpe` |
+| Uploaded `readme.txt` CID | `bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
+| Local sample folder CID | `QmfEPoXQVtHTj3MK2jX23HW4Q7pJ2q2MD6HCnJEYgWqJSA` |
+| 4EVERLAND gateway access | `https://ipfs.4everland.io/ipfs/bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
+| dweb.link gateway access | `https://dweb.link/ipfs/bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
+| ipfs.io gateway access | `https://ipfs.io/ipfs/bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
 
 Pinning is important because IPFS content can disappear if no node keeps it. A local node can pin content, but it depends on my machine. 4EVERLAND Bucket pins the content in a managed service, so the content remains available even when my local node is offline.
 
@@ -133,27 +147,25 @@ This is close to traditional hosting from the user's point of view, but the depl
 
 ## Screenshots
 
-Required screenshots to add before final submission:
+Screenshots collected for final submission:
 
 | Screenshot | Save as |
 | --- | --- |
 | Local IPFS Web UI | `k8s/photos/lab18/ipfs-webui.png` |
-| Local IPFS gateway with `hello-ipfs.txt` | `k8s/photos/lab18/local-gateway-file.png` |
-| 4EVERLAND dashboard / project | `k8s/photos/lab18/4everland-dashboard.png` |
-| Deployed static site | `k8s/photos/lab18/deployed-site.png` |
+| Local IPFS gateway with `hello-ipfs.txt` | `k8s/photos/lab18/local-gateway.png` |
+| 4EVERLAND deployment success | `k8s/photos/lab18/4everlans-success.png` |
+| Deployed static site | `k8s/photos/lab18/deployed-app.png` |
 | 4EVERLAND Bucket files | `k8s/photos/lab18/bucket-files.png` |
 | Gateway access from 4EVERLAND or public gateway | `k8s/photos/lab18/gateway-access.png` |
 
-After screenshots are saved, they can be embedded here:
+Evidence:
 
-```markdown
 ![IPFS Web UI](k8s/photos/lab18/ipfs-webui.png)
-![Local Gateway](k8s/photos/lab18/local-gateway-file.png)
-![4EVERLAND Dashboard](k8s/photos/lab18/4everland-dashboard.png)
-![Deployed Site](k8s/photos/lab18/deployed-site.png)
+![Local Gateway](k8s/photos/lab18/local-gateway.png)
+![4EVERLAND Deployment Success](k8s/photos/lab18/4everlans-success.png)
+![Deployed Site](k8s/photos/lab18/deployed-app.png)
 ![Bucket Files](k8s/photos/lab18/bucket-files.png)
 ![Gateway Access](k8s/photos/lab18/gateway-access.png)
-```
 
 ## Centralized vs Decentralized Hosting
 
@@ -183,10 +195,10 @@ For this lab, 4EVERLAND is a practical middle ground. It gives a normal hosting 
 - [x] Local CIDs recorded
 - [x] Local pinning verified
 - [x] Static site prepared for 4EVERLAND
-- [ ] 4EVERLAND account/project screenshot added
-- [ ] Static site deployed via 4EVERLAND
-- [ ] 4EVERLAND deployment URL and CID recorded
-- [ ] Files uploaded to 4EVERLAND Bucket
-- [ ] Bucket CIDs and gateway URLs recorded
-- [ ] Screenshots embedded
+- [x] 4EVERLAND account/project screenshot added
+- [x] Static site deployed via 4EVERLAND
+- [x] 4EVERLAND deployment URL and CID recorded
+- [x] Files uploaded to 4EVERLAND Bucket
+- [x] Bucket CIDs and gateway URLs recorded
+- [x] Screenshots embedded
 - [x] Centralized vs decentralized comparison completed
