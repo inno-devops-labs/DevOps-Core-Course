@@ -16,3 +16,4 @@ ansible/inventory/*.pyc
 .tools/
 pw.b64
 .pytest-tmp/
+**/.wrangler/
