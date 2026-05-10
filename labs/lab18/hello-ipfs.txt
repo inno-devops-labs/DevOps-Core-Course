@@ -1,0 +1,2 @@
+Hello IPFS from DevOps Core Lab 18.
+This file is used to test local content addressing.
