@@ -1,19 +1,21 @@
-# Lab 18 - Decentralized Hosting with IPFS and 4EVERLAND
+# Lab 18 - IPFS and 4EVERLAND
 
 ## Goal
 
-The goal of this lab is to deploy static content to the decentralized web and understand how IPFS content addressing is different from normal web hosting.
+In this lab I deployed a static website to IPFS using 4EVERLAND.
 
-The deployed content is the provided static site:
+I also tested IPFS locally with Docker. The main idea was to see how content addressing works. In IPFS, files are found by their content hash, not only by a server address.
 
-- Local source: `labs/lab18/index.html`
-- Site type: static HTML/CSS
-- Build command: none
-- Output directory for 4EVERLAND: `labs/lab18`
+Deployed site:
+
+- Source file: `labs/lab18/index.html`
+- Type: static HTML/CSS site
+- Build command: empty
+- Output directory: `labs/lab18`
 
 ## Task 1 - Local IPFS Node
 
-I started a local IPFS node with Docker using the Kubo image.
+I started a local IPFS node with Docker and the Kubo image.
 
 ```powershell
 docker run -d --name ipfs-lab18 `
@@ -24,21 +26,21 @@ docker run -d --name ipfs-lab18 `
   ipfs/kubo:latest
 ```
 
-The node was available at:
+Local services:
 
 - Web UI: `http://localhost:5001/webui`
 - Local gateway: `http://localhost:8080`
-- Agent version: `kubo/0.41.0`
+- IPFS agent: `kubo/0.41.0`
 
-I added a test file, a sample folder, and the full Lab 18 static site to IPFS.
+I added files to the local IPFS node.
 
-| Content | CID | Local access |
+| Content | CID | Access |
 | --- | --- | --- |
 | `hello-ipfs.txt` | `QmUhi6bbaPubXRVq3vCxdFZjRPYnGbpZWqQMQmeCvMaLsY` | `http://localhost:8080/ipfs/QmUhi6bbaPubXRVq3vCxdFZjRPYnGbpZWqQMQmeCvMaLsY` |
-| `bucket-sample/` folder | `QmfEPoXQVtHTj3MK2jX23HW4Q7pJ2q2MD6HCnJEYgWqJSA` | `http://localhost:8080/ipfs/QmfEPoXQVtHTj3MK2jX23HW4Q7pJ2q2MD6HCnJEYgWqJSA/readme.txt` |
-| Full `labs/lab18/` site folder | `Qmd63qTMCvi5hYgskGc5dyhhBaNefh3UnG2YrVLYAfERmN` | `http://localhost:8080/ipfs/Qmd63qTMCvi5hYgskGc5dyhhBaNefh3UnG2YrVLYAfERmN/index.html` |
+| `bucket-sample/` | `QmfEPoXQVtHTj3MK2jX23HW4Q7pJ2q2MD6HCnJEYgWqJSA` | `http://localhost:8080/ipfs/QmfEPoXQVtHTj3MK2jX23HW4Q7pJ2q2MD6HCnJEYgWqJSA/readme.txt` |
+| Full Lab 18 site | `Qmd63qTMCvi5hYgskGc5dyhhBaNefh3UnG2YrVLYAfERmN` | `http://localhost:8080/ipfs/Qmd63qTMCvi5hYgskGc5dyhhBaNefh3UnG2YrVLYAfERmN/index.html` |
 
-All three objects were pinned recursively on the local node.
+I also checked that the content was pinned locally.
 
 ```powershell
 docker exec ipfs-lab18 ipfs pin ls --type recursive
@@ -54,30 +56,34 @@ QmUhi6bbaPubXRVq3vCxdFZjRPYnGbpZWqQMQmeCvMaLsY recursive
 
 ## Task 2 - 4EVERLAND Setup
 
-4EVERLAND provides several Web3 hosting services:
+I used 4EVERLAND as a managed IPFS platform.
 
-| Service | Purpose |
+Main services:
+
+| Service | What it does |
 | --- | --- |
-| Hosting | Deploy static sites and web apps to IPFS from GitHub or uploaded files. |
-| Bucket | Store and pin files or folders on IPFS. |
-| Gateway | Access IPFS content from normal browsers over HTTPS. |
-| Domains | Keep a stable URL while the IPFS CID changes after updates. |
+| Hosting | Deploys websites to IPFS from GitHub. |
+| Bucket | Stores and pins files on IPFS. |
+| Gateway | Opens IPFS files in a normal browser. |
+| Domains | Gives a stable URL for the site. |
 
-Useful official docs:
+Useful links:
 
-- 4EVERLAND Hosting deployment: <https://docs.4everland.org/hositng/guides/site-deployment>
-- 4EVERLAND IPFS Bucket: <https://docs.4everland.org/storage/bucket/ipfs-bucket>
-- 4EVERLAND IPFS Gateway: <https://docs.4everland.org/gateways>
+- Hosting docs: <https://docs.4everland.org/hositng/guides/site-deployment>
+- Bucket docs: <https://docs.4everland.org/storage/bucket/ipfs-bucket>
+- Gateway docs: <https://docs.4everland.org/gateways>
 
 ## Task 3 - Static Site Deployment
 
-Deployment settings for 4EVERLAND:
+I connected my GitHub repository to 4EVERLAND Hosting.
+
+Build settings:
 
 | Setting | Value |
 | --- | --- |
 | Repository | `DevOps-Core-Course` |
-| Branch | current working branch |
-| Framework | None / Static |
+| Branch | `lab18` |
+| Framework | `Other` |
 | Build command | empty |
 | Output directory | `labs/lab18` |
 | Entry file | `index.html` |
@@ -86,77 +92,75 @@ Deployment result:
 
 | Item | Value |
 | --- | --- |
-| 4EVERLAND project URL | `https://devops-core-lab18-ijfvxwtc-linktur.ipfs.4everland.app` |
-| IPFS gateway URL | `https://ipfs.4everland.io/ipfs/bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq` |
-| First deployment CID | `bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq` |
-| Updated deployment CID | `TODO: paste second CID here after a small change` |
+| Site URL | `https://devops-core-lab18-fdbos9gf-linktur.ipfs.4everland.app` |
+| First CID | `bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq` |
+| Updated CID | `bafybeifgqcrtvheeitferrhiofgvg6r7tq63c5ttaxnhay4j7pvwlt2yqu` |
+| Updated gateway URL | `https://ipfs.4everland.io/ipfs/bafybeifgqcrtvheeitferrhiofgvg6r7tq63c5ttaxnhay4j7pvwlt2yqu` |
 
-The site URL should stay the same after redeploy. The CID should change when the site content changes.
+The first deploy was successful. Then I changed the site text and deployed again.
 
-The deployment was successful:
+The second deployment used:
 
 - Status: `Success`
 - Environment: `Production`
-- Duration: `6s`
-- IPFS URI: `ipfs://bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq`
+- Branch: `lab18`
+- Commit: `5f8e61 - lab18-v2`
+- New IPFS URI: `ipfs://bafybeifgqcrtvheeitferrhiofgvg6r7tq63c5ttaxnhay4j7pvwlt2yqu`
+
+This proves that the content changed and IPFS created a new CID.
 
 Gateway checks:
 
-- 4EVERLAND: `https://ipfs.4everland.io/ipfs/bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq`
-- dweb.link: `https://dweb.link/ipfs/bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq`
-- ipfs.io: `https://ipfs.io/ipfs/bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq`
+- 4EVERLAND: `https://ipfs.4everland.io/ipfs/bafybeifgqcrtvheeitferrhiofgvg6r7tq63c5ttaxnhay4j7pvwlt2yqu`
+- dweb.link: `https://dweb.link/ipfs/bafybeifgqcrtvheeitferrhiofgvg6r7tq63c5ttaxnhay4j7pvwlt2yqu`
+- ipfs.io: `https://ipfs.io/ipfs/bafybeifgqcrtvheeitferrhiofgvg6r7tq63c5ttaxnhay4j7pvwlt2yqu`
 
 ## Task 4 - Bucket and Pinning
 
-For the Bucket task I prepared a small sample folder:
+I created a sample bucket and uploaded two files:
 
-- `labs/lab18/bucket-sample/readme.txt`
-- `labs/lab18/bucket-sample/about.html`
+- `about.html`
+- `readme.txt`
 
-The same folder was added locally to IPFS and received this directory CID:
-
-```text
-QmfEPoXQVtHTj3MK2jX23HW4Q7pJ2q2MD6HCnJEYgWqJSA
-```
-
-4EVERLAND Bucket result:
+Bucket result:
 
 | Item | Value |
 | --- | --- |
 | Bucket name | `bucket-sample` |
-| Uploaded `about.html` CID | `bafkreienvgdxqjih2cohzkxf7oco72jfohq5ryupl6f6wwk2hw3vbfbzpe` |
-| Uploaded `readme.txt` CID | `bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
-| Local sample folder CID | `QmfEPoXQVtHTj3MK2jX23HW4Q7pJ2q2MD6HCnJEYgWqJSA` |
-| 4EVERLAND gateway access | `https://ipfs.4everland.io/ipfs/bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
-| dweb.link gateway access | `https://dweb.link/ipfs/bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
-| ipfs.io gateway access | `https://ipfs.io/ipfs/bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
+| `about.html` CID | `bafkreienvgdxqjih2cohzkxf7oco72jfohq5ryupl6f6wwk2hw3vbfbzpe` |
+| `readme.txt` CID | `bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
+| Object URL | `https://bucket-sample.4everbucket.com/bucket-sample/readme.txt` |
+| 4EVERLAND gateway | `https://ipfs.4everland.io/ipfs/bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
+| dweb.link gateway | `https://dweb.link/ipfs/bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
+| ipfs.io gateway | `https://ipfs.io/ipfs/bafkreicvse3fd6pkhulyfok7j6fgv7rkh6gpft52763zqzrirkf44k3xze` |
 
-Pinning is important because IPFS content can disappear if no node keeps it. A local node can pin content, but it depends on my machine. 4EVERLAND Bucket pins the content in a managed service, so the content remains available even when my local node is offline.
+Pinning means that the content is kept available. If nobody pins the content, IPFS nodes may delete it later. 4EVERLAND Bucket pins the files for me, so they stay online even when my local IPFS node is off.
 
-## Task 5 - IPNS and Updates
+## Task 5 - IPFS, IPNS, and Updates
 
-IPFS content is immutable. If one byte changes, IPFS creates a new CID.
+IPFS content is immutable. If I change the file, the CID changes.
 
-IPNS solves this by using a stable name that points to the newest CID. 4EVERLAND hides this complexity for normal hosting:
+This happened in my deployment:
 
-- the project URL stays the same;
-- a new deployment can produce a new CID;
-- users still open the same 4EVERLAND URL.
+- First CID: `bafybeic2csltdzhspgwxjqyxl7dm3vs2uh6kp7urhnlbtg4lkq3264f7sq`
+- Updated CID: `bafybeifgqcrtvheeitferrhiofgvg6r7tq63c5ttaxnhay4j7pvwlt2yqu`
 
-This is close to traditional hosting from the user's point of view, but the deployed build is still content-addressed by IPFS.
+The project URL still works as a normal stable URL. 4EVERLAND handles this part for the user.
+
+IPNS is useful for this idea because it can point one stable name to a new IPFS CID.
 
 ## Screenshots
 
-Screenshots collected for final submission:
+The screenshots are stored in `k8s/photos/lab18`.
 
-| Screenshot | Save as |
+| Screenshot | File |
 | --- | --- |
 | Local IPFS Web UI | `k8s/photos/lab18/ipfs-webui.png` |
-| Local IPFS gateway with `hello-ipfs.txt` | `k8s/photos/lab18/local-gateway.png` |
+| Local IPFS gateway | `k8s/photos/lab18/local-gateway.png` |
 | 4EVERLAND deployment success | `k8s/photos/lab18/4everlans-success.png` |
-| Deployed static site | `k8s/photos/lab18/deployed-app.png` |
-| 4EVERLAND Bucket files | `k8s/photos/lab18/bucket-files.png` |
-| Gateway access from 4EVERLAND or public gateway | `k8s/photos/lab18/gateway-access.png` |
+| Deployed website | `k8s/photos/lab18/deployed-app.png` |
+| Bucket files | `k8s/photos/lab18/bucket-files.png` |
+| IPFS gateway access | `k8s/photos/lab18/gateway-access.png` |
 
 Evidence:
 
@@ -169,23 +173,31 @@ Evidence:
 
 ## Centralized vs Decentralized Hosting
 
-| Aspect | Traditional Hosting | IPFS / 4EVERLAND |
+| Aspect | Traditional hosting | IPFS / 4EVERLAND |
 | --- | --- | --- |
-| Content addressing | Uses a server location and URL. | Uses a content hash called a CID. |
-| Single point of failure | One server or provider can be a weak point. | Content can be served by many IPFS nodes and gateways. |
-| Censorship resistance | Provider or server owner can remove content. | Pinned content is harder to remove from the network. |
-| Update mechanism | Replace files on the same server. | New content creates a new CID; stable URLs can point to the newest CID. |
-| Cost model | Pay for server, traffic, storage, and uptime. | Pay for pinning, gateways, bandwidth, or managed platform features. |
-| Speed / latency | Usually fast when close to the server or CDN. | Can be fast with good gateways, but cold content may take longer. |
-| Best use cases | Dynamic apps, APIs, databases, private dashboards. | Static sites, public docs, archives, NFT metadata, immutable releases. |
+| Addressing | Uses server URL. | Uses content CID. |
+| Failure point | Server or provider can fail. | Content can be served by many nodes and gateways. |
+| Censorship | Provider can remove the site. | Pinned content is harder to remove. |
+| Updates | Replace files on the server. | New content gets a new CID. |
+| Stable URL | Domain points to a server. | 4EVERLAND domain can point to the latest IPFS content. |
+| Cost | Pay for server and traffic. | Pay for pinning, gateway, and platform usage. |
+| Best for | Dynamic apps, APIs, private apps. | Static sites, public docs, archives, metadata. |
 
 ## Use Case Analysis
 
-Decentralized hosting is a good choice for public static content that should be easy to verify and hard to silently change. Examples include course pages, documentation, public reports, open source release artifacts, and NFT metadata.
+Decentralized hosting is good for public static content. It is useful when people need to verify that content did not change secretly.
 
-Traditional hosting is better for dynamic applications with login, private data, server-side APIs, databases, or fast updates that do not need immutable history.
+Good use cases:
 
-For this lab, 4EVERLAND is a practical middle ground. It gives a normal hosting workflow through GitHub, but the deployed content can still be accessed and verified through IPFS CIDs.
+- documentation;
+- public reports;
+- static course pages;
+- open source release files;
+- NFT metadata.
+
+Traditional hosting is better for apps with login, private data, APIs, or databases.
+
+My recommendation is simple: use IPFS/4EVERLAND for public static content and archives. Use traditional hosting for dynamic applications.
 
 ## Final Checklist
 
@@ -194,11 +206,10 @@ For this lab, 4EVERLAND is a practical middle ground. It gives a normal hosting 
 - [x] Content added to local IPFS
 - [x] Local CIDs recorded
 - [x] Local pinning verified
-- [x] Static site prepared for 4EVERLAND
-- [x] 4EVERLAND account/project screenshot added
-- [x] Static site deployed via 4EVERLAND
-- [x] 4EVERLAND deployment URL and CID recorded
+- [x] 4EVERLAND account used
+- [x] Static site deployed with 4EVERLAND
+- [x] First and updated deployment CIDs recorded
 - [x] Files uploaded to 4EVERLAND Bucket
 - [x] Bucket CIDs and gateway URLs recorded
-- [x] Screenshots embedded
+- [x] Screenshots added
 - [x] Centralized vs decentralized comparison completed
