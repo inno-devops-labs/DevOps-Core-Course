@@ -12,8 +12,11 @@
  */
 
 export interface Env {
+  COURSE_NAME: string;
   APP_NAME: string;
   COUNTER_KV: KVNamespace;
+  API_TOKEN: string;
+  ADMIN_EMAIL: string;
 }
 
 function jsonResponse(data: unknown, status = 200): Response {
@@ -30,11 +33,18 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/") {
+	  const current = await env.COUNTER_KV.get("visits");
+      let count = current ? parseInt(current) : 0;
+      count += 1;
+      await env.COUNTER_KV.put("visits", count.toString());
+
       return jsonResponse({
         app: env.APP_NAME,
+		course: env.COURSE_NAME,
         message: "Hello friend!",
         framework: "Cloudflare Workers",
         timestamp: new Date().toISOString(),
+		visits: count
       });
     }
 
@@ -44,6 +54,20 @@ export default {
         timestamp: new Date().toISOString(),
       });
     }
+
+	if (url.pathname === "/admin-check") {
+		const token = request.headers.get("token");
+		const email = request.headers.get("email");
+
+		const valid =
+			token === env.API_TOKEN &&
+			email === env.ADMIN_EMAIL;
+		
+		return jsonResponse({
+			valid: valid,
+      	});
+	}
+	
 
     if (url.pathname === "/edge") {
       return jsonResponse({
@@ -59,12 +83,8 @@ export default {
 
     if (url.pathname === "/counter") {
       const current = await env.COUNTER_KV.get("visits");
-
       let count = current ? parseInt(current) : 0;
-
       count += 1;
-
-      await env.COUNTER_KV.put("visits", count.toString());
 
       return jsonResponse({
         visits: count,
@@ -77,5 +97,7 @@ export default {
       },
       404
     );
+
+	
   },
 };

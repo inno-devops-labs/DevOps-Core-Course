@@ -11,7 +11,8 @@
 / for general app info
 /health for health status
 /edge for cloudflare edge metadata
-/counter for a persistent KV-based request counter, which shows the number of visits
+/counter for a persistent KV-based request counter, which shows the number of visits for / route
+/admin-check is for checking if the requester is an admin, it uses secrets API_TOKEN and ADMIN_EMAIL, and the requester should provide valid token and email in the request headers
 and also there is "Not Found" response for non-existent route
 
 ### Configuration used
@@ -47,6 +48,44 @@ cloudflare workers are automatically executed on cloudflare edge locations aroun
 - custom domains allow exposing the worker directly through an owned custom domain, not through a provided workers.dev
 
 ### Example log or metrics screenshot
+
+## Configuration, Secrets & Persistence
+
+### Explain why plaintext vars are not suitable for secrets
+
+variables I added: "APP_NAME" and "COURSE_NAME"
+
+plaintext vars are not safe for secrets because they are stored in config and visible in repo and dashboard, so anyone can read them
+
+### Secrets
+
+I added 2 secrets: API_TOKEN and ADMIN_EMAIL. They are used in the /admin-check endpoint, where the requester can pass their access token and email and see if they can be authenticated as an admin.
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air edge-api % npx wrangler secret list
+[
+  {
+    "name": "ADMIN_EMAIL",
+    "type": "secret_text"
+  },
+  {
+    "name": "API_TOKEN",
+    "type": "secret_text"
+  }
+]
+```
+
+![](./../app_python/docs/screenshots/lab17-shots/secrets.png)
+
+### Workers KV persistence
+
+### Document what you stored and how you verified it
+
+I stored the number of visits of the / endpoint. Each time / is visited, the counter increases by one, and visits value is updated. The value then can be accessed through the /visits endpoint.
+
+The persistance verification:
+
+![](./../app_python/docs/screenshots/lab17-shots/persistance.png)
 
 ## Kubernetes vs Cloudflare Workers Comparison
 

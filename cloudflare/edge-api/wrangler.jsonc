@@ -18,12 +18,18 @@
 		{
 			"binding": "COUNTER_KV",
 			"id": "e4ba4a6ed0f9491294fd7f4fde51eb7f"
-		}
+		},
 	],
-
 	"vars": {
-		"APP_NAME": "my-edge-api-app"
-	}
+		"APP_NAME": "my-edge-api-app",
+		"COURSE_NAME": "devops-core",
+	},
+	"secrets": {
+		"required": [
+			"API_TOKEN",
+			"ADMIN_EMAIL"
+		],
+	},
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
