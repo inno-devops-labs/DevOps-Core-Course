@@ -1,0 +1,25 @@
+# Lab 16 — App deployment with ServiceMonitor for Prometheus Operator.
+#
+# Usage:
+#   helm upgrade --install devops-info-python k8s/devops-info-python \
+#     -n default \
+#     -f k8s/devops-info-python/values.yaml \
+#     -f k8s/devops-info-python/values-monitoring.yaml
+#
+# Activates the ServiceMonitor CRD so Prometheus (installed by
+# kube-prometheus-stack as `monitoring`) starts scraping `/metrics`.
+
+fullnameOverride: devops-info-python
+
+# Vault is not installed in lab16 environment.
+vault:
+  enabled: false
+
+serviceMonitor:
+  enabled: true
+  release: monitoring          # must match kube-prometheus-stack release name
+  endpoint:
+    port: http                 # named port in service.yaml
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s

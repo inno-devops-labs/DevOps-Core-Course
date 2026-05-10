@@ -36,6 +36,46 @@ spec:
         {{- end }}
     spec:
       serviceAccountName: {{ include "common.fullname" . }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              echo "[init-download] fetching {{ .Values.initContainers.download.url }}"
+              wget -O {{ .Values.initContainers.download.targetPath }} {{ .Values.initContainers.download.url }}
+              echo "[init-download] saved:"
+              ls -la {{ .Values.initContainers.download.mountPath }}
+          volumeMounts:
+            - name: work-dir
+              mountPath: {{ .Values.initContainers.download.mountPath }}
+        {{- end }}
+        {{- if .Values.initContainers.wait.enabled }}
+        - name: init-wait
+          image: {{ .Values.initContainers.wait.image | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              SVC="{{ .Values.initContainers.wait.service }}"
+              END=$(( $(date +%s) + {{ .Values.initContainers.wait.timeoutSeconds }} ))
+              echo "[init-wait] waiting for $SVC"
+              until nslookup "$SVC" >/dev/null 2>&1; do
+                if [ "$(date +%s)" -ge "$END" ]; then
+                  echo "[init-wait] timeout waiting for $SVC"
+                  exit 1
+                fi
+                echo "[init-wait] $SVC not resolvable yet, retrying..."
+                sleep 2
+              done
+              echo "[init-wait] $SVC resolved, proceeding"
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -59,6 +99,11 @@ spec:
             - name: data-volume
               mountPath: /data
             {{- end }}
+            {{- if and .Values.initContainers.enabled .Values.initContainers.download.enabled }}
+            - name: work-dir
+              mountPath: {{ .Values.initContainers.mainMountPath }}
+              readOnly: true
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -73,5 +118,9 @@ spec:
         - name: data-volume
           persistentVolumeClaim:
             claimName: {{ include "common.fullname" . }}-data
+        {{- end }}
+        {{- if and .Values.initContainers.enabled .Values.initContainers.download.enabled }}
+        - name: work-dir
+          emptyDir: {}
         {{- end }}
 {{- end }}

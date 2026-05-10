@@ -111,3 +111,34 @@ statefulset:
   updateStrategy:
     type: RollingUpdate
     # partition: 0  # uncomment to freeze pods with ordinal < N
+
+# Lab 16 — init containers demo (download + wait-for-service patterns).
+# Gated so existing scenarios (rollout / statefulset / plain deployment) are unaffected.
+initContainers:
+  enabled: false
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: "https://example.com"
+    targetPath: "/work-dir/index.html"
+    mountPath: "/work-dir"
+  wait:
+    enabled: true
+    image: busybox:1.36
+    # Service to wait for (FQDN or short name resolvable from the pod).
+    service: "monitoring-grafana.monitoring.svc.cluster.local"
+    timeoutSeconds: 120
+  # Mount path inside the main container where downloaded artifacts appear.
+  mainMountPath: "/work-dir"
+
+# Lab 16 — ServiceMonitor CRD for Prometheus Operator scraping.
+# `release` label must match the kube-prometheus-stack Helm release name
+# (default selector: `release: monitoring`).
+serviceMonitor:
+  enabled: false
+  release: monitoring
+  endpoint:
+    port: http
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s

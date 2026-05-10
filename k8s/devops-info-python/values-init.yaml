@@ -1,0 +1,52 @@
+# Lab 16 — Init containers demo (download + wait-for-service patterns).
+#
+# Usage:
+#   kubectl create namespace init-demo
+#   helm install init-demo k8s/devops-info-python \
+#     -n init-demo \
+#     -f k8s/devops-info-python/values.yaml \
+#     -f k8s/devops-info-python/values-init.yaml
+#
+# Disables persistence/vault/rollouts/statefulset to keep the demo focused on
+# the init container behavior alone.
+
+fullnameOverride: devops-info-python
+
+replicaCount: 1
+
+# ClusterIP only — avoid colliding with the lab12 deployment that already
+# binds nodePort 30080 in the default namespace.
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+# Force a pull of busybox + main image only — no Vault sidecar, no PVC.
+vault:
+  enabled: false
+persistence:
+  enabled: false
+rollout:
+  enabled: false
+statefulset:
+  enabled: false
+serviceMonitor:
+  enabled: false
+
+initContainers:
+  enabled: true
+  download:
+    enabled: true
+    image: busybox:1.36
+    # https URL the init container fetches via wget into the shared emptyDir.
+    url: "https://example.com"
+    targetPath: "/work-dir/index.html"
+    mountPath: "/work-dir"
+  wait:
+    enabled: true
+    image: busybox:1.36
+    # Service the second init container waits for via DNS resolution.
+    # Resolvable from inside the pod — kube-prometheus-stack must be installed first.
+    service: "monitoring-grafana.monitoring.svc.cluster.local"
+    timeoutSeconds: 120
+  mainMountPath: "/work-dir"

@@ -9,7 +9,8 @@ spec:
   selector:
     {{- include "common.selectorLabels" . | nindent 4 }}
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
       {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
