@@ -1,0 +1,24 @@
+Lab 17 deployment blocker
+Date: 2026-05-10
+
+Fly.io CLI is installed and authentication works, but the Fly.io account is not fully enabled for running Fly Machines because account/billing activation is incomplete.
+
+To avoid creating paid resources, the following commands were prepared but not executed:
+
+  fly apps create devops-info-egrapa-lab17
+  fly volumes create data --size 1 --region ams --app devops-info-egrapa-lab17
+  fly secrets set APP_ENV="production" APP_DISPLAY_NAME="devops-info-service-fly" --app devops-info-egrapa-lab17
+  fly deploy --app devops-info-egrapa-lab17
+  fly regions add iad sin --app devops-info-egrapa-lab17
+  fly scale count 2 --region ams --app devops-info-egrapa-lab17
+
+Expected URL after account activation and deployment:
+  https://devops-info-egrapa-lab17.fly.dev
+
+Repository-side work completed:
+  - app_python/fly.toml created
+  - Docker image builds locally
+  - /, /health, /visits, and /metrics verified locally
+  - health check configured
+  - persistent /data mount configured
+  - planned multi-region deployment documented

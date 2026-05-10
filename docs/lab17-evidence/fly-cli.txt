@@ -1,0 +1,43 @@
+Lab 17 Fly.io CLI evidence
+Date: 2026-05-10
+
+Command:
+  /home/egrapa/.fly/bin/fly version
+
+Output:
+  flyctl v0.4.49 linux/amd64 Commit: fd07d818e8678f0ea9e9111e0f367a3a16973a06 BuildDate: 2026-05-07T08:59:44Z
+
+Command:
+  /home/egrapa/.fly/bin/fly auth whoami
+
+Output:
+  Authenticated successfully. Account email was printed by flyctl and is redacted here for privacy.
+
+Command:
+  /home/egrapa/.fly/bin/fly platform regions
+
+Output excerpt:
+  Europe:
+    Amsterdam, Netherlands: ams
+    Frankfurt, Germany: fra
+    London, United Kingdom: lhr
+    Paris, France: cdg
+    Stockholm, Sweden: arn
+
+  North America:
+    Ashburn, Virginia (US): iad
+    Chicago, Illinois (US): ord
+    Dallas, Texas (US): dfw
+    Los Angeles, California (US): lax
+    San Jose, California (US): sjc
+    Secaucus, NJ (US): ewr
+    Toronto, Canada: yyz
+
+  Asia Pacific:
+    Mumbai, India: bom
+    Singapore, Singapore: sin
+    Sydney, Australia: syd
+    Tokyo, Japan: nrt
+
+Planned regions for the lab:
+  ams, iad, sin

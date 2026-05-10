@@ -1,0 +1,52 @@
+Lab 17 local Docker evidence
+Date: 2026-05-10
+
+Command:
+  cd app_python
+  docker build -t devops-info-service:lab17-local .
+
+Output excerpt:
+  Successfully built 4c7f4317d560
+  Successfully tagged devops-info-service:lab17-local
+
+Command:
+  docker run -d --rm --name devops-info-service-lab17-local -p 5000:5000 -e APP_ENV=lab17-local -e APP_DISPLAY_NAME=devops-info-service devops-info-service:lab17-local
+
+Output:
+  a5597c4c0176a045e1714ad12df1b6a3aadbd8ea05f4205ffbbc114adea38a4b
+
+Command:
+  curl -sS -w ' status=%{http_code} total=%{time_total}s\n' -o /tmp/lab17-root.json http://127.0.0.1:5000/
+
+Output:
+  status=200 total=0.014326s
+
+Command:
+  curl -sS -w ' status=%{http_code} total=%{time_total}s\n' -o /tmp/lab17-health.json http://127.0.0.1:5000/health
+
+Output:
+  status=200 total=0.001111s
+
+Health response:
+  {"status":"healthy","timestamp":"2026-05-10T17:31:25.571953+00:00","uptime_seconds":7}
+
+Command:
+  curl -sS -w ' status=%{http_code} total=%{time_total}s\n' -o /tmp/lab17-visits.json http://127.0.0.1:5000/visits
+
+Output:
+  status=200 total=0.001627s
+
+Visits response:
+  {"visits":0}
+
+Command:
+  curl -sS http://127.0.0.1:5000/metrics | rg '^(http_requests_total|devops_info_endpoint_calls_total)'
+
+Output excerpt:
+  http_requests_total{endpoint="/visits",method="GET",status_code="200"} 1.0
+  http_requests_total{endpoint="/health",method="GET",status_code="200"} 1.0
+  http_requests_total{endpoint="/",method="GET",status_code="200"} 1.0
+  devops_info_endpoint_calls_total{endpoint="/visits"} 1.0
+  devops_info_endpoint_calls_total{endpoint="/health"} 1.0
+  devops_info_endpoint_calls_total{endpoint="/"} 1.0
+  devops_info_endpoint_calls_total{endpoint="/metrics"} 1.0

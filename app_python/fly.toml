@@ -1,0 +1,37 @@
+app = "devops-info-egrapa-lab17"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "5000"
+  VISITS_FILE = "/data/visits"
+  LOG_LEVEL = "INFO"
+
+[mounts]
+  source = "data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 5000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 5000
+    path = "/health"
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "30s"
