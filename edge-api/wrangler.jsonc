@@ -1,0 +1,21 @@
+{
+	"name": "edge-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-03-10",
+	"workers_dev": true,
+	"preview_urls": true,
+	"observability": {
+		"enabled": true,
+	},
+	"vars": {
+		"APP_NAME": "edge-api",
+		"COURSE_NAME": "devops-core",
+		"DEPLOYMENT_ENV": "production"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "0ffbf5dc66ee44adacfc64be63312e3d"
+		}
+	]
+}
