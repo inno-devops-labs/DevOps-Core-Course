@@ -1,3 +1,0 @@
-restart_policy: unless-stopped
-env_vars: {}
-docker_image: ""

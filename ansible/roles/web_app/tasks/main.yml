@@ -1,0 +1,39 @@
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Template docker compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: "0644"
+
+    - name: Pull and start services
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir }}"
+        pull: missing
+        state: present
+        recreate: auto
+
+    - name: Wait for application port
+      wait_for:
+        host: "127.0.0.1"
+        port: "{{ app_port }}"
+        timeout: 60
+        delay: 2
+  rescue:
+    - name: Log deployment failure
+      debug:
+        msg: "Docker Compose deployment failed for {{ app_name }}"
+  tags:
+    - app_deploy
+    - compose

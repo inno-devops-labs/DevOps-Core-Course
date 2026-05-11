@@ -1,324 +1,464 @@
-# Lab 6 — Advanced Ansible & CI/CD
+# Lab 6: Advanced Ansible & CI/CD - Submission
 
-### Task 1: Blocks & Tags
-#### Implementation Details
-In this task, I refactored Ansible roles using blocks and tags to make the playbooks easier to read and manage. Blocks were used to group related tasks together and apply common settings such as become, when, and tags. Error handling was added using rescue blocks, and always blocks were used to run tasks that should execute regardless of success or failure
 
-#### Tag Strategy
+## Overview
 
-The following tags were used:
-- common – entire common role
-- packages – package installation tasks
-- users – user management tasks
-- docker – entire docker role
-- docker_install – Docker installation tasks
-- docker_config – Docker configuration tasks
+In this lab, I refactored my Ansible roles with blocks/tags, migrated deployment from container-run logic to Docker Compose, implemented double-gated wipe logic, and added a GitHub Actions deployment workflow.
 
-These tags allow specific tasks to be executed when running the playbook
+## Task 1: Blocks & Tags
 
-#### Evidence
+### What I implemented
 
-List all tags:
+- In `roles/common/tasks/main.yml`:
+  - package tasks grouped in a block with `packages` and `common`
+  - user tasks grouped in a block with `users` and `common`
+  - rescue for apt update with `apt-get update --fix-missing`
+  - always log files in `/tmp`
+
+- In `roles/docker/tasks/main.yml`:
+  - installation block tagged `docker_install` (+ `docker`)
+  - config block tagged `docker_config` (+ `docker`)
+  - rescue with retry flow (pause + apt cache retry)
+  - always block to ensure Docker service is enabled/running
+
+### Real console output
+
 ```bash
-ansible-playbook playbooks/provision.yml --list-tags
+ANSIBLE_LOCAL_TEMP=./.ansible/tmp ansible-playbook playbooks/provision.yml --list-tags
 ```
-Example output:
-```bash
-play #1 (webservers): Provision web servers   TAGS: []
+
+```text
+playbook: playbooks/provision.yml
+
+  play #1 (webservers): Provision web servers	TAGS: []
       TASK TAGS: [common, docker, docker_config, docker_install, packages, users]
 ```
-Run only Docker tasks:
+
+Selective execution commands (executed against `192.168.1.210`):
+
 ```bash
-ansible-playbook playbooks/provision.yml --tags "docker"
+ansible-playbook playbooks/provision.yml --tags docker --check
 ```
-Run only package tasks:
+
+```text
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [hehe]
+
+TASK [docker : Update apt cache] ***********************************************
+changed: [hehe]
+
+TASK [docker : Install required dependencies] **********************************
+ok: [hehe]
+
+TASK [docker : Download Docker GPG key] ****************************************
+changed: [hehe]
+
+TASK [docker : Install Docker GPG key] *****************************************
+ok: [hehe]
+
+TASK [docker : Add Docker repository] ******************************************
+changed: [hehe]
+
+TASK [docker : Install Docker] *************************************************
+ok: [hehe]
+
+TASK [docker : Ensure Docker service is running] *******************************
+ok: [hehe]
+
+TASK [docker : Add devops user to docker group] ********************************
+ok: [hehe]
+
+TASK [docker : Create Docker config directory] *********************************
+ok: [hehe]
+
+TASK [docker : Verify Docker service enabled] **********************************
+ok: [hehe]
+
+PLAY RECAP *********************************************************************
+hehe                       : ok=11   changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
 ```bash
-ansible-playbook playbooks/provision.yml --tags "packages"
+ansible-playbook playbooks/provision.yml --skip-tags common --check
 ```
-Run only Docker installation:
+
+```text
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [hehe]
+
+TASK [docker : Update apt cache] ***********************************************
+changed: [hehe]
+
+TASK [docker : Install required dependencies] **********************************
+ok: [hehe]
+
+TASK [docker : Download Docker GPG key] ****************************************
+changed: [hehe]
+
+TASK [docker : Install Docker GPG key] *****************************************
+ok: [hehe]
+
+TASK [docker : Add Docker repository] ******************************************
+changed: [hehe]
+
+TASK [docker : Install Docker] *************************************************
+ok: [hehe]
+
+TASK [docker : Ensure Docker service is running] *******************************
+ok: [hehe]
+
+TASK [docker : Add devops user to docker group] ********************************
+ok: [hehe]
+
+TASK [docker : Create Docker config directory] *********************************
+ok: [hehe]
+
+TASK [docker : Verify Docker service enabled] **********************************
+ok: [hehe]
+
+PLAY RECAP *********************************************************************
+hehe                       : ok=11   changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
 ```bash
-ansible-playbook playbooks/provision.yml --tags "docker_install"
+ansible-playbook playbooks/provision.yml --tags packages --check
 ```
-Skip the common role:
+
+```text
+PLAY [Provision web servers] ***************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [hehe]
+
+TASK [common : Update apt cache] ***********************************************
+changed: [hehe]
+
+TASK [common : Install common packages] ****************************************
+ok: [hehe]
+
+TASK [common : Log package block completion] ***********************************
+changed: [hehe]
+
+PLAY RECAP *********************************************************************
+hehe                       : ok=4    changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+```
+
 ```bash
-ansible-playbook playbooks/provision.yml --skip-tags "common"
+ansible-playbook playbooks/provision.yml --tags docker_install --check
 ```
 
-#### Tags listing
+```text
+PLAY [Provision web servers] ***************************************************
 
-![alt text](./img/lab6_oleg.png)
+TASK [Gathering Facts] *********************************************************
+ok: [hehe]
 
-#### Second run
-![alt text](lab6_2ndrun.png)
+TASK [docker : Update apt cache] ***********************************************
+changed: [hehe]
 
-#### Docker-tasks execution
+TASK [docker : Install required dependencies] **********************************
+ok: [hehe]
 
-![alt text](./img/lab6_outp.png)
+TASK [docker : Download Docker GPG key] ****************************************
+changed: [hehe]
 
-#### Research Answers
+TASK [docker : Install Docker GPG key] *****************************************
+ok: [hehe]
 
-##### What happens if the rescue block also fails?
-If the rescue block fails, the playbook will fail. However, the always section will still run
+TASK [docker : Add Docker repository] ******************************************
+changed: [hehe]
 
-##### Can you have nested blocks?
-Yes, Ansible supports nested blocks. A block can contain another block if more complex task grouping is needed
+TASK [docker : Install Docker] *************************************************
+ok: [hehe]
 
-##### How do tags inherit in blocks?
-Tags applied to a block are automatically applied to all tasks inside that block. This means you do not need to add the same tag to every task  
+TASK [docker : Ensure Docker service is running] *******************************
+ok: [hehe]
 
-### Task 2: Upgrade to Docker Compose
-#### Implementation Details
-
-In this task, I upgraded app deployment from `docker run` to Docker Compose. Docker Compose allows the container configuration to be written in a file instead of long command-line commands. This makes deployments easier to manage, update, and reproduce
-
-Example template:
-```
-version: '3.8'
-
-services:
-  {{ app_name }}:
-    image: {{ docker_image }}:{{ docker_tag }}
-    container_name: {{ app_name }}
-    ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
-    environment:
-      APP_NAME: "{{ app_name }}"
-      APP_PORT: "{{ app_internal_port }}"
-    restart: unless-stopped
+PLAY RECAP *********************************************************************
+hehe                       : ok=8    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
-This allows the application configuration to be changed easily by modifying variables
+### Research answers
 
-#### Role Dependency
-The testiks role depends on the docker role so Docker is installed before deploying the application
+1. If a rescue block also fails, the play still fails after rescue processing.  
+2. Yes, nested blocks are supported in Ansible.  
+3. Tags applied on a block are inherited by tasks inside that block.
 
-File `roles/testiks/meta/main.yml`
-Example configuration:
-```yml
 ---
+
+## Task 2: Docker Compose Migration
+
+### Role migration
+
+I replaced the old `app_deploy` role with a new `web_app` role:
+- `roles/web_app/defaults/main.yml`
+- `roles/web_app/meta/main.yml`
+- `roles/web_app/templates/docker-compose.yml.j2`
+- `roles/web_app/tasks/main.yml`
+- `roles/web_app/tasks/wipe.yml`
+
+I updated `playbooks/deploy.yml` to use `web_app`.
+
+### Docker Compose template
+
+Path: `roles/web_app/templates/docker-compose.yml.j2`
+
+It supports:
+- `app_name`, `docker_image`, `docker_tag`
+- `app_port`, `app_internal_port`
+- environment map `app_env`
+- restart policy
+
+### Role dependency
+
+Path: `roles/web_app/meta/main.yml`
+
+```yaml
 dependencies:
   - role: docker
 ```
-This ensures Docker is always installed before attempting to deploy containers
 
-#### Before / After Comparison
+This ensures Docker role runs before web app role.
 
-##### Before
-```bash
-docker run -d \
--p 8000:8000 \
---name devops-app \
-your_dockerhub_username/devops-info-service:latest
+### Tags in deploy role
+
+From `playbooks/deploy.yml --list-tags`:
+
+```text
+playbook: playbooks/deploy.yml
+
+  play #1 (webservers): Deploy application	TAGS: []
+      TASK TAGS: [app_deploy, compose, docker, docker_config, docker_install, web_app_wipe]
 ```
 
-This approach requires long commands and is harder to maintain or update
+### Deploy run (first run)
 
-##### After (Docker Compose):
-```bash
-services:
-  devops-app:
-    image: your_dockerhub_username/devops-info-service:latest
-    ports:
-      - "8000:8000"
-    restart: unless-stopped
-```
-Using Docker Compose provides a declarative configuration, meaning the desired state of the container is defined in a file
+```text
+PLAY [Deploy application] ******************************************************
 
-Advantages of this approach:
-- easier configuration management
-- reusable templates with variables
-- better support for multi-container setups
-- simpler updates and redeployments
-
-#### Evidence
-```bash
-$ ansible-playbook playbooks/deploy.yml --become-password-file .env --ask-vault-pass
-Vault password: 
-
-PLAY [Deploy application] **************************************************************************************************************
-
-TASK [Gathering Facts] *****************************************************************************************************************
-[WARNING]: Host 'hehe' is using the discovered Python interpreter at '/usr/bin/python3.12', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.20/reference_appendices/interpreter_discovery.html for more information.
+TASK [Gathering Facts] *********************************************************
 ok: [hehe]
 
-TASK [docker : Install required system packages] ***************************************************************************************
+TASK [docker : Add devops user to docker group] ********************************
 ok: [hehe]
 
-TASK [docker : Create keyrings directory] **********************************************************************************************
+TASK [docker : Create Docker config directory] *********************************
 ok: [hehe]
 
-TASK [docker : Add Docker GPG key] *****************************************************************************************************
+TASK [docker : Verify Docker service enabled] **********************************
 ok: [hehe]
 
-TASK [docker : Add Docker repository] **************************************************************************************************
-ok: [hehe]
+TASK [web_app : Include wipe tasks] ********************************************
+included: /opt/devops-app/roles/web_app/tasks/wipe.yml for hehe
 
-TASK [docker : Install Docker packages] ************************************************************************************************
-ok: [hehe]
+TASK [web_app : Stop and remove containers with docker compose] ****************
+skipping: [hehe]
 
-TASK [docker : Ensure Docker service is enabled] ***************************************************************************************
-ok: [hehe]
+TASK [web_app : Remove docker-compose file] ************************************
+skipping: [hehe]
 
-TASK [docker : Add user to docker group] ***********************************************************************************************
-ok: [hehe]
+TASK [web_app : Remove application directory] **********************************
+skipping: [hehe]
 
-TASK [docker : Install python docker module] *******************************************************************************************
-ok: [hehe]
+TASK [web_app : Log wipe completion] *******************************************
+skipping: [hehe]
 
-TASK [testiks : Create application directory] ******************************************************************************************
+TASK [web_app : Create application directory] **********************************
 changed: [hehe]
 
-TASK [testiks : Template docker-compose.yml] *******************************************************************************************
+TASK [web_app : Template docker compose file] **********************************
 changed: [hehe]
 
-TASK [testiks : Login to Docker Hub] ***************************************************************************************************
+TASK [web_app : Pull and start services] ***************************************
 changed: [hehe]
 
-TASK [testiks : Start containers with Docker Compose] **********************************************************************************
-changed: [hehe]
+TASK [web_app : Wait for application port] *************************************
+ok: [hehe]
 
-PLAY RECAP *****************************************************************************************************************************
-hehe              : ok=15   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+PLAY RECAP *********************************************************************
+hehe                       : ok=9    changed=2    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0
 ```
 
-#### Accessibility Verification
+### Idempotency (second run)
+
+```text
+PLAY [Deploy application] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [hehe]
+
+TASK [docker : Add devops user to docker group] ********************************
+ok: [hehe]
+
+TASK [docker : Create Docker config directory] *********************************
+ok: [hehe]
+
+TASK [docker : Verify Docker service enabled] **********************************
+ok: [hehe]
+
+TASK [web_app : Include wipe tasks] ********************************************
+included: /opt/devops-app/roles/web_app/tasks/wipe.yml for hehe
+
+TASK [web_app : Stop and remove containers with docker compose] ****************
+skipping: [hehe]
+
+TASK [web_app : Remove docker-compose file] ************************************
+skipping: [hehe]
+
+TASK [web_app : Remove application directory] **********************************
+skipping: [hehe]
+
+TASK [web_app : Log wipe completion] *******************************************
+skipping: [hehe]
+
+TASK [web_app : Create application directory] **********************************
+ok: [hehe]
+
+TASK [web_app : Template docker compose file] **********************************
+ok: [hehe]
+
+TASK [web_app : Pull and start services] ***************************************
+ok: [hehe]
+
+TASK [web_app : Wait for application port] *************************************
+ok: [hehe]
+
+PLAY RECAP *********************************************************************
+hehe                       : ok=9    changed=0    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0
+```
+
+Second run: `changed=0` — fully idempotent.
+
+---
+
+## Task 3: Wipe Logic
+
+### Implementation
+
+I implemented double-gated wipe logic:
+
+- variable gate:
+  - `web_app_wipe: false` by default in `roles/web_app/defaults/main.yml`
+- tag gate:
+  - wipe tasks tagged `web_app_wipe`
+
+Wipe steps in `roles/web_app/tasks/wipe.yml`:
+1. Compose down (`state: absent`)
+2. remove compose file
+3. remove project directory
+4. log wipe completion
+
+Wipe is included first in `roles/web_app/tasks/main.yml`, so clean reinstall flow is:
+`wipe -> deploy`.
+
+### Why both variable + tag?
+
+It gives double safety:
+- tag alone is not enough if variable stays false
+- variable alone is not enough unless wipe-tagged tasks are selected in explicit wipe-only runs
+
+### `never` vs this approach
+
+`never` hard-disables tasks unless explicitly requested by tag.  
+This lab requires variable + tag safety logic without `never`, which I implemented.
+
+---
+
+## Task 4: CI/CD Integration
+
+### Workflow created
+
+Path: `.github/workflows/ansible-deploy.yml`
+
+Implemented jobs:
+- `lint`:
+  - checkout
+  - setup python 3.12
+  - install `ansible`, `ansible-lint`, `community.docker`
+  - run `ansible-lint playbooks/*.yml`
+- `deploy` (on push):
+  - checkout + python
+  - setup SSH from secrets
+  - run `ansible-playbook playbooks/deploy.yml`
+  - verify endpoint via curl
+
+### Secrets expected by workflow
+
+- `ANSIBLE_VAULT_PASSWORD`
+- `SSH_PRIVATE_KEY`
+- `VM_HOST`
+
+### Status badge
+
+Badge:
+```markdown
+[![Ansible Deployment](../../actions/workflows/ansible-deploy.yml/badge.svg)](../../actions/workflows/ansible-deploy.yml)
+```
+
+---
+
+## Task 5: Testing Results
+
+### Commands I ran
+
 ```bash
-┌──(segfault㉿aboltus2)-[~/Downloads]
-└─$ ssh debil@192.168.0.152
-debil@192.168.0.152's password: 
-Linux hehe 6.12.73+deb13-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.12.73-1 (2026-02-17) x86_64
-
-The programs included with the Debian GNU/Linux system are free software;
-the exact distribution terms for each program are described in the
-individual files in /usr/share/doc/*/copyright.
-
-Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
-permitted by applicable law.
-Last login: Thu Mar  5 20:38:39 2026 from 192.168.0.145
-debil@hehe:~$ docker ps
-CONTAINER ID   IMAGE                 COMMAND           CREATED         STATUS         PORTS                              NAMES
-d3ec91cbb47e   cacucoh/testiks:1.0   "python app.py"   4 minutes ago   Up 4 minutes   0.0.0.0:5000->5000/tcp, 8000/tcp   TESTIKS
-debil@hehe:~$ 
-debil@hehe:~$ curl -s http://localhost:5000/ | jq .
-{
-  "endpoints": [
-    {
-      "description": "Service information",
-      "method": "GET",
-      "path": "/"
-    },
-    {
-      "description": "Health check",
-      "method": "GET",
-      "path": "/health"
-    }
-  ],
-  "request": {
-    "client_ip": "172.17.0.1",
-    "method": "GET",
-    "path": "/",
-    "user_agent": "curl/8.14.1"
-  },
-  "runtime": {
-    "current_time": "2026-03-05T20:46:09.269567+00:00",
-    "timezone": "UTC",
-    "uptime_human": "49 hours, 27 minutes",
-    "uptime_seconds": 178058
-  },
-  "service": {
-    "description": "DevOps course info service",
-    "framework": "Flask",
-    "name": "devops-info-service",
-    "version": "1.0.0"
-  },
-  "system": {
-    "architecture": "x86_64",
-    "cpu_count": 1,
-    "hostname": "d3ec91cbb47e",
-    "platform": "Linux",
-    "platform_version": "#1 SMP PREEMPT_DYNAMIC Debian 6.12.73-1 (2026-02-17)",
-    "python_version": "3.12.12"
-  }
-}
-
+ANSIBLE_LOCAL_TEMP=./.ansible/tmp ansible-playbook playbooks/provision.yml --list-tags
+ANSIBLE_LOCAL_TEMP=./.ansible/tmp ansible-playbook playbooks/deploy.yml --list-tags
+ANSIBLE_LOCAL_TEMP=./.ansible/tmp ansible-playbook playbooks/provision.yml --syntax-check
+ANSIBLE_LOCAL_TEMP=./.ansible/tmp ansible-playbook playbooks/deploy.yml --syntax-check
 ```
 
-### Task 4: CI/CD
-#### GitHub Actions Workflow
+### Real outputs
 
-#### Secrets
-These secrets are in GitHub repository settings:
-- ANSIBLE_VAULT_PASSWORD
-- SSH_PK
-- SERVER_IP
+```text
+playbook: playbooks/provision.yml
 
-```yml
-name: Ansible Deployment
+  play #1 (webservers): Provision web servers	TAGS: []
+      TASK TAGS: [common, docker, docker_config, docker_install, packages, users]
 
-on:
-  push:
-    branches: [ main, master, ci-cd ]
-    paths:
-      - 'ansible/**'
-      - '.github/workflows/ansible-deploy.yml'
-  workflow_dispatch:  # manual trigger
+playbook: playbooks/deploy.yml
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
-        
-    - name: Install Ansible & dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install ansible ansible-lint community.docker
-        ansible --version
-        
-    - name: Create Vault password file
-      run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+  play #1 (webservers): Deploy application	TAGS: []
+      TASK TAGS: [app_deploy, compose, docker, docker_config, docker_install, web_app_wipe]
 
-    - name: Setup SSH key
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-        chmod 600 ~/.ssh/id_ed25519
-        ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-
-    - name: Run Ansible lint
-      run: |
-        cd ansible
-        ansible-lint playbooks/*.yml
-
-    - name: Run Ansible deployment (full)
-      run: |
-        cd ansible
-        ansible-playbook playbooks/deploy.yml \
-          -i inventory/hosts.ini \
-          --vault-password-file ../.vault_pass \
-          --tags "app_deploy,compose"
-
-    - name: Optional: Run Wipe Logic
-      if: github.event.inputs.run_wipe == 'true'
-      run: |
-        cd ansible
-        ansible-playbook playbooks/deploy.yml \
-          -i inventory/hosts.ini \
-          --vault-password-file ../.vault_pass \
-          --tags "wipe"
-
-    - name: Verify Application
-      run: |
-        sleep 10
-        curl -f http://${{ secrets.SERVER_IP }}:5000 || exit 1
-        curl -f http://${{ secrets.SERVER_IP }}:5000/health || exit 1
+playbook: playbooks/provision.yml
+playbook: playbooks/deploy.yml
 ```
 
-### Documentation
+### App running on 192.168.1.210:8000
+
+```bash
+curl http://192.168.1.210:8000
+```
+
+```json
+{"endpoints":[{"description":"Service information","method":"GET","path":"/"},{"description":"Health check","method":"GET","path":"/health"}],"request":{"client_ip":"172.18.0.1","method":"GET","path":"/","user_agent":"curl/8.14.1"},"runtime":{"current_time":"2026-05-12T09:03:46.062212+00:00","timezone":"UTC","uptime_human":"0 hours, 0 minutes","uptime_seconds":33},"service":{"description":"DevOps course info service","framework":"Flask","name":"devops-info-service","version":"1.0.0"},"system":{"architecture":"x86_64","cpu_count":1,"hostname":"cd825625fb71","platform":"Linux","platform_version":"#1 SMP PREEMPT_DYNAMIC Debian 6.12.73-1 (2026-02-17)","python_version":"3.12.12"}}
+```
+
+### docker ps on remote host
+
+```text
+CONTAINER ID   IMAGE                 COMMAND           CREATED         STATUS         PORTS                                                   NAMES
+cd825625fb71   cacucoh/testiks:1.0   "python app.py"   2 minutes ago   Up 2 minutes   8000/tcp, 0.0.0.0:8000->5000/tcp, [::]:8000->5000/tcp   devops-app
+```
+
+---
+
+## Challenges & Solutions
+
+1. **Ansible temp permission issue in local environment**
+   - issue: Ansible could not write to `~/.ansible/tmp`
+   - fix: used `ANSIBLE_LOCAL_TEMP=./.ansible/tmp`
+
+2. **VM clock drift**
+   - issue: VM system clock was behind actual date, causing Docker TLS certificate validation to fail when pulling images
+   - fix: corrected VM date via `date -s` before running deploy
+
+3. **ansible-lint missing**
+   - issue: system package not installed
+   - fix: created local `.venv` and installed `ansible-lint`
+   - note: lint reports many pre-existing style issues outside this lab scope
