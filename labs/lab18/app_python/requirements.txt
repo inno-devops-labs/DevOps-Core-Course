@@ -1,0 +1,8 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pytest==8.3.4
+pytest-asyncio==0.24.0
+httpx==0.28.1
+flake8==7.1.1
+pytest-cov==6.0.0
+prometheus-client==0.23.1
