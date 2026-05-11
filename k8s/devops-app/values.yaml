@@ -74,3 +74,30 @@ vault:
   enabled: true
   role: "devops-app-role"
   secretPath: "secret/data/devops-app/config"
+
+# Prometheus Operator: scrape /metrics from the primary Service (port name: http).
+# Set prometheusRelease to the Helm release name of kube-prometheus-stack (often "monitoring").
+monitoring:
+  serviceMonitor:
+    enabled: true
+    prometheusRelease: monitoring
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+# Init containers: set enabled true after applying k8s/monitoring/init-dependency.yaml
+# (wait-for-service probes the init-dependency Service).
+initContainers:
+  enabled: false
+  busyboxImage: busybox:1.36
+  wait:
+    enabled: true
+    service: init-dependency
+    namespace: default
+    port: 80
+    path: /
+  download:
+    enabled: true
+    url: https://raw.githubusercontent.com/prometheus/prometheus/main/LICENSE
+    filename: init-downloaded.txt
+    mountPath: /init-data

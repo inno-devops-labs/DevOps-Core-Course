@@ -1,0 +1,19 @@
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "devops-app.fullname" . }}
+  labels:
+    {{- include "devops-app.labels" . | nindent 4 }}
+    release: {{ .Values.monitoring.serviceMonitor.prometheusRelease | quote }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "devops-app.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  endpoints:
+    - port: http
+      path: {{ .Values.monitoring.serviceMonitor.path }}
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.monitoring.serviceMonitor.scrapeTimeout }}
+{{- end }}

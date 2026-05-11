@@ -35,6 +35,39 @@ spec:
       labels:
         {{- include "devops-app.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.wait.enabled }}
+        - name: wait-for-dependency
+          image: {{ .Values.initContainers.busyboxImage | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              url="http://{{ .Values.initContainers.wait.service }}.{{ .Values.initContainers.wait.namespace }}.svc.cluster.local:{{ .Values.initContainers.wait.port }}{{ .Values.initContainers.wait.path }}"
+              echo "Waiting for $url"
+              until wget -qO- "$url"; do
+                echo "dependency not ready, sleeping..."
+                sleep 2
+              done
+              echo "Dependency is reachable."
+        {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: download-with-wget
+          image: {{ .Values.initContainers.busyboxImage | quote }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              mkdir -p "{{ .Values.initContainers.download.mountPath }}"
+              wget -qO "{{ .Values.initContainers.download.mountPath }}/{{ .Values.initContainers.download.filename }}" "{{ .Values.initContainers.download.url }}"
+              ls -la "{{ .Values.initContainers.download.mountPath }}"
+          volumeMounts:
+            - name: init-data
+              mountPath: {{ .Values.initContainers.download.mountPath }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -47,6 +80,11 @@ spec:
             - name: config-volume
               mountPath: /config
               readOnly: true
+            {{- if .Values.initContainers.enabled }}
+            - name: init-data
+              mountPath: {{ .Values.initContainers.download.mountPath }}
+              readOnly: true
+            {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "devops-app.fullname" . }}-env
@@ -67,6 +105,10 @@ spec:
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
       volumes:
+        {{- if .Values.initContainers.enabled }}
+        - name: init-data
+          emptyDir: {}
+        {{- end }}
         - name: config-volume
           configMap:
             name: {{ include "devops-app.fullname" . }}-config
