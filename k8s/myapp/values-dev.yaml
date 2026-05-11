@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 3
 
 image:
   repository: qobz1e/devops-info-service
@@ -14,7 +14,7 @@ persistence:
   enabled: true
   size: 100Mi
 
-environment: dev-v2
+environment: stateful-dev
 
 secrets:
   username: admin
