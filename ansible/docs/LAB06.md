@@ -395,9 +395,8 @@ Implemented jobs:
 ### Status badge
 
 Badge:
-```markdown
+
 [![Ansible Deployment](../../actions/workflows/ansible-deploy.yml/badge.svg)](../../actions/workflows/ansible-deploy.yml)
-```
 
 ---
 
