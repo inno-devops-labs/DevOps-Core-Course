@@ -1,0 +1,10 @@
+service:
+  type: ClusterIP
+
+initContainers:
+  enabled: true
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
