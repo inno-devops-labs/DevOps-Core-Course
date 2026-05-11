@@ -21,6 +21,11 @@ Pulumi.*.yaml
 venv/
 __pycache__/
 
+# Node / Cloudflare Workers
+node_modules/
+.wrangler/
+.dev.vars
+
 # Ansible
 *.retry
 .vault_pass
