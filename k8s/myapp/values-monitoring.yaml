@@ -1,0 +1,28 @@
+replicaCount: 3
+
+image:
+  tag: lab16
+
+service:
+  type: ClusterIP
+
+config:
+  environment: monitoring
+
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+bootstrap:
+  enabled: true
+  mountPath: /bootstrap
+  downloadUrl: https://example.com
+  fileName: index.html
+  waitForService: kubernetes.default.svc.cluster.local
+
+serviceMonitor:
+  enabled: true
+  namespace: monitoring

@@ -4,12 +4,16 @@ metadata:
   name: {{ include "myapp.fullname" . }}-service
   labels:
     {{- include "myapp.labels" . | nindent 4 }}
+    {{- if .Values.serviceMonitor.enabled }}
+    monitoring.devops.io/scrape: "true"
+    {{- end }}
 spec:
   type: {{ .Values.service.type }}
   selector:
     {{- include "myapp.selectorLabels" . | nindent 4 }}
   ports:
-    - protocol: TCP
+    - name: {{ .Values.service.portName }}
+      protocol: TCP
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
       {{- if eq .Values.service.type "NodePort" }}

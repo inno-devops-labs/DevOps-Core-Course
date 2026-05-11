@@ -35,19 +35,42 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "myapp.fullname" . }}-config
+        {{- if .Values.bootstrap.enabled }}
+        - name: bootstrap-volume
+          emptyDir: {}
+        {{- end }}
         {{- if .Values.persistence.enabled }}
         - name: data-volume
           persistentVolumeClaim:
             claimName: {{ include "myapp.fullname" . }}-data
         {{- end }}
-      {{- if .Values.persistence.enabled }}
+      {{- if or .Values.persistence.enabled .Values.bootstrap.enabled }}
       initContainers:
+        {{- if .Values.persistence.enabled }}
         - name: volume-permissions
           image: busybox:1.36
           command: ["sh", "-c", "mkdir -p {{ .Values.persistence.mountPath }} && chown -R 999:999 {{ .Values.persistence.mountPath }}"]
           volumeMounts:
             - name: data-volume
               mountPath: {{ .Values.persistence.mountPath }}
+        {{- end }}
+        {{- if .Values.bootstrap.enabled }}
+        - name: init-download
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - wget -O "{{ .Values.bootstrap.mountPath }}/{{ .Values.bootstrap.fileName }}" "{{ .Values.bootstrap.downloadUrl }}"
+          volumeMounts:
+            - name: bootstrap-volume
+              mountPath: {{ .Values.bootstrap.mountPath }}
+        - name: wait-for-service
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nslookup {{ .Values.bootstrap.waitForService }}; do echo waiting for {{ .Values.bootstrap.waitForService }}; sleep 2; done
+        {{- end }}
       {{- end }}
       containers:
         - name: {{ include "myapp.name" . }}
@@ -55,11 +78,16 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.service.targetPort }}
+            - name: {{ .Values.service.portName }}
+              containerPort: {{ .Values.service.targetPort }}
           volumeMounts:
             - name: config-volume
               mountPath: {{ .Values.config.mountPath }}
               readOnly: true
+            {{- if .Values.bootstrap.enabled }}
+            - name: bootstrap-volume
+              mountPath: {{ .Values.bootstrap.mountPath }}
+            {{- end }}
             {{- if .Values.persistence.enabled }}
             - name: data-volume
               mountPath: {{ .Values.persistence.mountPath }}

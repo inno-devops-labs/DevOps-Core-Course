@@ -10,6 +10,7 @@ image:
 
 service:
   type: NodePort
+  portName: http
   port: 80
   targetPort: 5000
   nodePort: 30083
@@ -38,6 +39,22 @@ persistence:
   accessMode: ReadWriteOnce
   size: 100Mi
   storageClass: ""
+
+bootstrap:
+  enabled: false
+  mountPath: /bootstrap
+  downloadUrl: https://example.com
+  fileName: index.html
+  waitForService: kubernetes.default.svc.cluster.local
+
+serviceMonitor:
+  enabled: false
+  namespace: ""
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
+  labels:
+    release: monitoring
 
 resources:
   requests:

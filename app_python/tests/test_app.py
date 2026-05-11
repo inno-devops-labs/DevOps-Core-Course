@@ -141,6 +141,8 @@ def test_metrics_endpoint(client):
     assert 'http_requests_total{endpoint="/",method="GET",status_code="200"}' in content
     assert "# TYPE http_request_duration_seconds histogram" in content
     assert "# TYPE http_requests_in_progress gauge" in content
+    assert "# TYPE devops_info_visits_persistent_count gauge" in content
+    assert "devops_info_visits_persistent_count 1.0" in content
 
 
 def test_health_endpoint(client):

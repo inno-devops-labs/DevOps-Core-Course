@@ -41,6 +41,11 @@ endpoint_calls = Counter(
     ["endpoint"],
 )
 
+visits_persistent_count = Gauge(
+    "devops_info_visits_persistent_count",
+    "Current persisted visits counter value",
+)
+
 system_info_duration_seconds = Histogram(
     "devops_info_system_collection_seconds",
     "System information collection duration in seconds",
@@ -100,11 +105,15 @@ def ensure_parent_dir(path: Path) -> None:
 
 def read_visits() -> int:
     try:
-        return int(VISITS_FILE.read_text(encoding="utf-8").strip() or "0")
+        count = int(VISITS_FILE.read_text(encoding="utf-8").strip() or "0")
+        visits_persistent_count.set(count)
+        return count
     except FileNotFoundError:
+        visits_persistent_count.set(0)
         return 0
     except ValueError:
         logger.warning("Visits file contained invalid data", extra={"path": str(VISITS_FILE)})
+        visits_persistent_count.set(0)
         return 0
 
 
@@ -115,6 +124,7 @@ def write_visits(count: int) -> None:
         visits_file.flush()
         os.fsync(visits_file.fileno())
     VISITS_FILE.chmod(0o664)
+    visits_persistent_count.set(count)
 
 
 def increment_visits() -> int:
