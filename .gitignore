@@ -1,2 +1,7 @@
 test
-.*
+*.env
+*.vault_pass
+
+!.github
+!.gitignore
+!.gitkeep

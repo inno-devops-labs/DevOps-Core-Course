@@ -1,0 +1,11 @@
+# .helmignore
+myenv/
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+*.bak
+*.tmp
+.git/
+.idea/
+.vscode/
