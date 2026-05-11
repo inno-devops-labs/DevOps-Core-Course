@@ -1,8 +1,9 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "myapp.fullname" . }}
 spec:
+  serviceName: {{ include "myapp.fullname" . }}-headless
   replicas: {{ .Values.replicaCount }}
 
   selector:
@@ -13,22 +14,12 @@ spec:
     metadata:
       labels:
         app: {{ include "myapp.name" . }}
-      annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/configmap-file.yaml") . | sha256sum }}
 
     spec:
-      volumes:
-        - name: config-volume
-          configMap:
-            name: {{ include "myapp.fullname" . }}-config
-
-        - name: data-volume
-          persistentVolumeClaim:
-            claimName: {{ include "myapp.fullname" . }}-data
-
       containers:
         - name: app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+
           ports:
             - containerPort: {{ .Values.service.targetPort }}
 
@@ -39,7 +30,8 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /config
-            - name: data-volume
+
+            - name: data
               mountPath: /data
 
           livenessProbe:
@@ -56,9 +48,19 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 3
 
-  strategy:
-    blueGreen:
-      activeService: {{ include "myapp.fullname" . }}
-      previewService: {{ include "myapp.fullname" . }}-preview
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "myapp.fullname" . }}-config
 
-      autoPromotionEnabled: false
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
