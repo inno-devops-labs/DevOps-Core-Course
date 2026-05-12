@@ -1,0 +1,70 @@
+- name: Install prerequisites for Docker
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: yes
+  tags: [docker, packages]
+
+- name: Add Docker GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+  tags: [docker, repo]
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+    update_cache: yes
+  tags: [docker, repo]
+
+- name: Install Docker packages
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+  notify: restart docker
+  tags: [docker, packages]
+
+- name: Ensure Docker service is running and enabled
+  service:
+    name: docker
+    state: started
+    enabled: yes
+  tags: [docker, service]
+
+- name: Add user to docker group
+  user:
+    name: "{{ docker_user }}"
+    groups: docker
+    append: yes
+  notify: restart docker
+  tags: [docker, user]
+
+- name: Install Docker SDK for Python (for Ansible modules)
+  pip:
+    name:
+      - docker
+      - docker-compose
+    state: present
+  tags: [docker, pip]
+
+- name: Check Docker version
+  command: docker --version
+  register: docker_version
+  changed_when: false
+  tags: [docker, debug]
+
+- name: Display Docker version
+  debug:
+    msg: "{{ docker_version.stdout }}"
+  tags: [docker, debug]

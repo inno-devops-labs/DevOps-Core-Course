@@ -1,0 +1,6 @@
+- name: check_app_health
+  wait_for:
+    port: "{{ app_port }}"
+    timeout: 30
+    delay: 3
+  listen: "check_app_health"

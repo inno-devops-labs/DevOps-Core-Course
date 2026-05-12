@@ -1,0 +1,13 @@
+common_packages:
+  - python3-pip
+  - curl
+  - git
+  - vim
+  - htop
+  - net-tools
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - software-properties-common
+
+timezone: Europe/Moscow

@@ -1,0 +1,18 @@
+- name: Provision web server with common tools and Docker
+  hosts: webservers
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - common
+    - docker
+
+  post_tasks:
+    - name: Display system information
+      debug:
+        msg:
+          - "Hostname: {{ ansible_hostname }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Kernel: {{ ansible_kernel }}"
+          - "CPU Cores: {{ ansible_processor_cores }}"
+          - "Memory: {{ ansible_memtotal_mb }} MB"
