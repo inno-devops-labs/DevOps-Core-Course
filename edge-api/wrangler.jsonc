@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "adelina-edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-12",
+  "workers_dev": true,
+  "vars": {
+    "APP_NAME": "adelina-edge-api",
+    "COURSE_NAME": "DevOps Core",
+    "LAB_ID": "lab17"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "0ef64cda796347d9a9b1c0fbf733acbf"
+    }
+  ]
+}

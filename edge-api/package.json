@@ -1,0 +1,23 @@
+{
+  "name": "edge-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "whoami": "wrangler whoami",
+    "deployments": "wrangler deployments list",
+    "kv:create": "wrangler kv namespace create SETTINGS",
+    "secret:api-token": "wrangler secret put API_TOKEN",
+    "secret:admin-email": "wrangler secret put ADMIN_EMAIL",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260510.0",
+    "typescript": "^5.9.3",
+    "wrangler": "4.15.2"
+  }
+}
