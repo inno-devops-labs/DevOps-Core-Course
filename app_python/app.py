@@ -71,6 +71,9 @@ def metrics():
 
 @app.before_request
 def before_request():
+    # Do not touch in-flight gauge for Prometheus scrapes (no matching after_request dec).
+    if request.path == "/metrics":
+        return
     request.start_time = time.time()
     http_requests_in_progress.inc()
 
@@ -78,8 +81,8 @@ def before_request():
 @app.after_request
 def after_request(response):
     if request.path == "/metrics":
-         return response
-         
+        return response
+
     duration = time.time() - request.start_time
 
     http_requests_total.labels(
@@ -158,6 +161,8 @@ def get_response():
 
 @app.before_request
 def log_request():
+    if request.path == "/metrics":
+        return
     request.log_start_time = datetime.now(timezone.utc)
     logger.info(
         "request_started",

@@ -1,0 +1,57 @@
+# kube-prometheus-stack — Minikube + Docker driver (Lab 16)
+# ------------------------------------------------------------------
+# Pin chart version when installing (see k8s/scripts/install-kube-prometheus-minikube.sh):
+#   helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+#     --version 65.8.1 -n monitoring --create-namespace -f k8s/kube-prometheus-values-minikube-docker.yaml
+#
+# Minikube does not expose kubeadm-style control-plane endpoints; scraping them
+# creates noisy DOWN targets and is unnecessary for the lab.
+kubeControllerManager:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+# Avoid PVC / default StorageClass issues on small clusters.
+grafana:
+  persistence:
+    enabled: false
+
+# Docker driver: host root bind-mount + mount propagation breaks node-exporter.
+# Non-distroless image is slightly more forgiving on some Docker/WSL setups.
+prometheus-node-exporter:
+  hostRootFsMount:
+    enabled: false
+  hostPID: false
+  image:
+    distroless: false
+
+kube-state-metrics:
+  image:
+    pullPolicy: Always
+
+prometheus:
+  prometheusSpec:
+    retention: 5d
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi

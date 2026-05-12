@@ -6,6 +6,9 @@
 replicaCount: 3
 containerPort: 5000
 
+serviceLabels:
+  app.kubernetes.io/name: myapp
+
 workload:
   # rollout (Lab 14) or statefulset (Lab 15)
   kind: rollout
