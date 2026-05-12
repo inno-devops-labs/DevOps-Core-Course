@@ -1,0 +1,207 @@
+$ StatefulSet CPU by pod
+[
+  {
+    "metric": {
+      "pod": "info-devops-info-service-1"
+    },
+    "value": [
+      1778614124.960,
+      "0.0037840551367627436"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "info-devops-info-service-2"
+    },
+    "value": [
+      1778614124.960,
+      "0.004068483837065443"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "info-devops-info-service-0"
+    },
+    "value": [
+      1778614124.960,
+      "0.004763202759310232"
+    ]
+  }
+]
+
+$ StatefulSet memory by pod (MiB)
+[
+  {
+    "metric": {
+      "pod": "info-devops-info-service-1"
+    },
+    "value": [
+      1778614124.978,
+      "37.49609375"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "info-devops-info-service-2"
+    },
+    "value": [
+      1778614124.978,
+      "36.890625"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "info-devops-info-service-0"
+    },
+    "value": [
+      1778614124.978,
+      "37.07421875"
+    ]
+  }
+]
+
+$ Default namespace CPU by pod
+[
+  {
+    "metric": {
+      "pod": "wait-for-service-demo"
+    },
+    "value": [
+      1778614124.999,
+      "0"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "init-dependency-c84dcf55d-vjp5d"
+    },
+    "value": [
+      1778614124.999,
+      "0"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "init-dependency-7d7b66789b-qrssh"
+    },
+    "value": [
+      1778614124.999,
+      "0"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "init-download-demo"
+    },
+    "value": [
+      1778614124.999,
+      "0.000040180000000000005"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "info-devops-info-service-1"
+    },
+    "value": [
+      1778614124.999,
+      "0.003784627042506236"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "info-devops-info-service-2"
+    },
+    "value": [
+      1778614124.999,
+      "0.004069090569521843"
+    ]
+  },
+  {
+    "metric": {
+      "pod": "info-devops-info-service-0"
+    },
+    "value": [
+      1778614124.999,
+      "0.004763897462070918"
+    ]
+  }
+]
+
+$ Node memory used percentage
+[
+  {
+    "metric": {
+      "container": "node-exporter",
+      "endpoint": "http-metrics",
+      "instance": "192.168.58.2:9100",
+      "job": "node-exporter",
+      "namespace": "monitoring",
+      "pod": "monitoring-prometheus-node-exporter-6t74v",
+      "service": "monitoring-prometheus-node-exporter"
+    },
+    "value": [
+      1778614125.012,
+      "38.41428803642505"
+    ]
+  }
+]
+
+$ Node memory used MiB
+[
+  {
+    "metric": {
+      "container": "node-exporter",
+      "endpoint": "http-metrics",
+      "instance": "192.168.58.2:9100",
+      "job": "node-exporter",
+      "namespace": "monitoring",
+      "pod": "monitoring-prometheus-node-exporter-6t74v",
+      "service": "monitoring-prometheus-node-exporter"
+    },
+    "value": [
+      1778614125.026,
+      "3452.53515625"
+    ]
+  }
+]
+
+$ Node CPU cores
+[
+  {
+    "metric": {
+      "instance": "192.168.58.2:9100"
+    },
+    "value": [
+      1778614125.041,
+      "12"
+    ]
+  }
+]
+
+$ Kubelet pods
+[
+  {
+    "metric": {},
+    "value": [
+      1778614125.054,
+      "19"
+    ]
+  }
+]
+
+$ Kubelet containers
+[
+  {
+    "metric": {},
+    "value": [
+      1778614125.067,
+      "28"
+    ]
+  }
+]
+
+$ Default namespace receive bytes/sec by pod
+[]
+
+$ Default namespace transmit bytes/sec by pod
+[]

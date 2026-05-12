@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: init-dependency
+  labels:
+    app: init-dependency
+spec:
+  selector:
+    app: init-dependency
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: init-dependency
+  labels:
+    app: init-dependency
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: init-dependency
+  template:
+    metadata:
+      labels:
+        app: init-dependency
+    spec:
+      containers:
+        - name: http
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - httpd -f -p 80
+          ports:
+            - name: http
+              containerPort: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-for-service-demo
+  labels:
+    app: wait-for-service-demo
+spec:
+  restartPolicy: Never
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - until nslookup init-dependency.default.svc.cluster.local; do echo waiting for init-dependency; sleep 2; done
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - echo dependency is ready && sleep 3600

@@ -1,0 +1,37 @@
+replicaCount: 3
+
+image:
+  repository: devops-info-service
+  tag: "lab16"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5000
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+persistence:
+  enabled: true
+  mountPath: "/data"
+  size: "100Mi"
+  accessMode: "ReadWriteOnce"
+  storageClass: "standard"
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
+
+rollout:
+  enabled: false

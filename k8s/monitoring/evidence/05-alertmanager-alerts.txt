@@ -1,0 +1,31 @@
+$ Alertmanager /api/v2/alerts
+[
+  {
+    "annotations": {
+      "description": "This is an alert meant to ensure that the entire alerting pipeline is functional.\nThis alert is always firing, therefore it should always be firing in Alertmanager\nand always fire against a receiver. There are integrations with various notification\nmechanisms that send a notification when this alert is not firing. For example the\n\"DeadMansSnitch\" integration in PagerDuty.\n",
+      "runbook_url": "https://runbooks.prometheus-operator.dev/runbooks/general/watchdog",
+      "summary": "An alert that should always be firing to certify that Alertmanager is working properly."
+    },
+    "endsAt": "2026-05-12T19:30:04.301Z",
+    "fingerprint": "d200352fd868ba95",
+    "receivers": [
+      {
+        "name": "null"
+      }
+    ],
+    "startsAt": "2026-05-12T19:24:34.301Z",
+    "status": {
+      "inhibitedBy": [],
+      "mutedBy": [],
+      "silencedBy": [],
+      "state": "active"
+    },
+    "updatedAt": "2026-05-12T19:26:04.307Z",
+    "generatorURL": "http://monitoring-kube-prometheus-prometheus.monitoring:9090/graph?g0.expr=vector%281%29&g0.tab=1",
+    "labels": {
+      "alertname": "Watchdog",
+      "prometheus": "monitoring/monitoring-kube-prometheus-prometheus",
+      "severity": "none"
+    }
+  }
+]

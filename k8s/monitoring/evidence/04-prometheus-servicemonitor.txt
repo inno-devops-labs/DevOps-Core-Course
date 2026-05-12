@@ -1,0 +1,124 @@
+$ curl Prometheus query: up{job="info-devops-info-service"}
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "__name__": "up",
+          "container": "devops-info-service",
+          "endpoint": "http",
+          "instance": "10.244.0.19:5000",
+          "job": "info-devops-info-service",
+          "namespace": "default",
+          "pod": "info-devops-info-service-2",
+          "service": "info-devops-info-service"
+        },
+        "value": [
+          1778614044.169,
+          "1"
+        ]
+      },
+      {
+        "metric": {
+          "__name__": "up",
+          "container": "devops-info-service",
+          "endpoint": "http",
+          "instance": "10.244.0.18:5000",
+          "job": "info-devops-info-service",
+          "namespace": "default",
+          "pod": "info-devops-info-service-1",
+          "service": "info-devops-info-service"
+        },
+        "value": [
+          1778614044.169,
+          "1"
+        ]
+      },
+      {
+        "metric": {
+          "__name__": "up",
+          "container": "devops-info-service",
+          "endpoint": "http",
+          "instance": "10.244.0.16:5000",
+          "job": "info-devops-info-service",
+          "namespace": "default",
+          "pod": "info-devops-info-service-0",
+          "service": "info-devops-info-service"
+        },
+        "value": [
+          1778614044.169,
+          "1"
+        ]
+      }
+    ]
+  }
+}
+
+$ curl Prometheus targets containing info-devops-info-service
+{
+  "health": "up",
+  "scrapeUrl": "http://10.244.0.16:5000/metrics",
+  "labels": {
+    "container": "devops-info-service",
+    "endpoint": "http",
+    "instance": "10.244.0.16:5000",
+    "job": "info-devops-info-service",
+    "namespace": "default",
+    "pod": "info-devops-info-service-0",
+    "service": "info-devops-info-service"
+  },
+  "lastScrape": "2026-05-12T19:27:12.86862698Z",
+  "lastError": ""
+}
+{
+  "health": "up",
+  "scrapeUrl": "http://10.244.0.18:5000/metrics",
+  "labels": {
+    "container": "devops-info-service",
+    "endpoint": "http",
+    "instance": "10.244.0.18:5000",
+    "job": "info-devops-info-service",
+    "namespace": "default",
+    "pod": "info-devops-info-service-1",
+    "service": "info-devops-info-service"
+  },
+  "lastScrape": "2026-05-12T19:27:23.303702867Z",
+  "lastError": ""
+}
+{
+  "health": "up",
+  "scrapeUrl": "http://10.244.0.19:5000/metrics",
+  "labels": {
+    "container": "devops-info-service",
+    "endpoint": "http",
+    "instance": "10.244.0.19:5000",
+    "job": "info-devops-info-service",
+    "namespace": "default",
+    "pod": "info-devops-info-service-2",
+    "service": "info-devops-info-service"
+  },
+  "lastScrape": "2026-05-12T19:27:18.558479244Z",
+  "lastError": ""
+}
+
+$ curl app metric sample
+{
+  "status": "success",
+  "data": {
+    "resultType": "vector",
+    "result": [
+      {
+        "metric": {
+          "endpoint": "http",
+          "status": "200"
+        },
+        "value": [
+          1778614044.202,
+          "480"
+        ]
+      }
+    ]
+  }
+}

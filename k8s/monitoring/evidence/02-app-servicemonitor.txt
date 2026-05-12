@@ -1,0 +1,51 @@
+$ kubectl get po,sts,svc,pvc,servicemonitor -l app.kubernetes.io/instance=info -o wide
+NAME                             READY   STATUS    RESTARTS   AGE     IP            NODE            NOMINATED NODE   READINESS GATES
+pod/info-devops-info-service-0   1/1     Running   0          5m53s   10.244.0.16   lab16-adelina   <none>           <none>
+pod/info-devops-info-service-1   1/1     Running   0          5m39s   10.244.0.18   lab16-adelina   <none>           <none>
+pod/info-devops-info-service-2   1/1     Running   0          5m29s   10.244.0.19   lab16-adelina   <none>           <none>
+
+NAME                                        READY   AGE     CONTAINERS            IMAGES
+statefulset.apps/info-devops-info-service   3/3     5m54s   devops-info-service   devops-info-service:lab16
+
+NAME                                        TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE     SELECTOR
+service/info-devops-info-service            ClusterIP   10.100.99.46   <none>        80/TCP    5m54s   app.kubernetes.io/instance=info,app.kubernetes.io/name=devops-info-service
+service/info-devops-info-service-headless   ClusterIP   None           <none>        80/TCP    5m54s   app.kubernetes.io/instance=info,app.kubernetes.io/name=devops-info-service
+
+NAME                                                    STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE     VOLUMEMODE
+persistentvolumeclaim/data-info-devops-info-service-0   Bound    pvc-5f3399a7-a15c-4ed6-ae02-51afa7333474   100Mi      RWO            standard       <unset>                 7m6s    Filesystem
+persistentvolumeclaim/data-info-devops-info-service-1   Bound    pvc-e6d58ebb-d641-4747-ab8c-af735568bf68   100Mi      RWO            standard       <unset>                 6m54s   Filesystem
+persistentvolumeclaim/data-info-devops-info-service-2   Bound    pvc-b1379b7a-3dea-4970-b94c-4715a4b97c9f   100Mi      RWO            standard       <unset>                 6m40s   Filesystem
+
+NAME                                                            AGE
+servicemonitor.monitoring.coreos.com/info-devops-info-service   5m54s
+
+$ kubectl get servicemonitor info-devops-info-service -o yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations:
+    meta.helm.sh/release-name: info
+    meta.helm.sh/release-namespace: default
+  creationTimestamp: "2026-05-12T19:21:29Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/instance: info
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/version: 1.0.0
+    helm.sh/chart: devops-info-service-0.1.0
+    release: monitoring
+  name: info-devops-info-service
+  namespace: default
+  resourceVersion: "1609"
+  uid: b72f9942-2ffd-4f11-8478-8d317f49c4f0
+spec:
+  endpoints:
+  - interval: 15s
+    path: /metrics
+    port: http
+    scrapeTimeout: 10s
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: info
+      app.kubernetes.io/name: devops-info-service
