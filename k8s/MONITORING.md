@@ -133,15 +133,6 @@ Screenshots were captured after port-forwarding Grafana and Alertmanager locally
 
 ![6 — Alertmanager alerts](screenshots/lab16-alertmanager-alerts.png)
 
-**How screenshots were produced (repeatable):**
-
-```bash
-# terminals
-kubectl port-forward svc/monitoring-grafana -n monitoring 13000:80
-kubectl port-forward svc/monitoring-kube-prometheus-prometheus -n monitoring 19090:9090
-kubectl port-forward svc/monitoring-kube-prometheus-alertmanager -n monitoring 19093:9093
-
-```
 
 ---
 
