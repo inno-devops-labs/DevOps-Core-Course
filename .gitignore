@@ -1,2 +1,10 @@
 test
 /venv
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+*.tfvars
+sa-key.json
+*.pem
+*.key
