@@ -1,0 +1,51 @@
+# Lab 16, Task 3 — standalone "download via init container" demo.
+#
+# A self-contained alternative to the Helm-chart based init container
+# in values-monitoring.yaml. Useful for the verification commands listed
+# in the lab hints (kubectl logs <pod> -c init-download, etc.).
+#
+#   kubectl apply -f k8s/init-containers/download-init.yaml
+#   kubectl get pod init-download-demo -w   # Init:0/1 -> Running
+#   kubectl logs init-download-demo -c init-download
+#   kubectl exec init-download-demo -- cat /data/index.html | head
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-download-demo
+  labels:
+    app: init-download-demo
+    lab: "16"
+spec:
+  restartPolicy: OnFailure
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          set -e
+          echo "downloading example.com -> /work-dir/index.html"
+          wget -q -O /work-dir/index.html https://example.com
+          ls -l /work-dir
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+  containers:
+    - name: main
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "main container sees the downloaded asset:"
+          ls -l /data
+          head -5 /data/index.html
+          sleep 600
+      volumeMounts:
+        - name: workdir
+          mountPath: /data
+          readOnly: true
+  volumes:
+    - name: workdir
+      emptyDir: {}

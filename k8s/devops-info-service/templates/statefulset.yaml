@@ -24,6 +24,22 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      {{- if .Values.initContainers.download.enabled }}
+      initContainers:
+        - name: init-download
+          image: {{ .Values.initContainers.download.image }}
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "Downloading {{ .Values.initContainers.download.url }} -> /work-dir/index.html"
+              wget -q -O /work-dir/index.html {{ .Values.initContainers.download.url }}
+              ls -l /work-dir
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -43,6 +59,11 @@ spec:
               mountPath: /config
             - name: data
               mountPath: /data
+            {{- if .Values.initContainers.download.enabled }}
+            - name: workdir
+              mountPath: /work-dir
+              readOnly: true
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           livenessProbe:
@@ -53,6 +74,10 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
+        {{- if .Values.initContainers.download.enabled }}
+        - name: workdir
+          emptyDir: {}
+        {{- end }}
   volumeClaimTemplates:
     - metadata:
         name: data
