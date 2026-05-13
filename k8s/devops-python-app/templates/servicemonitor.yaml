@@ -1,0 +1,22 @@
+{{- if and .Values.statefulset.enabled .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "devops-python-app.fullname" . }}-monitor
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "devops-python-app.labels" . | nindent 4 }}
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      {{- include "devops-python-app.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+{{- end }}

@@ -143,3 +143,10 @@ hooks:
 
 nameOverride: ""
 fullnameOverride: ""
+
+initContainers:
+  download:
+    enabled: true
+
+serviceMonitor:
+  enabled: false
