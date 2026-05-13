@@ -126,3 +126,29 @@ statefulset:
     type: RollingUpdate     # RollingUpdate | OnDelete
     rollingUpdate:
       partition: 0          # only pods with ordinal >= partition update
+
+# Lab 16 — Init containers (gated; download + wait-for-service patterns).
+initContainers:
+  enabled: false
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: https://raw.githubusercontent.com/kubernetes/kubernetes/master/README.md
+    targetFile: /work-dir/index.html
+  waitForService:
+    enabled: true
+    image: busybox:1.36
+    # FQDN of the service to wait on. Default points at kube-prometheus-stack Prometheus.
+    service: monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local
+    port: 9090
+    timeoutSeconds: 120
+
+# Lab 16 — Prometheus ServiceMonitor (bonus). Requires kube-prometheus-stack.
+monitoring:
+  serviceMonitor:
+    enabled: false
+    # Label kube-prometheus-stack's Prometheus uses to discover ServiceMonitors
+    # (matches the install release name; default chart install is "monitoring").
+    releaseLabel: monitoring
+    interval: 30s
+    scrapeTimeout: 10s

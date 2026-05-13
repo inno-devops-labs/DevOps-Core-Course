@@ -42,10 +42,15 @@ spec:
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
         runAsUser: {{ .Values.securityContext.runAsUser }}
         runAsGroup: {{ .Values.securityContext.runAsGroup }}
+      {{- with (include "devops-info-service.initContainers" . | trim) }}
+      initContainers:
+        {{- . | nindent 8 }}
+      {{- end }}
       volumes:
         - name: app-config
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
+        {{- include "devops-info-service.initContainerVolumes" . | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -77,6 +82,7 @@ spec:
               readOnly: true
             - name: visits-data
               mountPath: /data
+            {{- include "devops-info-service.initContainerVolumeMounts" . | nindent 12 }}
           envFrom:
             - secretRef:
                 name: {{ include "devops-info-service.fullname" . }}-credentials
