@@ -151,3 +151,11 @@ hooks:
       - sh
       - -c
       - echo running smoke test metadata for {{ .Release.Name }} && echo post-install validation passed
+
+serviceMonitor:
+  enabled: false
+  port: http
+  path: /metrics
+  interval: 15s
+  labels:
+    release: monitoring

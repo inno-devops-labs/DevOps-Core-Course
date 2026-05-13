@@ -1,0 +1,17 @@
+grafana:
+  adminPassword: prom-operator
+
+alertmanager:
+  enabled: true
+
+prometheusOperator:
+  enabled: true
+
+prometheus:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true

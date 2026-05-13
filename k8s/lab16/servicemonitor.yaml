@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: lab16-stateful-web
+  labels:
+    release: monitoring
+    app.kubernetes.io/name: lab16-stateful-web
+    app.kubernetes.io/part-of: devops-core-course
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lab16-stateful-web
+  namespaceSelector:
+    matchNames:
+      - default
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
