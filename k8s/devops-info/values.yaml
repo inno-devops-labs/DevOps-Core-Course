@@ -70,6 +70,16 @@ rollout:
     failureLimit: 1
     successCondition: result == "healthy"
 
+statefulset:
+  enabled: false
+  podManagementPolicy: OrderedReady
+  headlessService:
+    enabled: true
+    publishNotReadyAddresses: false
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+
 terminationGracePeriodSeconds: 30
 
 podAnnotations: {}
