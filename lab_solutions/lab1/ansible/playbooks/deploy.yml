@@ -5,15 +5,15 @@
     - ../group_vars/all.yml
 
   roles:
-    - app_deploy
+    - web_app
 
   post_tasks:
     - name: Show deployment summary
       debug:
         msg:
           - "Deployment complete"
-          - "Container: {{ app_container_name }}"
-          - "Image: {{ docker_image }}:{{ docker_image_tag }}"
+          - "Container: {{ app_name }}"
+          - "Image: {{ docker_image }}:{{ docker_tag | default('latest') }}"
           - "Port: {{ app_port }}"
           - "URL: http://{{ ansible_default_ipv4.address }}:{{ app_port }}"
       tags: [deploy, debug]

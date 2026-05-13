@@ -1,24 +1,68 @@
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-  tags: [common, packages]
+- name: System provisioning with error handling
+  block:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      tags: [packages, common]
 
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
-  tags: [common, packages]
+    - name: Install common packages
+      apt:
+        name: "{{ common_packages | default(['python3-pip', 'curl', 'git', 'vim', 'htop', 'net-tools', 'ca-certificates']) }}"
+        state: present
+      tags: [packages, common]
 
-- name: Set timezone
-  timezone:
-    name: "{{ timezone }}"
-  notify: restart cron
-  tags: [common, timezone]
+  rescue:
+    - name: Fix apt cache on failure
+      command: apt-get update --fix-missing
+      register: fix_result
+      tags: [packages, common]
 
-- name: Ensure /opt directory exists
-  file:
-    path: /opt
-    state: directory
-    mode: '0755'
+    - name: Display fix result
+      debug:
+        msg: "Apt cache fixed: {{ fix_result.stdout }}"
+      tags: [packages, common]
+
+  always:
+    - name: Log provisioning completion
+      copy:
+        content: |
+          Common role completed at {{ ansible_date_time.iso8601 }}
+          Host: {{ ansible_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+        dest: /tmp/common_provisioning.log
+        mode: '0644'
+      tags: [packages, common]
+
+  become: true
   tags: [common]
+
+- name: User management block
+  block:
+    - name: Ensure users exist
+      user:
+        name: "{{ item }}"
+        state: present
+        shell: /bin/bash
+      loop: "{{ extra_users | default([]) }}"
+      tags: [users, common]
+
+  rescue:
+    - name: Log user creation failure
+      debug:
+        msg: "Failed to create users: {{ ansible_failed_result }}"
+      tags: [users, common]
+
+  become: true
+  tags: [common, users]
+
+- name: Timezone configuration block
+  block:
+    - name: Set timezone
+      timezone:
+        name: "{{ timezone | default('UTC') }}"
+      notify: restart cron
+      tags: [timezone, common]
+
+  become: true
+  tags: [common, timezone]

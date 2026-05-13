@@ -1,0 +1,76 @@
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir | default('/opt/' + app_name) }}"
+        state: directory
+        mode: '0755'
+      tags: [app_deploy, compose]
+
+    - name: Template docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir | default('/opt/' + app_name) }}/docker-compose.yml"
+        mode: '0644'
+      tags: [app_deploy, compose]
+
+    - name: Login to Docker Hub
+      community.docker.docker_login:
+        registry_url: https://index.docker.io/v1/
+        username: "{{ dockerhub_username }}"
+        password: "{{ dockerhub_password }}"
+      no_log: true
+      tags: [app_deploy, docker_login]
+
+    - name: Deploy with Docker Compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_project_dir | default('/opt/' + app_name) }}"
+        state: present
+        pull: always
+        recreate: always
+      register: compose_result
+      tags: [app_deploy, compose]
+
+    - name: Wait for container to be ready
+      wait_for:
+        port: "{{ app_port }}"
+        timeout: 60
+        delay: 5
+      tags: [app_deploy, health]
+
+    - name: Verify health endpoint
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        return_content: yes
+        status_code: 200
+        timeout: 10
+      register: health_response
+      retries: 10
+      delay: 5
+      until: health_response.status == 200
+      ignore_errors: yes
+      tags: [app_deploy, health]
+
+    - name: Display container status
+      debug:
+        msg:
+          - "Container {{ app_name }} is running"
+          - "Image: {{ docker_image }}:{{ docker_tag | default('latest') }}"
+          - "Port: {{ app_port }}"
+          - "URL: http://{{ ansible_default_ipv4.address }}:{{ app_port }}"
+      tags: [app_deploy, debug]
+
+  rescue:
+    - name: Log deployment failure
+      debug:
+        msg: "Deployment failed: {{ ansible_failed_result }}"
+      tags: [app_deploy]
+
+  become: true
+  tags: [app_deploy]

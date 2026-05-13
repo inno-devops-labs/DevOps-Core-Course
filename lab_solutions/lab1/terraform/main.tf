@@ -75,6 +75,13 @@ resource "yandex_vpc_security_group" "lab_sg" {
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description    = "Lab6 App port 8000"
+    protocol       = "TCP"
+    port           = 8000
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     description    = "Allow all outgoing traffic"
     protocol       = "ANY"

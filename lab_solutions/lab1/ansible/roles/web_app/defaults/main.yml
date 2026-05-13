@@ -1,0 +1,12 @@
+app_name: devops-python
+docker_image: "{{ dockerhub_username }}/devops-info-service"
+docker_tag: latest
+app_port: 8000
+app_internal_port: 5000
+app_restart_policy: unless-stopped
+compose_project_dir: "/opt/{{ app_name }}"
+
+dockerhub_username: ""
+dockerhub_password: ""
+
+web_app_wipe: false

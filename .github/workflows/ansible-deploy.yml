@@ -1,0 +1,94 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'ansible/**'
+      - '!ansible/docs/**'
+      - '.github/workflows/ansible-deploy.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'ansible/playbooks/**'
+      - 'ansible/roles/**'
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/*.yml --exclude roles/
+
+  deploy:
+    name: Deploy to VM
+    needs: lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible and dependencies
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Create vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Create inventory file
+        run: |
+          mkdir -p ansible/inventory
+          cat > ansible/inventory/hosts.ini <<INNER_EOF
+          [webservers]
+          lab-vm ansible_host=${{ secrets.VM_HOST }} ansible_user=ubuntu ansible_ssh_private_key_file=/tmp/ssh_key
+
+          [webservers:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          INNER_EOF
+
+      - name: Setup SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > /tmp/ssh_key
+          chmod 600 /tmp/ssh_key
+
+      - name: Run Ansible deploy
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy.yml \
+            --vault-password-file /tmp/vault_pass \
+            --ssh-common-args="-o StrictHostKeyChecking=no"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f /tmp/vault_pass /tmp/ssh_key
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          curl -f http://${{ secrets.VM_HOST }}:8000/health || echo "Health check failed"

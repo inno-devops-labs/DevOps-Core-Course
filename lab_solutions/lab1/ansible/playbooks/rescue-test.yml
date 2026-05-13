@@ -1,0 +1,23 @@
+- name: Test rescue block with Docker installation
+  hosts: webservers
+  become: yes
+  
+  tasks:
+    - name: Temporarily break Docker GPG key (for testing)
+      block:
+        - name: Add Docker GPG key with wrong URL
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg-INVALID
+            state: present
+      rescue:
+        - name: Rescue block - fix with correct URL
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+          register: rescue_result
+        
+        - name: Show rescue succeeded
+          debug:
+            msg: "Rescue block executed successfully!"
+      
+      tags: [test, rescue]

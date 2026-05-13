@@ -17,3 +17,6 @@ inno-key.json
 ansible/inventory/*.pyc
 __pycache__/
 venv
+
+.vault_pass
+.retry

@@ -1,58 +1,98 @@
-- name: Install prerequisites for Docker
-  apt:
-    name:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - gnupg
-      - lsb-release
-    state: present
-    update_cache: yes
+- name: Docker installation block
+  block:
+    - name: Install prerequisites for Docker
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: yes
+      tags: [docker_install, docker]
 
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+    - name: Add Docker GPG key with retry
+      block:
+        - name: Add Docker GPG key
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+      rescue:
+        - name: Wait 10 seconds and retry GPG key
+          wait_for:
+            timeout: 10
+          tags: [docker_install, docker]
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
-    update_cache: yes
+        - name: Retry adding Docker GPG key
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+      tags: [docker_install, docker]
 
-- name: Install Docker packages
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
-      - docker-compose-plugin
-    state: present
-  notify: restart docker
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        update_cache: yes
+      tags: [docker_install, docker]
 
-- name: Ensure Docker service is running and enabled
-  service:
-    name: docker
-    state: started
-    enabled: yes
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+      notify: restart docker
+      tags: [docker_install, docker]
 
-- name: Add ubuntu user to docker group
-  user:
-    name: ubuntu
-    groups: docker
-    append: yes
+  rescue:
+    - name: Log Docker installation failure
+      debug:
+        msg: "Docker installation failed: {{ ansible_failed_result }}"
+      tags: [docker_install, docker]
 
-- name: Install Docker SDK for Python
-  pip:
-    name: docker
-    state: present
+  always:
+    - name: Ensure Docker service is enabled
+      service:
+        name: docker
+        enabled: yes
+      tags: [docker_install, docker]
 
-- name: Verify Docker installation
-  command: docker --version
-  register: docker_version
-  changed_when: false
+  become: true
+  tags: [docker]
 
-- name: Display Docker version
-  debug:
-    msg: "{{ docker_version.stdout }}"
+- name: Docker configuration block
+  block:
+    - name: Add user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+      tags: [docker_config, docker]
+      notify: restart docker
+
+    - name: Install Docker SDK for Python
+      pip:
+        name:
+          - docker
+          - requests==2.31.0
+        state: present
+      tags: [docker_config, docker]
+
+    - name: Verify Docker installation
+      command: docker --version
+      register: docker_version
+      changed_when: false
+      tags: [docker_config, docker]
+
+    - name: Display Docker version
+      debug:
+        msg: "{{ docker_version.stdout }}"
+      tags: [docker_config, docker]
+
+  become: true
+  tags: [docker, docker_config]
