@@ -1,0 +1,24 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "edge-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-05-13",
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"vars": {
+		"APP_NAME": "edge-api",
+		"COURSE_NAME": "devops-core",
+		"DEPLOYMENT_NOTE": "v2-post-rollback-demo-v2"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "e1c99e3e9d5842caa4fc2dc6d913e7e1"
+		}
+	]
+}

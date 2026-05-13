@@ -14,3 +14,7 @@ monitoring/.env
 
 # Local scratch
 .tmp/
+
+# Node / Cloudflare Workers (Lab 17)
+edge-api/node_modules/
+**/.wrangler/
