@@ -15,7 +15,7 @@
 	"vars": {
 		"APP_NAME": "edge-api",
 		"COURSE_NAME": "devops-core",
-		"DEPLOYMENT_LABEL": "v1"
+		"DEPLOYMENT_LABEL": "v2"
 	},
 	"kv_namespaces": [
 		{
