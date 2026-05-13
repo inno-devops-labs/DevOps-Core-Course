@@ -2,7 +2,7 @@ name: Ansible Deployment
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, lab6-solution ]
     paths:
       - 'ansible/**'
       - '!ansible/docs/**'
