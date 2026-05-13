@@ -1,0 +1,25 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "devops-lab17",
+	"main": "src/index.ts",
+	"workers_dev": true,
+	"compatibility_date": "2026-05-13",
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"vars": {
+		"APP_NAME": "devops-lab17",
+		"COURSE_NAME": "devops-core",
+		"DEPLOYMENT_NOTE": "v2-post-rollback-demo-v2"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "1b8d36678fda4377a9727ba0ca304221"
+		}
+	]
+}

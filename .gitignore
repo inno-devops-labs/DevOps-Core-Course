@@ -1,9 +1,20 @@
-.pytest_cache/
-.vscode/
+test
+.idea/
 .venv
+
 # Ansible
 *.retry
 .vault_pass
 ansible/inventory/*.pyc
 __pycache__/
+
+# Monitoring secrets
 monitoring/.env
+.env
+
+# Local scratch
+.tmp/
+
+# Node / Cloudflare Workers (Lab 17)
+edge-api/node_modules/
+**/.wrangler/
