@@ -43,6 +43,20 @@ spec:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        - name: init-download
+          image: {{ .Values.initContainers.downloadFile.image }}
+          command:
+            {{- toYaml .Values.initContainers.downloadFile.command | nindent 12 }}
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image }}
+          command:
+            {{- toYaml .Values.initContainers.waitForService.command | nindent 12 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

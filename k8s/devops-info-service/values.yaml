@@ -109,6 +109,15 @@ statefulset:
   podManagementPolicy: OrderedReady
   headlessServiceSuffix: headless
 
+initContainers:
+  enabled: true
+  downloadFile:
+    image: "busybox:1.36"
+    command: ['sh', '-c', 'wget -O /data/index.html https://example.com']
+  waitForService:
+    image: "busybox:1.36"
+    command: ['sh', '-c', 'until nslookup kubernetes.default.svc.cluster.local; do echo "waiting for service"; sleep 2; done; echo "Service found!"']
+
 # Liveness probe — restarts the container if Flask becomes unresponsive
 livenessProbe:
   httpGet:
