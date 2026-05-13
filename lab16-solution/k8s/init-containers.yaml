@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wait-service
+  labels:
+    app: wait-service
+spec:
+  selector:
+    app: wait-service
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wait-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wait-service
+  template:
+    metadata:
+      labels:
+        app: wait-service
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25.4
+          ports:
+            - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: init-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: init-demo
+  template:
+    metadata:
+      labels:
+        app: init-demo
+    spec:
+      initContainers:
+        - name: wait-for-service
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z wait-service 80; do echo waiting; sleep 2; done']
+        - name: init-download
+          image: busybox:1.36
+          command: ['sh', '-c', 'wget -q -O /work-dir/index.html https://example.com']
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+      containers:
+        - name: main-app
+          image: busybox:1.36
+          command: ['sh', '-c', 'cat /data/index.html && sleep 3600']
+          volumeMounts:
+            - name: workdir
+              mountPath: /data
+      volumes:
+        - name: workdir
+          emptyDir: {}
