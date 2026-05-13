@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-13",
+  "observability": {
+    "enabled": true
+  },
+
+  // Plaintext vars — readable by any Cloudflare account member; not for secrets.
+  "vars": {
+    "APP_NAME": "edge-api",
+    "COURSE_NAME": "devops-core"
+  },
+
+  // Workers KV — persistent key/value store, replicated to every Cloudflare PoP.
+  // Run `npx wrangler kv namespace create SETTINGS` and paste the returned id here.
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ]
+
+  // Secrets (API_TOKEN, ADMIN_EMAIL) are NOT defined here. They're created with:
+  //   npx wrangler secret put API_TOKEN
+  //   npx wrangler secret put ADMIN_EMAIL
+  // Local dev reads the same names from .dev.vars (gitignored).
+}

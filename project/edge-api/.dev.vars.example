@@ -1,0 +1,4 @@
+# Copy to `.dev.vars` (which is gitignored) and put real values for local `wrangler dev`.
+# Production secrets are created with `npx wrangler secret put API_TOKEN` etc.
+API_TOKEN=local-dev-token-replace-me
+ADMIN_EMAIL=admin@example.com
