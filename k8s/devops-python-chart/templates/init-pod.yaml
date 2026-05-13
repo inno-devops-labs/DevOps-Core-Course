@@ -23,8 +23,8 @@ spec:
         - sh
         - -c
         - |
-          until nslookup {{ include "devops-python-chart.fullname" . }}.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do
-            echo "Waiting for service {{ include "devops-python-chart.fullname" . }}..."
+          until nslookup {{ include "devops-python-chart.fullname" . }}-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do
+            echo "Waiting for service {{ include "devops-python-chart.fullname" . }}-service..."
             sleep 2
           done
           echo "Service is ready"
