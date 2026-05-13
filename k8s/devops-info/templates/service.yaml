@@ -5,6 +5,9 @@ metadata:
   name: {{ include "common.fullname" . }}
   labels:
     {{- include "common.labels" . | nindent 4 }}
+    {{- if .Values.serviceMonitor.enabled }}
+    app.kubernetes.io/monitoring: "true"
+    {{- end }}
 spec:
   type: {{ .Values.service.type }}
   selector:
