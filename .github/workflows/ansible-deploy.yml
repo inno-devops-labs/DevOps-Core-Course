@@ -32,7 +32,7 @@ jobs:
 
       - name: Run ansible-lint
         run: |
-          cd ansible
+          cd lab_solutions/lab1/ansible
           ansible-lint playbooks/*.yml --exclude roles/
 
   deploy:
