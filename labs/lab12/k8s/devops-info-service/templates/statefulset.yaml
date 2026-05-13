@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+
+spec:
+  serviceName: {{ include "devops-info-service.fullname" . }}-headless
+  replicas: {{ .Values.replicaCount }}
+
+  selector:
+    matchLabels:
+      {{- include "devops-info-service.selectorLabels" . | nindent 6 }}
+
+  template:
+    metadata:
+      labels:
+        {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
+
+    spec:
+      serviceAccountName: {{ include "devops-info-service.serviceAccountName" . }}
+
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      containers:
+        - name: {{ .Chart.Name }}
+
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          envFrom:
+            - configMapRef:
+                name: {{ include "devops-info-service.fullname" . }}-env
+
+          {{- if .Values.secret.enabled }}
+            - secretRef:
+                name: {{ include "devops-info-service.fullname" . }}-{{ .Values.secret.nameSuffix }}
+          {{- end }}
+
+          volumeMounts:
+            - name: data
+              mountPath: /data
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+
+      spec:
+        accessModes:
+          - ReadWriteOnce
+
+        resources:
+          requests:
+            storage: 1Gi
