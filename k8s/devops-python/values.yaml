@@ -41,6 +41,16 @@ statefulset:
 headlessService:
   enabled: true
 
+serviceMonitor:
+  enabled: false
+  namespace: ""
+  labels:
+    release: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+  path: /metrics
+  honorLabels: false
+
 resources:
   requests:
     cpu: 100m

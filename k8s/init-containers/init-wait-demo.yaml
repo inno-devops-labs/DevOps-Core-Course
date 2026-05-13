@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: wait-target
+  namespace: default
+  labels:
+    app: wait-target
+spec:
+  selector:
+    app: wait-target
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wait-target
+  namespace: default
+  labels:
+    app: wait-target
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wait-target
+  template:
+    metadata:
+      labels:
+        app: wait-target
+    spec:
+      containers:
+        - name: http-echo
+          image: hashicorp/http-echo:1.0
+          args:
+            - -text=ok
+            - -listen=:8080
+          ports:
+            - containerPort: 8080
+              name: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: init-wait-demo
+  namespace: default
+  labels:
+    app: init-wait-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: init-wait-demo
+  template:
+    metadata:
+      labels:
+        app: init-wait-demo
+    spec:
+      initContainers:
+        - name: wait-for-service
+          image: busybox:1.36
+          command:
+            - sh
+            - -lc
+            - until nslookup wait-target.default.svc.cluster.local; do echo waiting for wait-target; sleep 2; done
+      containers:
+        - name: app
+          image: busybox:1.36
+          command:
+            - sh
+            - -lc
+            - echo dependency resolved; sleep 3600

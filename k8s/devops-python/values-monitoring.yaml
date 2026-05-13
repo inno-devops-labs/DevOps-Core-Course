@@ -1,0 +1,24 @@
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  nodePort: null
+
+rollout:
+  enabled: false
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
