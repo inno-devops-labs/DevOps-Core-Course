@@ -1,0 +1,16 @@
+{
+	"name": "edge-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2024-08-15",
+	"vars": {
+		"APP_NAME": "edge-api",
+		"COURSE_NAME": "DevOps-Core",
+		"VERSION": "1.0.0"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "5fc4b21e9d3d43dba317ea7cd74544f5"
+		}
+	]
+}

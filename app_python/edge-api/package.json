@@ -1,0 +1,24 @@
+{
+  "name": "edge-api",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers edge API deployment",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "start": "wrangler dev",
+    "test": "echo \"no tests yet\""
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "edge",
+    "devops"
+  ],
+  "author": "Diana Yakupova",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240815.1",
+    "wrangler": "^4.90.1"
+  }
+}

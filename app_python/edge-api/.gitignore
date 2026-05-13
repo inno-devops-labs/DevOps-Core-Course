@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+.wrangler/
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.cache/
+.turbo
