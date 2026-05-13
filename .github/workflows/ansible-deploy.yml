@@ -3,7 +3,7 @@ name: Ansible Deployment
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master, lab6-solution ]
+    branches: [main, master, lab6-solution]
     paths:
       - 'ansible/**'
       - '!ansible/docs/**'
