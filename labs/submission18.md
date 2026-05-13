@@ -164,6 +164,10 @@ $ curl -s http://localhost:5050/visits
 {"visits":1,"file":"/tmp/devops-info-service/visits"}
 ```
 
+![img.png](lab18/screenshots/running.png)
+
+![output.png](lab18/screenshots/output.png)
+
 Identical responses to the `pip install -r requirements.txt && python app.py` workflow from Lab 1.
 
 > macOS port note: I had to run on `PORT=5050`. macOS AirPlay Receiver squats on 5000 and the server fails with `[Errno 48] address already in use`. This is the OS, not Nix.
@@ -306,6 +310,7 @@ $ curl -s localhost:5050/health
 $ curl -s localhost:5051/health
 {"status":"healthy","timestamp":"2026-05-13T17:17:19.834945+00:00","uptime_seconds":3}
 ```
+![img.png](lab18/screenshots/2containers.png)
 
 Both containers serve identical responses on the lab's contract endpoints.
 
@@ -499,16 +504,6 @@ The real-world "works on my machine" stories this prevents:
 
 - Two devs paired on a bug; one had `werkzeug==2.0.1`, the other `werkzeug==2.3.7`; the bug only reproduced on one machine. With a lock file, both would have had `werkzeug==X` and the bug would have reproduced everywhere.
 - CI's Python 3.12, dev's Python 3.13; a slightly different `asyncio` semantics. With `nix develop`, both run 3.13.12 from the same store path.
-
----
-
-## Pitfalls I hit (one-line notes for my future self)
-
-1. **`src = ./.` introduced non-determinism** until I added `cleanSourceWith` to filter out the `result` symlink. Without the filter, build N hashes build N-1's symlink target, and the store path drifts on every rebuild.
-2. **macOS port 5000** is held by AirPlay Receiver. Bind to 5050 locally.
-3. **`dockerTools` on macOS** produces Mach-O binaries inside the OCI tarball. `docker load` accepts them; `docker run` doesn't (`exec format error`). Build inside `nixos/nix:latest` with the repo root mounted, so flakes see the git context.
-4. **Flakes only see git-tracked files.** `nix build` errored with `cp: cannot stat 'middleware.py'` on a sibling lab until I `git add`-ed the source dir. Staging is enough; commit isn't required.
-5. **`nixos-25.05` on macOS 26** fails to load `fakeroot` because of the removed dyld symbol `_fstat$INODE64`. Use `nixos-25.11`.
 
 ---
 
