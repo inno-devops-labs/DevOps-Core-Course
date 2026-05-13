@@ -1,0 +1,17 @@
+{
+  "name": "edge-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lab 17 — Cloudflare Workers edge API for the DevOps Core Course",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250513.0",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.0.0"
+  }
+}
