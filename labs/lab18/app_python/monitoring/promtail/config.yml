@@ -1,0 +1,22 @@
+server:
+  http_listen_port: 9080
+positions:
+  filename: "/tmp/positions.yaml"
+  sync_period: 10s
+  ignore_invalid_yaml: false
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      - target_label: job
+        replacement: docker
+      - source_labels: ['__meta_docker_container_label_logging']
+        regex: promtail
+        action: keep

@@ -1,0 +1,16 @@
+apiVersion: v2
+name: app_python
+description: My Python application Helm chart
+
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+keywords:
+  - python
+  - web
+maintainers:
+  - name: Veronika Levasheva
+    email: veronikalev2005@gmail.com
+sources:
+  - https://github.com/ffountainer/DevOps-Core-Course

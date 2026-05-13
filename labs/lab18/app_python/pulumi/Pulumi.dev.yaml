@@ -1,0 +1,9 @@
+encryptionsalt: v1:ibiWcVbfzPE=:v1:JGYI/AyYOtO6LyQX:wm2sULkxKAuOHYQjzutkotLh1kDMWQ==
+config:
+  pulumi-vm:zone: "ru-central1-a"
+  pulumi-vm:appPort: "1999"
+  pulumi-vm:sshUser: "ubuntu"
+  pulumi-vm:sshPublicKeyPath: "/Users/fountainer/.ssh/terraform-vm-key.pub"
+  yandex:cloudId: "b1g4lhssapi17vlk0t0m"
+  yandex:folderId: "b1gcu87lbfoq3i0quvi9"
+  yandex:serviceAccountKeyFile: "/Users/fountainer/.yc/pulumi-key.json"

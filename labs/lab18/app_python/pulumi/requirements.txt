@@ -1,0 +1,4 @@
+pulumi>=3.223.0
+pulumi_yandex==0.13.0
+PyYAML
+setuptools

@@ -1,0 +1,47 @@
+---
+# the first block with package installation tasks
+- name: Install dependencies
+  become: true
+  tags:
+    - packages
+  block:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+    - name: Install common_packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+  rescue:
+    - name: Handle installation failure
+      ansible.builtin.apt:
+        update_cache: true
+        force_apt_get: true
+  always:
+    - name: Write log file
+      ansible.builtin.copy:
+        content: "Common role has finished"
+        dest: /tmp/common.log
+        mode: "0644"
+  # The second block with user creation
+- name: Manage users
+  become: true
+  tags:
+    - users
+  block:
+    - name: Create common users
+      ansible.builtin.user:
+        name: "{{ item }}"
+        state: present
+        create_home: true
+      loop: "{{ common_users }}"
+  # the third block with timezone set up
+- name: Ensure timezone is set
+  become: true
+  tags:
+    - timezone
+  block:
+    - name: Set timezome
+      community.general.timezone:
+        name: "{{ common_timezone_name }}"

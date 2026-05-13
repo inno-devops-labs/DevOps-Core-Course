@@ -1,0 +1,66 @@
+---
+- name: Docker installation
+  tags:
+    - docker_install
+  become: true
+  # block with docker installation and set up
+  block:
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: true
+        force_apt_get: true
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: "{{ docker_gpg_url }}"
+        state: present
+    - name: Add Docker APT repository
+      ansible.builtin.apt_repository:
+        repo: "{{ docker_repo }}"
+        state: present
+        filename: docker
+    - name: Install Docker packages
+      ansible.builtin.apt:
+        name: "{{ docker_packages }}"
+        state: present
+        update_cache: true
+        force_apt_get: true
+      notify: Restart docker
+    - name: Install python3-docker for Ansible Docker modules
+      ansible.builtin.apt:
+        name: python3-docker
+        state: present
+  rescue:
+    - name: Wait before retry
+      ansible.builtin.pause:
+        seconds: 10
+    - name: Retry apt update
+      ansible.builtin.apt:
+        update_cache: true
+    - name: Retry adding Docker GPG key
+      ansible.builtin.apt_key:
+        url: "{{ docker_gpg_url }}"
+        state: present
+  always:
+    - name: Ensure docker service is enabled
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+- name: Configure docker
+  tags:
+    - docker_config
+  become: true
+  # block with docker configuration
+  block:
+    - name: Add user to Docker group
+      ansible.builtin.user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: true

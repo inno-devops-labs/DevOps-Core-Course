@@ -1,0 +1,22 @@
+version: '{{ docker_compose_version }}'
+
+services:
+  {{ app_name }}:
+    image: {{ web_app_docker_image }}:{{ web_app_docker_tag }}
+
+    ports:
+      - "{{ app_port }}:{{ app_internal_port }}"
+
+    restart: unless-stopped
+
+    environment:
+{% for key, value in web_app_env.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+
+    networks:
+      - {{ app_name }}_network
+
+networks:
+  {{ app_name }}_network:
+    driver: bridge

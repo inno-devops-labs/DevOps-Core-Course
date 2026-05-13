@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mychart.fullname" . }}-config
+  labels:
+    app: {{ include "mychart.name" . }}
+data:
+  config.json: |-
+{{ .Files.Get "files/config.json" | indent 4 }}

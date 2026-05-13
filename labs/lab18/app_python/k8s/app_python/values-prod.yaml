@@ -1,0 +1,40 @@
+replicaCount: 3
+
+image:
+  repository: fountainer/my-app
+  tag: "16-04"
+  pullPolicy: Always
+
+container:
+  port: 12345
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+strategy:
+  maxUnavailable: 1
+  maxSurge: 1
+
+livenessProbe:
+  path: /health
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  timeoutSeconds: 5
+  failureThreshold: 5
+
+readinessProbe:
+  path: /ready
+  initialDelaySeconds: 10
+  periodSeconds: 3
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 12345
+  protocol: TCP
+  nodePort: 30008

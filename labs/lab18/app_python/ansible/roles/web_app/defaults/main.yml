@@ -1,0 +1,17 @@
+---
+web_app_container_port: "12345"
+web_app_restart_policy: unless-stopped
+web_app_compose_project_dir: "/opt/{{ app_name }}"
+web_app_docker_image: "{{ dockerhub_username }}/{{ app_name }}"
+web_app_docker_tag: latest
+
+web_app_env:
+  PORT: "{{ web_app_container_port }}"
+
+# Wipe Logic Control
+web_app_wipe: false # Default: do not wipe
+
+# Usage documentation:
+# Set to true to remove application completely
+# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
+# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"

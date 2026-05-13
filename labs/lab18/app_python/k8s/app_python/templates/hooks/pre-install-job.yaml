@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "mychart.fullname" . }}-pre-install"
+  labels:
+    {{- include "mychart.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ include "mychart.fullname" . }}-pre-install"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: pre-install-job
+          image: busybox
+          command: 
+            - sh
+            - -c
+            - |
+              echo "Pre-install task running"
+              sleep 10
+              echo "Pre-install completed"

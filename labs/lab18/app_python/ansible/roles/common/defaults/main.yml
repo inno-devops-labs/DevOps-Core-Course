@@ -1,0 +1,12 @@
+---
+common_packages:
+  - vim
+  - git
+  - curl
+  - python3-pip
+  - htop
+
+common_timezone_name: "Europe/Moscow"
+
+common_users:
+  - ubuntu

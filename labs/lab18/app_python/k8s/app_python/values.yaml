@@ -1,0 +1,60 @@
+replicaCount: 3
+
+image:
+  repository: fountainer/my-app
+  tag: "2026.05.01"
+  pullPolicy: Always
+
+container:
+  port: 12345
+
+persistence:
+  size: 1Gi
+
+storageClass: ""
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+
+strategy:
+  maxUnavailable: 1
+  maxSurge: 1
+
+livenessProbe:
+  path: /health
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+
+readinessProbe:
+  path: /ready
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 12345
+  protocol: TCP
+  nodePort: 30009
+
+secret:
+  name: app-credentials 
+  data:
+    username: "placeholder-user"
+    password: "placeholder-password"
+
+appName: my-app
+environment: dev
+logLevel: info
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: "" 

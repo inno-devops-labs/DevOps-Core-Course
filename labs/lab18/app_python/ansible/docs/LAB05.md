@@ -1,0 +1,1 @@
+!!!!!! real LAB05.md documentation lies in the app_python/docs/LAB05.md, since all prev labs documentation files were there, and I wanted to remain consistent. Please check this file, it has everything required by the task

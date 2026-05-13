@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    ports:
+      - "1999:12345"
+    environment:
+      - PORT=12345
+      - ADDRESS=0.0.0.0
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data

@@ -1,0 +1,11 @@
+{
+  "app_name": "my-app",
+  "environment": "dev",
+  "feature_flags": {
+    "debug": true,
+    "metrics": true
+  },
+  "settings": {
+    "log_level": "info"
+  }
+}
