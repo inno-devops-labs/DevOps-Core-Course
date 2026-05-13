@@ -65,3 +65,55 @@ Non-sensitive container environment variables (DRY; include in deployment).
 - name: VISITS_FILE
   value: "/data/visits"
 {{- end }}
+
+{{/*
+Lab 16 — Init containers (download + wait-for-service patterns).
+Rendered list is empty when initContainers.enabled=false.
+*/}}
+{{- define "devops-info-service.initContainers" -}}
+{{- if .Values.initContainers.enabled }}
+{{- if .Values.initContainers.download.enabled }}
+- name: init-download
+  image: {{ .Values.initContainers.download.image }}
+  command: ['sh', '-c', 'wget -O {{ .Values.initContainers.download.targetFile }} {{ .Values.initContainers.download.url }}']
+  volumeMounts:
+    - name: workdir
+      mountPath: /work-dir
+{{- end }}
+{{- if .Values.initContainers.waitForService.enabled }}
+- name: init-wait-for-service
+  image: {{ .Values.initContainers.waitForService.image }}
+  command:
+    - sh
+    - -c
+    - |
+      DEADLINE=$(($(date +%s) + {{ .Values.initContainers.waitForService.timeoutSeconds }}))
+      until nc -z {{ .Values.initContainers.waitForService.service }} {{ .Values.initContainers.waitForService.port }} 2>/dev/null; do
+        echo "waiting for {{ .Values.initContainers.waitForService.service }}:{{ .Values.initContainers.waitForService.port }}..."
+        [ $(date +%s) -ge $DEADLINE ] && echo "timeout" && exit 1
+        sleep 2
+      done
+      echo "service reachable"
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Lab 16 — Volume entry for the init-download shared workdir.
+*/}}
+{{- define "devops-info-service.initContainerVolumes" -}}
+{{- if and .Values.initContainers.enabled .Values.initContainers.download.enabled }}
+- name: workdir
+  emptyDir: {}
+{{- end }}
+{{- end }}
+
+{{/*
+Lab 16 — Main container mount for the shared workdir (so app can read what init-download fetched).
+*/}}
+{{- define "devops-info-service.initContainerVolumeMounts" -}}
+{{- if and .Values.initContainers.enabled .Values.initContainers.download.enabled }}
+- name: workdir
+  mountPath: /work-dir
+{{- end }}
+{{- end }}
