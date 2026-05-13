@@ -36,6 +36,14 @@ service:
   targetPort: http
   nodePort: 30082
 
+serviceMonitor:
+  enabled: false
+  labels:
+    release: monitoring
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
+
 strategy:
   type: RollingUpdate
   rollingUpdate:
@@ -79,6 +87,37 @@ statefulset:
   updateStrategy:
     type: RollingUpdate
     rollingUpdate: {}
+
+initContainers:
+  enabled: false
+  workdirVolumeName: init-workdir
+  workdirMountPath: /init-data
+  waitForService:
+    enabled: false
+    name: wait-for-service
+    image: busybox:1.36
+    serviceName: kubernetes.default.svc.cluster.local
+    command:
+      - sh
+      - -c
+      - |
+        until nslookup "${SERVICE_NAME}"; do
+          echo "waiting for ${SERVICE_NAME}"
+          sleep 2
+        done
+    env: []
+  download:
+    enabled: false
+    name: init-download
+    image: busybox:1.36
+    url: http://example.com
+    fileName: index.html
+    command:
+      - sh
+      - -c
+      - |
+        wget -O "${WORKDIR}/${FILE_NAME}" "${DOWNLOAD_URL}"
+        ls -l "${WORKDIR}/${FILE_NAME}"
 
 terminationGracePeriodSeconds: 30
 

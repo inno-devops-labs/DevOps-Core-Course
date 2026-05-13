@@ -1,0 +1,70 @@
+fullnameOverride: lab16-devops-info
+
+replicaCount: 3
+
+image:
+  repository: app_python-devops-info
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  enabled: true
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30090
+
+env:
+  - name: HOST
+    value: "0.0.0.0"
+  - name: PORT
+    value: "5002"
+  - name: CONFIG_PATH
+    value: /config/config.json
+  - name: VISITS_FILE
+    value: /data/visits
+  - name: APP_ENV
+    value: lab16-monitoring
+  - name: APP_REVISION
+    value: monitoring-init-containers
+
+statefulset:
+  enabled: true
+  podManagementPolicy: OrderedReady
+  headlessService:
+    enabled: true
+    publishNotReadyAddresses: false
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+
+persistence:
+  enabled: true
+  existingClaim: ""
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: standard
+  mountPath: /data
+
+initContainers:
+  enabled: true
+  workdirVolumeName: init-workdir
+  workdirMountPath: /init-data
+  waitForService:
+    enabled: true
+    serviceName: lab16-devops-info.lab16.svc.cluster.local
+  download:
+    enabled: true
+    url: http://example.com
+    fileName: index.html
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
+
+hookJobs:
+  enabled: false

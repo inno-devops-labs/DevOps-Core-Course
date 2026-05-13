@@ -58,6 +58,39 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: {{ .Values.initContainers.waitForService.name }}
+          image: {{ .Values.initContainers.waitForService.image | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            {{- toYaml .Values.initContainers.waitForService.command | nindent 12 }}
+          env:
+            - name: SERVICE_NAME
+              value: {{ .Values.initContainers.waitForService.serviceName | quote }}
+            {{- with .Values.initContainers.waitForService.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      {{- end }}
+        {{- if .Values.initContainers.download.enabled }}
+        - name: {{ .Values.initContainers.download.name }}
+          image: {{ .Values.initContainers.download.image | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            {{- toYaml .Values.initContainers.download.command | nindent 12 }}
+          env:
+            - name: DOWNLOAD_URL
+              value: {{ .Values.initContainers.download.url | quote }}
+            - name: FILE_NAME
+              value: {{ .Values.initContainers.download.fileName | quote }}
+            - name: WORKDIR
+              value: {{ .Values.initContainers.workdirMountPath | quote }}
+          volumeMounts:
+            - name: {{ .Values.initContainers.workdirVolumeName }}
+              mountPath: {{ .Values.initContainers.workdirMountPath }}
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ include "common.name" . }}
           image: "{{ include "devops-info.image" . }}"
@@ -79,7 +112,7 @@ spec:
                 name: {{ include "devops-info.secretName" . }}
             {{- end }}
           {{- end }}
-          {{- if or (and .Values.config.enabled .Values.config.file.enabled) .Values.persistence.enabled }}
+          {{- if or (and .Values.config.enabled .Values.config.file.enabled) .Values.persistence.enabled .Values.initContainers.enabled }}
           volumeMounts:
             {{- if and .Values.config.enabled .Values.config.file.enabled }}
             - name: config-volume
@@ -89,6 +122,11 @@ spec:
             {{- if .Values.persistence.enabled }}
             - name: data-volume
               mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+            {{- if .Values.initContainers.enabled }}
+            - name: {{ .Values.initContainers.workdirVolumeName }}
+              mountPath: {{ .Values.initContainers.workdirMountPath }}
+              readOnly: true
             {{- end }}
           {{- end }}
           resources:
@@ -101,7 +139,7 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-      {{- if or (and .Values.config.enabled .Values.config.file.enabled) (and .Values.persistence.enabled .Values.persistence.existingClaim) }}
+      {{- if or (and .Values.config.enabled .Values.config.file.enabled) (and .Values.persistence.enabled .Values.persistence.existingClaim) .Values.initContainers.enabled }}
       volumes:
         {{- if and .Values.config.enabled .Values.config.file.enabled }}
         - name: config-volume
@@ -112,6 +150,10 @@ spec:
         - name: data-volume
           persistentVolumeClaim:
             claimName: {{ .Values.persistence.existingClaim }}
+        {{- end }}
+        {{- if .Values.initContainers.enabled }}
+        - name: {{ .Values.initContainers.workdirVolumeName }}
+          emptyDir: {}
         {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
