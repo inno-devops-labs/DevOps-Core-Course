@@ -29,6 +29,7 @@ PORT = int(os.getenv("PORT", 8000))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
 CONFIG_FILE = os.getenv("CONFIG_FILE", "/config/config.json")
+SECRET_NAMES = ("LAB17_API_KEY", "LAB17_DEPLOYMENT_TOKEN")
 
 # Application start time
 START_TIME = datetime.now(timezone.utc)
@@ -289,6 +290,17 @@ def get_request_info():
     }
 
 
+def get_secret_status():
+    """Return presence metadata for configured secrets without exposing values."""
+    return {
+        secret_name: {
+            "configured": bool(os.getenv(secret_name)),
+            "value": "set" if os.getenv(secret_name) else "missing",
+        }
+        for secret_name in SECRET_NAMES
+    }
+
+
 @app.route("/")
 def index():
     """Main endpoint - service and system information."""
@@ -323,6 +335,11 @@ def index():
                 "path": "/config",
                 "method": "GET",
                 "description": "Current application config",
+            },
+            {
+                "path": "/secrets",
+                "method": "GET",
+                "description": "Secret presence check",
             },
             {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
@@ -360,6 +377,13 @@ def config():
     """Return the current application configuration."""
     DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/config").inc()
     return jsonify({"config": load_app_config(), "file": CONFIG_FILE})
+
+
+@app.route("/secrets")
+def secrets():
+    """Return whether required Fly secrets are present without returning values."""
+    DEVOPS_INFO_ENDPOINT_CALLS_TOTAL.labels(endpoint="/secrets").inc()
+    return jsonify({"secrets": get_secret_status()})
 
 
 @app.route("/metrics")

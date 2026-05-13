@@ -144,6 +144,10 @@ class TestMainEndpoint:
         assert visits_endpoint is not None
         assert visits_endpoint["method"] == "GET"
 
+        secrets_endpoint = next((e for e in endpoints if e["path"] == "/secrets"), None)
+        assert secrets_endpoint is not None
+        assert secrets_endpoint["method"] == "GET"
+
     def test_main_endpoint_increments_visits(self, client):
         """Test that root requests increment the persisted visits counter."""
         response1 = client.get("/")
@@ -282,6 +286,27 @@ class TestConfigEndpoint:
         app_module.config_mtime = None
 
         assert client.get("/config").get_json()["config"]["environment"] == "prod"
+
+
+class TestSecretsEndpoint:
+    """Tests for the /secrets endpoint."""
+
+    def test_secrets_endpoint_reports_presence_without_values(
+        self, client, monkeypatch
+    ):
+        """Test that configured secrets are detected without leaking secret values."""
+        monkeypatch.setenv("LAB17_API_KEY", "super-secret")
+        monkeypatch.delenv("LAB17_DEPLOYMENT_TOKEN", raising=False)
+
+        response = client.get("/secrets")
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data["secrets"]["LAB17_API_KEY"]["configured"] is True
+        assert data["secrets"]["LAB17_API_KEY"]["value"] == "set"
+        assert "super-secret" not in response.get_data(as_text=True)
+        assert data["secrets"]["LAB17_DEPLOYMENT_TOKEN"]["configured"] is False
+        assert data["secrets"]["LAB17_DEPLOYMENT_TOKEN"]["value"] == "missing"
 
 
 class TestErrorHandling:

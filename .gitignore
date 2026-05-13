@@ -35,6 +35,7 @@ htmlcov/
 app_python/data/
 
 # Credentials
+.fly/
 *.pem
 *.key
 id_rsa*
