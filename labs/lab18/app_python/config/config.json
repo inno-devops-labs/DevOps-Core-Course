@@ -1,0 +1,11 @@
+{
+  "applicationName": "devops-info-service",
+  "environment": "local",
+  "featureFlags": {
+    "visitsCounter": true,
+    "metrics": true
+  },
+  "settings": {
+    "showExtendedSystemInfo": true
+  }
+}
