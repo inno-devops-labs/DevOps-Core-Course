@@ -1,0 +1,7 @@
+﻿Prometheus active target summary:
+up: 16
+
+Devops service targets:
+job=devops-info-service service=devops-info-service pod=devops-info-service-2 url=http://10.244.0.94:5000/metrics health=up error=
+job=devops-info-service service=devops-info-service pod=devops-info-service-1 url=http://10.244.0.95:5000/metrics health=up error=
+job=devops-info-service service=devops-info-service pod=devops-info-service-0 url=http://10.244.0.96:5000/metrics health=up error=

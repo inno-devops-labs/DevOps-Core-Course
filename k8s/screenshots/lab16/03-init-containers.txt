@@ -1,0 +1,23 @@
+﻿init-download logs:
+Connecting to example.com (172.66.147.243:80)
+saving to '/work-dir/example.html'
+example.html         100% |********************************|   528  0:00:00 ETA
+'/work-dir/example.html' saved
+wait-for-service logs:
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+
+Name:	devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.94
+Name:	devops-info-service-headless.default.svc.cluster.local
+Address: 10.244.0.95
+
+files visible from main container:
+total 8
+-rw-r--r--    1 appuser  appgroup       528 May 13 19:07 example.html
+-rw-r--r--    1 appuser  appgroup        29 May 13 19:07 status.txt
+init status file:
+downloaded by init container
+example.html first line:
+<!doctype html><html lang="en"><head><title>Example Domain</title><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{background:#eee;width:60vw;margin:15vh auto;font-family:system-ui,sans-serif}h1{font-size:1.5em}div{opacity:0.8}a:link,a:visited{color:#348}</style></head><body><div><h1>Example Domain</h1><p>This domain is for use in documentation examples without needing permission. Avoid use in operations.</p><p><a href="https://iana.org/domains/example">Learn more</a></p></div></body></html>

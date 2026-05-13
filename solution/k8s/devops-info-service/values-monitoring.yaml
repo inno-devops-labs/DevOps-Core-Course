@@ -1,0 +1,48 @@
+workload:
+  kind: StatefulSet
+
+replicaCount: 3
+
+image:
+  repository: devops-info-service
+  tag: "lab15"
+  pullPolicy: IfNotPresent
+
+env:
+  releaseVersion: "monitoring-v1"
+
+statefulset:
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+
+persistence:
+  enabled: true
+  size: 100Mi
+
+initContainers:
+  enabled: true
+  download:
+    command: wget -O /work-dir/example.html http://example.com && echo "downloaded by init container" > /work-dir/status.txt
+  wait:
+    command: until nslookup devops-info-service-headless.default.svc.cluster.local; do echo waiting for headless service; sleep 2; done
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring
+
+prometheusRule:
+  enabled: true
+  labels:
+    release: monitoring
+  labEvidence:
+    expr: vector(1)
+    for: 30s
+    severity: lab
+    summary: Lab 16 monitoring alert is firing
+    description: This controlled alert verifies that Prometheus sends application-related alerts to Alertmanager.
+
+hooks:
+  enabled: false

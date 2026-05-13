@@ -1,0 +1,32 @@
+﻿Lab 16 dashboard answers collected from Grafana and Prometheus
+
+1. StatefulSet CPU cores by pod:
+devops-info-service-0: 0.002661 cores
+devops-info-service-1: 0.002685 cores
+devops-info-service-2: 0.002684 cores
+1. StatefulSet memory working set by pod:
+devops-info-service-0: 42.63 MiB
+devops-info-service-1: 41.94 MiB
+devops-info-service-2: 42.05 MiB
+2. Default namespace CPU ranking:
+devops-info-service-1: 0.002685 cores
+devops-info-service-2: 0.002684 cores
+devops-info-service-0: 0.002661 cores
+Most CPU: devops-info-service-1. Least CPU: devops-info-service-0.
+3. Node metrics:
+Memory total: 7805.2 MiB
+Memory used: 2752.84 MiB (35.27%)
+Memory available: 5052.36 MiB
+CPU cores: 12
+4. Kubelet managed pods and containers:
+Running pods: 18
+created: 1
+exited: 17
+running: 22
+5. Application HTTP traffic by StatefulSet pod:
+devops-info-service-0: 1079 requests
+devops-info-service-1: 1104 requests
+devops-info-service-2: 1108 requests
+6. Alerts:
+Firing alerts: 1
+DevopsInfoServiceLabEvidence severity=lab state=firing

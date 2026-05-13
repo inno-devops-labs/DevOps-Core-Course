@@ -4,6 +4,9 @@ metadata:
   name: {{ include "devops-info-service.serviceName" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
+    {{- if .Values.serviceMonitor.enabled }}
+    app.kubernetes.io/monitoring: enabled
+    {{- end }}
 spec:
   type: {{ .Values.service.type }}
   selector:

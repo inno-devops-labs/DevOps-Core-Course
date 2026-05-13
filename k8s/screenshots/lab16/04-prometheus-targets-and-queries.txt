@@ -1,0 +1,335 @@
+﻿Prometheus target and query evidence
+
+Prometheus active target summary:
+up: 16
+
+Devops service targets:
+job=devops-info-service service=devops-info-service pod=devops-info-service-2 url=http://10.244.0.94:5000/metrics health=up error=
+job=devops-info-service service=devops-info-service pod=devops-info-service-1 url=http://10.244.0.95:5000/metrics health=up error=
+job=devops-info-service service=devops-info-service pod=devops-info-service-0 url=http://10.244.0.96:5000/metrics health=up error=
+
+[statefulset_cpu_by_pod]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "pod":  "devops-info-service-2"
+                                               },
+                                    "value":  [
+                                                  1778702843.650,
+                                                  "0.002683593411927615"
+                                              ]
+                                },
+                                {
+                                    "metric":  {
+                                                   "pod":  "devops-info-service-1"
+                                               },
+                                    "value":  [
+                                                  1778702843.650,
+                                                  "0.002685109976998273"
+                                              ]
+                                },
+                                {
+                                    "metric":  {
+                                                   "pod":  "devops-info-service-0"
+                                               },
+                                    "value":  [
+                                                  1778702843.650,
+                                                  "0.002661382580711191"
+                                              ]
+                                }
+                            ]
+             }
+}
+
+[statefulset_memory_mib_by_pod]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "pod":  "devops-info-service-2"
+                                               },
+                                    "value":  [
+                                                  1778702843.668,
+                                                  "42.0546875"
+                                              ]
+                                },
+                                {
+                                    "metric":  {
+                                                   "pod":  "devops-info-service-0"
+                                               },
+                                    "value":  [
+                                                  1778702843.668,
+                                                  "42.62890625"
+                                              ]
+                                },
+                                {
+                                    "metric":  {
+                                                   "pod":  "devops-info-service-1"
+                                               },
+                                    "value":  [
+                                                  1778702843.668,
+                                                  "41.94140625"
+                                              ]
+                                }
+                            ]
+             }
+}
+
+[node_memory_used_percent]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "container":  "node-exporter",
+                                                   "endpoint":  "http-metrics",
+                                                   "instance":  "192.168.49.2:9100",
+                                                   "job":  "node-exporter",
+                                                   "namespace":  "monitoring",
+                                                   "pod":  "monitoring-prometheus-node-exporter-nsgtm",
+                                                   "service":  "monitoring-prometheus-node-exporter"
+                                               },
+                                    "value":  [
+                                                  1778702843.671,
+                                                  "35.26930916941882"
+                                              ]
+                                }
+                            ]
+             }
+}
+
+[node_memory_total_mib]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "container":  "node-exporter",
+                                                   "endpoint":  "http-metrics",
+                                                   "instance":  "192.168.49.2:9100",
+                                                   "job":  "node-exporter",
+                                                   "namespace":  "monitoring",
+                                                   "pod":  "monitoring-prometheus-node-exporter-nsgtm",
+                                                   "service":  "monitoring-prometheus-node-exporter"
+                                               },
+                                    "value":  [
+                                                  1778702843.674,
+                                                  "7805.19921875"
+                                              ]
+                                }
+                            ]
+             }
+}
+
+[node_memory_available_mib]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "container":  "node-exporter",
+                                                   "endpoint":  "http-metrics",
+                                                   "instance":  "192.168.49.2:9100",
+                                                   "job":  "node-exporter",
+                                                   "namespace":  "monitoring",
+                                                   "pod":  "monitoring-prometheus-node-exporter-nsgtm",
+                                                   "service":  "monitoring-prometheus-node-exporter"
+                                               },
+                                    "value":  [
+                                                  1778702843.678,
+                                                  "5052.359375"
+                                              ]
+                                }
+                            ]
+             }
+}
+
+[node_cpu_cores]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "__name__":  "machine_cpu_cores",
+                                                   "boot_id":  "3dfe658b-bd8e-4e97-82f9-5b2db6f573f1",
+                                                   "endpoint":  "https-metrics",
+                                                   "instance":  "192.168.49.2:10250",
+                                                   "job":  "kubelet",
+                                                   "machine_id":  "86e0bfeb3f77427722393c2969964edb",
+                                                   "metrics_path":  "/metrics/cadvisor",
+                                                   "namespace":  "kube-system",
+                                                   "node":  "minikube",
+                                                   "service":  "monitoring-kube-prometheus-kubelet",
+                                                   "system_uuid":  "86e0bfeb3f77427722393c2969964edb"
+                                               },
+                                    "value":  [
+                                                  1778702843.681,
+                                                  "12"
+                                              ]
+                                }
+                            ]
+             }
+}
+
+[kubelet_running_pods]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "__name__":  "kubelet_running_pods",
+                                                   "endpoint":  "https-metrics",
+                                                   "instance":  "192.168.49.2:10250",
+                                                   "job":  "kubelet",
+                                                   "metrics_path":  "/metrics",
+                                                   "namespace":  "kube-system",
+                                                   "node":  "minikube",
+                                                   "service":  "monitoring-kube-prometheus-kubelet"
+                                               },
+                                    "value":  [
+                                                  1778702843.684,
+                                                  "18"
+                                              ]
+                                }
+                            ]
+             }
+}
+
+[kubelet_running_containers]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "__name__":  "kubelet_running_containers",
+                                                   "container_state":  "created",
+                                                   "endpoint":  "https-metrics",
+                                                   "instance":  "192.168.49.2:10250",
+                                                   "job":  "kubelet",
+                                                   "metrics_path":  "/metrics",
+                                                   "namespace":  "kube-system",
+                                                   "node":  "minikube",
+                                                   "service":  "monitoring-kube-prometheus-kubelet"
+                                               },
+                                    "value":  [
+                                                  1778702843.687,
+                                                  "1"
+                                              ]
+                                },
+                                {
+                                    "metric":  {
+                                                   "__name__":  "kubelet_running_containers",
+                                                   "container_state":  "exited",
+                                                   "endpoint":  "https-metrics",
+                                                   "instance":  "192.168.49.2:10250",
+                                                   "job":  "kubelet",
+                                                   "metrics_path":  "/metrics",
+                                                   "namespace":  "kube-system",
+                                                   "node":  "minikube",
+                                                   "service":  "monitoring-kube-prometheus-kubelet"
+                                               },
+                                    "value":  [
+                                                  1778702843.687,
+                                                  "17"
+                                              ]
+                                },
+                                {
+                                    "metric":  {
+                                                   "__name__":  "kubelet_running_containers",
+                                                   "container_state":  "running",
+                                                   "endpoint":  "https-metrics",
+                                                   "instance":  "192.168.49.2:10250",
+                                                   "job":  "kubelet",
+                                                   "metrics_path":  "/metrics",
+                                                   "namespace":  "kube-system",
+                                                   "node":  "minikube",
+                                                   "service":  "monitoring-kube-prometheus-kubelet"
+                                               },
+                                    "value":  [
+                                                  1778702843.687,
+                                                  "22"
+                                              ]
+                                }
+                            ]
+             }
+}
+
+[application_http_requests]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "pod":  "devops-info-service-1"
+                                               },
+                                    "value":  [
+                                                  1778702843.691,
+                                                  "1104"
+                                              ]
+                                },
+                                {
+                                    "metric":  {
+                                                   "pod":  "devops-info-service-2"
+                                               },
+                                    "value":  [
+                                                  1778702843.691,
+                                                  "1108"
+                                              ]
+                                },
+                                {
+                                    "metric":  {
+                                                   "pod":  "devops-info-service-0"
+                                               },
+                                    "value":  [
+                                                  1778702843.691,
+                                                  "1079"
+                                              ]
+                                }
+                            ]
+             }
+}
+
+[active_alerts]
+{
+    "status":  "success",
+    "data":  {
+                 "resultType":  "vector",
+                 "result":  [
+                                {
+                                    "metric":  {
+                                                   "__name__":  "ALERTS",
+                                                   "alertname":  "DevopsInfoServiceLabEvidence",
+                                                   "alertstate":  "firing",
+                                                   "app":  "devops-info-service",
+                                                   "severity":  "lab"
+                                               },
+                                    "value":  [
+                                                  1778702843.695,
+                                                  "1"
+                                              ]
+                                }
+                            ]
+             }
+}
+

@@ -1,0 +1,22 @@
+﻿NAME                        READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+pod/devops-info-service-0   1/1     Running   0          60m   10.244.0.96   minikube   <none>           <none>
+pod/devops-info-service-1   1/1     Running   0          60m   10.244.0.95   minikube   <none>           <none>
+pod/devops-info-service-2   1/1     Running   0          60m   10.244.0.94   minikube   <none>           <none>
+
+NAME                                   READY   AGE     CONTAINERS            IMAGES
+statefulset.apps/devops-info-service   3/3     5d23h   devops-info-service   devops-info-service:lab15
+
+NAME                                   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE     SELECTOR
+service/devops-info-service            NodePort    10.99.221.54   <none>        80:30080/TCP   5d23h   app.kubernetes.io/instance=devops-info-service,app.kubernetes.io/name=devops-info-service
+service/devops-info-service-headless   ClusterIP   None           <none>        80/TCP         5d23h   app.kubernetes.io/instance=devops-info-service,app.kubernetes.io/name=devops-info-service
+
+NAME                                                      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE     VOLUMEMODE
+persistentvolumeclaim/data-volume-devops-info-service-0   Bound    pvc-dc9fce54-1dee-44ee-a870-2df3971d60e2   100Mi      RWO            standard       <unset>                 5d23h   Filesystem
+persistentvolumeclaim/data-volume-devops-info-service-1   Bound    pvc-b2844a86-48b8-402e-a25f-c45c785c9e65   100Mi      RWO            standard       <unset>                 5d23h   Filesystem
+persistentvolumeclaim/data-volume-devops-info-service-2   Bound    pvc-ce6cfd5c-2a8e-4f76-a2a3-0850619d0cf0   100Mi      RWO            standard       <unset>                 5d23h   Filesystem
+
+NAME                                                       AGE
+servicemonitor.monitoring.coreos.com/devops-info-service   60m
+
+NAME                                                       AGE
+prometheusrule.monitoring.coreos.com/devops-info-service   15m

@@ -1,0 +1,87 @@
+﻿{
+  "dashboard": {
+    "id": null,
+    "uid": "lab16-devops-monitoring",
+    "title": "Lab 16 DevOps Monitoring Evidence",
+    "tags": ["lab16", "devops"],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "refresh": "10s",
+    "time": { "from": "now-30m", "to": "now" },
+    "panels": [
+      {
+        "id": 1,
+        "title": "StatefulSet CPU by pod",
+        "type": "timeseries",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "targets": [{ "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"default\",pod=~\"devops-info-service-[0-9]+\"}[5m]))", "legendFormat": "{{pod}}", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "cores", "decimals": 4 }, "overrides": [] },
+        "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+      },
+      {
+        "id": 2,
+        "title": "StatefulSet memory working set by pod",
+        "type": "bargauge",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "targets": [{ "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"default\",pod=~\"devops-info-service-[0-9]+\"}) / 1024 / 1024", "legendFormat": "{{pod}}", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "mbytes", "decimals": 2 }, "overrides": [] },
+        "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true }
+      },
+      {
+        "id": 3,
+        "title": "Node memory used percent",
+        "type": "stat",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "gridPos": { "h": 7, "w": 6, "x": 0, "y": 8 },
+        "targets": [{ "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)", "legendFormat": "memory used", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "percent", "decimals": 2 }, "overrides": [] },
+        "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" }
+      },
+      {
+        "id": 4,
+        "title": "Node CPU cores",
+        "type": "stat",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "gridPos": { "h": 7, "w": 6, "x": 6, "y": 8 },
+        "targets": [{ "expr": "machine_cpu_cores", "legendFormat": "cores", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+        "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" }
+      },
+      {
+        "id": 5,
+        "title": "Kubelet containers by state",
+        "type": "bargauge",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "gridPos": { "h": 7, "w": 12, "x": 12, "y": 8 },
+        "targets": [{ "expr": "kubelet_running_containers", "legendFormat": "{{container_state}}", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+        "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true }
+      },
+      {
+        "id": 6,
+        "title": "Application HTTP traffic by pod",
+        "type": "timeseries",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+        "targets": [{ "expr": "sum by (pod) (app_http_requests_total{namespace=\"default\"})", "legendFormat": "{{pod}}", "refId": "A" }],
+        "fieldConfig": { "defaults": { "unit": "req", "decimals": 0 }, "overrides": [] },
+        "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+      },
+      {
+        "id": 7,
+        "title": "Firing alerts",
+        "type": "table",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+        "targets": [{ "expr": "ALERTS{alertstate=\"firing\"}", "format": "table", "instant": true, "refId": "A" }],
+        "fieldConfig": { "defaults": {}, "overrides": [] },
+        "options": { "showHeader": true }
+      }
+    ]
+  },
+  "folderUid": "",
+  "overwrite": true
+}

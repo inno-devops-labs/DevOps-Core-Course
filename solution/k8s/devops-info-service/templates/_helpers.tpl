@@ -109,11 +109,33 @@ spec:
     - name: config-volume
       configMap:
         name: {{ include "devops-info-service.configFileMapName" . }}
+    {{- if .Values.initContainers.enabled }}
+    - name: init-workdir
+      emptyDir: {}
+    {{- end }}
     {{- if and .Values.persistence.enabled (ne .Values.workload.kind "StatefulSet") }}
     - name: data-volume
       persistentVolumeClaim:
         claimName: {{ include "devops-info-service.pvcName" . }}
     {{- end }}
+  {{- if .Values.initContainers.enabled }}
+  initContainers:
+    - name: init-download
+      image: {{ .Values.initContainers.image }}
+      command:
+        - sh
+        - -c
+        - {{ .Values.initContainers.download.command | quote }}
+      volumeMounts:
+        - name: init-workdir
+          mountPath: {{ .Values.initContainers.workdir | quote }}
+    - name: wait-for-service
+      image: {{ .Values.initContainers.image }}
+      command:
+        - sh
+        - -c
+        - {{ .Values.initContainers.wait.command | quote }}
+  {{- end }}
   containers:
     - name: {{ .Chart.Name }}
       image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -132,6 +154,11 @@ spec:
         - name: config-volume
           mountPath: {{ .Values.configMaps.file.mountPath | quote }}
           readOnly: true
+        {{- if .Values.initContainers.enabled }}
+        - name: init-workdir
+          mountPath: {{ .Values.initContainers.mainMountPath | quote }}
+          readOnly: true
+        {{- end }}
         {{- if .Values.persistence.enabled }}
         - name: data-volume
           mountPath: {{ .Values.persistence.mountPath | quote }}

@@ -1,0 +1,2 @@
+﻿Alertmanager active alerts:
+alertname=DevopsInfoServiceLabEvidence severity=lab receiver=lab16-receiver state=active

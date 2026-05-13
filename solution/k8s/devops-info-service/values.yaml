@@ -135,6 +135,35 @@ statefulset:
     type: RollingUpdate
     rollingUpdate: {}
 
+initContainers:
+  enabled: false
+  image: busybox:1.36
+  workdir: /work-dir
+  mainMountPath: /init-data
+  download:
+    command: wget -O /work-dir/example.html http://example.com && echo "downloaded by init container" > /work-dir/status.txt
+  wait:
+    command: until nslookup kubernetes.default.svc.cluster.local; do echo waiting for kubernetes service; sleep 2; done
+
+serviceMonitor:
+  enabled: false
+  labels:
+    release: monitoring
+  path: /metrics
+  interval: 15s
+  scrapeTimeout: 10s
+
+prometheusRule:
+  enabled: false
+  labels:
+    release: monitoring
+  labEvidence:
+    expr: vector(1)
+    for: 30s
+    severity: lab
+    summary: Lab 16 monitoring alert is firing
+    description: This controlled alert verifies that Prometheus sends application-related alerts to Alertmanager.
+
 serviceAccount:
   create: true
   name: ""

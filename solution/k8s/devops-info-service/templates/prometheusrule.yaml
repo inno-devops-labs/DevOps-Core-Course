@@ -1,0 +1,24 @@
+{{- if .Values.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}
+  labels:
+    {{- include "devops-info-service.labels" . | nindent 4 }}
+    {{- with .Values.prometheusRule.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  groups:
+    - name: {{ include "devops-info-service.fullname" . }}.rules
+      rules:
+        - alert: DevopsInfoServiceLabEvidence
+          expr: {{ .Values.prometheusRule.labEvidence.expr | quote }}
+          for: {{ .Values.prometheusRule.labEvidence.for }}
+          labels:
+            severity: {{ .Values.prometheusRule.labEvidence.severity | quote }}
+            app: {{ include "devops-info-service.fullname" . | quote }}
+          annotations:
+            summary: {{ .Values.prometheusRule.labEvidence.summary | quote }}
+            description: {{ .Values.prometheusRule.labEvidence.description | quote }}
+{{- end }}

@@ -1,0 +1,36 @@
+grafana:
+  adminPassword: prom-operator
+
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+defaultRules:
+  disabled:
+    Watchdog: true
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+
+alertmanager:
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: lab16-receiver
+      group_by:
+        - namespace
+        - alertname
+      group_wait: 10s
+      group_interval: 30s
+      repeat_interval: 12h
+    receivers:
+      - name: lab16-receiver
+      - name: "null"
