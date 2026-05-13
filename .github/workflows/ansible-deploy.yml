@@ -3,13 +3,44 @@ name: Ansible Deployment
 on:
   workflow_dispatch:
   push:
-    branches: [main, master, lab6-solution]
+    branches: [ main, master, lab6-solution ]
     paths:
       - 'ansible/**'
       - '!ansible/docs/**'
       - '.github/workflows/ansible-deploy.yml'
 
 jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install ansible ansible-lint
+
+      
+      - name: Run ansible-lint (exclude vault and roles)
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+          
+          cd lab_solutions/lab1/ansible
+          
+          export ANSIBLE_VAULT_PASSWORD_FILE=/tmp/vault_pass
+          ansible-lint playbooks/*.yml --exclude group_vars/ --exclude roles/ --profile=min
+
+      - name: Cleanup Lint Vault File
+        if: always()
+        run: rm -f /tmp/vault_pass
+
+
+
   syntax-check:
     name: Ansible Syntax Check
     runs-on: ubuntu-latest
@@ -41,7 +72,7 @@ jobs:
 
   deploy:
     name: Deploy to VM
-    needs: [ syntax-check ]
+    needs: [lint, syntax-check]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     environment: production
