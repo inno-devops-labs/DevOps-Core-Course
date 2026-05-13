@@ -1,56 +1,60 @@
 name: Ansible Deployment
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, master, lab6-solution ]
     paths:
       - 'ansible/**'
       - '!ansible/docs/**'
       - '.github/workflows/ansible-deploy.yml'
-  pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'ansible/playbooks/**'
-      - 'ansible/roles/**'
 
 jobs:
-  lint:
-    name: Ansible Lint
+  syntax-check:
+    name: Ansible Syntax Check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: |
-          pip install ansible ansible-lint
+      - name: Install Ansible
+        run: pip install ansible
 
-      - name: Run ansible-lint
+      - name: Create vault password file
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+          chmod 600 /tmp/vault_pass
+
+      - name: Run syntax check
         run: |
           cd lab_solutions/lab1/ansible
-          ansible-lint playbooks/*.yml --exclude roles/
+          ansible-playbook playbooks/deploy.yml --syntax-check --vault-password-file /tmp/vault_pass
+          ansible-playbook playbooks/provision.yml --syntax-check
+
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/vault_pass
 
   deploy:
     name: Deploy to VM
-    needs: lint
+    needs: [ syntax-check ]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
+    environment: production
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install Ansible and dependencies
+      - name: Install Ansible
         run: |
           pip install ansible
           ansible-galaxy collection install community.docker
@@ -62,8 +66,9 @@ jobs:
 
       - name: Create inventory file
         run: |
-          mkdir -p ansible/inventory
-          cat > ansible/inventory/hosts.ini <<INNER_EOF
+          cd lab_solutions/lab1/ansible
+          mkdir -p inventory
+          cat > inventory/hosts.ini <<INNER_EOF
           [webservers]
           lab-vm ansible_host=${{ secrets.VM_HOST }} ansible_user=ubuntu ansible_ssh_private_key_file=/tmp/ssh_key
 
@@ -78,7 +83,7 @@ jobs:
 
       - name: Run Ansible deploy
         run: |
-          cd ansible
+          cd lab_solutions/lab1/ansible
           ansible-playbook playbooks/deploy.yml \
             --vault-password-file /tmp/vault_pass \
             --ssh-common-args="-o StrictHostKeyChecking=no"
