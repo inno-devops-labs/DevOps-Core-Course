@@ -1,0 +1,5 @@
+# Copy to .dev.vars for local `npm run dev` (file is gitignored).
+# Production values come from `wrangler secret put` — never commit real values.
+
+API_TOKEN=dev-token-change-me
+ADMIN_EMAIL=dev@example.com
