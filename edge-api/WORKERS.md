@@ -1,8 +1,6 @@
 # Lab 17 — Cloudflare Workers deployment write-up
 
-**Plaintext `vars`** in `wrangler.jsonc` (`APP_NAME`, `COURSE_NAME`, `DEPLOYMENT_LABEL`) are shipped with the Worker bundle and visible in the dashboard; they are fine for non-sensitive labels. **Secrets** (`API_TOKEN`, `ADMIN_EMAIL` via `wrangler secret put`) are encrypted at rest and only injected at runtime—never committed to Git. Local development uses `.dev.vars` (gitignored); see `.dev.vars.example`.
 
----
 
 ## 1. Deployment summary
 
@@ -31,12 +29,14 @@
 
 Worker **edge-api** in Cloudflare: **Workers & Pages → edge-api** (Overview / Observability / Metrics as needed).
 
-### 2.2 Screenshots (saved in repo)
+### 2.2 Screenshots
 
-| Evidence | File |
-|----------|------|
-| Observability (requests, log-style events) | [`screenshots/logs.png`](screenshots/logs.png) |
-| Metrics (requests, errors, CPU / wall time) | [`screenshots/metrics.png`](screenshots/metrics.png) |
+Observability (requests, log-style events) 
+
+![Observability dashboard](screenshots/logs.png)
+
+Metrics (requests, errors, CPU / wall time) 
+![Metrics dashboard](screenshots/metrics.png) 
 
 ### 2.3 Example `/edge` JSON (Cloudflare `request.cf`)
 
@@ -132,7 +132,11 @@ Wrangler prompts you to pick a deployment (or use non-interactive flags if your 
 
 ---
 
-## 4. Persistence (Task 4)
+## 4.1 Environment variables
+
+**Plaintext `vars`** in `wrangler.jsonc` (`APP_NAME`, `COURSE_NAME`, `DEPLOYMENT_LABEL`) are shipped with the Worker bundle and visible in the dashboard; they are fine for non-sensitive labels. **Secrets** (`API_TOKEN`, `ADMIN_EMAIL` via `wrangler secret put`) are encrypted at rest and only injected at runtime—never committed to Git. Local development uses `.dev.vars` (gitignored).
+
+## 4.2 Persistence
 
 - **Stored value:** KV namespace `SETTINGS`, key **`visits`**, string integer.
 - **Procedure:** `GET /counter` increments and returns `{ "visits": N }`. Run `npx wrangler deploy` again **without** deleting the KV namespace or changing its `id` in `wrangler.jsonc`.
@@ -140,13 +144,13 @@ Wrangler prompts you to pick a deployment (or use non-interactive flags if your 
 
 ---
 
-## 5. Global distribution (Task 3)
+## 5. Global distribution
 
 Workers runs in Cloudflare PoPs when a request arrives; the platform chooses where that request executes. You do **not** run a separate “deploy to three regions” step—the same script version is available on the edge network, and each request carries `request.cf` metadata from the handling location.
 
 ---
 
-## 6. Routing: `workers.dev` vs Routes vs Custom Domains (Task 3)
+## 6. Routing: `workers.dev` vs Routes vs Custom Domains
 
 | Mechanism | Role |
 |-----------|------|
@@ -184,13 +188,3 @@ Workers runs in Cloudflare PoPs when a request arrives; the platform chooses whe
 - **More constrained:** No Lab 2 Docker image; adapt to the Workers runtime and bindings.
 - **Without Docker:** Ship a bundle to Cloudflare, not an image; persistence is explicit (KV here).
 
----
-
-## 10. Lab checklist (self-check)
-
-- [x] Worker deployed to `workers.dev`
-- [x] `/health`, `/edge`, `/meta`, `/counter`, secrets route
-- [x] Plaintext vars + 2 secrets + KV + persistence after redeploy
-- [x] Logs (dashboard + `wrangler tail` possible) and metrics reviewed
-- [x] Deployment history documented; rollback path described
-- [x] This file + screenshots in `edge-api/screenshots/`
