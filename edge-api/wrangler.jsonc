@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-05-14",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "vars": {
+    "APP_NAME": "edge-api",
+    "COURSE_NAME": "devops-core",
+  },
+
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "4c52770073e146d99916cc46573868d9",
+    },
+  ],
+
+  "observability": {
+    "enabled": true,
+  },
+}
