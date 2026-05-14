@@ -1,5 +1,8 @@
 # Lab 18 - IPFS and 4EVERLAND
 
+## Note
+Note: the live 4EVERLAND/IPFS deployment was shown to and checked by the professor. After verification, the deployment was disabled because keeping the hosted service available may require paid platform resources
+
 ## Goal
 
 In this lab I deployed a static website to IPFS using 4EVERLAND.

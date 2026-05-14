@@ -1,6 +1,8 @@
 # Lab 17 - Fly.io Edge Deployment
 
-Date: 2026-05-10
+## Note
+Note: the live Fly.io deployment was shown to and checked by the professor. After verification, the deployment was stopped because keeping the service running may require paid cloud resources.
+
 
 This lab deploys the Flask DevOps Info Service to Fly.io. The app runs from a Docker image, uses a health check, stores the visits counter on a Fly Volume, and runs in several regions.
 
