@@ -1,0 +1,300 @@
+{
+    "wallTime": 0,
+    "cpuTime": 0,
+    "truncated": false,
+    "executionModel": "stateless",
+    "outcome": "ok",
+    "scriptVersion": {
+        "id": "e297394d-b430-4090-80c7-340e513c23c8"
+    },
+    "scriptName": "edge-api",
+    "diagnosticsChannelEvents": [],
+    "exceptions": [],
+    "logs": [
+        {
+            "message": [
+                "{\"event\":\"request\",\"path\":\"/health\",\"method\":\"GET\",\"colo\":\"ARN\",\"country\":\"FI\"}"
+            ],
+            "level": "log",
+            "timestamp": 1778706484221
+        }
+    ],
+    "eventTimestamp": 1778706484220,
+    "event": {
+        "request": {
+            "url": "http://edge-api.xrixis-devops-core.workers.dev/health",
+            "method": "GET",
+            "headers": {
+                "accept": "*/*",
+                "accept-encoding": "gzip",
+                "cf-connecting-ip": "<redacted-client-ip>",
+                "cf-ipcountry": "FI",
+                "cf-ray": "9fb4a2e65f4999fc",
+                "cf-visitor": "{\"scheme\":\"http\"}",
+                "connection": "Keep-Alive",
+                "host": "edge-api.xrixis-devops-core.workers.dev",
+                "user-agent": "curl/8.19.0",
+                "x-forwarded-proto": "http",
+                "x-real-ip": "<redacted-client-ip>"
+            },
+            "cf": {
+                "httpProtocol": "HTTP/1.1",
+                "requestPriority": "",
+                "edgeRequestKeepAliveStatus": 1,
+                "requestHeaderNames": {},
+                "clientTcpRtt": 47,
+                "clientQuicRtt": 0,
+                "colo": "ARN",
+                "asn": 56971,
+                "asOrganization": "CGI GLOBAL LIMITED",
+                "country": "FI",
+                "isEUCountry": "1",
+                "city": "Helsinki",
+                "continent": "EU",
+                "region": "Uusimaa",
+                "regionCode": "18",
+                "timezone": "Europe/Helsinki",
+                "longitude": "24.93545",
+                "latitude": "60.16952",
+                "postalCode": "00100",
+                "tlsVersion": "",
+                "tlsCipher": "",
+                "tlsClientRandom": "",
+                "tlsClientCiphersSha1": "",
+                "tlsClientExtensionsSha1": "",
+                "tlsClientExtensionsSha1Le": "",
+                "tlsClientHelloLength": "0",
+                "tlsClientAuth": {
+                    "certPresented": "0",
+                    "certVerified": "NONE",
+                    "certRevoked": "0",
+                    "certIssuerDN": "",
+                    "certSubjectDN": "",
+                    "certIssuerDNRFC2253": "",
+                    "certSubjectDNRFC2253": "",
+                    "certIssuerDNLegacy": "",
+                    "certSubjectDNLegacy": "",
+                    "certSerial": "",
+                    "certIssuerSerial": "",
+                    "certSKI": "",
+                    "certIssuerSKI": "",
+                    "certFingerprintSHA1": "",
+                    "certFingerprintSHA256": "",
+                    "certNotBefore": "",
+                    "certNotAfter": "",
+                    "certRFC9440": "",
+                    "certRFC9440TooLarge": false,
+                    "certChainRFC9440": "",
+                    "certChainRFC9440TooLarge": false
+                },
+                "verifiedBotCategory": "",
+                "edgeL4": {
+                    "deliveryRate": 0
+                }
+            }
+        },
+        "response": {
+            "status": 200
+        }
+    }
+}
+{
+    "wallTime": 0,
+    "cpuTime": 0,
+    "truncated": false,
+    "executionModel": "stateless",
+    "outcome": "ok",
+    "scriptVersion": {
+        "id": "e297394d-b430-4090-80c7-340e513c23c8"
+    },
+    "scriptName": "edge-api",
+    "diagnosticsChannelEvents": [],
+    "exceptions": [],
+    "logs": [
+        {
+            "message": [
+                "{\"event\":\"request\",\"path\":\"/edge\",\"method\":\"GET\",\"colo\":\"ARN\",\"country\":\"FI\"}"
+            ],
+            "level": "log",
+            "timestamp": 1778706484568
+        }
+    ],
+    "eventTimestamp": 1778706484567,
+    "event": {
+        "request": {
+            "url": "http://edge-api.xrixis-devops-core.workers.dev/edge",
+            "method": "GET",
+            "headers": {
+                "accept": "*/*",
+                "accept-encoding": "gzip",
+                "cf-connecting-ip": "<redacted-client-ip>",
+                "cf-ipcountry": "FI",
+                "cf-ray": "9fb4a2e88be882d7",
+                "cf-visitor": "{\"scheme\":\"http\"}",
+                "connection": "Keep-Alive",
+                "host": "edge-api.xrixis-devops-core.workers.dev",
+                "user-agent": "curl/8.19.0",
+                "x-forwarded-proto": "http",
+                "x-real-ip": "<redacted-client-ip>"
+            },
+            "cf": {
+                "httpProtocol": "HTTP/1.1",
+                "requestPriority": "",
+                "edgeRequestKeepAliveStatus": 1,
+                "requestHeaderNames": {},
+                "clientTcpRtt": 50,
+                "clientQuicRtt": 0,
+                "colo": "ARN",
+                "asn": 56971,
+                "asOrganization": "CGI GLOBAL LIMITED",
+                "country": "FI",
+                "isEUCountry": "1",
+                "city": "Helsinki",
+                "continent": "EU",
+                "region": "Uusimaa",
+                "regionCode": "18",
+                "timezone": "Europe/Helsinki",
+                "longitude": "24.93545",
+                "latitude": "60.16952",
+                "postalCode": "00100",
+                "tlsVersion": "",
+                "tlsCipher": "",
+                "tlsClientRandom": "",
+                "tlsClientCiphersSha1": "",
+                "tlsClientExtensionsSha1": "",
+                "tlsClientExtensionsSha1Le": "",
+                "tlsClientHelloLength": "0",
+                "tlsClientAuth": {
+                    "certPresented": "0",
+                    "certVerified": "NONE",
+                    "certRevoked": "0",
+                    "certIssuerDN": "",
+                    "certSubjectDN": "",
+                    "certIssuerDNRFC2253": "",
+                    "certSubjectDNRFC2253": "",
+                    "certIssuerDNLegacy": "",
+                    "certSubjectDNLegacy": "",
+                    "certSerial": "",
+                    "certIssuerSerial": "",
+                    "certSKI": "",
+                    "certIssuerSKI": "",
+                    "certFingerprintSHA1": "",
+                    "certFingerprintSHA256": "",
+                    "certNotBefore": "",
+                    "certNotAfter": "",
+                    "certRFC9440": "",
+                    "certRFC9440TooLarge": false,
+                    "certChainRFC9440": "",
+                    "certChainRFC9440TooLarge": false
+                },
+                "verifiedBotCategory": "",
+                "edgeL4": {
+                    "deliveryRate": 0
+                }
+            }
+        },
+        "response": {
+            "status": 200
+        }
+    }
+}
+{
+    "wallTime": 0,
+    "cpuTime": 0,
+    "truncated": false,
+    "executionModel": "stateless",
+    "outcome": "ok",
+    "scriptVersion": {
+        "id": "e297394d-b430-4090-80c7-340e513c23c8"
+    },
+    "scriptName": "edge-api",
+    "diagnosticsChannelEvents": [],
+    "exceptions": [],
+    "logs": [
+        {
+            "message": [
+                "{\"event\":\"request\",\"path\":\"/config\",\"method\":\"GET\",\"colo\":\"ARN\",\"country\":\"FI\"}"
+            ],
+            "level": "log",
+            "timestamp": 1778706484940
+        }
+    ],
+    "eventTimestamp": 1778706484925,
+    "event": {
+        "request": {
+            "url": "http://edge-api.xrixis-devops-core.workers.dev/config",
+            "method": "GET",
+            "headers": {
+                "accept": "*/*",
+                "accept-encoding": "gzip",
+                "cf-connecting-ip": "<redacted-client-ip>",
+                "cf-ipcountry": "FI",
+                "cf-ray": "9fb4a2eabe0bab70",
+                "cf-visitor": "{\"scheme\":\"http\"}",
+                "connection": "Keep-Alive",
+                "host": "edge-api.xrixis-devops-core.workers.dev",
+                "user-agent": "curl/8.19.0",
+                "x-forwarded-proto": "http",
+                "x-real-ip": "<redacted-client-ip>"
+            },
+            "cf": {
+                "httpProtocol": "HTTP/1.1",
+                "requestPriority": "",
+                "edgeRequestKeepAliveStatus": 1,
+                "requestHeaderNames": {},
+                "clientTcpRtt": 48,
+                "clientQuicRtt": 0,
+                "colo": "ARN",
+                "asn": 56971,
+                "asOrganization": "CGI GLOBAL LIMITED",
+                "country": "FI",
+                "isEUCountry": "1",
+                "city": "Helsinki",
+                "continent": "EU",
+                "region": "Uusimaa",
+                "regionCode": "18",
+                "timezone": "Europe/Helsinki",
+                "longitude": "24.93545",
+                "latitude": "60.16952",
+                "postalCode": "00100",
+                "tlsVersion": "",
+                "tlsCipher": "",
+                "tlsClientRandom": "",
+                "tlsClientCiphersSha1": "",
+                "tlsClientExtensionsSha1": "",
+                "tlsClientExtensionsSha1Le": "",
+                "tlsClientHelloLength": "0",
+                "tlsClientAuth": {
+                    "certPresented": "0",
+                    "certVerified": "NONE",
+                    "certRevoked": "0",
+                    "certIssuerDN": "",
+                    "certSubjectDN": "",
+                    "certIssuerDNRFC2253": "",
+                    "certSubjectDNRFC2253": "",
+                    "certIssuerDNLegacy": "",
+                    "certSubjectDNLegacy": "",
+                    "certSerial": "",
+                    "certIssuerSerial": "",
+                    "certSKI": "",
+                    "certIssuerSKI": "",
+                    "certFingerprintSHA1": "",
+                    "certFingerprintSHA256": "",
+                    "certNotBefore": "",
+                    "certNotAfter": "",
+                    "certRFC9440": "",
+                    "certRFC9440TooLarge": false,
+                    "certChainRFC9440": "",
+                    "certChainRFC9440TooLarge": false
+                },
+                "verifiedBotCategory": "",
+                "edgeL4": {
+                    "deliveryRate": 0
+                }
+            }
+        },
+        "response": {
+            "status": 200
+        }
+    }
+}

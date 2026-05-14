@@ -1,4 +1,6 @@
 test
+!solution/edge-api/test/
+!solution/edge-api/test/**
 .idea
 .vscode
 .env

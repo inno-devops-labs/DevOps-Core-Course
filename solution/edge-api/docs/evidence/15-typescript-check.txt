@@ -1,0 +1,2 @@
+npx tsc --noEmit
+completed with exit code 0
