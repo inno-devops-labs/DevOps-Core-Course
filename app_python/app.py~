@@ -1,16 +1,25 @@
 import os
-import json
-import logging
 import socket
-
-
-
 from datetime import datetime
 
 import uvicorn
 import platform
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse
+
+
+#------------------constantes----------------------------
+response_404 = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Not Found</title>
+</head>
+<body>
+    <p>The file you requested was not found.</p>
+</body>
+</html>
+"""
 
 #------------------Fonctions---------------------------------
 start_time = datetime.now()
@@ -83,30 +92,16 @@ def getRequestInfo(request: Request):
             }
 
 
-#--------------------logging----------------------------
-def getLogging(request: Request):
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        filename="debug.log"
-    )
-    logger = logging.getLogger(__name__)
-
-    logger.info('Application starting...')
-    logger.info('Man-debugger')
-    logger.debug(f'Request: Ola{request.method} {request.url.path}')
-
 
 #--------------------app----------------------------------------
 
+app = FastAPI()
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 5000))
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-app = FastAPI(debug=DEBUG)
 
 @app.get("/")
 def read_root(request:Request):
-    getLogging(request)
     return {
             "service": getService(),
             "system": getSystemInformation(),
@@ -119,8 +114,7 @@ def read_root(request:Request):
             }
 
 @app.get("/health")
-def read_health(request: Request):
-    getLogging(request)
+def read_health():
     return {
             'status': 'healthy',
             'timestamp': datetime.now().isoformat(),
@@ -129,21 +123,14 @@ def read_health(request: Request):
 #---------------------Error handlers----------------
 
 @app.exception_handler(404)
-def custom_404_handler(request: Request, __):
-    getLogging(request)
-    return JSONResponse({
-            "error": "404 not Found",
-            "message": "Endpoint does not exist"
-            })
+def custom_404_handler(_, __):
+    return HTMLResponse(response_404)
 
 @app.exception_handler(500)
-def custom_500_handler(request: Request, __):
-    getLogging(request)
-    return JSONResponse({
+def custom_500_handler(_, __):
+    return {
             "error": "505 internal Server Error",
-            "message": "An unexpected error occurred"
-            })
-
-
+            "message": ""
+            }
 if __name__ == "__main__":
     uvicorn.run(app, host=HOST, port=PORT)
