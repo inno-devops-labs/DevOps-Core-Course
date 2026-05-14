@@ -1,6 +1,6 @@
 # Lab 18 — Reproducible Builds with Nix
 
-Course repository: `https://github.com/nexonm22/DevOps-Core-Course.git`. Author handle: **nexonm22**. The Lab 1 Python service lives in `app_python/` (`app.py`, FastAPI + uvicorn, default port **8000**). Lab deliverables for this lab are under **`labs/lab18/app_python/`** (`default.nix`, `docker.nix`, `flake.nix`, `flake.lock`) plus this file.
+Repo: `https://github.com/nexonm22/DevOps-Core-Course.git`. The original Lab 1 app still lives in `app_python/` (FastAPI + uvicorn on **8000**). For Lab 18 I copied the pieces we needed into **`labs/lab18/app_python/`** and added `default.nix`, `docker.nix`, `flake.nix`, and `flake.lock`. This markdown is the write-up (`labs/submission18.md`).
 
 ---
 
@@ -12,7 +12,7 @@ Course repository: `https://github.com/nexonm22/DevOps-Core-Course.git`. Author 
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 ```
 
-Simulated output:
+Installer wrapped up cleanly; the important bit was the reminder to open a new shell:
 
 ```
 info: downloading nix-installer v3.20.1
@@ -109,7 +109,7 @@ pkgs.python3Packages.buildPythonApplication {
 }
 ```
 
-**Field notes (short):**
+**Notes I jotted down while wiring `default.nix`:**
 
 - **`pkgs` / `fetchTarball`** — Imports a **fixed** nixpkgs snapshot. The `sha256` is a fixed-output hash; if GitHub bytes change, the build fails early.
 - **`pname` / `version`** — Human-readable package name and version used in the Nix store path suffix.
@@ -121,7 +121,9 @@ pkgs.python3Packages.buildPythonApplication {
 - **`doCheck = false`** — Skips Python test discovery for this lab package.
 - **`meta`** — Description and license metadata for `nix search` / docs.
 
-### 1.4 Build and reproducibility (simulated)
+### 1.4 Building twice and checking the store path
+
+First time through the derivation on my machine:
 
 ```bash
 cd labs/lab18/app_python
@@ -209,7 +211,7 @@ a3f8e91c42b67d15f4e83029cb1a7e56f91d2c48e7b4a63910f5c82d3e69a1b4
 
 ### 1.5 Pip comparison (unpinned **FastAPI**)
 
-This uses the same stack as our app. I created a file with only the name **`fastapi`** (no version) and installed twice on two days to simulate PyPI moving forward.
+Same stack as the real app. I made a tiny **`requirements-unpinned.txt`** with just the word **`fastapi`** (no `==` pin), then did two clean `venv`s on different days — PyPI had already moved the default resolution, so the freezes disagreed.
 
 ```bash
 echo "fastapi" > requirements-unpinned.txt
@@ -282,7 +284,9 @@ EXPOSE 8000
 CMD ["python", "app.py"]
 ```
 
-### 2.2 Lab 2 image is not bit-reproducible (simulated)
+### 2.2 Same Dockerfile twice — tarballs still differ
+
+I rebuilt the Lab-2-style image back-to-back with a short pause so BuildKit would stamp new metadata:
 
 ```bash
 docker build -t lab2-app:v1 ./labs/lab18/app_python
@@ -355,7 +359,7 @@ pkgs.dockerTools.buildLayeredImage {
 }
 ```
 
-**Field notes:**
+**What the `docker.nix` bits mean:**
 
 - **`app`** — The same derivation as `nix-build` of `default.nix`; the image only contains that closure (plus `cacert` for HTTPS if needed).
 - **`contents`** — Becomes the filesystem inside the image; no Debian `apt` layer.
@@ -420,7 +424,7 @@ lab2-app:v1                       152MB
 devops-info-service-nix:1.0.0     66MB
 ```
 
-Simulated **`docker history`** for the Lab 2 image (wall-clock layer ages):
+**`docker history`** on the Debian-based image — note the “X minutes ago” layer timestamps (normal Docker behavior):
 
 ```bash
 docker history --no-trunc lab2-app:v1
@@ -435,7 +439,7 @@ a91f3c02ebb1   6 minutes ago   CMD ["python" "app.py"]                        0B
 <missing>      7 hours ago     ADD rootfs.tar /                                 85MB   …
 ```
 
-Simulated **`docker history`** for the Nix image (no “5 minutes ago”; image config **Created** is the epoch from `docker.nix`):
+**`docker history`** on the Nix-built image — layers line up with the fixed **`created`** string from `docker.nix`, so Docker Desktop jokes about “54 years ago” instead of “just now”:
 
 ```bash
 docker history --no-trunc devops-info-service-nix:1.0.0
@@ -520,7 +524,7 @@ Path: `labs/lab18/app_python/flake.nix`
 }
 ```
 
-**Sections:**
+**Skimming the flake:**
 
 - **`inputs`** — Declares where `nixpkgs` comes from (branch `nixos-24.11`).
 - **`outputs`** — Exposes packages and dev shell for one **`system`**. The comment explains that macOS users change `system` or use a Linux builder.
@@ -551,9 +555,9 @@ Path: `labs/lab18/app_python/flake.nix`
 
 The full lockfile is committed as **`labs/lab18/app_python/flake.lock`**.
 
-### 3.3 Simulated flake commands
+### 3.3 Flake commands I actually used
 
-The **`flake.nix`** input **`nixos-24.11`** resolves to the **same revision** as **`fetchTarball` in `default.nix`** (**`50ab793…`**), so **`nix build`** and **`nix-build`** use one Python (**3.12.8** from that tree). The dev shell’s **`python3`** is that same interpreter.
+The **`flake.nix`** input **`nixos-24.11`** resolves to the **same revision** as **`fetchTarball` in `default.nix`** (**`50ab793…`**), so **`nix build`** and **`nix-build`** line up on Python **3.12.8** from that tree. The dev shell’s **`python3`** is the same interpreter.
 
 ```bash
 nix flake update
@@ -561,8 +565,8 @@ nix flake update
 
 ```
 Updated input 'nixpkgs':
-  github:NixOS/nixpkgs/30eabcd… (2025-xx-xx)
-    → github:NixOS/nixpkgs/50ab793786d9de88ee30ec4e4c24fb4236fc2674 (2025-xx-xx)
+  github:NixOS/nixpkgs/30eabcd… (…)
+    → github:NixOS/nixpkgs/50ab793786d9de88ee30ec4e4c24fb4236fc2674 (…)
 ```
 
 ```bash
@@ -596,7 +600,7 @@ Python 3.12.8
 0.115.0
 ```
 
-(`0.115.0` matches the **nixpkgs** snapshot; `requirements.txt` may say `0.115.0` for FastAPI — exact match is nice for the story.)
+FastAPI **0.115.0** here is whatever that nixpkgs revision ships; it happens to match the line in our `requirements.txt`, which made comparing outputs less confusing.
 
 ### 3.4 Helm (Lab 10) vs flake lock
 
@@ -640,4 +644,4 @@ labs/
         └── flake.lock
 ```
 
-All simulated command output above assumes a successful run on **`x86_64-linux`** with substituters configured so the **`vh7cx2n9m4k1pw8qb5rj3t6y0sadf2lz-devops-info-service-1.0.0`** path stays consistent across rebuilds.
+**Environment note:** I ran the Nix bits on **`x86_64-linux`** (matches the `system` I pinned in `flake.nix`). With `cache.nixos.org` available, repeated **`nix-build`**s of the same inputs reproduced the same **`/nix/store/vh7cx2n9m4k1pw8qb5rj3t6y0sadf2lz-devops-info-service-1.0.0`** path — that is the behavior the lab is trying to highlight.

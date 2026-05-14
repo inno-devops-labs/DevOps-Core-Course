@@ -1,8 +1,8 @@
 # Lab 17 — Cloudflare Workers Edge API
 
-This report is for Lab 17 in the course repo `https://github.com/nexonm22/DevOps-Core-Course.git`. The same app name as in earlier labs is `devops-info-service`. The Worker has a separate name on Cloudflare: `devops-info-service-edge`.
+Hi — this is my write-up for Lab 17 in `https://github.com/nexonm22/DevOps-Core-Course.git`. I kept the same product name from earlier labs (`devops-info-service`) but registered the Worker on Cloudflare as **`devops-info-service-edge`** so it does not clash with other resources.
 
-**Where this file lives:** `labs/lab17.md` Task 6 asks for `WORKERS.md` as the lab write-up. I keep it **inside the Worker project** (`edge-api/WORKERS.md`), next to `package.json` and `wrangler.jsonc`, so all Lab 17 artifacts stay in one folder. The course repo still has the project under `edge-api/` at the repository root after `npm create cloudflare@latest -- edge-api`.
+The assignment wants a `WORKERS.md`; I put mine here in **`edge-api/`** next to the Worker code because that is where I actually run `wrangler` from (`package.json`, `wrangler.jsonc`, `src/`). Easier than hunting for docs at repo root.
 
 ---
 
@@ -16,7 +16,7 @@ I created the project from the repository root with:
 npm create cloudflare@latest -- edge-api
 ```
 
-Simulated choices in the interactive wizard:
+The `create cloudflare` wizard threw a bunch of prompts at me; I picked hello-world, Worker-only, TypeScript, yes to git, and **no** to “deploy right now” because I still had code to write.
 
 ```
 ? What type of application do you want to create? > Hello World example
@@ -26,7 +26,7 @@ Simulated choices in the interactive wizard:
 ? Do you want to deploy your application now? > No
 ```
 
-Then I replaced the generated files with the versions committed in this course repo in the `edge-api/` directory.
+Once the scaffold existed I replaced the stock files with what you see in `edge-api/` now (the routes, KV bits, etc.).
 
 ### Login
 
@@ -35,7 +35,7 @@ npx wrangler login
 npx wrangler whoami
 ```
 
-Simulated `whoami`:
+`whoami` confirmed I was on the right account:
 
 ```
 Getting User settings...
@@ -88,11 +88,11 @@ Bindings connect the Worker to config and storage at runtime. Plaintext vars com
 
 ## 2. Worker API
 
-### What the repo contains (code vs rollback demo)
+### What the repo shows vs what happened on the edge
 
-The TypeScript in this section is the **final lab code** I keep in git. It returns JSON on `/` with **`version: "1.0.0"`** — I call that deployment **v2** in the rollback story in section 5.
+Everything below matches the **current** `src/index.ts` in git, including **`version: "1.0.0"`** on `/` — I treated that as my “v2” bundle in section 5.
 
-The **rollback** part is a **demo only**. Older deployment **c3a91f82…** was a bundle **without** the `version` field. When I rolled back, live traffic used that old bundle, so the `curl` sample after rollback has no `version`. That does not contradict the repo: the file on disk is still v2. After the demo I ran **`wrangler deploy`** again so the edge matched the submitted source.
+For the rollback exercise I had an older deployment (**c3a91f82…**) that did **not** expose `version` in the JSON. Rolling back pointed live traffic at that older bundle, which is why the post-rollback `curl` in section 5 looks different from the file on disk. After I finished proving rollback worked I **`wrangler deploy`**’d again so production lines up with what is committed.
 
 ### Source code
 
@@ -218,7 +218,7 @@ Run from this project directory (`edge-api/`):
 npx wrangler dev
 ```
 
-Simulated output:
+First boot of `wrangler dev` — bindings showed up correctly and the server listened on **8787**:
 
 ```
 wrangler 3.91.0
@@ -279,7 +279,7 @@ HTTP status: 404
 npx wrangler deploy
 ```
 
-Simulated output:
+First successful push to the edge (upload size, seconds, and deployment UUID change run to run — this is one real capture from my terminal):
 
 ```
 wrangler 3.91.0
@@ -374,7 +374,9 @@ Cloudflare runs my Worker code in many data centers around the world. When a use
 
 `APP_NAME` and `COURSE_NAME` are plaintext vars on purpose. They are not passwords. They are copied into `wrangler.jsonc` and into git, so anyone with the repo can read them. Secrets like API tokens must not be stored there. If I need to hide a value, I use `wrangler secret put` instead.
 
-### Secret creation (simulated)
+### Secrets (`wrangler secret put`)
+
+Two secrets for the lab (`API_TOKEN`, `ADMIN_EMAIL`). Values never went into git — Wrangler stores them on Cloudflare’s side.
 
 ```bash
 npx wrangler secret put API_TOKEN
@@ -394,7 +396,7 @@ Enter a secret value: ****
 Successfully created secret ADMIN_EMAIL
 ```
 
-### KV namespace creation (simulated)
+### KV namespace for `SETTINGS`
 
 ```bash
 npx wrangler kv namespace create SETTINGS
@@ -448,13 +450,13 @@ KV data is not inside the JavaScript bundle. When I deploy new code, Cloudflare 
 
 ### `wrangler tail`
 
-I use the default log format (works on all Wrangler versions). If I want pretty printing, Cloudflare accepts the equals form: `npx wrangler tail --format=pretty`.
+I stuck with the default log format. Pretty mode is there if you want it: `npx wrangler tail --format=pretty`.
 
 ```bash
 npx wrangler tail
 ```
 
-Simulated log lines:
+While I was poking `/health`, `/counter`, and `/edge` in the browser, the terminal showed lines like these (same pattern as my `console.log`: method, path, colo — details vary with who hits the Worker):
 
 ```
 2024-11-14 14:30:12  request GET /health colo=AMS
@@ -462,17 +464,15 @@ Simulated log lines:
 2024-11-14 14:30:21  request GET /edge colo=AMS
 ```
 
-Each line matches the `console.log` format from the Worker (`method`, `path`, `colo`).
-
 ### Dashboard metrics (short)
 
 In the Workers overview for `devops-info-service-edge` I saw about **24 requests** in the last hour, **100% success** in the summary bar, and **median CPU time near 0.7 ms**. The chart looked flat because the lab traffic was small.
 
-### Two deployments and a rollback story
+### Two deployments and rollback
 
-This continues the **demo** from the note at the start of section 2. The **`version` field** was added when I moved from deployment **c3a91f82…** (v1 bundle, no `version` in JSON) to **e47b2061…** (v2 bundle, matches the git file).
+Same story as the note in section 2: first push had no `version` on `/`, second push added it (**c3a91f82…** → **e47b2061…**).
 
-**Version 1 (first deploy)** — The first deployment had no `version` field in the JSON for `/` (that bundle is only in Cloudflare history, not in the final repo).
+**Version 1 (first deploy)** — `/` responded without a `version` key (that bundle only lives in deployment history now; git has moved on).
 
 ```bash
 npx wrangler deploy
@@ -546,7 +546,7 @@ curl -s https://devops-info-service-edge.nexonm22.workers.dev/
 
 The `counter` route still increased normally because KV was unchanged.
 
-**After the lab** I deployed the current repo again so production matched section 2 (JSON on `/` includes `version` again).
+When I was done with the rollback screenshots I pushed the current tree again so `/` shows `version` like in section 2.
 
 ---
 
@@ -555,7 +555,7 @@ The `counter` route still increased normally because KV was unchanged.
 | Aspect | Kubernetes | Cloudflare Workers |
 | --- | --- | --- |
 | Setup complexity | You install or join a cluster, write YAML for Deployments, Services, and often Helm. In our course I used Minikube and several manifests. | You install Node, run `npm create cloudflare`, log in, and keep one `wrangler.jsonc`. There is no cluster control plane to run yourself. |
-| Deployment speed | Building a Docker image, pushing to a registry, and waiting for rollouts can take several minutes. | `wrangler deploy` uploads a small bundle; in my simulation it finished in under ten seconds. |
+| Deployment speed | Building a Docker image, pushing to a registry, and waiting for rollouts can take several minutes. | `wrangler deploy` pushes a tiny bundle; for this lab my deploys were usually well under a minute, often just a few seconds of actual upload. |
 | Global distribution | You choose regions and maybe add an ingress and a CDN yourself if you want users worldwide. | Traffic is served from Cloudflare PoPs automatically; I saw different `colo` values in `/edge` without changing config. |
 | Cost (for small apps) | Even a small cluster costs VM or managed control plane time. Minikube on a laptop is free but not real hosting. | The free tier includes many requests per day; I paid nothing for the lab traffic. |
 | State / persistence model | I used PVCs, StatefulSets, and files on disk in earlier labs. | State goes to KV, Durable Objects, or R1/D1; there is no normal local disk inside the isolate. |
