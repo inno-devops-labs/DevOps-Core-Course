@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+
+result
+result-*
+*.tar.gz
+
+pip-venv/
+venv/
