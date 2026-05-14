@@ -367,5 +367,5 @@ The lab API was implemented as Workers-native TypeScript instead of deploying a 
 - Persistence verified after redeploy: done
 - Logs or metrics reviewed: done
 - Deployment history viewed: done
-- `WORKERS.md` documentation complete: done except adding dashboard screenshots
+- `WORKERS.md` documentation complete: done
 - Kubernetes comparison documented: done
