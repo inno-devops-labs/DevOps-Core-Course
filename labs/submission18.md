@@ -1,0 +1,556 @@
+# Lab 18 — Reproducible Builds with Nix
+
+## Goal
+
+The goal of this lab was to:
+
+- Install and configure Nix package manager
+- Build a Python Flask application using Nix
+- Verify reproducible builds
+- Compare traditional Docker builds with Nix-based builds
+- Build and run a Docker image generated via Nix
+- Analyze reproducibility and image structure
+
+# Environment
+
+| Component | Version |
+|---|---|
+| OS | Ubuntu Linux |
+| Nix | Determinate Nix 3.20.0 / Nix 2.34.6 |
+| Python | 3.13 |
+| Flask | 3.1.0 |
+| Docker | Installed locally |
+
+# Step 1 — Verify Nix Installation
+
+## Commands
+
+```bash
+nix --version
+nix run nixpkgs#hello
+```
+
+## Result
+
+```text
+nix (Determinate Nix 3.20.0) 2.34.6
+Hello, world!
+```
+
+## Conclusion
+
+Nix package manager was successfully installed and operational.
+
+# Step 2 — Prepare Application
+
+## Commands
+
+```bash
+mkdir -p labs/lab18/app_python
+cp -r app_python/* labs/lab18/app_python/
+cd labs/lab18/app_python
+```
+
+## Application Structure
+
+```text
+Dockerfile
+README.md
+app.py
+data
+requirements.txt
+requirements-dev.txt
+tests
+ruff.toml
+```
+
+## Python Dependency
+
+```text
+Flask==3.1.0
+```
+
+# Step 3 — Build Application with Nix
+
+## Command
+
+```bash
+nix-build
+```
+
+## Result
+
+Nix successfully:
+
+- Downloaded dependencies into the Nix store
+- Built a derivation
+- Created immutable store path
+- Generated a runnable application package
+
+Store path:
+
+```text
+/nix/store/9i0sjq0n8pl5rnzkrsaws9gc7rxmnavz-devops-info-service-1.0.0
+```
+
+# Step 4 — Run Nix Application
+
+## Command
+
+```bash
+./result/bin/devops-info-service
+```
+
+## Result
+
+```text
+Starting devops-info-service on 0.0.0.0:5000
+Running on http://127.0.0.1:5000
+```
+
+## Health Check
+
+```bash
+curl http://localhost:5000/health
+```
+
+## Response
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-05-14T18:18:48.441380+00:00",
+  "uptime_seconds": 13
+}
+```
+
+## Conclusion
+
+The application built by Nix successfully launched and responded correctly.
+
+# Step 5 — Reproducibility Test
+
+## Commands
+
+```bash
+readlink result > store-path-1.txt
+
+rm result
+nix-build
+
+readlink result > store-path-2.txt
+```
+
+## Initial Observation
+
+The generated store paths differed:
+
+```text
+/nix/store/9i0sjq0n8pl5rnzkrsaws9gc7rxmnavz-devops-info-service-1.0.0
+/nix/store/khaiyh5gwcvidzfiqg3c8j2rlgcmrq7d-devops-info-service-1.0.0
+```
+
+## Cause
+
+The build source included temporary and generated files:
+
+- result
+- __pycache__
+- generated txt files
+- local runtime data
+
+Because Nix hashes all source inputs, these extra files changed the derivation hash.
+
+## Solution
+
+The source definition was updated using `cleanSourceWith`:
+
+```nix
+src = pkgs.lib.cleanSourceWith {
+  src = ./.;
+  filter = path: type:
+    let
+      base = baseNameOf path;
+    in
+      !(base == "result"
+        || base == "__pycache__"
+        || base == "data"
+        || base == "store-path-1.txt"
+        || base == "store-path-2.txt"
+        || base == ".venv"
+        || base == ".git");
+};
+```
+
+## Conclusion
+
+After excluding temporary files, builds became reproducible because the source input no longer changed between builds.
+
+# Step 6 — Verify Nix Store Behavior
+
+## Command
+
+```bash
+readlink result
+```
+
+## Output
+
+```text
+/nix/store/9i0sjq0n8pl5rnzkrsaws9gc7rxmnavz-devops-info-service-1.0.0
+```
+
+## Observation
+
+Nix stores all packages in immutable store paths.
+
+Each package path contains:
+
+- cryptographic hash
+- package name
+- version
+
+This guarantees:
+
+- immutability
+- dependency isolation
+- deterministic builds
+
+# Step 7 — Nix Hash Verification
+
+## Command
+
+```bash
+nix-hash --type sha256 result
+```
+
+## Result
+
+```text
+d289f2511949f51114b1f82594aa25d4adca5a50273c349dc2a9b31816d78a0c
+```
+
+## Conclusion
+
+Nix provides deterministic content-addressed hashing for build outputs.
+
+# Step 8 — Garbage Collection Test
+
+## Commands
+
+```bash
+STORE_PATH=$(readlink result)
+
+nix-store --delete $STORE_PATH
+```
+
+## Result
+
+```text
+Cannot delete path because it's referenced by the GC root 'result'
+```
+
+## Conclusion
+
+Nix protects active build outputs through garbage collector roots.
+
+This prevents accidental deletion of currently referenced packages.
+
+# Step 9 — Build Docker Image with Nix
+
+## Command
+
+```bash
+nix-build docker.nix
+```
+
+## Result
+
+Nix created a Docker image tarball:
+
+```text
+/nix/store/ci7hnh7f9a1lzpv7n3c7gxhr3wv8j1lw-devops-info-service-nix.tar.gz
+```
+
+The generated image:
+
+- used immutable Nix store paths
+- included dependency layers
+- contained reproducible metadata
+- had deterministic timestamps
+
+# Step 10 — Load Docker Image
+
+## Commands
+
+```bash
+docker load < result
+
+docker images | grep devops-info-service-nix
+```
+
+## Result
+
+```text
+devops-info-service-nix:1.0.0
+```
+
+# Step 11 — Run Nix Docker Image
+
+## Commands
+
+```bash
+docker run -d -p 5001:5000 --name nix-container devops-info-service-nix:1.0.0
+
+curl http://localhost:5001/health
+```
+
+## Result
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-05-14T18:22:43.351689+00:00",
+  "uptime_seconds": 4
+}
+```
+
+## Conclusion
+
+The Docker image generated by Nix launched successfully and worked correctly.
+
+# Step 12 — Compare Traditional Docker Builds
+
+## Commands
+
+```bash
+docker build -t lab2-app:v1 ./app_python
+docker save lab2-app:v1 | sha256sum
+
+sleep 2
+
+docker build -t lab2-app:v2 ./app_python
+docker save lab2-app:v2 | sha256sum
+```
+
+## Result
+
+First hash:
+
+```text
+e77637a17a62edb9928fcb3c9f2c57d8525a04061f89ea0c8938969609db3774
+```
+
+Second hash:
+
+```text
+ca87e60c44296c7f77170f497f9e9ae899d8252232b284441eaf3fc306fb1c98
+```
+
+## Observation
+
+Traditional Docker builds produced different image hashes despite identical source code.
+
+## Cause
+
+Docker images include:
+
+- timestamps
+- mutable metadata
+- layer ordering changes
+- non-deterministic build artifacts
+
+# Step 13 — Compare Docker History
+
+## Traditional Docker Image
+
+```bash
+docker history lab2-app:v1
+```
+
+## Observation
+
+Traditional Docker images contain:
+
+- mutable layers
+- timestamped build steps
+- dynamically generated metadata
+
+## Nix Docker Image
+
+```bash
+docker history devops-info-service-nix:1.0.0
+```
+
+## Observation
+
+Nix image layers referenced immutable Nix store paths:
+
+```text
+store paths: ['/nix/store/...']
+```
+
+# Key Differences Between Docker and Nix
+
+| Feature | Traditional Docker | Nix |
+|---|---|---|
+| Reproducibility | Weak | Strong |
+| Immutable dependencies | No | Yes |
+| Dependency isolation | Partial | Full |
+| Content-addressed storage | No | Yes |
+| Deterministic metadata | No | Yes |
+| Build purity | Limited | High |
+| Garbage collection | Limited | Advanced |
+
+# Advantages of Nix
+
+## Reproducible Builds
+
+Identical source and dependencies produce identical outputs.
+
+## Dependency Isolation
+
+Different package versions can coexist safely.
+
+## Immutable Package Store
+
+Packages cannot be modified after creation.
+
+## Deterministic Environments
+
+Development and production environments remain consistent.
+
+## Efficient Caching
+
+Previously built artifacts are reused automatically.
+
+# Problems Encountered
+
+## Non-Reproducible Store Paths
+
+### Cause
+
+Temporary files inside the source directory changed build hashes.
+
+### Solution
+
+Used `cleanSourceWith` to exclude generated files.
+
+## Docker Container Crash
+
+### Cause
+
+Initial image configuration mismatch.
+
+### Solution
+
+Rebuilt the Nix Docker image and reloaded it.
+
+# Final Conclusion
+
+During this lab:
+
+- Nix was successfully installed and configured
+- A Flask application was packaged with Nix
+- The application was built and executed from the Nix store
+- Docker images were generated using Nix
+- Reproducibility behavior was analyzed
+- Traditional Docker builds were compared with Nix builds
+- Deterministic package management concepts were explored
+
+The lab demonstrated that Nix provides significantly stronger guarantees for reproducibility, dependency isolation, and deterministic builds compared to traditional Docker workflows.
+
+Nix-based builds are especially useful for:
+
+- DevOps pipelines
+- CI/CD systems
+- Infrastructure automation
+- Research environments
+- Long-term reproducible deployments
+- Secure software supply chains
+
+# Commands Summary
+
+## Build Application
+
+```bash
+nix-build
+```
+
+```
+/nix/store/9i0sjq0n8pl5rnzkrsaws9gc7rxmnavz-devops-info-service-1.0.0
+```
+
+## Run Application
+
+```bash
+./result/bin/devops-info-service
+```
+
+```
+2026-05-14 23:18:35,094 - devops-info-service - INFO - Starting devops-info-service on 0.0.0.0:5000 (debug=False)
+
+* Serving Flask app 'app'
+* Debug mode: off
+
+* Running on http://127.0.0.1:5000
+* Running on http://172.18.0.1:5000
+```
+
+## Health Check
+
+```bash
+curl http://localhost:5000/health
+```
+
+```
+{"status":"healthy","timestamp":"2026-05-14T18:18:48.441380+00:00","uptime_seconds":13}
+```
+
+## Build Docker Image
+
+```bash
+nix-build docker.nix
+```
+
+```
+Loaded image: devops-info-service-nix:1.0.0
+
+/nix/store/588xvrmcpcffd6ldhawq4qjg58nmcv3q-devops-info-service-nix.tar.gz
+```
+
+## Load Docker Image
+
+```bash
+docker load < result
+```
+
+```
+Loaded image: devops-info-service-nix:1.0.0
+```
+
+## Run Docker Container
+
+```bash
+docker run -d -p 5001:5000 --name nix-container devops-info-service-nix:1.0.0
+```
+
+```
+670e23d840786c699a24a9b16e0a821a7cb124bfcee48ee5e6d39eebc9218864
+```
+
+## Compare Docker Hashes
+
+```bash
+docker save lab2-app:v1 | sha256sum
+```
+```
+e77637a17a62edb9928fcb3c9f2c57d8525a04061f89ea0c8938969609db3774
+```
+
+```bash
+docker save lab2-app:v2 | sha256sum
+```
+```
+ca87e60c44296c7f77170f497f9e9ae899d8252232b284441eaf3fc306fb1c98
+```

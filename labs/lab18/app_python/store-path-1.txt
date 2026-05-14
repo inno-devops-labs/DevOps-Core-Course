@@ -1,0 +1,1 @@
+/nix/store/9i0sjq0n8pl5rnzkrsaws9gc7rxmnavz-devops-info-service-1.0.0
