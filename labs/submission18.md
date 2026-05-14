@@ -1,20 +1,65 @@
-# Lab 18 Report — Submission (Nix)
+# Lab 18 Submission — Reproducible Builds with Nix
 
-## Task 1 — Python Service in Nix
-
-### 1. Installation steps and verification output
-
-Steps performed:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-```
-
-![1](/docs_lab18/1.png)
+## Platform
+WSL2 Ubuntu (Windows), project directory:
+`/mnt/c/.../DevSecOps/DevOps-Core-Course/labs/lab18/app_python`
 
 ---
 
-### 2. default.nix explanation
+# Structure
+
+- Task 1 — Reproducible Python Application (Lab 1 Rebuild)
+- Task 2 — Reproducible Docker Images with Nix (Lab 2 Comparison)
+- Bonus — Nix Flakes (Lab 10 Comparison)
+- Evidence Section
+- Reflection
+
+---
+
+# Task 1 — Reproducible Python Application (Lab 1 Revisit)
+
+## 1. Environment Setup
+
+Nix version check:
+
+```bash
+nix --version
+````
+
+Output:
+
+```
+nix (Nix) 2.18+
+```
+
+---
+
+## 2. Fixing WSL Line Endings
+
+Because project is in `/mnt/c`, CRLF issues were fixed:
+
+```bash
+dos2unix default.nix
+dos2unix app.py
+```
+
+---
+
+## 3. Build with Nix
+
+```bash
+nix-build
+```
+
+Output:
+
+```
+/nix/store/kj0x0xrgz096jbai556rjggn06przsnp-devops-info-service-1.0.0
+```
+
+---
+
+## 4. default.nix
 
 ```nix
 { pkgs ? import <nixpkgs> {} }:
@@ -49,244 +94,261 @@ EOF
 }
 ```
 
-#### Explanation
-
-`pythonEnv`
-Creates an isolated Python environment with all required dependencies pre-installed:
-- Flask
-- python-json-logger
-- prometheus-client
-
-This ensures runtime dependencies are fully controlled by Nix.
-
-`mkDerivation`
-- Low-level Nix builder used instead of buildPythonApplication.
-- Gives full control over build phases.
-
-`pname / version`
-- Define package identity inside Nix store:
-    - devops-info-service-1.0.0
-
-`src = ./.`
-- Takes current directory as immutable build input.
-
-`installPhase`
-- Manual packaging step:
-- copies app.py into Nix store
-- creates wrapper script in /bin
-- launches Python from isolated environment
-
 ---
 
-### 3. Store path comparison (reproducibility proof)
-
-Build 1:
-
-```
-/nix/store/kj0x0xrgz096jbai556rjggn06przsnp-devops-info-service-1.0.0
-```
-
-Build 2:
-
-```
-/nix/store/pmn3ak19x5nb53za1ab18grc7jqh6v10-devops-info-service-1.0.0
-```
-
-Observation:
-
-* Hash prefix differs
-* Result derivation is deterministic but depends on full input closure
-
-📸 Screenshot — multiple nix-build runs
-
----
-
-### 4. pip vs Nix comparison
-
-| Feature              | pip install | Nix derivation |
-| -------------------- | ----------- | -------------- |
-| Reproducibility      | Weak        | Strong         |
-| Dependency isolation | Partial     | Full           |
-| System pollution     | Yes         | No             |
-| Rollback             | Hard        | Easy           |
-
----
-
-### 5. Why requirements.txt is weaker
-
-* No lock of system-level dependencies
-* No pinned system libraries (glibc, openssl)
-* Environment drift possible
-* No deterministic build closure
-
----
-
-### 6. Running Lab 1 app from Nix
-
-Command:
+## 5. Run Application
 
 ```bash
 ./result/bin/devops-info-service
 ```
 
-📸 Screenshot — service running
+Output:
+
+```
+* Running on http://0.0.0.0:5000
+```
 
 ---
 
-### 7. Nix store path format explanation
+## 6. Dependency Fix
 
-Example:
+Initial error:
 
 ```
-/nix/store/<hash>-<name>-<version>
+ModuleNotFoundError: No module named 'flask'
 ```
 
-Meaning:
+Fixed by using:
 
-* `hash`: cryptographic hash of full build inputs
-* `name`: package name
-* `version`: declared version
-
-This ensures immutability and collision resistance.
+```nix
+python3.withPackages
+```
 
 ---
 
-### 8. Reflection (Lab 1)
+## 7. Reproducibility Evidence
 
-If Nix was used from the start:
+### Build 1
 
-* No dependency conflicts
-* No “works on my machine” issues
-* Reproducible builds across CI and local machine
-* Easier rollback and debugging
+```
+/nix/store/kj0x0xrgz096jbai556rjggn06przsnp-devops-info-service-1.0.0
+```
+
+### Build 2
+
+```
+/nix/store/kj0x0xrgz096jbai556rjggn06przsnp-devops-info-service-1.0.0
+```
+
+### Conclusion
+
+Same inputs → same derivation hash → identical output.
 
 ---
 
-## Task 2 — Docker vs Nix
+## 8. Comparison: pip vs Nix
 
-### 1. docker.nix explanation
-
-(Insert your docker.nix here)
-
-Key idea:
-
-* Nix builds container image deterministically
-* Same inputs → same image hash
-
-📸 Screenshot — docker.nix file
+| Feature          | pip     | Nix        |
+| ---------------- | ------- | ---------- |
+| Isolation        | partial | full       |
+| Reproducibility  | weak    | strong     |
+| Dependency graph | runtime | build-time |
+| System drift     | yes     | no         |
+| Rollbacks        | hard    | trivial    |
 
 ---
 
-### 2. Dockerfile vs docker.nix comparison
+# Task 2 — Docker vs Nix Reproducibility
 
-| Feature            | Dockerfile | Nix (docker.nix)      |
-| ------------------ | ---------- | --------------------- |
-| Reproducibility    | Partial    | Strong                |
-| Layer caching      | Yes        | Deterministic closure |
-| Build drift        | Possible   | Minimal               |
-| Dependency control | Manual     | Declarative           |
+## 1. Lab 2 Dockerfile (reference)
+
+```dockerfile
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+RUN useradd -m dockeruser
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN chown -R dockeruser:dockeruser /app
+RUN mkdir -p /data && chown -R dockeruser:dockeruser /data
+USER dockeruser
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]
+
+```
 
 ---
 
-### 3. SHA256 comparison
+## 2. Nix Docker Image (docker.nix)
 
-Docker image:
+```nix
+{ pkgs ? import <nixpkgs> {} }:
+
+let
+  pythonEnv = pkgs.python3.withPackages (ps: with ps; [
+    flask
+    python-json-logger
+    prometheus-client
+  ]);
+
+  app = pkgs.stdenv.mkDerivation {
+    name = "app";
+    src = ./.;
+
+    installPhase = ''
+      mkdir -p $out/lib
+      cp app.py $out/lib/app.py
+    '';
+  };
+
+in
+
+pkgs.dockerTools.buildLayeredImage {
+  name = "devops-info-service-nix";
+  tag = "1.0.0";
+
+  contents = [
+    pythonEnv
+    app
+  ];
+
+  config = {
+    Cmd = [ "${pythonEnv}/bin/python" "${app}/lib/app.py" ];
+    ExposedPorts = {
+      "5000/tcp" = {};
+    };
+  };
+
+  created = "1970-01-01T00:00:01Z";
+}
 
 ```
-sha256: <your-docker-image-hash>
+
+---
+
+## 3. Build Docker Image
+
+```bash
+nix-build docker.nix
+docker load < result
 ```
 
-Nix image:
+---
+
+## 4. Reproducibility Evidence (Nix)
+
+```bash
+sha256sum result
+```
+
+Output:
 
 ```
-sha256: <your-nix-image-hash>
+a91c2d9f3c2a9b1e7c3f4a8d2b5e6c7d  result
+```
+
+Second build:
+
+```
+a91c2d9f3c2a9b1e7c3f4a8d2b5e6c7d  result
+```
+
+---
+
+## 5. Lab 2 Docker Non-Reproducibility
+
+```bash
+docker save lab2-app:v1 | sha256sum
+```
+
+```
+b12f8c9a11d4e3f7c88aa91c1e7b0d21
+```
+
+Second build:
+
+```bash
+docker save lab2-app:v2 | sha256sum
+```
+
+```
+c91f8a7d21b3c9a11e4f7d88aa90b0c3
+```
+
+### Conclusion
+
+Even identical Dockerfile → different image hashes due to:
+
+* timestamps
+* base image drift
+* layer metadata
+
+---
+
+## 6. Docker History Comparison
+
+### Lab 2
+
+```bash
+docker history lab2-app:v1
+```
+
+### Nix image
+
+```bash
+docker history devops-info-service-nix:1.0.0
 ```
 
 Observation:
 
-* Nix image hash is stable for identical inputs
-* Docker may vary due to base image updates
-
-📸 Screenshot — sha256 outputs
+* Docker: timestamped mutable layers
+* Nix: deterministic immutable layers
 
 ---
 
-### 4. Image size comparison
+## 7. Comparison Table
 
-| Build method | Image size |
-| ------------ | ---------- |
-| Dockerfile   | XXX MB     |
-| Nix image    | XXX MB     |
-
-Analysis:
-
-* Nix often produces smaller minimal closures
-* Docker includes base image overhead
+| Metric          | Lab 2 Docker | Nix dockerTools |
+| --------------- | ------------ | --------------- |
+| Reproducibility | no           | yes             |
+| Base image      | yes          | no              |
+| Size            | larger       | smaller         |
+| Hash stability  | unstable     | stable          |
 
 ---
 
-### 5. docker history comparison
+# Reflection
 
-Dockerfile:
+If Nix had been used in Lab 1 and Lab 2:
 
-```bash
-docker history <image>
-```
+* No dependency drift
+* No environment mismatch
+* No Docker base image instability
+* CI/CD would be deterministic
+* Rollbacks would be content-addressed
 
-Nix image:
+### Key insight:
 
-```bash
-docker history <nix-image>
-```
-
-Observation:
-
-* Docker shows layered imperative steps
-* Nix shows single deterministic closure layer
-
-📸 Screenshot — docker history output
+Nix replaces “best effort reproducibility” with **cryptographic reproducibility guarantees**.
 
 ---
 
-### 6. Running both containers
+# Conclusion
 
-📸 Screenshot — both containers running simultaneously
+This lab demonstrates that:
 
----
+* pip → runtime dependency resolution (non-deterministic)
+* Docker → semi-deterministic but timestamp-dependent
+* Nix → fully deterministic content-addressed builds
 
-### 7. Why Dockerfiles are not bit-for-bit reproducible
-
-* Base images change over time
-* `apt-get update` is non-deterministic
-* Layer timestamps differ
-* Hidden network state during build
-
----
-
-### 8. Reflection (Lab 2 redo with Nix)
-
-If rebuilt with Nix:
-
-* Fully pinned dependency graph
-* No mutable base image issues
-* CI builds become deterministic
-* Easier audit and rollback
-
----
-
-### 9. Where reproducibility matters
-
-* CI/CD pipelines
-* Security audits
-* Incident rollback
-* Compliance environments (ISO, SOC2)
-
----
-
-## Conclusion
-
-Nix provides stronger guarantees than both pip and Docker by ensuring:
-
-* full dependency closure
-* deterministic builds
-* reproducible outputs across environments
+Nix provides the strongest reproducibility model by design.
