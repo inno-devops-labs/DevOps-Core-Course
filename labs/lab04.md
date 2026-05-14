@@ -33,11 +33,11 @@ By using both Terraform and Pulumi for the same task, you'll understand:
 - How to evaluate IaC tools for your needs
 
 **Important for Lab 5:**
-The VM you create in this lab will be used in **Lab 5 (Ansible)** for configuration management. You have two options:
-- **Option A (Recommended):** Keep your cloud VM running until you complete Lab 5
-- **Option B:** Use a local VM (see Local VM Alternative section below)
+The VM you create in this lab will be used in **Lab 5 (Ansible)** for configuration management.
 
-If you choose to destroy your cloud VM after Lab 4, you can easily recreate it later using your Terraform/Pulumi code!
+Recommended approach:
+- Keep **one** cloud VM running until you complete Lab 5 (to avoid re-creating it).
+- If you destroy it after Lab 4, recreate it later from your Terraform/Pulumi code.
 
 ---
 
@@ -88,71 +88,6 @@ If Yandex Cloud is unavailable, choose any of these:
 - ✅ **Set billing alerts if available**
 - ✅ **If not using for Lab 5, delete resources after lab completion**
 - ❌ **Never commit cloud credentials to Git**
-
----
-
-## Local VM Alternative
-
-If you cannot or prefer not to use cloud providers, you can use a local VM instead. This VM will need to meet specific requirements for Lab 5 (Ansible).
-
-### Option 1: VirtualBox/VMware VM
-
-**Requirements:**
-- Ubuntu 24.04 LTS (recommended) or Ubuntu 22.04 LTS
-- 1 GB RAM minimum (2 GB recommended)
-- 10 GB disk space
-- Network adapter in Bridged mode (or NAT with port forwarding)
-- SSH server installed and configured
-- Your SSH public key added to `~/.ssh/authorized_keys`
-- Static or predictable IP address
-
-**Setup Steps:**
-```bash
-# Install SSH server (if not installed)
-sudo apt update
-sudo apt install openssh-server
-
-# Add your SSH public key
-mkdir -p ~/.ssh
-echo "your-public-key-here" >> ~/.ssh/authorized_keys
-chmod 700 ~/.ssh
-chmod 600 ~/.ssh/authorized_keys
-
-# Verify SSH access from your host machine
-ssh username@vm-ip-address
-```
-
-### Option 2: Vagrant VM
-
-**Requirements:**
-- Vagrant installed on your machine
-- VirtualBox (or another Vagrant provider)
-
-**Basic Vagrantfile:**
-```ruby
-Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/noble64"  # Ubuntu 24.04 LTS
-  # Or use "ubuntu/jammy64" for Ubuntu 22.04 LTS
-  config.vm.network "private_network", ip: "192.168.56.10"
-  config.vm.provider "virtualbox" do |vb|
-    vb.memory = "2048"
-  end
-end
-```
-
-### Option 3: WSL2 (Windows Subsystem for Linux)
-
-**Note:** WSL2 can work but has networking limitations. Bridged mode VM is preferred.
-
-**If using local VM:**
-- You can skip Terraform/Pulumi cloud provider setup
-- Document your local VM setup instead
-- For Task 1, show VM creation (manual or Vagrant)
-- For Task 2, you can skip Pulumi (or use Pulumi to manage Vagrant)
-- Focus on understanding IaC concepts with cloud provider research
-
-**Recommended Approach:**
-Even with a local VM, complete the Terraform/Pulumi tasks with a cloud provider to gain real IaC experience. You can destroy the cloud VM after Lab 4 and use your local VM for Lab 5.
 
 ---
 
@@ -905,7 +840,7 @@ Brief comparison (3-5 sentences each):
 **VM for Lab 5:**
 - Are you keeping your VM for Lab 5? (Yes/No)
 - If yes: Which VM (Terraform or Pulumi created)?
-- If no: What will you use for Lab 5? (Local VM/Will recreate cloud VM)
+- If no: How will you recreate the VM for Lab 5? (Terraform/Pulumi + steps)
 
 **Cleanup Status:**
 - If keeping VM for Lab 5: Show VM is still running and accessible
@@ -1339,13 +1274,13 @@ terraform import github_repository.course_repo DevOps-Core-Course
    - ✅ Check no secrets in code
    - ✅ Review .gitignore is correct
 
-   **If NOT keeping VM for Lab 5:**
-   - ✅ Run `terraform destroy`
-   - ✅ Run `pulumi destroy`
-   - ✅ Verify no resources in cloud console
-   - ✅ Check no secrets in code
-   - ✅ Review .gitignore is correct
-   - ✅ Document your Lab 5 plan (local VM or recreate cloud VM)
+	   **If NOT keeping VM for Lab 5:**
+	   - ✅ Run `terraform destroy`
+	   - ✅ Run `pulumi destroy`
+	   - ✅ Verify no resources in cloud console
+	   - ✅ Check no secrets in code
+	   - ✅ Review .gitignore is correct
+	   - ✅ Document your Lab 5 plan (how you'll recreate the cloud VM from IaC)
 
 4. **Create Pull Requests:**
    - **PR #1:** `your-fork:lab04` → `course-repo:master`
@@ -1386,7 +1321,7 @@ terraform import github_repository.course_repo DevOps-Core-Course
 - [ ] Terraform implementation documented
 - [ ] Pulumi implementation documented
 - [ ] Terraform vs Pulumi comparison provided
-- [ ] Lab 5 preparation documented (keeping VM or using local/recreating)
+	- [ ] Lab 5 preparation documented (keeping VM or recreating it from IaC)
 - [ ] Cleanup status documented (what's kept, what's destroyed)
 - [ ] Terminal outputs provided (sanitized, no secrets)
 
@@ -1431,7 +1366,7 @@ terraform import github_repository.course_repo DevOps-Core-Course
 
 **Critical Requirements:**
 - ✅ MUST use free tier resources only
-- ✅ MUST document Lab 5 VM plan (keeping, local, or recreating)
+- ✅ MUST document Lab 5 VM plan (keeping one VM or recreating it from IaC)
 - ✅ MUST NOT commit secrets or state files
 - ✅ MUST provide SSH access proof
 - ⚠️ Keeping ONE VM for Lab 5 is acceptable (document it!)
@@ -1498,7 +1433,7 @@ terraform import github_repository.course_repo DevOps-Core-Course
 ## Looking Ahead
 
 - **Lab 5:** Ansible will provision software on your VM (install Docker, deploy your app from Labs 1-3)
-  - **You'll need a VM ready** - either keep your cloud VM from this lab, use a local VM, or recreate later
+  - **You'll need a VM ready** - keep your cloud VM from this lab or recreate later from your IaC code
 - **Lab 6:** Ansible + Terraform integration (provision and configure in one workflow)
 - **Lab 9:** Kubernetes will replace individual VMs (but concepts are same)
 - **Lab 13:** ArgoCD will manage infrastructure changes (GitOps for infrastructure)
@@ -1507,4 +1442,4 @@ terraform import github_repository.course_repo DevOps-Core-Course
 
 **Good luck!** 🚀
 
-> **Remember:** Infrastructure as Code is about automation, repeatability, and collaboration. Focus on understanding WHY we define infrastructure in code, not just HOW. Consider keeping one VM for Lab 5 (Ansible). If destroying resources, document your Lab 5 plan. Never commit secrets!
+> **Remember:** Infrastructure as Code is about automation, repeatability, and collaboration. Focus on understanding WHY we define infrastructure in code, not just HOW. Consider keeping one VM for Lab 5 (Ansible). If destroying resources, document how you'll recreate the VM from your IaC code. Never commit secrets!
