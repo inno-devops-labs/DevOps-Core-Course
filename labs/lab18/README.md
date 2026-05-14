@@ -21,14 +21,29 @@ nix build .#default
 ./result/bin/devops-info-service
 ```
 
-**Docker image (Linux; needs Docker for `load`/`run`):**
+**Docker image (needs Docker for `load`/`run`):**
+
+On **Linux** (or NixOS):
 
 ```bash
-nix-build docker.nix
+nix build .#docker
 docker load < result
 docker run --rm -p 5001:5000 devops-info-service-nix:1.0.0
 curl -sS http://127.0.0.1:5001/health
 ```
+
+On **macOS**, `nix build .#docker` often fails inside `dockerTools` with **`fakeroot` / `dyld` (`_fstat$INODE64`)** — this is a known limitation, not a mistake in `docker.nix`. Build the same derivation **inside Linux via Docker**:
+
+```bash
+cd labs/lab18/app_python
+chmod +x nix-docker-linux.sh
+./nix-docker-linux.sh
+docker load -i devops-info-service-nix.tar.gz
+```
+
+(`result` points into the container’s `/nix/store`; on macOS that path is often missing — the script copies **`devops-info-service-nix.tar.gz`** into this directory for `docker load`.)
+
+Then compare hashes / run containers as in **`submission18.md`**.
 
 Compare with Lab 2 (**repository root**, not `lab18/`):
 
