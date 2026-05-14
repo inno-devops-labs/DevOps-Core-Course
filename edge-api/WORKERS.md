@@ -390,6 +390,5 @@ This trade-off means less control but also much less operational overhead.
 
 ---
 
-
 **Student:** Zavadskii Peter
 **Lab:** 17 — Cloudflare Workers Edge Deployment
