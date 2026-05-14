@@ -10,6 +10,7 @@ from fastapi.routing import APIRoute
 
 from utils import APP_START_TIME
 from metrics import endpoint_calls, system_info_duration
+import visits_counter
 from routes.root.schemas import (
     InfoResponse,
     EndpointInfo,
@@ -101,6 +102,7 @@ class SysInfoService:
         try:
             logger.info("Starting run main func")
             endpoint_calls.labels(endpoint="/").inc()
+            visits_counter.increment()
 
             with system_info_duration.time():
                 result = InfoResponse(

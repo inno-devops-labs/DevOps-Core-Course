@@ -13,13 +13,13 @@ from metrics import (
     http_request_duration_seconds,
     http_requests_in_progress,
 )
-from routes import health_router, root_router
+from routes import health_router, root_router, visits_router
 
 setup_logger()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(debug=DEBUG)
-for router in [health_router, root_router]:
+for router in [health_router, root_router, visits_router]:
     app.include_router(router=router)
 
 app.add_middleware(

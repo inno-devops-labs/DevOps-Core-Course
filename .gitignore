@@ -171,4 +171,4 @@ cython_debug/
 
 .claude/*
 
-terraform/.terraform.lock.hcl
+terraform/.terraform.lock.hclk8s/devops-info-service/charts/

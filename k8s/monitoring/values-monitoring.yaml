@@ -1,0 +1,55 @@
+# Values for kube-prometheus-stack (lab 16)
+# Install:
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm repo update
+#   helm install monitoring prometheus-community/kube-prometheus-stack \
+#     --namespace monitoring --create-namespace \
+#     -f k8s/monitoring/values-monitoring.yaml
+
+fullnameOverride: monitoring
+
+# Allow ServiceMonitor resources from any namespace, and pick up monitors
+# that are NOT labeled with `release: monitoring` too. That way our
+# application ServiceMonitor (without that label) is also scraped.
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    retention: 10d
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        memory: 1Gi
+
+grafana:
+  adminPassword: prom-operator
+  service:
+    type: ClusterIP
+  defaultDashboardsTimezone: utc
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+# Keep kube-state-metrics + node-exporter enabled (defaults), they ship the
+# cluster + node dashboards we use to answer task 2 questions.
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
+
+prometheus-node-exporter:             
+    hostRootFsMount:                                
+      enabled: false                           
+    extraArgs:
+      - --no-collector.wifi
+      - --no-collector.hwmon
+      - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+      - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$

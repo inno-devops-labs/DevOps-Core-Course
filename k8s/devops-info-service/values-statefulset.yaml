@@ -1,0 +1,18 @@
+# Values for StatefulSet deployment (Lab 15)
+replicaCount: 3
+
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+
+rollout:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
+  visitsFile: "/data/visits"

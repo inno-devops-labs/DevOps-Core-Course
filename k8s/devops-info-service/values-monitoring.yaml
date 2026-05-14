@@ -1,0 +1,23 @@
+# Values overlay for lab 16:
+#   helm upgrade --install devops-info-service ./k8s/devops-info-service \
+#     -f k8s/devops-info-service/values-statefulset.yaml \
+#     -f k8s/devops-info-service/values-monitoring.yaml
+#
+# Enables the init-container that downloads index.html into a shared
+# emptyDir, plus a ServiceMonitor so kube-prometheus-stack scrapes /metrics.
+
+initContainers:
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: https://example.com
+
+serviceMonitor:
+  enabled: true
+  interval: 15s
+  path: /metrics
+  port: http
+  # `release: monitoring` is the default label kube-prometheus-stack uses
+  # to discover ServiceMonitors. Change if your Helm release uses a
+  # different name.
+  releaseLabel: monitoring

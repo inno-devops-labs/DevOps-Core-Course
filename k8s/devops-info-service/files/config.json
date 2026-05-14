@@ -1,0 +1,9 @@
+{
+  "app_name": "devops-info-service",
+  "environment": "dev",
+  "features": {
+    "visits_counter": true,
+    "metrics": true
+  },
+  "log_level": "INFO"
+}
