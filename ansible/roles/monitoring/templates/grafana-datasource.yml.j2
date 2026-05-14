@@ -8,3 +8,10 @@ datasources:
     url: http://loki:{{ monitoring_loki_port }}
     isDefault: true
     editable: true
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:{{ monitoring_prometheus_port }}
+    isDefault: false
+    editable: true

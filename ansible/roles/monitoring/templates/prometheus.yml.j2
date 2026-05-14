@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:{{ monitoring_prometheus_port }}
+
+  - job_name: app
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - app-python:8000
+
+  - job_name: loki
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - loki:{{ monitoring_loki_port }}
+
+  - job_name: grafana
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - grafana:{{ monitoring_grafana_port }}

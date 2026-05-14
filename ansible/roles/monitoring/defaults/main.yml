@@ -5,25 +5,31 @@ monitoring_docker_containers_path: /var/lib/docker/containers
 monitoring_loki_version: 3.0.0
 monitoring_promtail_version: 3.0.0
 monitoring_grafana_version: 12.3.1
+monitoring_prometheus_version: 3.9.0
 
 monitoring_loki_port: 3100
 monitoring_promtail_port: 9080
 monitoring_grafana_port: 3000
+monitoring_prometheus_port: 9090
 monitoring_python_app_port: 8000
 monitoring_go_app_port: 8001
 
 monitoring_retention_period: 168h
 monitoring_schema_version: v13
+monitoring_prometheus_retention_time: 15d
+monitoring_prometheus_retention_size: 10GB
 
 monitoring_grafana_admin_user: admin
 monitoring_grafana_admin_password: "{{ vault_grafana_admin_password | default('ChangeMeNow123!') }}"
 
-monitoring_loki_mem_limit: 512m
-monitoring_loki_cpus: "0.50"
+monitoring_loki_mem_limit: 1g
+monitoring_loki_cpus: "1.00"
 monitoring_promtail_mem_limit: 256m
 monitoring_promtail_cpus: "0.30"
-monitoring_grafana_mem_limit: 768m
-monitoring_grafana_cpus: "0.70"
+monitoring_grafana_mem_limit: 512m
+monitoring_grafana_cpus: "0.50"
+monitoring_prometheus_mem_limit: 1g
+monitoring_prometheus_cpus: "1.00"
 monitoring_app_mem_limit: 256m
 monitoring_app_cpus: "0.50"
 

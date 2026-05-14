@@ -8,6 +8,7 @@
     - "{{ monitoring_project_dir }}"
     - "{{ monitoring_project_dir }}/loki"
     - "{{ monitoring_project_dir }}/promtail"
+    - "{{ monitoring_project_dir }}/prometheus"
     - "{{ monitoring_project_dir }}/grafana/provisioning/datasources"
     - "{{ monitoring_project_dir }}/grafana/provisioning/dashboards"
     - "{{ monitoring_project_dir }}/grafana/dashboards"
@@ -22,6 +23,12 @@
   ansible.builtin.template:
     src: promtail-config.yml.j2
     dest: "{{ monitoring_project_dir }}/promtail/config.yml"
+    mode: "0644"
+
+- name: Template Prometheus config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_project_dir }}/prometheus/prometheus.yml"
     mode: "0644"
 
 - name: Template Grafana datasource provisioning
@@ -40,6 +47,12 @@
   ansible.builtin.template:
     src: lab07-logs-dashboard.json.j2
     dest: "{{ monitoring_project_dir }}/grafana/dashboards/lab07-logs-dashboard.json"
+    mode: "0644"
+
+- name: Template Lab 08 metrics dashboard JSON
+  ansible.builtin.template:
+    src: lab08-metrics-dashboard.json.j2
+    dest: "{{ monitoring_project_dir }}/grafana/dashboards/lab08-metrics-dashboard.json"
     mode: "0644"
 
 - name: Template .env file for Grafana credentials

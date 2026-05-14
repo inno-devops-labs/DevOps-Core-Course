@@ -20,6 +20,13 @@
     delay: 2
     timeout: 120
 
+- name: Wait for Prometheus port
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: "{{ monitoring_prometheus_port }}"
+    delay: 2
+    timeout: 120
+
 - name: Verify Loki readiness endpoint
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ monitoring_loki_port }}/ready"
@@ -29,6 +36,12 @@
 - name: Verify Grafana health endpoint
   ansible.builtin.uri:
     url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/health"
+    method: GET
+    status_code: 200
+
+- name: Verify Prometheus health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_prometheus_port }}/-/healthy"
     method: GET
     status_code: 200
 
@@ -43,6 +56,19 @@
       - 200
       - 404
   register: grafana_loki_datasource
+  changed_when: false
+
+- name: Query Prometheus datasource in Grafana
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources/name/Prometheus"
+    method: GET
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    status_code:
+      - 200
+      - 404
+  register: grafana_prometheus_datasource
   changed_when: false
 
 - name: Create Loki datasource in Grafana when missing
@@ -64,3 +90,23 @@
       - 200
       - 409
   when: grafana_loki_datasource.status == 404
+
+- name: Create Prometheus datasource in Grafana when missing
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ monitoring_grafana_port }}/api/datasources"
+    method: POST
+    user: "{{ monitoring_grafana_admin_user }}"
+    password: "{{ monitoring_grafana_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: Prometheus
+      type: prometheus
+      access: proxy
+      url: "http://prometheus:{{ monitoring_prometheus_port }}"
+      isDefault: false
+      editable: true
+    status_code:
+      - 200
+      - 409
+  when: grafana_prometheus_datasource.status == 404
