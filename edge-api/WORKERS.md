@@ -48,6 +48,10 @@ Source control history:
 4873860 Complete lab 17 task 3 edge behavior
 9d59d9a Complete lab 17 task 4 config and persistence
 bae5513 Complete lab 17 task 5 operations
+a4671ca Complete lab 17 documentation
+e9e2208 Add lab 17 dashboard screenshot
+27e1dd3 Add lab 17 metrics screenshot
+42955f7 Finalize lab 17 checklist
 ```
 
 ## Evidence
@@ -55,8 +59,6 @@ bae5513 Complete lab 17 task 5 operations
 Dashboard screenshot:
 
 ![Cloudflare dashboard screenshot](screenshots/cloudflare-dashboard.png)
-
-Expected screenshot content: Cloudflare Dashboard -> Workers & Pages -> `edge-api`, showing the Worker exists and is deployed.
 
 Edge metadata response:
 
@@ -80,8 +82,6 @@ curl -sS https://edge-api.neilzvest.workers.dev/edge
 Log or metrics screenshot:
 
 ![Cloudflare metrics or logs screenshot](screenshots/cloudflare-metrics-or-logs.png)
-
-Expected screenshot content: Cloudflare Dashboard -> Workers & Pages -> `edge-api` -> Metrics or Observability/Logs, showing request counts, errors, or a log entry.
 
 CLI log evidence is also recorded in the Task 5 section below.
 
