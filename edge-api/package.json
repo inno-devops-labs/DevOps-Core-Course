@@ -1,0 +1,16 @@
+{
+  "name": "edge-api",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251111.0",
+    "typescript": "^5.5.2",
+    "wrangler": "^4.70.0"
+  }
+}

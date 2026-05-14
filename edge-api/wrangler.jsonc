@@ -1,0 +1,20 @@
+/**
+ * Cloudflare Workers configuration for the edge-api Worker.
+ * Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-05-01",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "APP_NAME": "edge-api",
+    "COURSE_NAME": "devops-core"
+  },
+  "kv_namespaces": [
+    { "binding": "SETTINGS", "id": "0717bb1979f34755bbc158911b37901c" }
+  ]
+}
