@@ -81,7 +81,7 @@ serviceAccount:
 podAnnotations: {}
 podLabels:
   project: devops-course
-  lab: lab15
+  lab: lab16
 
 podSecurityContext: {}
 
@@ -156,3 +156,18 @@ statefulset:
     type: RollingUpdate
     rollingUpdate:
       partition: 0  # only pods with ordinal >= partition are updated
+
+# Init containers configuration
+initContainers:
+  download:
+    enabled: true
+    url: "https://example.com"
+  waitForService:
+    enabled: true
+    service: "devops-info-service-headless"
+
+# ServiceMonitor configuration (for kube-prometheus-stack)
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  interval: 15s

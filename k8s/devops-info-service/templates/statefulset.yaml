@@ -49,6 +49,20 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.initContainers.download.enabled }}
+      initContainers:
+        - name: init-download
+          image: busybox:1.36
+          command: ['sh', '-c', 'wget -O /work-dir/index.html {{ .Values.initContainers.download.url | quote }}']
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nslookup {{ .Values.initContainers.waitForService.service }}.default.svc.cluster.local > /dev/null 2>&1; do echo waiting for {{ .Values.initContainers.waitForService.service }}; sleep 2; done']
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -111,10 +125,19 @@ spec:
               readOnly: true
             - name: data
               mountPath: /data
+            {{- if .Values.initContainers.download.enabled }}
+            - name: workdir
+              mountPath: /data/init
+              readOnly: true
+            {{- end }}
       volumes:
         - name: config-volume
           configMap:
             name: {{ include "devops-info-service.fullname" . }}-config
+        {{- if .Values.initContainers.download.enabled }}
+        - name: workdir
+          emptyDir: {}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
