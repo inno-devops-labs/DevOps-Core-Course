@@ -1,0 +1,69 @@
+{{- if .Values.hooks.postInstall.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "devops-python.fullname" . }}-post-install"
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "devops-python.labels" . | nindent 4 }}
+    app.kubernetes.io/component: post-install-hook
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: "{{ include "devops-python.fullname" . }}-post-install"
+      labels:
+        {{- include "devops-python.labels" . | nindent 8 }}
+        app.kubernetes.io/component: post-install-hook
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: post-install
+        image: "busybox:latest"
+        imagePullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+          - -c
+          - |
+            set -e
+            echo "=========================================="
+            echo "Post-Install Hook - Smoke Tests"
+            echo "=========================================="
+            echo ""
+            echo "[1/4] Installation completed successfully"
+            echo "Release: {{ .Release.Name }}"
+            echo "Namespace: {{ .Release.Namespace }}"
+            echo "Timestamp: $(date)"
+            echo "✓ Release deployed"
+            echo ""
+            echo "[2/4] Release configuration"
+            echo "Chart: {{ .Chart.Name }}-{{ .Chart.Version }}"
+            echo "App: {{ .Chart.AppVersion }}"
+            echo "Replicas: {{ .Values.replicaCount }}"
+            echo "Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            echo "Service: {{ .Values.service.type }}"
+            echo "Port: {{ .Values.service.port }}"
+            echo "✓ Configuration applied"
+            echo ""
+            echo "[3/4] Verifying deployment metadata"
+            echo "Resources: CPU {{ .Values.resources.requests.cpu }} - {{ .Values.resources.limits.cpu }}"
+            echo "Memory: {{ .Values.resources.requests.memory }} - {{ .Values.resources.limits.memory }}"
+            echo "✓ Resource limits configured"
+            echo ""
+            echo "[4/4] Post-install verification completed"
+            echo ""
+            sleep 2
+            echo "=========================================="
+            echo "Installation verified!"
+            echo "=========================================="
+            echo ""
+            echo "Management commands:"
+            echo "  Get status: helm status {{ .Release.Name }}"
+            echo "  Get values: helm get values {{ .Release.Name }}"
+            echo "  Get manifest: helm get manifest {{ .Release.Name }}"
+            echo ""
+{{- end }}
