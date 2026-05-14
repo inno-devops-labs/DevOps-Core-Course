@@ -54,9 +54,7 @@ bae5513 Complete lab 17 task 5 operations
 
 Dashboard screenshot:
 
-```text
-TODO: add screenshot at screenshots/cloudflare-dashboard.png
-```
+![Cloudflare dashboard screenshot](screenshots/cloudflare-dashboard.png)
 
 Expected screenshot content: Cloudflare Dashboard -> Workers & Pages -> `edge-api`, showing the Worker exists and is deployed.
 
