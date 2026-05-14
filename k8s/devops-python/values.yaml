@@ -58,6 +58,33 @@ hooks:
   postInstall:
     enabled: true
 
+# Application configuration
+app:
+  name: devops-info-service
+  environment: dev
+  features:
+    visitsCounter: true
+    metrics: true
+    logging: true
+  env:
+    APP_ENV: dev
+    LOG_LEVEL: info
+    FEATURE_VISITS_COUNTER: "true"
+    FEATURE_METRICS: "true"
+
+# ConfigMap and persistence settings
+config:
+  enabled: true
+  fileMountPath: /config/config.json
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
+  mountPath: /data
+  visitsFile: /data/visits
+
 # Application secrets configuration
 secrets:
   enabled: true

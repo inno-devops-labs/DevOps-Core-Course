@@ -1,0 +1,11 @@
+{
+  "application": {
+    "name": "{{ .Values.app.name }}",
+    "environment": "{{ .Values.app.environment }}",
+    "features": {
+      "visitsCounter": {{ .Values.app.features.visitsCounter }},
+      "metrics": {{ .Values.app.features.metrics }},
+      "logging": {{ .Values.app.features.logging }}
+    }
+  }
+}

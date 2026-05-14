@@ -5,8 +5,10 @@ import platform
 import socket
 import sys
 import time
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any
+from threading import RLock
 
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
@@ -16,6 +18,8 @@ from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTEN
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEFAULT_VISITS_FILE = Path(__file__).resolve().parent / "data" / "visits"
+VISITS_FILE = Path(os.getenv("VISITS_FILE", str(DEFAULT_VISITS_FILE)))
 
 
 logger = logging.getLogger(__name__)
@@ -88,6 +92,50 @@ setup_logging()
 
 
 START_TIME = datetime.now(timezone.utc)
+
+
+class VisitCounter:
+    """Persist and manage visit counts stored in a file."""
+
+    def __init__(self, file_path: Path):
+        self.file_path = file_path
+        self._lock = RLock()
+        self.file_path.parent.mkdir(parents=True, exist_ok=True)
+        self._count = self._load_from_disk()
+
+    def _load_from_disk(self) -> int:
+        try:
+            raw_value = self.file_path.read_text(encoding="utf-8").strip()
+            return int(raw_value) if raw_value else 0
+        except FileNotFoundError:
+            return 0
+        except (OSError, ValueError):
+            logger.warning(
+                "visit_counter_load_failed",
+                extra={"path": str(self.file_path)},
+            )
+            return 0
+
+    def _write_to_disk(self, count: int) -> None:
+        tmp_path = self.file_path.with_suffix(f"{self.file_path.suffix}.tmp")
+        tmp_path.write_text(f"{count}\n", encoding="utf-8")
+        os.replace(tmp_path, self.file_path)
+
+    def increment(self) -> int:
+        with self._lock:
+            current = self._load_from_disk()
+            new_value = current + 1
+            self._write_to_disk(new_value)
+            self._count = new_value
+            return new_value
+
+    def get(self) -> int:
+        with self._lock:
+            self._count = self._load_from_disk()
+            return self._count
+
+
+visit_counter = VisitCounter(VISITS_FILE)
 
 
 # Prometheus Metrics - wrapped in try-except for reload safety
@@ -172,7 +220,14 @@ def get_runtime_info():
 async def on_startup():
     logger.info(
         "application_startup",
-        extra={"host": HOST, "port": PORT, "debug": DEBUG, "service": "devops-info-service"},
+        extra={
+            "host": HOST,
+            "port": PORT,
+            "debug": DEBUG,
+            "service": "devops-info-service",
+            "visits_file": str(VISITS_FILE),
+            "current_visits": visit_counter.get(),
+        },
     )
 
 
@@ -233,6 +288,7 @@ async def log_and_track_requests(request: Request, call_next):
 
 @app.get("/")
 async def index(request: Request):
+    visits = visit_counter.increment()
     return {
         "service": {
             "name": "devops-info-service",
@@ -240,12 +296,14 @@ async def index(request: Request):
             "description": "DevOps course info service",
             "framework": "FastAPI",
         },
+        "visits": visits,
         "system": get_system_info(),
         "runtime": get_runtime_info(),
         "request": get_request_info(request),
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/visits", "method": "GET", "description": "Visit counter"},
         ],
     }
 
@@ -257,6 +315,14 @@ async def health():
         "status": "healthy",
         "timestamp": now.isoformat().replace("+00:00", "Z"),
         "uptime_seconds": get_uptime()["seconds"],
+    }
+
+
+@app.get("/visits")
+async def visits():
+    return {
+        "visits": visit_counter.get(),
+        "file": str(VISITS_FILE),
     }
 
 

@@ -20,6 +20,8 @@ spec:
     metadata:
       labels:
         {{- include "devops-python.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
@@ -30,6 +32,22 @@ spec:
           ports:
             - containerPort: {{ .Values.service.targetPort }}
               name: http
+          env:
+            - name: VISITS_FILE
+              value: {{ .Values.persistence.visitsFile | quote }}
+            - name: CONFIG_FILE
+              value: {{ .Values.config.fileMountPath | quote }}
+          {{- if or .Values.config.enabled .Values.secrets.enabled }}
+          envFrom:
+            {{- if .Values.config.enabled }}
+            - configMapRef:
+                name: {{ include "devops-python.fullname" . }}-env
+            {{- end }}
+            {{- if .Values.secrets.enabled }}
+            - secretRef:
+                name: {{ include "devops-python.fullname" . }}-secret
+            {{- end }}
+          {{- end }}
           resources:
             requests:
               memory: {{ .Values.resources.requests.memory | quote }}
@@ -56,8 +74,29 @@ spec:
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
             failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
-          {{- end }}          {{- if .Values.secrets.enabled }}
-          envFrom:
-            - secretRef:
-                name: {{ include "devops-python.fullname" . }}-secret
           {{- end }}
+          volumeMounts:
+            {{- if .Values.config.enabled }}
+            - name: config-volume
+              mountPath: {{ .Values.config.fileMountPath | quote }}
+              subPath: config.json
+              readOnly: true
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - name: data-volume
+              mountPath: {{ .Values.persistence.mountPath | quote }}
+            {{- end }}
+      volumes:
+        {{- if .Values.config.enabled }}
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-python.fullname" . }}-config
+            items:
+              - key: config.json
+                path: config.json
+        {{- end }}
+        {{- if .Values.persistence.enabled }}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-python.fullname" . }}-data
+        {{- end }}

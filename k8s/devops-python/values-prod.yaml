@@ -47,3 +47,11 @@ strategy:
   rollingUpdate:
     maxSurge: 1
     maxUnavailable: 0
+
+app:
+  environment: prod
+  env:
+    APP_ENV: prod
+    LOG_LEVEL: info
+    FEATURE_VISITS_COUNTER: "true"
+    FEATURE_METRICS: "true"

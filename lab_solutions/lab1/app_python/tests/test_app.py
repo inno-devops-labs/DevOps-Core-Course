@@ -1,12 +1,21 @@
 import json
 import logging
 
+import pytest
 from fastapi.testclient import TestClient
 
-from app import JSONFormatter, app, logger
+import app as app_module
+from app import JSONFormatter, logger
 
 
-client = TestClient(app)
+client = TestClient(app_module.app)
+
+
+@pytest.fixture()
+def isolated_visit_counter(monkeypatch, tmp_path):
+    counter = app_module.VisitCounter(tmp_path / "visits")
+    monkeypatch.setattr(app_module, "visit_counter", counter)
+    return counter
 
 
 def test_json_formatter_returns_json_object():
@@ -32,7 +41,7 @@ def test_json_formatter_returns_json_object():
     assert payload["status_code"] == 200
 
 
-def test_request_logging_emits_json_log():
+def test_request_logging_emits_json_log(isolated_visit_counter):
     records = []
 
     class ListHandler(logging.Handler):
@@ -57,13 +66,14 @@ def test_request_logging_emits_json_log():
     assert log_entry["client_ip"] in {"testclient", "127.0.0.1", "unknown"}
 
 
-def test_root_endpoint_structure():
+def test_root_endpoint_structure(isolated_visit_counter):
     response = client.get("/", headers={"User-Agent": "pytest"})
     assert response.status_code == 200
 
     data = response.json()
     assert data["service"]["name"] == "devops-info-service"
     assert data["service"]["framework"] == "FastAPI"
+    assert data["visits"] == 1
 
     assert "hostname" in data["system"]
     assert "platform" in data["system"]
@@ -78,9 +88,25 @@ def test_root_endpoint_structure():
     endpoints = {item["path"] for item in data["endpoints"]}
     assert "/" in endpoints
     assert "/health" in endpoints
+    assert "/visits" in endpoints
 
 
-def test_health_endpoint():
+def test_visit_counter_persists(isolated_visit_counter):
+    client.get("/")
+    client.get("/")
+
+    visits_response = client.get("/visits")
+    assert visits_response.status_code == 200
+    assert visits_response.json()["visits"] == 2
+
+    visits_file = isolated_visit_counter.file_path
+    assert visits_file.read_text(encoding="utf-8").strip() == "2"
+
+    reloaded_counter = app_module.VisitCounter(visits_file)
+    assert reloaded_counter.get() == 2
+
+
+def test_health_endpoint(isolated_visit_counter):
     response = client.get("/health")
     assert response.status_code == 200
 
@@ -90,7 +116,7 @@ def test_health_endpoint():
     assert isinstance(data["timestamp"], str)
 
 
-def test_unknown_endpoint_returns_404():
+def test_unknown_endpoint_returns_404(isolated_visit_counter):
     response = client.get("/does-not-exist")
     assert response.status_code == 404
     assert response.json()["detail"] == "Not Found"
