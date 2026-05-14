@@ -4,11 +4,13 @@ import json
 import platform
 import socket
 import sys
+import time
 from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
+from prometheus_client import Counter, Gauge, Histogram, generate_latest, CONTENT_TYPE_LATEST, REGISTRY
 
 
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -88,6 +90,41 @@ setup_logging()
 START_TIME = datetime.now(timezone.utc)
 
 
+# Prometheus Metrics - wrapped in try-except for reload safety
+def _get_or_create_metric(metric_class, name, documentation, labelnames=None, **kwargs):
+    """Get existing metric from registry or create new one."""
+    # Check if metric already exists
+    for collector in list(REGISTRY._collector_to_names.keys()):
+        if hasattr(collector, '_name') and collector._name == name:
+            return collector
+    # Create new metric
+    if labelnames:
+        return metric_class(name, documentation, labelnames, **kwargs)
+    return metric_class(name, documentation, **kwargs)
+
+
+http_requests_total = _get_or_create_metric(
+    Counter,
+    "http_requests_total",
+    "Total HTTP requests",
+    labelnames=["method", "endpoint", "status"],
+)
+
+http_request_duration_seconds = _get_or_create_metric(
+    Histogram,
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    labelnames=["method", "endpoint"],
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0),
+)
+
+http_requests_in_progress = _get_or_create_metric(
+    Gauge,
+    "http_requests_in_progress",
+    "HTTP requests currently being processed",
+)
+
+
 app = FastAPI(title="DevOps Info Service", version="1.0.0")
 
 
@@ -140,35 +177,57 @@ async def on_startup():
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
+async def log_and_track_requests(request: Request, call_next):
     started_at = datetime.now(timezone.utc)
+    start_time = time.time()
     client_ip = request.client.host if request.client else "unknown"
+    endpoint = request.url.path
+
+    http_requests_in_progress.inc()
 
     try:
         response: Response = await call_next(request)
     except Exception:
+        elapsed_ms = int((datetime.now(timezone.utc) - started_at).total_seconds() * 1000)
         logger.exception(
             "request_failed",
             extra={
                 "method": request.method,
-                "path": request.url.path,
+                "path": endpoint,
                 "client_ip": client_ip,
                 "status_code": 500,
             },
         )
+        http_requests_total.labels(method=request.method, endpoint=endpoint, status="500").inc()
+        http_request_duration_seconds.labels(method=request.method, endpoint=endpoint).observe(
+            time.time() - start_time
+        )
+        http_requests_in_progress.dec()
         raise
 
     elapsed_ms = int((datetime.now(timezone.utc) - started_at).total_seconds() * 1000)
+    elapsed_seconds = time.time() - start_time
+
     logger.info(
         "request_completed",
         extra={
             "method": request.method,
-            "path": request.url.path,
+            "path": endpoint,
             "status_code": response.status_code,
             "client_ip": client_ip,
             "duration_ms": elapsed_ms,
         },
     )
+
+    # Record metrics
+    http_requests_total.labels(
+        method=request.method, endpoint=endpoint, status=response.status_code
+    ).inc()
+    http_request_duration_seconds.labels(method=request.method, endpoint=endpoint).observe(
+        elapsed_seconds
+    )
+    http_requests_in_progress.dec()
+
     return response
 
 
@@ -207,6 +266,12 @@ async def error_endpoint():
     raise ValueError("This is a deliberate test error for logging purposes")
 
 
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 if __name__ == "__main__":
     import uvicorn
 
@@ -215,7 +280,7 @@ if __name__ == "__main__":
         extra={"host": HOST, "port": PORT, "debug": DEBUG},
     )
     uvicorn.run(
-        "app:app",
+        app,
         host=HOST,
         port=PORT,
         reload=DEBUG,
