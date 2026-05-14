@@ -253,3 +253,10 @@ yarn-error.log*
 # Secrets directories
 secrets/
 .secrets/
+
+# ============================================
+# Nix - Lab 18
+# ============================================
+labs/**/result
+labs/**/result-*
+labs/lab18/app_python/data/

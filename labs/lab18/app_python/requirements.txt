@@ -1,0 +1,15 @@
+# Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
+# Metrics
+prometheus-client==0.23.1
+
+# Testing (dev dependencies)
+pytest==8.3.4
+pytest-cov==6.0.0
+httpx==0.28.1
+
+# Code Quality
+pylint==3.3.2
+black==24.10.0
