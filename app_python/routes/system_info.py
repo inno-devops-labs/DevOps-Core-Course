@@ -2,13 +2,21 @@ from fastapi import APIRouter, Request
 from datetime import datetime, timezone
 from prometheus_client import Counter, Histogram
 import os
+import tempfile
 import threading
 
 import services.system_info as system_info_service
 
 router = APIRouter()
 
-VISITS_FILE = os.getenv("VISITS_FILE", "/data/visits")
+
+def _default_visits_file() -> str:
+    if os.path.isdir("/data") and os.access("/data", os.W_OK):
+        return "/data/visits"
+    return os.path.join(tempfile.gettempdir(), "devops-info-service-visits")
+
+
+VISITS_FILE = os.getenv("VISITS_FILE", _default_visits_file())
 
 _visits_lock = threading.Lock()
 

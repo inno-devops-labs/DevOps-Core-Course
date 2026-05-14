@@ -1,0 +1,28 @@
+app = "devops-info-service-roma3213"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "8000"
+  APP_ENV = "production"
+  VISITS_FILE = "/tmp/visits"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 8000
+    path = "/health"
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "30s"
