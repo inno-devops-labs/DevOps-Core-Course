@@ -1,14 +1,15 @@
-{{- if eq .Values.workload.kind "rollout" }}
+{{- if eq .Values.workload.kind "statefulset" }}
 {{- $vaultAnnotations := include "devops-info-service.vaultAnnotations" . | trim }}
-apiVersion: argoproj.io/v1alpha1
-kind: Rollout
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: {{ include "devops-info-service.fullname" . }}
   labels:
     {{- include "devops-info-service.labels" . | nindent 4 }}
 spec:
+  serviceName: {{ include "devops-info-service.headlessServiceName" . }}
   replicas: {{ .Values.replicaCount }}
-  minReadySeconds: {{ .Values.minReadySeconds }}
+  podManagementPolicy: OrderedReady
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   selector:
     matchLabels:
@@ -66,6 +67,11 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -78,37 +84,25 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-  strategy:
-    {{- if eq .Values.rollout.strategy "blueGreen" }}
-    blueGreen:
-      activeService: {{ include "devops-info-service.fullname" . }}
-      previewService: {{ include "devops-info-service.previewServiceName" . }}
-      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
-      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
-      {{- with .Values.rollout.blueGreen.autoPromotionSeconds }}
-      autoPromotionSeconds: {{ . }}
-      {{- end }}
-    {{- else }}
-    canary:
-      maxSurge: {{ .Values.rollout.canary.maxSurge }}
-      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
-      steps:
-        - setWeight: 20
-        - pause: {}
-        {{- if .Values.analysis.enabled }}
-        - analysis:
-            templates:
-              - templateName: {{ include "devops-info-service.analysisTemplateName" . }}
+  updateStrategy:
+    type: RollingUpdate
+  {{- if .Values.persistence.enabled }}
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: {{ .Values.persistence.retentionPolicy.whenDeleted }}
+    whenScaled: {{ .Values.persistence.retentionPolicy.whenScaled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "devops-info-service.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          {{- toYaml .Values.persistence.accessModes | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass | quote }}
         {{- end }}
-        - setWeight: 40
-        - pause:
-            duration: 30s
-        - setWeight: 60
-        - pause:
-            duration: 30s
-        - setWeight: 80
-        - pause:
-            duration: 30s
-        - setWeight: 100
-    {{- end }}
+  {{- end }}
 {{- end }}

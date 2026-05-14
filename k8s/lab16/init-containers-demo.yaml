@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab16-init-source
+data:
+  index.html: |
+    <html>
+      <body>
+        <h1>Lab 16 init container demo</h1>
+        <p>This file was fetched by an init container before nginx started.</p>
+      </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab16-init-source
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lab16-init-source
+  template:
+    metadata:
+      labels:
+        app: lab16-init-source
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: source-content
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+      volumes:
+        - name: source-content
+          configMap:
+            name: lab16-init-source
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab16-init-source
+spec:
+  selector:
+    app: lab16-init-source
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab16-init-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lab16-init-demo
+  template:
+    metadata:
+      labels:
+        app: lab16-init-demo
+    spec:
+      initContainers:
+        - name: wait-for-source
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nslookup lab16-init-source.default.svc.cluster.local >/dev/null 2>&1; do
+                echo "waiting for service DNS"
+                sleep 2
+              done
+              until wget -qO- http://lab16-init-source/ >/dev/null; do
+                echo "waiting for HTTP endpoint"
+                sleep 2
+              done
+        - name: download-page
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              wget -O /work-dir/index.html http://lab16-init-source/index.html
+              test -s /work-dir/index.html
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: workdir
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: workdir
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab16-init-demo
+spec:
+  selector:
+    app: lab16-init-demo
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
