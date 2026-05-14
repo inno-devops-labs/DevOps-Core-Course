@@ -83,8 +83,6 @@ kubectl port-forward svc/monitoring-grafana -n monitoring 3000:80
 
 Only one pod is running in the default namespace (others were scaled down to free memory for the monitoring stack).
 
-![Namespace CPU usage](screenshots/grafana_namespace_cpu.png)
-
 ### Q3 — Node Memory & CPU
 
 **Dashboard:** `Node Exporter / Nodes`
