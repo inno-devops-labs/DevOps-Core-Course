@@ -23,3 +23,4 @@ app_python/**/venv/
 # Other
 *.log
 *.zip
+labs/lab18/app_python/result
