@@ -18,8 +18,31 @@ spec:
       labels:
         {{- include "info-service.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if .Values.initContainers.enabled }}
+      {{- $waitService := default (printf "%s-headless" (include "info-service.fullname" .)) .Values.initContainers.waitForService }}
+      initContainers:
+      - name: init-download
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - wget -O /work-dir/index.html {{ .Values.initContainers.downloadUrl | quote }} && echo "Download complete"
+        volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+      - name: wait-for-service
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            until nslookup {{ $waitService }}; do
+              echo "Waiting for {{ $waitService }}..."
+              sleep 2
+            done
+      {{- end }}
       containers:
-      - name: {{ .Chart.Name }}
+      - name: {{ include "info-service.name" . }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         envFrom:
@@ -36,6 +59,10 @@ spec:
           mountPath: /config
         - name: data
           mountPath: /data
+        {{- if .Values.initContainers.enabled }}
+        - name: workdir
+          mountPath: /init-data
+        {{- end }}
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 10 }}
         readinessProbe:
@@ -44,6 +71,10 @@ spec:
       - name: config-volume
         configMap:
           name: {{ include "info-service.fullname" . }}-config
+      {{- if .Values.initContainers.enabled }}
+      - name: workdir
+        emptyDir: {}
+      {{- end }}
   volumeClaimTemplates:
   - metadata:
       name: data

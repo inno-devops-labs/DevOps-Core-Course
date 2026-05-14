@@ -74,3 +74,8 @@ statefulset:
   enabled: false
   updateStrategy:
     type: RollingUpdate
+
+initContainers:
+  enabled: false
+  downloadUrl: "http://example.com"
+  waitForService: ""
