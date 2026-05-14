@@ -78,7 +78,7 @@ jobs:
           ansible-playbook playbooks/deploy.yml \
             --vault-password-file /tmp/vault_pass \
             -e "dockerhub_username=nadiaa02" \
-            -e "dockerhub_password=dckr_pat_mGU2_QrcEjStk7BACotLdyNrLco" \
+            -e "dockerhub_password=${{ secrets.DOCKERHUB_TOKEN }}" \
             -e "app_name=lab02-python-app" \
             -e "docker_image=nadiaa02/lab02-python-app" \
             -e "docker_image_tag=latest" \

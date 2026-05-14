@@ -4,7 +4,7 @@
   become: yes
   vars:
     dockerhub_username: nadiaa02
-    dockerhub_password: dckr_pat_mGU2_QrcEjStk7BACotLdyNrLco
+    dockerhub_password: ${{ secrets.DOCKERHUB_TOKEN }}
     app_name: lab02-python-app
     docker_image: nadiaa02/lab02-python-app
     docker_image_tag: latest
