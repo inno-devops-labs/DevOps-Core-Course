@@ -1,0 +1,37 @@
+---
+- name: Log in to Docker Hub
+  shell: docker login -u "{{ dockerhub_username }}" -p "{{ dockerhub_password }}"
+
+- name: Pull Docker image
+  shell: docker pull "{{ docker_image }}:{{ docker_image_tag }}"
+
+- name: Stop existing container if running
+  shell: docker stop "{{ app_container_name }}" || true
+
+- name: Remove existing container if exists
+  shell: docker rm "{{ app_container_name }}" || true
+
+- name: Run application container
+  shell: >
+    docker run -d
+    --name "{{ app_container_name }}"
+    --restart "{{ app_restart_policy }}"
+    -p "{{ app_port }}:{{ app_port }}"
+    "{{ docker_image }}:{{ docker_image_tag }}"
+
+- name: Wait for application to be ready
+  wait_for:
+    host: localhost
+    port: "{{ app_port }}"
+    delay: 5
+    timeout: 60
+
+- name: Verify application health
+  uri:
+    url: "http://localhost:{{ app_port }}/"
+    return_content: yes
+  register: health_check
+
+- name: Show health check result
+  debug:
+    msg: "App is running, status: {{ health_check.status }}"
