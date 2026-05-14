@@ -19,12 +19,12 @@
 
       devShells.${system}.default = pkgs.mkShell {
         buildInputs = with pkgs; [
-          python313
-          python313Packages.flask
-          python313Packages.werkzeug
-          python313Packages.gunicorn
-          python313Packages.python-json-logger
-          python313Packages.prometheus-client
+          python312
+          python312Packages.flask
+          python312Packages.werkzeug
+          python312Packages.gunicorn
+          python312Packages.python-json-logger
+          python312Packages.prometheus-client
         ];
       };
     };

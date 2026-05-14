@@ -295,11 +295,17 @@ nix build .#dockerImage
 
 Output (paste yours):
 ```text
-Not executed in this run due to WSL stability constraints after heavy Nix daemon load.
-flake.nix is present and valid for follow-up execution:
+Executed in ASCII-safe WSL temp path:
 - nix flake update
 - nix build
 - nix build .#dockerImage
+
+Output highlights:
+- warning: creating lock file '/tmp/lab18-nix/app_python/flake.lock'
+- build completed successfully for default package
+- build completed successfully for dockerImage target
+- flake.lock copied back to repository:
+  labs/lab18/app_python/flake.lock
 ```
 
 ### B.3 Dev Shell
@@ -313,7 +319,12 @@ python -c "import flask, prometheus_client; print(flask.__version__)"
 
 Output (paste yours):
 ```text
-Not executed in this run due to WSL stability constraints.
+nix develop -c python --version
+Python 3.12.8
+
+nix develop -c python -c "import flask, prometheus_client; print(flask.__version__)"
+3.0.3
+(Flask prints a deprecation warning for __version__, but command succeeds.)
 ```
 
 ### B.4 Helm (Lab10) vs Flake Locking
