@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-wait-demo
+spec:
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command: ['sh', '-c', 'until nslookup myservice.default.svc.cluster.local; do echo waiting for myservice; sleep 2; done']
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command: ['sh', '-c', 'echo service is available && sleep 3600']
+      volumeMounts:
+        - name: workdir
+          mountPath: /data
+  volumes:
+    - name: workdir
+      emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myservice
+spec:
+  selector:
+    app: myservice
+  ports:
+    - port: 80
+      targetPort: 80
