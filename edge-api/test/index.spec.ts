@@ -23,7 +23,8 @@ describe("edge-api worker", () => {
 		await expect(response.json()).resolves.toMatchObject({
 			app: "edge-api",
 			message: "Hello from Cloudflare Workers",
-			version: "task-2",
+			course: "devops-core",
+			version: "task-4",
 		});
 	});
 
@@ -41,8 +42,36 @@ describe("edge-api worker", () => {
 		expect(response.status).toBe(200);
 		await expect(response.json()).resolves.toMatchObject({
 			app: "edge-api",
-			version: "task-2",
+			version: "task-4",
 			runtime: "cloudflare-workers",
+		});
+	});
+
+	it("responds with safe configuration metadata", async () => {
+		const response = await SELF.fetch("https://example.com/config");
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({
+			app: "edge-api",
+			course: "devops-core",
+			plaintextVars: ["APP_NAME", "COURSE_NAME"],
+			note: "Secret values are read from env but are not returned.",
+		});
+	});
+
+	it("persists a counter in KV", async () => {
+		const first = await SELF.fetch("https://example.com/counter");
+		const second = await SELF.fetch("https://example.com/counter");
+
+		expect(first.status).toBe(200);
+		expect(second.status).toBe(200);
+
+		const firstBody = await first.json<{ visits: number }>();
+		const secondBody = await second.json<{ visits: number }>();
+
+		expect(secondBody.visits).toBe(firstBody.visits + 1);
+		expect(secondBody).toMatchObject({
+			key: "visits",
+			persistedIn: "Workers KV",
 		});
 	});
 

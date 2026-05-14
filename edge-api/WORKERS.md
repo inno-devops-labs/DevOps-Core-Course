@@ -55,3 +55,86 @@ References:
 - Request API and `request.cf`: https://developers.cloudflare.com/workers/runtime-apis/request/
 - `workers.dev` routing: https://developers.cloudflare.com/workers/configuration/routing/workers-dev/
 - Routes and domains: https://developers.cloudflare.com/workers/configuration/routing/
+
+## Task 4 - Configuration, Secrets, and Persistence
+
+Plaintext variables are configured in `wrangler.jsonc`:
+
+```json
+{
+  "vars": {
+    "APP_NAME": "edge-api",
+    "COURSE_NAME": "devops-core"
+  }
+}
+```
+
+The Worker uses these values through `env.APP_NAME` and `env.COURSE_NAME` in `/`, `/health`, `/metadata`, and `/config`.
+
+Plaintext vars are not suitable for secrets because they are committed to source control in `wrangler.jsonc`. They are appropriate for non-sensitive configuration such as app names, feature flags, or course labels. Secret values should be stored with Wrangler secrets because Cloudflare stores them outside the repository and injects them into the Worker environment at runtime.
+
+Two secrets were configured with Wrangler:
+
+```bash
+npx wrangler secret put API_TOKEN
+npx wrangler secret put ADMIN_EMAIL
+```
+
+The Worker reads these through `env.API_TOKEN` and `env.ADMIN_EMAIL`, but it does not return the raw secret values. `/config` only returns whether each secret is configured and the email domain:
+
+```json
+{
+  "app": "edge-api",
+  "course": "devops-core",
+  "plaintextVars": ["APP_NAME", "COURSE_NAME"],
+  "secrets": {
+    "apiTokenConfigured": true,
+    "adminEmailConfigured": true,
+    "adminEmailDomain": "gmail.com"
+  },
+  "note": "Secret values are read from env but are not returned."
+}
+```
+
+Workers KV persistence is configured with a namespace bound as `SETTINGS`:
+
+```json
+{
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "f4c891b632f746e791d55f1a6fe80c1f"
+    }
+  ]
+}
+```
+
+The `/counter` endpoint reads the `visits` key from `env.SETTINGS`, increments it, writes it back, and returns the new value.
+
+Persistence verification:
+
+```bash
+curl -sS -w "\nHTTP %{http_code}\n" https://edge-api.neilzvest.workers.dev/counter
+```
+
+Before redeploy:
+
+```json
+{
+  "key": "visits",
+  "visits": 1,
+  "persistedIn": "Workers KV"
+}
+```
+
+After redeploy:
+
+```json
+{
+  "key": "visits",
+  "visits": 2,
+  "persistedIn": "Workers KV"
+}
+```
+
+The value increased after redeploy, which confirms the counter state is stored in Workers KV rather than in Worker memory.

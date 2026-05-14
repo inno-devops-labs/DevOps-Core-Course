@@ -13,6 +13,16 @@
 	"upload_source_maps": true,
 	"compatibility_flags": [
 		"nodejs_compat"
+	],
+	"vars": {
+		"APP_NAME": "edge-api",
+		"COURSE_NAME": "devops-core"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "f4c891b632f746e791d55f1a6fe80c1f"
+		}
 	]
 	/**
 	 * Smart Placement
@@ -31,7 +41,6 @@
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
 	 */
-	// "vars": {  "MY_VARIABLE": "production_value" }
 	/**
 	 * Static Assets
 	 * https://developers.cloudflare.com/workers/static-assets/binding/
