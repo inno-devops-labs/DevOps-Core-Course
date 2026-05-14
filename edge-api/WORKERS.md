@@ -79,9 +79,7 @@ curl -sS https://edge-api.neilzvest.workers.dev/edge
 
 Log or metrics screenshot:
 
-```text
-TODO: add screenshot at screenshots/cloudflare-metrics-or-logs.png
-```
+![Cloudflare metrics or logs screenshot](screenshots/cloudflare-metrics-or-logs.png)
 
 Expected screenshot content: Cloudflare Dashboard -> Workers & Pages -> `edge-api` -> Metrics or Observability/Logs, showing request counts, errors, or a log entry.
 
