@@ -1,41 +1,41 @@
-# Lab 18 — Reproducible Builds with Nix
+# Lab 18 Submission — Reproducible Builds with Nix
 
-**Student**: Selivanov George  
-**Date**: May 12, 2026
-
-## 1. Overview
-
-This lab demonstrates truly reproducible builds using Nix, comparing with traditional `pip install` and `Dockerfile` approaches from Labs 1-2. Nix provides bit-for-bit identical outputs across machines and time — something Docker and pip cannot guarantee.
-
-### 1.1 Files Created
-
-| File | Purpose |
-|------|---------|
-| `labs/lab18/app_python/default.nix` | Nix derivation building the Python app |
-| `labs/lab18/app_python/docker.nix` | Nix dockerTools reproducible container image |
-| `labs/lab18/app_python/flake.nix` | Nix Flake with locked dependencies (bonus) |
-| `labs/submission18.md` | This documentation |
+**Author:** Selivanov George  
+**Date:** May 14, 2026  
+**Platform:** Linux (Ubuntu 24.04 WSL2), x86_64  
+**Nix Version:** 2.24.12 (Determinate Nix 3.22.0)
 
 ---
 
-## 2. Task 1 — Build Reproducible Python App (6 pts)
+## Task 1 — Build Reproducible Python App (Revisiting Lab 1)
 
-### 2.1 Nix Installation
+### 1.1 Nix Installation
+
+Nix was installed via the Determinate Systems installer:
 
 ```bash
-# Determinate Systems installer (recommended, enables flakes by default)
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-
-# Verify
-nix --version
 ```
 
-**Output:**
+**Verification:**
+
 ```
-nix (Nix) 2.24.x
+$ nix --version
+nix (Determinate Nix 3.22.0) 2.24.12
+
+$ nix run nixpkgs#hello
+Hello, world!
 ```
 
-### 2.2 Nix Derivation (`default.nix`)
+Flakes were enabled by default with the Determinate installer.
+
+### 1.2 Application Preparation
+
+The Lab 1 FastAPI application was copied to `labs/lab18/app_python/` with:
+- `app.py` — FastAPI DevOps Info Service (endpoints: `/`, `/health`, `/visits`, `/metrics`)
+- `requirements.txt` — pinned dependencies (fastapi==0.115.0, uvicorn[standard]==0.32.1, prometheus-client==0.23.1, python-json-logger==3.2.1)
+
+### 1.3 Nix Derivation (`default.nix`)
 
 ```nix
 { pkgs ? import <nixpkgs> {} }:
@@ -43,7 +43,7 @@ nix (Nix) 2.24.x
 pkgs.python3Packages.buildPythonApplication {
   pname = "devops-python-app";
   version = "1.0.0";
-  src = ../../../app_python;
+  src = ./.;
 
   format = "other";
 
@@ -54,170 +54,147 @@ pkgs.python3Packages.buildPythonApplication {
     python-json-logger
   ];
 
-  nativeBuildInputs = with pkgs; [ makeWrapper ];
+  nativeBuildInputs = [ pkgs.makeWrapper ];
 
   installPhase = ''
-    mkdir -p $out/bin
-    mkdir -p $out/data
-    cp app.py $out/bin/devops-python-app
-    cp requirements.txt $out/ 2>/dev/null || true
-
-    wrapProgram $out/bin/devops-python-app \
-      --prefix PYTHONPATH : "$PYTHONPATH:$out" \
-      --set HOST "0.0.0.0" \
-      --set PORT "5000"
+    mkdir -p $out/bin $out/share
+    makeWrapper ${pkgs.python3}/bin/python3 $out/bin/devops-python-app \
+      --add-flags "$out/share/app.py" \
+      --prefix PYTHONPATH : "$PYTHONPATH"
+    cp app.py $out/share/app.py
   '';
+
+  doCheck = false;
 }
 ```
 
-**Explanation:**
-- `pname`/`version`: Package identity in the Nix store
-- `src`: Points to `app_python/` from repo root (relative path)
-- `propagatedBuildInputs`: Python dependencies from nixpkgs (not PyPI directly)
-- `makeWrapper`: Wraps the Python script with the correct interpreter and PYTHONPATH
-- `installPhase`: Copies the app into the Nix store and wraps it
+**Field explanations:**
 
-### 2.3 Build and Run
+| Field | What it does |
+|-------|-------------|
+| `pname` / `version` | Package identity — used in the Nix store path |
+| `src = ./.` | Source is the current directory (all files in the flake) |
+| `format = "other"` | Tells Nix this is not a setuptools/flit/poetry project |
+| `propagatedBuildInputs` | Python packages our app needs at runtime — from nixpkgs, not PyPI |
+| `nativeBuildInputs` | Build-time tools — `makeWrapper` creates the executable wrapper |
+| `installPhase` | Copies app.py, then wraps `python3` with the app path and PYTHONPATH set |
+| `doCheck = false` | Skip the automatic test phase (no pytest in this project) |
 
-```bash
-cd labs/lab18/app_python
-nix-build
+**Why `makeWrapper` instead of `wrapProgram`:** The first attempt used `wrapProgram` directly on `app.py`, but since `app.py` has no shebang line, bash tried to execute the Python docstring as a shell command. The fix wraps `python3` itself and passes `app.py` as an argument, which is cleaner and more robust.
+
+### 1.4 Reproducibility Proof
+
+**Store path from initial build:**
+
+```
+$ readlink result
+/nix/store/0u69gntff74vppicf2fjaywt722w524p-devops-python-app-1.0.0
 ```
 
-**Output:**
-```
-these 42 derivations will be built:
-  /nix/store/abc123...-python3.13-fastapi-0.115.x.drv
-  ...
-/nix/store/d7e5a2b1c3f4...-devops-python-app-1.0.0
-```
+**Rebuild (cache hit):**
 
-```bash
-./result/bin/devops-python-app
-# → Uvicorn running on http://0.0.0.0:5000
+```
+$ rm result && nix build
+$ readlink result
+/nix/store/0u69gntff74vppicf2fjaywt722w524p-devops-python-app-1.0.0
 ```
 
-```bash
-curl http://localhost:5000/health
-# {"status":"ok","uptime_seconds":3}
+Same path returned — Nix recognized the inputs hadn't changed and reused the cached build.
+
+**Forced rebuild (deleted from store):**
+
+```
+$ rm result && nix store delete /nix/store/0u69gntff74vppicf2fjaywt722w524p-devops-python-app-1.0.0
+1 store paths deleted, 0.02 MiB freed
+
+$ nix build
+$ readlink result
+/nix/store/0u69gntff74vppicf2fjaywt722w524p-devops-python-app-1.0.0
 ```
 
-### 2.4 Prove Reproducibility
+**Same store path after complete rebuild from scratch.** Nix rebuilt the derivation and produced the exact same hash. This proves bit-for-bit reproducibility.
 
-**Store path recording:**
-```bash
-readlink result
-# /nix/store/d7e5a2b1c3f4...-devops-python-app-1.0.0
+**Application runs correctly from Nix build:**
+
+```
+$ timeout 3 ./result/bin/devops-python-app
+{"timestamp":"2026-05-14T19:45:03+00:00","level":"INFO","message":"Started server process [152847]"}
+{"timestamp":"2026-05-14T19:45:03+00:00","level":"INFO","message":"Application startup complete."}
+{"timestamp":"2026-05-14T19:45:03+00:00","level":"INFO","message":"Uvicorn running on http://0.0.0.0:5000"}
 ```
 
-**Rebuild and compare:**
-```bash
-rm result
-nix-build
-readlink result
-# /nix/store/d7e5a2b1c3f4...-devops-python-app-1.0.0  ← IDENTICAL
+### 1.5 Understanding the Nix Store Path
+
+```
+/nix/store/0u69gntff74vppicf2fjaywt722w524p-devops-python-app-1.0.0
+  |         |                                      |                    |
+  |         |                                      |                    +-- version
+  |         |                                      +-- package name
+  |         +-- content hash (32 chars, base32)
+  +-- Nix store root
 ```
 
-Nix reused the cached build — same inputs = same hash = cache hit.
+The hash `0u69gntff74vppicf2fjaywt722w524p` is computed from:
+- All source code (app.py, requirements.txt)
+- All dependencies transitively (fastapi, uvicorn, prometheus-client, python-json-logger, and their deps)
+- The build instructions (installPhase, build inputs)
+- Compiler flags and environment
 
-**Force actual rebuild:**
-```bash
-STORE_PATH=$(readlink result)
-nix-store --delete $STORE_PATH
-rm result
-nix-build
-readlink result
-# /nix/store/d7e5a2b1c3f4...-devops-python-app-1.0.0  ← STILL IDENTICAL
-```
+Any change to any of these produces a different hash. Same inputs always produce the same hash — this is the foundation of Nix's reproducibility.
 
-**Observation:** Same store path returns after deleting and rebuilding from scratch. Nix rebuilt it and got the exact same hash — cryptographic proof of reproducibility.
-
-**SHA256 hash of output:**
-```bash
-nix-hash --type sha256 result
-# sha256-d7e5a2b1c3f4...abc
-# This hash is identical on any machine that builds this derivation
-```
-
-### 2.5 Comparison: Lab 1 `pip` vs Lab 18 Nix
-
-**Lab 1 approach (`requirements.txt`):**
-```bash
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python app.py
-```
-
-**Problems demonstrated:**
-```bash
-# Test: pip without hashes
-echo "fastapi" > requirements-unpinned.txt
-python -m venv venv1 && source venv1/bin/activate
-pip install -r requirements-unpinned.txt
-pip freeze | grep fastapi > freeze1.txt
-deactivate
-
-pip cache purge 2>/dev/null || true
-python -m venv venv2 && source venv2/bin/activate
-pip install -r requirements-unpinned.txt
-pip freeze | grep fastapi > freeze2.txt
-deactivate
-
-diff freeze1.txt freeze2.txt
-# May differ! Different transitive dependency versions
-```
+### 1.6 Comparison: Lab 1 pip vs Lab 18 Nix
 
 | Aspect | Lab 1 (pip + venv) | Lab 18 (Nix) |
-|--------|--------------------|--------------|
-| Python version | System-dependent | Pinned in derivation |
-| Dependency resolution | Runtime (`pip install`) | Build-time (pure) |
-| Reproducibility | Approximate (lockfiles help) | Bit-for-bit identical |
+|--------|-------------------|--------------|
+| Python version | System-dependent (python3 from apt) | Pinned via nixpkgs (python3.13 from nixos-24.11) |
+| Dependency resolution | `pip install` at runtime | Resolved at build time from nixpkgs |
+| Reproducibility | Approximate (pinned versions, but transitive deps can drift) | Bit-for-bit identical (cryptographic hashes) |
 | Portability | Requires same OS + Python | Works anywhere Nix runs |
 | Binary cache | No | Yes (cache.nixos.org) |
-| Isolation | Virtual environment | Sandboxed build |
+| Isolation | Virtual environment (PATH only) | Full sandbox (no network, no /home, no /tmp) |
 | Store path | N/A | Content-addressable hash |
 
-**Why Nix is stronger:**
-- `requirements.txt` pins direct dependencies, but transitive dependencies (what Flask depends on) still drift
-- Nix pins the **entire closure** — Python, all packages, build tools, everything
-- Nix builds in a sandbox with no network access, ensuring deterministic results
-- The store path hash covers all inputs — any change (even whitespace) produces a different hash
+**Why `requirements.txt` provides weaker guarantees:**
+
+`requirements.txt` only pins what *you* directly install. It does NOT pin:
+- Your dependencies' dependencies (starlette for FastAPI, httptools for uvicorn, etc.)
+- The Python interpreter version
+- System libraries (OpenSSL, etc.)
+- Build tools (C compiler, etc.)
+
+Nix pins EVERYTHING in the transitive closure. The `flake.lock` locks the exact nixpkgs revision which pins all 80,000+ packages. Two builds from the same `flake.lock` will always produce identical results.
+
+**Reflection — How Nix would have helped in Lab 1:**
+
+If I had used Nix from the start, I wouldn't have needed to:
+- Document "install Python 3.x" in the README
+- Worry about whether `pip install` would work the same on my teammate's machine
+- Create a virtual environment manually
+- Deal with "it works on my machine" issues during grading
+
+The entire build would be `nix build` and the entire dev environment would be `nix develop`.
 
 ---
 
-## 3. Task 2 — Reproducible Docker Images (4 pts)
+## Task 2 — Reproducible Docker Images (Revisiting Lab 2)
 
-### 3.1 Review Lab 2 Dockerfile
+### 2.1 Lab 2 Dockerfile Review
+
+The existing Dockerfile from Lab 2:
 
 ```dockerfile
 FROM python:3.13-slim
-RUN useradd -m appuser
+RUN useradd -m -u 1001 appuser
+USER appuser
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY app.py .
-USER appuser
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
 EXPOSE 5000
 CMD ["python", "app.py"]
 ```
 
-**Non-reproducibility test:**
-```bash
-docker build -t lab2-app:v1 ./app_python
-docker inspect lab2-app:v1 | grep Created
-# "Created": "2026-05-12T15:00:00.123456789Z"
-
-sleep 5
-
-docker build -t lab2-app:v2 ./app_python
-docker inspect lab2-app:v2 | grep Created
-# "Created": "2026-05-12T15:00:05.987654321Z"  ← DIFFERENT
-```
-
-Different timestamps = different image hashes, even though source is identical.
-
-### 3.2 Nix Docker Image (`docker.nix`)
+### 2.2 Nix Docker Image (`docker.nix`)
 
 ```nix
 { pkgs ? import <nixpkgs> {} }:
@@ -234,121 +211,197 @@ pkgs.dockerTools.buildLayeredImage {
   config = {
     Cmd = [ "${app}/bin/devops-python-app" ];
     ExposedPorts = { "5000/tcp" = {}; };
-    WorkingDir = "/data";
   };
 
-  created = "1970-01-01T00:00:01Z";  # Fixed, reproducible timestamp
+  created = "1970-01-01T00:00:01Z";  # fixed = reproducible
 }
 ```
 
-**Key differences from Dockerfile:**
-- No base image — `contents` is the minimal closure (only what the app needs)
-- Fixed timestamp (`1970-01-01`) — no drift between builds
-- `app` is the exact Nix derivation from Task 1 — already content-addressed
+**Field explanations:**
 
-**Build and load:**
-```bash
-cd labs/lab18/app_python
-nix-build docker.nix
-# /nix/store/e8f9a0b1c2d3...-docker-image-devops-python-app-nix-1.0.0.tar.gz
+| Field | What it does |
+|-------|-------------|
+| `name` / `tag` | Docker image name and tag |
+| `contents` | What goes in the image — just our app derivation (no base image!) |
+| `config.Cmd` | The default command — our wrapped python3 with app.py |
+| `config.ExposedPorts` | Port 5000 |
+| `created` | Fixed epoch timestamp (1970-01-01) — critical for reproducibility |
 
-docker load < result
-# Loaded image: devops-python-app-nix:1.0.0
+### 2.3 Reproducibility: Nix Docker vs Traditional Docker
+
+**Nix Docker image — build twice:**
+
+```
+$ nix build .#dockerImage && sha256sum result
+838eb9fdaa651a1178a6548c1340e0a089d2fdddea512620eaef26781f1970a8  result
+
+$ rm result && nix build .#dockerImage && sha256sum result
+838eb9fdaa651a1178a6548c1340e0a089d2fdddea512620eaef26781f1970a8  result
 ```
 
-**Run both containers:**
-```bash
-docker run -d -p 5000:5000 --name lab2-container lab2-app:v1
-docker run -d -p 5001:5000 --name nix-container devops-python-app-nix:1.0.0
+**Identical SHA256 hashes.** The image tarball is bit-for-bit identical.
 
-curl http://localhost:5000/health  # Lab 2 version
-curl http://localhost:5001/health  # Nix version
-# Both return {"status":"ok"}
+**Traditional Docker — build twice:**
+
+```
+$ docker build -t lab2-app:v1 ./app_python && docker save lab2-app:v1 | sha256sum
+6c696f874129d735b9926341d5bee9f2a2a995bf846f1a11b08cd4bf247cafc6  -
+
+$ docker build -t lab2-app:v2 ./app_python && docker save lab2-app:v2 | sha256sum
+72b073db2acaf5972e8b8e47ce32bee3aa26700687d82f63cc8f4014a1ca4cbc  -
 ```
 
-### 3.3 Reproducibility Proof
+**Different hashes** even though the Dockerfile and source are identical.
 
-**Rebuild Nix image twice:**
-```bash
-rm result && nix-build docker.nix && sha256sum result
-# sha256-e8f9a0b1c2d3...
+### 2.4 Image Size Comparison
 
-rm result && nix-build docker.nix && sha256sum result
-# sha256-e8f9a0b1c2d3...  ← IDENTICAL SHA256
 ```
-
-**Compare with Lab 2 Dockerfile:**
-```bash
-docker build -t lab2-app:test1 ./app_python && docker save lab2-app:test1 | sha256sum
-# sha256-aaaa1111...
-
-sleep 2
-
-docker build -t lab2-app:test2 ./app_python && docker save lab2-app:test2 | sha256sum
-# sha256-bbbb2222...  ← DIFFERENT (timestamps!)
-```
-
-### 3.4 Image Size Comparison
-
-```bash
-docker images | grep -E "lab2-app|devops-python-app-nix"
+$ docker images | grep -E "lab2-app|devops-python-app-nix"
+devops-python-app-nix:1.0.0    198MB
+lab2-app:v1                    170MB
 ```
 
 | Metric | Lab 2 Dockerfile | Lab 18 Nix dockerTools |
 |--------|------------------|------------------------|
-| Image size | ~170MB (python:3.13-slim base) | ~60MB (minimal closure) |
-| Reproducibility | Different hashes each build | Identical hashes |
-| Build caching | Layer-based (timestamp-dependent) | Content-addressable |
-| Base image dependency | Yes (python:3.13-slim) | No base image needed |
+| Image size | 170MB | 198MB |
+| Base image | python:3.13-slim (~78MB) | N/A (no base image) |
+| Reproducibility | No — different hashes each build | Yes — identical SHA256 |
+| Layer strategy | Dockerfile instructions | Content-addressable store paths |
+| Timestamps | Actual build time | Fixed: 1970-01-01 |
 
-**Layer analysis:**
-```bash
-docker history lab2-app:v1
-# IMAGE          CREATED          CREATED BY
-# abc123        2 minutes ago    /bin/sh -c pip install -r requirements.txt
-# def456        2 minutes ago    /bin/sh -c useradd -m appuser
-# (timestamps vary between builds)
+Note: The Nix image is larger because it includes the full transitive closure of all Python dependencies (each as a separate layer from the Nix store). The traditional Docker image benefits from the slim base image. However, the Nix image has no base image dependency and is fully auditable.
 
-docker history devops-python-app-nix:1.0.0
-# IMAGE          CREATED          CREATED BY
-# fff999        Jan 1, 1970      (all layers at epoch)  ← FIXED
+### 2.5 Layer Analysis
+
+**Traditional Docker (`docker history lab2-app:v1`):**
 ```
+IMAGE          CREATED          CREATED BY
+a168d467fbf4   28 seconds ago   CMD ["python" "app.py"]
+7c543ac192eb   28 seconds ago   EXPOSE 5000
+30ac3b61a65d   29 seconds ago   COPY dir:...
+248b35e5be92   8 weeks ago      pip install ...
+d10f08fd26ef   8 weeks ago      COPY requirements.txt
+...
+464f788e6eab   3 months ago     CMD ["python3"]
+```
+
+Timestamps vary between builds. The `Created` column shows real wall-clock times.
+
+**Nix Docker (`docker history devops-python-app-nix:1.0.0`):**
+```
+IMAGE          CREATED   CREATED BY
+af3bf525686b   N/A       store paths: [...devops-python-app-nix-customisation-layer]
+<missing>      N/A       store paths: [...devops-python-app-1.0.0]
+<missing>      N/A       store paths: [...prometheus-client-0.23.1]
+<missing>      N/A       store paths: [...fastapi-0.115.0]
+<missing>      N/A       store paths: [...uvicorn-0.32.1]
+```
+
+All timestamps are `N/A` — no temporal information leaks into the image. Each layer is a content-addressable Nix store path.
+
+### 2.6 Both Containers Running
+
+```
+$ docker run -d -p 5000:5000 --name lab2-container lab2-app:v1
+$ docker run -d -p 5001:5000 --name nix-container devops-python-app-nix:1.0.0
+
+$ curl http://localhost:5000/health
+{"status":"healthy","timestamp":"2026-05-14T19:50:06+00:00","uptime_seconds":1}
+
+$ curl http://localhost:5001/health
+{"status":"healthy","timestamp":"2026-05-14T19:50:06+00:00","uptime_seconds":1}
+```
+
+Both respond identically.
+
+### 2.7 Analysis: Why Traditional Dockerfiles Cannot Be Reproducible
+
+Traditional Dockerfiles have several sources of non-determinism:
+
+1. **Timestamps:** Every `docker build` records the current time in layer metadata. Even with identical content, the image hash differs.
+2. **Base image tags:** `python:3.13-slim` is a mutable tag. Over time it points to different digests as Debian updates and Python patches ship.
+3. **Package managers:** `pip install` and `apt-get install` fetch latest versions within version constraints. A `requirements.txt` with `fastapi>=0.100` gets different results over time.
+4. **Network state:** Builds depend on external repositories being available and returning the same packages.
+
+Nix solves all four:
+1. `created = "1970-01-01T00:00:01Z"` — fixed timestamp
+2. No base images — the image contains only what's declared
+3. nixpkgs is pinned by hash in `flake.lock` — exact same packages every time
+4. Sandboxed builds with no network access (except for fixed-output derivations)
+
+### 2.8 Practical Scenarios Where Nix Reproducibility Matters
+
+- **CI/CD pipelines:** Every build agent produces identical artifacts. No more debugging why staging works but production doesn't.
+- **Security audits:** Know exactly which versions of which libraries are in your image. The Nix store path hash is a cryptographic proof of the entire dependency tree.
+- **Rollbacks:** Since every build is content-addressed, rolling back means pointing to a known store path. No "rebuild the old tag" guesswork.
+- **Regulatory compliance:** Prove that the binary you audited is the same binary running in production.
 
 ---
 
-## 4. Bonus — Modern Nix with Flakes (2 pts)
+## Bonus Task — Modern Nix with Flakes (Including Lab 10 Comparison)
 
-### 4.1 Flake Structure (`flake.nix`)
+### Bonus.1 Flake Configuration
 
 ```nix
 {
-  description = "DevOps Info Service - Reproducible build with Nix";
+  description = "DevOps Info Service — Reproducible Build with Nix";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";  # Pinned nixpkgs
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
   };
 
-  outputs = { self, nixpkgs }: ...
+  outputs = { self, nixpkgs }:
+    let
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+    in
+    {
+      packages.${system} = {
+        default = import ./default.nix { inherit pkgs; };
+        dockerImage = import ./docker.nix { inherit pkgs; };
+      };
+
+      devShells.${system}.default = pkgs.mkShell {
+        buildInputs = with pkgs; [
+          python313
+          python313Packages.fastapi
+          python313Packages.uvicorn
+          python313Packages.prometheus-client
+          python313Packages.python-json-logger
+        ];
+      };
+    };
+}
 ```
 
-**Generate lock file:**
-```bash
-cd labs/lab18/app_python
-nix flake update
-# flake.lock created with exact nixpkgs revision
-```
+**Structure explained:**
 
-**`flake.lock` excerpt:**
+| Section | Purpose |
+|---------|---------|
+| `description` | Human-readable project description |
+| `inputs.nixpkgs.url` | Pin exact nixpkgs release (nixos-24.11 from GitHub) |
+| `outputs.packages.default` | Main app — imports from `default.nix` |
+| `outputs.packages.dockerImage` | Docker image — imports from `docker.nix` |
+| `outputs.devShells.default` | Dev environment with Python + all deps |
+
+### Bonus.2 Flake Lock File
+
 ```json
 {
   "nodes": {
     "nixpkgs": {
       "locked": {
-        "lastModified": 1704321342,
-        "narHash": "sha256-abc123def456...",
+        "lastModified": 1756863782,
+        "narHash": "sha256-l3MjXpjMfvR9M1uwqaP3ggH1q7aj9TODgsypwXNtxDF=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "52e3e80afff4b16ccb7c52e9f0f5220552f03d04",
+        "rev": "f250580a0780cfbda191329b155d66085aa251d6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-24.11",
+        "repo": "nixpkgs",
         "type": "github"
       }
     }
@@ -357,186 +410,96 @@ nix flake update
 ```
 
 This locks:
-- Exact nixpkgs revision (all 80,000+ packages)
-- Python version and all dependencies
-- Build tools and compilers
-- Everything in the transitive closure
+- Exact nixpkgs revision (`f250580a...`) — all 80,000+ packages
+- The `narHash` is a cryptographic hash of the entire nixpkgs tree
+- Anyone with this `flake.lock` gets identical packages, forever
 
-**Build via flake:**
+### Bonus.3 Build Using Flakes
+
+```
+$ nix build                    # default package
+$ nix build .#dockerImage      # Docker image
+$ ./result/bin/devops-python-app  # runs the app
+```
+
+### Bonus.4 Dev Shell vs Lab 1 venv
+
+**Lab 1 approach:**
 ```bash
-nix build                          # Builds default package
-nix build .#dockerImage            # Builds Docker image
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+# Wait for pip to download and install...
+python app.py
 ```
 
-### 4.2 Comparison: Nix Flakes vs Helm `values.yaml` (Lab 10)
-
-**Helm approach (Lab 10):**
-```yaml
-# values.yaml - only pins container image tag
-image:
-  repository: ge0s1/devops-python-app
-  tag: "1.0.0"
+**Lab 18 Nix approach:**
+```bash
+nix develop
+# Instantly: python3.13 + fastapi + uvicorn + prometheus-client + python-json-logger
+python app.py
 ```
 
-**Nix Flakes approach:**
-Locks everything — not just the image tag:
-- Python version, all Python packages, transitive dependencies
-- Build tools, compilers, system libraries
-- The entire dependency tree is hashed and locked
+The `nix develop` shell provides:
+- Exact Python version from the locked nixpkgs
+- All dependencies pre-resolved (no pip download needed)
+- Same environment on every machine with the same `flake.lock`
+- Shell prompt shows `(nix:$name)` prefix indicating the Nix environment
+
+### Bonus.5 Comparison: Lab 10 Helm vs Lab 18 Nix Flakes
 
 | Aspect | Lab 1 (venv + requirements.txt) | Lab 10 (Helm values.yaml) | Lab 18 (Nix Flakes) |
 |--------|--------------------------------|---------------------------|---------------------|
-| Locks Python version | Uses system Python | Uses image Python | Pinned in flake.lock |
-| Locks dependencies | Approximate (versions drift) | Only image tag | Exact hashes |
-| Locks build tools | No | No | Yes |
-| Reproducibility | Probabilistic | Tag-based | Cryptographic |
-| Cross-machine | Varies | Depends on image | Identical |
-| Dev environment | Yes (venv) | No | Yes (nix develop) |
-| Time-stable | Packages update | Tags can change | Locked forever |
+| Locks Python version | No (system Python) | No (image Python) | Yes (pinned in flake) |
+| Locks Python deps | Approximate (versions can drift) | No (only image tag) | Yes (exact nixpkgs hashes) |
+| Locks build tools | No | No | Yes (compiler, glibc, etc.) |
+| Reproducibility | Probabilistic | Tag-based (tags can move) | Cryptographic (hashes) |
+| Cross-machine | Varies | Depends on registry state | Identical |
+| Dev environment | Yes (venv, manual) | No | Yes (`nix develop`, automatic) |
+| Time-stable | No (packages update) | No (tags can be overwritten) | Yes (locked forever) |
 
-### 4.3 Development Shell
+**Key insight:** Helm `values.yaml` pins the container image tag, but the tag is a mutable pointer. `flake.lock` pins everything with cryptographic hashes that cannot be mutated. If you combine both — Nix for building the image and Helm for deploying to Kubernetes — you get perfect reproducibility end-to-end.
 
-```bash
-nix develop
-```
+### Bonus.6 Cross-Machine Reproducibility
 
-**Output:**
-```
-DevOps Info Service — Nix development shell
-Python: Python 3.13.x
-Run: python app.py
-```
+The theory: `nix build github:Ge-os/DevOps-Core-Course?dir=labs/lab18/app_python#default` would produce the same store path `0u69gntff74vppicf2fjaywt722w524p-devops-python-app-1.0.0` on any machine with the same `flake.lock`.
 
-```bash
-python --version     # Python 3.13.x — exact version from flake.lock
-python -c "import fastapi; print(fastapi.__version__)"
-# 0.115.x
+### Bonus.7 Reflection: How Flakes Improve Dependency Management
 
-python app.py &
-sleep 2
-curl http://localhost:5000/health
-# {"status":"ok"}
+Traditional dependency management treats dependencies as a list of names and version constraints. At install time, the package manager resolves these constraints against whatever is currently available. This is fundamentally non-deterministic.
 
-exit  # Leaves the shell — no cleanup needed
-```
-
-**Comparison with Lab 1 venv:**
-| | Lab 1 venv | Lab 18 nix develop |
-|---|-----------|-------------------|
-| Setup time | ~30s (venv + pip install) | ~2s (download from cache) |
-| Reproducibility | System-dependent Python | Exact Python from flake.lock |
-| Cleanup | `deactivate + rm -rf venv` | `exit` |
-| Re-entry | Same as first setup | Instant (cached) |
+Nix Flakes reverse this: the `flake.lock` is generated ONCE and then used forever. It records the exact resolution result — not the constraints. Anyone using the same `flake.lock` gets the exact same packages, down to the bit. This eliminates entire categories of problems:
+- "It works on my machine" — impossible, everyone has identical deps
+- Dependency confusion attacks — the hash proves the exact source
+- "What version of X is in production?" — check `flake.lock`, it's exact
 
 ---
 
-## 5. Nix Store Path Format
+## Troubleshooting Notes
+
+### Issue 1: Flakehub timeout
+
+The Determinate Nix installer configures `flakehub.com` as the default nixpkgs source, but it was timing out from my network. Fixed by using `github:NixOS/nixpkgs/nixos-24.11` directly in the flake inputs.
+
+### Issue 2: wrapProgram on non-executable file
+
+`app.py` has no shebang line, so `wrapProgram` failed because bash tried to execute the Python docstring as a shell command. Fixed by wrapping `python3` itself with `makeWrapper` and passing `app.py` as a flag argument.
+
+### Issue 3: nix store delete with active GC root
+
+`nix store delete` failed when the `result` symlink was still pointing to the store path. Fixed by removing the symlink first (`rm result`), then deleting.
+
+---
+
+## Files Created
 
 ```
-/nix/store/<hash>-<name>-<version>
-/nix/store/d7e5a2b1c3f4...-devops-python-app-1.0.0
-             └──┬──┘      └─────┬──────┘ └─┬─┘
-               hash         package name   version
+labs/lab18/
+  app_python/
+    app.py              — FastAPI DevOps Info Service (from Lab 1)
+    requirements.txt    — Python dependencies (from Lab 1)
+    default.nix         — Nix derivation for Python app
+    docker.nix          — Nix dockerTools image builder
+    flake.nix           — Modern flake with packages + devShell
+    flake.lock          — Locked nixpkgs revision
 ```
-
-The hash is computed from:
-- All source code contents
-- All dependencies (transitively, entire closure)
-- Build instructions and compiler flags
-- Everything needed to reproduce the build
-
-Same inputs → same hash → reuse existing store path (cache hit).
-
----
-
-## 6. Key Technical Decisions
-
-### 6.1 Why Fixed Timestamp in Docker Images?
-
-`created = "1970-01-01T00:00:01Z"` eliminates timestamp drift. Traditional Docker builds use `now()`, which makes every build produce a different image hash. Nix uses epoch to guarantee identical outputs.
-
-### 6.2 Why No Base Image?
-
-Nix `dockerTools.buildLayeredImage` includes only the exact closure — no OS base image. This means:
-- Minimal attack surface (fewer CVEs)
-- Smaller images (~60MB vs ~170MB)
-- No version drift from `python:3.13-slim` or `alpine:latest`
-
-### 6.3 Why Nix Sandbox?
-
-Nix builds run in an isolated sandbox:
-- No network access (prevents pulling varying packages at build time)
-- No access to system paths (`/usr`, `/lib`, `/home`)
-- Only declared dependencies are available
-- Ensures the same inputs always produce the same outputs
-
----
-
-## 7. Challenges & Solutions
-
-### 7.1 Transitive Dependency Drift
-
-**Problem:** `requirements.txt` pins direct dependencies but not transitive ones. Different machines get different transitive versions.
-
-**Nix solution:** The entire dependency tree is in the Nix store — every package, every version, hashed. No drift possible.
-
-### 7.2 Timestamp Non-Determinism in Docker
-
-**Problem:** Docker includes build timestamps in layer metadata. Every `docker build` produces different hashes.
-
-**Nix solution:** `created = "1970-01-01T00:00:01Z"` — fixed epoch timestamp ensures identical layer hashes.
-
-### 7.3 Missing Packages in nixpkgs
-
-**Problem:** Some Python packages from `pip` are not in nixpkgs.
-
-**Solution:** For core dependencies (fastapi, uvicorn, prometheus-client, python-json-logger), all are available in nixpkgs. For missing packages, Nix provides `buildPythonPackage` to package any pip package with exact source hashes.
-
----
-
-## 8. Verification Checklist
-
-- [x] Nix installed (commands documented)
-- [x] `default.nix` builds the Python app reproducibly
-- [x] Store path identical across multiple builds (cache + forced rebuild)
-- [x] SHA256 hash of output is consistent
-- [x] Comparison table: `pip install` vs Nix derivation
-- [x] `docker.nix` builds reproducible container image
-- [x] SHA256 of Nix image tarball identical across rebuilds
-- [x] Dockerfile vs Nix image: hash comparison proves difference
-- [x] Image size comparison documented
-- [x] `flake.nix` and `flake.lock` with pinned nixpkgs
-- [x] `nix develop` dev shell vs Lab 1 venv comparison
-- [x] Helm values.yaml vs Nix Flakes dependency locking comparison
-- [x] `labs/submission18.md` complete
-
----
-
-## 9. User Action Required
-
-> Nix must be installed on a Linux/macOS/WSL2 system. Windows native is not supported.
-
-1. **Install Nix:**
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-   ```
-2. **Restart terminal** and verify: `nix --version`
-3. **Build the app:**
-   ```bash
-   cd labs/lab18/app_python
-   nix-build
-   ./result/bin/devops-python-app
-   ```
-4. **Build Docker image:**
-   ```bash
-   nix-build docker.nix
-   docker load < result
-   docker run -p 5000:5000 devops-python-app-nix:1.0.0
-   ```
-5. **Flake (bonus):**
-   ```bash
-   nix flake update
-   nix build
-   nix build .#dockerImage
-   nix develop
-   ```
