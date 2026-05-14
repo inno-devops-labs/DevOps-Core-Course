@@ -1,0 +1,4 @@
+docker_user: "{{ ansible_user }}"
+docker_packages:
+  - docker.io
+  - python3-docker

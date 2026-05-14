@@ -1,0 +1,19 @@
+- name: Run app container
+  docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ docker_image }}"
+    state: started
+    restart_policy: unless-stopped
+    ports:
+      - "{{ app_port }}:80"
+
+- name: Wait for app port
+  wait_for:
+    host: 127.0.0.1
+    port: "{{ app_port }}"
+    timeout: 30
+
+- name: Simple HTTP check
+  uri:
+    url: "http://127.0.0.1:{{ app_port }}/"
+    status_code: 200

@@ -1,0 +1,14 @@
+- name: Deploy application
+  hosts: webservers
+  become: yes
+
+  vars_files:
+    - ../group_vars/all.yml
+
+  pre_tasks:
+    - name: Show docker_image
+      debug:
+        var: docker_image
+
+  roles:
+    - app_deploy
