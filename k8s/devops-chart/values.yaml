@@ -11,9 +11,24 @@ service:
   targetPort: 5000
 
 resources:
-  limits:
-    cpu: 200m
-    memory: 256Mi
   requests:
     cpu: 100m
     memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+secret:
+  enabled: true
+  name: ""
+  username: "placeholder-user"
+  password: "placeholder-password"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-app"
+  secretPath: "secret/data/myapp/config"

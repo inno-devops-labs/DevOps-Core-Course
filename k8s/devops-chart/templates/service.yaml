@@ -1,11 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-service
+  name: {{ include "devops-chart.fullname" . }}-service
+  labels:
+    {{- include "devops-chart.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: {{ .Release.Name }}-app
+    {{- include "devops-chart.selectorLabels" . | nindent 4 }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}
