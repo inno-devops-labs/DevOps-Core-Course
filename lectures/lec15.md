@@ -90,13 +90,16 @@ By the end of this lecture, you will:
 
 ```mermaid
 flowchart TD
-  A[📦 Deployment] --> B[📦 Pod-abc123]
-  A --> C[📦 Pod-def456]
-  A --> D[📦 Pod-ghi789]
-
-  E[Pods are interchangeable]
-  F[Random names]
-  G[Any pod can be replaced]
+  subgraph Deployments
+    A[📦 Deployment] --> B[📦 Pod-abc123]
+    A --> C[📦 Pod-def456]
+    A --> D[📦 Pod-ghi789]
+  end
+  subgraph Characteristics
+    E[Pods are interchangeable]
+    F[Random names]
+    G[Any pod can be replaced]
+  end
 ```
 
 * ✅ **Great for:** Web servers, API services, workers
@@ -499,7 +502,7 @@ topk(5, sum by (pod) (rate(container_cpu_usage_seconds_total[5m])))
 **All-in-one monitoring solution:**
 
 ```mermaid
-flowchart TD
+flowchart LR
   A[📦 kube-prometheus-stack] --> B[📊 Prometheus]
   A --> C[📈 Grafana]
   A --> D[🔔 Alertmanager]
