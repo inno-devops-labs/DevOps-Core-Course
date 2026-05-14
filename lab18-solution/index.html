@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Core Course | Production-Grade Practices</title>
+    <meta name="description" content="Master production-grade DevOps practices through 16 hands-on labs. Build, containerize, deploy, monitor, and scale applications using industry-standard tools.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-tertiary: #06b6d4;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #2d2d3a;
+            --gradient-1: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+            --gradient-2: linear-gradient(135deg, #1a1a24 0%, #0a0a0f 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Navigation */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-top: 80px;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .hero-badge span {
+            color: var(--accent-success);
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero h1 .highlight {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.75rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-primary);
+        }
+
+        /* Stats Section */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            padding: 4rem 0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            margin: 4rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Section Styles */
+        section {
+            padding: 6rem 0;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Labs Section */
+        .labs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .lab-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            transition: all 0.3s ease;
+        }
+
+        .lab-card:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .lab-number {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--accent-primary);
+            flex-shrink: 0;
+        }
+
+        .lab-card.bonus .lab-number {
+            background: linear-gradient(135deg, var(--accent-warning) 0%, var(--accent-danger) 100%);
+            color: white;
+        }
+
+        .lab-content h4 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .lab-content p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .lab-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .lab-tag.exam-alt {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-warning);
+        }
+
+        /* Roadmap */
+        .roadmap {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .phase {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .phase-number {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-1);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .phase-number span {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .phase-number strong {
+            font-size: 1.75rem;
+        }
+
+        .phase-content h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .phase-content p {
+            color: var(--text-secondary);
+        }
+
+        .phase-topics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .topic-tag {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* CTA Section */
+        .cta {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 30% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 100%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .cta h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .cta p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        footer p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        /* Deployed Badge */
+        .deployed-badge {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+            z-index: 100;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .deployed-badge .icon {
+            width: 32px;
+            height: 32px;
+            background: var(--gradient-1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .deployed-badge span {
+            color: var(--text-secondary);
+        }
+
+        .deployed-badge strong {
+            color: var(--accent-tertiary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .phase {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .phase-number {
+                margin: 0 auto;
+            }
+
+            .phase-topics {
+                justify-content: center;
+            }
+
+            .cta {
+                padding: 2rem;
+            }
+
+            .deployed-badge {
+                bottom: 1rem;
+                right: 1rem;
+                left: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">DevOps Core</div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#labs">Labs</a></li>
+                <li><a href="#roadmap">Roadmap</a></li>
+                <li><a href="https://github.com/inno-devops-labs/S25-core-course-labs">GitHub</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-badge">
+                        <span>&#x2713;</span> 2026 Edition &mdash; 7th Year &mdash; Evolved every semester
+                    </div>
+                    <h1>Master <span class="highlight">Production-Grade</span> DevOps Practices</h1>
+                    <p>16 lectures and hands-on labs covering Kubernetes, GitOps, CI/CD, Monitoring, and beyond. 18 weeks of learning to build real-world skills.</p>
+                    <div class="hero-buttons">
+                        <a href="https://github.com/inno-devops-labs/S25-core-course-labs" class="btn btn-primary">
+                            Start Learning &rarr;
+                        </a>
+                        <a href="#labs" class="btn btn-secondary">
+                            View Curriculum
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="container">
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value">7</div>
+                    <div class="stat-label">Years Running</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">1000+</div>
+                    <div class="stat-label">Students Trained</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">16</div>
+                    <div class="stat-label">Lectures & Labs</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">18</div>
+                    <div class="stat-label">Weeks of Learning</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="container">
+            <div class="section-header">
+                <h2>Why This Course?</h2>
+                <p>Build production-ready skills through hands-on practice with tools used by top tech companies worldwide.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">&#x2601;</div>
+                    <h3>Cloud-Native Architecture</h3>
+                    <p>Master Kubernetes, Helm, StatefulSets, and container orchestration for scalable deployments.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x21BB;</div>
+                    <h3>GitOps & Automation</h3>
+                    <p>Implement ArgoCD, Argo Rollouts, and progressive delivery for safe, automated deployments.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x1F512;</div>
+                    <h3>Security & Secrets</h3>
+                    <p>Learn HashiCorp Vault, Kubernetes Secrets, and secure configuration management practices.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x1F4CA;</div>
+                    <h3>Observability</h3>
+                    <p>Build monitoring stacks with Prometheus, Grafana, Loki, and implement effective alerting.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x2699;</div>
+                    <h3>Infrastructure as Code</h3>
+                    <p>Automate infrastructure with Terraform and Ansible for reproducible environments.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#x1F310;</div>
+                    <h3>Beyond Kubernetes</h3>
+                    <p>Explore edge computing with Fly.io and decentralized hosting with IPFS and 4EVERLAND.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="labs" class="container">
+            <div class="section-header">
+                <h2>Lectures & Labs</h2>
+                <p>16 lectures with corresponding hands-on labs, plus 2 bonus labs as exam alternatives.</p>
+            </div>
+            <div class="labs-grid">
+                <div class="lab-card">
+                    <div class="lab-number">01</div>
+                    <div class="lab-content">
+                        <h4>Web Application Development</h4>
+                        <p>Python/Go, Best Practices</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">02</div>
+                    <div class="lab-content">
+                        <h4>Containerization</h4>
+                        <p>Docker, Multi-stage Builds</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">03</div>
+                    <div class="lab-content">
+                        <h4>Continuous Integration</h4>
+                        <p>GitHub Actions, Snyk</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">04</div>
+                    <div class="lab-content">
+                        <h4>Infrastructure as Code</h4>
+                        <p>Terraform, Cloud Providers</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">05</div>
+                    <div class="lab-content">
+                        <h4>Configuration Management</h4>
+                        <p>Ansible Basics</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">06</div>
+                    <div class="lab-content">
+                        <h4>Continuous Deployment</h4>
+                        <p>Ansible Advanced</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">07</div>
+                    <div class="lab-content">
+                        <h4>Logging</h4>
+                        <p>Promtail, Loki, Grafana</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">08</div>
+                    <div class="lab-content">
+                        <h4>Monitoring</h4>
+                        <p>Prometheus, Grafana</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">09</div>
+                    <div class="lab-content">
+                        <h4>Kubernetes Basics</h4>
+                        <p>Minikube, Deployments, Services</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">10</div>
+                    <div class="lab-content">
+                        <h4>Helm Charts</h4>
+                        <p>Templating, Hooks</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">11</div>
+                    <div class="lab-content">
+                        <h4>Secrets Management</h4>
+                        <p>K8s Secrets, HashiCorp Vault</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">12</div>
+                    <div class="lab-content">
+                        <h4>Configuration & Storage</h4>
+                        <p>ConfigMaps, PVCs</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">13</div>
+                    <div class="lab-content">
+                        <h4>GitOps</h4>
+                        <p>ArgoCD</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">14</div>
+                    <div class="lab-content">
+                        <h4>Progressive Delivery</h4>
+                        <p>Argo Rollouts</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">15</div>
+                    <div class="lab-content">
+                        <h4>StatefulSets</h4>
+                        <p>Persistent Storage, Headless Services</p>
+                    </div>
+                </div>
+                <div class="lab-card">
+                    <div class="lab-number">16</div>
+                    <div class="lab-content">
+                        <h4>Cluster Monitoring</h4>
+                        <p>Kube-Prometheus, Init Containers</p>
+                    </div>
+                </div>
+                <div class="lab-card bonus">
+                    <div class="lab-number">17</div>
+                    <div class="lab-content">
+                        <h4>Fly.io Edge Deployment</h4>
+                        <p>Global Distribution, PaaS</p>
+                        <span class="lab-tag exam-alt">Exam Alternative</span>
+                    </div>
+                </div>
+                <div class="lab-card bonus">
+                    <div class="lab-number">18</div>
+                    <div class="lab-content">
+                        <h4>4EVERLAND & IPFS</h4>
+                        <p>Decentralized Hosting</p>
+                        <span class="lab-tag exam-alt">Exam Alternative</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="roadmap" class="container">
+            <div class="section-header">
+                <h2>Learning Roadmap</h2>
+                <p>A structured 16-week journey from foundations to advanced production patterns, plus 2 weeks for bonus labs or exam preparation.</p>
+            </div>
+            <div class="roadmap">
+                <div class="phase">
+                    <div class="phase-number">
+                        <span>Phase</span>
+                        <strong>1</strong>
+                    </div>
+                    <div class="phase-content">
+                        <h3>Foundations (Weeks 1-6)</h3>
+                        <p>Build core skills in containerization, CI/CD, and infrastructure automation.</p>
+                        <div class="phase-topics">
+                            <span class="topic-tag">Docker</span>
+                            <span class="topic-tag">GitHub Actions</span>
+                            <span class="topic-tag">Terraform</span>
+                            <span class="topic-tag">Ansible</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase">
+                    <div class="phase-number">
+                        <span>Phase</span>
+                        <strong>2</strong>
+                    </div>
+                    <div class="phase-content">
+                        <h3>Observability (Weeks 7-8)</h3>
+                        <p>Master logging and monitoring for production visibility.</p>
+                        <div class="phase-topics">
+                            <span class="topic-tag">Prometheus</span>
+                            <span class="topic-tag">Grafana</span>
+                            <span class="topic-tag">Loki</span>
+                            <span class="topic-tag">Alerting</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase">
+                    <div class="phase-number">
+                        <span>Phase</span>
+                        <strong>3</strong>
+                    </div>
+                    <div class="phase-content">
+                        <h3>Kubernetes Core (Weeks 9-12)</h3>
+                        <p>Deep dive into Kubernetes orchestration and package management.</p>
+                        <div class="phase-topics">
+                            <span class="topic-tag">Kubernetes</span>
+                            <span class="topic-tag">Helm</span>
+                            <span class="topic-tag">Secrets</span>
+                            <span class="topic-tag">ConfigMaps</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase">
+                    <div class="phase-number">
+                        <span>Phase</span>
+                        <strong>4</strong>
+                    </div>
+                    <div class="phase-content">
+                        <h3>Advanced Patterns (Weeks 13-16)</h3>
+                        <p>Implement GitOps, progressive delivery, stateful workloads, and production monitoring.</p>
+                        <div class="phase-topics">
+                            <span class="topic-tag">ArgoCD</span>
+                            <span class="topic-tag">Argo Rollouts</span>
+                            <span class="topic-tag">StatefulSets</span>
+                            <span class="topic-tag">Vault</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase">
+                    <div class="phase-number">
+                        <span>Bonus</span>
+                        <strong>+2</strong>
+                    </div>
+                    <div class="phase-content">
+                        <h3>Bonus Labs / Exam Prep (Weeks 17-18)</h3>
+                        <p>Complete exam alternative labs or prepare for the final exam.</p>
+                        <div class="phase-topics">
+                            <span class="topic-tag">Fly.io</span>
+                            <span class="topic-tag">IPFS</span>
+                            <span class="topic-tag">4EVERLAND</span>
+                            <span class="topic-tag">Edge Computing</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="container">
+            <div class="cta">
+                <h2>Ready to Start Your DevOps Journey?</h2>
+                <p>Join 1000+ students who have built production-ready skills through this battle-tested curriculum.</p>
+                <a href="https://github.com/inno-devops-labs/S25-core-course-labs" class="btn btn-primary">
+                    Get Started Free &rarr;
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2020&ndash;2026 DevOps Core Course. 7 years of continuous improvement. Open source educational content.</p>
+            <div class="footer-links">
+                <a href="https://github.com/inno-devops-labs/S25-core-course-labs">GitHub</a>
+                <a href="mailto:devops@example.com">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <div class="deployed-badge">
+        <div class="icon">&#x1F310;</div>
+        <div>
+            <span>Deployed on</span><br>
+            <strong>IPFS via 4EVERLAND</strong>
+        </div>
+    </div>
+</body>
+</html>

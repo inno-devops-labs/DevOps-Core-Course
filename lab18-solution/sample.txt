@@ -1,0 +1,3 @@
+Sample document for IPFS pinning.
+This file demonstrates content addressing.
+Same content = same CID.

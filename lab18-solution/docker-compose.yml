@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  ipfs:
+    image: ipfs/kubo:latest
+    ports:
+      - "4001:4001"  # Swarm
+      - "8080:8080"  # Gateway
+      - "5001:5001"  # API
+    volumes:
+      - ipfs_data:/data/ipfs
+      - .:/host
+    restart: unless-stopped
+
+volumes:
+  ipfs_data:
