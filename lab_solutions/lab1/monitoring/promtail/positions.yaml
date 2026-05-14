@@ -1,0 +1,4 @@
+# Promtail positions file (persisted)
+# This file tracks read offsets so Promtail resumes correctly on restart.
+
+{}

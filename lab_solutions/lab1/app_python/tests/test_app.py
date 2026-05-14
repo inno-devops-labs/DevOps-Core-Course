@@ -1,9 +1,60 @@
+import json
+import logging
+
 from fastapi.testclient import TestClient
 
-from app import app
+from app import JSONFormatter, app, logger
 
 
 client = TestClient(app)
+
+
+def test_json_formatter_returns_json_object():
+    record = logging.LogRecord(
+        name="app",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="request_completed",
+        args=(),
+        exc_info=None,
+    )
+    record.method = "GET"
+    record.path = "/"
+    record.status_code = 200
+
+    payload = json.loads(JSONFormatter().format(record))
+
+    assert payload["level"] == "INFO"
+    assert payload["message"] == "request_completed"
+    assert payload["method"] == "GET"
+    assert payload["path"] == "/"
+    assert payload["status_code"] == 200
+
+
+def test_request_logging_emits_json_log():
+    records = []
+
+    class ListHandler(logging.Handler):
+        def emit(self, record):
+            records.append(json.loads(JSONFormatter().format(record)))
+
+    handler = ListHandler()
+    logger.addHandler(handler)
+    try:
+        response = client.get("/", headers={"User-Agent": "pytest"})
+    finally:
+        logger.removeHandler(handler)
+
+    assert response.status_code == 200
+    matching = [item for item in records if item.get("message") == "request_completed"]
+    assert matching, "expected request_completed log entry"
+
+    log_entry = matching[-1]
+    assert log_entry["method"] == "GET"
+    assert log_entry["path"] == "/"
+    assert log_entry["status_code"] == 200
+    assert log_entry["client_ip"] in {"testclient", "127.0.0.1", "unknown"}
 
 
 def test_root_endpoint_structure():
