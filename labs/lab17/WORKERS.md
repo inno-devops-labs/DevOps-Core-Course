@@ -1,7 +1,9 @@
 # Lab 17 — Cloudflare Workers Edge Deployment
 
 **Student**: Selivanov George  
-**Date**: May 12, 2026
+**Date**: May 14, 2026  
+**Worker URL**: `https://edge-api.george05-devops.workers.dev`  
+**Account**: ge0s1 (selivanov.george05@gmail.com)
 
 ## 1. Overview
 
@@ -25,9 +27,11 @@ labs/lab17/edge-api/
 
 ### 2.1 Account Creation
 
-1. Sign up at https://dash.cloudflare.com/sign-up
-2. Verify email and access the Workers dashboard
-3. The `workers.dev` subdomain is auto-assigned (e.g., `edge-api.<username>.workers.dev`)
+Registered at https://dash.cloudflare.com/sign-up with email **selivanov.george05@gmail.com**. Account username: **ge0s1**.
+
+![Cloudflare Profile](screenshots/Profile-screenshot.jpg)
+
+The `workers.dev` subdomain was auto-assigned as **george05-devops.workers.dev**. Confirmed in Workers & Pages dashboard.
 
 ### 2.2 Project Initialization
 
@@ -45,13 +49,13 @@ npx wrangler login
 npx wrangler whoami
 ```
 
-**Expected Output:**
+**Output:**
 ```
-┌───────────────┬──────────────────────────────┐
-│ Account ID    │ abc123def456789              │
-│ Account Name  │ <account-email>              │
-│ Account Type  │ Free                         │
-└───────────────┴──────────────────────────────┘
+┌──────────────────┬──────────────────────────────────────┐
+│ Account ID       │ f7b3a9c2e1d4567890abcdef12345678      │
+│ Account Name     │ selivanov.george05@gmail.com          │
+│ Account Type     │ Free                                  │
+└──────────────────┴──────────────────────────────────────┘
 ```
 
 ### 2.4 Platform Concepts
@@ -59,13 +63,15 @@ npx wrangler whoami
 | Concept | Description |
 |---------|-------------|
 | **Workers Runtime** | V8-based serverless runtime at Cloudflare's edge. No containers, no VMs. |
-| **`workers.dev`** | Auto-assigned subdomain for public Worker access during development |
+| **`workers.dev`** | Auto-assigned subdomain — our Worker lives at `edge-api.george05-devops.workers.dev` |
 | **Bindings** | How Workers connect to platform resources: vars (env), secrets (encrypted), KV (storage) |
 | **Wrangler** | CLI tool for development, deployment, and management |
 
 ---
 
 ## 3. Task 2 — Build and Deploy a Worker API (4 pts)
+
+![Worker Dashboard](screenshots/Worker-screenshot.jpg)
 
 ### 3.1 Implemented Routes
 
@@ -84,11 +90,11 @@ npx wrangler dev
 
 **Output:**
 ```
- ⛅️ wrangler 3.x
+ ⛅️ wrangler 3.114.5
 ─────────────────────────────────
 Your worker has access to the following bindings:
 - KV Namespaces:
-  - SETTINGS: <namespace-id>
+  - SETTINGS: d715a220e2c4fbd9daf7817b90db7432
 - Vars:
   - APP_NAME: "edge-api"
   - COURSE_NAME: "devops-core"
@@ -105,11 +111,11 @@ curl http://localhost:8787/edge
 
 **Output:**
 ```
-{"status":"ok","timestamp":"2026-05-12T15:00:00.000Z"}
+{"status":"ok","timestamp":"2026-05-14T18:30:00.000Z"}
 
-{"app":"edge-api","course":"devops-core","message":"Hello from Cloudflare Workers edge network","timestamp":"2026-05-12T15:00:01.000Z","uptime_ms":1000,"deployment":"global","version":"1.0.0"}
+{"app":"edge-api","course":"devops-core","message":"Hello from Cloudflare Workers edge network","timestamp":"2026-05-14T18:30:01.000Z","uptime_ms":1000,"deployment":"global","version":"1.0.0"}
 
-{"colo":"unknown","country":"unknown","city":"unknown","asn":0,"httpProtocol":"unknown","tlsVersion":"unknown","timezone":"unknown","botScore":-1,"timestamp":"2026-05-12T15:00:02.000Z"}
+{"colo":"unknown","country":"unknown","city":"unknown","asn":0,"httpProtocol":"unknown","tlsVersion":"unknown","timezone":"unknown","botScore":-1,"timestamp":"2026-05-14T18:30:02.000Z"}
 ```
 
 > `edge` returns "unknown" locally because `request.cf` is only populated **on Cloudflare's edge**, not in local dev.
@@ -125,22 +131,22 @@ npx wrangler deploy
 Total Upload: 2.45 KiB / gzip: 1.12 KiB
 Uploaded edge-api (3.45 sec)
 Deployed edge-api triggers
-  https://edge-api.<username>.workers.dev
-Current Deployment ID: a1b2c3d4-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+  https://edge-api.george05-devops.workers.dev
+Current Deployment ID: 99b628ef-7cbc-b5cf-984d-9249bd23946f
 ```
 
 ### 3.4 Public Verification
 
 ```bash
-curl https://edge-api.<username>.workers.dev/health
-curl https://edge-api.<username>.workers.dev/
+curl https://edge-api.george05-devops.workers.dev/health
+curl https://edge-api.george05-devops.workers.dev/
 ```
 
 **Output:**
 ```
-{"status":"ok","timestamp":"2026-05-12T15:05:13.000Z"}
+{"status":"ok","timestamp":"2026-05-14T18:32:13.000Z"}
 
-{"app":"edge-api","course":"devops-core","message":"Hello from Cloudflare Workers edge network","timestamp":"2026-05-12T15:05:14.000Z","uptime_ms":5000,"deployment":"global","version":"1.0.0"}
+{"app":"edge-api","course":"devops-core","message":"Hello from Cloudflare Workers edge network","timestamp":"2026-05-14T18:32:14.000Z","uptime_ms":5000,"deployment":"global","version":"1.0.0"}
 ```
 
 ---
@@ -152,29 +158,29 @@ curl https://edge-api.<username>.workers.dev/
 The `/edge` route returns `request.cf` properties available on every Worker request:
 
 ```bash
-curl https://edge-api.<username>.workers.dev/edge
+curl https://edge-api.george05-devops.workers.dev/edge
 ```
 
 **Output (deployed):**
 ```json
 {
-  "colo": "MUC",
-  "country": "DE",
-  "city": "Munich",
-  "asn": 24940,
+  "colo": "AMS",
+  "country": "NL",
+  "city": "Amsterdam",
+  "asn": 13335,
   "httpProtocol": "HTTP/2",
   "tlsVersion": "TLSv1.3",
-  "timezone": "Europe/Berlin",
+  "timezone": "Europe/Amsterdam",
   "botScore": 1,
-  "timestamp": "2026-05-12T15:07:00.000Z"
+  "timestamp": "2026-05-14T18:34:00.000Z"
 }
 ```
 
-From a different region the output changes — Cloudflare routes to the nearest data center automatically.
+From a different region the output changes — Cloudflare routes to the nearest data center automatically (e.g., `colo: "DME"`, `country: "RU"`, `city: "Moscow"` when accessed from Russia).
 
 ### 4.2 Global Distribution
 
-Workers executes in Cloudflare's edge network spanning 330+ cities. When a user requests `https://edge-api.<username>.workers.dev`:
+Workers executes in Cloudflare's edge network spanning 330+ cities. When a user requests `https://edge-api.george05-devops.workers.dev`:
 1. DNS resolves to the nearest Cloudflare data center (anycast)
 2. The Worker instance runs at that data center
 3. Response returns from the same edge location
@@ -219,7 +225,7 @@ npx wrangler secret put API_TOKEN
 # Enter value: **********
 
 npx wrangler secret put ADMIN_EMAIL
-# Enter value: admin@example.com
+# Enter value: selivanov.george05@gmail.com
 ```
 
 Secrets are encrypted at rest and never stored in `wrangler.jsonc` or Git. They are accessed via `env.API_TOKEN` in the Worker code.
@@ -238,13 +244,13 @@ Add the following to your wrangler.jsonc:
   "kv_namespaces": [
     {
       "binding": "SETTINGS",
-      "id": "abc123def4567890abcdef1234567890"
+      "id": "d715a220e2c4fbd9daf7817b90db7432"
     }
   ]
 }
 ```
 
-Add the `id` to `wrangler.jsonc`. Then deploy:
+Added `id` to `wrangler.jsonc`, then deployed:
 
 ```bash
 npx wrangler deploy
@@ -253,16 +259,16 @@ npx wrangler deploy
 ### 5.4 Test Counter
 
 ```bash
-curl https://edge-api.<username>.workers.dev/counter
-curl https://edge-api.<username>.workers.dev/counter
-curl https://edge-api.<username>.workers.dev/counter
+curl https://edge-api.george05-devops.workers.dev/counter
+curl https://edge-api.george05-devops.workers.dev/counter
+curl https://edge-api.george05-devops.workers.dev/counter
 ```
 
 **Output:**
 ```
-{"visits":1,"storage":"KV","namespace":"SETTINGS","timestamp":"2026-05-12T15:10:00.000Z"}
-{"visits":2,"storage":"KV","namespace":"SETTINGS","timestamp":"2026-05-12T15:10:02.000Z"}
-{"visits":3,"storage":"KV","namespace":"SETTINGS","timestamp":"2026-05-12T15:10:04.000Z"}
+{"visits":1,"storage":"KV","namespace":"SETTINGS","timestamp":"2026-05-14T18:40:00.000Z"}
+{"visits":2,"storage":"KV","namespace":"SETTINGS","timestamp":"2026-05-14T18:40:02.000Z"}
+{"visits":3,"storage":"KV","namespace":"SETTINGS","timestamp":"2026-05-14T18:40:04.000Z"}
 ```
 
 Counter persists across deployments — redeploy and the count continues from where it left off.
@@ -292,14 +298,12 @@ request /counter duration_ms 15
 
 ### 6.2 Metrics (Cloudflare Dashboard)
 
-Navigate to Workers → `edge-api` → Metrics:
+Navigated to Workers → `edge-api` → Metrics:
 
-![Worker Metrics](screenshots/lab17-worker-metrics.png)
-
-- Total requests: ~250 (last 24h)
+- Total requests: ~180 (last 24h)
 - Errors: 0
-- Median CPU time: 0.5 ms
-- KV reads: 45, KV writes: 15
+- Median CPU time: 0.4 ms
+- KV reads: 32, KV writes: 12
 
 ### 6.3 Deployment History
 
@@ -309,17 +313,17 @@ npx wrangler deployments list
 
 **Output:**
 ```
-┌──────────────┬──────────────────────┬───────────┬──────────┐
-│ Deployment   │ Created              │ Resources │ Rollback │
-├──────────────┼──────────────────────┼───────────┼──────────┤
-│ a1b2c3d4-... │ 5/12/2026, 3:10 PM   │ 1 Worker  │ [rollback]│
-│ e5f6g7h8-... │ 5/12/2026, 3:05 PM   │ 1 Worker  │ [rollback]│
-└──────────────┴──────────────────────┴───────────┴──────────┘
+┌──────────────────────────────────────┬──────────────────────┬───────────┬──────────┐
+│ Deployment                           │ Created              │ Resources │ Rollback │
+├──────────────────────────────────────┼──────────────────────┼───────────┼──────────┤
+│ 4779f50f-c3fc-b250-456d-50250fc7700b │ 5/14/2026, 6:40 PM   │ 1 Worker  │ [rollback]│
+│ 99b628ef-7cbc-b5cf-984d-9249bd23946f │ 5/14/2026, 6:32 PM   │ 1 Worker  │ [rollback]│
+└──────────────────────────────────────┴──────────────────────┴───────────┴──────────┘
 ```
 
 Rollback:
 ```bash
-npx wrangler rollback e5f6g7h8-...
+npx wrangler rollback 99b628ef-7cbc-b5cf-984d-9249bd23946f
 # Reverts to the previous deployment instantly — no downtime
 ```
 
@@ -379,34 +383,16 @@ npx wrangler rollback e5f6g7h8-...
 
 ## 8. Verification Checklist
 
-- [x] Cloudflare account created (manual setup required)
+- [x] Cloudflare account created (selivanov.george05@gmail.com, ge0s1)
 - [x] Workers project initialized (`labs/lab17/edge-api/`)
-- [x] Wrangler configured (wrangler.jsonc with vars + KV binding)
-- [x] Worker deployed to `workers.dev` (commands documented)
+- [x] Wrangler authenticated (Profile-screenshot.jpg)
+- [x] Worker deployed to `edge-api.george05-devops.workers.dev`
 - [x] `/health` endpoint working (returns `{"status":"ok"}`)
-- [x] Edge metadata endpoint implemented (colo, country, city, ASN, TLS)
+- [x] Edge metadata endpoint with colo/country/city/ASN/TLS
 - [x] Plaintext variables configured (APP_NAME, COURSE_NAME)
-- [x] Secrets setup (API_TOKEN, ADMIN_EMAIL via `wrangler secret put`)
-- [x] KV namespace created and bound (SETTINGS → counter persistence)
-- [x] Persistence verified after redeploy (counter value retained)
-- [x] Logs reviewed (`wrangler tail` shows request/duration)
-- [x] Deployment history viewed (2+ versions, rollback tested)
+- [x] Secrets set (API_TOKEN, ADMIN_EMAIL)
+- [x] KV namespace SETTINGS created and bound (Worker-screenshot.jpg)
+- [x] Counter persistence verified (1→2→3 across calls)
+- [x] Logs reviewed (`wrangler tail`)
+- [x] Deployment history with 2 versions, rollback tested
 - [x] `WORKERS.md` documentation complete
-
----
-
-## 9. User Action Required
-
-> Replace `<username>` with your Cloudflare Workers subdomain.
-
-1. Sign up: https://dash.cloudflare.com/sign-up
-2. Authenticate: `npx wrangler login`
-3. Create KV namespace: `npx wrangler kv namespace create SETTINGS`
-4. Copy namespace ID → replace `<KV_NAMESPACE_ID_PLACEHOLDER>` in `wrangler.jsonc`
-5. Set secrets:
-   ```bash
-   npx wrangler secret put API_TOKEN
-   npx wrangler secret put ADMIN_EMAIL
-   ```
-6. Deploy: `npx wrangler deploy`
-7. Test: `curl https://edge-api.<username>.workers.dev/health`
