@@ -1,0 +1,23 @@
+services:
+  app-python:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app-python
+    ports:
+      - "8000:80"
+    environment:
+      - LOG_FORMAT=json
+      - DATA_DIR=/data
+    volumes:
+      - app-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:80/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  app-data:

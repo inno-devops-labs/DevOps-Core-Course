@@ -18,3 +18,4 @@ monitoring/.env
 # Node / Cloudflare Workers (Lab 17)
 edge-api/node_modules/
 **/.wrangler/
+/labs/lab18/app_python/venv/
