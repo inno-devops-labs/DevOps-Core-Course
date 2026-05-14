@@ -1,0 +1,9 @@
+hiksol@Hiksol:~/ansible/lab18/app_python$ nix-build
+/nix/store/5cwc6cljdrb1ki0z8ivxsfdajwz6nssp-devops-info-service-1.0.0
+hiksol@Hiksol:~/ansible/lab18/app_python$ readlink result
+/nix/store/5cwc6cljdrb1ki0z8ivxsfdajwz6nssp-devops-info-service-1.0.0
+hiksol@Hiksol:~/ansible/lab18/app_python$ rm result
+hiksol@Hiksol:~/ansible/lab18/app_python$ nix-build
+/nix/store/5cwc6cljdrb1ki0z8ivxsfdajwz6nssp-devops-info-service-1.0.0
+hiksol@Hiksol:~/ansible/lab18/app_python$ readlink result
+/nix/store/5cwc6cljdrb1ki0z8ivxsfdajwz6nssp-devops-info-service-1.0.0
