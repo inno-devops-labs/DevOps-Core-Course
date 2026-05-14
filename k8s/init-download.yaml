@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-download-pod
+  namespace: default
+spec:
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command: ['sh', '-c', 'echo "<html><body>Hello from init container</body></html>" > /work-dir/index.html && echo "File created"']
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command: ['sh', '-c', 'echo "File contents:"; cat /data/index.html; sleep 3600']
+      volumeMounts:
+        - name: workdir
+          mountPath: /data
+  volumes:
+    - name: workdir
+      emptyDir: {}
