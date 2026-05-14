@@ -1,0 +1,4 @@
+# Copy to .dev.vars for `npm run dev` (never commit .dev.vars).
+# Production: use `npx wrangler secret put API_TOKEN` and `npx wrangler secret put ADMIN_EMAIL`
+API_TOKEN=local-dev-only-token
+ADMIN_EMAIL=dev@example.com
