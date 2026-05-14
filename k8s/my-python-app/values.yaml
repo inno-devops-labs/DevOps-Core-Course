@@ -57,3 +57,6 @@ statefulset:
     type: RollingUpdate
     rollingUpdate:
       partition: 0
+
+monitoring:
+  enabled: false

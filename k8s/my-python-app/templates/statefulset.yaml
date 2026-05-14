@@ -10,17 +10,37 @@ spec:
   selector:
     matchLabels:
       {{- include "my-python-app.selectorLabels" . | nindent 6 }}
-  updateStrategy:
-    type: {{ .Values.statefulset.updateStrategy.type }}
-    {{- if eq .Values.statefulset.updateStrategy.type "RollingUpdate" }}
-    rollingUpdate:
-      partition: {{ .Values.statefulset.updateStrategy.rollingUpdate.partition }}
-    {{- end }}
   template:
     metadata:
       labels:
         {{- include "my-python-app.selectorLabels" . | nindent 8 }}
     spec:
+      initContainers:
+        - name: init-download
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              wget -O /work-dir/index.html https://example.com
+              echo "Download completed" > /work-dir/status
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+        - name: wait-for-service
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for kubernetes service..."
+              until nslookup kubernetes.default.svc.cluster.local; do
+                echo "Waiting..."; sleep 2
+              done
+              echo "Service found!"
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -33,12 +53,17 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /data
+        - name: workdir
+          mountPath: /shared
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         livenessProbe:
           {{- toYaml .Values.livenessProbe | nindent 10 }}
         readinessProbe:
           {{- toYaml .Values.readinessProbe | nindent 10 }}
+      volumes:
+        - name: workdir
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: data

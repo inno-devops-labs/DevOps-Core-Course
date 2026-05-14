@@ -1,0 +1,17 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "my-python-app.fullname" . }}
+  labels:
+    release: monitoring
+    {{- include "my-python-app.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "my-python-app.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+{{- end }}
