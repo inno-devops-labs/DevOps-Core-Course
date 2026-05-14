@@ -20,7 +20,7 @@
         packages = with pkgs; [
           python313
           python313Packages.flask
-          python313Packages.prometheus-client
+          python313Packages.prometheus_client
         ];
       };
     };
