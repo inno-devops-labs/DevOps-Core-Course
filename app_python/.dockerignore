@@ -1,5 +1,5 @@
 *
 !src/**
 !pyproject.toml
-!poetry.lock
+!uv.lock
 !gunicorn.conf.py

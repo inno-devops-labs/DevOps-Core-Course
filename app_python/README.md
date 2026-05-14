@@ -9,12 +9,12 @@ Small Flask web service that reports service metadata, system information, runti
 ## Prerequisites
 
 - Python 3.14+
-- Poetry
+- uv
 
 ## Installation
 
 ```bash
-poetry install
+uv sync
 ```
 
 ### Docker
@@ -29,7 +29,7 @@ poetry install
   ```
   The Docker build installs dependencies with:
   ```bash
-  poetry install --only main --no-root
+  uv sync --frozen --no-dev --no-install-project
   ```
 
 ## Running the Application
@@ -37,8 +37,8 @@ poetry install
 Production-style local run with Gunicorn:
 
 ```bash
-poetry run gunicorn --config gunicorn.conf.py src.main:app
-HOST=127.0.0.1 PORT=8080 poetry run gunicorn --config gunicorn.conf.py src.main:app
+uv run gunicorn --config gunicorn.conf.py src.main:app
+HOST=127.0.0.1 PORT=8080 uv run gunicorn --config gunicorn.conf.py src.main:app
 ```
 
 Gunicorn access logs are emitted as JSON so Loki can parse request fields cleanly.
@@ -86,8 +86,8 @@ For Lab 12, run the monitoring stack with a writable `/data` volume for the Pyth
 The project uses `pytest` for unit tests.
 
 ```bash
-poetry install --with dev
-poetry run pytest --cov=src --cov-report=term-missing
+uv sync
+uv run pytest --cov=src --cov-report=term-missing
 ```
 
 The test suite covers:
@@ -101,5 +101,5 @@ The test suite covers:
 ## Linting
 
 ```bash
-poetry run flake8 src tests
+uv run flake8 src tests
 ```

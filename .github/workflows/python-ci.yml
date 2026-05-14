@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.14]
-        poetry-version: [2.3.2]
+        uv-version: [0.9.30]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     defaults:
@@ -32,16 +32,16 @@ jobs:
         uses: ./.github/actions/python-setup
         with:
           python-version: ${{ matrix.python-version }}
-          poetry-version: ${{ matrix.poetry-version }}
+          uv-version: ${{ matrix.uv-version }}
           working-directory: app_python
-          lockfile-path: app_python/poetry.lock
-          install-args: --with dev --no-interaction --no-ansi
+          lockfile-path: app_python/uv.lock
+          install-args: --frozen
       - name: Lint with flake8
-        run: poetry run flake8 src tests
+        run: uv run flake8 src tests
       - name: Test using pytest with coverage report
         run: |
           mkdir -p test-results
-          poetry run pytest \
+          uv run pytest \
             --junitxml=test-results/pytest-report.xml \
             --cov=src \
             --cov-report=term-missing \

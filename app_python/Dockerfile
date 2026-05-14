@@ -1,24 +1,32 @@
+# syntax=docker/dockerfile:1
 FROM python:3.14-alpine
-RUN apk upgrade -U
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.14 /uv /uvx /bin/
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV POETRY_VERSION=2.3.2
-
-RUN pip install --no-cache-dir "poetry==$POETRY_VERSION" \
-    && addgroup appgroup \
-    && adduser --disabled-password --gecos "" --no-create-home -s /bin/sh appuser -G appgroup
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+ENV UV_PROJECT_ENVIRONMENT=/app/.venv
+ENV HOME=/home/appuser
+ENV PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock gunicorn.conf.py ./
-RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-interaction --no-ansi --no-root
+RUN apk upgrade -U \
+    && addgroup -S appgroup \
+    && adduser -S -D -h /home/appuser -s /sbin/nologin -G appgroup appuser \
+    && mkdir -p /data \
+    && chown -R appuser:appgroup /app /data /home/appuser
 
-COPY src ./src
+COPY pyproject.toml uv.lock gunicorn.conf.py ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked --no-dev --no-install-project
+
+COPY --chown=appuser:appgroup src ./src
 
 ENV PORT=5000
 ENV HOST="0.0.0.0"
 
 USER appuser
-CMD ["sh", "-c", "gunicorn --config /app/gunicorn.conf.py src.main:app"]
+CMD ["gunicorn", "--config", "/app/gunicorn.conf.py", "src.main:app"]
