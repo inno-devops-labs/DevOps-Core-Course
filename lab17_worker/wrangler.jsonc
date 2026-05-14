@@ -1,0 +1,15 @@
+{
+  "name": "lab17-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-14",
+  "vars": {
+    "PLAINTEXT_VAR": "example-value"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "LAB17_KV",
+      "id": "c4f71efad1be45b4b5423696771988f2",
+      "preview_id": "1529d92271f44c9fba6604e7c2c3a8c9"
+    }
+  ]
+}
