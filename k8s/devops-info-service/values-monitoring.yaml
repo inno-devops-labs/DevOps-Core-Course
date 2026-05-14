@@ -1,0 +1,34 @@
+workload:
+  kind: statefulset
+
+replicaCount: 3
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: http
+  nodePort: 30083
+
+releaseMetadata:
+  version: "1.0.0-monitoring"
+  track: "monitoring"
+  color: ""
+
+persistence:
+  enabled: true
+  mountPath: /data
+  size: 128Mi
+  storageClass: ""
+
+serviceMonitor:
+  enabled: true
+  additionalLabels:
+    release: monitoring
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
+
+secret:
+  stringData:
+    APP_USERNAME: "monitoring-user"
+    APP_PASSWORD: "replace-me-in-monitoring"

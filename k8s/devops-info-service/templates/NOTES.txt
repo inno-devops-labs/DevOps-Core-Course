@@ -1,9 +1,17 @@
 1. Check the release:
   helm status {{ .Release.Name }}
+  {{- if eq .Values.workload.kind "rollout" }}
   kubectl argo rollouts get rollout {{ include "devops-info-service.fullname" . }}
+  {{- else }}
+  kubectl get statefulset {{ include "devops-info-service.fullname" . }}
+  {{- end }}
 
 2. Inspect resources:
+  {{- if eq .Values.workload.kind "rollout" }}
   kubectl get rollouts.argoproj.io,svc,pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  {{- else }}
+  kubectl get statefulset,pods,svc,pvc -l app.kubernetes.io/instance={{ .Release.Name }}
+  {{- end }}
 
 3. Access the application:
   {{- if eq .Values.service.type "NodePort" }}
@@ -13,7 +21,7 @@
   {{- else }}
   kubectl port-forward service/{{ include "devops-info-service.fullname" . }} 8080:{{ .Values.service.port }}
   {{- end }}
-  {{- if eq .Values.rollout.strategy "blueGreen" }}
+  {{- if and (eq .Values.workload.kind "rollout") (eq .Values.rollout.strategy "blueGreen") }}
   kubectl port-forward service/{{ include "devops-info-service.previewServiceName" . }} 8081:{{ .Values.previewService.port }}
   {{- end }}
 

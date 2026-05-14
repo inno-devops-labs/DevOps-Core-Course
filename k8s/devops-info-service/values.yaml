@@ -1,5 +1,8 @@
 replicaCount: 3
 
+workload:
+  kind: rollout
+
 image:
   repository: devops-info-service
   tag: "lab09"
@@ -57,6 +60,17 @@ service:
   port: 80
   targetPort: http
   nodePort: 30081
+
+persistence:
+  enabled: false
+  mountPath: /data
+  accessModes:
+    - ReadWriteOnce
+  size: 128Mi
+  storageClass: ""
+  retentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
 
 rollout:
   strategy: canary
@@ -136,6 +150,14 @@ hooks:
     weight: "5"
     deletePolicy: before-hook-creation,hook-succeeded
     smokeTestPath: /health
+
+serviceMonitor:
+  enabled: false
+  namespace: ""
+  additionalLabels: {}
+  interval: 15s
+  scrapeTimeout: 10s
+  path: /metrics
 
 nodeSelector: {}
 tolerations: []
