@@ -1,0 +1,11 @@
+name: lab04-pulumi
+description: Lab 04 Pulumi IaC
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python
