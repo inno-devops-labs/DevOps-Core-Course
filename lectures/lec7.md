@@ -247,10 +247,10 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  subgraph ❌ Unstructured
+  subgraph "❌ Unstructured"
     U1[ERROR: Failed to connect to db at 10:23]
   end
-  subgraph ✅ Structured
+  subgraph "✅ Structured"
     S1[JSON with fields]
   end
   U1 --> Hard[😰 Hard to parse]
@@ -637,15 +637,17 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  subgraph 😱 Blind
+  subgraph Blind["😱 Blind"]
     SSH[🔌 SSH grep]
     Guess[🤷 Guesswork]
     Slow[⏱️ Hours]
+    SSH --- Guess --- Slow
   end
-  subgraph 🔍 Observable
+  subgraph Observable["🔍 Observable"]
     Dashboard[📊 Dashboard]
     Query[🔍 LogQL]
     Fast[⚡ Minutes]
+    Dashboard --- Query --- Fast
   end
   Blind -->|🚀 Loki| Observable
 ```
@@ -730,7 +732,7 @@ healthcheck:
 ## 📍 Slide 34 – 📈 Career Path: Observability Skills
 
 ```mermaid
-flowchart LR
+flowchart TD
   Junior[🌱 Junior: Basic logging] --> Mid[💼 Mid: Structured logging & dashboards]
   Mid --> Senior[⭐ Senior: Full observability stack]
   Senior --> Principal[🏆 Principal: Observability strategy]
