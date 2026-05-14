@@ -806,4 +806,499 @@ Practical scenarios where Nix reproducibility matters:
 * team development, where different machines should not produce different builds;
 * long-term maintenance, where package repositories and base image tags may change over time.
 
+---
 
+# Bonus Task — Modern Nix with Flakes
+
+## Bonus.1 Objective
+
+The goal of this bonus task was to modernize the Lab 18 Nix setup using Nix Flakes.
+
+Nix Flakes improve reproducibility by adding:
+
+- `flake.nix` for a standard project interface
+- `flake.lock` for locked dependencies
+- reproducible package builds
+- reproducible Docker image builds
+- isolated development shells with `nix develop`
+
+## Bonus.2 Flake Files
+
+The following files were added:
+
+```text
+labs/lab18/app_python/flake.nix
+labs/lab18/app_python/flake.lock
+```
+
+The flake provides three main outputs:
+
+```bash
+nix build
+nix build .#dockerImage
+nix develop
+```
+
+- `nix build` builds the Python application.
+- `nix build .#dockerImage` builds the Docker image.
+- `nix develop` enters a reproducible development shell.
+
+## Bonus.3.1 flake.nix
+
+The complete flake definition is stored in:
+
+```text
+labs/lab18/app_python/flake.nix
+```
+
+```nix
+{
+  description = "DevOps Info Service reproducible build with Nix Flakes";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  };
+
+  outputs = { self, nixpkgs }:
+    let
+      supportedSystems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
+
+      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
+    in
+    {
+      packages = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        {
+          default = import ./default.nix { inherit pkgs; };
+          dockerImage = import ./docker.nix { inherit pkgs; };
+        });
+
+      apps = forAllSystems (system:
+        {
+          default = {
+            type = "app";
+            program = "${self.packages.${system}.default}/bin/devops-info-service";
+          };
+        });
+
+      devShells = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          python = pkgs.python313;
+          pythonPackages = pkgs.python313Packages;
+        in
+        {
+          default = pkgs.mkShell {
+            packages = [
+              python
+              pythonPackages.fastapi
+              pythonPackages.uvicorn
+              pythonPackages.prometheus-client
+              pkgs.curl
+            ];
+
+            shellHook = ''
+              export DATA_DIR="$PWD/.nix-dev/data"
+              export CONFIG_PATH="$PWD/.nix-dev/config/config.json"
+              export APP_ENV="nix-flake-dev"
+              export LOG_LEVEL="debug"
+              export RELEASE_VERSION="1.0.0-flake"
+
+              mkdir -p "$DATA_DIR" "$(dirname "$CONFIG_PATH")"
+
+              echo "Nix flake dev shell ready"
+              echo "Python: $(python --version)"
+              echo "DATA_DIR=$DATA_DIR"
+            '';
+          };
+        });
+    };
+}
+```
+
+Field explanation:
+
+| Field | Meaning |
+|---|---|
+| `description` | Human-readable project description shown by `nix flake metadata` |
+| `inputs.nixpkgs` | Pinned package source used for Python, build tools, and Docker image creation |
+| `outputs` | Defines what the flake exposes |
+| `packages.default` | Default application package built by `nix build` |
+| `packages.dockerImage` | Docker image artifact built by `nix build .#dockerImage` |
+| `devShells.default` | Reproducible development shell entered with `nix develop` |
+| `legacyPackages` / `pkgs` | Package set imported from the locked `nixpkgs` input |
+| `python` | Python interpreter selected from Nix |
+| `pythonPackages` | Python package set used for FastAPI, Uvicorn, and Prometheus client |
+
+## Bonus.3 Locked Dependencies
+
+The lock file was generated with:
+
+```bash
+nix flake update
+```
+
+This created `flake.lock` and pinned the exact `nixpkgs` revision.
+
+Important `flake.lock` excerpt:
+
+```json
+"nixpkgs": {
+  "locked": {
+    "lastModified": 1778443072,
+    "narHash": "sha256-zi7/fsqM/kFdNuED//4WOCUtezGtKKqRNORjMvfwjnA=",
+    "owner": "NixOS",
+    "repo": "nixpkgs",
+    "rev": "da5ad661ba4e5ef59ba743f0d112cbc30e474f32",
+    "type": "github"
+  },
+  "original": {
+    "owner": "NixOS",
+    "ref": "nixos-unstable",
+    "repo": "nixpkgs",
+    "type": "github"
+  }
+}
+```
+
+Flake metadata was checked with:
+
+```bash
+nix flake metadata
+```
+
+Output:
+
+```text
+Resolved URL:  git+file:///Users/george/Desktop/Devops/DevOps-Core-Course?dir=labs/lab18/app_python
+Description:   DevOps Info Service reproducible build with Nix Flakes
+Revision:      f551de2ea62e87100be6752dfa596a311275a238-dirty
+Last modified: 2026-05-14 20:34:32
+Fingerprint:   f76be66427f826e89037307ab439060155cc2aaea11d718ada3336424d880c12
+Inputs:
+└───nixpkgs: github:NixOS/nixpkgs/da5ad66 (2026-05-10 19:57:52)
+```
+
+The `-dirty` suffix is expected here because the flake files had not been committed yet.
+
+Screenshot:
+
+![Nix flake metadata](lab18/screenshots/flake-metadata.png)
+
+## Bonus.4 Building the Application with Flakes
+
+The application was built with:
+
+```bash
+nix build
+```
+
+Result path:
+
+```text
+/nix/store/3np763mmab3xpagy5ilc321vwx3vz1i8-devops-info-service-1.0.0
+```
+
+The application was started from the flake build result:
+
+```bash
+./result/bin/devops-info-service
+```
+
+The app started successfully on port `5005`:
+
+```text
+INFO:     Uvicorn running on http://0.0.0.0:5005
+```
+
+Health check:
+
+```bash
+curl -s http://localhost:5005/health | python3 -m json.tool
+```
+
+Output:
+
+```json
+{
+    "status": "healthy",
+    "timestamp": "2026-05-14T20:34:14.189839+00:00",
+    "uptime_seconds": 15
+}
+```
+
+## Bonus.5 Flake Reproducibility Check
+
+The flake build was repeated to verify reproducibility.
+
+Commands:
+
+```bash
+FIRST_FLAKE_PATH=$(readlink result)
+echo "First flake build path: $FIRST_FLAKE_PATH"
+
+rm result
+nix build
+
+SECOND_FLAKE_PATH=$(readlink result)
+echo "Second flake build path: $SECOND_FLAKE_PATH"
+
+nix-hash --type sha256 result
+```
+
+Output:
+
+```text
+First flake build path: /nix/store/3np763mmab3xpagy5ilc321vwx3vz1i8-devops-info-service-1.0.0
+Second flake build path: /nix/store/3np763mmab3xpagy5ilc321vwx3vz1i8-devops-info-service-1.0.0
+f4a8d25a8c438ba17577068056f54a15429230a0c711a975c465d3c6e1eb1779
+```
+
+Both builds produced the same Nix store path. This confirms that the application build is reproducible with the locked flake inputs.
+
+## Bonus.6 Development Shell
+
+The flake also provides a reproducible development shell.
+
+Command:
+
+```bash
+nix develop
+```
+
+Output:
+
+```text
+Nix flake dev shell ready
+Python: Python 3.13.12
+DATA_DIR=/Users/george/Desktop/Devops/DevOps-Core-Course/labs/lab18/app_python/.nix-dev/data
+```
+
+Python version inside the shell:
+
+```bash
+python --version
+```
+
+Output:
+
+```text
+Python 3.13.12
+```
+
+Dependency versions:
+
+```bash
+python - <<'PY'
+import importlib.metadata as metadata
+
+for package in ["fastapi", "uvicorn", "prometheus-client"]:
+    print(package, metadata.version(package))
+PY
+```
+
+Output:
+
+```text
+fastapi 0.128.0
+uvicorn 0.40.0
+prometheus-client 0.24.1
+```
+
+Application import check:
+
+```bash
+python -c "import app; print(app.APP_NAME, app.APP_VERSION)"
+```
+
+Output:
+
+```text
+devops-info-service 1.0.0-flake
+```
+
+Compared with the Lab 1 `venv` approach, `nix develop` provides a complete isolated development environment with a pinned Python version and pinned dependencies. It does not depend on the system Python installation.
+
+## Bonus.7 Flake Docker Image
+
+The Docker image was also built through the flake output:
+
+```bash
+nix build .#dockerImage
+```
+
+Because the host machine is macOS, the Docker image was built inside a Linux Nix container. This avoids creating a Docker image with Darwin binaries.
+
+Command:
+
+```bash
+docker run --rm -it \
+  -e NIX_CONFIG="experimental-features = nix-command flakes" \
+  -v "$PWD":/workspace \
+  -w /workspace/labs/lab18/app_python \
+  nixos/nix:latest \
+  bash
+```
+
+Inside the Linux container:
+
+```bash
+nix build .#dockerImage -o result-flake-linux-image-1
+sha256sum result-flake-linux-image-1
+
+rm result-flake-linux-image-1
+
+nix build .#dockerImage -o result-flake-linux-image-2
+sha256sum result-flake-linux-image-2
+```
+
+Output:
+
+```text
+2dbe6ffec721e303181fedef9f545e29f0badddf5df9f9d1d170b59b3b0110fe  result-flake-linux-image-1
+2dbe6ffec721e303181fedef9f545e29f0badddf5df9f9d1d170b59b3b0110fe  result-flake-linux-image-2
+```
+
+Both Docker image builds produced the same SHA256 hash. This confirms that the flake-based Docker image artifact is reproducible.
+
+The image was loaded into Docker:
+
+```bash
+docker load < devops-info-service-flake-linux.tar.gz
+```
+
+Output:
+
+```text
+Loaded image: devops-info-service-nix:1.0.0
+```
+
+The container was started on port `5006`:
+
+```bash
+docker run -d -p 5006:5000 --name nix-flake-container devops-info-service-nix:1.0.0
+```
+
+Container status:
+
+```text
+CONTAINER ID   IMAGE                           COMMAND                  STATUS              PORTS                    NAMES
+8a5616909605   devops-info-service-nix:1.0.0   "/nix/store/mxd5j19d…"   Up About a minute   0.0.0.0:5006->5000/tcp   nix-flake-container
+```
+
+Container logs:
+
+```text
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+{"timestamp": "2026-05-14T20:39:18.540000+00:00", "level": "INFO", "logger": "devops-info-service", "message": "application started", "event": "startup", "service": "devops-info-service", "version": "1.0.0"}
+{"timestamp": "2026-05-14T20:39:18.540071+00:00", "level": "INFO", "logger": "devops-info-service", "message": "application paths initialized", "path": "/tmp/devops-info-service-data/visits", "event": "paths_initialized", "service": "devops-info-service", "version": "1.0.0"}
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5000
+```
+
+Health check:
+
+```bash
+curl -s http://localhost:5006/health | python3 -m json.tool
+```
+
+Output:
+
+```json
+{
+    "status": "healthy",
+    "timestamp": "2026-05-14T20:40:36.769816+00:00",
+    "uptime_seconds": 78
+}
+```
+
+## Bonus.8 Lab 10 Helm Values vs Nix Flakes
+
+In Lab 10, Helm used `values.yaml` to pin the container image tag:
+
+```yaml
+image:
+  repository: egorlazutkin/devops-info-service
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+```
+
+This is useful for Kubernetes deployment configuration, but it only pins the image reference.
+
+Limitations of the Helm-only approach:
+
+- it does not lock Python dependencies inside the image
+- it does not lock build tools
+- it does not lock the base image contents
+- mutable tags can point to different content if rebuilt and pushed again
+
+Nix Flakes go further because `flake.lock` pins the full dependency source graph.
+
+## Bonus.9 Dependency Management Comparison
+
+| Aspect | Lab 1 venv + requirements.txt | Lab 10 Helm values.yaml | Lab 18 Nix Flakes |
+|---|---|---|---|
+| Python version | Uses system Python | Depends on image | Pinned by Nix |
+| Python dependencies | Can drift with loose constraints | Hidden inside image | Locked through nixpkgs |
+| Build tools | Not locked | Not locked | Locked |
+| Container image | Built by Dockerfile | Referenced by tag | Built from Nix closure |
+| Reproducibility | Probabilistic | Tag-based | Cryptographic |
+| Cross-machine behavior | Can vary | Depends on image tag | Same locked inputs |
+| Dev environment | venv per machine | Not provided | `nix develop` |
+| Time stability | Packages can change | Tags can change | `flake.lock` is stable |
+
+## Bonus.10 Combined Helm and Nix Approach
+
+The best practical approach is to combine both tools:
+
+1. Build the application image reproducibly with Nix.
+2. Load or publish the image.
+3. Reference the immutable image digest from Helm values.
+
+Example:
+
+```yaml
+image:
+  repository: egorlazutkin/devops-info-service
+  tag: "sha256:<image-digest>"
+```
+
+This combines:
+
+- Helm's declarative Kubernetes deployment model
+- Nix's reproducible build model
+
+Helm remains responsible for Kubernetes deployment configuration, while Nix is responsible for producing the reproducible application artifact.
+
+## Bonus.11 Cross-Machine Reproducibility
+
+The flake can be built directly from Git after pushing the branch:
+
+```bash
+nix build "github:<username>/DevOps-Core-Course?ref=feature/lab18&dir=labs/lab18/app_python#default"
+```
+
+Then the store path can be checked with:
+
+```bash
+readlink result
+```
+
+A separate classmate machine was not used in this run, but the flake is prepared for cross-machine verification because `flake.lock` pins the exact `nixpkgs` revision. Local repeated builds produced identical store paths and hashes.
+
+## Bonus.12 Reflection
+
+Nix Flakes improve traditional dependency management by locking the complete dependency graph in `flake.lock`.
+
+Compared with Lab 1 `venv`, the flake does not depend on whichever Python version happens to be installed on the machine.
+
+Compared with Lab 10 Helm values, the flake locks more than an image tag. It locks the package set, Python version, libraries, build tools, and closure used to create the artifact.
+
+A practical problem this prevents is the common "works on my machine" issue. With `requirements.txt`, a loose dependency such as `fastapi>=0.115.6` can resolve to different versions over time. With Flakes, both developers use the same locked `nixpkgs` revision and get the same dependency versions.

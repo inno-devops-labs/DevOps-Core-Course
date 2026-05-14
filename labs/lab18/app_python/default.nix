@@ -27,7 +27,7 @@ pkgs.stdenv.mkDerivation {
     cp app.py $out/lib/devops-info-service/app.py
 
     makeWrapper ${pythonPackages.uvicorn}/bin/uvicorn $out/bin/devops-info-service \
-      --add-flags "app:app --host 0.0.0.0 --port 5001 --no-access-log" \
+      --add-flags "app:app --host 0.0.0.0 --port 5005 --no-access-log" \
       --set PYTHONPATH "$out/lib/devops-info-service:${pythonPath}" \
       --set DATA_DIR "/tmp/devops-info-service-data" \
       --set CONFIG_PATH "/tmp/devops-info-service-config/config.json" \
