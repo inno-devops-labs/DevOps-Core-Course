@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-demo
+  labels:
+    app: init-demo
+spec:
+  initContainers:
+    - name: init-download
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Preparing shared volume"
+          echo "<html><body><h1>Init container created this file</h1></body></html>" > /work-dir/index.html
+          echo "Download simulation complete"
+      volumeMounts:
+        - name: workdir
+          mountPath: /work-dir
+
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Kubernetes DNS"
+          until nslookup kubernetes.default.svc.cluster.local; do
+            echo "Service not ready yet"
+            sleep 2
+          done
+          echo "Kubernetes service is reachable"
+
+  containers:
+    - name: main-app
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Main container started"
+          echo "Reading file from shared volume:"
+          cat /data/index.html
+          sleep 3600
+      volumeMounts:
+        - name: workdir
+          mountPath: /data
+
+  volumes:
+    - name: workdir
+      emptyDir: {}
