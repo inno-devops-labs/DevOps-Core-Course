@@ -36,6 +36,16 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      initContainers:
+        - name: init-download
+          image: busybox:1.36
+          command: ['sh', '-c', 'wget -O /work-dir/index.html {{ .Values.initContainers.downloadUrl }}']
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+        - name: wait-for-service
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nslookup {{ include "app-python.fullname" . }}-headless; do echo waiting for headless service; sleep 2; done']
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
@@ -68,10 +78,14 @@ spec:
               mountPath: /config
             - name: data
               mountPath: /data
+            - name: workdir
+              mountPath: /work-dir
       volumes:
         - name: config-volume
           configMap:
             name: {{ include "app-python.fullname" . }}-config
+        - name: workdir
+          emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -83,3 +83,11 @@ rollout:
 statefulset:
   enabled: true
   partition: 0
+
+initContainers:
+  downloadUrl: "https://example.com"
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  path: /metrics
