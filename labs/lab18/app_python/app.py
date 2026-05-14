@@ -27,6 +27,10 @@ def setup_json_logging():
 
 setup_json_logging()
 logger = logging.getLogger(__name__)
+# Werkzeug has its own log format; routing it through JsonFormatter raises an
+# exception inside send_response, which drops the connection before the client
+# receives the response body.
+logging.getLogger("werkzeug").propagate = False
 
 try:
     HOST = os.getenv('HOST', '0.0.0.0')
