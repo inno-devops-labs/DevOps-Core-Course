@@ -324,6 +324,41 @@ Throughout the labs, I rebuilt the image a looot of times, so many dependencies 
 
 ### Your docker.nix file with explanations of each field
 
+```bash
+{ pkgs ? import <nixpkgs> {} }:
+
+let
+  app = import ./default.nix { inherit pkgs; };
+  # import derivation from task 1
+
+# building image
+in pkgs.dockerTools.buildLayeredImage {
+  name = "devops-info-service-nix";
+  tag = "1.0.0";
+
+  # what will be added to the container filesystem
+  contents = [
+    app
+  ];
+
+  config = {
+    # start executable for the container
+    Cmd = [ "${app}/bin/devops-info-service" ];
+
+    ExposedPorts = {
+      "12346/tcp" = {};
+    };
+
+    Env = [
+      "PORT=12346"
+    ];
+  };
+
+  # fix timestamp so it is reproducable and won't change
+  created = "1970-01-01T00:00:01Z";
+}
+```
+
 ### Side-by-side comparison: Lab 2 Dockerfile vs Nix docker.nix
 
 ### SHA256 hash comparison proving Nix reproducibility

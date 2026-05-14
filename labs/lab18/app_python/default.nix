@@ -1,4 +1,9 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ 
+    pkgs ? import <nixpkgs> {
+        # having problems with system mismatch (mac darwin vs linux)
+        system = "aarch64-linux";
+    } 
+}:
 
 pkgs.python3Packages.buildPythonApplication rec {
   pname = "devops-info-service";
