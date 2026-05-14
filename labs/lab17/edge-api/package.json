@@ -1,0 +1,18 @@
+{
+  "name": "edge-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Workers edge API for DevOps Core Course",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "login": "wrangler login"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.x",
+    "typescript": "5.x",
+    "wrangler": "3.x"
+  }
+}
