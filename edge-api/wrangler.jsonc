@@ -1,0 +1,15 @@
+{
+	"$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+	"name": "edge-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-05-01",
+	"vars": {
+		"APP_NAME": "edge-api"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "c51bc512144e4c42bd0f75e36c5e3324"
+		}
+	]
+}
