@@ -253,3 +253,14 @@ yarn-error.log*
 # Secrets directories
 secrets/
 .secrets/
+
+# ============================================
+# Cloudflare Workers - Lab 17
+# ============================================
+
+# Wrangler local cache and state (содержит account ID, токены)
+.wrangler/
+**/.wrangler/
+
+# Node modules in edge-api
+edge-api/node_modules/

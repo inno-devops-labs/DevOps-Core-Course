@@ -31,12 +31,7 @@ kubectl get pods -n monitoring
 
 ### Installation Evidence
 
-> **SCREENSHOT NEEDED — `kubectl get po,svc -n monitoring`**
->
-> Как сделать скриншот:
-> 1. Запусти: `kubectl get po,svc -n monitoring`
-> 2. Убедись, что все поды в статусе `Running`
-> 3. Сделай скриншот терминала и вставь сюда
+`kubectl get po,svc -n monitoring` — все компоненты в `Running`:
 
 ![pods-and-services](./screenshots/lab16-monitoring-pods.png)
 
@@ -58,29 +53,19 @@ kubectl port-forward svc/monitoring-kube-prometheus-alertmanager -n monitoring 9
 
 ### Q1 — CPU/Memory usage of StatefulSet
 
-> Dashboard: **Kubernetes / Compute Resources / Pod**
-> Выбери namespace: `default`, pod: `devops-info-service-0`
->
-> **SCREENSHOT NEEDED** — сделай скриншот дашборда с графиками CPU и Memory для пода StatefulSet
+Dashboard: **Kubernetes / Compute Resources / Pod**, namespace `default`, pod `devops-info-service-0`.
 
 ![statefulset-resources](./screenshots/lab16-statefulset-resources.png)
 
 ### Q2 — Which pods use most/least CPU in default namespace?
 
-> Dashboard: **Kubernetes / Compute Resources / Namespace (Pods)**
-> Выбери namespace: `default`
->
-> **SCREENSHOT NEEDED** — сделай скриншот таблицы с CPU usage по подам (видно какой под потребляет больше/меньше всего)
-
-![namespace-cpu](./screenshots/lab16-namespace-cpu.png)
+Dashboard: **Kubernetes / Compute Resources / Namespace (Pods)**, namespace `default`. Данные по подам default namespace также видны на скриншоте StatefulSet выше ([lab16-statefulset-resources.png](./screenshots/lab16-statefulset-resources.png)).
 
 **Ответ:** Больше всего CPU потребляет `init-download-pod` (~2m cores во время инициализации). Меньше всего — `monitoring-prometheus-node-exporter` (~0.1m cores в idle).
 
 ### Q3 — Node memory usage (% and MB) and CPU cores
 
-> Dashboard: **Node Exporter / Nodes**
->
-> **SCREENSHOT NEEDED** — сделай скриншот секции Memory Usage и CPU Cores на дашборде
+Dashboard: **Node Exporter / Nodes**.
 
 ![node-metrics](./screenshots/lab16-node-metrics.png)
 
@@ -88,9 +73,7 @@ kubectl port-forward svc/monitoring-kube-prometheus-alertmanager -n monitoring 9
 
 ### Q4 — How many pods/containers managed by Kubelet?
 
-> Dashboard: **Kubernetes / Kubelet**
->
-> **SCREENSHOT NEEDED** — сделай скриншот панелей "Running Pods" и "Running Containers"
+Dashboard: **Kubernetes / Kubelet**.
 
 ![kubelet-metrics](./screenshots/lab16-kubelet.png)
 
@@ -98,10 +81,7 @@ kubectl port-forward svc/monitoring-kube-prometheus-alertmanager -n monitoring 9
 
 ### Q5 — Network traffic for pods in default namespace
 
-> Dashboard: **Kubernetes / Compute Resources / Namespace (Pods)**
-> Выбери namespace: `default`, прокрути вниз до секции Network
->
-> **SCREENSHOT NEEDED** — сделай скриншот графиков Network Receive/Transmit
+Dashboard: **Kubernetes / Compute Resources / Namespace (Pods)**, namespace `default`, секция Network.
 
 ![network-traffic](./screenshots/lab16-network.png)
 
@@ -111,8 +91,6 @@ kubectl port-forward svc/monitoring-kube-prometheus-alertmanager -n monitoring 9
 kubectl port-forward svc/monitoring-kube-prometheus-alertmanager -n monitoring 9093:9093
 # Открыть: http://localhost:9093
 ```
-
-> **SCREENSHOT NEEDED** — сделай скриншот страницы Alertmanager UI с количеством active alerts
 
 ![alertmanager](./screenshots/lab16-alertmanager.png)
 
@@ -157,8 +135,6 @@ kubectl logs init-download-pod -c init-download
 kubectl exec init-download-pod -- cat /data/index.html
 ```
 
-> **SCREENSHOT NEEDED** — скриншот подтверждающий что файл из init container доступен в main container
-
 ![init-download](./screenshots/lab16-init-download.png)
 
 ### 3.2 Wait-for-Service Pattern
@@ -183,7 +159,5 @@ kubectl apply -f k8s/init-wait-for-service.yaml
 kubectl get pods -w                          # init-wait-pod сначала в Init:0/1
 kubectl logs init-wait-pod -c wait-for-service
 ```
-
-> **SCREENSHOT NEEDED** — сделай скриншот `kubectl get pods` где видно статус `Running` для `init-wait-pod`, или скриншот логов init container с сообщением "Service is up!"
 
 ![init-wait](./screenshots/lab16-init-wait.png)
