@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+python-json-logger
+httpx
+pytest
+pytest-cov
+prometheus-client==0.23.1
