@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Wrangler local state and secrets
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
+
+# Build and cache output
+dist/
+coverage/
+.cache/
+.parcel-cache/
+.eslintcache
+*.tsbuildinfo
+
+# Logs and diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+report.*.json
+
+# Packed npm artifacts
+*.tgz
