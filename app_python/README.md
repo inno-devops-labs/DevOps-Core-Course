@@ -12,6 +12,8 @@ The DevOps Info Service exposes REST API endpoints that return:
 - System information (hostname, platform, architecture, CPU count)
 - Runtime information (uptime, current time)
 - Request details (client IP, user agent)
+- Deployment metadata (Fly app, region, secret presence)
+- Persistent visit counter state
 - Health status for monitoring and Kubernetes probes
 
 ## Prerequisites
@@ -159,9 +161,26 @@ curl http://localhost:5000/
     "method": "GET",
     "path": "/"
   },
+  "deployment": {
+    "platform": "local",
+    "app_name": null,
+    "region": null,
+    "primary_region": null,
+    "machine_id": null,
+    "image_ref": null,
+    "secrets": {
+      "API_KEY": false,
+      "DATABASE_URL": false
+    }
+  },
+  "persistence": {
+    "path": "/path/to/app_python/data/visits",
+    "visits": 3
+  },
   "endpoints": [
     {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"}
+    {"path": "/health", "method": "GET", "description": "Health check"},
+    {"path": "/visits", "method": "GET", "description": "Persistent visit count"}
   ]
 }
 ```
@@ -186,6 +205,23 @@ curl http://localhost:5000/health
 
 **HTTP Status:** `200 OK` when healthy.
 
+### `GET /visits` — Persistent Visit Counter
+
+Returns the current persisted counter without incrementing it.
+
+```bash
+curl http://localhost:5000/visits
+```
+
+```json
+{
+  "visits": 3,
+  "storage": {
+    "path": "/path/to/app_python/data/visits"
+  }
+}
+```
+
 ## Configuration
 
 | Variable | Default | Description |
@@ -193,6 +229,13 @@ curl http://localhost:5000/health
 | `HOST` | `0.0.0.0` | Host address to bind |
 | `PORT` | `5000` | Port number |
 | `DEBUG` | `False` | Enable Flask debug mode |
+| `DATA_DIR` | `app_python/data` | Directory used for persisted visit counter |
+| `VISITS_FILE` | `<DATA_DIR>/visits` | Override full path to visits counter file |
+| `FLY_APP_NAME` | unset | Fly.io app name exposed in response metadata |
+| `FLY_REGION` | unset | Current Fly.io region exposed in response metadata |
+| `PRIMARY_REGION` | unset | Primary Fly.io region exposed in response metadata |
+| `API_KEY` | unset | Secret presence exposed as boolean only |
+| `DATABASE_URL` | unset | Secret presence exposed as boolean only |
 
 ## Project Structure
 

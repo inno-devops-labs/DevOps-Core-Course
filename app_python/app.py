@@ -7,6 +7,7 @@ import os
 import socket
 import platform
 import logging
+from threading import Lock
 from datetime import datetime, timezone
 from flask import Flask, jsonify, request
 
@@ -26,6 +27,73 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # Application start time for uptime calculation
 START_TIME = datetime.now(timezone.utc)
+VISITS_LOCK = Lock()
+
+
+def get_visits_file_path():
+    """Return path to persisted visits counter."""
+    default_data_dir = os.path.join(app.root_path, "data")
+    data_dir = os.getenv("DATA_DIR", default_data_dir)
+    return os.getenv("VISITS_FILE", os.path.join(data_dir, "visits"))
+
+
+def read_visits_count():
+    """Read persisted visits count."""
+    visits_file = get_visits_file_path()
+    try:
+        with open(visits_file, "r", encoding="utf-8") as file:
+            return int(file.read().strip() or "0")
+    except FileNotFoundError:
+        return 0
+    except ValueError:
+        logger.warning("Invalid visits counter in %s, resetting to 0", visits_file)
+        return 0
+
+
+def write_visits_count(count):
+    """Persist visits count using atomic replace."""
+    visits_file = get_visits_file_path()
+    directory = os.path.dirname(visits_file)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+
+    temp_file = f"{visits_file}.tmp"
+    with open(temp_file, "w", encoding="utf-8") as file:
+        file.write(str(count))
+    os.replace(temp_file, visits_file)
+
+
+def increment_visits_count():
+    """Increment and persist visits count."""
+    with VISITS_LOCK:
+        count = read_visits_count() + 1
+        write_visits_count(count)
+        return count
+
+
+def get_deployment_info():
+    """Return deployment metadata safe for public exposure."""
+    secrets = ("API_KEY", "DATABASE_URL")
+    fly_app_name = os.getenv("FLY_APP_NAME")
+
+    return {
+        "platform": ("fly.io" if fly_app_name or os.getenv("FLY_REGION") else "local"),
+        "app_name": fly_app_name,
+        "region": os.getenv("FLY_REGION"),
+        "primary_region": os.getenv("PRIMARY_REGION"),
+        "machine_id": os.getenv("FLY_MACHINE_ID"),
+        "image_ref": os.getenv("FLY_IMAGE_REF"),
+        "secrets": {secret: bool(os.getenv(secret)) for secret in secrets},
+    }
+
+
+def get_persistence_info(visits=None):
+    """Return persistence state for current request."""
+    current_visits = read_visits_count() if visits is None else visits
+    return {
+        "path": get_visits_file_path(),
+        "visits": current_visits,
+    }
 
 
 def get_uptime():
@@ -79,6 +147,11 @@ def get_endpoints():
     return [
         {"path": "/", "method": "GET", "description": "Service information"},
         {"path": "/health", "method": "GET", "description": "Health check"},
+        {
+            "path": "/visits",
+            "method": "GET",
+            "description": "Persistent visit count",
+        },
     ]
 
 
@@ -89,6 +162,7 @@ def index():
     logger.info(f"Request: {request.method} {request.path} from {client_ip}")
 
     uptime = get_uptime()
+    visits = increment_visits_count()
 
     response = {
         "service": get_service_info(),
@@ -100,6 +174,8 @@ def index():
             "timezone": "UTC",
         },
         "request": get_request_info(),
+        "deployment": get_deployment_info(),
+        "persistence": get_persistence_info(visits),
         "endpoints": get_endpoints(),
     }
 
@@ -119,6 +195,18 @@ def health():
             "status": "healthy",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "uptime_seconds": uptime["seconds"],
+        }
+    )
+
+
+@app.route("/visits")
+def visits():
+    """Return current persisted visit counter without incrementing it."""
+    current_visits = read_visits_count()
+    return jsonify(
+        {
+            "visits": current_visits,
+            "storage": {"path": get_visits_file_path()},
         }
     )
 

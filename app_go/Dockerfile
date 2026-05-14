@@ -7,7 +7,7 @@
 FROM golang:1.21-alpine AS builder
 
 ARG TARGETOS=linux
-ARG TARGETARCH=arm64
+ARG TARGETARCH
 
 # Install CA certificates for HTTPS (needed in scratch image)
 RUN apk --no-cache add ca-certificates
@@ -27,7 +27,7 @@ COPY main.go .
 # CGO_ENABLED=0: Pure Go, no C dependencies
 # -ldflags="-s -w": Strip debug info for smaller binary
 # -o: Output binary name
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH:-amd64} go build \
     -ldflags="-s -w" \
     -o devops-info-service \
     main.go

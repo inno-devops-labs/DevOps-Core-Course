@@ -10,6 +10,7 @@ A Go implementation of the DevOps Info Service that provides system information 
 This is the Go version of the DevOps Info Service, providing the same REST API endpoints as the Python version:
 - Service and system information
 - Health check for monitoring and Kubernetes probes
+- Ready-to-deploy Fly.io configuration in `fly.toml`
 
 ## Prerequisites
 

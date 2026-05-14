@@ -5,12 +5,19 @@ Tests all endpoints and error handling.
 
 import pytest
 from datetime import datetime
-from app import app, get_service_info, get_system_info, get_endpoints, get_uptime
+from app import (
+    app,
+    get_endpoints,
+    get_service_info,
+    get_system_info,
+    get_uptime,
+)
 
 
 @pytest.fixture
-def client():
+def client(monkeypatch, tmp_path):
     """Create a test client for the Flask application."""
+    monkeypatch.setenv("VISITS_FILE", str(tmp_path / "visits"))
     app.config["TESTING"] = True
     with app.test_client() as client:
         yield client
@@ -123,7 +130,7 @@ class TestMainEndpoint:
 
         assert "endpoints" in data
         assert isinstance(data["endpoints"], list)
-        assert len(data["endpoints"]) == 2
+        assert len(data["endpoints"]) == 3
 
         # Check endpoint structure
         for endpoint in data["endpoints"]:
@@ -135,6 +142,44 @@ class TestMainEndpoint:
         paths = [e["path"] for e in data["endpoints"]]
         assert "/" in paths
         assert "/health" in paths
+        assert "/visits" in paths
+
+    def test_main_endpoint_increments_visit_counter(
+        self, client, monkeypatch, tmp_path
+    ):
+        """Test that GET / increments persisted visit counter."""
+        visits_file = tmp_path / "visits"
+        monkeypatch.setenv("VISITS_FILE", str(visits_file))
+
+        response = client.get("/")
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data["persistence"]["visits"] == 1
+        assert visits_file.read_text(encoding="utf-8").strip() == "1"
+
+    def test_main_endpoint_reports_fly_metadata_without_secret_values(
+        self, client, monkeypatch
+    ):
+        """Test that Fly metadata is present and secrets are redacted."""
+        monkeypatch.setenv("FLY_APP_NAME", "devops-info-python")
+        monkeypatch.setenv("FLY_REGION", "ams")
+        monkeypatch.setenv("PRIMARY_REGION", "ams")
+        monkeypatch.setenv("API_KEY", "super-secret")
+        monkeypatch.setenv("DATABASE_URL", "postgres://example")
+
+        response = client.get("/")
+        data = response.get_json()
+
+        deployment = data["deployment"]
+        assert deployment["platform"] == "fly.io"
+        assert deployment["app_name"] == "devops-info-python"
+        assert deployment["region"] == "ams"
+        assert deployment["primary_region"] == "ams"
+        assert deployment["secrets"]["API_KEY"] is True
+        assert deployment["secrets"]["DATABASE_URL"] is True
+        assert "super-secret" not in str(data)
+        assert "postgres://example" not in str(data)
 
 
 class TestHealthEndpoint:
@@ -184,6 +229,36 @@ class TestHealthEndpoint:
         uptime2 = response2.get_json()["uptime_seconds"]
 
         assert uptime2 >= uptime1
+
+
+class TestVisitsEndpoint:
+    """Tests for GET /visits endpoint."""
+
+    def test_visits_endpoint_returns_current_count(self, client, monkeypatch, tmp_path):
+        """Test that /visits returns current persisted count."""
+        visits_file = tmp_path / "visits"
+        visits_file.write_text("7", encoding="utf-8")
+        monkeypatch.setenv("VISITS_FILE", str(visits_file))
+
+        response = client.get("/visits")
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data["visits"] == 7
+        assert data["storage"]["path"] == str(visits_file)
+
+    def test_visits_endpoint_defaults_to_zero_when_file_missing(
+        self, client, monkeypatch, tmp_path
+    ):
+        """Test that /visits handles missing persistence file gracefully."""
+        visits_file = tmp_path / "missing" / "visits"
+        monkeypatch.setenv("VISITS_FILE", str(visits_file))
+
+        response = client.get("/visits")
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data["visits"] == 0
 
 
 class TestErrorHandling:
@@ -244,7 +319,7 @@ class TestHelperFunctions:
         endpoints = get_endpoints()
 
         assert isinstance(endpoints, list)
-        assert len(endpoints) == 2
+        assert len(endpoints) == 3
 
         for endpoint in endpoints:
             assert "path" in endpoint
