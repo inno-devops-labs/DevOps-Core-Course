@@ -138,3 +138,98 @@ After redeploy:
 ```
 
 The value increased after redeploy, which confirms the counter state is stored in Workers KV rather than in Worker memory.
+
+## Task 5 - Observability and Operations
+
+The Worker includes a production log statement at the start of `fetch()`:
+
+```ts
+console.log("request", {
+  method: request.method,
+  path: url.pathname,
+  colo: request.cf?.colo ?? "local",
+  country: request.cf?.country ?? "local",
+  version: API_VERSION,
+});
+```
+
+Log tailing was verified with Wrangler:
+
+```bash
+npx wrangler tail --format pretty
+curl -sS -w "\nHTTP %{http_code}\n" https://edge-api.neilzvest.workers.dev/health
+```
+
+Captured log entry:
+
+```text
+GET https://edge-api.neilzvest.workers.dev/health - Ok @ 5/14/2026, 4:16:42 PM
+  (log) request {
+  method: 'GET',
+  path: '/health',
+  colo: 'FRA',
+  country: 'DE',
+  version: 'task-5'
+}
+```
+
+The request returned:
+
+```json
+{
+  "status": "ok",
+  "service": "edge-api",
+  "timestamp": "2026-05-14T13:16:42.108Z"
+}
+```
+
+HTTP status:
+
+```text
+HTTP 200
+```
+
+### Metrics
+
+Metrics were inspected for the Worker request/error counts. For the 2026-05-14T12:00:00Z to 2026-05-14T13:30:00Z window, Cloudflare reported:
+
+```json
+{
+  "requests": 26,
+  "errors": 0,
+  "subrequests": 0
+}
+```
+
+The key metric reviewed was the request/error count. It confirms the Worker received traffic during the lab and had zero reported Worker invocation errors in that time window.
+
+### Deployments
+
+Deployment history was viewed with:
+
+```bash
+npx wrangler deployments list
+```
+
+Recent deployments include:
+
+```text
+2026-05-14T13:11:10.914Z  1ebe297f-8e76-41a0-b62b-2f20b2bb42b7
+2026-05-14T13:11:43.350Z  5e3f7167-b871-4c73-b7dc-960b33f45a1d
+2026-05-14T13:16:06.961Z  79e95d9d-1c63-4c98-aeef-9c1ab1069548
+```
+
+Current production deployment:
+
+```text
+Created:     2026-05-14T13:16:06.961Z
+Version(s):  (100%) 79e95d9d-1c63-4c98-aeef-9c1ab1069548
+```
+
+Rollback was documented rather than performed so the latest Task 5 version stays active. To roll back to the previous Task 4 version, the command would be:
+
+```bash
+npx wrangler rollback 5e3f7167-b871-4c73-b7dc-960b33f45a1d --message "Rollback to Task 4 version"
+```
+
+After a real rollback, `npx wrangler deployments status` would confirm which version is receiving 100% of production traffic.

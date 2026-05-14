@@ -1,5 +1,5 @@
 const WORKER_NAME = "edge-api";
-const API_VERSION = "task-4";
+const API_VERSION = "task-5";
 
 interface WorkerEnv {
 	APP_NAME: string;
@@ -39,6 +39,14 @@ export default {
 		const url = new URL(request.url);
 		const timestamp = new Date().toISOString();
 		const app = env.APP_NAME || WORKER_NAME;
+
+		console.log("request", {
+			method: request.method,
+			path: url.pathname,
+			colo: request.cf?.colo ?? "local",
+			country: request.cf?.country ?? "local",
+			version: API_VERSION,
+		});
 
 		if (request.method !== "GET") {
 			return json(

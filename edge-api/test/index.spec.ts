@@ -24,7 +24,7 @@ describe("edge-api worker", () => {
 			app: "edge-api",
 			message: "Hello from Cloudflare Workers",
 			course: "devops-core",
-			version: "task-4",
+			version: "task-5",
 		});
 	});
 
@@ -42,7 +42,7 @@ describe("edge-api worker", () => {
 		expect(response.status).toBe(200);
 		await expect(response.json()).resolves.toMatchObject({
 			app: "edge-api",
-			version: "task-4",
+			version: "task-5",
 			runtime: "cloudflare-workers",
 		});
 	});
