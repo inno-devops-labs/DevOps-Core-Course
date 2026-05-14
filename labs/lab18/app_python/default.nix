@@ -1,7 +1,5 @@
 { 
     pkgs ? import <nixpkgs> {
-        # having problems with system mismatch (mac darwin vs linux)
-        system = "aarch64-linux";
     } 
 }:
 

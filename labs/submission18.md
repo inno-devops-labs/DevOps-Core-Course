@@ -359,18 +359,90 @@ in pkgs.dockerTools.buildLayeredImage {
 }
 ```
 
+IMPORTANT
+
+I had a platform error while building an image on Mac, so I had to switch to the ubuntu virtual machine on another laptop, here is the error I was getting:
+
+![](./lab18/app_python/docs/screenshots/lab18-shots/platform%20error.png)
+
 ### Side-by-side comparison: Lab 2 Dockerfile vs Nix docker.nix
+
+| aspect | dockerfile | docker.nix |
+|---|---|---|
+| base image | uses `python:3.13-slim` | builds image from nix packages |
+| dependency management | installs with `pip install` | dependencies declared in nix expressions |
+| reproducibility | depends on external package state | more reproducible because dependencies are pinned |
+| image creation | imperative step by step build | declarative image definition |
+| debugging | easier | harder to debug |
+| image contents | includes apt packages and copied files | includes exact nix store paths |
+| setup complexity | simpler | more complicated |
 
 ### SHA256 hash comparison proving Nix reproducibility
 
+![](./lab18/app_python/docs/screenshots/lab18-shots/sha.png)
+
+![](./lab18/app_python/docs/screenshots/lab18-shots/hash%20dockerfile.png)
+
+As can be seen, we have different hashes for the images build with Dockerfile.
+
 ### Image size comparison table with analysis
+
+When I was building the images on mac:
+
+```bash
+(devops) fountainer@Veronicas-MacBook-Air app_python % docker images | grep -E "lab2-app|devops-info-service-nix"
+lab2-app                      v1        da646f7524d6   3 hours ago    188MB
+devops-info-service-nix       1.0.0     ab19921d81e3   56 years ago   1.47GB
+```
+
+| Metric | Lab 2 Dockerfile | Lab 18 Nix dockerTools |
+|--------|------------------|------------------------|
+| Image size | 188MB | 1.47GB |
+| Reproducibility | build can change over time, different hashes | much more reproducible, the same hashes |
+| Build caching | Layer-based caching | Dependency/store-based caching |
+| Base image dependency | Yes (`python:3.13-slim`) | No separate base image |
+
+analysis:
+
+- the nix image ended up much larger than the dockerfile image, this is because nix includes full dependency closures from the nix store instead of only copying minimal runtime files.
+
+- the dockerfile image uses a slim python base image and only installs the packages needed for execution, which keeps the image relatively small
+
+- the nix image prioritizes reproducibility and dependency isolation over image size, it also included extra debugging tools like bash and coreutils, which increased the final size further.
+
+Note! When I moved to linux to run containers there I got another size difference:
+
+![](./lab18/app_python/docs/screenshots/lab18-shots/sizeubuntu.png)
+
+This is interesting: the size for nix is still larger than for traditional docker, but the difference is much smaller (however still, nix image is five times the size of the classical docker image).
 
 ### docker history output for both approaches
 
+Traditional:
+
+![](./lab18/app_python/docs/screenshots/lab18-shots/history.png)
+
+Nix:
+
+![](./lab18/app_python/docs/screenshots/lab18-shots/history-nix.png)
+
 ### Screenshots showing both containers running simultaneously
+
+![](./lab18/app_python/docs/screenshots/lab18-shots/curl.png)
 
 ### Analysis: Why can't traditional Dockerfiles achieve bit-for-bit reproducibility?
 
+traditional dockerfiles depend on mutable external sources like apt repositories and pip registries.  
+even if the dockerfile stays the same, newer package versions or changed mirrors can produce different images later. timestamps, package metadata, dependency resolution, and download order can also change build outputs. nix avoids this by hashing dependencies and building from fully specified inputs.
+
 ### Reflection: If you could redo Lab 2 with Nix, what would you do differently?
 
+If I had used nix from the beginning, i would probably focus more on reproducibility and dependency management instead of image optimization, the workflow would have been more complex at first, especially on macos, which I sadly use, but dependency versions and environments would have been much more predictable across builds.
+
 ### Practical scenarios where Nix's reproducibility matters (CI/CD, security audits, rollbacks)
+
+- ci/cd pipelines where builds must behave identically on every machine
+- security audits where exact dependency versions need to be verified
+- rollbacks where older environments must be restored exactly
+- team environments where everyone should use the same toolchain and dependencies
+- long-term projects where reproducible builds matter even years later
