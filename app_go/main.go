@@ -10,6 +10,8 @@ import (
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Service metadata
@@ -75,6 +77,14 @@ type ErrorResponse struct {
 }
 
 var startTime = time.Now()
+
+func initFilePath() string {
+	path := os.Getenv("INIT_FILE_PATH")
+	if path == "" {
+		return "/data/index.html"
+	}
+	return path
+}
 
 // getHostname returns the system hostname
 func getHostname() string {
@@ -155,6 +165,8 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		Endpoints: []Endpoint{
 			{Path: "/", Method: "GET", Description: "Service information"},
 			{Path: "/health", Method: "GET", Description: "Health check"},
+			{Path: "/init-file", Method: "GET", Description: "Content downloaded by init container"},
+			{Path: "/metrics", Method: "GET", Description: "Prometheus metrics"},
 		},
 	}
 
@@ -180,6 +192,23 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(health)
 }
 
+// initFileHandler returns the file prepared by the init container.
+func initFileHandler(w http.ResponseWriter, r *http.Request) {
+	content, err := os.ReadFile(initFilePath())
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Init file not found",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Write(content)
+}
+
 // notFoundHandler handles 404 errors
 func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("404 Not Found: %s", r.URL.Path)
@@ -190,6 +219,13 @@ func notFoundHandler(w http.ResponseWriter, r *http.Request) {
 		Error:   "Not Found",
 		Message: "Endpoint does not exist",
 	})
+}
+
+func registerHandlers(mux *http.ServeMux) {
+	mux.HandleFunc("/", mainHandler)
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/init-file", initFileHandler)
+	mux.Handle("/metrics", promhttp.Handler())
 }
 
 func main() {
@@ -206,13 +242,12 @@ func main() {
 
 	addr := fmt.Sprintf("%s:%s", host, port)
 
-	// Register handlers
-	http.HandleFunc("/", mainHandler)
-	http.HandleFunc("/health", healthHandler)
+	mux := http.NewServeMux()
+	registerHandlers(mux)
 
 	log.Printf("Starting DevOps Info Service (Go) on %s", addr)
 
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

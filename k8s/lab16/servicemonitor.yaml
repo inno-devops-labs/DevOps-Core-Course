@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: devops-info-service
+  namespace: monitoring
+  labels:
+    release: monitoring
+    app.kubernetes.io/name: devops-info-service
+    app.kubernetes.io/instance: lab16
+    app.kubernetes.io/part-of: devops-core-course
+spec:
+  namespaceSelector:
+    matchNames:
+      - lab16
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-info-service
+      app.kubernetes.io/instance: lab16
+      monitoring: enabled
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

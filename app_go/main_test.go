@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
@@ -42,12 +43,64 @@ func TestMainHandler(t *testing.T) {
 		"endpoints",
 		"devops-info-service",
 		"1.0.0",
+		"/init-file",
+		"/metrics",
 	}
 
 	for _, field := range expectedFields {
 		if !contains(body, field) {
 			t.Errorf("response body does not contain expected field: %s", field)
 		}
+	}
+}
+
+func TestInitFileHandler(t *testing.T) {
+	tmp := t.TempDir()
+	path := tmp + "/index.html"
+	expected := "downloaded by init"
+	t.Setenv("INIT_FILE_PATH", path)
+
+	if err := os.WriteFile(path, []byte(expected), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	req, err := http.NewRequest("GET", "/init-file", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(initFileHandler)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	if body := rr.Body.String(); body != expected {
+		t.Errorf("handler returned wrong body: got %q want %q", body, expected)
+	}
+}
+
+func TestMetricsHandler(t *testing.T) {
+	req, err := http.NewRequest("GET", "/metrics", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	mux := http.NewServeMux()
+	registerHandlers(mux)
+
+	mux.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	body := rr.Body.String()
+	if !contains(body, "go_gc_duration_seconds") && !contains(body, "go_goroutines") {
+		t.Errorf("metrics response does not contain expected Go runtime metrics")
 	}
 }
 
