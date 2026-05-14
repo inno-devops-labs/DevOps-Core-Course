@@ -64,13 +64,13 @@ npx wrangler deploy
 
 ![wrangler deploy output — Worker URL](../k8s/img/lab17/wrangler-deploy.png)
 
-**Worker URL:** `https://edge-api.<your-subdomain>.workers.dev`
+**Worker URL:** `https://edge-api.arina-zimina.workers.dev`
 
 Verify deployed Worker:
 
 ```bash
-curl https://edge-api.<your-subdomain>.workers.dev/health
-curl https://edge-api.<your-subdomain>.workers.dev/
+curl https://edge-api.arina-zimina.workers.dev/health
+curl https://edge-api.arina-zimina.workers.dev/
 ```
 
 ![Deployed Worker responding in browser](../k8s/img/lab17/worker-running.png)
@@ -82,7 +82,7 @@ curl https://edge-api.<your-subdomain>.workers.dev/
 ### Edge Metadata Endpoint
 
 ```bash
-curl https://edge-api.<your-subdomain>.workers.dev/edge
+curl https://edge-api.arina-zimina.workers.dev/edge
 ```
 
 Example response:
@@ -157,9 +157,9 @@ Copy the returned `id` into `wrangler.jsonc` under `kv_namespaces`.
 
 ```bash
 npx wrangler deploy
-curl https://edge-api.<your-subdomain>.workers.dev/counter
+curl https://edge-api.arina-zimina.workers.dev/counter
 # {"visits": 1}
-curl https://edge-api.<your-subdomain>.workers.dev/counter
+curl https://edge-api.arina-zimina.workers.dev/counter
 # {"visits": 2}
 ```
 
@@ -168,10 +168,10 @@ curl https://edge-api.<your-subdomain>.workers.dev/counter
 **Persistence verification after redeploy:**
 
 ```bash
-curl https://edge-api.<your-subdomain>.workers.dev/counter
+curl https://edge-api.arina-zimina.workers.dev/counter
 # {"visits": N}
 npx wrangler deploy   # redeploy
-curl https://edge-api.<your-subdomain>.workers.dev/counter
+curl https://edge-api.arina-zimina.workers.dev/counter
 # {"visits": N+1}   ← value survived redeploy
 ```
 
@@ -190,7 +190,7 @@ npx wrangler tail
 In a second terminal, make a request:
 
 ```bash
-curl https://edge-api.<your-subdomain>.workers.dev/edge
+curl https://edge-api.arina-zimina.workers.dev/edge
 ```
 
 ![wrangler tail — live log entry with path and colo](../k8s/img/lab17/wrangler-tail.png)
