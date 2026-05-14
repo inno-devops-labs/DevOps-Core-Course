@@ -69,6 +69,8 @@ Don't want to take the exam? Complete **both** bonus labs:
 - Deadline: **1 week before exam date**
 - Can still take exam if you need more points for desired grade
 
+**Lab 17 (Workers):** [`WORKERS.md`](WORKERS.md) · code in [`edge-api/`](edge-api/). *Older Fly.io pointer:* [`FLYIO.md`](FLYIO.md).
+
 <details>
 <summary>📊 Grade Scale</summary>
 
@@ -218,6 +220,9 @@ git push -u origin lab1
 - [ArgoCD](https://argo-cd.readthedocs.io/)
 - [Argo Rollouts](https://argoproj.github.io/argo-rollouts/)
 - [HashiCorp Vault](https://developer.hashicorp.com/vault/docs)
+
+**Exam alternative (Lab 17):**
+- [Cloudflare Workers](https://developers.cloudflare.com/workers/) — course notes: [`WORKERS.md`](WORKERS.md)
 
 </details>
 
