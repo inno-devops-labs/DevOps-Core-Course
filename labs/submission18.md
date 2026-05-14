@@ -10,7 +10,6 @@ WSL2 Ubuntu (Windows), project directory:
 
 - Task 1 — Reproducible Python Application (Lab 1 Rebuild)
 - Task 2 — Reproducible Docker Images with Nix (Lab 2 Comparison)
-- Bonus — Nix Flakes (Lab 10 Comparison)
 - Evidence Section
 - Reflection
 
