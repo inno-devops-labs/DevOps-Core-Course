@@ -1,0 +1,14 @@
+{
+  "application": {
+    "name": "devops-info-service",
+    "environment": "local",
+    "feature_flags": {
+      "show_hostname": true,
+      "show_request_headers": false
+    },
+    "settings": {
+      "greeting": "Hello from the local Docker setup",
+      "log_level": "INFO"
+    }
+  }
+}
