@@ -20,3 +20,7 @@ venv
 
 .vault_pass
 .retry
+
+# Environment secrets
+.env
+*.env

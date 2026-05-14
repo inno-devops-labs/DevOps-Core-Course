@@ -1,9 +1,14 @@
 import os
 import logging
+import json
 import platform
 import socket
+import sys
 from datetime import datetime, timezone
+from typing import Any
+
 from fastapi import FastAPI, Request
+from fastapi.responses import Response
 
 
 HOST = os.getenv("HOST", "0.0.0.0")
@@ -11,13 +16,73 @@ PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 
-logging.basicConfig(
-    level=logging.DEBUG if DEBUG else logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-
-
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+logger.propagate = False
+
+
+class JSONFormatter(logging.Formatter):
+    """Format log records as JSON for Loki-friendly structured logging."""
+
+    standard_keys = {
+        "args",
+        "asctime",
+        "created",
+        "exc_info",
+        "exc_text",
+        "filename",
+        "funcName",
+        "levelname",
+        "levelno",
+        "lineno",
+        "module",
+        "msecs",
+        "message",
+        "msg",
+        "name",
+        "pathname",
+        "process",
+        "processName",
+        "relativeCreated",
+        "stack_info",
+        "thread",
+        "threadName",
+    }
+
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict[str, Any] = {
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+
+        for key, value in record.__dict__.items():
+            if key not in self.standard_keys and not key.startswith("_"):
+                payload[key] = value
+
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(payload, default=str)
+
+
+def setup_logging() -> None:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(JSONFormatter())
+
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+    root_logger.addHandler(handler)
+
+    logger.handlers.clear()
+    logger.addHandler(handler)
+
+
+setup_logging()
 
 
 START_TIME = datetime.now(timezone.utc)
@@ -66,9 +131,49 @@ def get_runtime_info():
     }
 
 
+@app.on_event("startup")
+async def on_startup():
+    logger.info(
+        "application_startup",
+        extra={"host": HOST, "port": PORT, "debug": DEBUG, "service": "devops-info-service"},
+    )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    started_at = datetime.now(timezone.utc)
+    client_ip = request.client.host if request.client else "unknown"
+
+    try:
+        response: Response = await call_next(request)
+    except Exception:
+        logger.exception(
+            "request_failed",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "client_ip": client_ip,
+                "status_code": 500,
+            },
+        )
+        raise
+
+    elapsed_ms = int((datetime.now(timezone.utc) - started_at).total_seconds() * 1000)
+    logger.info(
+        "request_completed",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "client_ip": client_ip,
+            "duration_ms": elapsed_ms,
+        },
+    )
+    return response
+
+
 @app.get("/")
 async def index(request: Request):
-    logger.info("Request: %s %s", request.method, request.url.path)
     return {
         "service": {
             "name": "devops-info-service",
@@ -96,10 +201,19 @@ async def health():
     }
 
 
+@app.get("/error")
+async def error_endpoint():
+    """Test endpoint that intentionally raises an error for log testing."""
+    raise ValueError("This is a deliberate test error for logging purposes")
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    logger.info("Starting application on %s:%s", HOST, PORT)
+    logger.info(
+        "starting_application",
+        extra={"host": HOST, "port": PORT, "debug": DEBUG},
+    )
     uvicorn.run(
         "app:app",
         host=HOST,
