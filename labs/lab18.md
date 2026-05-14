@@ -1179,6 +1179,7 @@ Now you can proceed with the lab using these minimal examples!
 - [Nix Pills - Deep dive](https://nixos.org/guides/nix-pills/)
 - [NixOS Package Search](https://search.nixos.org/)
 
+
 **Docker with Nix:**
 - [Building Docker images - nix.dev](https://nix.dev/tutorials/nixos/building-and-running-docker-images.html)
 - [dockerTools reference](https://ryantm.github.io/nixpkgs/builders/images/dockertools/)
@@ -1187,6 +1188,7 @@ Now you can proceed with the lab using these minimal examples!
 - [Nix Flakes - NixOS Wiki](https://wiki.nixos.org/wiki/Flakes)
 - [Flakes - Zero to Nix](https://zero-to-nix.com/concepts/flakes)
 - [Practical Nix Flakes](https://serokell.io/blog/practical-nix-flakes)
+
 
 **Community:**
 - [awesome-nix - Curated resources](https://github.com/nix-community/awesome-nix)
@@ -1220,6 +1222,7 @@ Now you can proceed with the lab using these minimal examples!
 - Update the hash in your derivation to match the error message
 - Use `lib.fakeHash` to discover the correct hash
 
+
 **If Docker load fails:**
 - Verify result is a valid tarball: `file result`
 - Check Docker daemon is running: `docker info`
@@ -1229,6 +1232,7 @@ Now you can proceed with the lab using these minimal examples!
 - Ensure experimental features are enabled in `~/.config/nix/nix.conf`
 - Run `nix flake check` to validate flake syntax
 - Make sure your flake is in a git repository
+
 
 **If cross-machine builds differ:**
 - Check nixpkgs input is locked in `flake.lock`

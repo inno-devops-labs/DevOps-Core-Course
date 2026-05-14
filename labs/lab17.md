@@ -529,4 +529,5 @@ npx wrangler rollback
 
 **Good luck!** 🌍
 
+
 > **Remember:** Cloudflare Workers is excellent for globally distributed APIs and lightweight edge logic. Kubernetes gives you more control, broader runtime flexibility, and stronger patterns for long-running container workloads. Choose the right model for the workload.
