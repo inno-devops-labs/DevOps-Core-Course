@@ -1,0 +1,6 @@
+Hello IPFS from DevOps Core Course Lab 18.
+
+This file is used for the local Kubo node test:
+- add content to IPFS
+- record the CID
+- fetch it through the local HTTP gateway
