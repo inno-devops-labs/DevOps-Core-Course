@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-05-14",
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "APP_NAME": "edge-api",
+    "COURSE_NAME": "devops-core"
+  },
+  // After running: npx wrangler kv namespace create SETTINGS
+  // replace PASTE_YOUR_KV_ID_HERE with the returned id
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "d288899810164a64b3d7cff8cd95477c"
+    }
+  ]
+}
