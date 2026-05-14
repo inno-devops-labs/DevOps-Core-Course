@@ -4,31 +4,26 @@ metadata:
   name: {{ include "devops-chart.fullname" . }}
   labels:
     {{- include "devops-chart.labels" . | nindent 4 }}
-
 spec:
   replicas: {{ .Values.replicaCount }}
-
   selector:
     matchLabels:
       {{- include "devops-chart.selectorLabels" . | nindent 6 }}
-
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
-
   template:
     metadata:
       labels:
         {{- include "devops-chart.selectorLabels" . | nindent 8 }}
+      {{- if .Values.vault.enabled }}
       annotations:
-        {{- if .Values.vault.enabled }}
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
         vault.hashicorp.com/agent-inject-secret-config: {{ .Values.vault.secretPath | quote }}
-        {{- end }}
-
+      {{- end }}
     spec:
       serviceAccountName: {{ include "devops-chart.serviceAccountName" . }}
       containers:
@@ -37,26 +32,36 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.targetPort }}
-
-          {{- if .Values.secret.enabled }}
           envFrom:
+            - configMapRef:
+                name: {{ include "devops-chart.fullname" . }}-env
+            {{- if .Values.secret.enabled }}
             - secretRef:
                 name: {{ default (printf "%s-secret" (include "devops-chart.fullname" .)) .Values.secret.name }}
-          {{- end }}
-
+            {{- end }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+            - name: data-volume
+              mountPath: /data
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 10
             periodSeconds: 5
-
           readinessProbe:
             httpGet:
               path: /health
               port: {{ .Values.service.targetPort }}
             initialDelaySeconds: 5
             periodSeconds: 3
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ include "devops-chart.fullname" . }}-config
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: {{ include "devops-chart.fullname" . }}-data

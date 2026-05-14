@@ -2,7 +2,7 @@ replicaCount: 3
 
 image:
   repository: aserova/devops-info-service
-  tag: "v2"
+  tag: "v3"
   pullPolicy: IfNotPresent
 
 service:
@@ -32,3 +32,12 @@ vault:
   enabled: false
   role: "devops-app"
   secretPath: "secret/data/myapp/config"
+
+config:
+  appEnv: "dev"
+  logLevel: "info"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""

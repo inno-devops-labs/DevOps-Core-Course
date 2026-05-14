@@ -1,7 +1,9 @@
 replicaCount: 1
 
 image:
-  tag: "latest"
+  repository: aserova/devops-info-service
+  tag: "v3"
+  pullPolicy: IfNotPresent
 
 service:
   type: NodePort
