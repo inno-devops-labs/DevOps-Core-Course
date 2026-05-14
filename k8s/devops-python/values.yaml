@@ -58,6 +58,15 @@ hooks:
   postInstall:
     enabled: true
 
+# Application secrets configuration
+secrets:
+  enabled: true
+  # Use placeholder values - override with --set during install
+  data:
+    DATABASE_USER: "admin"
+    DATABASE_PASSWORD: "changeme"
+    API_KEY: "placeholder-api-key"
+
 # Name overrides
 nameOverride: ""
 fullnameOverride: ""
