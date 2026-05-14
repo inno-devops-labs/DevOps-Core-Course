@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+**/*.pyc
+venv/
+.venv/
+*.log
+.coverage 
+.coverage.* 
+htmlcov/ 
+.pytest_cache/
+coverage.xml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Secrets
+.env
+
+# Local persistence
+data/

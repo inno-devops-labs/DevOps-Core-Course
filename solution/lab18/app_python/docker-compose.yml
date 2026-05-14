@@ -1,0 +1,16 @@
+services:
+  app-python:
+    build:
+      context: .
+    image: devops-info-service:lab12
+    container_name: devops-info-service-lab12
+    environment:
+      HOST: 0.0.0.0
+      PORT: "5000"
+      DEBUG: "false"
+      RELEASE_VERSION: "lab12"
+      VISITS_FILE: /data/visits
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data

@@ -1,0 +1,13 @@
+INFO:     Started server process [790]
+INFO:     Waiting for application startup.
+{"timestamp": "2026-05-14T18:41:00.956867+00:00", "level": "INFO", "logger": "__main__", "message": "Application startup", "event": "startup", "host": "0.0.0.0", "port": 5000, "debug": false, "release_version": "nix-1.0.0", "service": "devops-info-service", "visits_file": "/tmp/devops-info-service/visits", "config_path": "/config/config.json"}
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+{"timestamp": "2026-05-14T18:41:05.463939+00:00", "level": "INFO", "logger": "__main__", "message": "HTTP request started", "event": "http_request", "method": "GET", "path": "/health", "client_ip": "127.0.0.1", "user_agent": "curl/8.18.0"}
+{"timestamp": "2026-05-14T18:41:05.464920+00:00", "level": "INFO", "logger": "__main__", "message": "HTTP request completed", "event": "http_request", "method": "GET", "path": "/health", "client_ip": "127.0.0.1", "user_agent": "curl/8.18.0", "status_code": 200}
+INFO:     127.0.0.1:37714 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+{"timestamp": "2026-05-14T18:41:05.590985+00:00", "level": "INFO", "logger": "__main__", "message": "Application shutdown", "event": "shutdown"}
+INFO:     Application shutdown complete.
+INFO:     Finished server process [790]

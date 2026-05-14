@@ -1,0 +1,13 @@
+WSL2 Ubuntu was available and stable after reboot.
+
+Native Nix installation attempts:
+- Determinate Systems installer: failed because install.determinate.systems:443 timed out.
+- Official Nix installer: failed because nixos.org:443 timed out while downloading the installer.
+
+Executed Nix environment:
+- Official nixos/nix:latest container.
+- Nix version: 2.34.7.
+- Basic Nix usage verified with hello.
+
+Reasoning:
+The container is a Linux Nix environment with the same Nix CLI and nixpkgs build semantics used by a native install. It allowed the lab builds, hashes, dockerTools image, and flake checks to be executed without relying on the blocked installer endpoints.

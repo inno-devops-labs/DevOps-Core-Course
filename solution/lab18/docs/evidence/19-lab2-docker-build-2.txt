@@ -1,0 +1,7 @@
+docker build -t lab2-app:test2 ./labs/lab18/app_python
+
+Result:
+- Build completed successfully with Docker BuildKit.
+- Image: lab2-app:test2
+- Image ID: sha256:5486604f1ac77ff7193a76faab64327c736c68056741f9de20a49721ff46640d
+- Size: 37304384 bytes

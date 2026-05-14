@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+**/*.pyc
+venv/
+.venv/
+*.log
+
+# Tests
+tests/
+.coverage 
+.coverage.* 
+coverage.xml
+htmlcov/ 
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Secrets
+.env
+
+# Git
+.git/
+.github/
+.gitignore
+
+# Docs
+*.md
+docs/
+
+# Nix build outputs
+result
+result-*

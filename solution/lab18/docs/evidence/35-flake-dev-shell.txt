@@ -1,0 +1,3 @@
+Lab 18 Nix shell: Python 3.13.12
+Python 3.13.12
+0.116.1
