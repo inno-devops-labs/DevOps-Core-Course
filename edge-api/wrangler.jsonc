@@ -1,0 +1,18 @@
+{
+	"name": "edge-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-05-14",
+	"observability": {
+		"enabled": true,
+	},
+	"vars": {
+		"APP_NAME": "edge-api",
+		"COURSE_NAME": "devops-core",
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "0b8545351dba4975b4ab1668a99a31f6",
+		},
+	],
+}
