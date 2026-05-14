@@ -46,18 +46,18 @@ spec:
       serviceAccountName: {{ include "devops-python-app.serviceAccountName" . }}
       {{- if .Values.initContainers.download.enabled }}
       initContainers:
-        - name: init-wait-health
+        - name: init-wait-dns
           image: busybox:1.36
           command:
             - sh
             - -c
             - |
-              echo "Waiting for health endpoint to become available..."
-              until wget -qO- http://127.0.0.1:{{ .Values.container.port }}/health 2>/dev/null; do
-                echo "Not ready yet, sleeping 2s..."
+              echo "Waiting for kube-dns service to be available..."
+              until nslookup kube-dns.kube-system.svc.cluster.local 2>/dev/null | grep -q "Address"; do
+                echo "DNS not ready yet, sleeping 2s..."
                 sleep 2
               done
-              echo "Health endpoint ready!"
+              echo "DNS service is ready!"
         - name: init-download
           image: busybox:1.36
           command:
@@ -95,22 +95,22 @@ spec:
                 name: {{ include "devops-python-app.configEnvConfigMapName" . }}
             {{- end }}
           {{- end }}
-      {{- if or .Values.configMap.file.enabled .Values.persistence.enabled .Values.initContainers.download.enabled }}
-      volumeMounts:
-        {{- if .Values.configMap.file.enabled }}
-        - name: app-config
-          mountPath: {{ .Values.configMap.file.mountPath }}
-          readOnly: true
-        {{- end }}
-        {{- if .Values.persistence.enabled }}
-        - name: app-data
-          mountPath: {{ .Values.persistence.mountPath }}
-        {{- end }}
-        {{- if .Values.initContainers.download.enabled }}
-        - name: workdir
-          mountPath: /init-data
-        {{- end }}
-      {{- end }}
+          {{- if or .Values.configMap.file.enabled .Values.persistence.enabled .Values.initContainers.download.enabled }}
+          volumeMounts:
+            {{- if .Values.configMap.file.enabled }}
+            - name: app-config
+              mountPath: {{ .Values.configMap.file.mountPath }}
+              readOnly: true
+            {{- end }}
+            {{- if .Values.persistence.enabled }}
+            - name: app-data
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+            {{- if .Values.initContainers.download.enabled }}
+            - name: workdir
+              mountPath: /init-data
+            {{- end }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           readinessProbe:

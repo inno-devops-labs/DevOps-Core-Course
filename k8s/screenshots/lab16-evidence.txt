@@ -1,0 +1,45 @@
+﻿Pods:
+NAME                             READY   STATUS    RESTARTS   AGE     IP            NODE                       NOMINATED NODE   READINESS GATES
+python-app-devops-python-app-0   1/1     Running   0          3m39s   10.244.0.33   devops-lab-control-plane   <none>           <none>
+python-app-devops-python-app-1   1/1     Running   0          3m12s   10.244.0.34   devops-lab-control-plane   <none>           <none>
+python-app-devops-python-app-2   1/1     Running   0          2m45s   10.244.0.35   devops-lab-control-plane   <none>           <none>
+
+StatefulSet:
+NAME                           READY   AGE   CONTAINERS          IMAGES
+python-app-devops-python-app   3/3     29m   devops-python-app   ge0s1/devops-python-app:lab16-fix2
+
+Services:
+NAME                                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+python-app-devops-python-app-headless   ClusterIP   None            <none>        80/TCP         29m
+python-app-devops-python-app-service    NodePort    10.96.143.185   <none>        80:30080/TCP   29m
+
+PVCs:
+NAME                                      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+app-data-python-app-devops-python-app-0   Bound    pvc-2b4ac241-1796-4eb9-b205-fe558e52a2c4   50Mi       RWO            standard       <unset>                 29m
+app-data-python-app-devops-python-app-1   Bound    pvc-bd1fcff3-0ff0-4905-a90b-e69cd40907ed   50Mi       RWO            standard       <unset>                 22m
+app-data-python-app-devops-python-app-2   Bound    pvc-06f3398f-1d6a-482a-8af4-a454ae459c91   50Mi       RWO            standard       <unset>                 17m
+
+Monitoring pods:
+NAME                                                     READY   STATUS    RESTARTS   AGE
+alertmanager-monitoring-kube-prometheus-alertmanager-0   2/2     Running   0          37m
+monitoring-grafana-6c9f57469f-9mszr                      3/3     Running   0          37m
+monitoring-kube-prometheus-operator-646fb7bdb-zdzbt      1/1     Running   0          37m
+monitoring-kube-state-metrics-5746795bd9-j4m2k           1/1     Running   0          37m
+monitoring-prometheus-node-exporter-f797x                1/1     Running   0          37m
+prometheus-monitoring-kube-prometheus-prometheus-0       2/2     Running   0          37m
+
+Init container logs:
+Downloading welcome page...
+Downloaded successfully
+Init container completed
+
+Init container + volume verification:
+Defaulted container "devops-python-app" out of: devops-python-app, init-wait-dns (init), init-download (init) <!doctype html><html lang="en"><head><title>Example Domain</title><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{background:#eee;width:60vw;margin:15vh auto;font-family:system-ui,sans-serif}h1{font-size:1.5em}div{opacity:0.8}a:link,a:visited{color:#348}</style></head><body><div><h1>Example Domain</h1><p>This domain is for use in documentation examples without needing permission. Avoid use in operations.</p><p><a href="https://iana.org/domains/example">Learn more</a></p></div></body></html>
+
+App /health endpoint:
+Defaulted container "devops-python-app" out of: devops-python-app, init-wait-dns (init), init-download (init) {"status":"healthy","timestamp":"2026-05-14T19:30:06.938108+00:00","uptime_seconds":201}
+
+Per-pod visit counts (storage isolation):
+Defaulted container "devops-python-app" out of: devops-python-app, init-wait-dns (init), init-download (init) {"visits":3,"visits_file":"/data/visits"}
+Defaulted container "devops-python-app" out of: devops-python-app, init-wait-dns (init), init-download (init) {"visits":5,"visits_file":"/data/visits"}
+Defaulted container "devops-python-app" out of: devops-python-app, init-wait-dns (init), init-download (init) {"visits":2,"visits_file":"/data/visits"}
