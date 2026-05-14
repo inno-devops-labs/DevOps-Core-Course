@@ -1,0 +1,19 @@
+replicaCount: 3
+
+image:
+  repository: aserova/devops-info-service
+  tag: "v2"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
