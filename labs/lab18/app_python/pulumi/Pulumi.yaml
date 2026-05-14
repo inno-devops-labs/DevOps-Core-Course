@@ -1,0 +1,10 @@
+name: app-python
+description: lab04 pulumi part
+runtime:
+  name: python
+  options:
+    toolchain: pip
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: python

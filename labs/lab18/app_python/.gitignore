@@ -1,0 +1,5 @@
+venv
+result
+__pycache__
+*.pyc
+

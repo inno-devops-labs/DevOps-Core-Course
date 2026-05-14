@@ -1,0 +1,6 @@
+encryptionsalt: v1:VOWYF2ib5ug=:v1:BMl6B+O3G1V2TCs2:j4xsbIEdJB7nG4SAFJrtGpT6EFZLsw==
+config:
+  yandex:cloudId: b1gv84qp02od589u3le0
+  yandex:folderId: b1g9bh9kbc2skuhht2de
+  yandex:zone: ru-central1-a
+  yandex:serviceAccountKeyFile: /workspaces/DevOps-Core-Course/labs/yc-key.json
