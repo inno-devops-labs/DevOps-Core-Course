@@ -4,7 +4,7 @@
 
 **Worker name:** `edge-api`
 
-**Public URL:** `https://edge-api.<your-subdomain>.workers.dev`
+**Public URL:** `https://edge-api.onovoselova884.workers.dev`
 
 ### Routes
 
@@ -25,6 +25,18 @@
 
 ## 2. Evidence
 
+### Setup — Wrangler authentication
+
+![whoami](screenshots/whoami.png)
+
+### Local development
+
+![local-dev](screenshots/local-dev.png)
+
+### Deployment
+
+![deploy](screenshots/deploy.png)
+
 ### Cloudflare Dashboard
 
 ![dashboard](screenshots/dashboard.png)
@@ -32,21 +44,29 @@
 ### /edge JSON Response
 
 ```json
-{
-  "colo": "WAW",
-  "country": "PL",
-  "city": "Warsaw",
-  "asn": 12345,
-  "httpProtocol": "HTTP/2",
-  "tlsVersion": "TLSv1.3"
-}
+$ curl https://edge-api.onovoselova884.workers.dev/edge
+{"colo":"WAW","country":"PL","city":"Poznań","asn":210895,"httpProtocol":"HTTP/1.1","tlsVersion":"TLSv1.3"}
 ```
 
 ![edge-response](screenshots/edge-response.png)
 
-### Logs / Metrics
+### Secrets
 
-![logs](screenshots/logs.png)
+![secrets](screenshots/secrets.png)
+
+### KV counter persistence after redeploy
+
+![counter-persist](screenshots/counter-persist.png)
+
+### Deployment history
+
+![deployments](screenshots/deployments.png)
+
+### Tail logs
+
+![tail-logs](screenshots/tail-logs.png)
+
+### Metrics
 
 ![metrics](screenshots/metrics.png)
 
@@ -79,8 +99,6 @@
 - There is no budget or staff for infrastructure management.
 - Deployment simplicity and speed matter more than runtime flexibility.
 - The app is stateless or can use KV/Durable Objects for its limited state needs.
-
-**Recommendation:** For a student project or small team API with global users, Workers removes almost all operational overhead. For a production service with complex state, long jobs, or existing container workflows, Kubernetes is the more appropriate platform.
 
 ---
 
