@@ -199,7 +199,7 @@ Why pip and Docker are not fully reproducible:
 
 # 7. Reflection
 
-If I had used Nix in Lab 2:
+If I had used Nix in previous lab work:
 
 - no need for virtual environments
 - no dependency drift issues
