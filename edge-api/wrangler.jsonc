@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "edge-api-devops",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-13",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "APP_NAME": "edge-api-devops",
+    "COURSE_NAME": "devops-core-course",
+    "APP_VERSION": "v1"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SETTINGS",
+      "id": "3afc8e96d9344d1aa68c23f1f5b7e23b"
+    }
+  ]
+}
