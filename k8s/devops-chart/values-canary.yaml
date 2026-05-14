@@ -21,8 +21,8 @@ resources:
 secret:
   enabled: true
   name: ""
-  username: "placeholder-user"
-  password: "placeholder-password"
+  username: "canary-user"
+  password: "canary-password"
 
 serviceAccount:
   create: true
@@ -34,8 +34,8 @@ vault:
   secretPath: "secret/data/myapp/config"
 
 config:
-  appEnv: "dev"
-  logLevel: "info"
+  appEnv: "canary"
+  logLevel: "debug"
 
 persistence:
   enabled: true

@@ -21,8 +21,8 @@ resources:
 secret:
   enabled: true
   name: ""
-  username: "placeholder-user"
-  password: "placeholder-password"
+  username: "bluegreen-user"
+  password: "bluegreen-password"
 
 serviceAccount:
   create: true
@@ -34,7 +34,7 @@ vault:
   secretPath: "secret/data/myapp/config"
 
 config:
-  appEnv: "dev"
+  appEnv: "bluegreen"
   logLevel: "info"
 
 persistence:
@@ -43,4 +43,4 @@ persistence:
   storageClass: ""
 
 rollout:
-  strategy: canary
+  strategy: blueGreen
