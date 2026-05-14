@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dependency-service
+  namespace: default
+spec:
+  selector:
+    app: dependency
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dependency-pod
+  namespace: default
+  labels:
+    app: dependency
+spec:
+  containers:
+    - name: dependency
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Dependency service is running"
+          sleep 3600
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wait-for-service-demo
+  namespace: default
+spec:
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for dependency-service DNS..."
+          until nslookup dependency-service.default.svc.cluster.local; do
+            echo "Service not ready yet"
+            sleep 2
+          done
+          echo "Dependency service is available"
+  containers:
+    - name: main
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Main container started after dependency was ready"
+          sleep 3600
