@@ -83,7 +83,7 @@ Login: **admin** / **prom-operator** (chart default).
 
 ### Screenshots
 
-Images live in `lab16c/k8s/img/`. Tiny placeholder PNGs are committed so Markdown links resolve; replace them with your own full screenshots if the grader wants readable UI detail.
+Images in `lab16c/k8s/img/`
 
 | Question | File |
 |----------|------|
