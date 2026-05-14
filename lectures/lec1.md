@@ -518,16 +518,16 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  subgraph 📋 Plan & Code
+  subgraph "📋 Plan & Code"
     L1[🔬 Labs 1-3: Git, GitHub]
   end
-  subgraph 🔨 Build & Test
+  subgraph "🔨 Build & Test"
     L2[🐳 Labs 4-6: Docker, CI/CD]
   end
-  subgraph 🚀 Deploy & Operate
+  subgraph "🚀 Deploy & Operate"
     L3[☸️ Labs 7-10: K8s, Helm]
   end
-  subgraph 🔐 Secure & Monitor
+  subgraph "🔐 Secure & Monitor"
     L4[📊 Labs 11-15: Vault, Monitoring]
   end
 ```
@@ -560,15 +560,15 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-  subgraph 😱 Chaos
-    Manual[📋 Manual Work]
-    Silos[🧱 Silos]
-    Fear[😨 Fear]
-  end
-  subgraph 🌊 Flow
+  subgraph "🌊 Flow"
     Auto[🤖 Automation]
     Collab[🤝 Collaboration]
     Confidence[💪 Confidence]
+  end
+  subgraph "😱 Chaos"
+    Manual[📋 Manual Work]
+    Silos[🧱 Silos]
+    Fear[😨 Fear]
   end
   Chaos -->|🚀 DevOps| Flow
 ```
