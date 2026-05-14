@@ -1,0 +1,82 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - lab06
+    paths:
+      - 'ansible/**'
+      - '.github/workflows/ansible-deploy.yml'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint
+          ansible-galaxy collection install community.docker
+
+      - name: Create vault password file
+        run: |
+          cd ansible
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+          chmod 600 .vault_pass
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint -x yaml,key-order,var-naming,ignore-errors,name,fqcn,command-instead-of-module
+
+      - name: Cleanup vault password file
+        if: always()
+        run: rm -f ansible/.vault_pass
+
+  deploy:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Setup SSH
+        run: |
+            mkdir -p ~/.ssh
+            echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan -H "${{ secrets.VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Create vault password file
+        run: |
+          cd ansible
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+          chmod 600 .vault_pass
+
+      - name: Deploy with Ansible
+        run: |
+          cd ansible
+          ansible-playbook -i inventory/hosts.ini playbooks/deploy.yml --vault-password-file .vault_pass
+
+      - name: Verify deployment
+        run: |
+          curl -f http://${{ secrets.VM_HOST }}:5000/
+
+      - name: Cleanup vault password file
+        if: always()
+        run: rm -f ansible/.vault_pass

@@ -1,0 +1,55 @@
+- name: Include wipe tasks
+  ansible.builtin.include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  tags:
+    - app_deploy
+    - compose
+  become: true
+  block:
+    - name: Ensure compose project directory exists
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Template docker-compose file
+      ansible.builtin.template:
+        src: docker-compose.yml.j2
+        dest: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Deploy with Docker Compose v2
+      community.docker.docker_compose_v2:
+        project_src: "{{ web_app_compose_project_dir }}"
+        state: present
+        pull: always
+        recreate: auto
+
+    - name: Wait for app port
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: "{{ web_app_port }}"
+        timeout: 60
+
+    - name: Verify HTTP endpoint
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ web_app_port }}/"
+        status_code: 200
+
+  rescue:
+    - name: Log deployment failure
+      ansible.builtin.copy:
+        dest: /tmp/web_app_deploy_failed.log
+        content: "web_app deployment failed\n"
+        mode: "0644"
+
+    - name: Fail deployment explicitly
+      ansible.builtin.fail:
+        msg: "web_app deployment failed"

@@ -1,0 +1,32 @@
+- name: Wipe web application
+  when: web_app_wipe | bool
+  tags:
+    - web_app_wipe
+  become: true
+  block:
+    - name: Remove legacy container
+      community.docker.docker_container:
+        name: "{{ web_app_name }}"
+        state: absent
+        force_kill: true
+      failed_when: false
+
+    - name: Compose down
+      community.docker.docker_compose_v2:
+        project_src: "{{ web_app_compose_project_dir }}"
+        state: absent
+      failed_when: false
+
+    - name: Remove compose file
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}/docker-compose.yml"
+        state: absent
+
+    - name: Remove application directory
+      ansible.builtin.file:
+        path: "{{ web_app_compose_project_dir }}"
+        state: absent
+
+    - name: Log wipe completion
+      ansible.builtin.debug:
+        msg: "Application {{ web_app_name }} wiped successfully"

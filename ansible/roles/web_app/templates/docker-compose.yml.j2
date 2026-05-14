@@ -1,0 +1,13 @@
+services:
+  {{ web_app_name }}:
+    image: "{{ web_app_docker_image }}:{{ web_app_docker_tag }}"
+    container_name: "{{ web_app_name }}"
+    ports:
+      - "{{ web_app_port }}:{{ web_app_internal_port }}"
+{% if web_app_env is defined and web_app_env | length > 0 %}
+    environment:
+{% for k, v in web_app_env.items() %}
+      {{ k }}: "{{ v }}"
+{% endfor %}
+{% endif %}
+    restart: unless-stopped
