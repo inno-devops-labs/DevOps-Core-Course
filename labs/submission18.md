@@ -1,8 +1,4 @@
-# Lab 18 — Reproducible Builds with Nix: Submission
-
-> **Branch:** `feature/lab18`  
-> **Machine:** macOS 15 (Sequoia), Apple Silicon M1 — `aarch64-darwin`  
-> **Nix version:** `nix (Nix) 2.24.5` (Determinate Systems installer)
+# Lab 18
 
 ---
 
@@ -46,12 +42,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
-| Problem | Explanation |
-|---|---|
-| Python version varies | Uses whatever `python3` is on the host |
-| Transitive drift | `requirements.txt` pins direct deps; Flask/uvicorn sub-deps can change |
-| Not portable | venv is path-absolute, breaks on another machine |
-| No binary guarantee | Same `requirements.txt` can install different bytecode on different CPython builds |
+| Problem               | Explanation                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| Python version varies | Uses whatever `python3` is on the host                                             |
+| Transitive drift      | `requirements.txt` pins direct deps; Flask/uvicorn sub-deps can change             |
+| Not portable          | venv is path-absolute, breaks on another machine                                   |
+| No binary guarantee   | Same `requirements.txt` can install different bytecode on different CPython builds |
 
 ### 1.3 — Nix Derivation (`default.nix`)
 
@@ -105,14 +101,14 @@ pkgs.python3Packages.buildPythonApplication {
 
 **Field-by-field explanation:**
 
-| Field | Purpose |
-|---|---|
-| `pname` / `version` | Appear in the store path name for human readability |
-| `src` with `cleanSourceWith` | Hashes only `main.py`; excludes `__pycache__`, `result*`, `flake.lock` etc. to keep the derivation input-stable |
-| `format = "other"` | Tells `buildPythonApplication` there is no `setup.py`/`pyproject.toml`; use a custom `installPhase` |
-| `propagatedBuildInputs` | Runtime Python deps; Nix adds them to `PYTHONPATH` in downstream consumers |
-| `nativeBuildInputs = [ makeWrapper ]` | Build-time tool; creates the wrapper shell script in `$out/bin/` |
-| `installPhase` | Manually copies `main.py` and wraps the Python interpreter with the correct `PYTHONPATH` |
+| Field                                 | Purpose                                                                                                         |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pname` / `version`                   | Appear in the store path name for human readability                                                             |
+| `src` with `cleanSourceWith`          | Hashes only `main.py`; excludes `__pycache__`, `result*`, `flake.lock` etc. to keep the derivation input-stable |
+| `format = "other"`                    | Tells `buildPythonApplication` there is no `setup.py`/`pyproject.toml`; use a custom `installPhase`             |
+| `propagatedBuildInputs`               | Runtime Python deps; Nix adds them to `PYTHONPATH` in downstream consumers                                      |
+| `nativeBuildInputs = [ makeWrapper ]` | Build-time tool; creates the wrapper shell script in `$out/bin/`                                                |
+| `installPhase`                        | Manually copies `main.py` and wraps the Python interpreter with the correct `PYTHONPATH`                        |
 
 **Build:**
 
@@ -226,18 +222,18 @@ Lab 18 (Nix):
   → BIT-FOR-BIT reproducibility, forever
 ```
 
-**Comparison Table — Lab 1 (pip) vs Lab 18 (Nix):**
+**Comparison Table**
 
-| Aspect | Lab 1 (pip + venv) | Lab 18 (Nix) |
-|---|---|---|
-| Python version | System-dependent | Pinned (`python3-3.13.12`) |
-| Dependency resolution | Runtime (`pip install`) | Build-time (pure sandbox) |
-| Transitive deps | Not pinned | Pinned via nixpkgs revision |
-| Reproducibility | Approximate | Bit-for-bit identical |
-| Portability | Requires same OS + Python | Works anywhere Nix runs |
-| Binary cache | No | Yes (`cache.nixos.org`) |
-| Isolation | virtualenv (fragile paths) | Sandboxed, content-addressed |
-| Store path | N/A | `/nix/store/<hash>-name-ver` |
+| Aspect                | Lab 1 (pip + venv)         | Lab 18 (Nix)                 |
+| --------------------- | -------------------------- | ---------------------------- |
+| Python version        | System-dependent           | Pinned (`python3-3.13.12`)   |
+| Dependency resolution | Runtime (`pip install`)    | Build-time (pure sandbox)    |
+| Transitive deps       | Not pinned                 | Pinned via nixpkgs revision  |
+| Reproducibility       | Approximate                | Bit-for-bit identical        |
+| Portability           | Requires same OS + Python  | Works anywhere Nix runs      |
+| Binary cache          | No                         | Yes (`cache.nixos.org`)      |
+| Isolation             | virtualenv (fragile paths) | Sandboxed, content-addressed |
+| Store path            | N/A                        | `/nix/store/<hash>-name-ver` |
 
 **Reflection — How would Nix have helped in Lab 1?**
 
@@ -324,13 +320,13 @@ pkgs.dockerTools.buildLayeredImage {
 
 **Field-by-field explanation:**
 
-| Field | Purpose |
-|---|---|
-| `buildLayeredImage` | Produces efficient OCI-compatible layers; each Nix store path is its own layer (maximises layer cache sharing) |
-| `contents` | Exact closure to include; no implicit base image pulled from Docker Hub |
-| `pkgs.cacert` | TLS root certificates (needed for HTTPS calls inside the container) |
-| `config.Cmd` | Absolute Nix store path — cannot drift |
-| `created = "1970-01-01T00:00:01Z"` | Fixed timestamp → no date embedded in image manifest → identical tarball every time |
+| Field                              | Purpose                                                                                                        |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `buildLayeredImage`                | Produces efficient OCI-compatible layers; each Nix store path is its own layer (maximises layer cache sharing) |
+| `contents`                         | Exact closure to include; no implicit base image pulled from Docker Hub                                        |
+| `pkgs.cacert`                      | TLS root certificates (needed for HTTPS calls inside the container)                                            |
+| `config.Cmd`                       | Absolute Nix store path — cannot drift                                                                         |
+| `created = "1970-01-01T00:00:01Z"` | Fixed timestamp → no date embedded in image manifest → identical tarball every time                            |
 
 **Build and load:**
 
@@ -393,15 +389,15 @@ d95fb335e508bdab9e9fa37c7aef5c0990e2aa6eb3fda88c7ea63decbe5d4d3b  docker-result 
 
 **Summary table:**
 
-| Metric | Lab 2 Dockerfile | Lab 18 Nix dockerTools |
-|---|---|---|
-| Image SHA256 (build 1) | `5ce6dd6e…` | `d95fb335…` |
-| Image SHA256 (build 2) | `05272cf2…` ← DIFFERENT | `d95fb335…` ← SAME |
-| Reproducible | ❌ | ✅ |
-| Creation timestamp | Wall clock at build time | `1970-01-01T00:00:01Z` (fixed) |
-| Base image dependency | `python:3.13-slim` (changes) | None (pure closure) |
-| Layer CREATED fields | Real timestamps | `N/A` |
-| Caching strategy | Layer-based (timestamp-dependent) | Content-addressable |
+| Metric                 | Lab 2 Dockerfile                  | Lab 18 Nix dockerTools         |
+| ---------------------- | --------------------------------- | ------------------------------ |
+| Image SHA256 (build 1) | `5ce6dd6e…`                       | `d95fb335…`                    |
+| Image SHA256 (build 2) | `05272cf2…` ← DIFFERENT           | `d95fb335…` ← SAME             |
+| Reproducible           | ❌                                | ✅                             |
+| Creation timestamp     | Wall clock at build time          | `1970-01-01T00:00:01Z` (fixed) |
+| Base image dependency  | `python:3.13-slim` (changes)      | None (pure closure)            |
+| Layer CREATED fields   | Real timestamps                   | `N/A`                          |
+| Caching strategy       | Layer-based (timestamp-dependent) | Content-addressable            |
 
 **Why can't traditional Dockerfiles achieve bit-for-bit reproducibility?**
 
@@ -498,6 +494,7 @@ $ nix flake update
 ```
 
 The lock file records:
+
 - **`rev`** — exact nixpkgs git commit (`50ab793…`), cryptographically identifying 80,000+ packages
 - **`narHash`** — SHA256 of the entire nixpkgs source tree; tamper-evident
 - **`lastModified`** — human-readable timestamp of the commit (informational only)
@@ -514,12 +511,14 @@ image:
 ```
 
 **Problems:**
+
 - `tag: "latest"` — mutable; the image behind "latest" can change at any time
 - Only the _image tag_ is pinned — Python, pip, Flask versions inside the image are unknown
 - No lock on Helm chart dependency versions
 - No guarantee the image was built reproducibly
 
 **Nix Flakes approach (`flake.lock`):**
+
 - Locks the nixpkgs revision → pins Python 3.13.12, fastapi 0.128.0, uvicorn 0.40.0 and all 20+ transitive deps
 - The image tarball SHA256 (`d95fb335…`) is the real "content hash" — unlike a Docker tag, it cannot be silently overwritten
 - `flake.lock` is committed to git → every checkout of the repo builds with the _exact same_ dependency graph, forever
@@ -537,15 +536,15 @@ This gives Helm's declarative Kubernetes deployment _plus_ Nix's cryptographic r
 
 **Comparison Table:**
 
-| Aspect | Lab 1 (`venv` + `requirements.txt`) | Lab 10 (Helm `values.yaml`) | Lab 18 (Nix Flakes) |
-|---|---|---|---|
-| Locks Python version | ❌ system Python | ❌ image Python | ✅ `python3-3.13.12` |
-| Locks direct deps | ⚠️ approximate | ❌ only image tag | ✅ exact hashes |
-| Locks transitive deps | ❌ | ❌ | ✅ entire closure |
-| Locks build tools | ❌ | ❌ | ✅ |
-| Time-stable | ❌ packages update | ⚠️ tag can change | ✅ locked forever |
-| Dev environment | ✅ venv (path-fragile) | ❌ N/A | ✅ `nix develop` |
-| Cross-machine identical | ❌ | ⚠️ depends on image | ✅ cryptographic |
+| Aspect                  | Lab 1 (`venv` + `requirements.txt`) | Lab 10 (Helm `values.yaml`) | Lab 18 (Nix Flakes)  |
+| ----------------------- | ----------------------------------- | --------------------------- | -------------------- |
+| Locks Python version    | ❌ system Python                    | ❌ image Python             | ✅ `python3-3.13.12` |
+| Locks direct deps       | ⚠️ approximate                      | ❌ only image tag           | ✅ exact hashes      |
+| Locks transitive deps   | ❌                                  | ❌                          | ✅ entire closure    |
+| Locks build tools       | ❌                                  | ❌                          | ✅                   |
+| Time-stable             | ❌ packages update                  | ⚠️ tag can change           | ✅ locked forever    |
+| Dev environment         | ✅ venv (path-fragile)              | ❌ N/A                      | ✅ `nix develop`     |
+| Cross-machine identical | ❌                                  | ⚠️ depends on image         | ✅ cryptographic     |
 
 ### Bonus.4 — Development Shell vs Lab 1 venv
 
@@ -572,17 +571,3 @@ nix develop
 ```
 
 The `nix develop` shell is described in `flake.nix` and locked via `flake.lock` — the exact same shell will be reproduced on any machine that checks out the repo, today or five years from now.
-
----
-
-## Files Summary
-
-| File | Purpose |
-|---|---|
-| `labs/lab18/app_python/main.py` | FastAPI DevOps Info Service (copied from Lab 1) |
-| `labs/lab18/app_python/requirements.txt` | pip reference (for comparison) |
-| `labs/lab18/app_python/Dockerfile` | Lab 2 Dockerfile (for comparison) |
-| `labs/lab18/app_python/default.nix` | Task 1 — Nix derivation for the Python app |
-| `labs/lab18/app_python/docker.nix` | Task 2 — Nix `dockerTools` container image |
-| `labs/lab18/app_python/flake.nix` | Bonus — Nix Flake wrapping both packages + dev shell |
-| `labs/lab18/app_python/flake.lock` | Bonus — Auto-generated lock pinning nixpkgs to exact commit |
