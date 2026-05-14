@@ -108,10 +108,40 @@ services:
       resources:
         limits:
           cpus: '0.5'
-          memory: 512M
+          memory: 256M
         reservations:
           cpus: '0.25'
-          memory: 256M
+          memory: 128M
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     restart: unless-stopped
 
 networks:
@@ -124,3 +154,5 @@ volumes:
     name: loki-data
   grafana-data:
     name: grafana-data
+  prometheus-data:
+    name: prometheus-data
