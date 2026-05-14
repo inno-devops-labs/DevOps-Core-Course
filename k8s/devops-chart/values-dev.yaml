@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: aserova/devops-info-service
@@ -9,4 +9,35 @@ service:
   type: NodePort
   port: 80
   targetPort: 5000
-  nodePort: 30007
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+secret:
+  enabled: true
+  name: ""
+  username: "dev-user"
+  password: "dev-password"
+
+serviceAccount:
+  create: true
+  name: ""
+
+vault:
+  enabled: false
+  role: "devops-app"
+  secretPath: "secret/data/myapp/config"
+
+config:
+  appEnv: "dev"
+  logLevel: "debug"
+
+persistence:
+  enabled: true
+  size: 100Mi
+  storageClass: ""
