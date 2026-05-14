@@ -1,0 +1,8 @@
+[MASTER]
+fail-under=7.0
+
+[MESSAGES CONTROL]
+disable=C0111,W0511,R0903,C0103,R0913,R0914,C0301
+
+[FORMAT]
+max-line-length=100

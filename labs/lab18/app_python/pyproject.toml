@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]
+ignore = ["E501", "F401"]
+
+[tool.black]
+line-length = 100
+target-version = ['py312']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"

@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: ./app_python
+    ports:
+      - "5000:5000"
+    volumes:
+      - visits_data:/data
+
+volumes:
+  visits_data:

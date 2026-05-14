@@ -1,0 +1,46 @@
+# Python файлы
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.env
+.venv
+env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Логи и временные файлы
+*.log
+*.tmp
+
+# Документация и тесты (не нужны в runtime)
+docs/
+tests/
+
+# Файлы настроек (если есть)
+config.local.*
+secrets.*
+
+# Исключаем всё, кроме необходимого для работы приложения
+# Явно указываем что включаем в след. строках
+!app.py
+!requirements.txt
+# Если у вас есть другие файлы приложения, добавьте их здесь
+# !templates/
+# !static/
