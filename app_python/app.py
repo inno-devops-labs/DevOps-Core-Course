@@ -7,9 +7,11 @@ import logging
 import os
 import platform
 import socket
+import time
 from datetime import datetime, timezone
 
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, g, request
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -19,8 +21,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("devops-info-service")
 
-
-# Configuration (env vars)
+# Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "5000"))
 DEBUG = os.getenv("DEBUG", "False").strip().lower() == "true"
@@ -30,17 +31,32 @@ SERVICE_VERSION = os.getenv("SERVICE_VERSION", "1.0.0")
 SERVICE_DESCRIPTION = os.getenv("SERVICE_DESCRIPTION", "DevOps course info service")
 FRAMEWORK = "Flask"
 
-# App start time for uptime
 START_TIME_UTC = datetime.now(timezone.utc)
 
 app = Flask(__name__)
 
+# Prometheus metrics
+HTTP_REQUESTS_TOTAL = Counter(
+    "http_requests_total",
+    "Total number of HTTP requests",
+    ["method", "endpoint", "status"],
+)
+
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["method", "endpoint"],
+)
+
+HTTP_REQUESTS_IN_PROGRESS = Gauge(
+    "http_requests_in_progress",
+    "Number of HTTP requests currently being processed",
+)
+
 
 def get_uptime() -> dict:
-    """Return uptime in seconds and a human-friendly string."""
     delta = datetime.now(timezone.utc) - START_TIME_UTC
     seconds = int(delta.total_seconds())
-
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     return {
@@ -50,7 +66,6 @@ def get_uptime() -> dict:
 
 
 def get_system_info() -> dict:
-    """Collect system information."""
     return {
         "hostname": socket.gethostname(),
         "platform": platform.system(),
@@ -62,8 +77,6 @@ def get_system_info() -> dict:
 
 
 def get_request_info() -> dict:
-    """Collect request metadata (best-effort for client IP)."""
-   
     forwarded_for = request.headers.get("X-Forwarded-For", "")
     client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else request.remote_addr
 
@@ -75,9 +88,40 @@ def get_request_info() -> dict:
     }
 
 
+@app.before_request
+def before_request():
+    if request.path != "/metrics":
+        g.start_time = time.time()
+        HTTP_REQUESTS_IN_PROGRESS.inc()
+
+
+@app.after_request
+def after_request(response):
+    if request.path != "/metrics":
+        endpoint = request.path
+        method = request.method
+        status = str(response.status_code)
+
+        HTTP_REQUESTS_TOTAL.labels(
+            method=method,
+            endpoint=endpoint,
+            status=status,
+        ).inc()
+
+        if hasattr(g, "start_time"):
+            duration = time.time() - g.start_time
+            HTTP_REQUEST_DURATION_SECONDS.labels(
+                method=method,
+                endpoint=endpoint,
+            ).observe(duration)
+
+        HTTP_REQUESTS_IN_PROGRESS.dec()
+
+    return response
+
+
 @app.get("/")
 def index():
-    """Main endpoint - service and system information."""
     logger.info("Request: %s %s", request.method, request.path)
 
     uptime = get_uptime()
@@ -99,6 +143,7 @@ def index():
         "endpoints": [
             {"path": "/", "method": "GET", "description": "Service information"},
             {"path": "/health", "method": "GET", "description": "Health check"},
+            {"path": "/metrics", "method": "GET", "description": "Prometheus metrics"},
         ],
     }
     return jsonify(payload), 200
@@ -106,7 +151,6 @@ def index():
 
 @app.get("/health")
 def health():
-    """Health check endpoint."""
     logger.info("Health check: %s %s", request.method, request.path)
     uptime = get_uptime()
     return (
@@ -119,6 +163,11 @@ def health():
         ),
         200,
     )
+
+
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), mimetype="text/plain")
 
 
 @app.errorhandler(404)

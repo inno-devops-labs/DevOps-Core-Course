@@ -10,7 +10,7 @@ services:
       - loki-data:/loki
     command: -config.file=/etc/loki/config.yml
     networks:
-      - logging
+      - observability
 
   promtail:
     image: grafana/promtail:3.0.0
@@ -23,7 +23,22 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     command: -config.file=/etc/promtail/config.yml
     networks:
-      - logging
+      - observability
+
+  prometheus:
+    image: prom/prometheus:v3.9.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+    networks:
+      - observability
 
   grafana:
     image: grafana/grafana:12.3.1
@@ -36,11 +51,25 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     networks:
-      - logging
+      - observability
+
+  app-python:
+    build: ../app_python
+    container_name: app-python
+    ports:
+      - "5000:5000"
+    networks:
+      - observability
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 networks:
-  logging:
+  observability:
