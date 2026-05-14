@@ -1,0 +1,9 @@
+services:
+  {{ app_name }}:
+    image: {{ docker_image }}:{{ docker_image_tag }}
+    container_name: {{ app_container_name }}
+    ports:
+      - "{{ app_port }}:{{ app_port }}"
+    restart: {{ app_restart_policy }}
+    environment:
+      - APP_ENV=production

@@ -1,0 +1,55 @@
+---
+- name: Include wipe tasks
+  include_tasks: wipe.yml
+  tags:
+    - web_app_wipe
+
+- name: Deploy application with Docker Compose
+  block:
+    - name: Create application directory
+      file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Template docker-compose file
+      template:
+        src: docker-compose.yml.j2
+        dest: "{{ compose_project_dir }}/docker-compose.yml"
+        mode: '0644'
+
+    - name: Login to Docker Hub
+      shell: docker login -u "{{ dockerhub_username }}" -p "{{ dockerhub_password }}"
+
+    - name: Pull latest Docker image
+      shell: docker pull "{{ docker_image }}:{{ docker_image_tag }}"
+
+    - name: Deploy with Docker Compose
+      shell: docker compose -f "{{ compose_project_dir }}/docker-compose.yml" up -d --remove-orphans
+
+    - name: Wait for application to be ready
+      wait_for:
+        host: localhost
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 60
+
+    - name: Verify application health
+      uri:
+        url: "http://localhost:{{ app_port }}/"
+        return_content: yes
+      register: health_check
+
+    - name: Show health check result
+      debug:
+        msg: "App is running, status: {{ health_check.status }}"
+
+  rescue:
+    - name: Handle deployment failure
+      debug:
+        msg: "Deployment failed for {{ app_name }}"
+
+  become: true
+  tags:
+    - app_deploy
+    - compose

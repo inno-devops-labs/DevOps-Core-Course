@@ -1,0 +1,6 @@
+---
+app_port: 5000
+app_restart_policy: unless-stopped
+app_env_vars: {}
+compose_project_dir: "/opt/{{ app_container_name }}"
+web_app_wipe: false

@@ -1,0 +1,100 @@
+name: Ansible Deployment
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'ansible/**'
+      - '!ansible/docs/**'
+      - '.github/workflows/ansible-deploy.yml'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'ansible/**'
+      - '!ansible/docs/**'
+      - '.github/workflows/ansible-deploy.yml'
+
+jobs:
+  lint:
+    name: Ansible Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install ansible ansible-lint
+
+      - name: Run ansible-lint
+        run: |
+          cd ansible
+          ansible-lint playbooks/provision.yml playbooks/deploy.yml || true
+
+  deploy:
+    name: Deploy Application
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Ansible
+        run: pip install ansible
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create vault password file
+        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
+
+      - name: Update inventory with VM host
+        run: |
+          cat > ansible/inventory/hosts.ini << 'INVENTORY'
+          [webservers]
+          lab04-vm ansible_host=${{ secrets.VM_HOST }} ansible_user=${{ secrets.VM_USER }} ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+          [webservers:vars]
+          ansible_python_interpreter=/usr/bin/python3
+          INVENTORY
+
+      - name: Run Ansible playbook
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy.yml \
+            --vault-password-file /tmp/vault_pass \
+            -e "dockerhub_username=nadiaa02" \
+            -e "dockerhub_password=dckr_pat_mGU2_QrcEjStk7BACotLdyNrLco" \
+            -e "app_name=lab02-python-app" \
+            -e "docker_image=nadiaa02/lab02-python-app" \
+            -e "docker_image_tag=latest" \
+            -e "app_port=5000" \
+            -e "app_container_name=devops-app"
+
+      - name: Cleanup vault password
+        run: rm /tmp/vault_pass
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          curl -f http://${{ secrets.VM_HOST }}:5000/ || exit 1
+          curl -f http://${{ secrets.VM_HOST }}:5000/health || exit 1
+
+      - name: Show deployment result
+        run: |
+          echo "Deployment successful!"
+          curl http://${{ secrets.VM_HOST }}:5000/health

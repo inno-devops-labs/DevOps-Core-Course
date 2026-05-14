@@ -2,6 +2,14 @@
 - name: Deploy application
   hosts: webservers
   become: yes
+  vars:
+    dockerhub_username: nadiaa02
+    dockerhub_password: dckr_pat_mGU2_QrcEjStk7BACotLdyNrLco
+    app_name: lab02-python-app
+    docker_image: nadiaa02/lab02-python-app
+    docker_image_tag: latest
+    app_port: 5000
+    app_container_name: devops-app
 
   roles:
-    - app_deploy
+    - web_app

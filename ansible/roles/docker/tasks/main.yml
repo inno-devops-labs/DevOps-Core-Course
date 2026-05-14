@@ -1,51 +1,81 @@
 ---
-- name: Install required system packages
-  apt:
-    name:
-      - ca-certificates
-      - curl
-      - gnupg
-    state: present
+- name: Install Docker
+  block:
+    - name: Install required system packages
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
 
-- name: Create directory for Docker GPG key
-  file:
-    path: /etc/apt/keyrings
-    state: directory
-    mode: '0755'
+    - name: Create directory for Docker GPG key
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
 
-- name: Add Docker GPG key
-  apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-- name: Add Docker repository
-  apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
 
-- name: Install Docker packages
-  apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-    state: present
-    update_cache: yes
-  notify: restart docker
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+        update_cache: yes
+      notify: restart docker
 
-- name: Ensure Docker service is running and enabled
-  service:
-    name: docker
-    state: started
-    enabled: yes
+  rescue:
+    - name: Wait and retry Docker GPG key
+      ansible.builtin.pause:
+        seconds: 10
 
-- name: Add user to docker group
-  user:
-    name: "{{ docker_user }}"
-    groups: docker
-    append: yes
+    - name: Retry Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
 
-- name: Install python3-docker
-  apt:
-    name: python3-docker
-    state: present
+  tags:
+    - docker
+    - docker_install
+
+- name: Configure Docker
+  block:
+    - name: Ensure Docker service is running and enabled
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install python3-docker
+      apt:
+        name: python3-docker
+        state: present
+
+  always:
+    - name: Ensure Docker service is enabled
+      service:
+        name: docker
+        enabled: yes
+      ignore_errors: yes
+
+  become: true
+  tags:
+    - docker
+    - docker_config
