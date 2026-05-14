@@ -74,6 +74,7 @@ monitoring-prometheus-node-exporter             ClusterIP   10.102.88.155    <no
 prometheus-operated                             ClusterIP   None             <none>        9090/TCP                     8m11s
 ```
 
+
 **Pods and Services (combined listing).** A single `kubectl get po,svc` invocation confirms both workload Pods and ClusterIP Services in namespace `monitoring`.
 
 ```
