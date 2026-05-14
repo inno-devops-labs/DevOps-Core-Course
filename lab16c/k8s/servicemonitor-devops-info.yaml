@@ -1,0 +1,20 @@
+# Prometheus Operator: scrape devops-info /metrics (FastAPI app from course chart).
+# Prereq: kube-prometheus-stack installed with Helm release name "monitoring"
+# (so ServiceMonitors with label release=monitoring are selected).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: devops-info-monitor
+  namespace: default
+  labels:
+    release: monitoring
+    app.kubernetes.io/name: devops-info
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devops-info
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

@@ -1,0 +1,66 @@
+# Lab 16 — wait-for-service: consumer pod waits until backend Service resolves in DNS.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lab16-wait-backend
+  labels:
+    app.kubernetes.io/name: lab16-wait-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lab16-wait-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lab16-wait-backend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+              name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lab16-wait-backend
+  labels:
+    app.kubernetes.io/name: lab16-wait-backend
+spec:
+  selector:
+    app.kubernetes.io/name: lab16-wait-backend
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lab16-wait-consumer
+  labels:
+    app.kubernetes.io/name: lab16-wait-consumer
+spec:
+  initContainers:
+    - name: wait-for-service
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          set -e
+          echo "Waiting for DNS: lab16-wait-backend.default.svc.cluster.local"
+          until nslookup lab16-wait-backend.default.svc.cluster.local; do
+            echo "not ready, sleep 2"; sleep 2
+          done
+          echo "Service is resolvable."
+  containers:
+    - name: main
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - wget -q -O- http://lab16-wait-backend.default.svc.cluster.local | head -c 200 && echo && sleep 3600
