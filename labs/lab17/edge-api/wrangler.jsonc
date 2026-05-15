@@ -1,0 +1,22 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "edge-api",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-05-15",
+	"workers_dev": true,
+	"vars": {
+		"APP_NAME": "edge-api",
+		"COURSE_NAME": "devops-core"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SETTINGS",
+			"id": "df7715bf380b4f51828e7652f763870c",
+			"remote": true
+		}
+	]
+}
