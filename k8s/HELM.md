@@ -50,8 +50,9 @@ k8s/devops-python/
 
 ### Key templated values
 
+- **Init (Lab 16)**: `.Values.initContainers.*` — shared file under `/init` on the app container  
+- **ServiceMonitor (bonus)**: `.Values.serviceMonitor.*` (Prometheus Operator)  
 - **Workload**: `.Values.workload.kind` — `rollout` (Argo Rollouts, Lab 14) or `statefulSet` (Lab 15; `-f values-statefulset.yaml`)
-- **Image**: `.Values.image.repository` / `.Values.image.tag`
 - **Replicas**: `.Values.replicaCount`
 - **Resources**: `.Values.resources`
 - **Service**: `.Values.service.type`, `.Values.service.port`, `.Values.service.nodePort`

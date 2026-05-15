@@ -82,3 +82,63 @@ Stable checksum input for env ConfigMap (Lab 12 bonus — pod restart on change)
 {{- printf "%s-health" (include "devops-python.fullname" .) -}}
 {{- end -}}
 
+{{/*
+Lab 16 — init containers (download + wait-for-DNS). Included when .Values.initContainers.enabled
+*/}}
+{{- define "devops-python.initContainers" -}}
+{{- if .Values.initContainers.waitForService.enabled }}
+- name: wait-for-dns
+  image: {{ .Values.initContainers.waitForService.image | quote }}
+  command:
+    - sh
+    - -c
+    - |
+      set -e
+      until nslookup "$WAIT_HOST" >/dev/null 2>&1; do
+        echo "waiting for DNS: $WAIT_HOST"
+        sleep 2
+      done
+      echo "DNS resolved for $WAIT_HOST"
+  env:
+    - name: WAIT_HOST
+      value: {{ .Values.initContainers.waitForService.host | quote }}
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: false
+    runAsUser: 0
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      memory: 32Mi
+{{- end }}
+{{- if .Values.initContainers.download.enabled }}
+- name: init-download
+  image: {{ .Values.initContainers.download.image | quote }}
+  command:
+    - sh
+    - -c
+    - wget -q -O /work-dir/{{ .Values.initContainers.download.filename }} {{ .Values.initContainers.download.url | quote }}
+  volumeMounts:
+    - name: init-workdir
+      mountPath: /work-dir
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: false
+    runAsUser: 0
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 64Mi
+{{- end }}
+{{- end }}
+

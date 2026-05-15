@@ -42,7 +42,15 @@ spec:
       serviceAccountName: {{ include "devops-python.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.securityContext.pod | nindent 8 }}
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- include "devops-python.initContainers" . | nindent 8 }}
+      {{- end }}
       volumes:
+        {{- if .Values.initContainers.enabled }}
+        - name: init-workdir
+          emptyDir: {}
+        {{- end }}
         {{- if .Values.config.enabled }}
         - name: app-config
           configMap:
@@ -84,6 +92,11 @@ spec:
             {{- end }}
             - name: visits-data
               mountPath: /data
+            {{- if .Values.initContainers.enabled }}
+            - name: init-workdir
+              mountPath: /init
+              readOnly: true
+            {{- end }}
             - name: tmp
               mountPath: /tmp
           resources:

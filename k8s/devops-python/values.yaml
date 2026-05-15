@@ -118,6 +118,28 @@ rollout:
     enabled: false
     healthPath: /health
 
+# Lab 16 — init containers (kube-prometheus doc: k8s/MONITORING.md)
+initContainers:
+  enabled: true
+  download:
+    enabled: true
+    image: busybox:1.36
+    url: "http://example.com"
+    filename: "index.html"
+  waitForService:
+    enabled: true
+    image: busybox:1.36
+    # Resolves in every cluster — Lab 16 “wait until dependency exists” pattern
+    host: "kubernetes.default.svc.cluster.local"
+
+# Lab 16 bonus — Prometheus Operator ServiceMonitor (install kube-prometheus-stack first)
+serviceMonitor:
+  enabled: false
+  # Must match kube-prometheus-stack Helm release name (labels Prometheus resource)
+  releaseLabel: monitoring
+  interval: 30s
+  scrapeTimeout: 10s
+
 # Service account (required for Vault Kubernetes auth — Lab 11)
 serviceAccount:
   create: true

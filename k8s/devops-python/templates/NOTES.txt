@@ -25,7 +25,9 @@ Generic (port-forward):
   kubectl get pods,pvc -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
 {{- end }}
 
-3) Useful Helm commands:
+3) Lab 16 — Init file from init container: `/init/{{ .Values.initContainers.download.filename }}` (default `index.html`). Monitoring: `k8s/MONITORING.md`, optional ServiceMonitor: `.Values.serviceMonitor.enabled`
+
+4) Useful Helm commands:
   helm get manifest {{ .Release.Name }}
   helm get values {{ .Release.Name }}
   helm history {{ .Release.Name }}
