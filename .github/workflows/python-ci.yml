@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: [3.14]
-        uv-version: [0.9.30]
+        uv-version: [0.11.14]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     defaults:
@@ -35,7 +35,7 @@ jobs:
           uv-version: ${{ matrix.uv-version }}
           working-directory: app_python
           lockfile-path: app_python/uv.lock
-          install-args: --frozen
+          install-args: --locked
       - name: Lint with flake8
         run: uv run flake8 src tests
       - name: Test using pytest with coverage report

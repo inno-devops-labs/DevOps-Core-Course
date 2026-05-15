@@ -24,9 +24,28 @@ jobs:
       - uses: actions/checkout@v6
       - name: Setup Python tooling and dependencies
         uses: ./.github/actions/python-setup
+        with:
+          uv-version: 0.11.14
+          install-args: --locked --no-dev
       - name: Setup Snyk CLI
         uses: snyk/actions/setup@master
-      - name: Run Snyk dependency scan (or skip)
+      - name: Verify Snyk requirements export
+        run: |
+          uv export \
+            --locked \
+            --no-dev \
+            --no-annotate \
+            --no-header \
+            --no-hashes \
+            --format requirements.txt \
+            --output-file /tmp/snyk-requirements.txt \
+            > /dev/null
+          diff -u requirements.txt /tmp/snyk-requirements.txt
+      - name: Prepare Snyk scan environment
+        run: |
+          uv venv --seed .snyk-venv
+          uv pip install --python .snyk-venv/bin/python -r requirements.txt
+      - name: Run Snyk dependency scan
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
@@ -34,4 +53,9 @@ jobs:
             echo "SNYK_TOKEN secret not set; skipping Snyk dependency scan."
             exit 0
           fi
-          snyk test --severity-threshold=medium --fail-on=upgradable
+          snyk test \
+            --file=requirements.txt \
+            --package-manager=pip \
+            --command=.snyk-venv/bin/python \
+            --severity-threshold=medium \
+            --fail-on=upgradable

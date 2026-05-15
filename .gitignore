@@ -26,6 +26,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
+app_python/.venv/
+app_python/.snyk-venv/
+app_python/test-results/
 
 # IDE
 .vscode/
