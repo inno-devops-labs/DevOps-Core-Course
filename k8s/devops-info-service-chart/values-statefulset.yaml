@@ -1,0 +1,14 @@
+statefulset:
+  enabled: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+rollouts:
+  enabled: false
+replicaCount: 2
+persistence:
+  enabled: true
+  size: 100Mi
+image:
+  tag: lab12
