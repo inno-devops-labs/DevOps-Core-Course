@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-post-install
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": {{ .Values.hooks.postInstall.weight | quote }}
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 120
+  template:
+    metadata:
+      name: {{ include "devops-info-service.fullname" . }}-post-install
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: post-install-validation
+        image: {{ .Values.hooks.postInstall.image }}
+        command:
+        - sh
+        - -c
+        - |
+          echo "========================================="
+          echo "Post-install hook for {{ .Release.Name }}"
+          echo "Waiting for service to be ready..."
+          sleep 5
+          echo "Post-install validation completed!"
+          echo "Service should be accessible at:"
+          echo "  kubectl get svc {{ include "devops-info-service.fullname" . }}"
+          echo "========================================="

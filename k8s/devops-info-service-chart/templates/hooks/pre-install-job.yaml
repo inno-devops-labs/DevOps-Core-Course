@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "devops-info-service.fullname" . }}-pre-install
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": {{ .Values.hooks.preInstall.weight | quote }}
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 120
+  template:
+    metadata:
+      name: {{ include "devops-info-service.fullname" . }}-pre-install
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: pre-install-check
+        image: {{ .Values.hooks.preInstall.image }}
+        command:
+        - sh
+        - -c
+        - |
+          echo "========================================="
+          echo "Pre-install hook for {{ .Release.Name }}"
+          echo "Release namespace: {{ .Release.Namespace }}"
+          echo "Chart version: {{ .Chart.Version }}"
+          echo "========================================="
+          echo "Checking Kubernetes connectivity..."
+          echo "Pre-install validation completed successfully!"

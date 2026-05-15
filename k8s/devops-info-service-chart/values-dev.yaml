@@ -1,0 +1,24 @@
+# Development environment
+replicaCount: 1
+
+image:
+  tag: latest
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+service:
+  type: NodePort
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 3
