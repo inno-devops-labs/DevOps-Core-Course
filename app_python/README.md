@@ -14,7 +14,13 @@ Small Flask web service that reports service metadata, system information, runti
 ## Installation
 
 ```bash
-uv sync
+uv sync --locked
+```
+
+`uv.lock` is the source of truth for Python dependencies. `requirements.txt` is generated from it for Snyk's pip-compatible scan path and should be refreshed with:
+
+```bash
+uv export --locked --no-dev --no-annotate --no-header --no-hashes --format requirements.txt --output-file requirements.txt > /dev/null
 ```
 
 ### Docker
@@ -29,8 +35,9 @@ uv sync
   ```
   The Docker build installs dependencies with:
   ```bash
-  uv sync --frozen --no-dev --no-install-project
+  uv sync --locked --no-dev --no-install-project
   ```
+  The image uses the pinned uv binary image and runs as `appuser` with `HOME=/home/appuser`.
 
 ## Running the Application
 
@@ -86,7 +93,7 @@ For Lab 12, run the monitoring stack with a writable `/data` volume for the Pyth
 The project uses `pytest` for unit tests.
 
 ```bash
-uv sync
+uv sync --locked
 uv run pytest --cov=src --cov-report=term-missing
 ```
 

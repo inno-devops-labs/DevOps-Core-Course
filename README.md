@@ -16,6 +16,14 @@ Master **production-grade DevOps practices** through hands-on labs. Build, conta
 3. **Start with Lab 1** and progress sequentially
 4. **Submit PRs** for each lab (details below)
 
+## Module Directories
+
+- `app_python/`: Python DevOps Info Service.
+- `app_go/`: Go DevOps Info Service.
+- `k8s/`: Kubernetes, Helm, GitOps, rollout, storage, and monitoring labs.
+- `edge-api/`: Lab 17 Cloudflare Workers API.
+- `nix/`: Lab 18 reproducible builds with Nix, uv, flakes, and `dockerTools`.
+
 ---
 
 ## Course Roadmap
