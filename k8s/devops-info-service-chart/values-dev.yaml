@@ -22,3 +22,16 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 3
   periodSeconds: 3
+
+configmap:
+  enabled: true
+  env:
+    APP_ENV: "development"
+    LOG_LEVEL: "DEBUG"
+    FEATURE_METRICS: "false"
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 50Mi
+  storageClass: ""

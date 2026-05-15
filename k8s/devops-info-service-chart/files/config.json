@@ -1,0 +1,13 @@
+{
+  "app_name": "devops-info-service",
+  "environment": "production",
+  "features": {
+    "visits_counter": true,
+    "metrics": false,
+    "debug": false
+  },
+  "settings": {
+    "log_level": "INFO",
+    "max_visitors": 10000
+  }
+}

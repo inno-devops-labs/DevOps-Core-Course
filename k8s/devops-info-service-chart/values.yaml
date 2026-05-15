@@ -61,3 +61,23 @@ hooks:
     enabled: true
     image: busybox:1.36
     weight: 5
+secrets:
+  enabled: true
+  username: "myapp-user"
+  password: "myapp-pass"
+vault:
+  enabled: true
+  role: devops-info-service
+  secretPath: devops/data/devops-info-service/config
+configmap:
+  enabled: true
+  env:
+    APP_ENV: "production"
+    LOG_LEVEL: "INFO"
+    FEATURE_METRICS: "false"
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  storageClass: ""
