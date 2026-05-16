@@ -16,6 +16,19 @@ spec:
       labels:
         {{- include "devops-info-service.selectorLabels" . | nindent 8 }}
     spec:
+      initContainers:
+      - name: init-download
+        image: busybox:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "Downloading initial config..."
+          wget -O /init-data/config.txt https://raw.githubusercontent.com/prometheus/prometheus/main/README.md || echo "Download failed, using default"
+          echo "Init container completed"
+        volumeMounts:
+        - name: data
+          mountPath: /init-data
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
