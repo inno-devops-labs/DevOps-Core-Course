@@ -15,3 +15,6 @@ Pulumi.*.yaml
 key.json
 *.pem
 venv/
+venv/
+__pycache__/
+*.pyc
