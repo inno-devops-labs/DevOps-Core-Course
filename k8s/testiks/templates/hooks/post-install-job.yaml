@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "testiks.fullname" . }}-post-install"
+  labels:
+    {{- include "testiks.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": {{ if .Values.hooks.deleteAfterSuccess }}hook-succeeded{{ else }}before-hook-creation{{ end }}
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/managed-by: Helm
+        helm.sh/hook: post-install
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install
+          image: "curlimages/curl:8.5.0"
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              URL="http://{{ include "testiks.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}/health"
+              echo "post-install: smoke GET $URL"
+              i=0
+              while [ "$i" -lt 30 ]; do
+                if curl -fsS --connect-timeout 3 --max-time 10 "$URL"; then
+                  echo "post-install OK"
+                  exit 0
+                fi
+                i=$((i + 1))
+                echo "post-install: retry $i/30"
+                sleep 2
+              done
+              echo "post-install: health check failed" >&2
+              exit 1

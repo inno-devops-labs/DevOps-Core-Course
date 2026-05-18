@@ -1,3 +1,5 @@
 test
 .*
 minikube*
+edge-api
+**/__pycache__/
