@@ -1,0 +1,33 @@
+replicaCount: 3
+
+image:
+  repository: app-python
+  tag: "latest"
+  pullPolicy: Never
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 5000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 30
+  periodSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 3

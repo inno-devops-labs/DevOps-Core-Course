@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ include "app-python-chart.fullname" . }}-post-install"
+  labels:
+    {{- include "app-python-chart.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      name: "{{ include "app-python-chart.fullname" . }}-post-install"
+      labels:
+        {{- include "app-python-chart.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: post-install-check
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - echo "Post-install validation for {{ include "app-python-chart.fullname" . }}" && echo "Release resources were created"

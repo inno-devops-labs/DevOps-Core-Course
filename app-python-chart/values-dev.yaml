@@ -1,0 +1,34 @@
+replicaCount: 1
+
+image:
+  repository: app-python
+  tag: "latest"
+  pullPolicy: Never
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 30007
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 3
+  periodSeconds: 5

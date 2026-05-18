@@ -1,5 +1,7 @@
 # Kubernetes Deployment Report (Lab 09)
 
+> Lab 10 Helm documentation is in `k8s/HELM.md`.
+
 ## 1. Architecture Overview
 
 ### Deployment Architecture
