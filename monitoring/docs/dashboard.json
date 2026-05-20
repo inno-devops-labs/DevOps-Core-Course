@@ -24,7 +24,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dfggyt10utf5sf"
+        "uid": "cfmm3mons9iwwc"
       },
       "fieldConfig": {
         "defaults": {
@@ -75,9 +75,12 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfmm3mons9iwwc"
+          },
           "editorMode": "code",
           "expr": "up{job=\"python\"}",
-          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
@@ -88,7 +91,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dfggyt10utf5sf"
+        "uid": "cfmm3mons9iwwc"
       },
       "fieldConfig": {
         "defaults": {
@@ -137,7 +140,11 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
-          "editorMode": "code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfmm3mons9iwwc"
+          },
+          "editorMode": "builder",
           "expr": "http_requests_in_progress",
           "legendFormat": "__auto",
           "range": true,
@@ -150,7 +157,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dfggyt10utf5sf"
+        "uid": "cfmm3mons9iwwc"
       },
       "fieldConfig": {
         "defaults": {
@@ -199,6 +206,10 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfmm3mons9iwwc"
+          },
           "editorMode": "code",
           "expr": "sum by (status) (rate(http_requests_total[5m]))",
           "legendFormat": "__auto",
@@ -212,7 +223,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dfggyt10utf5sf"
+        "uid": "cfmm3mons9iwwc"
       },
       "fieldConfig": {
         "defaults": {
@@ -294,9 +305,13 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfmm3mons9iwwc"
+          },
           "editorMode": "code",
           "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
-          "legendFormat": "{{endpoint}}, {{job}}",
+          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
@@ -307,7 +322,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dfggyt10utf5sf"
+        "uid": "cfmm3mons9iwwc"
       },
       "fieldConfig": {
         "defaults": {
@@ -391,13 +406,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dfggyt10utf5sf"
+            "uid": "cfmm3mons9iwwc"
           },
           "editorMode": "code",
-          "exemplar": false,
-          "expr": "sum(rate(http_requests_total[5m])) by (endpoint)\n",
-          "instant": false,
-          "interval": "",
+          "expr": "sum(rate(http_requests_total[5m])) by (endpoint)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -409,7 +421,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dfggyt10utf5sf"
+        "uid": "cfmm3mons9iwwc"
       },
       "fieldConfig": {
         "defaults": {
@@ -490,9 +502,12 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfmm3mons9iwwc"
+          },
           "editorMode": "code",
           "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m]))",
-          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
@@ -503,7 +518,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dfggyt10utf5sf"
+        "uid": "cfmm3mons9iwwc"
       },
       "fieldConfig": {
         "defaults": {
@@ -565,19 +580,149 @@
       "pluginVersion": "12.3.1",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfmm3mons9iwwc"
+          },
           "editorMode": "code",
           "expr": "rate(http_request_duration_seconds_bucket[5m])",
-          "format": "heatmap",
-          "legendFormat": "{{le}},{{job}}",
+          "legendFormat": "__auto",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "Request Duration Heatmap",
       "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "efmm3jke8ju9sa"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "id": 8,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "showControls": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "cfmlvr4jdlwcgd"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{container=\"monitoring-infoservice-python-1\"} |= ``",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Python logs",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "efmm3jke8ju9sa"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 23
+      },
+      "id": 9,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "showControls": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "cfmlvr4jdlwcgd"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{container=\"monitoring-infoservice-python-1\"} |= `ERROR`",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Python errors only",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "efmm3jke8ju9sa"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      },
+      "id": 10,
+      "options": {
+        "dedupStrategy": "none",
+        "enableInfiniteScrolling": false,
+        "enableLogDetails": true,
+        "showControls": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "12.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "cfmlvr4jdlwcgd"
+          },
+          "direction": "backward",
+          "editorMode": "builder",
+          "expr": "{container=\"monitoring-infoservice-python-1\"} | json | __error__=``",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Python info logs",
+      "type": "logs"
     }
   ],
   "preload": false,
+  "refresh": "auto",
   "schemaVersion": 42,
   "tags": [],
   "templating": {
@@ -589,7 +734,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "DevOps lab 8",
+  "title": "DevOps lab 7",
   "uid": "g7xn7g",
   "version": 2
 }
