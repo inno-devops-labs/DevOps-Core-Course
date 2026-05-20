@@ -3,15 +3,19 @@ services:
     image: grafana/loki:3.0.0
     ports:
       - "3100:3100"
+    networks:
+      - default
+      - logging
     volumes:
       - ./loki/config.yml:/etc/loki/config.yml
       - loki-data:/loki
     command: -config.file=/etc/loki/config.yml
     healthcheck:
-      test: ["CMD", "curl", "--silent", "http://loki:3100/ready"]
+      start_period: 30s
+      timeout: 10s
       interval: 10s
-      timeout: 5s
       retries: 10
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://loki:3100/ready"]
     deploy:
       resources:
         limits:
@@ -27,6 +31,8 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     command: -config.file=/etc/promtail/config.yml
+    networks:
+      - logging
     deploy:
       resources:
         limits:
@@ -42,16 +48,20 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
     environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_AUTH_BASIC_ENABLED=true
+      - GF_AUTH_LDAP_ENABLED=true
+    env_file:
+      - ./grafana.env
     networks:
+      - default
       - logging
     healthcheck:
-      test: ["CMD", "curl", "--silent", "http://grafana:3000/api/health"]
+      start_period: 30s
+      timeout: 10s
       interval: 10s
-      timeout: 5s
-      retries: 5
+      retries: 10
+      test: ["CMD", "curl", "--silent", "http://grafana:3000/api/health"]
     deploy:
       resources:
         limits:
@@ -85,15 +95,17 @@ services:
     volumes:
       - python-app-data:/data
     networks:
+      - default
       - logging
     labels:
       logging: "promtail"
       app: "devops-python"
     healthcheck:
-      test: ["CMD", "curl", "--silent", "http://infoservice-python:8000/health"]
+      start_period: 30s
+      timeout: 10s
       interval: 10s
-      timeout: 5s
       retries: 10
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://infoservice-python:8000/health"]
     deploy:
       resources:
         limits:
@@ -107,15 +119,17 @@ services:
     ports:
       - "8001:8000"
     networks:
+      - default
       - logging
     labels:
       logging: "promtail"
       app: "devops-go"
     healthcheck:
-      test: ["CMD", "curl", "--silent", "http://infoservice-go:8000/health"]
+      start_period: 30s
+      timeout: 10s
       interval: 10s
-      timeout: 5s
       retries: 10
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://infoservice-go:8000/health"]
     deploy:
       resources:
         limits:
