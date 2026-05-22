@@ -5,7 +5,7 @@ credentials:
 replicaCount: 1
 
 image:
-  tag: "latest"
+  tag: "python-latest"
 
 resources:
   limits:

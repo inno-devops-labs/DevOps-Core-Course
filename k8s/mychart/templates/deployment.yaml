@@ -27,9 +27,25 @@ spec:
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         imagePullPolicy: "Always"
 
-        resources: {{ .Values.recources }}
-        livenessProbe: {{ .Values.livenessProbe }}
-        readinessProbe: {{ .Values.readinessProbe }}
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
 
   volumes:
     - name: config-volume
