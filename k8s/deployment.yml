@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infoservice
+  labels:
+    app: infoservice
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: infoservice
+  template:
+    metadata:
+      labels:
+        app: infoservice
+    spec:
+      containers:
+      - name: infoservice
+        image: ub3rch/infoservice:go-latest
+        volumeMounts:
+          - name: workdir
+            mountPath: /work-dir
+
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 3
+
+      volumes:
+        - name: workdir
+          emptyDir: {}
