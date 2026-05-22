@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
-  name: {{ include "mychart.fullname" . }}
+  name: infoservice
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -18,7 +18,14 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           # ... rest of container spec
   strategy:
-    blueGreen:
-      activeService: {{ include "mychart.fullname" . }}
-      previewService: {{ include "mychart.fullname" . }}-preview
-      autoPromotionEnabled: false  # Manual promotion
+    canary:
+      steps:
+        - setWeight: 20
+        - pause: {}  # Manual promotion required
+        - setWeight: 40
+        - pause: { duration: 30s }
+        - setWeight: 60
+        - pause: { duration: 30s }
+        - setWeight: 80
+        - pause: { duration: 30s }
+        - setWeight: 100
