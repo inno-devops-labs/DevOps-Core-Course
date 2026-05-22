@@ -5,6 +5,11 @@ metadata:
   labels:
     app: infoservice
 
+annotations:
+  vault.hashicorp.com/agent-inject: "true"
+  vault.hashicorp.com/role: "your-role"
+  vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
+
 spec:
   strategy:
     type: RollingUpdate
