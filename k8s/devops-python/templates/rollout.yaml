@@ -1,18 +1,12 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "devops-python.fullname" . }}
   labels:
     {{- include "devops-python.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  strategy:
-    type: {{ .Values.strategy.type }}
-    {{- if eq .Values.strategy.type "RollingUpdate" }}
-    rollingUpdate:
-      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
-      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
-    {{- end }}
+  revisionHistoryLimit: {{ .Values.rollout.revisionHistoryLimit }}
   selector:
     matchLabels:
       {{- include "devops-python.selectorLabels" . | nindent 6 }}
@@ -100,3 +94,22 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "devops-python.fullname" . }}-data
         {{- end }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "devops-python.fullname" . }}-service
+      previewService: {{ include "devops-python.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- with .Values.rollout.blueGreen.autoPromotionSeconds }}
+      autoPromotionSeconds: {{ . }}
+      {{- end }}
+      {{- with .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      scaleDownDelaySeconds: {{ . }}
+      {{- end }}
+    {{- else }}
+    canary:
+      maxSurge: {{ .Values.rollout.canary.maxSurge }}
+      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
+      steps:
+        {{- toYaml .Values.rollout.canary.steps | nindent 8 }}
+    {{- end }}
