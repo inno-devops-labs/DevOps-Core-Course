@@ -83,6 +83,20 @@ hooks:
   postInstall:
     enabled: true
 
+# Init containers configuration (Task 3)
+initContainers:
+  enabled: true
+  download:
+    enabled: true
+    image: busybox:1.36
+    # Create a test file to demonstrate init container sharing volume with main app
+    createTestFile: true
+  waitForService:
+    enabled: false
+    image: busybox:1.36
+    serviceName: "lab15-sts-devops-python-headless"
+    timeout: 30
+
 # Application configuration
 app:
   name: devops-info-service

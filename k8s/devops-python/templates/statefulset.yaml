@@ -21,6 +21,40 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
+      {{- if .Values.initContainers.enabled }}
+      initContainers:
+        {{- if .Values.initContainers.download.enabled }}
+        - name: init-download
+          image: {{ .Values.initContainers.download.image }}
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "=== Init Container: Creating test file ==="
+              echo "Pod hostname: $(hostname)"
+              echo "Init container timestamp: $(date)"
+              cat > /work-dir/initialized.txt << 'EOF'
+              Pod {{ .Release.Name }} initialized at $(date)
+              This file was created by init-download container
+              Main application can read this file in /data-init/
+              EOF
+              echo "Created by init-download on $(date)" >> /work-dir/initialized.txt
+              ls -la /work-dir/
+              cat /work-dir/initialized.txt
+          volumeMounts:
+            - name: workdir
+              mountPath: /work-dir
+        {{- end }}
+        {{- if .Values.initContainers.waitForService.enabled }}
+        - name: wait-for-service
+          image: {{ .Values.initContainers.waitForService.image }}
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Waiting for service {{ .Values.initContainers.waitForService.serviceName }}..."
+              timeout {{ .Values.initContainers.waitForService.timeout }} sh -c "until nslookup {{ .Values.initContainers.waitForService.serviceName }}; do sleep 2; done" || echo "Service check timeout"
+              echo "Service is ready!"
+        {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -84,6 +118,10 @@ spec:
             - name: data
               mountPath: {{ .Values.persistence.mountPath | quote }}
             {{- end }}
+            {{- if .Values.initContainers.enabled }}
+            - name: workdir
+              mountPath: /data-init
+            {{- end }}
       {{- if .Values.config.enabled }}
       volumes:
         - name: config-volume
@@ -92,6 +130,14 @@ spec:
             items:
               - key: config.json
                 path: config.json
+        {{- if .Values.initContainers.enabled }}
+        - name: workdir
+          emptyDir: {}
+        {{- end }}
+      {{- else if .Values.initContainers.enabled }}
+      volumes:
+        - name: workdir
+          emptyDir: {}
       {{- end }}
   {{- if .Values.persistence.enabled }}
   volumeClaimTemplates:
