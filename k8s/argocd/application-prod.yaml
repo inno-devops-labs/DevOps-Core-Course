@@ -8,7 +8,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/Leropsis/DevOps-Core-Course-v.git
-    targetRevision: lab13-solution
+    targetRevision: d8a14695fcc4f23c3eb84518c7049c1a851b0b79
     path: k8s/devops-python
     helm:
       valueFiles:

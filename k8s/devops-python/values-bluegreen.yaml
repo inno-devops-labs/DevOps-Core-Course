@@ -1,20 +1,26 @@
-# Development Environment Values
-# Lightweight configuration for development and testing
+# Blue-green rollout profile (Lab 14 Task 3)
+# Usage: helm upgrade --install <release> k8s/devops-python -f values-bluegreen.yaml -n <ns>
 
-# 3+ replicas required for meaningful canary weight steps (Lab 14)
-replicaCount: 3
+rollout:
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    previewService:
+      enabled: true
+      nodePort: 30084
+
+replicaCount: 2
 
 image:
   repository: devops-python
-  tag: "v2"
+  tag: "bg-v1"
   pullPolicy: IfNotPresent
 
 service:
   type: NodePort
   port: 80
   targetPort: 5000
-  # Distinct from default/prod and other lab releases on the same cluster (NodePort must be unique).
-  nodePort: 30082
+  nodePort: 30083
 
 resources:
   requests:
@@ -45,9 +51,16 @@ readinessProbe:
   failureThreshold: 2
 
 app:
-  environment: dev
+  name: devops-info-service-blue
+  environment: dev-bluegreen
   env:
-    APP_ENV: dev
+    APP_ENV: blue
     LOG_LEVEL: debug
     FEATURE_VISITS_COUNTER: "true"
     FEATURE_METRICS: "true"
+
+hooks:
+  preInstall:
+    enabled: false
+  postInstall:
+    enabled: false
