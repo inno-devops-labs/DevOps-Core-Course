@@ -1,0 +1,18 @@
+{{- if eq (default "statefulset" .Values.workload.kind) "statefulset" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "devops-python.fullname" . }}-headless
+  labels:
+    {{- include "devops-python.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "devops-python.selectorLabels" . | nindent 4 }}
+{{- end }}

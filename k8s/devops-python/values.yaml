@@ -4,6 +4,10 @@
 
 replicaCount: 3
 
+workload:
+  # statefulset | rollout
+  kind: statefulset
+
 image:
   repository: devops-python
   tag: "latest"
