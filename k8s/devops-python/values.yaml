@@ -44,12 +44,33 @@ readinessProbe:
   timeoutSeconds: 2
   failureThreshold: 3
 
-# Rolling update strategy
-strategy:
-  type: RollingUpdate
-  rollingUpdate:
+# Argo Rollouts strategy (Lab 14): canary | blueGreen
+rollout:
+  strategy: canary
+  revisionHistoryLimit: 3
+  blueGreen:
+    autoPromotionEnabled: false
+    autoPromotionSeconds: null
+    scaleDownDelaySeconds: 30
+    previewService:
+      enabled: true
+      nodePort: null
+  canary:
     maxSurge: 1
     maxUnavailable: 0
+    steps:
+      - setWeight: 20
+      - pause: {}
+      - setWeight: 40
+      - pause:
+          duration: 30s
+      - setWeight: 60
+      - pause:
+          duration: 30s
+      - setWeight: 80
+      - pause:
+          duration: 30s
+      - setWeight: 100
 
 # Helm lifecycle hooks
 hooks:
