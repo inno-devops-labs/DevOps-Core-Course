@@ -1,978 +1,603 @@
-# 📌 Lecture 3 — Continuous Integration: Automate Testing & Build Confidence
+# 📌 Lecture 3 — Continuous Integration: From "Merge Week" to Green on Every Push
 
 ## 📍 Slide 1 – 🤖 Welcome to CI/CD
 
-* 🐛 **Manual testing** = slow, error-prone, doesn't scale
-* 🤖 **Continuous Integration** = automate testing, building, and validation
-* ✅ **Goal**: Catch bugs before they reach production
-* 🚀 This lecture: Build your first CI/CD pipeline with GitHub Actions
+* 🐳 Lecture 2 ended with an image that "works everywhere" — but only if you remember to rebuild, scan, and push it
+* 🤖 **Continuous Integration** makes that "if" a "when": every commit runs the same pipeline, on the same runner, with the same scanner
+* 🎯 This lecture: build the GitHub Actions workflow Lab 3 asks for — test → lint → scan → build → publish, gated on every PR
+* 🔗 **Lab 3 builds this exact workflow** for the Python service from Lab 1 and the image from Lab 2
 
 ```mermaid
 flowchart LR
-  Manual[😰 Manual Testing] -->|CI/CD| Auto[🤖 Automated Pipeline]
-  Auto --> Confidence[💪 Deploy with Confidence]
+  Push[📤 git push] --> CI[🤖 GitHub Actions]
+  CI -->|✅| Image[🐳 GHCR image]
+  CI -->|❌| Block[🚫 PR blocked]
 ```
+
+> 📚 **Frame:** CI is the bridge between "I changed code on my laptop" (Lec 1) and "this exact image runs in K8s" (Lec 9). Skip CI and the bridge is a leap of faith.
 
 ---
 
 ## 📍 Slide 2 – 🎯 Learning Outcomes
 
-* ✅ Understand CI/CD principles and benefits
-* ✅ Write effective unit tests
-* ✅ Build GitHub Actions workflows
-* ✅ Implement security scanning with Snyk
-* ✅ Apply CI/CD best practices (caching, versioning)
-
-**🎓 By the end of this lecture:**
-
-| # | 🎯 Outcome |
-|---|-----------|
-| 1 | 🧠 Explain CI/CD and why it matters |
-| 2 | 🧪 Write meaningful unit tests |
-| 3 | ⚙️ Create GitHub Actions workflows |
-| 4 | 🔐 Integrate security scanning |
-| 5 | 📦 Automate Docker builds & publishing |
+| # | Outcome |
+|---|---------|
+| 1 | 🧠 Define CI, CD, and CDeploy in Humble & Farley's terms |
+| 2 | 🔺 Apply the test pyramid — unit-heavy, integration-thin, E2E-rare |
+| 3 | 📝 Read and write a GitHub Actions workflow from scratch |
+| 4 | 🛡️ Gate merges on Trivy vulnerability scans and required checks |
+| 5 | 🏷️ Choose SemVer vs CalVer and tag images accordingly |
+| 6 | ⚡ Diagnose slow CI — caching, matrices, path filters, concurrency |
 
 ---
 
-## 📍 Slide 3 – 📋 Lecture Overview
+## 📍 Slide 3 – 🛠️ Tech Stack (Pinned for May 2026)
 
-* 📚 **CI/CD fundamentals** — what, why, how
-* 🧪 **Testing strategies** — unit, integration, coverage
-* ⚙️ **GitHub Actions** — YAML workflows, actions marketplace
-* 🔐 **Security** — Snyk vulnerability scanning
-* 🚀 **Automation** — Docker builds, versioning, caching
+| Component | Version | Why pinned |
+|-----------|--------:|------------|
+| Runner | `ubuntu-24.04` | LTS; `ubuntu-latest` rotates and breaks reproducibility |
+| `actions/checkout` | `@v4` | Node 20 runtime; v3 was deprecated Feb 2024 |
+| `actions/setup-python` | `@v5` | Built-in `cache: pip` keyed off `requirements.txt` |
+| `docker/build-push-action` | `@v6` | BuildKit + multi-platform; v5 EOL April 2025 |
+| `docker/metadata-action` | `@v5` | SemVer/CalVer/SHA tags in one step |
+| Trivy | `v0.69.3+` | ⚠️ Mar 2026 supply-chain attack (v0.69.4 malicious — see Slide 15); CVE DB updated daily; alternatives: Grype, Snyk (paid) |
+| Cosign | `2.4` | Sigstore client; image signing covered in DevSecOps elective |
+| pytest | `8.3+` | Python 3.13 compatible |
 
-**⏱️ Lecture Structure:**
-```
-Section 0: Introduction           → 📝 PRE Quiz
-Section 1: The Testing Problem
-Section 2: CI/CD Fundamentals
-Section 3: GitHub Actions Hands-on → 📝 MID Quiz
-Section 4: Advanced CI Patterns
-Section 5: Production Practices
-Section 6: Reflection             → 📝 POST Quiz
-```
+> 📌 **Pin actions to a major tag** (`@v4`), pin tools to a minor version, pin base images by digest in production. Lab 3 enforces the first two.
 
 ---
 
 ## 📍 Slide 4 – ❓ The Big Question
 
-* 📊 **85%** of software bugs are found in production (2024)
-* ⏱️ Average cost to fix a prod bug: **100x** more than dev bug
-* 🚀 Teams with good CI deploy **46x** more frequently
+* 📊 **DORA 2024:** elite teams deploy on-demand, multiple times per day; low performers deploy less than once a month
+* 🐛 **Capers Jones (2012):** fixing a prod bug costs **30–100×** the cost of catching it in dev
+* 🔍 **Sonatype 2024:** 1 in 8 open-source downloads carries a known vulnerability — deps are the attack surface
 
-> 💬 *"If it hurts, do it more often"* — Continuous Delivery principle
-
-**🤔 Think about it:**
-* How do you know your code works before deploying?
-* What happens when someone breaks the main branch?
-* How many bugs could be caught automatically?
+> 💬 *"If it hurts, do it more often."* — Martin Fowler, *Continuous Integration* (2006)
 
 ---
 
-## 📍 Slide 5 – 📝 QUIZ — DEVOPS_L3_PRE
+## 📍 Slide 5 – 🔥 The Problem: Manual Testing Hell
 
----
+A team without CI looks like this:
 
-## 📍 Slide 6 – 🔥 Section 1: The Testing Problem
-
-* 👨‍💻 **Developer**: "It works on my machine!"
-* 🐛 **Production**: 500 errors, users complaining
-* 😰 **The gap**: No automated testing or validation
-* 💥 **Result**: Bugs slip through, confidence is low
+* 📋 50-step manual checklist before each release
+* 🗓️ Releases monthly because each one takes a full day
+* 😴 The QA engineer forgot to test `/health` again
+* 💥 Production breaks; nobody can replay what was deployed
 
 ```mermaid
 flowchart LR
-  Dev[👨‍💻 Dev: Works!] -->|No Tests| Prod[🌐 Production]
-  Prod --> Bug[🐛 Bug Found]
-  Bug --> Fire[🔥 Firefighting]
+  Code[💻 Code] --> Wait[📅 Release window] --> Manual[📋 Checklist] --> Deploy[🙏 Deploy] --> War[🔥 War room]
 ```
+
+> 📖 Lecture 1 named this *Manual Release Hell*. CI is the practice that retires it.
 
 ---
 
-## 📍 Slide 7 – 🧪 Manual Testing Hell
+## 📍 Slide 6 – 💥 The Integration Problem ("Merge Week")
 
-* 📋 **Manual checklist**: 50 steps to test before deploy
-* ⏱️ **Time**: 2 hours per test cycle
-* 😴 **Human error**: Forgot to test one endpoint
-* 🔄 **Frequency**: Only before big releases (too painful)
+Before CI, integrating long-lived branches was a scheduled event:
+
+* 🌿 Five devs on feature branches for **3 weeks**
+* 📅 "Integration Friday" — everyone merges into `main` at once
+* 🔀 Hours of conflict resolution; nobody understands the diffs
+* 💀 `main` broken for a week; nobody can ship
+
+> 📖 Kent Beck (*Extreme Programming*, 1999) prescribed the cure: **integrate at least daily**. Humble & Farley codified it in *Continuous Delivery* (2010).
+
+**The fix:** small commits, trunk-based development, every push validated by CI.
+
+---
+
+## 📍 Slide 7 – 🔓 The Security Gap
+
+Lecture 2 ended with `trivy image`. Run it once, by hand, and you'll forget — and a CVE published next Tuesday won't ring any bells.
+
+* 🔍 **Sonatype 2024:** average enterprise app pulls **180+ open-source dependencies**
+* ⏱️ Median time-to-detect a vulnerable dep without scanning: **218 days** (Snyk *State of Open Source 2024*)
+* 🤖 **GitGuardian 2024:** leaked credentials in public repos are found by scanner bots in **under 5 minutes**
+
+> 🔥 **CI is where security shifts left** — the scan runs on every PR, not "when we have time".
+
+---
+
+## 📍 Slide 8 – 💡 What CI/CD Actually Is
+
+Three terms, often conflated. Humble & Farley's *Continuous Delivery* (2010) draws the lines:
+
+| Term | Definition | Trigger |
+|------|------------|---------|
+| 🤖 **Continuous Integration** | Every commit is built and tested in a shared trunk | Push / PR |
+| 📦 **Continuous Delivery** | Every passing commit is **deployable** at any time | Merge to `main` |
+| 🚀 **Continuous Deployment** | Every passing commit is **automatically deployed** to prod | Merge to `main` |
+
+```mermaid
+flowchart LR
+  Commit[📝 Commit] --> CI[🤖 CI: test+build]
+  CI -->|deployable| CDel[📦 CD: ready]
+  CDel -->|manual gate| Prod1[🚀 Prod]
+  CDel -->|auto| Prod2[🚀 Auto-deploy]
+```
+
+> 📖 Jez Humble: *"Continuous Delivery is not Continuous Deployment. The difference is who pushes the button."*
+
+---
+
+## 📍 Slide 9 – 🔄 Pipeline Anatomy
+
+Every modern CI pipeline has the same skeleton — Lab 3 builds the boxed steps:
+
+```mermaid
+flowchart LR
+  Push[📤 Push] --> Lint[🔍 Lint]
+  Lint --> Test[🧪 Unit tests]
+  Test --> Scan[🛡️ Vuln scan]
+  Scan --> Build[🐳 Build image]
+  Build --> Publish[📦 Push to GHCR]
+  Publish -.->|Lab 13| Deploy[🚀 Deploy]
+```
+
+* 🔍 **Lint** — `ruff` / `flake8` / `pylint`. Seconds.
+* 🧪 **Test** — `pytest` against Lab 1's endpoints. Tens of seconds.
+* 🛡️ **Scan** — Trivy or Grype on deps and image. ~1 min.
+* 🐳 **Build** — Lab 2's multi-stage Dockerfile, BuildKit cached.
+* 📦 **Publish** — GHCR (free for public, GitHub-native, `GITHUB_TOKEN`).
+
+> 🔗 Deploy (dashed) is Lecture 13 / Lab 13 — ArgoCD watches the registry.
+
+---
+
+## 📍 Slide 10 – 🔺 The Testing Pyramid
+
+Mike Cohn's pyramid (*Succeeding with Agile*, 2009) is still the model:
 
 ```mermaid
 flowchart TD
-  Code[📝 Write Code] --> Manual[📋 Manual Testing]
-  Manual --> Bug[🐛 Found Bug]
-  Bug --> Fix[🔧 Fix Code]
-  Fix --> Manual
-  Manual --> Deploy[😮‍💨 Finally Deploy]
+  E2E[🌐 E2E — few, slow, brittle]
+  INT[🔗 Integration — moderate]
+  UNIT[🧪 Unit — many, fast, deterministic]
+  E2E --- INT
+  INT --- UNIT
 ```
 
-**😰 Problems:**
-* 🐌 Slow feedback loop
-* 🎰 Testing is inconsistent
-* 🧠 Requires human to remember all steps
-* 💀 Nobody wants to test
+| Layer | Share | Speed | Catches |
+|-------|------:|------:|---------|
+| 🧪 Unit | ~70% | ms | Logic bugs in pure functions |
+| 🔗 Integration | ~20% | seconds | Wrong HTTP status, DB query shape |
+| 🌐 E2E | ~10% | minutes | Cross-service flows, UI |
+
+> ⚠️ **Inverted pyramid (E2E-heavy) = slow, flaky CI.** Google's *Testing Blog* calls it the *ice-cream cone* anti-pattern. Lab 3 stays at the unit layer; integration tests appear in Lab 7+.
 
 ---
 
-## 📍 Slide 8 – 💥 The Integration Problem
+## 📍 Slide 11 – 📝 GitHub Actions Workflow Anatomy
 
-* 👥 **Multiple developers** pushing to main branch
-* 🔀 **Merge conflicts** caught too late
-* 💥 **Breaking changes** not detected
-* 🤷 **"Who broke the build?"** — the blame game
-
-```mermaid
-flowchart LR
-  Dev1[👨‍💻 Dev 1] -->|Push| Main[🌳 Main Branch]
-  Dev2[👩‍💻 Dev 2] -->|Push| Main
-  Dev3[👨‍💻 Dev 3] -->|Push| Main
-  Main --> Break[💥 Build Broken]
-```
-
-> 🤔 **Think:** How do we prevent this?
-
----
-
-## 📍 Slide 9 – 🔐 The Security Gap
-
-* 📦 **Dependencies** with known vulnerabilities
-* 🔓 **Secrets** accidentally committed
-* 🚨 **CVEs** discovered after deployment
-* 🤷 **Nobody checked** before merging
-
-**📊 Real Stats:**
-* 🔍 **84%** of codebases have vulnerable dependencies
-* ⏱️ Average time to detect vulnerability: **54 days**
-* 💰 Average breach cost: **$4.45 million**
-
----
-
-## 📍 Slide 10 – 💸 The Cost of No CI
-
-| 🔥 Problem | 💥 Impact |
-|------------|-----------|
-| 🐛 Bugs in production | Customer churn, reputation damage |
-| ⏱️ Slow feedback | Wasted development time |
-| 😰 Fear of deployment | Infrequent releases |
-| 🔒 Security vulnerabilities | Data breaches, compliance issues |
-
-**📈 Real Numbers:**
-* 🐛 Prod bug fix cost: **$10,000 - $100,000**
-* 🕒 Time to detect + fix: **4-8 hours**
-* 🏢 Without CI: Deploy **monthly**
-* 🚀 With CI: Deploy **daily**
-
----
-
-## 📍 Slide 11 – 💡 Section 2: CI/CD Fundamentals
-
-* 🤖 **Continuous Integration (CI)** = automatically test every change
-* 🚀 **Continuous Delivery (CD)** = always ready to deploy
-* 📦 **Continuous Deployment** = automatically deploy to production
-* 🎯 **Goal**: Fast, reliable, automated software delivery
-
-```mermaid
-flowchart LR
-  CI[🤖 CI: Test] --> CD[📦 CD: Package]
-  CD --> Deploy[🚀 Deploy]
-```
-
-**📖 Definitions:**
-> *CI: Developers integrate code into shared repository frequently. Each integration is verified by automated build and tests.*
-> *CD: Software can be released to production at any time.*
-
----
-
-## 📍 Slide 12 – 🔄 The CI/CD Pipeline
-
-```mermaid
-flowchart LR
-  Commit[📝 Commit] --> Trigger[⚡ Trigger CI]
-  Trigger --> Checkout[📥 Checkout Code]
-  Checkout --> Build[🔨 Build]
-  Build --> Test[🧪 Test]
-  Test --> Lint[🔍 Lint]
-  Lint --> Scan[🔐 Security Scan]
-  Scan --> Package[📦 Package]
-  Package --> Publish[🚀 Publish]
-```
-
-**🔧 Stages:**
-1. 📝 **Commit** — Developer pushes code
-2. ⚡ **Trigger** — CI system detects change
-3. 🔨 **Build** — Compile/prepare code
-4. 🧪 **Test** — Run automated tests
-5. 🔍 **Lint** — Check code quality
-6. 🔐 **Scan** — Security vulnerabilities
-7. 📦 **Package** — Build artifacts (Docker image)
-8. 🚀 **Publish** — Push to registry
-
----
-
-## 📍 Slide 13 – ✅ CI/CD Benefits
-
-| 🎯 Benefit | 📊 Impact |
-|-----------|----------|
-| ⚡ **Fast Feedback** | Know in 5 min if code works |
-| 🐛 **Early Bug Detection** | Catch before production |
-| 🔒 **Security** | Automated vulnerability scanning |
-| 📦 **Consistent Builds** | Same process every time |
-| 💪 **Confidence** | Deploy without fear |
-| 🚀 **Faster Releases** | Deploy multiple times per day |
-
-**📈 DORA Metrics (Elite Performers):**
-* 📦 Deploy frequency: **Multiple times/day**
-* ⏱️ Lead time: **< 1 hour**
-* 🔧 MTTR: **< 1 hour**
-* ❌ Change failure rate: **< 15%**
-
----
-
-## 📍 Slide 14 – 🧪 Testing Pyramid
-
-```mermaid
-flowchart TD
-  subgraph Pyramid["🔺 Testing Pyramid"]
-    E2E[🌐 E2E Tests<br/>Few, Slow, Expensive]
-    INT[🔗 Integration Tests<br/>Some, Moderate]
-    UNIT[🧪 Unit Tests<br/>Many, Fast, Cheap]
-  end
-  E2E --> INT --> UNIT
-```
-
-**🎯 Test Types:**
-* 🧪 **Unit Tests** (80%) — Test individual functions
-* 🔗 **Integration Tests** (15%) — Test components together
-* 🌐 **End-to-End Tests** (5%) — Test full user flows
-
-**💡 Why the pyramid?**
-* ✅ Unit tests: Fast (ms), cheap, catch most bugs
-* ✅ Integration: Slower (seconds), catch interface bugs
-* ⚠️ E2E: Slowest (minutes), brittle, expensive
-
----
-
-## 📍 Slide 15 – ⚡ Before vs After CI/CD
-
-| 😰 Before CI/CD | 🚀 After CI/CD |
-|-----------------|----------------|
-| 📋 Manual testing checklist | 🤖 Automated test suite |
-| 🎰 "Fingers crossed" deploys | ✅ Confident deployments |
-| 🐛 Bugs found in production | 🧪 Bugs caught in CI |
-| ⏱️ 2 hour test cycle | ⚡ 5 minute feedback |
-| 😱 Deploy monthly | 🚀 Deploy daily |
-| 🤷 "Who broke it?" | 📊 Git bisect + logs |
-
-> 🤔 Which column is your current process?
-
----
-
-## 📍 Slide 16 – 🎮 Section 3: GitHub Actions Hands-On
-
-## 🕹️ Lab Preview: Build Your CI Pipeline
-
-* 🏢 **Scenario**: You have a Python Flask app
-* 🎯 **Goal**: Automate testing and Docker builds
-* 📋 **Requirements**: Tests, lint, security scan, publish
-
-**❓ How do we automate all this?**
-
-> 🤖 **GitHub Actions** to the rescue!
-
-🎮 **Let's build it step by step.**
-
----
-
-## 📍 Slide 17 – 💥 Scenario 1: No Tests
-
-**😰 The Problem:**
-```python
-# app.py
-@app.route('/')
-def home():
-    return {"message": "Hello", "hostname": os.getenv("HOSTNAME")}
-
-# 🚫 No tests!
-```
-
-* 📝 Code looks fine
-* 💥 Deploy → crashes because `HOSTNAME` is None
-* 🐛 Users see 500 errors
-* 😱 Rollback emergency
-
-> ❓ **How do we catch this before deploy?**
-
----
-
-## 📍 Slide 18 – ✅ Solution: Unit Testing
-
-## 🛠️ Fix: Write Tests First
-
-```python
-# tests/test_app.py
-import pytest
-from app import app
-
-def test_home_endpoint():
-    """Test that home returns expected structure"""
-    client = app.test_client()
-    response = client.get('/')
-
-    assert response.status_code == 200
-    data = response.get_json()
-    assert "message" in data
-    assert "hostname" in data
-    assert isinstance(data["message"], str)
-
-def test_health_endpoint():
-    """Test health check"""
-    client = app.test_client()
-    response = client.get('/health')
-
-    assert response.status_code == 200
-    assert response.get_json()["status"] == "healthy"
-```
-
-**🎯 Result:** Tests catch the bug before deploy!
-
----
-
-## 📍 Slide 19 – 🧪 Testing Frameworks
-
-## Python Testing Options
-
-| Framework | 🎯 Pros | ⚠️ Cons |
-|-----------|--------|--------|
-| **pytest** | Simple, powerful, fixtures | Extra dependency |
-| **unittest** | Built-in, no dependencies | Verbose, old-style |
-
-```bash
-# 🧪 pytest (recommended)
-pip install pytest
-pytest tests/
-
-# 🧪 unittest (built-in)
-python -m unittest discover tests/
-```
-
-**💡 Why pytest?**
-* ✅ Simple syntax (`assert` instead of `self.assertEqual`)
-* ✅ Powerful fixtures (setup/teardown)
-* ✅ Great plugins (coverage, parallel, etc.)
-* ✅ Industry standard
-
----
-
-## 📍 Slide 20 – 📝 Scenario 2: Manual Docker Builds
-
-**😰 The Problem:**
-```bash
-# 🐌 Manual process every time
-docker build -t myapp:latest .
-docker tag myapp:latest username/myapp:v1.2.3
-docker login
-docker push username/myapp:v1.2.3
-docker push username/myapp:latest
-
-# 😱 Forgot to update version tag!
-# 💀 Built from wrong branch!
-```
-
-* ⏱️ Takes 10 minutes
-* 🎰 Inconsistent (human error)
-* 📋 No validation before build
-* 🤷 Can't track what version is deployed
-
----
-
-## 📍 Slide 21 – ✅ Solution: GitHub Actions CI/CD
-
-## 🛠️ Fix: Automate Everything
+A workflow is a YAML file under `.github/workflows/`. Read these keys top-to-bottom:
 
 ```yaml
-# .github/workflows/python-ci.yml
-name: Python CI
-
-on:
-  push:
-    branches: [ main ]
+name: Python CI                    # 👁️ shown in the Actions tab
+on:                                # ⚡ triggers
+  push: { branches: [main] }
   pull_request:
+permissions:                       # 🔒 minimum required
+  contents: read
+  packages: write                  # for GHCR push
+concurrency:                       # ♻️ cancel superseded runs on the same PR
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04          # 📌 pinned, not :latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest flake8
-
-      - name: Lint
-        run: flake8 app.py
-
-      - name: Test
-        run: pytest tests/
+        with: { python-version: "3.13", cache: pip }
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest -q
 ```
 
-**🎯 Result:** Every commit automatically tested!
+> 📌 **Pin actions to a major tag** (`@v4`). Pinning to `@main` lets an upstream compromise silently land in your CI (cf. **tj-actions/changed-files** supply-chain attack, **March 14-15, 2025**, **CVE-2025-30066** — 23,000+ repos leaked secrets in CI logs; fixed in v46.0.1).
 
 ---
 
-## 📍 Slide 22 – 🐳 Docker Build Automation
+## 📍 Slide 12 – 🧩 Jobs, Steps, Needs, Matrices
+
+* 🧱 **Workflow** → many **jobs** → many **steps**
+* 🧱 **Jobs run in parallel** by default; sequence them with `needs:`
+* 🧱 **Each job is a fresh VM** — files don't carry between jobs unless you `upload-artifact`/`download-artifact`
+* 🧱 **Matrices** fan out one job over many parameters
 
 ```yaml
+jobs:
+  test:
+    strategy:
+      fail-fast: false             # don't kill 3.12 when 3.13 fails
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/setup-python@v5
+        with: { python-version: "${{ matrix.python-version }}" }
+      - run: pytest
+
   docker:
-    needs: test  # ✅ Only run if tests pass
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: ./app_python
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/myapp:latest
-            ${{ secrets.DOCKER_USERNAME }}/myapp:${{ github.sha }}
+    needs: test                    # 🔗 only runs if every matrix cell passed
+    runs-on: ubuntu-24.04
+    steps: ...
 ```
 
-**🔐 Security Note:** Never hardcode credentials!
+> 💡 **Concurrency × matrix:** 3 jobs × N PRs can drain free-tier minutes fast. Always set `cancel-in-progress` (Slide 11).
 
 ---
 
-## 📍 Slide 23 – 🔓 Scenario 3: Vulnerable Dependencies
+## 📍 Slide 13 – 🎮 Scenario 1: No Tests → pytest in CI
 
-**😰 The Problem:**
+**The failure:**
+
+```python
+# app.py from Lab 1
+@app.route("/")
+def home():
+    return {"message": "Hello", "hostname": os.environ["HOSTNAME"]}
+```
+
+A typo in `os.environ` raises `KeyError`. It works on the dev's laptop because their `HOSTNAME` is set; it crashes in the container where it isn't.
+
+**The fix — pytest under CI:**
+
+```python
+# tests/test_app.py
+def test_home_returns_hostname_field(client, monkeypatch):
+    monkeypatch.delenv("HOSTNAME", raising=False)
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "hostname" in r.get_json()
+
+def test_health_endpoint(client):
+    r = client.get("/health")
+    assert r.status_code == 200
+    assert r.get_json()["status"] == "healthy"
+```
+
+> 🔗 **Lab 3 Task 1** asks you to write exactly these tests for `/` and `/health` — and to justify pytest vs unittest. Pytest's fixtures + plain `assert` win for most projects.
+
+---
+
+## 📍 Slide 14 – 🎮 Scenario 2: Manual Docker Builds → build-push-action
+
+**The failure (Lab 2's manual flow):**
+
 ```bash
-# requirements.txt
-flask==2.0.1  # 💀 Known CVE-2023-30861
-requests==2.25.0  # 🔓 Security vulnerability
-
-# 🤷 Nobody checked before deploying
+docker build -t myapp:latest .
+docker tag myapp:latest ghcr.io/me/myapp:v1.2.3
+docker login ghcr.io                       # ← typed by hand
+docker push ghcr.io/me/myapp:v1.2.3
+docker push ghcr.io/me/myapp:latest
+# 😱 forgot to push :v1.2.3 → prod runs yesterday's bug
 ```
 
-* 🔍 **84%** of apps have vulnerable dependencies
-* ⏱️ Takes **weeks** to discover
-* 💀 Already in production when found
-
-**📊 Real Example:**
-* 📦 Log4Shell (2021) — **35,000+ CVE**
-* 💰 Cost to remediate: **Billions of dollars**
-
----
-
-## 📍 Slide 24 – ✅ Solution: Snyk Security Scanning
-
-## 🛠️ Fix: Automated Vulnerability Scanning
+**The fix:**
 
 ```yaml
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Snyk
-        uses: snyk/actions/python-3.10@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
+docker:
+  needs: test
+  runs-on: ubuntu-24.04
+  permissions: { contents: read, packages: write }
+  steps:
+    - uses: actions/checkout@v4
+    - uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}    # 🔒 ephemeral, no secret to rotate
+    - uses: docker/metadata-action@v5
+      id: meta
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=semver,pattern={{version}}
+          type=sha,prefix=git-
+          type=raw,value=latest,enable={{is_default_branch}}
+    - uses: docker/build-push-action@v6
+      with:
+        context: ./app_python
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 ```
 
-**🎯 What Snyk Does:**
-* 🔍 Scans dependencies for known CVEs
-* 📊 Reports severity (low/medium/high/critical)
-* 🔧 Suggests fixes
-* ❌ Fails build if critical vulnerabilities found
-
-**🔐 Result:** Catch vulnerabilities before production!
+> 🔗 **Lab 3 Task 2** builds this exact job. `GITHUB_TOKEN` is auto-provisioned per run — no Docker Hub credentials to manage.
 
 ---
 
-## 📍 Slide 25 – 🐌 Scenario 4: Slow CI Builds
+## 📍 Slide 15 – 🎮 Scenario 3: Vulnerable Dependencies → Trivy + Dependabot
 
-**😰 The Problem:**
+**The failure:**
+
 ```
-[Run 1] Installing dependencies... 2 minutes
-[Run 2] Installing dependencies... 2 minutes
-[Run 3] Installing dependencies... 2 minutes
-# 💸 Wasting 6 minutes downloading same packages!
+# requirements.txt
+flask==2.0.1            # CVE-2023-30861 (high) — session cookie disclosure
+requests==2.25.0        # CVE-2023-32681 (medium) — proxy auth leak
 ```
 
-* ⏱️ Each run: **5-10 minutes**
-* 🔄 Re-downloading same dependencies
-* 💰 Wasting CI minutes (costs money!)
-* 😴 Slow feedback loop
+Lecture 2 introduced `trivy image`. CI runs it on every PR.
+
+```yaml
+- uses: aquasecurity/trivy-action@0.35.0   # 📌 v0.35.0+ post-incident-safe (see callout)
+  with:
+    scan-type: fs                      # scan requirements.txt + lockfiles
+    severity: HIGH,CRITICAL
+    exit-code: "1"                     # 🚫 fail the job
+    ignore-unfixed: true               # skip CVEs with no patch yet
+```
+
+> ⚠️ **The Trivy supply-chain attack (March 19, 2026 — CVE-2026-33634).** A malicious **Trivy v0.69.4** binary was published to the official GitHub release page after the maintainer's signing keys were compromised. Any CI job that pinned `trivy-action` to floating `master`/`latest`, or that called `curl -sfL .../install.sh | sh` on Mar 19-20, executed attacker code on the runner — with full access to the CI secret store. The fix shipped within 24h (Trivy **v0.69.3** rolled back to the last-known-good build; `trivy-action **v0.35.0+`**, `setup-trivy **v0.2.6+`** are post-incident-safe). **Lesson for this lecture:** the *scanner itself* is in your supply chain. Pin it. Verify its signature. The exact same pattern (compromised maintainer → malicious release) sank tj-actions/changed-files a year earlier — twice in 12 months for two of the most-used security tools in CI/CD.
+
+
+**Pair with Dependabot** (`.github/dependabot.yml` — native, no token, no third party):
+
+```yaml
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /app_python
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions  # 🔒 keep actions/checkout@v4 fresh
+    directory: /
+    schedule: { interval: weekly }
+```
+
+> 🛡️ **Tool choice:** Trivy (Aqua, Apache-2.0) and Grype (Anchore, Apache-2.0) are first-class FOSS. Snyk is feature-rich but paid past the free tier. Lab 3 accepts any of the three.
 
 ---
 
-## 📍 Slide 26 – ✅ Solution: Dependency Caching
+## 📍 Slide 16 – 🎮 Scenario 4: Slow CI → Caching
 
-## 🛠️ Fix: Cache Dependencies
+```
+[Run 1] pip install ........................ 2m 18s
+[Run 2] pip install ........................ 2m 14s     # identical deps
+[Run 3] pip install ........................ 2m 21s     # 😴 still downloading
+```
+
+**The fix — built into `setup-python`:**
 
 ```yaml
 - uses: actions/setup-python@v5
   with:
-    python-version: '3.12'
-    cache: 'pip'  # ✅ Enable caching
-    cache-dependency-path: 'requirements.txt'
-
-# Alternative with explicit cache
-- uses: actions/cache@v4
-  with:
-    path: ~/.cache/pip
-    key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+    python-version: "3.13"
+    cache: pip
+    cache-dependency-path: app_python/requirements.txt
 ```
 
-**📊 Performance Impact:**
-* ⏱️ **Before caching**: 5 minutes
-* ⚡ **After caching**: 30 seconds
-* 🚀 **10x faster!**
+The cache key is `runner.os + python-version + hash(requirements.txt)`. Touch `requirements.txt` and the cache invalidates automatically.
 
-**💡 Cache Key Strategy:**
-* 🔑 Key includes `requirements.txt` hash
-* 🔄 Cache invalidates when dependencies change
-* ✅ Fresh install when needed, cached otherwise
-
----
-
-## 📍 Slide 27 – 📝 QUIZ — DEVOPS_L3_MID
-
----
-
-## 📍 Slide 28 – 🏷️ Section 4: Versioning Strategies
-
-## 📦 How to Version Your Images?
-
-**Two main approaches:**
-
-**🔢 Semantic Versioning (SemVer):**
-* Format: `MAJOR.MINOR.PATCH` (e.g., `1.2.3`)
-* 🎯 Use when: Breaking changes matter
-* 📚 Example: Libraries, APIs
-
-**📅 Calendar Versioning (CalVer):**
-* Format: `YYYY.MM.DD` (e.g., `2024.01.15`)
-* 🎯 Use when: Continuous deployment
-* 🚀 Example: Web services, SaaS
-
-```mermaid
-flowchart LR
-  Code[📝 Code] --> SemVer[🔢 v1.2.3]
-  Code --> CalVer[📅 2024.01]
-  SemVer --> Lib[📚 Library]
-  CalVer --> Service[🌐 Service]
-```
-
----
-
-## 📍 Slide 29 – 🔢 Semantic Versioning (SemVer)
-
-## v MAJOR.MINOR.PATCH
-
-| Version | 🎯 When to Bump |
-|---------|----------------|
-| **MAJOR** (v2.0.0) | Breaking changes (API changed) |
-| **MINOR** (v1.1.0) | New features (backward-compatible) |
-| **PATCH** (v1.0.1) | Bug fixes (backward-compatible) |
+**Add Docker BuildKit cache** (Slide 14 already shows it):
 
 ```yaml
-# 🏷️ Multiple tags per release
-tags: |
-  username/app:1.2.3
-  username/app:1.2
-  username/app:1
-  username/app:latest
+cache-from: type=gha
+cache-to: type=gha,mode=max
 ```
 
-**✅ Pros:**
-* 📖 Clear breaking change signals
-* 🎯 Industry standard for libraries
-* 🔄 Users can pin to major version
-
-**⚠️ Cons:**
-* 🤔 Requires discipline
-* 📋 Need to track what's breaking vs feature
-
----
-
-## 📍 Slide 30 – 📅 Calendar Versioning (CalVer)
-
-## YYYY.MM.DD or YYYY.MM
-
-| Format | 📝 Example | 🎯 Use Case |
-|--------|-----------|-------------|
-| `YYYY.MM.DD` | `2024.01.15` | Daily releases |
-| `YYYY.MM.MICRO` | `2024.01.3` | Monthly + patch |
-| `YYYY.0M` | `2024.01` | Monthly releases |
+**Path filters skip workflows for unrelated changes:**
 
 ```yaml
-# 📅 Generate version from date
-- name: Generate version
-  run: echo "VERSION=$(date +%Y.%m.%d)" >> $GITHUB_ENV
-
-tags: |
-  username/app:2024.01.15
-  username/app:2024.01
-  username/app:latest
-```
-
-**✅ Pros:**
-* 📆 No ambiguity (date is date)
-* 🚀 Perfect for continuous deployment
-* 🧠 Easy to remember
-
-**⚠️ Cons:**
-* 🤷 Doesn't indicate breaking changes
-
----
-
-## 📍 Slide 31 – 🔀 Matrix Builds
-
-## Test Multiple Versions
-
-```yaml
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.11', '3.12', '3.13']
-
-    steps:
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - run: pytest tests/
-```
-
-**🎯 What This Does:**
-* 🔄 Runs tests **3 times** (one per Python version)
-* ⚡ Runs in **parallel**
-* ✅ Ensures compatibility across versions
-
-```mermaid
-flowchart LR
-  Test[🧪 Tests] --> Py311[🐍 Python 3.11]
-  Test --> Py312[🐍 Python 3.12]
-  Test --> Py313[🐍 Python 3.13]
-```
-
----
-
-## 📍 Slide 32 – 📂 Path Filters (Monorepo)
-
-## Only Run CI for Changed Apps
-
-```yaml
-# Python CI only runs when Python code changes
 on:
   push:
-    paths:
-      - 'app_python/**'
-      - '.github/workflows/python-ci.yml'
-
-# Go CI only runs when Go code changes
-on:
-  push:
-    paths:
-      - 'app_go/**'
-      - '.github/workflows/go-ci.yml'
+    paths: ["app_python/**", ".github/workflows/python-ci.yml"]
 ```
 
-**🎯 Benefits:**
-* ⚡ Faster CI (don't run unnecessary builds)
-* 💰 Save CI minutes
-* 🔕 Less noise (only relevant notifications)
+**Measured impact on a typical Lab 3 setup:** 5m 30s → 45s on warm cache. ~7× faster.
 
-**📊 Impact:**
-* 🐌 Without filters: Every commit runs **all** CI
-* 🚀 With filters: Only **affected** apps run
+> ⚠️ **Don't cache `~/.cache/pip` manually unless `setup-python` doesn't suit you** — the built-in cache handles invalidation correctly.
 
 ---
 
-## 📍 Slide 33 – 📊 Test Coverage
-
-## Measure What's Tested
+## 📍 Slide 17 – 📊 Coverage — Useful, Not Sacred
 
 ```yaml
-- name: Run tests with coverage
-  run: |
-    pip install pytest-cov
-    pytest --cov=app_python --cov-report=xml --cov-report=term
+- run: pytest --cov=app_python --cov-report=xml --cov-fail-under=70
+- uses: codecov/codecov-action@v4
+  with: { files: ./coverage.xml }
+```
 
-- name: Upload to Codecov
-  uses: codecov/codecov-action@v4
+| Coverage | Reading |
+|---------:|---------|
+| < 50% | Likely no real test culture |
+| 70–85% | Healthy for most application code |
+| 95%+ | Library / safety-critical territory |
+| 100% | Almost always wasteful — diminishing returns |
+
+> 🔥 **Martin Fowler:** *coverage is a useful tool for finding untested code; it isn't a useful target.* High coverage with weak assertions is theatre.
+
+---
+
+## 📍 Slide 18 – 🔁 Reusable Bits
+
+As your CI grows, copy-paste rots. GitHub gives you two reuse primitives:
+
+| Tool | Scope | When |
+|------|-------|------|
+| 🧩 **Composite action** (`action.yml`) | A bundle of **steps** | "Setup Python + cache + install deps" |
+| 🔁 **Reusable workflow** (`uses: org/repo/.github/workflows/x.yml@v1`) | A whole **job** | "Standard CI for every Python service" |
+
+> 🔗 **Lab 3 doesn't require this** but production monorepos lean on it heavily. We'll revisit in Lecture 13.
+
+---
+
+## 📍 Slide 19 – 🏷️ Versioning: SemVer
+
+`MAJOR.MINOR.PATCH` — Tom Preston-Werner's spec (semver.org, 2013).
+
+| Bump | When | Example |
+|------|------|---------|
+| **MAJOR** | Breaking API change | `1.4.2 → 2.0.0` |
+| **MINOR** | New backward-compatible feature | `1.4.2 → 1.5.0` |
+| **PATCH** | Bug fix only | `1.4.2 → 1.4.3` |
+
+`docker/metadata-action` can derive SemVer tags from a git tag (`git tag v1.2.3 && git push --tags`):
+
+```yaml
+tags: |
+  type=semver,pattern={{version}}    # 1.2.3
+  type=semver,pattern={{major}}.{{minor}}    # 1.2
+  type=semver,pattern={{major}}    # 1
+```
+
+**Use SemVer for:** libraries, SDKs, APIs that downstream consumers pin.
+
+---
+
+## 📍 Slide 20 – 📅 Versioning: CalVer
+
+`YYYY.MM.DD` or `YYYY.MM.PATCH` — calver.org, popularised by Ubuntu (`24.04`) and pip (`24.3`).
+
+```yaml
+- id: ver
+  run: echo "v=$(date -u +%Y.%m.%d)" >> $GITHUB_OUTPUT
+- uses: docker/build-push-action@v6
   with:
-    file: ./coverage.xml
+    tags: |
+      ghcr.io/${{ github.repository }}:${{ steps.ver.outputs.v }}
+      ghcr.io/${{ github.repository }}:latest
 ```
 
-**📊 Coverage Badge:**
-```markdown
-![Coverage](https://codecov.io/gh/user/repo/branch/main/graph/badge.svg)
-```
+**Use CalVer for:** services with continuous deployment where "breaking change" doesn't apply because nobody else pins you (your own service, deployed by your own CI).
 
-**🎯 What's Good Coverage?**
-* 🥉 **60-70%** — Okay, could be better
-* 🥈 **70-85%** — Good, most code tested
-* 🥇 **85-95%** — Excellent coverage
-* ⚠️ **100%** — Usually overkill (diminishing returns)
+> 🚫 **Never deploy `:latest` to production.** It's mutable; tomorrow's image with the same tag is a different artifact. Pin by SemVer or by digest. (Same lesson as Lecture 2.)
 
 ---
 
-## 📍 Slide 34 – ✅ CI Best Practices
+## 📍 Slide 21 – 🛡️ Branch Protection: CI is Only Useful if It Blocks
 
-| 🎯 Practice | 💡 Why It Matters |
-|------------|------------------|
-| ⚡ **Fail Fast** | Stop on first failure, save time |
-| 🔗 **Job Dependencies** | Don't push if tests fail |
-| 🔒 **Secrets in Vault** | Never hardcode credentials |
-| 📦 **Cache Dependencies** | 10x faster builds |
-| 🔍 **Security Scanning** | Catch CVEs early |
-| 📊 **Status Badges** | Visibility into health |
-| 🎯 **Branch Protection** | Require CI before merge |
-| ♻️ **Concurrency Control** | Cancel outdated runs |
+A green CI badge is decoration. **Required status checks** are the gate.
 
-**🔐 Security:**
-* ✅ Use `secrets.*` for sensitive data
-* ✅ Minimum permissions (`permissions:`)
-* ✅ Pin action versions (`actions/checkout@v4`)
+In `Settings → Branches → Branch protection rules` for `main`:
 
----
-
-## 📍 Slide 35 – 🌐 GitHub Actions Marketplace
-
-## Reusable Actions
+* ✅ Require a pull request before merging (≥1 review)
+* ✅ Require status checks to pass before merging — pick `test`, `docker`, `trivy`
+* ✅ Require branches to be up to date before merging
+* ✅ Require linear history (no merge commits) — keeps `git bisect` honest
+* ✅ Do not allow bypassing the above (even admins)
+* ✅ Restrict pushes that create matching branches
 
 ```mermaid
 flowchart LR
-  Marketplace[🏪 Actions Marketplace] --> Setup[⚙️ Setup Actions]
-  Marketplace --> Build[🔨 Build Actions]
-  Marketplace --> Deploy[🚀 Deploy Actions]
-  Marketplace --> Security[🔐 Security Actions]
+  PR[📝 Open PR] --> Checks[🤖 CI checks]
+  Checks -->|✅ all green| Review[👀 Review]
+  Review -->|approved| Merge[✅ Merge]
+  Checks -->|❌ any red| Block[🚫 Merge button greyed]
 ```
 
-**🔥 Popular Actions:**
-* ⚙️ `actions/checkout@v4` — Clone repo
-* 🐍 `actions/setup-python@v5` — Setup Python
-* 🐳 `docker/build-push-action@v5` — Build Docker
-* 🔐 `snyk/actions@master` — Security scan
-* 📊 `codecov/codecov-action@v4` — Coverage
-
-**🔍 Find Actions:**
-* 🌐 [github.com/marketplace](https://github.com/marketplace?type=actions)
-* ⭐ Check stars/downloads
-* 📖 Read documentation
-* 🔒 Verify source/security
+> 🔗 **Lab 3 Task 3** includes adding this protection to your fork.
 
 ---
 
-## 📍 Slide 36 – 🏢 Section 5: Production CI/CD
+## 📍 Slide 22 – 🚫 CI Anti-Patterns
 
-## Real-World CI Workflows
-
-**🎬 Netflix:**
-* 🚀 **3000+** builds per day
-* 🔄 Full CI pipeline in **<10 minutes**
-* 🎯 A/B test deployments
-
-**🛒 Shopify:**
-* ⚡ Deploy **80+ times per day**
-* 🤖 Auto-rollback on failure
-* 📊 Real-time metrics in CI
-
-**🔍 Google:**
-* 🏗️ **Monorepo** with 2 billion LOC
-* 🧪 **100+ million tests** daily
-* 📦 Bazel build system
+| ❌ Anti-pattern | ✅ Fix |
+|----------------|------|
+| `runs-on: ubuntu-latest` | Pin: `ubuntu-24.04` |
+| `actions/checkout@main` | Pin to a major tag (or SHA for high-risk actions) |
+| Secrets in `env:` at workflow scope | Pass via `secrets:` at job scope, scope minimum permissions |
+| 30-minute CI that everyone skips | Cache + path-filter + matrix-prune; target < 10 min |
+| Tests that depend on prod URLs | Mocks/fixtures; the runner has no creds for a reason |
+| `--ignore-unfixed` left on forever | Track unfixed CVEs in an issue; revisit weekly |
+| Single workflow file, 800 lines | Split by concern; reusable workflows for shared jobs |
+| Skipping CI with `[skip ci]` | Don't. The next person merges the regression. |
 
 ---
 
-## 📍 Slide 37 – 🚦 Branch Protection Rules
+## 📍 Slide 23 – 📈 CI Metrics That Matter
 
-## Require CI Before Merge
+Track these alongside your DORA metrics (Lec 1, Slide 23):
+
+| Metric | Healthy target | Why |
+|--------|---------------:|-----|
+| ⏱️ **Pipeline duration (p50)** | < 10 min | Feedback latency — Forsgren's *Accelerate* correlates with deploy frequency |
+| ✅ **Main-branch CI pass rate** | > 95% | Below that, flakes erode trust; people start ignoring red |
+| 🔄 **Mean time to green** after red | < 1 hour | How fast you fix `main` |
+| 🛡️ **CVEs caught in CI vs prod** | Mostly CI | Inverse of "leaked vulnerability lifetime" |
+| 📦 **Cache hit rate** | > 80% | Direct cost driver on hosted runners |
+
+> 📊 **Sources:** Forsgren et al., *Accelerate* (2018); CircleCI *State of Software Delivery 2024*.
+
+---
+
+## 📍 Slide 24 – 🏢 CI at Scale — Real Numbers
+
+* 🐙 **GitHub itself** — ~100M Actions runs/month across public repos; every PR to `github/github` runs ~30k tests
+* 🛒 **Shopify** — production deploys dozens of times per day; CI feedback under 5 minutes on the main monolith (Shopify Engineering, 2024)
+* 🎬 **Netflix** — every microservice built and tested per commit; ~3000+ builds/day
+* 🔍 **Google** — single trunk, **two billion** LOC, ~100M tests/day on Bazel (Winters et al., *Software Engineering at Google*, 2020)
+* 🏦 **Capital One** — 50+ teams on shared reusable workflows; a platform team owns the pipeline so product teams don't reinvent it
+
+> 🔥 **Common thread:** slow CI taxes every engineer, every day. A minute saved per run pays back across the org.
+
+---
+
+## 📍 Slide 25 – 🎯 Key Takeaways
+
+1. 🤖 **CI integrates frequently** — every push, on a clean runner, on the same workflow
+2. 🔺 **Pyramid: unit-heavy, integration-thin, E2E-rare** — the inverse is flaky and slow
+3. 📌 **Pin everything** — runner OS, action major versions, base images by digest in prod
+4. 🛡️ **Scan in CI, fix in PR** — Trivy or Grype on filesystem + image; Dependabot keeps deps fresh
+5. ⚡ **Cache the right things** — `setup-python` for pip, BuildKit GHA cache for layers, path filters for irrelevant pushes
+6. 🏷️ **SemVer for libraries, CalVer for services; never deploy `:latest`**
+7. 🚦 **Required checks > badges** — branch protection is the part that matters
+8. 📊 **Measure pipeline duration + pass rate** — slow, flaky CI gets ignored
+
+> 💡 **A good pipeline is fast, deterministic, and boring. Excitement in CI is a smell.**
+
+---
+
+## 📍 Slide 26 – 🚀 What Comes Next
+
+**📚 Next lecture: *Infrastructure as Code — Terraform & Pulumi*.** Your CI builds an image; Lecture 4 covers how the cloud resources that *run* the image get created reproducibly, in code, reviewed and applied through the same kind of pipeline you built today.
+
+* 🌍 Declarative vs imperative provisioning
+* 🏗️ Terraform 1.15 modules; Pulumi 3.x for code-native infra
+* 🔐 Backend state, locking, drift detection
+* 🧪 `terraform plan` as a CI gate — the same idea you applied to tests
+
+**🔬 Lab 3 deliverable:**
+
+* `app_python/tests/` with pytest covering `/` and `/health`
+* `.github/workflows/python-ci.yml` — lint → test → Trivy → build → push to GHCR
+* Branch protection on `main` requiring those checks
+* Status + coverage badges in the README
+* Bonus: a second workflow for your compiled-language app behind a `paths:` filter
 
 ```mermaid
 flowchart LR
-  PR[📝 Pull Request] --> CI[🤖 CI Runs]
-  CI -->|✅ Pass| Merge[✅ Can Merge]
-  CI -->|❌ Fail| Block[🚫 Blocked]
+  Lab1[🐍 Lab 1 app] --> Lab2[🐳 Lab 2 image]
+  Lab2 --> Lab3[🤖 Lab 3 CI]
+  Lab3 --> Lab4[🌍 Lab 4 IaC]
+  Lab4 --> Future[🚀 Labs 5+]
 ```
 
-**⚙️ GitHub Settings:**
-* ✅ Require status checks to pass
-* ✅ Require branches to be up to date
-* ✅ Require review from code owners
-* 🔒 Prevent direct push to main
-
-**🎯 Result:**
-* 🚫 No broken code in main branch
-* ✅ Every change is tested
-* 📊 Full history of CI results
+**👋 See you in Lecture 4.**
 
 ---
 
-## 📍 Slide 38 – 🔄 GitOps Preview
-
-## From CI to CD
-
-```mermaid
-flowchart LR
-  CI[🤖 CI: Test & Build] --> Push[📦 Push Image]
-  Push --> ArgoCD[🔄 ArgoCD Detects]
-  ArgoCD --> Deploy[🚀 Auto Deploy]
-  Deploy --> K8s[☸️ Kubernetes]
-```
-
-**🔮 Coming Up:**
-* 📦 **Lab 13**: ArgoCD deploys what CI builds
-* ☸️ **K8s**: Orchestrate containers
-* 🔄 **GitOps**: Git as source of truth
-* 🚀 **Full automation**: Commit → Production
-
----
-
-## 📍 Slide 39 – 💡 CI/CD Anti-Patterns
-
-| ❌ Anti-Pattern | ✅ Better Approach |
-|----------------|-------------------|
-| 🎰 "It works on my machine" | 🧪 Automated tests catch issues |
-| 📋 Manual deployment checklist | 🤖 Automated pipeline |
-| 🤷 No tests, just deploy | 🧪 Comprehensive test suite |
-| 💀 Long-lived feature branches | 🔄 Trunk-based development |
-| 🐌 Slow CI (>30 min) | ⚡ Optimize, parallelize, cache |
-| 🔓 Secrets in code | 🔒 Environment variables |
-
----
-
-## 📍 Slide 40 – 📈 CI Metrics to Track
-
-| 📊 Metric | 🎯 Target |
-|-----------|----------|
-| ⏱️ **Build Time** | < 10 minutes |
-| ✅ **Success Rate** | > 95% |
-| 🐛 **Bugs Caught in CI** | Maximize |
-| 📦 **Deploy Frequency** | Multiple/day |
-| 🔧 **Time to Fix Broken Build** | < 10 minutes |
-| 📊 **Test Coverage** | > 80% |
-
-```mermaid
-flowchart LR
-  Fast[⚡ Fast CI] --> Deploy[🚀 Deploy Often]
-  Deploy --> Confidence[💪 High Confidence]
-  Confidence --> Fast
-```
-
----
-
-## 📍 Slide 41 – 🎯 Section 6: Reflection
-
-## 📝 Key Takeaways
-
-1. 🤖 **CI automates testing** — catch bugs before production
-2. 🧪 **Unit tests are essential** — fast feedback loop
-3. ⚙️ **GitHub Actions** — powerful, free CI/CD platform
-4. 🔐 **Security scanning** — integrate Snyk, scan dependencies
-5. 📦 **Versioning matters** — SemVer or CalVer, be consistent
-
-> 💡 CI isn't just about automation — it's about building confidence.
-
----
-
-## 📍 Slide 42 – 🧠 The Mindset Shift
-
-| 😰 Old Mindset | 🚀 CI/CD Mindset |
-|---------------|------------------|
-| 📋 "Test before release" | 🧪 "Test every commit" |
-| 🤞 "Hope it works" | ✅ "Know it works" |
-| 🎰 Manual deployments | 🤖 Automated pipelines |
-| 😱 "Who broke it?" | 📊 "CI caught it" |
-| 🐌 Deploy monthly | 🚀 Deploy daily |
-| 🔍 Find bugs in prod | 🧪 Catch bugs in CI |
-
-> ❓ Which mindset will you adopt?
-
----
-
-## 📍 Slide 43 – ✅ Your Progress
-
-## 🎓 What You Now Understand
-
-* ✅ Why CI/CD is critical for modern development
-* ✅ How to write effective unit tests
-* ✅ GitHub Actions workflow syntax
-* ✅ Security scanning with Snyk
-* ✅ Versioning strategies (SemVer vs CalVer)
-* ✅ CI best practices (caching, matrix builds, path filters)
-
-> 🚀 **You're ready for Lab 3!**
-
----
-
-## 📍 Slide 44 – 📝 QUIZ — DEVOPS_L3_POST
-
----
-
-## 📍 Slide 45 – 🚀 What Comes Next
-
-## 📚 Lab 3: Build Your CI Pipeline
-
-* 🧪 Write unit tests for your Flask app
-* ⚙️ Create GitHub Actions workflow
-* 🔐 Integrate Snyk security scanning
-* 📦 Automate Docker builds and versioning
-* ⚡ Apply caching and best practices
-* 🏆 Bonus: Multi-app CI with path filters
-
-**🔮 Future Lectures:**
-* 📦 **Lecture 7**: Monitoring & Observability
-* ☸️ **Lecture 9**: Kubernetes Deployment
-* 🔄 **Lecture 13**: GitOps with ArgoCD
-
-```mermaid
-flowchart LR
-  You[👤 You] --> Tests[🧪 Write Tests]
-  Tests --> CI[🤖 GitHub Actions]
-  CI --> Automation[⚡ Full Automation]
-  Automation --> Career[🚀 DevOps Skills]
-```
-
-**👋 See you in the lab!**
-
----
-
-## 📚 Resources & Further Reading
+## 📚 Resources
 
 **📕 Books:**
-* 📖 *Continuous Delivery* — Jez Humble
-* 📖 *The DevOps Handbook* — Gene Kim
-* 📖 *Accelerate* — Nicole Forsgren
+* *Continuous Delivery* — Jez Humble & David Farley (Addison-Wesley, 2010). The canonical text.
+* *Continuous Integration* — Duvall, Matyas, Glover (2007). Pre-cloud, principles unchanged.
+* *Accelerate* — Forsgren, Humble, Kim (2018). The DORA science.
+* *Software Engineering at Google* — Winters, Manshreck, Wright (2020). CI at trunk scale.
 
 **🔗 Links:**
-* 🌐 [GitHub Actions Docs](https://docs.github.com/en/actions)
-* 🌐 [Pytest Documentation](https://docs.pytest.org/)
-* 🌐 [Snyk Security](https://snyk.io/)
-* 🌐 [SemVer](https://semver.org/)
-* 🌐 [CalVer](https://calver.org/)
+* 🌐 [docs.github.com/actions](https://docs.github.com/actions) — official reference
+* 🌐 [github.com/aquasecurity/trivy](https://github.com/aquasecurity/trivy) / [anchore/grype](https://github.com/anchore/grype)
+* 🌐 [semver.org](https://semver.org) / [calver.org](https://calver.org)
+* 🌐 [martinfowler.com/articles/continuousIntegration.html](https://martinfowler.com/articles/continuousIntegration.html) — Fowler, 2006
 
-**🛠️ Tools:**
-* 🔍 [act](https://github.com/nektos/act) — Run GitHub Actions locally
-* 🔍 [actionlint](https://github.com/rhysd/actionlint) — Lint workflows
-* 📊 [Codecov](https://codecov.io/) — Coverage tracking
+**🛠️ Local tooling:** [`act`](https://github.com/nektos/act) (run Actions locally), [`actionlint`](https://github.com/rhysd/actionlint) (lint workflows), [`gh`](https://cli.github.com/) (`gh run watch`).
 
----
+**🎓 Quiz:** post-lecture quiz feeds the weeks 1–3 leaderboard window (see `README.md` → Grading).
