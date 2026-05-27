@@ -2,677 +2,547 @@
 
 ![difficulty](https://img.shields.io/badge/difficulty-intermediate-yellow)
 ![topic](https://img.shields.io/badge/topic-Metrics%20%26%20Monitoring-blue)
-![points](https://img.shields.io/badge/points-10%2B2.5-orange)
-![tech](https://img.shields.io/badge/tech-Prometheus%20|%20Grafana%20|%20Docker%20Compose-informational)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
+![tech](https://img.shields.io/badge/tech-Prometheus%203.x%20|%20Grafana%2013%20|%20Docker%20Compose-informational)
 
-> Instrument your applications with metrics and build a complete monitoring stack with Prometheus and Grafana.
+> Instrument your Lab 1 Python app with metrics, then deploy Prometheus to scrape them and Grafana to visualise the **RED method** — alongside last week's Loki stack.
 
 ## Overview
 
-Add observability to your applications by exposing Prometheus metrics, then deploy Prometheus to collect them and Grafana to visualize. You'll instrument your app first, then build the monitoring infrastructure around it.
+In Lab 7 you gave your service *eyes* (logs). This week you give it a *pulse* (metrics). You'll add a `/metrics` endpoint to your Lab 1 Python app with `prometheus_client`, deploy **Prometheus 3.x** to scrape it on a 15-second schedule, and build a Grafana dashboard around the **R**ate / **E**rrors / **D**uration method. Prometheus joins the same `logging` Docker network you stood up in Lab 7, so by the end you have logs *and* metrics in one Grafana.
 
 **What You'll Learn:**
-- Application instrumentation with prometheus_client
-- Prometheus scraping and metric types
-- PromQL query language
-- Building Grafana dashboards for metrics
-- Monitoring best practices (RED method, resource limits)
-- Integration with existing observability stack from Lab 7
+- Application instrumentation with `prometheus_client` — counters, gauges, histograms
+- Why Prometheus is **pull-based** and how scrape config + service discovery work
+- **PromQL** for rates, percentiles, and per-endpoint aggregation
+- Designing a dashboard around the **RED method** (Rate, Errors, Duration)
+- Controlling **label cardinality** so you don't OOM your TSDB
+- Production concerns: retention, resource limits, health checks, persistence
 
-**Tech Stack:** Prometheus 3.9+ | Grafana 12.3+ | prometheus_client | PromQL
+> ✨ **Prometheus 3.x note.** This lab uses Prometheus 3.x (3.11+), the current major. Versus 2.x it defaults to UTF-8 metric/label names, a built-in OTLP receiver, remote-write 2.0, and — most relevant here — **native histograms are GA** (auto-bucketed, ~5× cheaper than classic histograms, same `histogram_quantile()` query). You'll use classic histograms in the required tasks and may opt into native histograms as a stretch.
 
-**Prerequisites:** Lab 7 completed (Loki + Grafana stack), Python app from Lab 1-2
+**Prerequisites:** Lab 1 (Python web app), Lab 6 (Docker Compose), Lab 7 (Loki + Alloy + Grafana stack — Prometheus extends that same `monitoring/` stack).
+
+**Tech Stack:** Prometheus **3.11.3** (or 3.5 LTS) · Grafana **13** · `prometheus_client` **0.23+** · PromQL · Docker Compose v2
 
 ---
 
 ## Tasks
 
-### Task 1 — Application Metrics (3 pts)
+> **Point split:** Task 1 (3) + Task 2 (3) + Task 3 (2) + Task 4 (1) + Task 5 (1) = **10 pts**. Bonus = **2 pts**.
+> Task 1 is self-contained: instrument the app and see `/metrics` locally — no Prometheus needed yet. Everything after builds on it.
 
-Add Prometheus metrics to your Python application.
+### Task 1 — Instrument the Python App (3 pts)
 
-#### 1.1 Understanding Application Metrics
+Add a Prometheus `/metrics` endpoint to your Lab 1 service.
 
-**Why metrics matter:**
-- **Logs** tell you what happened (Lab 7)
-- **Metrics** tell you how much and how often
-- **Together** they provide complete observability
+#### 1.1 Understand the metric types
 
-**The RED Method (for request-driven apps):**
-- **R**ate - Requests per second
-- **E**rrors - Error rate
-- **D**uration - Response time
+Read these before you write code — they answer the questions the instrumentation asks of you:
+- [Prometheus metric types](https://prometheus.io/docs/concepts/metric_types/)
+- [Instrumentation best practices](https://prometheus.io/docs/practices/instrumentation/)
+- [`prometheus_client` (Python)](https://github.com/prometheus/client_python)
+
+**Be able to answer in your LAB08.md:**
+- When do you reach for a **counter** vs a **gauge** vs a **histogram**? Give one example of each from your own app.
+- Why do you query `rate(counter[5m])` instead of the counter's raw value?
+- What is **label cardinality**, and why would `user_id` or `request_id` as a label eventually OOM Prometheus?
 
 <details>
-<summary>💡 Prometheus Metric Types</summary>
+<summary>💡 The three types you'll use</summary>
 
-**Counter** - Only goes up (total requests, errors)
-```python
-http_requests_total.inc()  # Increment by 1
-```
+| Type | Behaviour | Use for | Query with |
+|------|-----------|---------|------------|
+| **Counter** | Only goes up (resets to 0 on restart) | requests, errors, bytes | `rate()`, `increase()` |
+| **Gauge** | Up *and* down | in-flight requests, queue depth, cache size | direct, `avg()`, `max()` |
+| **Histogram** | Buckets a distribution | request latency, payload size | `histogram_quantile()` |
 
-**Gauge** - Can go up or down (memory usage, active connections)
-```python
-active_connections.set(42)
-```
-
-**Histogram** - Measures distribution (request duration, response size)
-```python
-request_duration_seconds.observe(0.25)  # Record 250ms request
-```
-
-**Summary** - Similar to histogram, with percentiles
-
-**When to use what:**
-- Counting events? → Counter
-- Current state? → Gauge
-- Distribution/percentiles? → Histogram
-
-**Resources:**
-- [Prometheus Metric Types](https://prometheus.io/docs/concepts/metric_types/)
-- [Instrumentation Best Practices](https://prometheus.io/docs/practices/instrumentation/)
+A classic histogram exposes three series families per label set: `*_bucket{le="..."}` (cumulative counts), `*_sum`, and `*_count`. That's what makes server-side percentiles possible.
 
 </details>
 
-#### 1.2 Install Prometheus Client
+#### 1.2 Add the client library
 
-**Add to `requirements.txt`:**
+Add to `app_python/requirements.txt` (check PyPI for the current patch; `0.23+` is required, `0.25.x` is latest):
+
 ```txt
 prometheus-client==0.23.1
 ```
 
-**Install:**
 ```bash
-pip install prometheus-client
+pip install -r requirements.txt
 ```
 
-#### 1.3 Implement Metrics Endpoint
+#### 1.3 Implement the `/metrics` endpoint — YOUR TASK
 
-**Add `/metrics` endpoint to your app:**
+Add HTTP instrumentation to your Lab 1 app. The skeleton below is **Flask**; adapt the hooks to FastAPI middleware if that's your stack. Fill in the `YOUR-TASK` markers.
 
-**Requirements:**
-- Expose metrics at `/metrics` endpoint
-- Track HTTP requests (counter)
-- Track request duration (histogram)
-- Track active requests (gauge)
-- Use labels: `method`, `endpoint`, `status_code`
+```python
+# app.py — add metrics to your Lab 1 service
+import time
+from flask import Flask, Response, request
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+
+app = Flask(__name__)
+
+# --- Metric definitions (low-cardinality labels only!) ---
+REQS = Counter(
+    "http_requests_total", "Total HTTP requests",
+    ["method", "endpoint", "status"],
+)
+LAT = Histogram(
+    "http_request_duration_seconds", "HTTP request latency",
+    ["method", "endpoint"],
+    # SRE default buckets — tune from real traffic later
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+)
+INF = Gauge("http_requests_in_progress", "In-flight HTTP requests")
+
+@app.before_request
+def _before():
+    request._t0 = time.perf_counter()
+    INF.inc()
+
+@app.after_request
+def _after(resp):
+    duration = time.perf_counter() - request._t0
+    # YOUR-TASK: use the ROUTE RULE, not request.path, as the `endpoint` label.
+    # Why? request.path = "/user/123" creates a new series per id (cardinality bomb).
+    # The route rule "/user/<id>" is bounded. Hint: request.url_rule.rule.
+    endpoint = ...
+    # YOUR-TASK: increment REQS with labels (method, endpoint, status_code)
+    #            and observe LAT with (method, endpoint).
+    INF.dec()
+    return resp
+
+@app.route("/metrics")
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+```
+
+> ⚠️ **Cardinality is the #1 way to OOM Prometheus.** Each unique label combination is its own time series (~3–5 KB of RAM). Labels must be *bounded* enumerations: `method` (~8), `endpoint` (dozens, normalised), `status` (~10). **Never** put `user_id`, `request_id`, raw paths, emails, or timestamps in a label.
 
 <details>
-<summary>💡 Implementation Guidance</summary>
+<summary>💡 Instrumentation hints</summary>
 
-**Basic Setup (Flask):**
-```python
-from prometheus_client import Counter, Histogram, Gauge, generate_latest
-
-# Define metrics
-http_requests_total = Counter(
-    'http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'status']
-)
-
-http_request_duration_seconds = Histogram(
-    'http_request_duration_seconds',
-    'HTTP request duration',
-    ['method', 'endpoint']
-)
-
-http_requests_in_progress = Gauge(
-    'http_requests_in_progress',
-    'HTTP requests currently being processed'
-)
-
-@app.route('/metrics')
-def metrics():
-    return generate_latest()
-```
-
-**Instrumenting Requests:**
-- Use `@app.before_request` to track start time
-- Use `@app.after_request` to record metrics
-- Increment counter with labels
-- Observe histogram with duration
-- Use gauge context manager for in-progress
-
-**Label Best Practices:**
-- Keep cardinality low (don't use user IDs as labels!)
-- Use `/` for root, `/health` for health, group others
-- Normalize endpoint names (e.g., `/user/{id}` not `/user/123`)
-
-**Resources:**
-- [prometheus_client docs](https://github.com/prometheus/client_python)
-- [Python instrumentation guide](https://prometheus.io/docs/guides/python/)
+- `@app.before_request` records a start time and bumps the in-flight gauge; `@app.after_request` records the duration and increments the counter.
+- `request.url_rule.rule` gives the matched route template (`/health`, `/`) — fall back to `"unknown"` when `url_rule` is `None` (404s).
+- Cast the status to a string: `REQS.labels(request.method, endpoint, str(resp.status_code)).inc()`.
+- FastAPI: do the same in an `@app.middleware("http")` coroutine; expose `/metrics` with `Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)`.
+- Reference: [Python instrumentation guide](https://prometheus.io/docs/guides/python/), [metric naming](https://prometheus.io/docs/practices/naming/).
 
 </details>
 
-#### 1.4 Add Application-Specific Metrics
+#### 1.4 Add one business metric
 
-**Beyond HTTP, track your app's business metrics:**
-- Counter: API calls to external services
-- Gauge: Items in cache, database pool size
-- Histogram: Database query duration
+Beyond HTTP, add **one** metric meaningful to your DevOps info service. Examples:
 
-**Example for your DevOps info service:**
 ```python
-# Track endpoint usage
-endpoint_calls = Counter('devops_info_endpoint_calls', 'Endpoint calls', ['endpoint'])
+# Counter: how often each endpoint is hit (separate from the RED counter)
+endpoint_calls = Counter("devops_info_endpoint_calls_total", "Endpoint calls", ["endpoint"])
 
-# Track system info collection time
-system_info_duration = Histogram('devops_info_system_collection_seconds', 'System info collection time')
+# Histogram: time spent collecting system info for GET /
+sysinfo_seconds = Histogram("devops_info_collection_seconds", "System info collection time")
 ```
 
-#### 1.5 Test Metrics Locally
+#### 1.5 Test locally
 
-**Run your app and test:**
 ```bash
 python app.py
-curl http://localhost:8000/metrics
+# generate a little traffic
+for i in $(seq 1 20); do curl -s localhost:8000/ > /dev/null; done
+curl -s localhost:8000/metrics | grep -E "http_requests_total|http_request_duration"
 ```
 
-**Expected output format:**
+The output is the Prometheus text exposition format (the snippet below is **illustrative** — your counts and buckets will differ):
+
 ```
 # HELP http_requests_total Total HTTP requests
 # TYPE http_requests_total counter
-http_requests_total{method="GET",endpoint="/",status="200"} 42.0
-http_requests_total{method="GET",endpoint="/health",status="200"} 15.0
-
-# HELP http_request_duration_seconds HTTP request duration
+http_requests_total{method="GET",endpoint="/",status="200"} 20.0
+# HELP http_request_duration_seconds HTTP request latency
 # TYPE http_request_duration_seconds histogram
-http_request_duration_seconds_bucket{le="0.005",method="GET",endpoint="/"} 10.0
-http_request_duration_seconds_bucket{le="0.01",method="GET",endpoint="/"} 35.0
+http_request_duration_seconds_bucket{le="0.005",method="GET",endpoint="/"} 12.0
+http_request_duration_seconds_bucket{le="0.01",method="GET",endpoint="/"} 18.0
 ...
 ```
 
-**Evidence Required:**
-- Screenshot of `/metrics` endpoint output
-- Code showing metric definitions
-- Documentation explaining your metric choices
+**Evidence:**
+- Screenshot of `curl localhost:8000/metrics` output showing your counter, histogram, gauge, and business metric.
+- The metric-definition code committed to `app_python/`.
 
 ---
 
-### Task 2 — Prometheus Setup (3 pts)
+### Task 2 — Deploy Prometheus & Scrape Config (3 pts)
 
-Deploy Prometheus and configure it to scrape your application metrics.
+Add Prometheus to the `monitoring/` stack from Lab 7 and point it at your app.
 
-#### 2.1 Understanding Prometheus Architecture
+#### 2.1 Understand the pull model
 
-<details>
-<summary>💡 How Prometheus Works</summary>
+**Be able to answer in your LAB08.md:**
+- Why does a *failed scrape* give you target health "for free" (`up == 0`), where a push model can't?
+- What's the difference between a **job**, a **target**, and the **scrape interval**?
+- In Docker Compose, why do you scrape `app-python:8000` (service name) and not `localhost:8000`?
 
-**Pull-based model:**
-1. Your app exposes `/metrics` endpoint
-2. Prometheus scrapes (pulls) metrics on schedule
-3. Stores time-series data locally
-4. Provides PromQL for querying
+#### 2.2 Add the Prometheus service — YOUR TASK
 
-**Key concepts:**
-- **Target** - Endpoint to scrape (your app)
-- **Job** - Collection of targets with same purpose
-- **Scrape interval** - How often to collect (default: 15s)
-- **TSDB** - Time-series database storing metrics
+**File:** `monitoring/docker-compose.yml` (extend the Lab 7 stack)
 
-**vs Push-based (like StatsD):**
-- Pull = simpler, apps don't need to know about Prometheus
-- Better for service discovery
-- Failed scrapes are visible
+Prometheus joins the same `logging` network so it can reach Loki, Grafana, and your app by service name. Fill in the `YOUR-TASK` markers.
 
-**Resources:**
-- [Prometheus Overview](https://prometheus.io/docs/introduction/overview/)
-- [First Steps with Prometheus](https://prometheus.io/docs/introduction/first_steps/)
-
-</details>
-
-#### 2.2 Add Prometheus to Docker Compose
-
-**Extend `monitoring/docker-compose.yml`** from Lab 7:
-
-**Requirements:**
-- Prometheus service (image: `prom/prometheus:v3.9.0`, port 9090)
-- Mount prometheus config: `./prometheus/prometheus.yml`
-- Mount data volume for persistence: `prometheus-data`
-- Connect to existing `logging` network from Lab 7
-
-<details>
-<summary>💡 Docker Compose Guidance</summary>
-
-**Key points:**
-- Use same network as Loki/Grafana from Lab 7
-- Mount config to `/etc/prometheus/prometheus.yml`
-- Use volume for data persistence: `/prometheus`
-- Add `--config.file=/etc/prometheus/prometheus.yml` command argument
-
-**Resource limits:**
 ```yaml
-deploy:
-  resources:
-    limits:
-      memory: 1G
-      cpus: '1.0'
+  prometheus:
+    image: prom/prometheus:v3.11.3      # 3.x major; or v3.5.0 LTS
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      # YOUR-TASK: add config-based retention flags (Task 4 hardens these):
+      #   --storage.tsdb.retention.time=15d
+      #   --storage.tsdb.retention.size=2GB
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks: [logging]
+
+volumes:
+  prometheus-data:      # add alongside loki-data / grafana-data
 ```
 
-</details>
+> The `logging` network and the `loki-data` / `grafana-data` volumes already exist from Lab 7 — you're adding `prometheus` as a fourth service and `prometheus-data` as a third named volume.
 
-#### 2.3 Configure Prometheus
+#### 2.3 Write the scrape config — YOUR TASK
 
 **File:** `monitoring/prometheus/prometheus.yml`
 
-**Requirements:**
-- Scrape Prometheus itself (job: `prometheus`)
-- Scrape your Python app (job: `app`)
-- Scrape Loki metrics (job: `loki`)
-- Scrape Grafana metrics (job: `grafana`)
-- Set scrape interval: 15s
-
-<details>
-<summary>💡 Prometheus Configuration Guide</summary>
-
-**Basic structure:**
 ```yaml
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
-# Storage retention (Prometheus 3.x config-based retention)
-storage:
-  tsdb:
-    retention_time: 15d
-    retention_size: 10GB
-
 scrape_configs:
-  - job_name: 'prometheus'
+  # 1) Prometheus scrapes itself — the self-monitoring job.
+  - job_name: "prometheus"
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ["localhost:9090"]
 
-  - job_name: 'app'
+  # 2) YOUR-TASK: scrape your instrumented Python app.
+  #    job_name: "app"; target: "app-python:8000"; metrics_path defaults to /metrics.
+
+  # 3) Loki and Grafana both expose /metrics natively (no exporter needed).
+  - job_name: "loki"
     static_configs:
-      - targets: ['app-python:8000']
-    metrics_path: '/metrics'
+      - targets: ["loki:3100"]
+  - job_name: "grafana"
+    static_configs:
+      - targets: ["grafana:3000"]
 ```
 
-**For Docker Compose:**
-- Use service names as hostnames (e.g., `loki:3100`)
-- Prometheus self-scrape uses `localhost:9090`
-- Check each service's metrics port:
-  - Loki: port 3100, path `/metrics`
-  - Grafana: port 3000, path `/metrics`
-  - Your app: port 8000, path `/metrics`
+<details>
+<summary>💡 Scrape-config hints & the optional echo target</summary>
 
-**Resources:**
-- [Prometheus Configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
-- [Scrape Configs](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config)
+- `metrics_path` defaults to `/metrics`, so you only set it for non-standard paths.
+- Service names are the hostnames on a Docker Compose network — `loki:3100`, `grafana:3000`, `app-python:8000`. Only Prometheus's *self*-scrape uses `localhost:9090`.
+- **Optional second app target — the course `echo` plumbing.** The repo ships a tiny Go service at [`plumbing/echo`](../plumbing/echo) that already exposes `/metrics` (`echo_requests_total` counter, `echo_uptime_seconds` gauge). Adding it gives your dashboard a second instrumented service. You do **not** modify it — just add it to compose and to the scrape config:
+
+  ```yaml
+  # docker-compose.yml
+    echo:
+      build: ../plumbing/echo          # or image: ghcr.io/inno-devops-labs/echo:v1
+      ports: ["8081:8081"]
+      networks: [logging]
+  ```
+  ```yaml
+  # prometheus.yml
+    - job_name: "echo"
+      static_configs:
+        - targets: ["echo:8081"]
+  ```
+
+- Reference: [Prometheus configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/), [scrape_config](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config).
 
 </details>
 
-#### 2.4 Deploy and Verify
+#### 2.4 Deploy and verify targets
 
-**Deploy the updated stack:**
 ```bash
 cd monitoring
-docker compose up -d
+docker compose up -d        # v2 CLI — space, not hyphen
 docker compose ps
 ```
 
-**Verify Prometheus:**
-1. **Access UI:** http://localhost:9090
-2. **Check targets:** http://localhost:9090/targets
-   - All targets should be "UP" (green)
-3. **Query metrics:** Try query `up` - should show all targets
+1. **Prometheus UI:** open `http://localhost:9090`.
+2. **Targets:** open `http://localhost:9090/targets` — every job (`prometheus`, `app`, `loki`, `grafana`, and `echo` if added) should be **UP** (green).
+3. **First query:** in the UI (Graph tab) run `up` — each target returns `1`.
 
-**Troubleshooting targets:**
-- **State: DOWN** → Check service is running, check port/path
-- **State: UNKNOWN** → Prometheus just started, wait for first scrape
-- **No target** → Check `prometheus.yml` syntax
+**Troubleshooting:**
+- Target **DOWN** → the service isn't running, or the port/path is wrong. `docker compose logs prometheus`.
+- Target **unknown / no data yet** → wait one scrape interval (15s).
+- No target at all → YAML indentation error in `prometheus.yml`; check `docker compose logs prometheus` for a parse error.
 
-**Evidence Required:**
-- Screenshot of `/targets` page showing all targets UP
-- Screenshot of a successful PromQL query
-- `prometheus.yml` configuration file
+**Evidence:**
+- Screenshot of `/targets` showing all targets UP.
+- Screenshot of the `up` query result.
+- `prometheus.yml` committed to `monitoring/prometheus/`.
 
 ---
 
-### Task 3 — Grafana Dashboards (2 pts)
+### Task 3 — Grafana RED Dashboard (2 pts)
 
-Build dashboards to visualize your application metrics.
+Visualise your app's health with the **RED method**: **R**ate, **E**rrors, **D**uration.
 
-#### 3.1 Add Prometheus Data Source
+#### 3.1 Add Prometheus as a data source
 
-**In Grafana:**
-1. **Connections** → **Data sources** → **Add data source** → **Prometheus**
-2. URL: `http://prometheus:9090`
-3. **Save & Test**
+In the Grafana from Lab 7 (already has Loki):
+1. **Connections → Data sources → Add data source → Prometheus**.
+2. URL: `http://prometheus:9090` (service name on the `logging` network).
+3. **Save & Test** → should report the data source is working.
 
-**Alternative:** Provision automatically (see Ansible bonus).
+> The bonus track provisions this automatically; doing it by hand once teaches you what the provisioning YAML encodes.
 
-#### 3.2 Learn PromQL Basics
+#### 3.2 Practise PromQL first
+
+Run these in **Explore** (Prometheus data source) before building panels — they map directly to the panels below. **Generate traffic first** so the series aren't empty:
+
+```bash
+for i in $(seq 1 200); do curl -s localhost:8000/ > /dev/null; curl -s localhost:8000/health > /dev/null; done
+```
+
+```promql
+# Rate — requests/sec per endpoint
+sum by (endpoint) (rate(http_requests_total[5m]))
+
+# Errors — 5xx requests/sec
+sum by (endpoint) (rate(http_requests_total{status=~"5.."}[5m]))
+
+# Duration — p95 latency (note: histogram_quantile OUTSIDE the sum by le)
+histogram_quantile(0.95,
+  sum by (endpoint, le) (rate(http_request_duration_seconds_bucket[5m])))
+
+# Error ratio — 5xx as a fraction of all requests
+sum(rate(http_requests_total{status=~"5.."}[5m]))
+  / sum(rate(http_requests_total[5m]))
+```
 
 <details>
-<summary>💡 PromQL Quick Reference</summary>
+<summary>💡 PromQL quick reference</summary>
 
-**Instant Vector (single value per time series):**
-```promql
-http_requests_total                                    # All request counters
-http_requests_total{method="GET"}                      # Filter by label
-http_requests_total{endpoint="/",status="200"}         # Multiple labels
-```
-
-**Range Vector (values over time range):**
-```promql
-http_requests_total[5m]                                # Last 5 minutes of data
-```
-
-**Functions:**
-```promql
-rate(http_requests_total[5m])                          # Requests per second
-sum(rate(http_requests_total[5m]))                     # Total req/s across all series
-sum by (endpoint) (rate(http_requests_total[5m]))      # Req/s per endpoint
-histogram_quantile(0.95, http_request_duration_seconds_bucket)  # 95th percentile latency
-```
-
-**Operators:**
-```promql
-up == 0                                                # Services down
-rate(http_requests_total{status="500"}[5m]) * 100     # Error rate percentage
-```
-
-**Common Queries:**
-- Request rate: `rate(http_requests_total[5m])`
-- Error rate: `sum(rate(http_requests_total{status=~"5.."}[5m]))`
-- p95 latency: `histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))`
-- CPU usage: `rate(process_cpu_seconds_total[5m]) * 100`
-
-**Resources:**
-- [PromQL Basics](https://prometheus.io/docs/prometheus/latest/querying/basics/)
-- [PromQL Examples](https://prometheus.io/docs/prometheus/latest/querying/examples/)
+- **Instant vector** `http_requests_total{status="500"}` — one sample per series. **Range vector** `http_requests_total[5m]` — all samples in a window; can't be graphed until you collapse it with a function.
+- **`rate()`** handles counter resets (pod restarts); raw subtraction and `irate()` do not — use `rate()` for graphs.
+- Keep the range `[Xm]` ≥ 4× the scrape interval. With 15s scrapes, `[1m]` is the floor that doesn't lie.
+- **Never average a percentile.** `histogram_quantile()` goes *outside* the `sum by (le, …)`, never inside an `avg()`.
+- Reference: [PromQL basics](https://prometheus.io/docs/prometheus/latest/querying/basics/), [examples](https://prometheus.io/docs/prometheus/latest/querying/examples/).
 
 </details>
 
-#### 3.3 Create Application Dashboard
+#### 3.3 Build the dashboard — 6 panels
 
-**Create dashboard with 6+ panels:**
+Each panel answers one question. (PromQL is real; any described "values" are **illustrative** — yours depend on your traffic.)
 
-1. **Request Rate** (Graph)
-   - Query: `sum(rate(http_requests_total[5m])) by (endpoint)`
-   - Shows requests/sec per endpoint
+| # | Panel | Visualisation | Query | Answers |
+|---|-------|---------------|-------|---------|
+| 1 | **Request rate** | Time series | `sum by (endpoint) (rate(http_requests_total[5m]))` | *How busy?* |
+| 2 | **Error rate** | Time series | `sum by (endpoint) (rate(http_requests_total{status=~"5.."}[5m]))` | *How often failing?* |
+| 3 | **p95 latency** | Time series | `histogram_quantile(0.95, sum by (endpoint, le) (rate(http_request_duration_seconds_bucket[5m])))` | *How slow (95th)?* |
+| 4 | **Latency heatmap** | Heatmap | `sum by (le) (rate(http_request_duration_seconds_bucket[5m]))` | *What's the long tail?* |
+| 5 | **In-flight requests** | Gauge / Stat | `http_requests_in_progress` | *How many right now?* |
+| 6 | **Service uptime** | Stat | `up{job="app"}` | *Are we alive (1/0)?* |
 
-2. **Error Rate** (Graph)
-   - Query: `sum(rate(http_requests_total{status=~"5.."}[5m]))`
-   - Shows 5xx errors/sec
+**How to build:**
+1. **Dashboards → New → New dashboard → Add visualization**, pick the **Prometheus** data source.
+2. Enter the PromQL; set the visualisation type and a clear title.
+3. Set **units** (panel 1: `req/s`; panel 3: `seconds`), a `{{endpoint}}` legend, and a threshold on the error panel.
+4. **Save dashboard**, then export the JSON model into `monitoring/`.
 
-3. **Request Duration p95** (Graph)
-   - Query: `histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))`
-   - Shows 95th percentile latency
-
-4. **Request Duration Heatmap** (Heatmap)
-   - Query: `rate(http_request_duration_seconds_bucket[5m])`
-   - Visualizes latency distribution
-
-5. **Active Requests** (Gauge/Graph)
-   - Query: `http_requests_in_progress`
-   - Shows concurrent requests
-
-6. **Status Code Distribution** (Pie Chart)
-   - Query: `sum by (status) (rate(http_requests_total[5m]))`
-   - Shows 2xx vs 4xx vs 5xx
-
-7. **Uptime** (Stat)
-   - Query: `up{job="app"}`
-   - Shows if service is up (1) or down (0)
-
-**Panel configuration tips:**
-- Set appropriate time ranges
-- Use legends with `{{label}}` syntax
-- Set units (requests/sec, seconds, etc.)
-- Add thresholds for alerting visualization
-
-#### 3.4 Import Community Dashboards
-
-**Grafana has pre-built dashboards:**
-
-**For Prometheus metrics:**
-- Dashboard ID: **3662** (Prometheus 2.0 Stats)
-
-**For Loki:**
-- Dashboard ID: **13407** (Loki Dashboard)
-
-**To import:**
-1. **Dashboards** → **New** → **Import**
-2. Enter dashboard ID
-3. Select Prometheus data source
-4. **Import**
-
-Customize these for your needs.
-
-**Evidence Required:**
-- Screenshot of your custom application dashboard with live data
-- Screenshot showing all 6+ panels working
-- Exported dashboard JSON file
-
----
-
-### Task 4 — Production Configuration (2 pts)
-
-Harden the monitoring stack for production use.
-
-#### 4.1 Add Health Checks
-
-**Add health checks to all services in `docker-compose.yml`:**
-
-**Prometheus:**
-```yaml
-healthcheck:
-  test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
-  interval: 10s
-  timeout: 5s
-  retries: 5
-```
-
-**Your app:**
-```yaml
-healthcheck:
-  test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-  interval: 10s
-  timeout: 5s
-  retries: 5
-```
-
-#### 4.2 Configure Resource Limits
-
-**Set limits on all services:**
-- Prometheus: 1G memory, 1 CPU
-- Loki: 1G memory, 1 CPU
-- Grafana: 512M memory, 0.5 CPU
-- Apps: 256M memory, 0.5 CPU
-
-#### 4.3 Data Retention
-
-**Configure retention periods:**
-
-**Prometheus retention:**
-```yaml
-command:
-  - '--config.file=/etc/prometheus/prometheus.yml'
-  - '--storage.tsdb.retention.time=15d'
-  - '--storage.tsdb.retention.size=10GB'
-```
-
-**Why retention matters:**
-- Disk space management
-- Query performance (smaller dataset = faster queries)
-- Compliance requirements
-
-#### 4.4 Persistent Volumes
-
-**Ensure data survives container restarts:**
-```yaml
-volumes:
-  prometheus-data:
-  loki-data:
-  grafana-data:
-```
-
-**Test persistence:**
-1. Create dashboard
-2. Stop containers: `docker compose down`
-3. Start containers: `docker compose up -d`
-4. Dashboard should still exist
-
-**Evidence Required:**
-- `docker compose ps` showing all services healthy
-- Documentation of retention policies
-- Proof of data persistence after restart
-
----
-
-### Task 5 — Documentation (2 pts)
-
-Create `monitoring/docs/LAB08.md` documenting your implementation.
-
-**Required sections:**
-1. **Architecture** - Diagram showing metric flow (app → Prometheus → Grafana)
-2. **Application Instrumentation** - What metrics you added and why
-3. **Prometheus Configuration** - Scrape targets, intervals, retention
-4. **Dashboard Walkthrough** - Each panel's purpose and query
-5. **PromQL Examples** - 5+ queries with explanations
-6. **Production Setup** - Health checks, resources, retention policies
-7. **Testing Results** - Screenshots showing everything working
-8. **Challenges & Solutions** - Issues encountered and fixes
+> 💡 Want a head start on infrastructure panels? Import community dashboard **ID 3662** (Prometheus self-stats) via **Dashboards → New → Import** and bind it to your Prometheus data source. Your *own* 6-panel RED dashboard is what's graded.
 
 **Evidence:**
-- Screenshots of dashboards with live data
-- PromQL queries that demonstrate RED method
-- Proof of all services healthy and scraping
-- Comparison: metrics vs logs (Lab 7) - when to use each
+- Screenshot of your 6-panel RED dashboard with live data from a `curl` loop.
+- The exported dashboard JSON committed to `monitoring/`.
 
 ---
 
-## Bonus — Ansible Automation (2.5 pts)
+### Task 4 — Production Configuration (1 pt)
 
-Automate the complete observability stack (Loki + Prometheus + Grafana) deployment with Ansible.
+Harden the metrics stack so it isn't a toy.
 
-**Extend your `monitoring` role from Lab 7** or create a comprehensive new one.
+#### 4.1 Resource limits
 
-#### Bonus 1.1 Enhanced Monitoring Role
+Cap Prometheus so a cardinality spike can't starve the host (apply to the other services too):
 
-**Update `roles/monitoring/` to include:**
-- Loki configuration (from Lab 7)
-- Promtail configuration (from Lab 7)
-- **Prometheus configuration** (new)
-- Grafana data sources (Loki + Prometheus)
-- Grafana dashboard provisioning (logs + metrics)
-
-#### Bonus 1.2 Variables to Parameterize
-
-**File:** `roles/monitoring/defaults/main.yml`
-
-**Add Prometheus variables:**
 ```yaml
-# Prometheus Configuration
-prometheus_version: "3.9.0"
-prometheus_port: 9090
-prometheus_retention_days: 15
-prometheus_retention_size: "10GB"
-prometheus_scrape_interval: "15s"
-
-# Scrape Targets
-prometheus_targets:
-  - job: "prometheus"
-    targets: ["localhost:9090"]
-  - job: "loki"
-    targets: ["loki:3100"]
-  - job: "grafana"
-    targets: ["grafana:3000"]
-  - job: "app"
-    targets: ["app-python:8000"]
-    path: "/metrics"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 ```
 
-#### Bonus 1.3 Template Prometheus Config
+#### 4.2 Retention
 
-**File:** `roles/monitoring/templates/prometheus.yml.j2`
+Prometheus 3.x retention is set on the command line (you stubbed these in Task 2.2):
 
-**Use Jinja2 to generate config from variables:**
 ```yaml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=2GB"
+```
+
+Document *why* retention matters: disk management, faster queries on a smaller dataset, and (in the real world) compliance.
+
+#### 4.3 Health check & persistence
+
+```yaml
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+```
+
+Confirm the `prometheus-data` volume survives a restart:
+
+```bash
+docker compose down && docker compose up -d
+# the up query still shows history; dashboards still present
+```
+
+**Evidence:**
+- `docker compose ps` showing services `healthy`.
+- A note (or screenshot) proving metrics history survived `down`/`up`.
+
+---
+
+### Task 5 — Documentation (1 pt)
+
+Write `monitoring/docs/LAB08.md`.
+
+**Required sections:**
+1. **Architecture** — a diagram (Mermaid or image) of `app → Prometheus → Grafana`, alongside the Lab 7 log path.
+2. **Instrumentation** — which metrics you added, their types, your label choices, and how you kept cardinality bounded (answer the Task 1.1 questions).
+3. **Scrape config** — your jobs, the 15s interval, the pull model (answer the Task 2.1 questions).
+4. **Dashboard** — each RED panel, its PromQL, and the question it answers.
+5. **Production config** — retention rationale, resource limits, health check, persistence proof.
+6. **Metrics vs logs** — one paragraph: when you'd reach for Prometheus vs the Lab 7 Loki query.
+7. **Challenges** — problems you hit and how you solved them.
+
+Include config snippets (not whole files) and the screenshots from Tasks 1–4.
+
+---
+
+## Bonus — Ansible Automation (2 pts)
+
+Automate the metrics stack with Ansible, extending the `roles/monitoring` role from Lab 7.
+
+Update the role so a single playbook deploys **logs + metrics** together:
+- Template `prometheus/prometheus.yml` from Jinja2 — scrape targets, interval, retention as variables.
+- Add the `prometheus` service (and `prometheus-data` volume) to the templated `docker-compose.yml`.
+- Provision the Prometheus data source into Grafana (`grafana/provisioning/datasources/`).
+- Provision your exported RED dashboard JSON (`grafana/provisioning/dashboards/`).
+- Wait for Prometheus `:9090/-/healthy` before reporting success.
+
+**Requirements:**
+- Parameterise: `prometheus_version` (`v3.11.3`), `prometheus_port` (`9090`), `prometheus_retention_time` (`15d`), `prometheus_scrape_interval` (`15s`), and a `prometheus_targets` list.
+- Idempotent — a second run reports `changed=0`.
+- Compatible with ansible-core 2.18+; deploy with `community.docker.docker_compose_v2`.
+- Playbook: `playbooks/deploy-monitoring.yml`.
+
+<details>
+<summary>💡 Variables & template sketch</summary>
+
+```yaml
+# roles/monitoring/defaults/main.yml
+prometheus_version: "v3.11.3"
+prometheus_port: 9090
+prometheus_retention_time: "15d"
+prometheus_scrape_interval: "15s"
+prometheus_targets:
+  - { job: "prometheus", targets: ["localhost:9090"] }
+  - { job: "app",        targets: ["app-python:8000"] }
+  - { job: "loki",       targets: ["loki:3100"] }
+  - { job: "grafana",    targets: ["grafana:3000"] }
+```
+
+```jinja
+{# roles/monitoring/templates/prometheus.yml.j2 #}
 global:
   scrape_interval: {{ prometheus_scrape_interval }}
 
 scrape_configs:
-{% for target in prometheus_targets %}
-  - job_name: '{{ target.job }}'
+{% for t in prometheus_targets %}
+  - job_name: "{{ t.job }}"
     static_configs:
-      - targets: {{ target.targets }}
-    {% if target.path is defined %}
-    metrics_path: '{{ target.path }}'
-    {% endif %}
+      - targets: {{ t.targets | to_json }}
 {% endfor %}
 ```
 
-#### Bonus 1.4 Provision Grafana Dashboards
+</details>
 
-**Automatically provision dashboards:**
-
-**File:** `roles/monitoring/files/grafana-app-dashboard.json`
-- Export your application dashboard JSON
-- Add to Ansible role files
-
-**File:** `roles/monitoring/tasks/grafana.yml`
-```yaml
-- name: Provision Grafana dashboards
-  copy:
-    src: "{{ item }}"
-    dest: "{{ monitoring_dir }}/grafana/provisioning/dashboards/"
-  loop:
-    - grafana-app-dashboard.json
-    - grafana-logs-dashboard.json
-```
-
-#### Bonus 1.5 End-to-End Deployment
-
-**Single playbook deploys everything:**
-```bash
-ansible-playbook playbooks/deploy-monitoring.yml
-```
-
-**Should deploy:**
-- Loki + Promtail + Grafana (Lab 7)
-- Prometheus (Lab 8)
-- Grafana data sources (Loki + Prometheus)
-- Grafana dashboards (logs + metrics)
-- All with proper config, health checks, resources
-
-**Evidence Required:**
-- Ansible playbook execution showing idempotency
-- Templated configuration files
-- Screenshot of Grafana with both data sources working
-- Both dashboards (logs + metrics) automatically provisioned
-- Documentation of role structure and variables
+**Evidence:**
+- Playbook run output (first run: changes; second run: `changed=0`).
+- The rendered (templated) `prometheus.yml` and the provisioned data source + dashboard.
+- Screenshot of Grafana with **both** data sources (Loki + Prometheus) working.
 
 ---
 
-## Checklist
+## How to Submit
 
-**Before submitting:**
-- [ ] `/metrics` endpoint added to Python app
-- [ ] prometheus_client installed and configured
-- [ ] Counter, Gauge, Histogram metrics implemented
-- [ ] Prometheus deployed and scraping all targets
-- [ ] All targets showing "UP" in Prometheus UI
-- [ ] Prometheus data source added to Grafana
-- [ ] Custom dashboard with 6+ panels created
-- [ ] PromQL queries demonstrating RED method
-- [ ] Health checks on all services
-- [ ] Resource limits configured
-- [ ] Data retention policies set
-- [ ] Volumes persist after restart
-- [ ] Complete LAB08.md documentation
-- [ ] Screenshots of working dashboards
+1. **Create a branch:**
+   ```bash
+   git checkout -b lab08
+   ```
+2. **Commit your work:**
+   ```bash
+   git add app_python/ monitoring/
+   # if you did the bonus:
+   git add ansible/roles/monitoring ansible/playbooks/deploy-monitoring.yml
+   git commit -m "feat: lab08 metrics & monitoring with prometheus"
+   git push -u origin lab08
+   ```
+3. **Open Pull Requests:**
+   - **PR #1:** `your-fork:lab08` → `course-repo:master`
+   - **PR #2:** `your-fork:lab08` → `your-fork:master`
+4. **Verify:** `/metrics` code, `prometheus.yml`, dashboard JSON, and `LAB08.md` all committed; screenshots present.
 
-**Bonus (if attempting):**
-- [ ] Ansible role extended for Prometheus
-- [ ] Variables parameterize all configs
-- [ ] Prometheus config templated with Jinja2
-- [ ] Grafana dashboards auto-provisioned
-- [ ] Single playbook deploys full stack
-- [ ] Idempotency verified
+---
+
+## Acceptance Criteria
+
+### Main Tasks (10 points)
+
+**App Instrumentation (3 pts):**
+- [ ] `/metrics` endpoint exposes a counter, a histogram, and a gauge.
+- [ ] HTTP requests labelled `method`, `endpoint`, `status` — with the route rule (not raw path) as `endpoint`.
+- [ ] One app-specific business metric present.
+- [ ] `curl localhost:8000/metrics` returns valid Prometheus text format.
+
+**Prometheus & Scrape Config (3 pts):**
+- [ ] Prometheus 3.x added to the `monitoring/` stack on the `logging` network.
+- [ ] `prometheus.yml` scrapes `prometheus`, `app`, `loki`, `grafana` (and optionally `echo`).
+- [ ] `/targets` shows all targets UP; `up` query returns `1` per target.
+
+**Grafana Dashboard (2 pts):**
+- [ ] 6-panel RED dashboard (rate, errors, p95, heatmap, in-flight, uptime) with live data.
+- [ ] Prometheus data source connected; dashboard JSON exported into the repo.
+
+**Production Config (1 pt):**
+- [ ] Resource limits on Prometheus (and peers).
+- [ ] Retention flags set; health check present; `docker compose ps` shows `healthy`.
+- [ ] Data persists across `down`/`up`.
+
+**Documentation (1 pt):**
+- [ ] `monitoring/docs/LAB08.md` complete with architecture, instrumentation rationale, scrape config, dashboard, production config, and metrics-vs-logs.
+
+### Bonus (2 points)
+- [ ] `roles/monitoring` templates `prometheus.yml` from variables.
+- [ ] Prometheus service + data source + RED dashboard provisioned by the role.
+- [ ] `docker_compose_v2` deploy is idempotent (2nd run `changed=0`).
+- [ ] Readiness wait for Prometheus `:9090/-/healthy`; both data sources shown working.
 
 ---
 
@@ -680,62 +550,62 @@ ansible-playbook playbooks/deploy-monitoring.yml
 
 | Criteria | Points | Description |
 |----------|--------|-------------|
-| **Application Metrics** | 3 pts | `/metrics` endpoint with Counter, Gauge, Histogram; proper labels |
-| **Prometheus Setup** | 3 pts | Deployed, configured, scraping all targets successfully |
-| **Grafana Dashboards** | 2 pts | Custom dashboard with 6+ panels, PromQL queries |
-| **Production Config** | 2 pts | Health checks, resource limits, retention, persistence |
-| **Documentation** | 2 pts | Complete LAB08.md with architecture, queries, evidence |
-| **Bonus: Ansible** | 2.5 pts | Full stack automation with templates and provisioning |
-| **Total** | 12.5 pts | 10 pts required + 2.5 bonus |
+| **App Instrumentation** | 3 pts | `/metrics` with counter/histogram/gauge; bounded labels; business metric |
+| **Prometheus & Scrape Config** | 3 pts | Prometheus 3.x deployed; all targets scraped and UP |
+| **Grafana Dashboard** | 2 pts | 6-panel RED dashboard with PromQL + exported JSON |
+| **Production Config** | 1 pt | Resource limits, retention, health check, persistence |
+| **Documentation** | 1 pt | Complete `LAB08.md` with rationale and evidence |
+| **Bonus: Ansible** | 2 pts | Idempotent templated deployment of the full logs+metrics stack |
+| **Total** | 12 pts | **10 pts required + 2 bonus** |
 
-**Grading Scale:**
-- **10/10:** All working, excellent dashboards, production-ready config, thorough docs
-- **8-9/10:** All works, good dashboards, basic production config, good docs
-- **6-7/10:** Core working, simple dashboards, minimal config, basic docs
-- **<6/10:** Incomplete, missing components, needs revision
+**Grading scale:**
+- **10/10:** App instrumented cleanly, all targets UP, sharp RED dashboard, hardened, excellent docs.
+- **8–9/10:** All works, good docs, minor gaps.
+- **6–7/10:** Metrics + Prometheus + a basic dashboard present.
+- **<6/10:** `/metrics` missing or targets not scraping.
 
 ---
 
 ## Resources
 
 <details>
-<summary>📊 Prometheus Documentation</summary>
+<summary>📊 Prometheus</summary>
 
-- [Prometheus Overview](https://prometheus.io/docs/introduction/overview/)
-- [Prometheus Configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
-- [PromQL Basics](https://prometheus.io/docs/prometheus/latest/querying/basics/)
-- [Metric Types](https://prometheus.io/docs/concepts/metric_types/)
-- [Instrumentation Best Practices](https://prometheus.io/docs/practices/instrumentation/)
-
-</details>
-
-<details>
-<summary>🐍 Python Instrumentation</summary>
-
-- [prometheus_client GitHub](https://github.com/prometheus/client_python)
-- [Python Instrumentation](https://prometheus.io/docs/guides/python/)
-- [Flask Metrics Example](https://github.com/prometheus/client_python#flask)
-- [Metric Naming](https://prometheus.io/docs/practices/naming/)
+- [Prometheus overview](https://prometheus.io/docs/introduction/overview/)
+- [Prometheus 3.0 announcement](https://prometheus.io/blog/2024/11/14/prometheus-3-0/) — UTF-8, native histograms, OTLP
+- [Configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)
+- [Metric types](https://prometheus.io/docs/concepts/metric_types/)
+- [Native histograms](https://prometheus.io/docs/specs/native_histograms/)
 
 </details>
 
 <details>
-<summary>📈 Grafana & Dashboards</summary>
+<summary>🐍 Python instrumentation</summary>
 
-- [Grafana Prometheus Data Source](https://grafana.com/docs/grafana/latest/datasources/prometheus/)
-- [Dashboard Best Practices](https://grafana.com/docs/grafana/latest/dashboards/build-dashboards/best-practices/)
-- [PromQL in Grafana](https://grafana.com/docs/grafana/latest/datasources/prometheus/query-editor/)
-- [Dashboard Provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards)
+- [`prometheus_client` (GitHub)](https://github.com/prometheus/client_python)
+- [Python instrumentation guide](https://prometheus.io/docs/guides/python/)
+- [Instrumentation best practices](https://prometheus.io/docs/practices/instrumentation/)
+- [Metric naming](https://prometheus.io/docs/practices/naming/)
 
 </details>
 
 <details>
-<summary>📚 Observability Concepts</summary>
+<summary>📈 PromQL & Grafana</summary>
 
-- [RED Method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/)
-- [USE Method](http://www.brendangregg.com/usemethod.html) - For resources
-- [The Four Golden Signals](https://sre.google/sre-book/monitoring-distributed-systems/)
-- [Metrics vs Logs vs Traces](https://peter.bourgon.org/blog/2017/02/21/metrics-tracing-and-logging.html)
+- [PromQL basics](https://prometheus.io/docs/prometheus/latest/querying/basics/)
+- [PromQL examples](https://prometheus.io/docs/prometheus/latest/querying/examples/)
+- [Grafana Prometheus data source](https://grafana.com/docs/grafana/latest/datasources/prometheus/)
+- [Dashboard provisioning](https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards)
+
+</details>
+
+<details>
+<summary>📚 Observability methods</summary>
+
+- [RED method (Tom Wilkie, Grafana)](https://grafana.com/blog/the-red-method-how-to-instrument-your-services/)
+- [USE method (Brendan Gregg)](https://www.brendangregg.com/usemethod.html)
+- [The Four Golden Signals (Google SRE)](https://sre.google/sre-book/monitoring-distributed-systems/)
+- [Metrics, tracing, and logging (Peter Bourgon)](https://peter.bourgon.org/blog/2017/02/21/metrics-tracing-and-logging.html)
 
 </details>
 
@@ -743,10 +613,12 @@ ansible-playbook playbooks/deploy-monitoring.yml
 
 ## Looking Ahead
 
-- **Lab 9:** Kubernetes - Deploy your monitored apps to K8s
-- **Lab 10:** Helm - Package your monitoring stack as Helm charts
-- **Lab 16:** Kubernetes Monitoring - Full observability with init containers and probes
+- **Lab 9:** Kubernetes Fundamentals — deploy your instrumented app + the `echo` service to K8s.
+- **Lab 10:** Helm — package the app and monitoring as charts.
+- **Lab 16:** Kubernetes Monitoring — today's compose stack becomes a `kube-prometheus-stack` Helm chart with `ServiceMonitor`/`PodMonitor` CRDs auto-discovering targets.
 
 ---
 
 **Good luck!** 🚀
+
+> **Remember:** counters need `rate()`, percentiles need `histogram_quantile()` *outside* the `sum by (le)`, and a label must never be unique per request or per user. RED for every service.

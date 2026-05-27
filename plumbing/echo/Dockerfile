@@ -1,7 +1,7 @@
 # Multi-stage distroless build — see Lecture 2.
 # Build context is this directory.
 
-FROM golang:1.23 AS build
+FROM golang:1.24 AS build
 WORKDIR /src
 COPY go.mod ./
 COPY main.go ./

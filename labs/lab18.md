@@ -16,7 +16,7 @@ A `Dockerfile` and a `requirements.txt` *look* reproducible, but they drift:
 
 Nix fixes this by treating the build as a **pure function of its inputs**: it hashes every input — sources, dependencies, compiler, flags — into the output path `/nix/store/<sha256>-<name>-<version>`. Same inputs → same hash → identical output, on any machine, today and in 2036. The same hash also means a cache hit on `cache.nixos.org` skips the rebuild entirely.
 
-**This is an Exam Alternative Lab** — complete both Lab 17 (Cloudflare Workers, 20 pts) and Lab 18 (Nix, 12 pts) to replace the final exam. See Lab 17 for the exam-alternative deadline and minimum-score rules.
+**This is an Exam Alternative Lab** — complete both Lab 17 (Cloudflare Workers) and Lab 18 (Nix), each worth 10 main + 2 bonus pts, to replace the final exam. See Lab 17 for the exam-alternative deadline and minimum-score rules.
 
 **What You'll Learn:**
 - The Nix philosophy: pure, sandboxed, content-addressed builds

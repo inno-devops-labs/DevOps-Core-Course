@@ -2,8 +2,8 @@
 
 ![difficulty](https://img.shields.io/badge/difficulty-intermediate-yellow)
 ![topic](https://img.shields.io/badge/topic-Edge%20Computing-blue)
-![points](https://img.shields.io/badge/points-12-orange)
-![type](https://img.shields.io/badge/type-Bonus%20%2F%20Exam%20Alternative-purple)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
+![type](https://img.shields.io/badge/type-Exam%20Alternative-purple)
 
 > Build and deploy a serverless HTTP API on Cloudflare's global edge network using Cloudflare Workers, then compare the model against the Kubernetes stack you built across Labs 8-16.
 

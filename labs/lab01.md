@@ -2,7 +2,7 @@
 
 ![difficulty](https://img.shields.io/badge/difficulty-beginner-success)
 ![topic](https://img.shields.io/badge/topic-Web%20Development-blue)
-![points](https://img.shields.io/badge/points-10%2B2.5-orange)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
 ![languages](https://img.shields.io/badge/languages-Python%20|%20Go-informational)
 
 > Build a DevOps info service that reports system information and health status. This service will evolve throughout the course into a comprehensive monitoring tool.
@@ -17,7 +17,7 @@ Create a **DevOps Info Service** - a web application providing detailed informat
 - Python best practices and documentation
 - Foundation for future DevOps tooling
 
-**Tech Stack:** Python 3.11+ | Flask 3.1 or FastAPI 0.115
+**Tech Stack:** Python 3.13 | Flask 3.1 or FastAPI 0.136
 
 ---
 
@@ -58,7 +58,7 @@ Document your decision in `app_python/docs/LAB01.md`.
 
 #### 1.3 Implement Main Endpoint: `GET /`
 
-Return comprehensive service and system information:
+Return comprehensive service and system information (example response below is *illustrative* — your values will differ):
 
 ```json
 {
@@ -325,13 +325,13 @@ logger.debug(f'Request: {request.method} {request.path}')
 
 ```txt
 # Web Framework
-Flask==3.1.0
+Flask==3.1.3
 # or
-fastapi==0.115.0
-uvicorn[standard]==0.32.0  # Includes performance extras
+fastapi==0.136.1
+uvicorn[standard]==0.35.0  # Includes performance extras
 ```
 
-Pin exact versions for reproducibility.
+Pin exact versions for reproducibility. *Versions above are illustrative — check PyPI for the current patch release when you build.*
 
 **5. Git Ignore (`.gitignore`)**
 
@@ -446,7 +446,7 @@ Add a "GitHub Community" section (after Challenges & Solutions) with 1-2 sentenc
 
 ---
 
-## Bonus Task — Compiled Language (2.5 pts)
+## Bonus Task — Compiled Language (2 pts)
 
 Implement the same service in a compiled language to prepare for multi-stage Docker builds (Lab 2).
 
@@ -599,7 +599,7 @@ func main() {
 - [ ] `.gitignore` properly configured
 - [ ] Environment variables working
 
-### Bonus Task (2.5 points)
+### Bonus Task (2 points)
 
 - [ ] Compiled language app implements both endpoints
 - [ ] Same JSON structure as Python version
@@ -618,8 +618,8 @@ func main() {
 | **Code Quality** | 2 pts | Clean, organized, follows Python standards |
 | **Documentation** | 3 pts | Complete README and lab submission docs |
 | **Configuration** | 2 pts | Dependencies, environment vars, .gitignore |
-| **Bonus** | 2.5 pts | Compiled language implementation |
-| **Total** | 12.5 pts | 10 pts required + 2.5 pts bonus |
+| **Bonus** | 2 pts | Compiled language implementation |
+| **Total** | 12 pts | 10 pts required + 2 pts bonus |
 
 **Grading Scale:**
 - **10/10:** Perfect implementation, excellent documentation
@@ -638,7 +638,7 @@ func main() {
 - [Flask Quickstart](https://flask.palletsprojects.com/en/latest/quickstart/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [FastAPI Tutorial](https://fastapi.tiangolo.com/tutorial/first-steps/)
-- [Django 5.1 Documentation](https://docs.djangoproject.com/en/5.1/)
+- [Django Documentation (stable)](https://docs.djangoproject.com/en/stable/)
 
 </details>
 

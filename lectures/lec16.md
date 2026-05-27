@@ -551,9 +551,9 @@ Pick the abstraction that lets your team move fastest **today** — but read the
 **This is the last lecture.** What's left:
 
 * 🧪 **Lab 16** — Kube-Prometheus + init containers (required, completes the core track)
-* 🌍 **Lab 17 (bonus / exam alternative)** — Cloudflare Workers edge API. 20 pts.
-* ❄️ **Lab 18 (bonus / exam alternative)** — Nix reproducible Python + Docker. 12 pts.
-* 🏆 **Lab 17 + Lab 18 together = 40 pts** = full **exam replacement** option
+* 🌍 **Lab 17 (bonus / exam alternative)** — Cloudflare Workers edge API. 10 main + 2 bonus pts.
+* ❄️ **Lab 18 (bonus / exam alternative)** — Nix reproducible Python + Docker. 10 main + 2 bonus pts.
+* 🏆 **Lab 17 + Lab 18 together** = the bonus-lab track = **20% of the grade** = full **exam replacement** option
 
 ```mermaid
 flowchart LR
