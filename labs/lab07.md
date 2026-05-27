@@ -1,528 +1,568 @@
-# Lab 7 — Observability & Logging with Loki Stack
+# Lab 7 — Observability & Logging with the Loki Stack
 
 ![difficulty](https://img.shields.io/badge/difficulty-intermediate-yellow)
 ![topic](https://img.shields.io/badge/topic-Logging%20%26%20Observability-blue)
-![points](https://img.shields.io/badge/points-10%2B2.5-orange)
-![tech](https://img.shields.io/badge/tech-Loki%20|%20Promtail%20|%20Grafana-informational)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
+![tech](https://img.shields.io/badge/tech-Loki%20|%20Alloy%20|%20Grafana-informational)
 
-> Deploy a logging stack with Loki, Promtail, and Grafana to aggregate and visualize logs from your containerized applications.
+> Deploy a centralised logging stack — Loki, **Grafana Alloy**, and Grafana — to aggregate, query, and visualise logs from your containerised applications.
 
 ## Overview
 
-Set up centralized logging for your applications using the Grafana Loki stack. You'll deploy Loki 3.0 (log storage with TSDB), Promtail (log collector), and Grafana 11 (visualization), then integrate your apps from previous labs.
+You'll stand up the Grafana logging stack with Docker Compose, ship your Lab 1 Python app's logs into it, and learn to ask questions of those logs with LogQL. By the end you can answer "what just broke?" from a single Grafana query instead of SSH + grep.
 
 **What You'll Learn:**
-- Loki 3.0 architecture with TSDB (10x faster queries!)
-- Promtail configuration for Docker log collection
-- LogQL query language basics
-- Building interactive log dashboards in Grafana 11
-- Production logging practices and retention policies
+- Loki 3.7 architecture: label-based indexing on a TSDB schema (cheap storage, fast queries)
+- **Grafana Alloy** config (River/Alloy syntax) for Docker log collection — the agent that replaced Promtail
+- Emitting structured **JSON logs** from a Python service
+- The **LogQL** query language: stream selectors, line filters, parsers, and metric queries
+- Building a Grafana dashboard that answers one operational question per panel
+- Production logging concerns: retention, resource limits, health checks, and securing Grafana
 
-**Prerequisites:** Lab 1 (web apps), Lab 2 (Docker), Lab 6 (Docker Compose understanding)
+> 🪦 **A note on Promtail.** Through 2025 the standard Loki agent was **Promtail**. It reached **End-of-Life on March 2, 2026** — no further releases, no security fixes. Its successor, **Grafana Alloy**, folds Promtail, the Prometheus agent, and the OpenTelemetry Collector into one binary. This lab uses Alloy. You may still meet Promtail configs in brownfield systems, so the lecture (slides 14–15) shows the legacy syntax and how it maps to Alloy — but **do not stand up a new Promtail in 2026.**
 
-**Tech Stack:** Loki 3.0 + Promtail 3.0 + Grafana 12.3
+**Prerequisites:** Lab 1 (Python web app), Lab 2 (Docker), Lab 6 (Docker Compose).
+
+**Tech Stack:** Loki **3.7** · Grafana Alloy **1.16.1** · Grafana **13** · Docker Compose v2
 
 ---
 
 ## Tasks
 
-### Task 1 — Deploy Loki Stack (4 pts)
+> **Point split:** Task 1 (3) + Task 2 (3) + Task 3 (2) + Task 4 (1) + Task 5 (1) = **10 pts**. Bonus = **2 pts**.
+> Task 1 is self-contained: deploy the stack and see container logs in Grafana. Everything after builds on it.
 
-Create a Docker Compose stack with Loki, Promtail, and Grafana.
+### Task 1 — Deploy the Loki + Alloy + Grafana Stack (3 pts)
 
-#### 1.1 Study the Stack
+Create a Docker Compose stack with Loki (storage), Alloy (collector), and Grafana (UI).
 
-**Research these components before starting:**
-- [Loki Overview](https://grafana.com/docs/loki/latest/get-started/overview/) - How Loki works
-- [Promtail Basics](https://grafana.com/docs/loki/latest/send-data/promtail/) - Log collection
-- [LogQL Introduction](https://grafana.com/docs/loki/latest/query/) - Query language
+#### 1.1 Study the components
 
-**Understand:**
-- How is Loki different from Elasticsearch?
-- What are log labels and why do they matter?
-- How does Promtail discover containers?
+Read these before you start — they answer the questions the config asks of you:
+- [Loki overview](https://grafana.com/docs/loki/latest/get-started/overview/) — how Loki stores and indexes logs
+- [Grafana Alloy](https://grafana.com/docs/alloy/latest/) — the agent, its config language, and components
+- [LogQL introduction](https://grafana.com/docs/loki/latest/query/) — the query language
 
-#### 1.2 Create Project Structure
+**Be able to answer in your LAB07.md:**
+- How does Loki's label index differ from Elasticsearch's full-text index, and why is that cheaper?
+- What is a *stream* in Loki, and why does high label cardinality hurt?
+- How does Alloy discover Docker containers (`discovery.docker`) and forward their logs (`loki.source.docker` → `loki.write`)?
+
+#### 1.2 Create the project structure
 
 ```
 monitoring/
 ├── docker-compose.yml
 ├── loki/
 │   └── config.yml
-├── promtail/
-│   └── config.yml
+├── alloy/
+│   └── config.alloy
 └── docs/
     └── LAB07.md
 ```
 
-#### 1.3 Configure Docker Compose
-
-**File:** `monitoring/docker-compose.yml`
-
-**Requirements:**
-- Loki service (image: `grafana/loki:3.0.0`, port 3100)
-- Promtail service (image: `grafana/promtail:3.0.0`)
-- Grafana service (image: `grafana/grafana:12.3.1`, port 3000)
-- Volumes for configs and data persistence
-- Shared network
-
-<details>
-<summary>💡 Docker Compose Hints</summary>
-
-**Key points to consider:**
-- Use Docker Compose v2 syntax (version field is optional but use 3.8 for compatibility)
-- Mount config files to `/etc/loki/config.yml` and `/etc/promtail/config.yml`
-- Promtail needs access to Docker logs: `/var/lib/docker/containers:ro`
-- Promtail needs Docker socket: `/var/run/docker.sock:ro` (⚠️ security consideration)
-- Create named volumes: `loki-data` and `grafana-data`
-- Use `command:` to specify config file path (e.g., `-config.file=/etc/loki/config.yml`)
-
-**Grafana environment variables for easier testing:**
-```yaml
-environment:
-  - GF_AUTH_ANONYMOUS_ENABLED=true
-  - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-  - GF_SECURITY_ALLOW_EMBEDDING=true  # For iframe embedding if needed
-```
-⚠️ Only for development! Remove for production.
-
-**Note:** Use `docker compose` (space, not hyphen) - the v2 CLI standard.
-
-</details>
-
-#### 1.4 Configure Loki
+#### 1.3 Configure Loki
 
 **File:** `monitoring/loki/config.yml`
 
-**Research and configure:**
-- Basic server settings (port 3100)
-- Storage backend (use `tsdb` with `filesystem` - recommended in Loki 3.0)
-- Schema configuration (use schema v13, find examples in [Loki docs](https://grafana.com/docs/loki/latest/configure/))
-- Log retention: 7 days (168h)
+This is provided plumbing — a working single-binary Loki 3.7 config (schema v13, TSDB, 7-day retention). Copy it in and read the comments; you'll explain the choices in your docs.
 
-<details>
-<summary>💡 Loki Configuration Hints</summary>
-
-**Essential sections you need:**
-- `auth_enabled: false` (for testing)
-- `server:` - HTTP port
-- `common:` - Shared configuration (new in Loki 3.0, simplifies config)
-- `schema_config:` - Storage schema (use v13 with TSDB for Loki 3.0+)
-- `storage_config:` - Where to store data
-  - Use `tsdb` index type (faster than boltdb-shipper)
-  - Use `filesystem` object store for single-instance setup
-- `limits_config:` - Retention period (`retention_period: 168h` = 7 days)
-- `compactor:` - Cleanup old logs (required when retention is enabled)
-
-**TSDB Benefits (Loki 3.0+):**
-- Faster queries (up to 10x improvement)
-- Lower memory usage
-- Better compression
-
-**Check the [Loki 3.0 configuration docs](https://grafana.com/docs/loki/latest/configure/) for structure and required fields.**
-
-</details>
-
-#### 1.5 Configure Promtail
-
-**File:** `monitoring/promtail/config.yml`
-
-**Requirements:**
-- Configure Loki client endpoint (http://loki:3100)
-- Set up Docker service discovery
-- Add relabeling to extract container name as label
-
-<details>
-<summary>💡 Promtail Configuration Hints</summary>
-
-**Key sections:**
-- `server:` - Promtail's own port (9080)
-- `positions:` - Track what logs were read
-- `clients:` - Where to send logs (Loki URL + `/loki/api/v1/push`)
-- `scrape_configs:` - How to collect logs
-
-**For Docker service discovery:**
 ```yaml
-scrape_configs:
-  - job_name: docker
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
+# loki/config.yml — Loki 3.7, single-binary, schema v13
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb               # replaces the old boltdb-shipper
+      object_store: filesystem  # swap to s3/gcs/minio in production
+      schema: v13               # latest stable schema
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  retention_period: 168h        # 7 days
+
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true       # REQUIRED for retention to actually delete
+  delete_request_store: filesystem
 ```
 
-**Relabeling extracts container name:**
-- Use `__meta_docker_container_name` source label
-- Create `container` target label
-- Remove leading `/` from container name with regex
+> ⚠️ **Gotcha:** setting `retention_period` *without* the `compactor` block means logs never actually delete — Loki silently ignores the limit.
 
-Check [Promtail Docker SD docs](https://grafana.com/docs/loki/latest/send-data/promtail/configuration/#docker_sd_configs).
+#### 1.4 Configure Alloy — YOUR TASK
+
+**File:** `monitoring/alloy/config.alloy`
+
+Alloy config is written in the **River/Alloy** syntax (HCL-like blocks). The pipeline is three components wired together: **discover** Docker containers → **read** their logs → **write** to Loki. Fill in the `YOUR-TASK` markers.
+
+```hcl
+// alloy/config.alloy — discover Docker containers, ship their logs to Loki
+
+// 1) Discover containers via the Docker socket.
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+
+  // YOUR-TASK: only scrape containers that opt in with the label `logging=alloy`.
+  // Hint: a `filter` block with name = "label" and values = ["logging=alloy"].
+}
+
+// 2) Promote useful Docker metadata to Loki labels (keep cardinality LOW).
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"           // strip the leading "/"
+    target_label  = "container"
+  }
+
+  // YOUR-TASK: add a second rule that copies the Docker label `app`
+  // (source label "__meta_docker_container_label_app") into a Loki label "app".
+}
+
+// 3) Read the discovered containers' log streams.
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.write.default.receiver]
+}
+
+// 4) Push everything to Loki.
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+```
+
+<details>
+<summary>💡 Alloy hints</summary>
+
+- The pipeline mirrors Promtail's three stages (discover → scrape → push), just expressed as wired components instead of a YAML list.
+- `discovery.docker` finds containers; `discovery.relabel` rewrites their labels; `loki.source.docker` tails the logs; `loki.write` ships them.
+- Each component references the previous one by its fully-qualified name (e.g. `discovery.relabel.containers.output`).
+- The `filter` block is how you make logging **opt-in** — only containers you explicitly label with `logging=alloy` get scraped. This keeps the stack's own noise out.
+- Alloy serves a live config/graph UI on **port 12345** — useful for debugging the pipeline.
+- Reference: [`discovery.docker`](https://grafana.com/docs/alloy/latest/reference/components/discovery/discovery.docker/), [`loki.source.docker`](https://grafana.com/docs/alloy/latest/reference/components/loki/loki.source.docker/), [`loki.write`](https://grafana.com/docs/alloy/latest/reference/components/loki/loki.write/).
 
 </details>
 
-#### 1.6 Deploy and Verify
+#### 1.5 Configure Docker Compose — YOUR TASK
 
-**Deploy the stack:**
+**File:** `monitoring/docker-compose.yml`
+
+Wire the three services together. Fill in the `YOUR-TASK` markers.
+
+```yaml
+# monitoring/docker-compose.yml
+services:
+  loki:
+    image: grafana/loki:3.7.0
+    command: -config.file=/etc/loki/config.yml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    networks: [logging]
+
+  alloy:
+    image: grafana/alloy:v1.16.1
+    # Alloy needs the config path + the data/storage path on its command line:
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "12345:12345"   # Alloy live UI
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # YOUR-TASK: Alloy needs read access to the Docker socket to discover
+      # containers and tail their logs. Mount it read-only.
+      # Hint: /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [logging]
+    depends_on: [loki]
+
+  grafana:
+    image: grafana/grafana:13.0.1
+    ports:
+      - "3000:3000"
+    environment:
+      # DEV ONLY — anonymous admin so you can click around quickly.
+      # You will turn this OFF in Task 4.
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks: [logging]
+    depends_on: [loki]
+
+volumes:
+  loki-data:
+  grafana-data:
+
+networks:
+  logging:
+    name: logging
+```
+
+> ⚠️ **Security note:** mounting `/var/run/docker.sock` gives Alloy a powerful view of the host. It's fine for this lab; in production you'd prefer file-based discovery or a dedicated socket proxy. Call this out in your docs.
+
+#### 1.6 Deploy and verify
+
 ```bash
 cd monitoring
-docker compose up -d  # v2 CLI (space, not hyphen)
+docker compose up -d      # v2 CLI — space, not hyphen
 docker compose ps
 ```
 
-**Verify services:**
+Verify each service:
+
 ```bash
-# Test Loki
-curl http://localhost:3100/ready
+# Loki ready?
+curl -s http://localhost:3100/ready          # expect: "ready"
 
-# Check Promtail targets
-curl http://localhost:9080/targets
+# Alloy live UI (open in a browser to see the component graph)
+open http://localhost:12345
 
-# Access Grafana
+# Grafana
 open http://localhost:3000
 ```
 
-**In Grafana:**
-1. Go to **Connections** → **Data sources** → **Add data source** → **Loki**
+In Grafana, add the Loki data source:
+1. **Connections → Data sources → Add data source → Loki**
 2. URL: `http://loki:3100`
-3. Click **Save & Test** (should show "Data source connected")
-4. Navigate to **Explore** → Select **Loki** data source
-5. Query: `{job="docker"}` → You should see logs from all containers
+3. **Save & Test** → should report the data source is working.
+4. **Explore → Loki**, run `{container=~".+"}` — you should see logs from the stack's own containers.
 
-**Alternative:** Provision the data source automatically (see bonus task for Ansible example).
+> 💡 Tip: at this stage only the stack's containers carry the `logging=alloy` label if you set the filter, so you may need to add the label to a container (Task 2) before logs appear. To smoke-test immediately, you can temporarily drop the `filter` block in Alloy and re-run.
 
-**Evidence:** Screenshot showing logs from at least 3 containers in Grafana Explore.
+**Evidence:** screenshot of Grafana Explore showing logs from at least two containers, plus the Alloy UI showing the component graph healthy.
 
 ---
 
-### Task 2 — Integrate Your Applications (3 pts)
+### Task 2 — Integrate Your Applications & Structured Logging (3 pts)
 
-Add your apps to the logging stack and implement structured logging.
+Make your apps emit JSON logs and ship them into Loki.
 
-#### 2.1 Add Structured Logging
+#### 2.1 Add JSON logging to your Lab 1 Python app
 
-**Update your Python app** from Lab 1 to log in JSON format.
+Upgrade your Lab 1 service to log in **structured JSON**. Pick one idiomatic path:
 
-**Requirements:**
-- Use Python's `logging` module
-- Output JSON format: `{"timestamp": "...", "level": "...", "message": "...", ...}`
-- Log important events: startup, HTTP requests, errors
-- Include context: method, path, status code, client IP
+```python
+# Option A — python-json-logger (drop-in, minimal app changes)
+import logging
+from pythonjsonlogger.json import JsonFormatter
 
-<details>
-<summary>💡 JSON Logging Hints</summary>
+handler = logging.StreamHandler()
+handler.setFormatter(JsonFormatter(
+    "%(asctime)s %(levelname)s %(name)s %(message)s",
+    rename_fields={"asctime": "ts", "levelname": "level"},
+))
+logging.basicConfig(level=logging.INFO, handlers=[handler])
 
-**Option 1: Custom formatter**
-Create a `JSONFormatter` class that inherits from `logging.Formatter` and overrides the `format()` method to return JSON.
-
-**Option 2: Use python-json-logger**
-```bash
-pip install python-json-logger
+logging.info("service starting", extra={"port": 8000})
 ```
-Then configure it in your app.
 
-**What to log:**
-- App startup with configuration
-- Each HTTP request (use `@app.before_request`)
-- Response status (use `@app.after_request`)
-- Errors and exceptions
+```python
+# Option B — structlog (richer; context vars; recommended for new code)
+import structlog
+log = structlog.get_logger()
+log.info("request", method="GET", path="/health", status=200, client_ip="127.0.0.1")
+```
 
-**Why JSON?**
-- Easy to parse by log aggregation tools
-- Structured data, not just text
-- Can extract fields in LogQL queries
+**Requirements — log at least these events as JSON:**
+- App **startup** (with config: host, port).
+- Every **HTTP request**: `method`, `path`, `status`, `client_ip` (use Flask `@app.before_request`/`@app.after_request` or FastAPI middleware).
+- Every **error / exception**, at `ERROR` level.
 
-</details>
+> ✅ **Definition of done for logging:** `curl localhost:8000/health` produces a single JSON line in `docker logs <container>`, with a `level` field you can later filter on in LogQL.
 
-#### 2.2 Add Applications to Docker Compose
+#### 2.2 Add your apps to the stack and label them for Alloy
 
-**Extend** `monitoring/docker-compose.yml` with your applications:
-- Python app from Lab 1 (port 8000)
-- Bonus app from Lab 1 if you completed it (port 8001)
+Extend `monitoring/docker-compose.yml` with your service(s). The **label is what opts a container into log collection** — Alloy only scrapes containers carrying `logging=alloy`.
 
-**Both apps should:**
-- Join the `logging` network
-- Have labels for Promtail filtering: `logging: "promtail"`, `app: "app-name"`
-
-<details>
-<summary>💡 Multi-App Compose Hints</summary>
-
-**Add to your docker-compose.yml:**
 ```yaml
-services:
-  # ... loki, promtail, grafana ...
-
   app-python:
-    image: your-username/devops-info-service:latest
+    image: your-username/devops-info-service:latest   # built in Lab 2
     ports:
       - "8000:8000"
-    networks:
-      - logging
+    networks: [logging]
     labels:
-      logging: "promtail"
-      app: "devops-python"
+      logging: "alloy"          # opt in to Alloy collection
+      app: "devops-python"      # becomes a Loki label via discovery.relabel
 ```
 
-**Filter in Promtail:** Update `promtail/config.yml` to only scrape containers with the label:
+**Optional — the course `echo` plumbing service.** The repo ships a tiny instructor-maintained Go service at [`plumbing/echo`](../plumbing/echo) (used heavily from Lab 9). It writes plain-text request logs and is a convenient *second* log source so your dashboard isn't single-app. Add it the same way:
+
 ```yaml
-filters:
-  - name: label
-    values: ["logging=promtail"]
+  echo:
+    build: ../plumbing/echo        # or image: ghcr.io/inno-devops-labs/echo:v1
+    ports:
+      - "8081:8081"
+    networks: [logging]
+    labels:
+      logging: "alloy"
+      app: "echo"
 ```
 
-</details>
+> You do **not** modify `plumbing/echo` — it's course-maintained. Including it is optional but recommended for a richer dashboard.
 
-#### 2.3 Generate Logs and Test
+#### 2.3 Generate logs and query them
 
-**Make requests to generate logs:**
 ```bash
-# Generate traffic
-for i in {1..20}; do curl http://localhost:8000/; done
-for i in {1..20}; do curl http://localhost:8000/health; done
+# Generate some traffic
+for i in $(seq 1 20); do curl -s http://localhost:8000/ > /dev/null; done
+for i in $(seq 1 20); do curl -s http://localhost:8000/health > /dev/null; done
+# If you added echo:
+for i in $(seq 1 20); do curl -s http://localhost:8081/ping > /dev/null; done
 ```
 
-**Query logs in Grafana Explore:**
+Now query in Grafana **Explore** (Loki data source):
+
 ```logql
-# All logs from Python app
+# All logs from the Python app
 {app="devops-python"}
 
-# Only errors
+# Only error lines
 {app="devops-python"} |= "ERROR"
 
-# Parse JSON and filter
-{app="devops-python"} | json | method="GET"
+# Parse JSON and filter on a field
+{app="devops-python"} | json | level="INFO"
+
+# (if echo is running) compare both apps
+{app=~"devops-python|echo"}
 ```
 
 **Evidence:**
-- Screenshot of JSON log output from your app
-- Screenshot of Grafana showing logs from both applications
-- At least 3 different LogQL queries that work
+- Screenshot of a JSON log line from your app (in `docker logs` or Grafana).
+- Screenshot of Grafana showing logs from your app (bonus: a second app too).
+- At least **3 different LogQL queries** that return results.
 
 ---
 
-### Task 3 — Build Log Dashboard (2 pts)
+### Task 3 — Build a Log Dashboard (2 pts)
 
-Create a Grafana dashboard to visualize your application logs.
+Build a Grafana dashboard where **each panel answers one operational question**.
 
-#### 3.1 Learn LogQL Basics
+#### 3.1 Practise LogQL first
 
-**Practice these query patterns in Explore first:**
+Run these in Explore before building panels — they map directly to the four panels below:
 
-1. **Stream selection:** `{app="devops-python"}`
-2. **Text filtering:** `{app="devops-python"} |= "error"`
-3. **JSON parsing:** `{app="devops-python"} | json`
-4. **Field filtering:** `{app="devops-python"} | json | level="INFO"`
-5. **Metrics from logs:** `rate({app="devops-python"}[1m])`
+```logql
+{app=~"devops-.*"}                                         # 1. recent activity
+sum by (app) (rate({app=~"devops-.*"} [1m]))               # 2. traffic per app
+{app=~"devops-.*"} | json | level="ERROR"                  # 3. errors only
+sum by (level) (count_over_time({app=~"devops-.*"} | json [5m]))  # 4. level mix
+```
 
 <details>
-<summary>💡 LogQL Reference</summary>
+<summary>💡 LogQL quick reference</summary>
 
-**Stream selectors:**
-- `{label="value"}` - exact match
-- `{label=~"regex"}` - regex match
-- `{label!="value"}` - not equal
+**Stream selectors:** `{label="v"}` exact · `{label=~"re"}` regex · `{label!="v"}` not-equal
+**Line filters:** `|= "x"` contains · `!= "x"` excludes · `|~ "re"` regex · `!~ "re"` not-regex
+**Parsers:** `| json` (JSON → fields) · `| logfmt` (key=value) · `| line_format "..."` (rewrite line)
+**Metric queries:** `rate([5m])` lines/sec · `count_over_time([5m])` total in window · `sum by (label) (...)` group
 
-**Line filters:**
-- `|= "text"` - contains
-- `!= "text"` - doesn't contain
-- `|~ "regex"` - regex match
-
-**Parsers:**
-- `| json` - parse JSON logs
-- `| logfmt` - parse logfmt logs
-
-**Aggregations:**
-- `rate({app="app"}[5m])` - logs per second
-- `count_over_time({app="app"}[5m])` - count logs
-- `sum by (level) (count_over_time({app="app"} | json [5m]))` - count by level
-
-Learn more: [LogQL Documentation](https://grafana.com/docs/loki/latest/query/)
+Put the cheapest, most-selective filter first — filters cascade left to right.
+Reference: [LogQL docs](https://grafana.com/docs/loki/latest/query/).
 
 </details>
 
-#### 3.2 Create Dashboard
+#### 3.2 Create the dashboard — 4 panels
 
-**Requirements - create 4 panels:**
+1. **Recent logs** (Logs visualisation) — `{app=~"devops-.*"}` — *"What's happening right now?"*
+2. **Request rate** (Time series) — `sum by (app) (rate({app=~"devops-.*"} [1m]))` — *"How busy are we?"*
+3. **Errors only** (Logs visualisation) — `{app=~"devops-.*"} | json | level="ERROR"` — *"What broke?"*
+4. **Log-level distribution** (Pie chart or Stat) — `sum by (level) (count_over_time({app=~"devops-.*"} | json [5m]))` — *"How noisy is the app?"*
 
-1. **Logs Table** (Logs visualization)
-   - Shows recent logs from all apps
-   - Query: `{app=~"devops-.*"}`
+**How to build:**
+1. **Dashboards → New → New dashboard → Add visualization**, pick the **Loki** data source.
+2. Enter the LogQL (use the code editor or the query builder).
+3. Choose the visualisation type (Logs / Time series / Pie chart / Stat).
+4. Set a clear panel title, then **Save dashboard**. Export the JSON model into your repo.
 
-2. **Request Rate** (Time series graph)
-   - Shows logs per second by app
-   - Query: `sum by (app) (rate({app=~"devops-.*"} [1m]))`
+> 💡 The `app` label only exists if your Alloy `discovery.relabel` rule (Task 1.4) and your container labels (Task 2.2) are both in place. If panels are empty, check the label exists in Explore first.
 
-3. **Error Logs** (Logs visualization)
-   - Shows only ERROR level logs
-   - Query: `{app=~"devops-.*"} | json | level="ERROR"`
-
-4. **Log Level Distribution** (Stat or Pie chart)
-   - Count logs by level (INFO, ERROR, etc.)
-   - Query: `sum by (level) (count_over_time({app=~"devops-.*"} | json [5m]))`
-
-**How to create:**
-1. **Dashboard** → **New** → **New Dashboard** → **Add visualization**
-2. Select **Loki** data source
-3. Enter LogQL query (use the query builder or code editor)
-4. Choose visualization type (Logs, Time series, Stat, Pie chart, etc.)
-5. Configure panel title and options
-6. **Save dashboard** (Grafana 11 auto-saves drafts)
-
-**Grafana 11 features:**
-- Query builder UI for LogQL (easier for beginners)
-- Better log context and line wrapping
-- Improved variable support
-- Dashboard version history
-
-**Evidence:** Screenshot of your dashboard showing all 4 panels with real data.
+**Evidence:** screenshot of the dashboard showing all 4 panels with real data, plus the exported dashboard JSON committed to `monitoring/`.
 
 ---
 
 ### Task 4 — Production Readiness (1 pt)
 
-Configure the stack for production use.
+Harden the stack so it isn't a toy.
 
-#### 4.1 Add Resource Limits
+#### 4.1 Resource limits
 
-Add resource constraints to prevent services from consuming too much:
+Add limits to each service so a log spike can't starve the host:
 
 ```yaml
-deploy:
-  resources:
-    limits:
-      cpus: '1.0'
-      memory: 1G
-    reservations:
-      cpus: '0.5'
-      memory: 512M
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 ```
-
-**Apply to all services** with appropriate values.
 
 #### 4.2 Secure Grafana
 
-**Remove anonymous authentication:**
-- Change `GF_AUTH_ANONYMOUS_ENABLED` to `false`
-- Set admin password via environment variable
-- Use `.env` file for secrets (don't commit!)
+- Set `GF_AUTH_ANONYMOUS_ENABLED=false`.
+- Set the admin password from a `.env` file (`GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}`), and **do not commit `.env`** — add it to `.gitignore`.
 
-#### 4.3 Add Health Checks
+#### 4.3 Health checks
 
-Add `healthcheck:` sections to verify services are working:
-- Loki: `http://localhost:3100/ready`
-- Grafana: `http://localhost:3000/api/health`
-
-<details>
-<summary>💡 Health Check Example</summary>
+Add `healthcheck:` blocks so `docker compose ps` reports real health:
 
 ```yaml
-healthcheck:
-  test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
-  interval: 10s
-  timeout: 5s
-  retries: 5
-  start_period: 10s  # Grace period for startup
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 ```
 
-**Alternative using curl:**
-```yaml
-test: ["CMD-SHELL", "curl -f http://localhost:3100/ready || exit 1"]
-```
-
-</details>
+Wire Loki to `:3100/ready` and Grafana to `:3000/api/health`.
 
 **Evidence:**
-- `docker-compose ps` showing all services healthy
-- Screenshot of Grafana login page (no anonymous access)
+- `docker compose ps` output showing services reporting `healthy`.
+- Screenshot of the Grafana **login page** (proving anonymous access is off).
 
 ---
 
-### Task 5 — Documentation (2 pts)
+### Task 5 — Documentation (1 pt)
 
-Create `monitoring/docs/LAB07.md` documenting your setup.
+Write `monitoring/docs/LAB07.md`.
 
 **Required sections:**
-1. **Architecture** - Diagram showing how components connect
-2. **Setup Guide** - Step-by-step deployment instructions
-3. **Configuration** - Explain your Loki/Promtail configs and why
-4. **Application Logging** - How you implemented JSON logging
-5. **Dashboard** - Explain each panel and the LogQL queries
-6. **Production Config** - Security measures, resources, retention
-7. **Testing** - Commands to verify everything works
-8. **Challenges** - Problems you encountered and solutions
+1. **Architecture** — a diagram (Mermaid or image) of apps → Alloy → Loki → Grafana.
+2. **Setup** — how to deploy (`docker compose up -d`) and verify.
+3. **Configuration** — explain your Loki schema/retention choices and your Alloy pipeline (discover → relabel → write); answer the Task 1.1 research questions.
+4. **Application logging** — how you implemented JSON logging and what fields you emit.
+5. **Dashboard** — each panel, its LogQL query, and the question it answers.
+6. **Production config** — resource limits, retention, Grafana auth, the Docker-socket security trade-off.
+7. **Challenges** — problems you hit and how you solved them.
 
-**Include:**
-- Configuration file snippets (not full files)
-- Screenshots of Grafana dashboard
-- Example LogQL queries with explanations
-- Evidence of all tasks completed
+Include config snippets (not whole files) and the screenshots from Tasks 1–4.
 
 ---
 
-## Bonus — Ansible Automation (2.5 pts)
+## Bonus — Ansible Automation (2 pts)
 
-Automate Loki stack deployment with Ansible (builds on Labs 5-6).
+Automate the whole stack with Ansible, building on Labs 5–6.
 
-**Create Ansible role** `roles/monitoring` that:
-- Creates monitoring directory structure
-- Templates configuration files (Loki 3.0 format)
-- Deploys stack with Docker Compose v2
-- Waits for services to be ready
-- Configures Grafana data source
+Create an Ansible role `roles/monitoring` that:
+- Creates the `monitoring/` directory structure.
+- Templates `loki/config.yml`, `alloy/config.alloy`, and `docker-compose.yml` from Jinja2 (versions, ports, retention as variables).
+- Deploys the stack idempotently with `community.docker.docker_compose_v2`.
+- Waits for Loki `:3100/ready` and Grafana `:3000/api/health` before reporting success.
 
 **Requirements:**
-- Use Jinja2 templates for configs (versions, ports, retention as variables)
-- Make it idempotent (use `community.docker.docker_compose_v2` module)
-- Add to your existing Ansible setup from Lab 6
-- Create playbook: `playbooks/deploy-monitoring.yml`
-- Compatible with Ansible 2.16+
+- Parameterise: image tags (`loki: 3.7.0`, `alloy: v1.16.1`, `grafana: 13.0.1`), ports, retention (`168h`), schema (`v13`), resource limits.
+- Idempotent — a second run reports `changed=0`.
+- Compatible with ansible-core 2.18+.
+- Playbook: `playbooks/deploy-monitoring.yml`.
 
 <details>
-<summary>💡 Ansible Role Structure</summary>
+<summary>💡 Role structure</summary>
 
 ```
 roles/monitoring/
-├── defaults/main.yml       # Variables (versions, ports, etc.)
+├── defaults/main.yml          # versions, ports, retention, limits
 ├── tasks/
-│   ├── main.yml           # Main orchestration
-│   ├── setup.yml          # Create dirs, template configs
-│   └── deploy.yml         # Docker compose deployment
+│   ├── main.yml               # orchestrate setup → deploy → wait
+│   ├── setup.yml              # create dirs, template configs
+│   └── deploy.yml             # docker_compose_v2 + readiness wait
 ├── templates/
 │   ├── docker-compose.yml.j2
 │   ├── loki-config.yml.j2
-│   └── promtail-config.yml.j2
-└── meta/main.yml          # Depends on: docker role
+│   └── config.alloy.j2
+└── meta/main.yml              # depends_on: docker role
 ```
-
-**Key variables to parameterize:**
-- Service versions (loki: 3.0.0, promtail: 3.0.0, grafana: 11.3.0)
-- Ports (loki: 3100, grafana: 3000, promtail: 9080)
-- Retention period (default: 168h / 7 days)
-- Resource limits (memory, CPU)
-- Schema version (v13 for Loki 3.0+)
 
 </details>
 
 **Evidence:**
-- Ansible playbook execution output
-- Idempotency test (run twice, second shows no changes)
-- Templated configuration files
+- Playbook run output (first run: changes; second run: `changed=0`).
+- The rendered (templated) config files.
 
 ---
 
-## Checklist
+## How to Submit
 
-**Before submitting:**
-- [ ] Loki, Promtail, Grafana running via Docker Compose
-- [ ] Loki data source configured in Grafana
-- [ ] Python app logging in JSON format
-- [ ] Bonus app (if completed Lab 1 bonus) integrated
-- [ ] Logs visible in Grafana from all containers
-- [ ] Dashboard with 4+ panels created
-- [ ] LogQL queries working for different scenarios
-- [ ] Resource limits on all services
-- [ ] Health checks added
-- [ ] Grafana secured (no anonymous access)
-- [ ] Complete documentation with screenshots
-- [ ] All configuration files in repo
+1. **Create a branch:**
+   ```bash
+   git checkout -b lab07
+   ```
+2. **Commit your work:**
+   ```bash
+   git add monitoring/ app_python/
+   # if you did the bonus:
+   git add ansible/roles/monitoring ansible/playbooks/deploy-monitoring.yml
+   git commit -m "feat: lab07 observability stack (loki + alloy + grafana)"
+   git push -u origin lab07
+   ```
+3. **Open Pull Requests:**
+   - **PR #1:** `your-fork:lab07` → `course-repo:master`
+   - **PR #2:** `your-fork:lab07` → `your-fork:master`
+4. **Verify:** all config files committed, screenshots present, `LAB07.md` complete.
+
+---
+
+## Acceptance Criteria
+
+### Main Tasks (10 points)
+
+**Stack Deployment (3 pts):**
+- [ ] `docker compose up -d` brings up Loki, Alloy, and Grafana.
+- [ ] Loki `:3100/ready` returns `ready`; Alloy UI on `:12345` shows a healthy graph.
+- [ ] Loki data source connected in Grafana; container logs visible in Explore.
+- [ ] Alloy config completes the `discovery.docker` filter, the `app` relabel rule, and the Docker-socket mount.
+
+**App Integration & JSON Logging (3 pts):**
+- [ ] Lab 1 Python app emits structured JSON (startup, requests, errors).
+- [ ] App container labelled `logging=alloy` and `app=…`; its logs reach Loki.
+- [ ] At least 3 working LogQL queries demonstrated.
+
+**Dashboard (2 pts):**
+- [ ] 4-panel dashboard (recent logs, request rate, errors, level distribution) with real data.
+- [ ] Dashboard JSON exported into the repo.
+
+**Production Config (1 pt):**
+- [ ] Resource limits on all services.
+- [ ] Grafana anonymous auth disabled, admin password from `.env` (uncommitted).
+- [ ] Health checks present; `docker compose ps` shows `healthy`.
+
+**Documentation (1 pt):**
+- [ ] `monitoring/docs/LAB07.md` complete with architecture, config rationale, dashboard explanation, and the Task 1.1 research answers.
+
+### Bonus (2 points)
+- [ ] `roles/monitoring` templates all three configs from variables.
+- [ ] `docker_compose_v2` deploy is idempotent (2nd run `changed=0`).
+- [ ] Readiness wait for Loki + Grafana before success.
+- [ ] Playbook output (both runs) and rendered configs included.
 
 ---
 
@@ -530,53 +570,62 @@ roles/monitoring/
 
 | Criteria | Points | Description |
 |----------|--------|-------------|
-| **Stack Deployment** | 4 pts | Loki, Promtail, Grafana configured and working |
-| **App Integration** | 3 pts | Apps logging JSON format, visible in Loki |
-| **Dashboard** | 2 pts | 4+ panels with appropriate LogQL queries |
-| **Production Config** | 1 pt | Resources, security, health checks |
-| **Documentation** | 2 pts | Complete LAB07.md with evidence |
-| **Bonus: Ansible** | 2.5 pts | Automated deployment with Ansible role |
-| **Total** | 12.5 pts | 10 pts required + 2.5 bonus |
+| **Stack Deployment** | 3 pts | Loki + Alloy + Grafana up; Alloy pipeline completed; logs in Grafana |
+| **App Integration** | 3 pts | JSON logging in Python app; labelled + shipped to Loki; LogQL queries work |
+| **Dashboard** | 2 pts | 4 panels with appropriate LogQL + exported JSON |
+| **Production Config** | 1 pt | Resource limits, Grafana secured, health checks |
+| **Documentation** | 1 pt | Complete `LAB07.md` with rationale and evidence |
+| **Bonus: Ansible** | 2 pts | Idempotent templated deployment of the full stack |
+| **Total** | 12 pts | **10 pts required + 2 bonus** |
+
+**Grading scale:**
+- **10/10:** Stack fully working, JSON logs, clean dashboard, hardened, excellent docs.
+- **8–9/10:** All works, good docs, minor gaps.
+- **6–7/10:** Core stack + integration present, basic dashboard/docs.
+- **<6/10:** Stack incomplete or logs not flowing.
 
 ---
 
 ## Resources
 
 <details>
-<summary>📚 Loki Documentation</summary>
+<summary>📚 Loki</summary>
 
-- [Loki 3.0 Overview](https://grafana.com/docs/loki/latest/get-started/overview/)
-- [Loki Configuration](https://grafana.com/docs/loki/latest/configure/)
-- [LogQL Query Language](https://grafana.com/docs/loki/latest/query/)
-- [Storage Configuration](https://grafana.com/docs/loki/latest/storage/)
-
-</details>
-
-<details>
-<summary>🚢 Promtail</summary>
-
-- [Promtail Configuration](https://grafana.com/docs/loki/latest/send-data/promtail/configuration/)
-- [Docker Service Discovery](https://grafana.com/docs/loki/latest/send-data/promtail/configuration/#docker_sd_configs)
-- [Scraping Configuration](https://grafana.com/docs/loki/latest/send-data/promtail/scraping/)
+- [Loki overview](https://grafana.com/docs/loki/latest/get-started/overview/)
+- [Loki configuration](https://grafana.com/docs/loki/latest/configure/)
+- [Storage / TSDB](https://grafana.com/docs/loki/latest/operations/storage/tsdb/)
+- [Retention & compactor](https://grafana.com/docs/loki/latest/operations/storage/retention/)
 
 </details>
 
 <details>
-<summary>📊 Grafana</summary>
+<summary>⚡ Grafana Alloy (Promtail's successor)</summary>
 
-- [Grafana 11 Dashboards](https://grafana.com/docs/grafana/latest/dashboards/)
-- [Loki Data Source](https://grafana.com/docs/grafana/latest/datasources/loki/)
-- [Explore Logs](https://grafana.com/docs/grafana/latest/explore/logs-integration/)
+- [Alloy documentation](https://grafana.com/docs/alloy/latest/)
+- [`discovery.docker`](https://grafana.com/docs/alloy/latest/reference/components/discovery/discovery.docker/)
+- [`loki.source.docker`](https://grafana.com/docs/alloy/latest/reference/components/loki/loki.source.docker/)
+- [`loki.write`](https://grafana.com/docs/alloy/latest/reference/components/loki/loki.write/)
+- [Migrate from Promtail to Alloy](https://grafana.com/docs/alloy/latest/set-up/migrate/from-promtail/)
 
 </details>
 
 <details>
-<summary>📝 Logging Best Practices</summary>
+<summary>🔍 LogQL & Grafana</summary>
 
-- [Structured Logging with structlog](https://www.structlog.org/en/stable/)
+- [LogQL query language](https://grafana.com/docs/loki/latest/query/)
+- [Grafana dashboards](https://grafana.com/docs/grafana/latest/dashboards/)
+- [Loki data source in Grafana](https://grafana.com/docs/grafana/latest/datasources/loki/)
+- [Explore logs](https://grafana.com/docs/grafana/latest/explore/logs-integration/)
+
+</details>
+
+<details>
+<summary>📝 Structured logging</summary>
+
+- [structlog](https://www.structlog.org/en/stable/)
+- [python-json-logger](https://github.com/nhairs/python-json-logger)
 - [The Twelve-Factor App: Logs](https://12factor.net/logs)
 - [Python Logging HOWTO](https://docs.python.org/3/howto/logging.html)
-- [python-json-logger](https://github.com/madzak/python-json-logger)
 
 </details>
 
@@ -584,11 +633,13 @@ roles/monitoring/
 
 ## Looking Ahead
 
-- **Lab 8:** Metrics with Prometheus - Add metrics to complement logs
-- **Lab 9:** Kubernetes Fundamentals - Deploy your apps to K8s
-- **Lab 10-12:** Helm, Secrets, ConfigMaps - Package and configure K8s deployments
-- **Lab 16:** Kubernetes Monitoring - Full observability in K8s
+- **Lab 8:** Metrics with Prometheus — add the metrics pillar to complement these logs. (Your `echo` service already exposes `/metrics`.)
+- **Lab 9:** Kubernetes Fundamentals — deploy your app + the `echo` service to K8s.
+- **Lab 10–12:** Helm, Secrets, ConfigMaps — package and configure K8s deployments.
+- **Lab 16:** Kubernetes Monitoring — full observability on the cluster.
 
 ---
 
 **Good luck!** 🚀
+
+> **Remember:** Loki indexes *labels*, not text. Keep labels low-cardinality; put per-request fields in the JSON body and filter with `| json` at query time.

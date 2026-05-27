@@ -2,516 +2,445 @@
 
 ![difficulty](https://img.shields.io/badge/difficulty-intermediate-yellow)
 ![topic](https://img.shields.io/badge/topic-Kubernetes-blue)
-![points](https://img.shields.io/badge/points-12%2B2.5-orange)
-![tech](https://img.shields.io/badge/tech-Kubernetes-informational)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
+![tech](https://img.shields.io/badge/tech-Kubernetes%201.36-informational)
 
-> Deploy your containerized applications to Kubernetes using declarative manifests and production best practices.
+> Stand up a local Kubernetes cluster and deploy **two** services side by side: your own Python app from Lab 2 and a course-provided Go `echo` service. Wire them together with `Service` + kube-DNS and prove they can talk to each other.
 
 ## Overview
 
-Take your Docker images from previous labs and deploy them to Kubernetes. Learn container orchestration fundamentals, declarative configuration, and production deployment patterns.
+Through Lab 8 you ran a **single** service with `docker compose up`. That worked — so why bother with Kubernetes? Because the moment you have **more than one** service, you need self-healing, stable network identity, and service discovery that you no longer want to wire by hand.
+
+Lab 9 is where that becomes concrete. You will run **two pods**:
+
+- **`web`** — your containerized Python service from Lab 2 (you build & deploy this)
+- **`echo`** — a tiny Go companion service shipped by the course as plumbing (you only deploy it)
+
+The payoff task is **cross-service networking**: from inside the `web` pod you will `curl http://echo:80/ping` and get back `pong`. That single round-trip exercises `Service`, label selectors, and kube-DNS all at once — the whole point of the K8s networking model, which never made sense with only one service.
 
 **What You'll Learn:**
-- Kubernetes core concepts and architecture
-- Writing production-ready manifests
-- Deployments, Services, and networking
-- Health checks and resource management
-- Scaling and updates
+- Kubernetes core concepts and the control-plane / worker-node architecture
+- Writing production-ready `Deployment` and `Service` manifests by hand
+- Label/selector binding — the glue between every K8s resource
+- Service discovery via kube-DNS and inter-pod networking
+- Health checks (liveness / readiness probes), resource requests/limits, scaling and rolling updates
 
-**Tech Stack:** Kubernetes 1.33+ | kubectl | minikube or kind | YAML
+**Tech Stack:** Kubernetes **1.36 "Haru"** | kubectl 1.36 | minikube 1.34+ **or** kind 0.25+ | plain YAML manifests
+
+> 📚 This lab pairs with **Lecture 9 — Kubernetes Fundamentals**. Re-read slides 7–11 (Pod, Deployment, Service, kube-DNS, labels) before you start.
 
 ---
 
 ## Tasks
 
+Main tasks total **10 pts**. The bonus adds **2 pts**.
+
 ### Task 1 — Local Kubernetes Setup (2 pts)
 
-**Objective:** Set up a local Kubernetes cluster and understand core concepts.
+**Objective:** Set up a local single-node Kubernetes cluster running version 1.36 and confirm it is healthy.
 
 **Requirements:**
 
-1. **Learn Kubernetes Fundamentals**
-   - Study core concepts (Pods, Deployments, Services, Namespaces)
-   - Understand control plane and worker node architecture
-   - Learn the declarative vs imperative approach
+1. **Install tools**
+   - Install `kubectl` (pin **v1.36** to match the cluster)
+   - Install **one** local cluster tool — **minikube (1.34+)** *or* **kind (0.25+)**. Pick one and stay with it for the rest of the semester.
 
-2. **Install Tools**
-   - Install `kubectl` (Kubernetes CLI)
-   - Install local cluster: `minikube` OR `kind`
-   - Verify installation with cluster info commands
+2. **Start a 1.36 cluster**
+   - minikube: `minikube start --kubernetes-version=v1.36.0`
+   - kind: create a cluster with the K8s 1.36 node image (e.g. `kindest/node:v1.36.0`)
 
-3. **Cluster Setup**
-   - Start local cluster
-   - Verify all components are running
-   - Explore cluster with kubectl commands
+3. **Verify the cluster**
+   - Run `kubectl version`, `kubectl cluster-info`, and `kubectl get nodes -o wide`
+   - Confirm the server version reports `v1.36.x`
 
 <details>
-<summary>💡 Kubernetes Concepts</summary>
+<summary>💡 Cluster Bring-Up Commands</summary>
 
-**Core Resources:**
-- **Pod**: Smallest deployable unit, contains one or more containers
-- **Deployment**: Manages replica sets and rolling updates
-- **Service**: Exposes Pods as network service with stable endpoint
-- **Namespace**: Virtual cluster for resource isolation
-
-**Why Kubernetes?**
-- Automatic scaling and load balancing
-- Self-healing (restart failed containers)
-- Rolling updates and rollbacks
-- Service discovery and networking
-- Resource management and scheduling
-
-**Local Development Options:**
-- **minikube**: Full-featured, runs in VM or Docker
-- **kind**: Lightweight, runs in Docker containers, great for CI/CD
-
-**Key Concepts to Research:**
-- Desired state vs actual state
-- Controllers and reconciliation loops
-- Labels and selectors
-- Declarative configuration (YAML manifests)
-
-**Resources:**
-- [What is Kubernetes](https://kubernetes.io/docs/concepts/overview/)
-- [Kubernetes Components](https://kubernetes.io/docs/concepts/overview/components/)
-- [kubectl Cheat Sheet](https://kubernetes.io/docs/reference/kubectl/quick-reference/)
-- [Install Tools](https://kubernetes.io/docs/tasks/tools/)
-
-</details>
-
-<details>
-<summary>💡 Essential kubectl Commands</summary>
-
-**Cluster Information:**
+**minikube**
 ```bash
-kubectl cluster-info
+minikube start --kubernetes-version=v1.36.0
 kubectl get nodes
-kubectl get namespaces
 ```
 
-**Resource Management:**
+**kind**
 ```bash
-kubectl get pods
-kubectl get deployments
-kubectl get services
-kubectl describe pod <pod-name>
-kubectl logs <pod-name>
+kind create cluster --name devops --image kindest/node:v1.36.0
+kubectl cluster-info --context kind-devops
 ```
 
-**Apply vs Create:**
-- `kubectl apply` - Declarative, idempotent, preferred
-- `kubectl create` - Imperative, fails if exists
+> Check the exact patch tag available for your tool — `kind` and `minikube` ship node images shortly after each upstream release. Use the newest `v1.36.x` your tool offers.
+
+**Sanity checks (output below is illustrative):**
+```bash
+kubectl get nodes -o wide
+# NAME       STATUS   ROLES           AGE   VERSION
+# devops     Ready    control-plane   30s   v1.36.0   ...
+```
 
 </details>
 
-**Documentation Required:**
-- Terminal output showing successful cluster setup
-- Output of `kubectl cluster-info` and `kubectl get nodes`
-- Brief explanation of your chosen tool (minikube/kind) and why
+<details>
+<summary>💡 Why a Local Cluster (and which one)?</summary>
+
+| Tool | Approach | Good for |
+|------|----------|----------|
+| **minikube** | K8s in a VM or Docker container | Most batteries included — `addons enable ingress` is one command (handy for the bonus) |
+| **kind** | "K8s IN Docker" — nodes are containers | Fast startup, lightweight, the standard for CI |
+
+Do **not** use Docker Desktop's bundled Kubernetes — it lags upstream and lacks the addons you'll need.
+
+</details>
+
+**Documentation required:**
+- Output of `kubectl version` and `kubectl get nodes -o wide` (server version must be 1.36.x)
+- One or two sentences on why you chose minikube or kind
 
 ---
 
-### Task 2 — Application Deployment (3 pts)
+### Task 2 — Deploy Your Web Service (3 pts)
 
-**Objective:** Create a Deployment manifest for your Python app with production best practices.
+**Objective:** Deploy your Lab 2 Python image as a `Deployment` fronted by a `Service`. You write the YAML — that is the skill being assessed.
 
 **Requirements:**
 
-1. **Create Deployment Manifest**
-   - File: `k8s/deployment.yml`
-   - Use your Docker image from Lab 2
-   - Minimum 3 replicas
-   - Include resource requests and limits
-   - Add liveness and readiness probes
-   - Use labels for organization
+1. **`k8s/web-deployment.yaml`** — a `Deployment` named `web` that:
+   - Uses **your own** Lab 2 image (the one you pushed to Docker Hub / GHCR in Lab 2)
+   - Runs **3 replicas**
+   - Carries the label `app: web` (on the Deployment, the selector, and the pod template — they must match)
+   - Declares resource **requests and limits** for CPU and memory
+   - Wires a **liveness** probe and a **readiness** probe to your app's `/health` endpoint (added back in Lab 1)
 
-2. **Production Best Practices**
-   - Non-root container (should already be in your image)
-   - Rolling update strategy
-   - Proper container port configuration
-   - Environment variables if needed
+2. **`k8s/web-service.yaml`** — a `Service` named `web` that:
+   - Selects `app: web`
+   - Is type `NodePort` so you can reach it from your laptop
+   - Maps service `port: 80` → your container's `targetPort`
 
-<details>
-<summary>💡 Deployment Manifest Structure</summary>
+3. **Apply and verify** the Deployment reaches 3/3 ready and the Service has endpoints.
 
-**Essential Sections:**
+**Skeletons — fill in every `YOUR-TASK` marker yourself:**
+
 ```yaml
+# k8s/web-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: your-app-name
+  name: web
   labels:
-    app: your-app
+    app: web
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: your-app
+      app: web
   template:
     metadata:
       labels:
-        app: your-app
+        app: web
     spec:
       containers:
-      - name: your-app
-        image: your-dockerhub-username/your-app:latest
-        # Add: ports, resources, probes
+        - name: web
+          image: YOUR-TASK      # your Lab 2 image, e.g. docker.io/<you>/devops-info:v1
+          ports:
+            - containerPort: YOUR-TASK   # the port your app listens on
+          resources:
+            requests:
+              cpu: YOUR-TASK
+              memory: YOUR-TASK
+            limits:
+              cpu: YOUR-TASK
+              memory: YOUR-TASK
+          livenessProbe:
+            httpGet:
+              path: YOUR-TASK    # /health
+              port: YOUR-TASK
+            initialDelaySeconds: YOUR-TASK
+            periodSeconds: YOUR-TASK
+          readinessProbe:
+            httpGet:
+              path: YOUR-TASK
+              port: YOUR-TASK
+            periodSeconds: YOUR-TASK
 ```
 
-**Key Fields to Research:**
-- `replicas`: Number of Pod copies
-- `selector.matchLabels`: How Deployment finds its Pods
-- `template`: Pod specification
-- `resources`: CPU/memory requests and limits
-- `livenessProbe`: Is container healthy?
-- `readinessProbe`: Is container ready for traffic?
-
-**Resources:**
-- [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
-- [Resource Management](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)
-- [Health Checks](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
-
-</details>
-
-<details>
-<summary>💡 Health Checks (Probes)</summary>
-
-**Types of Probes:**
-- **Liveness**: Restart container if failing
-- **Readiness**: Remove from service if not ready
-- **Startup**: For slow-starting containers
-
-**Probe Methods:**
-- HTTP GET (common for web apps)
-- TCP Socket
-- Exec command
-
-**Example Configuration Pattern:**
 ```yaml
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 8000
-  initialDelaySeconds: 10
-  periodSeconds: 5
-
-readinessProbe:
-  httpGet:
-    path: /ready
-    port: 8000
-  initialDelaySeconds: 5
-  periodSeconds: 3
-```
-
-**Note:** You may need to add `/health` endpoint to your app.
-
-</details>
-
-<details>
-<summary>💡 Resource Management</summary>
-
-**Why Set Resources?**
-- Prevents resource starvation
-- Enables proper scheduling
-- Protects cluster stability
-
-**Pattern:**
-```yaml
-resources:
-  requests:
-    memory: "128Mi"
-    cpu: "100m"
-  limits:
-    memory: "256Mi"
-    cpu: "200m"
-```
-
-**CPU Units:**
-- `1000m` = 1 CPU core
-- `100m` = 0.1 CPU core
-
-**Memory Units:**
-- `Mi` = Mebibyte (1024-based)
-- `Gi` = Gibibyte
-
-</details>
-
-**Test Your Deployment:**
-```bash
-kubectl apply -f k8s/deployment.yml
-kubectl get deployments
-kubectl get pods
-kubectl describe deployment <name>
-```
-
----
-
-### Task 3 — Service Configuration (2 pts)
-
-**Objective:** Create a Service to expose your Deployment.
-
-**Requirements:**
-
-1. **Create Service Manifest**
-   - File: `k8s/service.yml`
-   - Type: `NodePort` (for local cluster access)
-   - Target your Deployment's Pods using labels
-   - Expose the correct port
-
-2. **Verify Connectivity**
-   - Apply Service manifest
-   - Access app using `minikube service` command or port-forward
-   - Test all endpoints work
-
-<details>
-<summary>💡 Service Types</summary>
-
-**Service Types:**
-- **ClusterIP** (default): Internal cluster access only
-- **NodePort**: Exposes service on each node's IP at a static port
-- **LoadBalancer**: Cloud provider load balancer
-- **ExternalName**: CNAME record for external service
-
-**For Local Development:**
-Use `NodePort` - allows external access without cloud provider.
-
-**Service Manifest Pattern:**
-```yaml
+# k8s/web-service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: your-app-service
+  name: web
 spec:
   type: NodePort
   selector:
-    app: your-app  # Must match Deployment labels
+    app: YOUR-TASK     # must match the Deployment's pod labels
   ports:
-    - protocol: TCP
-      port: 80        # Service port
-      targetPort: 8000  # Container port
-      nodePort: 30080   # Optional: specific node port (30000-32767)
+    - port: 80
+      targetPort: YOUR-TASK   # your container's port
 ```
 
-**Resources:**
-- [Services](https://kubernetes.io/docs/concepts/services-networking/service/)
-- [Connect Applications with Services](https://kubernetes.io/docs/tutorials/services/connect-applications-service/)
+<details>
+<summary>💡 Apply, Inspect, Reach It</summary>
+
+```bash
+kubectl apply -f k8s/web-deployment.yaml
+kubectl apply -f k8s/web-service.yaml
+
+kubectl get deploy web
+kubectl get pods -l app=web
+kubectl get svc web
+kubectl get endpoints web        # should list 3 pod IPs once readiness passes
+```
+
+Reach the service from your laptop:
+```bash
+# minikube
+minikube service web --url
+# kind (or anywhere)
+kubectl port-forward svc/web 8080:80
+curl -s localhost:8080/health
+```
 
 </details>
 
 <details>
-<summary>💡 Accessing Your Service</summary>
+<summary>💡 Probes & Resources — Rules of Thumb</summary>
 
-**Minikube:**
-```bash
-minikube service <service-name>
-minikube service <service-name> --url
-```
+- **Liveness** = "should I be killed and restarted?" Point it at a cheap, in-process signal like `/health`, not a heavy endpoint.
+- **Readiness** = "should traffic come to me yet?" If it fails, the pod is pulled out of the Service rotation without a restart.
+- Always set **requests** (the scheduler reserves them). Set a **memory limit** (OOMKill protection). CPU is throttled, not killed, past its limit.
 
-**kind or other:**
-```bash
-kubectl port-forward service/<service-name> 8080:80
-```
-
-**Verify:**
-```bash
-kubectl get services
-kubectl describe service <service-name>
-kubectl get endpoints
+```yaml
+resources:
+  requests: {cpu: 100m, memory: 64Mi}
+  limits:   {cpu: 500m, memory: 256Mi}
 ```
 
 </details>
 
+**Documentation required:**
+- `kubectl get deploy,pods,svc -l app=web` output (illustrative or real — label real cluster output as such)
+- A note explaining your replica count, resource values, and probe choices
+
 ---
 
-### Task 4 — Scaling and Updates (2 pts)
+### Task 3 — Deploy the `echo` Service (2 pts)
 
-**Objective:** Demonstrate scaling and rolling updates.
+**Objective:** Add the course-provided **second** service. This is what makes `Service` + kube-DNS meaningful.
+
+`echo` is a tiny Go HTTP service maintained by the course as plumbing in `plumbing/echo/` — **you do not build or modify it.** A pre-built image is published by the course CI. It listens on **port 8081** and exposes:
+
+| Path | Behaviour |
+|------|-----------|
+| `GET /ping` | Returns `pong` — minimal smoke test |
+| `* /echo` | JSON with body, headers, hostname, version, uptime, and a request counter (useful for spotting load balancing across replicas) |
+| `GET /healthz` | Returns `ok` (200) — wire into probes |
+| `GET /metrics` | Prometheus text format |
 
 **Requirements:**
 
-1. **Scaling**
-   - Scale your deployment to 5 replicas
-   - Verify all replicas are running
-   - Document the process
+1. **`k8s/echo-deployment.yaml`** — a `Deployment` named `echo` that:
+   - Uses the provided image **`ghcr.io/inno-devops-labs/echo:v1`** (do not build your own)
+   - Runs **2 replicas** (so the Service has something to load-balance)
+   - Carries the label `app: echo`
+   - Wires liveness/readiness probes to `/healthz` on port `8081`
 
-2. **Rolling Updates**
-   - Update your image tag or change a configuration
-   - Apply the updated manifest
-   - Watch the rollout process
-   - Verify zero downtime
+2. **`k8s/echo-service.yaml`** — a `Service` named `echo` that:
+   - Selects `app: echo`
+   - Is type `ClusterIP` (internal only — no external access needed)
+   - Maps service `port: 80` → `targetPort: 8081`
 
-3. **Rollback**
-   - Demonstrate rollback capability
-   - Show rollout history
+**Skeletons — fill in every `YOUR-TASK` marker:**
 
-<details>
-<summary>💡 Scaling Operations</summary>
-
-**Declarative (Preferred):**
-Edit `deployment.yml` replicas field, then:
-```bash
-kubectl apply -f k8s/deployment.yml
-```
-
-**Imperative (Quick Testing):**
-```bash
-kubectl scale deployment/<name> --replicas=5
-```
-
-**Watch Scaling:**
-```bash
-kubectl get pods -w
-kubectl rollout status deployment/<name>
-```
-
-</details>
-
-<details>
-<summary>💡 Rolling Updates</summary>
-
-**How Rolling Updates Work:**
-- Creates new Pods with updated spec
-- Waits for them to be ready
-- Terminates old Pods gradually
-- Ensures minimum availability
-
-**Update Strategy:**
 ```yaml
+# k8s/echo-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo
+  labels:
+    app: echo
 spec:
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1        # Extra pods during update
-      maxUnavailable: 0  # Ensure availability
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echo
+  template:
+    metadata:
+      labels:
+        app: echo
+    spec:
+      containers:
+        - name: echo
+          image: ghcr.io/inno-devops-labs/echo:v1   # provided — do not change
+          ports:
+            - containerPort: 8081
+          readinessProbe:
+            httpGet:
+              path: YOUR-TASK    # /healthz
+              port: 8081
+            periodSeconds: YOUR-TASK
+          livenessProbe:
+            httpGet:
+              path: YOUR-TASK
+              port: 8081
+            initialDelaySeconds: YOUR-TASK
+            periodSeconds: YOUR-TASK
 ```
 
-**Useful Commands:**
+```yaml
+# k8s/echo-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo
+spec:
+  type: ClusterIP
+  selector:
+    app: YOUR-TASK     # must match the echo pod labels
+  ports:
+    - port: 80
+      targetPort: YOUR-TASK   # echo listens on 8081
+```
+
+<details>
+<summary>💡 Apply & Verify echo Is Up</summary>
+
 ```bash
-kubectl apply -f k8s/deployment.yml
-kubectl rollout status deployment/<name>
-kubectl rollout history deployment/<name>
-kubectl rollout undo deployment/<name>
+kubectl apply -f k8s/echo-deployment.yaml
+kubectl apply -f k8s/echo-service.yaml
+
+kubectl get pods -l app=echo       # expect 2 pods Running/Ready
+kubectl get svc echo
+kubectl get endpoints echo         # expect 2 pod IPs
 ```
 
-**Resources:**
-- [Performing Rolling Update](https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/)
+Quick smoke test through a port-forward (output illustrative):
+```bash
+kubectl port-forward svc/echo 8088:80
+curl -s localhost:8088/ping
+# pong
+```
 
 </details>
+
+**Documentation required:**
+- `kubectl get pods,svc,endpoints -l app=echo` output
+- Confirmation that 2 `echo` pods are Ready and the Service has 2 endpoints
 
 ---
 
-### Task 5 — Documentation (3 pts)
+### Task 4 — Cross-Service Networking, Scaling & Updates (2 pts)
 
-**Objective:** Document your Kubernetes implementation.
+**Objective:** Prove the two services can discover and reach each other through kube-DNS, then exercise scaling and rolling updates. **This is the pedagogical core of the lab.**
+
+**Requirements:**
+
+1. **Cross-service call (the key deliverable).** From **inside a `web` pod**, call the `echo` Service by its DNS name and capture `pong`:
+   ```bash
+   WEB_POD=$(kubectl get pod -l app=web -o jsonpath='{.items[0].metadata.name}')
+   kubectl exec "$WEB_POD" -- curl -s http://echo:80/ping
+   # expected: pong
+   ```
+   This works only because `echo` resolves via kube-DNS (`echo.default.svc.cluster.local`), the Service load-balances to a healthy `echo` pod, and the label selector binds them. Capture this output — it is the proof the networking model works.
+
+2. **Observe load balancing.** Hit `/echo` a few times and watch the `hostname` field change across the 2 backing pods:
+   ```bash
+   kubectl exec "$WEB_POD" -- sh -c 'for i in 1 2 3 4; do curl -s http://echo:80/echo -d hi; echo; done'
+   ```
+
+3. **Scale** the `web` Deployment to **5 replicas** and confirm all become Ready.
+
+4. **Rolling update.** Change the `web` image tag (or a label/env) and re-apply; watch the rollout proceed with zero downtime, then view rollout history.
+
+5. **Rollback** to the previous revision and confirm.
+
+<details>
+<summary>💡 If <code>curl</code> Is Missing in Your Image</summary>
+
+Your slim Python image may not ship `curl`. Options:
+- Add `curl` (or use `wget -qO-`) in your Lab 2 image, **or**
+- Run a throwaway client pod in the cluster:
+  ```bash
+  kubectl run tmp --rm -it --image=curlimages/curl:8.11.0 --restart=Never -- \
+    curl -s http://echo:80/ping
+  ```
+Either way, the call must go **pod → Service DNS name → echo**, not a port-forward from your laptop.
+
+</details>
+
+<details>
+<summary>💡 Scaling, Rollout & Rollback Commands</summary>
+
+```bash
+# Scale (declarative: edit replicas in the manifest and re-apply, or imperative:)
+kubectl scale deployment/web --replicas=5
+kubectl get pods -l app=web -w
+
+# Rolling update
+kubectl set image deployment/web web=docker.io/<you>/devops-info:v2
+kubectl rollout status deployment/web
+kubectl rollout history deployment/web
+
+# Rollback
+kubectl rollout undo deployment/web
+kubectl rollout status deployment/web
+```
+
+A `RollingUpdate` strategy with `maxUnavailable: 0` guarantees zero downtime during the update.
+
+</details>
+
+**Documentation required:**
+- The `kubectl exec ... curl http://echo:80/ping` command **and its `pong` output** (this is the headline evidence)
+- `/echo` output showing the hostname rotating across echo pods (load balancing)
+- Scaling to 5 replicas, rollout status, and rollback evidence (illustrative or real, labelled)
+
+---
+
+### Task 5 — Documentation (1 pt)
+
+**Objective:** Capture what you built in `k8s/README.md`.
 
 Create `k8s/README.md` with these sections:
 
-**Required Sections:**
-
-1. **Architecture Overview**
-   - Diagram or description of your deployment architecture
-   - How many Pods, which Services, networking flow
-   - Resource allocation strategy
-
-2. **Manifest Files**
-   - Brief description of each manifest
-   - Key configuration choices
-   - Why you chose specific values (replicas, resources, etc.)
-
-3. **Deployment Evidence**
-   - `kubectl get all` output
-   - `kubectl get pods,svc` with detailed view
-   - `kubectl describe deployment <name>` showing replicas and strategy
-   - Screenshot or curl output showing app working
-
-4. **Operations Performed**
-   - Commands used to deploy
-   - Scaling demonstration output
-   - Rolling update demonstration output
-   - Service access method and verification
-
-5. **Production Considerations**
-   - What health checks did you implement and why?
-   - Resource limits rationale
-   - How would you improve this for production?
-   - Monitoring and observability strategy
-
-6. **Challenges & Solutions**
-   - Issues encountered
-   - How you debugged (logs, describe, events)
-   - What you learned about Kubernetes
+1. **Architecture** — a short description or diagram: the `web` Deployment (3 pods) behind a NodePort Service, the `echo` Deployment (2 pods) behind a ClusterIP Service, and the `web → echo` call path through kube-DNS.
+2. **Manifests** — one line per file (`web-deployment.yaml`, `web-service.yaml`, `echo-deployment.yaml`, `echo-service.yaml`) and the key choices you made (replicas, resources, probe paths, Service types).
+3. **Cross-service evidence** — the `curl http://echo:80/ping` → `pong` output and a sentence explaining *why* the DNS name resolves.
+4. **Operations** — the commands used to deploy, scale, roll out, and roll back.
+5. **Challenges & learnings** — what broke, how you debugged it (`kubectl describe`, `kubectl logs`, `kubectl get events`), and what clicked about the K8s networking model.
 
 ---
 
-## Bonus Task — Ingress with TLS (2.5 pts)
+## Bonus Task — Ingress with TLS (2 pts)
 
-**Objective:** Deploy multiple applications with Ingress routing and HTTPS.
+**Objective:** Put an L7 HTTP router in front of both services and terminate TLS.
+
+You already have two Services (`web` and `echo`). Route to them through a single Ingress over HTTPS.
 
 **Requirements:**
 
-1. **Multi-App Deployment**
-   - Deploy second application (use different image or different config)
-   - Create Deployment and Service for second app
+1. **Ingress controller** — enable/install ingress-nginx:
+   - minikube: `minikube addons enable ingress`
+   - kind: apply the kind provider manifest for ingress-nginx
+   Verify the controller pod is Running.
 
-2. **Ingress Controller**
-   - Enable Ingress in minikube or install in kind
-   - Verify Ingress controller is running
+2. **Self-signed TLS cert + Secret** for a local host such as `devops.local`:
+   ```bash
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+     -keyout tls.key -out tls.crt \
+     -subj "/CN=devops.local/O=devops.local"
+   kubectl create secret tls devops-tls --key tls.key --cert tls.crt
+   ```
 
-3. **Ingress Resources**
-   - Create Ingress manifest with path-based routing
-   - Route `/app1` to first service
-   - Route `/app2` to second service
+3. **`k8s/ingress.yaml`** — path-based routing over TLS:
+   - `/` (or `/web`) → `web` Service
+   - `/echo` → `echo` Service
+   - `tls:` block referencing the `devops-tls` Secret
 
-4. **TLS Configuration**
-   - Generate self-signed certificate
-   - Create TLS Secret
-   - Configure Ingress for HTTPS
-
-<details>
-<summary>💡 Ingress Concepts</summary>
-
-**What is Ingress?**
-HTTP/HTTPS routing layer sitting in front of Services. Provides:
-- URL-based routing
-- TLS/SSL termination
-- Virtual hosting
-- Load balancing
-
-**Ingress vs Service:**
-- Service: L4 (TCP/UDP) load balancing
-- Ingress: L7 (HTTP/HTTPS) routing
-
-**Ingress Controller:**
-Software that implements Ingress rules. Popular options:
-- nginx-ingress (most common)
-- Traefik
-- HAProxy
-- Cloud provider specific
-
-**Enable in Minikube:**
-```bash
-minikube addons enable ingress
-```
-
-**Install in kind:**
-```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-```
-
-**Important Note:** The Ingress NGINX controller reaches end of life in March 2026. For production deployments, consider migrating to the [Gateway API](https://gateway-api.sigs.k8s.io/), which is the future of Kubernetes traffic management.
-
-**Resources:**
-- [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
-- [Ingress Controllers](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/)
-- [Set up Ingress on Minikube](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
-- [Gateway API](https://gateway-api.sigs.k8s.io/) - Next generation traffic management
-
-</details>
+4. **Verify** with `curl -k https://devops.local/...` (add the cluster IP for `devops.local` to `/etc/hosts`).
 
 <details>
-<summary>💡 Path-Based Routing</summary>
+<summary>💡 Ingress Skeleton</summary>
 
-**Ingress Manifest Pattern:**
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -520,133 +449,103 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  rules:
-  - host: local.example.com
-    http:
-      paths:
-      - path: /app1
-        pathType: Prefix
-        backend:
-          service:
-            name: app1-service
-            port:
-              number: 80
-      - path: /app2
-        pathType: Prefix
-        backend:
-          service:
-            name: app2-service
-            port:
-              number: 80
-```
-
-**Path Types:**
-- `Exact`: Exact match
-- `Prefix`: Matches URL path prefix
-
-**Testing:**
-Add to `/etc/hosts`:
-```
-<minikube-ip> local.example.com
-```
-
-Access:
-```bash
-curl http://local.example.com/app1
-curl http://local.example.com/app2
-```
-
-</details>
-
-<details>
-<summary>💡 TLS Configuration</summary>
-
-**Generate Self-Signed Certificate:**
-```bash
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout tls.key -out tls.crt \
-  -subj "/CN=local.example.com/O=local.example.com"
-```
-
-**Create TLS Secret:**
-```bash
-kubectl create secret tls tls-secret \
-  --key tls.key \
-  --cert tls.crt
-```
-
-**Update Ingress:**
-```yaml
-spec:
   tls:
-  - hosts:
-    - local.example.com
-    secretName: tls-secret
+    - hosts: [devops.local]
+      secretName: devops-tls
   rules:
-  # ... your rules
+    - host: devops.local
+      http:
+        paths:
+          - path: /echo
+            pathType: Prefix
+            backend:
+              service:
+                name: echo
+                port: {number: 80}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port: {number: 80}
 ```
 
-**Test HTTPS:**
 ```bash
-curl -k https://local.example.com/app1
+# /etc/hosts:  <minikube-ip or 127.0.0.1>  devops.local
+curl -k https://devops.local/echo/ping   # -> pong (through Ingress + TLS)
 ```
+
+> ⚠️ ingress-nginx is winding down upstream; the **Gateway API** is the future of K8s traffic management. For this lab ingress-nginx is fine and the most documented. You'll meet Gateway API later in the program.
 
 </details>
 
-**Documentation Required:**
-- Both applications deployed and accessible via Ingress
-- Ingress manifest with routing rules
-- TLS configuration and certificate creation steps
-- Terminal output showing all resources
-- curl commands demonstrating routing works
-- Explanation of Ingress benefits over NodePort Services
+**Documentation required:**
+- Ingress controller pod Running
+- `k8s/ingress.yaml` with TLS + path routing
+- `curl -k https://devops.local/...` output for both routes
+- One or two sentences on what Ingress buys you over a raw NodePort Service
 
 ---
 
-## Checklist
+## How to Submit
+
+1. **Create a branch:**
+   ```bash
+   git checkout -b lab09
+   ```
+
+2. **Commit your manifests and docs:**
+   ```bash
+   git add k8s/
+   git commit -m "feat: deploy web + echo services to kubernetes (lab09)"
+   git push -u origin lab09
+   ```
+
+3. **Open Pull Requests:**
+   - **PR #1:** `your-fork:lab09` → `course-repo:master`
+   - **PR #2:** `your-fork:lab09` → `your-fork:master`
+
+4. **Verify** all four manifests, `k8s/README.md`, and your evidence are present.
+
+---
+
+## Acceptance Criteria
 
 ### Task 1 — Local Kubernetes Setup (2 pts)
-- [ ] kubectl and local cluster (minikube/kind) installed
-- [ ] Cluster running successfully
-- [ ] Terminal output showing cluster info
-- [ ] Documentation of setup process
+- [ ] `kubectl` and one local cluster tool (minikube/kind) installed
+- [ ] Cluster running on **Kubernetes 1.36** (server version verified)
+- [ ] `kubectl get nodes -o wide` output captured
+- [ ] Chosen tool justified (1–2 sentences)
 
-### Task 2 — Application Deployment (3 pts)
-- [ ] `k8s/deployment.yml` exists
-- [ ] Uses Docker image from Lab 2
-- [ ] Minimum 3 replicas configured
-- [ ] Resource requests and limits defined
-- [ ] Liveness and readiness probes configured
-- [ ] Deployment successfully running
+### Task 2 — Deploy Your Web Service (3 pts)
+- [ ] `k8s/web-deployment.yaml` written, using your **Lab 2** image
+- [ ] 3 replicas, matching `app: web` labels/selector
+- [ ] Resource requests **and** limits set
+- [ ] Liveness **and** readiness probes wired to `/health`
+- [ ] `k8s/web-service.yaml` — NodePort, selects `app: web`, port 80 → container port
+- [ ] Deployment reports 3/3 ready and the Service has 3 endpoints
 
-### Task 3 — Service Configuration (2 pts)
-- [ ] `k8s/service.yml` exists
-- [ ] Service type: NodePort
-- [ ] Correct label selectors
-- [ ] Service accessible from outside cluster
-- [ ] All endpoints responding
+### Task 3 — Deploy the echo Service (2 pts)
+- [ ] `k8s/echo-deployment.yaml` uses provided `ghcr.io/inno-devops-labs/echo:v1` (not self-built)
+- [ ] 2 replicas, `app: echo` labels, probes on `/healthz:8081`
+- [ ] `k8s/echo-service.yaml` — ClusterIP, port 80 → targetPort 8081
+- [ ] 2 echo pods Ready, Service has 2 endpoints
 
-### Task 4 — Scaling and Updates (2 pts)
-- [ ] Scaling to 5 replicas demonstrated
-- [ ] Rolling update performed and documented
-- [ ] Rollback capability demonstrated
-- [ ] Zero downtime verified
+### Task 4 — Cross-Service Networking, Scaling & Updates (2 pts)
+- [ ] **`kubectl exec` into web pod + `curl http://echo:80/ping` returns `pong`** (headline evidence)
+- [ ] `/echo` output shows hostname rotating across echo pods (load balancing)
+- [ ] `web` scaled to 5 replicas, all Ready
+- [ ] Rolling update performed; zero downtime; history shown
+- [ ] Rollback demonstrated
 
-### Task 5 — Documentation (3 pts)
-- [ ] `k8s/README.md` complete with all sections
-- [ ] Architecture overview provided
-- [ ] Terminal output evidence included
-- [ ] Operations demonstrated
-- [ ] Production considerations discussed
-- [ ] Challenges and learnings documented
+### Task 5 — Documentation (1 pt)
+- [ ] `k8s/README.md` covers architecture, manifests, cross-service evidence, operations, and challenges
 
-### Bonus — Ingress with TLS (2.5 pts)
-- [ ] Second application deployed
-- [ ] Ingress controller enabled
-- [ ] Ingress manifest with path-based routing
-- [ ] TLS certificate generated
-- [ ] HTTPS working
-- [ ] Documentation complete
+### Bonus — Ingress with TLS (2 pts)
+- [ ] Ingress controller enabled and Running
+- [ ] Self-signed TLS Secret created
+- [ ] `k8s/ingress.yaml` routes `/` → web and `/echo` → echo over HTTPS
+- [ ] `curl -k https://devops.local/...` works for both routes
 
 ---
 
@@ -654,19 +553,19 @@ curl -k https://local.example.com/app1
 
 | Criteria | Points | Description |
 |----------|--------|-------------|
-| **Setup** | 2 pts | Cluster running, tools installed |
-| **Deployment** | 3 pts | Production-ready manifest with probes and resources |
-| **Service** | 2 pts | Properly exposed and accessible |
-| **Scaling & Updates** | 2 pts | Demonstrated operations |
-| **Documentation** | 3 pts | Complete and thorough |
-| **Bonus** | 2.5 pts | Ingress with TLS |
-| **Total** | 14.5 pts | 12 pts required + 2.5 pts bonus |
+| **Setup** | 2 pts | K8s 1.36 cluster running, tools installed and verified |
+| **Web service** | 3 pts | Hand-written Deployment + Service, probes, resources, 3/3 ready |
+| **echo service** | 2 pts | Provided image deployed as 2nd Deployment + ClusterIP Service |
+| **Cross-service + ops** | 2 pts | `web → echo` `pong` proven; scaling, rolling update, rollback |
+| **Documentation** | 1 pt | `k8s/README.md` complete and accurate |
+| **Bonus** | 2 pts | Ingress with TLS routing to both services |
+| **Total** | 12 pts | 10 pts required + 2 pts bonus |
 
 **Grading:**
-- **12/12:** All requirements met, excellent documentation, deep understanding
-- **10-11/12:** Working deployment, good practices, solid documentation
-- **8-9/12:** Basic deployment works, missing some best practices
-- **<8/12:** Missing requirements, no health checks, poor documentation
+- **10/10:** Both services deployed, cross-service `pong` proven, clean manifests and docs, deep understanding
+- **8–9/10:** Both services run and talk; minor gaps in probes/resources or docs
+- **6–7/10:** Web service works but the 2nd service or cross-service call is incomplete
+- **<6/10:** Missing the echo service, no working cross-service call, or no probes/resources
 
 ---
 
@@ -676,34 +575,28 @@ curl -k https://local.example.com/app1
 <summary>📚 Official Kubernetes Documentation</summary>
 
 - [Kubernetes Documentation](https://kubernetes.io/docs/home/)
-- [Kubernetes Concepts](https://kubernetes.io/docs/concepts/)
-- [kubectl Reference](https://kubernetes.io/docs/reference/kubectl/)
-- [Kubernetes API Reference](https://kubernetes.io/docs/reference/kubernetes-api/)
-
-</details>
-
-<details>
-<summary>🎓 Learning Resources</summary>
-
-- [Kubernetes Basics Tutorial](https://kubernetes.io/docs/tutorials/kubernetes-basics/)
-- [Learn Kubernetes Basics](https://kubernetes.io/docs/tutorials/kubernetes-basics/)
-- [Configuration Best Practices](https://kubernetes.io/docs/concepts/configuration/overview/)
+- [Kubernetes 1.36 release notes](https://kubernetes.io/blog/2026/04/22/kubernetes-v1-36-release/)
+- [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- [Services & kube-DNS](https://kubernetes.io/docs/concepts/services-networking/service/)
+- [DNS for Services and Pods](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/)
+- [Liveness, Readiness & Startup Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+- [kubectl Cheat Sheet](https://kubernetes.io/docs/reference/kubectl/quick-reference/)
 
 </details>
 
 <details>
 <summary>🛠️ Tools</summary>
 
-- [kubectl](https://kubernetes.io/docs/tasks/tools/) - Kubernetes CLI
-- [minikube](https://minikube.sigs.k8s.io/docs/) - Local Kubernetes
-- [kind](https://kind.sigs.k8s.io/) - Kubernetes in Docker
-- [k9s](https://k9scli.io/) - Terminal UI for Kubernetes
-- [kubectx/kubens](https://github.com/ahmetb/kubectx) - Context and namespace switcher
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) — Kubernetes CLI
+- [minikube](https://minikube.sigs.k8s.io/docs/) — local Kubernetes
+- [kind](https://kind.sigs.k8s.io/) — Kubernetes in Docker
+- [k9s](https://k9scli.io/) — terminal UI for Kubernetes
+- [kubectx/kubens](https://github.com/ahmetb/kubectx) — context & namespace switcher
 
 </details>
 
 <details>
-<summary>🔍 Debugging Resources</summary>
+<summary>🔍 Debugging</summary>
 
 - [Debug Pods](https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/)
 - [Debug Services](https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/)
@@ -711,20 +604,29 @@ curl -k https://local.example.com/app1
 
 </details>
 
+<details>
+<summary>🌐 Ingress (Bonus)</summary>
+
+- [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+- [Set up Ingress on Minikube](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
+- [Gateway API](https://gateway-api.sigs.k8s.io/) — next-generation traffic management
+
+</details>
+
 ---
 
 ## Looking Ahead
 
-- **Lab 10:** Helm charts for package management
-- **Lab 11:** Secrets management with Vault
+- **Lab 10:** Package these manifests as a **Helm 4** chart (echo becomes a subchart)
+- **Lab 11:** Secrets management with OpenBao / Vault
 - **Lab 12:** ConfigMaps and application configuration
-- **Lab 13:** ArgoCD for GitOps deployments
-- **Lab 14:** Progressive delivery with Argo Rollouts
-- **Lab 15:** StatefulSets for stateful applications
-- **Lab 16:** Kubernetes monitoring and observability
+- **Lab 13:** ArgoCD GitOps — `web` + `echo` via an ApplicationSet
+- **Lab 14:** Progressive delivery — Argo Rollouts canary on `echo`
+- **Lab 15:** StatefulSets for stateful workloads
+- **Lab 16:** Kubernetes monitoring & observability (scrape `echo`'s `/metrics`)
 
 ---
 
 **Good luck!** 🚢
 
-> **Remember:** Kubernetes is declarative. Define desired state, let the control plane make it happen. Use health checks and resource limits from day one.
+> **Remember:** Kubernetes is declarative — define desired state and let the control plane reconcile. The whole networking model only clicks once you have a **second** service to talk to. That `pong` from `echo` is the moment it all comes together.

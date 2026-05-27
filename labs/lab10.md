@@ -2,826 +2,407 @@
 
 ![difficulty](https://img.shields.io/badge/difficulty-intermediate-yellow)
 ![topic](https://img.shields.io/badge/topic-Helm-blue)
-![points](https://img.shields.io/badge/points-12%2B2.5-orange)
-![tech](https://img.shields.io/badge/tech-Helm-informational)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
+![tech](https://img.shields.io/badge/tech-Helm%204-informational)
 
-> Package your Kubernetes applications with Helm for reusable, configurable deployments across environments.
+> Package your Lab 9 Kubernetes manifests into a reusable, configurable Helm chart that ships through dev, staging, and prod with one value file per environment.
 
 ## Overview
 
-Transform your Kubernetes manifests from Lab 9 into Helm charts. Learn templating, values management, lifecycle hooks, and chart best practices for production deployments.
+In Lab 9 you deployed your apps with raw YAML — a Deployment and Service per service, copied and hand-edited. That stops scaling around the second environment. This lab converts those manifests into a single **Helm chart**: parameterized templates, a `values.yaml` per environment, lifecycle hooks, and an OCI push to GHCR.
 
 **What You'll Learn:**
-- Helm architecture and templating
-- Creating production-ready charts
-- Values and configuration management
-- Chart hooks for lifecycle events
-- Testing and validating charts
-- Library charts for code reuse
+- Helm 4 chart anatomy: `Chart.yaml`, `values.yaml`, `templates/`, `_helpers.tpl`
+- Go templates + Sprig functions, named templates, `include`, `nindent`
+- The release lifecycle: `install / upgrade / rollback / lint / template / test`
+- Multi-environment delivery via a values hierarchy (dev / staging / prod)
+- Lifecycle hooks (pre-install / post-install) with weights and delete policies
+- Publishing charts as OCI artifacts to GHCR
 
-**Tech Stack:** Helm 4.x | Kubernetes 1.33+ | Go templating | YAML
+**Tech Stack:** Helm 4.1.4 | Kubernetes 1.33+ | Go templating + Sprig | GHCR (OCI)
+
+> **Helm version note:** This course standardizes on **Helm 4** (4.1.4, released April 2026). Helm 3 is in support mode only (bug fixes through July 2026). Most Helm 3 syntax carries over unchanged — `apiVersion: v2` in `Chart.yaml` is still correct in Helm 4 — but run all commands below with a Helm 4.1+ binary so output and behavior match.
 
 ---
 
 ## Tasks
 
-### Task 1 — Helm Fundamentals (2 pts)
+Main tasks sum to **10 points**. The bonus is worth **2 points**.
 
-**Objective:** Understand Helm concepts and set up your environment.
+### Task 1 — Helm Fundamentals & Setup (1 pt)
+
+**Objective:** Install Helm 4 and understand charts, releases, and values before you build one.
 
 **Requirements:**
 
-1. **Learn Helm Concepts**
-   - Understand Charts, Releases, and Repositories
-   - Learn Go template syntax basics
-   - Study Helm architecture (v3)
+1. **Install Helm 4** and verify the version is **4.1.x**.
+2. **Explore a public chart** to see real-world structure — pull and inspect one chart from an OCI registry (e.g. Bitnami) without installing it.
+3. **Document** the three core concepts in your own words: **Chart**, **Release**, **Values**.
 
-2. **Install Helm**
-   - Install Helm CLI
-   - Verify installation
-   - Add common chart repositories
+```bash
+# Install (or upgrade) Helm — see https://helm.sh/docs/intro/install/
+helm version            # must report v4.1.x
 
-3. **Explore Existing Charts**
-   - Search public repositories
-   - Inspect a chart's structure
-   - Understand chart components
+# Inspect a public chart from an OCI registry (no install)
+helm show chart oci://registry-1.docker.io/bitnamicharts/nginx
+helm show values oci://registry-1.docker.io/bitnamicharts/nginx | head -40
+```
 
 <details>
-<summary>💡 Helm Concepts</summary>
+<summary>💡 The three concepts you must be able to explain</summary>
 
-**What is Helm?**
-Package manager for Kubernetes. Think `apt`/`yum` for K8s applications.
+- **Chart** — a package of templated Kubernetes resources (the `.deb`/`.rpm` of K8s).
+- **Release** — one installed instance of a chart in a cluster, with a tracked revision history.
+- **Values** — the configuration inputs (`values.yaml` + `-f` files + `--set`) that fill the templates.
 
-**Core Concepts:**
-- **Chart**: Package of Kubernetes resources (like a `.deb` or `.rpm`)
-- **Release**: Instance of a chart running in a cluster
-- **Repository**: Collection of charts (like package repositories)
-- **Values**: Configuration parameters for customization
+Helm 4 keeps `apiVersion: v2` charts (the Helm 3 format). No Tiller — release state lives in Secrets in the release namespace.
 
-**Why Helm?**
-- **Templating**: Reuse manifests across environments
-- **Versioning**: Track and rollback releases
-- **Dependencies**: Manage complex multi-chart applications
-- **Hooks**: Execute actions during install/upgrade/delete
-- **Standardization**: Industry-standard packaging
-
-**Helm 4 (Current):**
-- Released November 2025, first major version in 6 years
-- Full backward compatibility with Helm 3 charts (apiVersion v2)
-- OCI registry support
-- No Tiller (removed in Helm 3)
-- Improved security and performance
-
-**Chart Structure:**
-```
-mychart/
-├── Chart.yaml          # Chart metadata
-├── values.yaml         # Default configuration values
-├── charts/             # Chart dependencies
-└── templates/          # Kubernetes manifest templates
-    ├── deployment.yaml
-    ├── service.yaml
-    ├── _helpers.tpl    # Template helpers
-    └── NOTES.txt       # Post-install notes
-```
-
-**Resources:**
-- [Helm Architecture](https://helm.sh/docs/topics/architecture/)
-- [Three Big Concepts](https://helm.sh/docs/intro/using_helm/#three-big-concepts)
-- [Charts](https://helm.sh/docs/topics/charts/)
-- [Install Helm](https://helm.sh/docs/intro/install/)
+Reference: [Three Big Concepts](https://helm.sh/docs/intro/using_helm/#three-big-concepts)
 
 </details>
 
-<details>
-<summary>💡 Essential Helm Commands</summary>
-
-**Repository Management:**
-```bash
-# Note: Traditional HTTP repositories are being phased out
-# Many charts now use OCI registries
-
-# Add a repository (traditional method)
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-helm search repo prometheus
-
-# Install from OCI registry (modern method)
-helm install my-nginx oci://registry-1.docker.io/bitnamicharts/nginx
-```
-
-**Chart Operations:**
-```bash
-helm create mychart           # Create new chart
-helm lint mychart             # Validate chart
-helm template mychart         # Render templates locally
-helm install myrelease mychart  # Install chart
-helm list                     # List releases
-helm uninstall myrelease      # Remove release
-```
-
-**Debugging:**
-```bash
-helm install --dry-run --debug myrelease mychart
-helm get manifest myrelease
-helm get values myrelease
-```
-
-</details>
-
-**Documentation Required:**
-- Terminal output showing Helm installation and version (should be 4.x)
-- Output of exploring a public chart (e.g., `helm show chart prometheus-community/prometheus`)
-- Brief explanation of Helm's value proposition
+**Documentation required:** terminal output of `helm version` (showing 4.1.x), output of the `helm show chart` exploration, and a 2-3 sentence explanation of Chart vs Release vs Values.
 
 ---
 
-### Task 2 — Create Your Helm Chart (3 pts)
+### Task 2 — Build the Chart (3 pts)
 
-**Objective:** Convert your Lab 9 Kubernetes manifests into a Helm chart.
+**Objective:** Convert your Lab 9 manifests (the **web** app and the **echo** app) into one Helm chart with clean templating.
+
+Create the chart under `k8s/lab10-app/`. Below is the **skeleton you must produce** — files marked `YOUR-TASK` are the ones *you* write (that is the skill this lab grades). Do not run `helm create` and submit the generated boilerplate untouched; build the templates from your Lab 9 YAML.
+
+```
+k8s/lab10-app/
+├── Chart.yaml                 # provided shape below — fill metadata
+├── values.yaml                # YOUR-TASK: extract every hardcoded value here
+├── values.schema.json         # optional, used in the bonus
+├── values-dev.yaml            # Task 3
+├── values-staging.yaml        # Task 3
+├── values-prod.yaml           # Task 3
+└── templates/
+    ├── _helpers.tpl           # YOUR-TASK: name + label named templates
+    ├── deployment.yaml        # YOUR-TASK: templatize Lab 9 web Deployment
+    ├── service.yaml           # YOUR-TASK: templatize Lab 9 web Service
+    ├── echo-deployment.yaml   # YOUR-TASK: templatize Lab 9 echo Deployment
+    ├── echo-service.yaml      # YOUR-TASK: templatize Lab 9 echo Service
+    ├── hooks/                 # Task 4
+    └── NOTES.txt              # optional: printed after install
+```
 
 **Requirements:**
 
-1. **Initialize Chart**
-   - Create chart in `k8s/` directory
-   - Choose appropriate chart name
-   - Update `Chart.yaml` with metadata
+1. **`Chart.yaml`** — `apiVersion: v2`, a real `name`, `description`, `type: application`, a SemVer `version`, and an `appVersion`. Add `kubeVersion: ">=1.33.0"`.
+2. **`values.yaml`** — every value that was hardcoded in Lab 9 (image repo/tag, replica count, service type/ports, resource requests/limits, probe settings) must be a value with a sensible default. Both `web` and `echo` get their own value blocks.
+3. **`_helpers.tpl`** — define at least `name`, `fullname`, `labels`, and `selectorLabels` named templates and use them in your manifests via `include`.
+4. **Templates** — render the four Lab 9 manifests from values. Image must be `"{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"`.
+5. **Keep the health checks.** Liveness and readiness probes stay — make them configurable via values, never comment them out.
 
-2. **Convert Manifests to Templates**
-   - Move your `deployment.yml` to `templates/deployment.yaml`
-   - Move your `service.yml` to `templates/service.yaml`
-   - Templatize using Go template syntax
-   - Extract values to `values.yaml`
+`Chart.yaml` you start from:
 
-3. **Implement Proper Templating**
-   - Image repository and tag from values
-   - Replica count from values
-   - Resource limits from values
-   - Service type and ports from values
-   - Labels using helper templates
-
-4. **Keep Health Checks**
-   - NEVER comment out liveness/readiness probes
-   - Make probe configuration customizable via values
-   - Provide sensible defaults
+```yaml
+apiVersion: v2                 # correct for Helm 4 (NOT v1)
+name: lab10-app
+description: DevOps Core Lab 10 — web + echo packaged as a Helm chart
+type: application
+version: 0.1.0                 # chart version (SemVer); bump on chart changes
+appVersion: "1.0.0"            # app version; bump on image changes
+kubeVersion: ">=1.33.0"
+```
 
 <details>
-<summary>💡 Chart.yaml Structure</summary>
+<summary>💡 Templating idioms you will need</summary>
 
-**Required Fields:**
 ```yaml
-apiVersion: v2              # Chart API version (v2 for Helm 3+)
-name: my-python-app         # Chart name
-description: My Python application Helm chart
-type: application           # application or library
-version: 0.1.0              # Chart version (SemVer)
-appVersion: "1.0"           # App version (can be any string)
-```
+# values lookup with a fallback
+replicas: {{ .Values.web.replicaCount | default 2 }}
 
-**Optional but Recommended:**
-```yaml
-keywords:
-  - python
-  - web
-maintainers:
-  - name: Your Name
-    email: your.email@example.com
-sources:
-  - https://github.com/yourusername/yourapp
-```
-
-**Chart vs App Version:**
-- `version`: Chart version (change when chart changes)
-- `appVersion`: Application version (change when app changes)
-
-</details>
-
-<details>
-<summary>💡 Templating Basics</summary>
-
-**Go Template Syntax:**
-```yaml
-# Access value from values.yaml
-image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
-
-# With default value
-replicas: {{ .Values.replicaCount | default 3 }}
-
-# Conditional
-{{- if .Values.service.enabled }}
-# ... service definition
-{{- end }}
-
-# Range (loop)
-{{- range .Values.env }}
-- name: {{ .name }}
-  value: {{ .value }}
-{{- end }}
-```
-
-**Built-in Objects:**
-- `.Values`: Values from `values.yaml` and overrides
-- `.Chart`: Contents of `Chart.yaml`
-- `.Release`: Info about the release (name, namespace, etc.)
-- `.Template`: Info about current template
-
-**Example Conversion:**
-
-Before (static):
-```yaml
-apiVersion: apps/v1
-kind: Deployment
+# call a named template and indent the result
 metadata:
-  name: my-app
-spec:
-  replicas: 3
-  template:
-    spec:
-      containers:
-      - name: my-app
-        image: myuser/myapp:v1.0
-```
-
-After (templated):
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "mychart.fullname" . }}
   labels:
-    {{- include "mychart.labels" . | nindent 4 }}
-spec:
-  replicas: {{ .Values.replicaCount }}
-  template:
-    spec:
-      containers:
-      - name: {{ .Chart.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-```
+    {{- include "lab10-app.labels" . | nindent 4 }}
 
-</details>
-
-<details>
-<summary>💡 Values.yaml Design</summary>
-
-**Structure Your Values:**
-```yaml
-# values.yaml
-replicaCount: 3
-
-image:
-  repository: yourusername/yourapp
-  tag: "1.0"
-  pullPolicy: IfNotPresent
-
-service:
-  type: NodePort
-  port: 80
-  targetPort: 8000
-
+# render a values sub-tree as YAML (e.g. resources, probes)
+{{- with .Values.web.resources }}
 resources:
-  limits:
-    cpu: 200m
-    memory: 256Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
-
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 8000
-  initialDelaySeconds: 10
-  periodSeconds: 5
-
-readinessProbe:
-  httpGet:
-    path: /ready
-    port: 8000
-  initialDelaySeconds: 5
-  periodSeconds: 3
+  {{- toYaml . | nindent 12 }}
+{{- end }}
 ```
 
-**Best Practices:**
-- Nested structure for organization
-- Sensible defaults
-- Document each value
-- Make everything configurable
-- Never hardcode secrets
+- `include` (not `template`) returns a string you can pipe.
+- `nindent N` = newline + indent by N spaces. The single most common Helm bug is using `indent` where you needed `nindent`.
+- `{{- ... -}}` trims surrounding whitespace.
+
+Reference: [Chart Template Guide](https://helm.sh/docs/chart_template_guide/)
 
 </details>
 
 <details>
-<summary>💡 Helper Templates</summary>
+<summary>💡 `_helpers.tpl` starting point (adapt the chart name)</summary>
 
-**_helpers.tpl Pattern:**
-```yaml
-{{/*
-Expand the name of the chart.
-*/}}
-{{- define "mychart.name" -}}
+```handlebars
+{{- define "lab10-app.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{/*
-Create a default fully qualified app name.
-*/}}
-{{- define "mychart.fullname" -}}
-{{- if .Values.fullnameOverride }}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
-{{- else }}
-{{- $name := default .Chart.Name .Values.nameOverride }}
+{{- define "lab10-app.fullname" -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
 {{- end }}
-{{- end }}
 
-{{/*
-Common labels
-*/}}
-{{- define "mychart.labels" -}}
-helm.sh/chart: {{ include "mychart.chart" . }}
-{{ include "mychart.selectorLabels" . }}
+{{- define "lab10-app.labels" -}}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{ include "lab10-app.selectorLabels" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
+
+{{- define "lab10-app.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "lab10-app.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
 ```
 
-**Why Helpers?**
-- DRY principle
-- Consistent naming
-- Reusable logic
-- Easier maintenance
+`selectorLabels` is a strict subset of `labels` — selectors are immutable after a Deployment exists, so never put `version` in them.
 
 </details>
 
-**Test Your Chart:**
+**Validate as you go:**
+
 ```bash
-helm lint k8s/mychart
-helm template mychart k8s/mychart
-helm install --dry-run --debug test-release k8s/mychart
-helm install myrelease k8s/mychart
+helm lint k8s/lab10-app
+helm template demo k8s/lab10-app                 # render to stdout, inspect the YAML
+helm install demo k8s/lab10-app --dry-run --debug
+helm install demo k8s/lab10-app -n demo --create-namespace
 ```
+
+**Documentation required:** `helm lint` output, a snippet of `helm template` showing values flowing into the rendered Deployment, and `kubectl get all -n <ns>` proving both web and echo are running.
 
 ---
 
-### Task 3 — Multi-Environment Support (2 pts)
+### Task 3 — Multi-Environment Values (3 pts)
 
-**Objective:** Configure chart for different environments using values files.
+**Objective:** Drive three environments from one chart using a base + override values hierarchy.
 
 **Requirements:**
 
-1. **Create Environment-Specific Values**
-   - `values-dev.yaml` for development
-   - `values-prod.yaml` for production
-   - Different configurations per environment
+1. Create **`values-dev.yaml`**, **`values-staging.yaml`**, and **`values-prod.yaml`**. Each holds only the *deltas* from `values.yaml` — do not duplicate the whole file.
+2. Make the environments meaningfully different. Suggested shape:
 
-2. **Environment Differences**
-   - Dev: 1 replica, relaxed resources, NodePort
-   - Prod: 3+ replicas, proper resources, LoadBalancer ready
-   - Different image tags or configurations
+   | | dev | staging | prod |
+   |---|---|---|---|
+   | replicas (web) | 1 | 2 | 3+ |
+   | image.tag | `latest` | a pinned tag | a pinned SemVer |
+   | service.type | NodePort | NodePort | LoadBalancer |
+   | resources | relaxed | medium | full requests+limits |
 
-3. **Test Both Environments**
-   - Install with dev values
-   - Verify configuration
-   - Upgrade to prod values
-   - Verify changes applied
+3. **Install all three** into separate namespaces and prove the rendered config differs.
+
+```bash
+helm install web-dev     k8s/lab10-app -n dev     --create-namespace -f k8s/lab10-app/values-dev.yaml
+helm install web-staging k8s/lab10-app -n staging --create-namespace -f k8s/lab10-app/values-staging.yaml
+helm install web-prod    k8s/lab10-app -n prod    --create-namespace -f k8s/lab10-app/values-prod.yaml
+
+# prove they differ without a cluster
+helm template web-prod k8s/lab10-app -f k8s/lab10-app/values-prod.yaml | grep -E "replicas|image:|type:"
+```
 
 <details>
-<summary>💡 Values Override Pattern</summary>
+<summary>💡 Values precedence (lowest → highest)</summary>
 
-**values-dev.yaml:**
-```yaml
-replicaCount: 1
+1. `values.yaml` (chart defaults)
+2. each `-f file.yaml` (later files override earlier ones)
+3. `--set key=value` on the CLI
 
-image:
-  tag: "latest"
-
-resources:
-  limits:
-    cpu: 100m
-    memory: 128Mi
-  requests:
-    cpu: 50m
-    memory: 64Mi
-
-service:
-  type: NodePort
-
-livenessProbe:
-  initialDelaySeconds: 5
-  periodSeconds: 10
-```
-
-**values-prod.yaml:**
-```yaml
-replicaCount: 5
-
-image:
-  tag: "1.0.0"  # Specific version
-
-resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
-  requests:
-    cpu: 200m
-    memory: 256Mi
-
-service:
-  type: LoadBalancer
-
-livenessProbe:
-  initialDelaySeconds: 30
-  periodSeconds: 5
-
-readinessProbe:
-  initialDelaySeconds: 10
-  periodSeconds: 3
-```
-
-**Using Values Files:**
-```bash
-# Development
-helm install myapp-dev k8s/mychart -f k8s/mychart/values-dev.yaml
-
-# Production
-helm install myapp-prod k8s/mychart -f k8s/mychart/values-prod.yaml
-
-# Override specific value
-helm install myapp k8s/mychart --set replicaCount=10
-```
+So `-f values.yaml -f values-prod.yaml --set web.replicaCount=10` ends with 10 replicas. You usually don't need to pass `values.yaml` explicitly — Helm always loads it as the base.
 
 </details>
+
+**Documentation required:** the three values files, the install commands, and evidence (`kubectl get deploy -A` or per-namespace `helm template | grep`) that replicas / image tag / service type differ per environment.
 
 ---
 
-### Task 4 — Chart Hooks (3 pts)
+### Task 4 — Lifecycle Hooks (2 pts)
 
-**Objective:** Implement Helm hooks for lifecycle management.
+**Objective:** Run a Job at specific points in the release lifecycle.
 
 **Requirements:**
 
-1. **Learn Hook Concepts**
-   - Understand hook weights and execution order
-   - Learn hook deletion policies
+1. **Pre-install hook** — a Job that runs *before* the main resources (e.g. a fake DB migration / readiness check). Use `hook-weight` so it runs first.
+2. **Post-install hook** — a Job that runs *after* everything is installed (e.g. a smoke test / notification).
+3. Both hooks set a **`hook-delete-policy`** so they clean up after themselves.
+4. **Verify** the hooks render (`helm template`), execute on install, and are removed per policy.
 
-2. **Implement Hooks**
-   - **Pre-install hook**: Job that runs before installation (e.g., database migration, validation)
-   - **Post-install hook**: Job that runs after installation (e.g., smoke test, notification)
+The hook templates live under `k8s/lab10-app/templates/hooks/` and are `YOUR-TASK`. Pattern:
 
-3. **Hook Configuration**
-   - Proper annotations for hook type
-   - Hook weight for execution order
-   - Deletion policy (hook-succeeded)
-
-4. **Verify Hooks**
-   - Lint chart
-   - Dry-run to see hook rendering
-   - Install and verify hook execution
-   - Confirm hooks are deleted per policy
-
-<details>
-<summary>💡 Helm Hooks Concept</summary>
-
-**What Are Hooks?**
-Special Kubernetes resources that execute at specific points in release lifecycle.
-
-**Hook Types:**
-- `pre-install`: Before resources are installed
-- `post-install`: After all resources installed and ready
-- `pre-delete`: Before deletion
-- `post-delete`: After deletion
-- `pre-upgrade`: Before upgrade
-- `post-upgrade`: After upgrade
-- `pre-rollback`: Before rollback
-- `post-rollback`: After rollback
-
-**Hook Weights:**
-- Control execution order
-- Lower weight runs first
-- Default weight: 0
-
-**Hook Deletion Policies:**
-- `before-hook-creation`: Delete previous hook before new one
-- `hook-succeeded`: Delete after successful execution
-- `hook-failed`: Delete after failed execution
-
-**Resources:**
-- [Chart Hooks](https://helm.sh/docs/topics/charts_hooks/)
-
-</details>
-
-<details>
-<summary>💡 Hook Implementation Pattern</summary>
-
-**templates/hooks/pre-install-job.yaml:**
 ```yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: "{{ include "mychart.fullname" . }}-pre-install"
+  name: "{{ include "lab10-app.fullname" . }}-pre-install"
   labels:
-    {{- include "mychart.labels" . | nindent 4 }}
+    {{- include "lab10-app.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": hook-succeeded
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   template:
-    metadata:
-      name: "{{ include "mychart.fullname" . }}-pre-install"
     spec:
       restartPolicy: Never
       containers:
-      - name: pre-install-job
-        image: busybox
-        command: ['sh', '-c', 'echo Pre-install task running && sleep 10 && echo Pre-install completed']
+        - name: pre-install
+          image: busybox:1.37
+          command: ["sh", "-c", "echo running pre-install migration && sleep 5 && echo done"]
 ```
-
-**templates/hooks/post-install-job.yaml:**
-```yaml
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: "{{ include "mychart.fullname" . }}-post-install"
-  labels:
-    {{- include "mychart.labels" . | nindent 4 }}
-  annotations:
-    "helm.sh/hook": post-install
-    "helm.sh/hook-weight": "5"
-    "helm.sh/hook-delete-policy": hook-succeeded
-spec:
-  template:
-    metadata:
-      name: "{{ include "mychart.fullname" . }}-post-install"
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: post-install-job
-        image: busybox
-        command: ['sh', '-c', 'echo Post-install validation && sleep 10 && echo Validation passed']
-```
-
-**Real-World Hook Examples:**
-- Pre-install: Database schema migration
-- Post-install: Smoke tests, send notification
-- Pre-upgrade: Backup database
-- Post-upgrade: Run integration tests
-- Pre-delete: Backup data before cleanup
-
-</details>
 
 <details>
-<summary>💡 Testing Hooks</summary>
+<summary>💡 Hook reference</summary>
 
-**Validation Commands:**
-```bash
-# Lint chart
-helm lint k8s/mychart
+- **Hook points:** `pre-install`, `post-install`, `pre-upgrade`, `post-upgrade`, `pre-delete`, `post-delete`, `test`.
+- **`hook-weight`** orders multiple hooks at the same point — lower runs first; ties broken alphabetically.
+- **`hook-delete-policy`:** `before-hook-creation` (default), `hook-succeeded`, `hook-failed`. Without one, failed hook Jobs accumulate — `helm uninstall` does **not** delete hook resources.
 
-# Dry run to see hooks
-helm install --dry-run --debug test-release k8s/mychart | grep -A 20 "hook"
-
-# Install and watch hooks
-helm install myrelease k8s/mychart
-kubectl get jobs -w
-kubectl get pods -w
-
-# Check hook execution
-kubectl describe job myrelease-pre-install
-kubectl logs job/myrelease-pre-install
-
-# Verify deletion policy worked
-kubectl get jobs
-```
-
-**Hook Troubleshooting:**
-- Check annotations are correct
-- Verify hook weight if order matters
-- Check pod logs for hook failures
-- Ensure deletion policy is appropriate
+Reference: [Chart Hooks](https://helm.sh/docs/topics/charts_hooks/)
 
 </details>
 
----
+```bash
+helm install demo k8s/lab10-app -n demo --create-namespace
+kubectl get jobs -n demo            # watch the hook Job appear and complete
+kubectl logs -n demo job/<release>-pre-install
+kubectl get jobs -n demo            # confirm it was deleted per policy
+```
 
-### Task 5 — Documentation (2 pts)
-
-**Objective:** Document your Helm chart implementation.
-
-Create `k8s/HELM.md` with these sections:
-
-**Required Sections:**
-
-1. **Chart Overview**
-   - Chart structure explanation
-   - Key template files and their purpose
-   - Values organization strategy
-
-2. **Configuration Guide**
-   - Important values and their purpose
-   - How to customize for different environments
-   - Example installations with different configurations
-
-3. **Hook Implementation**
-   - What hooks you implemented and why
-   - Hook execution order and weights
-   - Deletion policies explanation
-
-4. **Installation Evidence**
-   - `helm list` output
-   - `kubectl get all` showing deployed resources
-   - Hook execution output (`kubectl get jobs`, `kubectl describe job`)
-   - Different environment deployments (dev vs prod)
-
-5. **Operations**
-   - Installation commands used
-   - How to upgrade a release
-   - How to rollback
-   - How to uninstall
-
-6. **Testing & Validation**
-   - `helm lint` output
-   - `helm template` verification
-   - Dry-run output
-   - Application accessibility verification
+**Documentation required:** both hook templates, `kubectl get jobs` showing execution, hook Job logs, and a confirmation that the delete policy cleaned them up.
 
 ---
 
-## Bonus Task — Library Charts (2.5 pts)
+### Task 5 — Documentation (1 pt)
 
-**Objective:** Create a library chart for shared templates across multiple applications.
+**Objective:** Document the chart so a teammate can operate it.
+
+Create **`k8s/lab10-app/HELM.md`** covering:
+
+1. **Chart overview** — structure, what each template renders, how values are organized.
+2. **Configuration** — the key values and how the three environments differ.
+3. **Hooks** — what you implemented, the weights, and the delete policies (and why).
+4. **Operations** — the exact `install`, `upgrade`, `rollback`, and `uninstall` commands you ran.
+5. **Evidence** — `helm list -A`, `kubectl get all`, hook output, and proof of a per-environment difference.
+
+```bash
+# the operations you should be able to demonstrate
+helm upgrade web-dev k8s/lab10-app -n dev -f k8s/lab10-app/values-dev.yaml --set web.image.tag=v1.0.1
+helm history web-dev -n dev
+helm rollback web-dev 1 -n dev
+helm uninstall web-dev -n dev
+```
+
+---
+
+## Bonus Task — Publish to GHCR via OCI (2 pts)
+
+**Objective:** Package the chart and push it to GitHub Container Registry as an OCI artifact, then install it straight from the registry.
 
 **Requirements:**
 
-1. **Deploy Second Application**
-   - Create Helm chart for second app
-   - Notice template duplication (labels, helpers, etc.)
+1. **Package** the chart into a `.tgz`.
+2. **Log in** to GHCR with a GitHub PAT (scope `write:packages`).
+3. **Push** the chart to `oci://ghcr.io/<your-username>/charts`.
+4. **Pull and install** the chart *from the registry* (not the local directory) to prove the round-trip works.
+5. **Document** the published artifact (GHCR package URL) and the install-from-OCI command.
 
-2. **Create Library Chart**
-   - Create library chart in `k8s/common-lib/`
-   - Extract shared templates (labels, names, etc.)
-   - Set chart type to `library` in Chart.yaml
-
-3. **Use Library Chart**
-   - Add library as dependency in both app charts
-   - Reference library templates
-   - Eliminate duplication
-
-4. **Verify**
-   - Both charts install successfully
-   - Templates render correctly using library
-
-<details>
-<summary>💡 Library Chart Concepts</summary>
-
-**What Are Library Charts?**
-Charts that only contain templates (no resources). Used to share common template logic.
-
-**Type: Library**
-- Cannot be installed directly
-- Used as dependencies
-- Share templates across charts
-
-**Common Use Cases:**
-- Standard labels
-- Name generation
-- Security contexts
-- Resource definitions
-- Common configuration patterns
-
-**Resources:**
-- [Library Charts](https://helm.sh/docs/topics/library_charts/)
-
-</details>
-
-<details>
-<summary>💡 Library Chart Implementation</summary>
-
-**k8s/common-lib/Chart.yaml:**
-```yaml
-apiVersion: v2
-name: common-lib
-description: Common templates for all applications
-type: library
-version: 0.1.0
-```
-
-**k8s/common-lib/templates/_labels.tpl:**
-```yaml
-{{/*
-Common labels
-*/}}
-{{- define "common.labels" -}}
-app.kubernetes.io/name: {{ include "common.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-helm.sh/chart: {{ include "common.chart" . }}
-{{- end }}
-
-{{/*
-Selector labels
-*/}}
-{{- define "common.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "common.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
-```
-
-**Using Library Chart:**
-
-**app1/Chart.yaml:**
-```yaml
-apiVersion: v2
-name: app1
-version: 0.1.0
-dependencies:
-  - name: common-lib
-    version: 0.1.0
-    repository: "file://../common-lib"
-```
-
-**app1/templates/deployment.yaml:**
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ include "common.fullname" . }}
-  labels:
-    {{- include "common.labels" . | nindent 4 }}
-spec:
-  selector:
-    matchLabels:
-      {{- include "common.selectorLabels" . | nindent 6 }}
-  # ... rest of deployment
-```
-
-**Install with Dependencies:**
 ```bash
-helm dependency update k8s/app1
-helm install app1-release k8s/app1
+# 1. package → produces lab10-app-0.1.0.tgz
+helm package k8s/lab10-app
+
+# 2. auth (use a PAT, never your password; CI would use GITHUB_TOKEN)
+echo $GHCR_PAT | helm registry login ghcr.io -u <your-username> --password-stdin
+
+# 3. push
+helm push lab10-app-0.1.0.tgz oci://ghcr.io/<your-username>/charts
+
+# 4. install from the registry
+helm install web-oci oci://ghcr.io/<your-username>/charts/lab10-app \
+  --version 0.1.0 -n oci-test --create-namespace
 ```
+
+<details>
+<summary>💡 Why OCI for charts?</summary>
+
+Since 2022 Helm pushes/pulls charts using the same OCI protocol as container images: one registry, one auth model, one set of access controls for both your images and your charts. It replaced the legacy `helm repo add` HTTP index model. GHCR, Docker Hub, Harbor, and ECR all support OCI artifacts.
+
+Make the GHCR package **public** (or grant your grader access) so the install-from-OCI step is reproducible.
+
+Reference: [Use OCI-based registries](https://helm.sh/docs/topics/registries/)
 
 </details>
 
-**Documentation Required:**
-- Library chart structure
-- Shared templates implemented
-- How both apps use the library
-- Benefits of this approach (DRY, consistency, maintainability)
-- Terminal output showing successful deployment of both apps
+**Documentation required:** the package + push terminal output, the GHCR package URL, and the successful `helm install oci://...` output.
 
 ---
 
-## Checklist
+## How to Submit
 
-### Task 1 — Helm Fundamentals (2 pts)
-- [ ] Helm installed and verified
-- [ ] Chart repositories explored
-- [ ] Helm concepts understood
-- [ ] Documentation of setup
+1. **Create Branch:**
+   ```bash
+   git checkout -b lab10
+   ```
 
-### Task 2 — Create Your Helm Chart (3 pts)
-- [ ] Chart created in `k8s/` directory
-- [ ] `Chart.yaml` properly configured
-- [ ] Manifests converted to templates
-- [ ] Values properly extracted
-- [ ] Helper templates implemented
-- [ ] Health checks remain functional (not commented out!)
-- [ ] Chart installs successfully
+2. **Commit Work:**
+   ```bash
+   git add k8s/lab10-app/
+   git commit -m "feat: package lab09 manifests into a helm chart (lab10)"
+   git push -u origin lab10
+   ```
 
-### Task 3 — Multi-Environment Support (2 pts)
-- [ ] `values-dev.yaml` created
-- [ ] `values-prod.yaml` created
-- [ ] Environment-specific configurations
-- [ ] Both environments tested
-- [ ] Documentation of differences
+3. **Create Pull Requests:**
+   - **PR #1:** `your-fork:lab10` → `course-repo:master`
+   - **PR #2:** `your-fork:lab10` → `your-fork:master`
 
-### Task 4 — Chart Hooks (3 pts)
-- [ ] Pre-install hook implemented
-- [ ] Post-install hook implemented
-- [ ] Proper hook annotations
-- [ ] Hook weights configured
-- [ ] Deletion policies applied
-- [ ] Hooks execute successfully
-- [ ] Hooks deleted per policy
+4. **Verify:**
+   - Chart lints clean and installs
+   - Three environment value files present and demonstrably different
+   - Hooks execute and clean up
+   - `k8s/lab10-app/HELM.md` complete with evidence
 
-### Task 5 — Documentation (2 pts)
-- [ ] `k8s/HELM.md` complete
-- [ ] Chart structure explained
-- [ ] Configuration guide provided
-- [ ] Hook implementation documented
-- [ ] Installation evidence included
-- [ ] Operations documented
+---
 
-### Bonus — Library Charts (2.5 pts)
-- [ ] Library chart created
-- [ ] Shared templates extracted
-- [ ] Two app charts using library
-- [ ] Dependencies configured
-- [ ] Both apps deploy successfully
-- [ ] Documentation complete
+## Acceptance Criteria
+
+### Main Tasks (10 points)
+
+**Fundamentals & Setup (1 pt):**
+- [ ] Helm reports v4.1.x
+- [ ] A public chart inspected via `helm show`
+- [ ] Chart / Release / Values explained
+
+**Build the Chart (3 pts):**
+- [ ] `Chart.yaml` with `apiVersion: v2`, SemVer `version`, and `appVersion`
+- [ ] Web + echo manifests templated from values (nothing hardcoded)
+- [ ] `_helpers.tpl` defines and uses `name` / `fullname` / `labels` / `selectorLabels`
+- [ ] Liveness + readiness probes kept and value-configurable (not commented out)
+- [ ] `helm lint` passes and the chart installs
+
+**Multi-Environment Values (3 pts):**
+- [ ] `values-dev.yaml`, `values-staging.yaml`, `values-prod.yaml` created (deltas only)
+- [ ] Replicas / image tag / service type / resources differ per environment
+- [ ] All three render or install and the differences are shown
+
+**Lifecycle Hooks (2 pts):**
+- [ ] Pre-install hook with negative `hook-weight`
+- [ ] Post-install hook
+- [ ] `hook-delete-policy` set on both
+- [ ] Hooks execute and are cleaned up per policy (shown)
+
+**Documentation (1 pt):**
+- [ ] `k8s/lab10-app/HELM.md` covers overview, config, hooks, operations, and evidence
+
+### Bonus Task (2 points)
+
+- [ ] Chart packaged to `.tgz`
+- [ ] Pushed to `oci://ghcr.io/<username>/charts`
+- [ ] Installed *from the registry* (not the local path)
+- [ ] GHCR package URL + install-from-OCI output documented
 
 ---
 
@@ -829,19 +410,19 @@ helm install app1-release k8s/app1
 
 | Criteria | Points | Description |
 |----------|--------|-------------|
-| **Fundamentals** | 2 pts | Helm installed, concepts understood |
-| **Chart Creation** | 3 pts | Proper templating, values, helpers |
-| **Multi-Environment** | 2 pts | Different configs, tested |
-| **Hooks** | 3 pts | Pre/post install hooks working |
-| **Documentation** | 2 pts | Complete HELM.md |
-| **Bonus** | 2.5 pts | Library chart implementation |
-| **Total** | 14.5 pts | 12 pts required + 2.5 pts bonus |
+| **Fundamentals** | 1 pt | Helm 4 installed, concepts explained |
+| **Chart Build** | 3 pts | Proper templating, values, helpers, probes kept |
+| **Multi-Environment** | 3 pts | dev/staging/prod values, demonstrably different |
+| **Hooks** | 2 pts | Pre/post-install hooks with weights + delete policy |
+| **Documentation** | 1 pt | Complete `HELM.md` with evidence |
+| **Bonus** | 2 pts | OCI package + push + install from GHCR |
+| **Total** | 12 pts | 10 pts required + 2 pts bonus |
 
 **Grading:**
-- **12/12:** Excellent templating, working hooks, multi-env, great docs
-- **10-11/12:** Working chart, hooks function, good documentation
-- **8-9/12:** Basic chart works, missing best practices or hooks
-- **<8/12:** Chart doesn't install, commented out probes, poor templating
+- **10/10:** Clean templating, three working environments, hooks fire and clean up, thorough docs
+- **8-9/10:** Chart installs, hooks work, minor best-practice gaps
+- **6-7/10:** Basic chart works, missing multi-env or hook polish
+- **<6/10:** Chart doesn't install, hardcoded values, commented-out probes
 
 ---
 
@@ -850,10 +431,11 @@ helm install app1-release k8s/app1
 <details>
 <summary>📚 Official Helm Documentation</summary>
 
-- [Helm Documentation](https://helm.sh/docs/)
-- [Chart Best Practices](https://helm.sh/docs/chart_best_practices/)
+- [Helm Documentation](https://helm.sh/docs/) (Helm 4)
 - [Chart Template Guide](https://helm.sh/docs/chart_template_guide/)
-- [Helm Commands](https://helm.sh/docs/helm/)
+- [Chart Best Practices](https://helm.sh/docs/chart_best_practices/)
+- [Chart Hooks](https://helm.sh/docs/topics/charts_hooks/)
+- [Use OCI-based registries](https://helm.sh/docs/topics/registries/)
 
 </details>
 
@@ -862,27 +444,20 @@ helm install app1-release k8s/app1
 
 - [Quickstart Guide](https://helm.sh/docs/intro/quickstart/)
 - [Using Helm](https://helm.sh/docs/intro/using_helm/)
-- [Go Template Primer](https://helm.sh/docs/chart_template_guide/builtin_objects/)
-- [Chart Development Tips](https://helm.sh/docs/howto/charts_tips_and_tricks/)
+- [Built-in Objects](https://helm.sh/docs/chart_template_guide/builtin_objects/)
+- [Sprig function reference](https://masterminds.github.io/sprig/)
+- *Learning Helm* (2e, 2024) — Butcher, Farina, Dolitsky (O'Reilly)
 
 </details>
 
 <details>
-<summary>🛠️ Tools</summary>
+<summary>🛠️ Tools & Registries</summary>
 
-- [Helm](https://helm.sh/) - Official site
-- [Artifact Hub](https://artifacthub.io/) - Public chart repository
-- [helm-docs](https://github.com/norwoodj/helm-docs) - Generate docs from values
-- [chart-testing](https://github.com/helm/chart-testing) - Lint and test charts
-
-</details>
-
-<details>
-<summary>📦 Public Chart Repositories</summary>
-
-- [Bitnami Charts](https://github.com/bitnami/charts)
-- [Prometheus Community](https://github.com/prometheus-community/helm-charts)
-- [Grafana Charts](https://github.com/grafana/helm-charts)
+- [Helm](https://helm.sh/) — official site
+- [Artifact Hub](https://artifacthub.io/) — public chart search
+- [helm-docs](https://github.com/norwoodj/helm-docs) — generate docs from values
+- [chart-testing](https://github.com/helm/chart-testing) — lint and test charts in CI
+- [GitHub Container Registry (GHCR)](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 
 </details>
 
@@ -890,9 +465,9 @@ helm install app1-release k8s/app1
 
 ## Looking Ahead
 
-- **Lab 11:** Secrets management with Vault (integrate with Helm)
+- **Lab 11:** Secrets management with OpenBao — because `values.yaml` is git-tracked and your DB password isn't
 - **Lab 12:** ConfigMaps and persistent volumes
-- **Lab 13:** ArgoCD deploys Helm charts via GitOps
+- **Lab 13:** ArgoCD deploys your Helm chart via GitOps
 - **Lab 14:** Progressive delivery with Argo Rollouts
 - **Lab 15:** StatefulSets for stateful applications
 
@@ -900,4 +475,4 @@ helm install app1-release k8s/app1
 
 **Good luck!** ⛵
 
-> **Remember:** Helm makes your deployments reusable and configurable. Never comment out health checks - configure them properly. Template everything, hardcode nothing (except defaults).
+> **Remember:** Template everything, hardcode nothing (except sensible defaults). One chart, N value files. And never comment out a health check — make it a value instead.

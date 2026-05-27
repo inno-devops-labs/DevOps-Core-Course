@@ -1,79 +1,95 @@
-# Lab 11 — Kubernetes Secrets & HashiCorp Vault
+# Lab 11 — Kubernetes Secrets & OpenBao
 
 ![difficulty](https://img.shields.io/badge/difficulty-intermediate-yellow)
 ![topic](https://img.shields.io/badge/topic-Secret%20Management-blue)
-![points](https://img.shields.io/badge/points-10%2B2.5-orange)
-![tech](https://img.shields.io/badge/tech-Vault%20%7C%20K8s%20Secrets-informational)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
+![tech](https://img.shields.io/badge/tech-OpenBao%202.5%20%7C%20K8s%20Secrets-informational)
 
-> Secure your Kubernetes applications by implementing proper secret management with native Secrets and HashiCorp Vault integration.
+> Stop putting passwords in Git. Secure your Kubernetes applications with native Secrets, Helm-managed secrets, and an **OpenBao** secret manager — the open-source successor to HashiCorp Vault.
 
 ## Overview
 
-Secret management is critical for production Kubernetes deployments. Hardcoded credentials in code or config files are a security nightmare. This lab teaches you how to properly manage sensitive data using Kubernetes native Secrets and enterprise-grade HashiCorp Vault.
+Secret management is critical for production Kubernetes. Hardcoded credentials in code, config files, or `values.yaml` are the single cheapest-to-prevent cause of cloud breaches. This lab teaches you the real security model behind Kubernetes Secrets (base64 is **not** encryption) and how to centralize secrets with **OpenBao**.
 
 **What You'll Learn:**
-- Kubernetes Secrets creation and consumption
-- Base64 encoding vs actual encryption
-- Helm-based secret management
-- HashiCorp Vault installation and configuration
-- Kubernetes authentication with Vault
-- Sidecar injection pattern for secrets
+- Kubernetes Secrets creation and consumption (env vars + file mounts)
+- Why base64 encoding is not encryption, and what etcd encryption-at-rest is
+- Helm-based secret management and resource limits
+- Deploying **OpenBao 2.5** in Kubernetes via Helm
+- Kubernetes auth method + KV-v2 + read policy + role binding
+- Injecting secrets into pods via the OpenBao Agent sidecar pattern
 
-**Building On:** Your Helm chart from Lab 10 will be extended with secret management capabilities.
+**Building On:** Your Helm chart from Lab 10 is extended with secret management.
 
-**Tech Stack:** Kubernetes Secrets | HashiCorp Vault 1.18+ | Vault Helm 0.28+ | Vault Agent Injector
+> **Why OpenBao, not Vault?** In August 2023 HashiCorp re-licensed Vault under the Business Source License (BSL 1.1), restricting commercial use. The community forked it as **OpenBao**, now governed by the Linux Foundation under the truly open MPL-2.0 license. OpenBao is wire-compatible: the `bao` CLI is a drop-in for `vault`, and the legacy `vault` CLI still works unchanged against an OpenBao server. We teach OpenBao so the manifests you build today run on a production cluster tomorrow without a license re-litigation.
+
+**Tech Stack:** Kubernetes **1.36** | **OpenBao 2.5.0** (Linux Foundation, MPL-2.0) | OpenBao Helm chart | Helm **4** | `bao` CLI (`vault` CLI also compatible) | External Secrets Operator (bonus)
 
 ---
 
 ## Tasks
 
+> **Note on outputs:** All command outputs shown below are **illustrative** — your hashes, pod names, and timestamps will differ. Capture *your own* real output for the documentation task.
+
 ### Task 1 — Kubernetes Secrets Fundamentals (2 pts)
 
-**Objective:** Understand how Kubernetes Secrets work and their security model.
+**Objective:** Understand how Kubernetes Secrets actually work and their security model. This task is standalone — it does not depend on your Lab 10 chart.
 
 **Requirements:**
 
 1. **Create a Secret Using kubectl**
-   - Create a secret named `app-credentials` with:
-     - `username` key
-     - `password` key
-   - Use the imperative `kubectl create secret` command
+   - Create a namespace `lab11` (`kubectl create namespace lab11`).
+   - Create a secret named `app-credentials` in `lab11` with a `username` key and a `password` key.
+   - Use the imperative `kubectl create secret generic` command with `--from-literal`.
 
 2. **Examine the Secret**
-   - View the secret in YAML format
-   - Decode the base64-encoded values
-   - Understand what "encoding" vs "encryption" means
+   - View the secret in YAML format.
+   - Decode the base64-encoded values back to plaintext.
+   - Demonstrate in writing the difference between **encoding** (base64) and **encryption**.
 
 3. **Understand Security Implications**
-   - Research: Are Kubernetes Secrets encrypted at rest by default?
-   - What is etcd encryption and when should you enable it?
+   - Answer in your docs: Are Kubernetes Secrets encrypted at rest by default? (No — they are base64 in etcd.)
+   - Explain what an `EncryptionConfiguration` / KMS provider does and when you should enable etcd encryption-at-rest.
+   - Note that RBAC protects the API *path*, not the data at rest.
 
 <details>
 <summary>💡 Hints</summary>
 
-**Creating Secrets:**
-There are multiple ways to create secrets:
-- `kubectl create secret generic` - from literals or files
-- `kubectl create secret docker-registry` - for image pull secrets
-- `kubectl create secret tls` - for TLS certificates
+**Creating Secrets (three patterns):**
+- `kubectl create secret generic` — from literals or files (imperative)
+- A `kind: Secret` YAML manifest (declarative)
+- A Helm `templates/secrets.yaml` (Task 2)
 
-**Useful Commands:**
+**Useful Commands (illustrative output):**
 ```bash
-# Create from literals
-kubectl create secret generic <name> --from-literal=key=value
+kubectl create namespace lab11
 
-# View secret
-kubectl get secret <name> -o yaml
+kubectl create secret generic app-credentials -n lab11 \
+  --from-literal=username=admin \
+  --from-literal=password='S3cure!2026'
 
-# Decode base64 (Linux/Mac)
-echo "<base64-string>" | base64 -d
+# View the stored object — values are base64, not encrypted
+kubectl get secret app-credentials -n lab11 -o yaml
+# data:
+#   password: UzNjdXJlITIwMjY=
+#   username: YWRtaW4=
+
+# Decode — no key, no password, just decode
+echo "YWRtaW4=" | base64 -d        # -> admin
+echo "UzNjdXJlITIwMjY=" | base64 -d  # -> S3cure!2026
 ```
 
-**Security Model:**
-Kubernetes Secrets are base64-encoded, NOT encrypted by default. Anyone with API access can decode them. For production:
-- Enable etcd encryption at rest
-- Use RBAC to limit secret access
-- Consider external secret managers (Vault, AWS Secrets Manager, etc.)
+**Encoding vs Encryption:**
+
+| base64 (encoding) | AES-GCM / KMS (encryption) |
+|-------------------|----------------------------|
+| Reversible by anyone with the string | Requires a key to decrypt |
+| For binary-safe text transport | For confidentiality |
+| Same data, different format | Mathematically secure |
+
+Secrets are base64 because `data` values must be valid string-safe YAML/JSON (binary like a TLS key wouldn't fit). Confidentiality is the job of RBAC + etcd-at-rest, not base64.
+
+**etcd encryption-at-rest** is enabled with a kube-apiserver `--encryption-provider-config` pointing at an `EncryptionConfiguration` (prefer a `kms` provider; the `identity` provider, meaning no encryption, must be last). On managed control planes (EKS/GKE/AKS) disk-level provider encryption is often on, but that is a different threat model than K8s-level `EncryptionConfiguration`.
 
 **Resources:**
 - [Kubernetes Secrets Concepts](https://kubernetes.io/docs/concepts/configuration/secret/)
@@ -85,165 +101,210 @@ Kubernetes Secrets are base64-encoded, NOT encrypted by default. Anyone with API
 
 ### Task 2 — Helm-Managed Secrets (3 pts)
 
-**Objective:** Integrate secrets into your Helm chart and inject them into your application.
+**Objective:** Integrate secrets into your Lab 10 Helm chart and inject them into your application as environment variables.
 
 **Requirements:**
 
-1. **Create Secret Template**
-   - Add `templates/secrets.yaml` to your Helm chart
-   - Define secret values in `values.yaml` (with placeholder defaults)
-   - Use proper templating for secret name and labels
+1. **Create a Secret Template**
+   - Add `templates/secrets.yaml` to your Helm chart.
+   - Define placeholder secret values in `values.yaml` (never commit real secrets).
+   - Use templated name and standard labels.
 
 2. **Inject Secrets as Environment Variables**
-   - Update your deployment to consume the secret
-   - Use `envFrom` with `secretRef` for all keys
-   - OR use individual `env` entries with `secretKeyRef`
+   - Update your Deployment to consume the secret via `envFrom` + `secretRef` (all keys), or individual `env` + `secretKeyRef`.
 
 3. **Verify Secret Injection**
-   - Deploy the updated chart
-   - Exec into the pod and verify environment variables
-   - Ensure secrets are not visible in `kubectl describe pod`
+   - Deploy the updated chart with Helm 4.
+   - Exec into the pod and confirm the environment variables exist.
+   - Confirm the secret *values* are not exposed by `kubectl describe pod`.
 
 4. **Add Resource Limits**
-   - Configure CPU and memory requests/limits in your deployment
-   - Use values.yaml for configurability
-   - Apply Kubernetes resource management best practices
+   - Configure CPU and memory `requests`/`limits` in your Deployment, driven from `values.yaml`.
+
+**Skeleton — `templates/secrets.yaml` (fill in the YOUR-TASK markers):**
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "mychart.fullname" . }}-secret   # YOUR-TASK: match your chart's helper name
+  labels:
+    {{- include "mychart.labels" . | nindent 4 }}
+type: Opaque
+stringData:                                          # stringData: Helm/K8s base64-encodes for you
+  # YOUR-TASK: reference placeholder values from values.yaml, e.g.:
+  # username: {{ .Values.appSecret.username | quote }}
+  # password: {{ .Values.appSecret.password | quote }}
+```
 
 <details>
 <summary>💡 Hints</summary>
 
-**Secret Template Structure:**
-Your `templates/secrets.yaml` should:
-- Use the standard `v1` API and `Secret` kind
-- Include proper metadata with templated name and labels
-- Reference values from `values.yaml`
-- Use `stringData` for plain text (auto-encoded) or `data` for pre-encoded
+**`values.yaml` placeholders (never real values):**
+```yaml
+appSecret:
+  username: "PLACEHOLDER_USER"
+  password: "PLACEHOLDER_PASS"   # override with --set or a secret manager at deploy time
+```
 
-**Consuming Secrets in Deployment:**
-There are two patterns for environment variables:
-
-Pattern 1 - All keys from secret:
+**Consuming the secret — Pattern 1 (all keys):**
 ```yaml
 envFrom:
   - secretRef:
       name: {{ include "mychart.fullname" . }}-secret
 ```
 
-Pattern 2 - Specific keys:
+**Pattern 2 (specific keys):**
 ```yaml
 env:
   - name: DATABASE_PASSWORD
     valueFrom:
       secretKeyRef:
-        name: secret-name
+        name: {{ include "mychart.fullname" . }}-secret
         key: password
 ```
 
-**Resource Limits:**
+**Resource limits (from values.yaml):**
 ```yaml
 resources:
-  requests:
-    memory: "64Mi"
-    cpu: "100m"
-  limits:
-    memory: "128Mi"
-    cpu: "200m"
+  requests: {memory: "64Mi", cpu: "100m"}
+  limits:   {memory: "128Mi", cpu: "200m"}
 ```
 
-**Security Note:**
-Never commit real secrets to Git! Use:
-- Placeholder values in `values.yaml`
-- `--set` flag during install
-- External secret management (next task)
+**Deploy + verify (illustrative):**
+```bash
+helm upgrade --install mychart ./mychart -n lab11 \
+  --set appSecret.password='S3cure!2026'
+
+kubectl exec -n lab11 deploy/mychart -- env | grep -i pass   # shows the var exists
+kubectl describe pod -n lab11 -l app=mychart                 # values NOT shown
+```
+
+**Never** put real values in `values.yaml` — that file ships to Git with your chart. Use `--set` for the lab and a secret manager (Task 3) for real deployments.
 
 **Resources:**
 - [Managing Secrets with kubectl](https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-kubectl/)
 - [Resource Management](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)
+- [Helm 4 docs](https://helm.sh/docs/)
 
 </details>
 
 ---
 
-### Task 3 — HashiCorp Vault Integration (3 pts)
+### Task 3 — OpenBao Integration (3 pts)
 
-**Objective:** Deploy HashiCorp Vault and configure it to inject secrets into your application.
+**Objective:** Deploy **OpenBao 2.5** and configure it to inject a secret into your application via the Agent sidecar pattern.
 
 **Requirements:**
 
-1. **Install Vault via Helm**
-   - Add HashiCorp Helm repository
-   - Install Vault in dev mode (for learning purposes)
-   - Verify all Vault pods are running
+1. **Install OpenBao via Helm**
+   - Add the OpenBao Helm repository.
+   - Install OpenBao in **dev mode** (learning only — unsealed, in-memory) with the Agent injector enabled.
+   - Verify the OpenBao server pod and the agent-injector pod are `Running`.
 
-2. **Configure Vault**
-   - Enable KV secrets engine (v2)
-   - Create a secret path for your application
-   - Store at least two key-value pairs
+2. **Configure OpenBao**
+   - Enable the KV-v2 secrets engine at path `secret`.
+   - Write a secret at `secret/lab11/db` with at least two key-value pairs.
 
 3. **Configure Kubernetes Authentication**
-   - Enable Kubernetes auth method in Vault
-   - Create a policy that grants read access to your secret path
-   - Create a role bound to your application's service account
+   - Enable the `kubernetes` auth method.
+   - Write a policy granting **read** on your secret path.
+   - Create a role binding that policy to a ServiceAccount (`lab11-sa`) in namespace `lab11`.
 
-4. **Enable Vault Agent Injection**
-   - Add Vault annotations to your deployment
-   - Configure the agent to inject secrets as files
-   - Verify secrets are available inside the pod at the expected path
+4. **Enable Agent Injection**
+   - Add OpenBao Agent annotations to your Deployment's pod template.
+   - Set `serviceAccountName: lab11-sa`.
+   - Verify the rendered secret file appears at `/vault/secrets/...` inside the pod.
+
+**Skeleton — Agent annotations on your Deployment (fill in the YOUR-TASK markers):**
+```yaml
+spec:
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "lab11"                 # YOUR-TASK: the role you create below
+        # YOUR-TASK: source path -> file at /vault/secrets/db
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/lab11/db"
+    spec:
+      serviceAccountName: lab11-sa
+      containers:
+        - name: app
+          # ... your container ...
+```
+
+> **Annotation prefix note:** OpenBao's Agent injector keeps the `vault.hashicorp.com/*` annotation keys for drop-in compatibility with existing Vault tooling, and renders files under `/vault/secrets/`. This is expected — OpenBao deliberately preserved the wire/annotation contract.
 
 <details>
 <summary>💡 Hints</summary>
 
-**Installing Vault:**
+**Install OpenBao (illustrative output):**
 ```bash
-# Add repo
-helm repo add hashicorp https://helm.releases.hashicorp.com
+helm repo add openbao https://openbao.github.io/openbao-helm
 helm repo update
 
-# Install in dev mode (NOT for production!)
-helm install vault hashicorp/vault \
-  --set "server.dev.enabled=true" \
-  --set "injector.enabled=true"
+helm install openbao openbao/openbao \
+  --namespace openbao --create-namespace \
+  --set "server.dev.enabled=true" \      # dev mode = unsealed + in-memory, NEVER prod
+  --set "injector.enabled=true" \        # deploy the Agent injector
+  --set "server.image.tag=2.5.0"
+
+kubectl get pods -n openbao
+# NAME                                READY   STATUS
+# openbao-0                           1/1     Running
+# openbao-agent-injector-7f...        1/1     Running
 ```
 
-**Vault Configuration Steps:**
-1. Exec into Vault pod: `kubectl exec -it vault-0 -- /bin/sh`
-2. Vault is auto-initialized in dev mode
-3. Use `vault` CLI inside the pod
-
-**Key Vault Commands:**
+**Configure OpenBao (exec into the server pod).** The `bao` CLI is primary; `vault` is an accepted alias on the same binary:
 ```bash
-# Enable KV v2
-vault secrets enable -path=secret kv-v2
+kubectl exec -n openbao -it openbao-0 -- /bin/sh
 
-# Create secret
-vault kv put secret/myapp/config username="admin" password="secret123"
+# Enable KV v2 (versioned static secrets)
+bao secrets enable -path=secret kv-v2
 
-# Enable K8s auth
-vault auth enable kubernetes
+# Write a secret (>= 2 keys)
+bao kv put secret/lab11/db username=app password='S3cure!2026'
 
-# Configure K8s auth (get values from your cluster)
-vault write auth/kubernetes/config \
+# Enable Kubernetes auth (validates a pod's ServiceAccount JWT via TokenReview)
+bao auth enable kubernetes
+bao write auth/kubernetes/config \
   kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"
+
+# Read-only policy on the exact data path
+bao policy write lab11-read - <<EOF
+path "secret/data/lab11/db" {
+  capabilities = ["read"]
+}
+EOF
+
+# Role tying SA + namespace + policy together
+bao write auth/kubernetes/role/lab11 \
+  bound_service_account_names=lab11-sa \
+  bound_service_account_namespaces=lab11 \
+  policies=lab11-read \
+  ttl=1h
 ```
 
-**Policy and Role:**
-You need to:
-1. Create a policy that allows reading from your secret path
-2. Create a role that binds the policy to your service account
+> The legacy `vault` command works too: `vault status`, `vault kv put ...`, etc. all run unchanged against OpenBao.
 
-**Vault Agent Annotations:**
-Add these to your deployment's pod template:
-```yaml
-annotations:
-  vault.hashicorp.com/agent-inject: "true"
-  vault.hashicorp.com/role: "your-role"
-  vault.hashicorp.com/agent-inject-secret-config: "secret/data/myapp/config"
+**Create the ServiceAccount** (declarative, in `lab11`):
+```bash
+kubectl create serviceaccount lab11-sa -n lab11
+```
+
+**How injection works:** the injector is a `MutatingAdmissionWebhook` that, when it sees the `agent-inject` annotation, patches your podspec with an init container (fetches the secret before your app boots) and a sidecar (renews the token, refreshes the file). The file lands on a shared `emptyDir` at `/vault/secrets/<name>`.
+
+**Verify (illustrative):**
+```bash
+kubectl exec -n lab11 deploy/mychart -c app -- cat /vault/secrets/db
+# data: map[password:S3cure!2026 username:app]
+# metadata: ...
 ```
 
 **Resources:**
-- [Vault Helm Chart](https://developer.hashicorp.com/vault/docs/platform/k8s/helm)
-- [Vault K8s Sidecar Tutorial](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar)
-- [Agent Annotations](https://developer.hashicorp.com/vault/docs/platform/k8s/injector/annotations)
+- [OpenBao docs](https://openbao.org/docs/)
+- [OpenBao Helm chart](https://github.com/openbao/openbao-helm)
+- [OpenBao Kubernetes auth](https://openbao.org/docs/auth/kubernetes/)
+- [Vault Agent annotations reference (applies to OpenBao injector)](https://developer.hashicorp.com/vault/docs/platform/k8s/injector/annotations)
 
 </details>
 
@@ -251,134 +312,208 @@ annotations:
 
 ### Task 4 — Documentation (2 pts)
 
-**Objective:** Document your secret management implementation.
+**Objective:** Document your secret management implementation with real evidence.
 
 **Create `k8s/SECRETS.md` with:**
 
 1. **Kubernetes Secrets**
-   - Output of creating and viewing your secret
-   - Decoded secret values demonstration
-   - Explanation of base64 encoding vs encryption
+   - Your real output of creating and viewing `app-credentials`.
+   - The decoded values demonstration.
+   - Your explanation of base64 encoding vs encryption.
 
 2. **Helm Secret Integration**
-   - Chart structure showing secrets.yaml
-   - How secrets are consumed in deployment
-   - Verification output (env vars in pod, excluding actual values)
+   - Chart structure showing `templates/secrets.yaml`.
+   - How the secret is consumed in the Deployment.
+   - Verification output (env vars present in the pod — redact the actual values).
 
 3. **Resource Management**
-   - Resource limits configuration
-   - Explanation of requests vs limits
-   - How to choose appropriate values
+   - Your `requests`/`limits` configuration.
+   - Explanation of requests vs limits and how to choose values.
 
-4. **Vault Integration**
-   - Vault installation verification (`kubectl get pods`)
-   - Policy and role configuration (sanitized)
-   - Proof of secret injection (show file exists, path structure)
-   - Explanation of the sidecar injection pattern
+4. **OpenBao Integration**
+   - Installation verification (`kubectl get pods -n openbao`).
+   - Policy and role configuration (sanitized).
+   - Proof of injection (the `/vault/secrets/...` file exists — redact the secret value).
+   - Explanation of the Agent sidecar injection pattern.
 
 5. **Security Analysis**
-   - Comparison: K8s Secrets vs Vault
-   - When to use each approach
-   - Production recommendations
+   - Comparison: native K8s Secrets vs OpenBao.
+   - When to use each approach.
+   - One paragraph on the Vault → OpenBao licensing history (BSL 1.1, Aug 2023) and why it matters.
+   - Production recommendations (no dev mode, integrated Raft storage, auto-unseal, audit device, TLS, least-privilege roles).
 
 ---
 
-## Bonus Task — Vault Agent Templates (2.5 pts)
+## Bonus Task — Choose ONE (2 pts)
 
-**Objective:** Use Vault Agent templating to render secrets in custom formats.
+Pick **one** of the two tracks below. Both are worth the full 2 points; do not do both.
+
+### Option A — OpenBao Agent Templating
+
+**Objective:** Render injected secrets in a custom format and wire up reload-on-rotation.
 
 **Requirements:**
 
-1. **Implement Template Annotation**
-   - Use `vault.hashicorp.com/agent-inject-template-*` annotation
-   - Render secrets as a configuration file (e.g., `.env` format or JSON)
-   - Include multiple secrets in a single rendered file
+1. **Custom Template Annotation**
+   - Use `vault.hashicorp.com/agent-inject-template-*` to render `secret/data/lab11/db` as a `.env`-style file containing **multiple** keys.
 
-2. **Dynamic Secret Rotation**
-   - Research how Vault Agent handles secret updates
-   - Document the refresh mechanism
-   - Explain `vault.hashicorp.com/agent-inject-command` annotation
+2. **Reload Mechanism**
+   - Add `vault.hashicorp.com/agent-inject-command-*` to signal your app to reload after a re-render.
+   - Document, in your own words, how the Agent re-renders on rotation.
 
-3. **Named Templates for Environment Variables**
-   - Create a named template in `_helpers.tpl` for common environment variables
-   - Use `include` to reference it in your deployment
-   - Demonstrate DRY principle in Helm charts
+3. **Named Helm Template (DRY)**
+   - Add a named template in `_helpers.tpl` for shared environment variables and `include` it in your Deployment.
+
+**Skeleton (fill in the YOUR-TASK markers):**
+```yaml
+vault.hashicorp.com/agent-inject-template-db: |
+  {{`{{- with secret "secret/data/lab11/db" -}}`}}
+  DB_USER={{`{{ .Data.data.username }}`}}
+  DB_PASS={{`{{ .Data.data.password }}`}}
+  {{`{{- end -}}`}}
+# YOUR-TASK: signal PID 1 to reload after re-render
+vault.hashicorp.com/agent-inject-command-db: "kill -HUP 1"
+```
+> The inner `{{ ... }}` is OpenBao Agent's *consul-template* syntax, escaped with Helm's `` {{` ` `}} `` so Helm doesn't try to evaluate it. This double-templating gotcha is the most common bonus mistake.
+
+**Named template — `_helpers.tpl` skeleton:**
+```yaml
+{{- define "mychart.envVars" -}}
+- name: APP_ENV
+  value: {{ .Values.environment | quote }}   # YOUR-TASK: add more shared vars
+{{- end -}}
+```
+In the Deployment: `{{- include "mychart.envVars" . | nindent 12 }}`
 
 <details>
 <summary>💡 Hints</summary>
 
-**Template Annotation Example:**
-```yaml
-vault.hashicorp.com/agent-inject-template-config: |
-  {{- with secret "secret/data/myapp/config" -}}
-  DATABASE_URL={{ .Data.data.db_url }}
-  API_KEY={{ .Data.data.api_key }}
-  {{- end -}}
-```
-
-**Named Template Pattern:**
-In `_helpers.tpl`:
-```yaml
-{{- define "mychart.envVars" -}}
-- name: APP_ENV
-  value: {{ .Values.environment }}
-- name: LOG_LEVEL
-  value: {{ .Values.logLevel }}
-{{- end -}}
-```
-
-In deployment:
-```yaml
-env:
-  {{- include "mychart.envVars" . | nindent 12 }}
-```
+- `agent-inject-template-*` lets you render any format: `.env`, JSON, YAML, a full app config.
+- `agent-inject-command-*` runs an in-pod command after each re-render so the app reloads.
+- The sidecar polls/renews the lease; when the source secret changes it re-renders the file and runs your command.
 
 **Resources:**
-- [Vault Agent Templates](https://developer.hashicorp.com/vault/docs/platform/k8s/injector/annotations#vault-hashicorp-com-agent-inject-template)
+- [Agent templates annotation](https://developer.hashicorp.com/vault/docs/platform/k8s/injector/annotations#vault-hashicorp-com-agent-inject-template)
 - [Helm Named Templates](https://helm.sh/docs/chart_template_guide/named_templates/)
 
 </details>
 
-**Bonus Documentation:**
-- Template annotation configuration
-- Rendered secret file content
-- Named template implementation
-- Benefits of templating approach
+### Option B — External Secrets Operator (ESO)
+
+**Objective:** Sync a secret from OpenBao into a native K8s `Secret` using ESO — no sidecar; the app reads a normal `Secret`.
+
+**Requirements:**
+
+1. **Install ESO** via its Helm chart (current release) into an `external-secrets` namespace.
+2. **`SecretStore`** pointing at your OpenBao server using the `vault` provider with `kubernetes` auth and `serviceAccountRef: lab11-sa`.
+3. **`ExternalSecret`** that produces a native K8s `Secret` (`target.name: db-creds`) from `secret/lab11/db`, then consume it via `envFrom: secretRef`.
+
+**Skeleton (fill in the YOUR-TASK markers):**
+```yaml
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata: {name: openbao, namespace: lab11}
+spec:
+  provider:
+    vault:                                # ESO's vault provider is compatible with OpenBao
+      server: "http://openbao.openbao:8200"
+      path: "secret"
+      version: "v2"
+      auth:
+        kubernetes:
+          mountPath: "kubernetes"
+          role: "lab11"                   # YOUR-TASK: the OpenBao role from Task 3
+          serviceAccountRef: {name: lab11-sa}
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata: {name: db, namespace: lab11}
+spec:
+  refreshInterval: 1h
+  secretStoreRef: {name: openbao, kind: SecretStore}
+  target: {name: db-creds}                # produces a native K8s Secret
+  data:
+    - secretKey: password                 # YOUR-TASK: add the username key too
+      remoteRef: {key: lab11/db, property: password}
+```
+
+<details>
+<summary>💡 Hints</summary>
+
+```bash
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update
+helm install external-secrets external-secrets/external-secrets \
+  -n external-secrets --create-namespace
+
+# After applying the manifests, ESO creates the native Secret:
+kubectl get secret db-creds -n lab11        # illustrative — should appear within the refresh window
+```
+ESO polls every `refreshInterval`; apps consume the resulting `Secret` with `envFrom: {secretRef: {name: db-creds}}` and never know ESO exists.
+
+**Resources:**
+- [external-secrets.io](https://external-secrets.io/)
+- [ESO Vault/OpenBao provider](https://external-secrets.io/latest/provider/hashicorp-vault/)
+
+</details>
+
+**Bonus Documentation (either option):** add a section to `k8s/SECRETS.md` showing your annotation/manifest config, the rendered/synced result (redact values), and the benefit of the approach you chose.
 
 ---
 
-## Checklist
+## How to Submit
 
-### Task 1 — Kubernetes Secrets Fundamentals (2 pts)
-- [ ] Secret created via kubectl
-- [ ] Secret viewed and decoded
-- [ ] Security implications understood and documented
+1. **Create Branch:**
+   ```bash
+   git checkout -b lab11
+   ```
 
-### Task 2 — Helm-Managed Secrets (3 pts)
-- [ ] `templates/secrets.yaml` created
-- [ ] Secrets defined in `values.yaml`
-- [ ] Deployment updated to consume secrets
-- [ ] Environment variables verified in pod
-- [ ] Resource limits configured
+2. **Commit Work:**
+   ```bash
+   git add k8s/ <your-chart-dir>/
+   git commit -m "feat: implement lab11 secrets management with OpenBao"
+   git push -u origin lab11
+   ```
 
-### Task 3 — HashiCorp Vault Integration (3 pts)
-- [ ] Vault installed via Helm
-- [ ] KV secrets engine configured
-- [ ] Kubernetes auth method enabled
-- [ ] Policy and role created
-- [ ] Vault Agent injection working
-- [ ] Secrets accessible in pod
+3. **Create Pull Requests:**
+   - **PR #1:** `your-fork:lab11` → `course-repo:master`
+   - **PR #2:** `your-fork:lab11` → `your-fork:master`
 
-### Task 4 — Documentation (2 pts)
-- [ ] `k8s/SECRETS.md` complete
-- [ ] All sections documented with evidence
-- [ ] Security analysis included
+4. **Verify:** chart files present, `k8s/SECRETS.md` complete, evidence captured, **no real secret values committed**.
 
-### Bonus — Vault Agent Templates (2.5 pts)
-- [ ] Template annotation implemented
-- [ ] Custom format rendering working
-- [ ] Named templates in `_helpers.tpl`
-- [ ] Documentation complete
+---
+
+## Acceptance Criteria
+
+### Main Tasks (10 points)
+
+**Task 1 — Kubernetes Secrets Fundamentals (2 pts):**
+- [ ] `app-credentials` secret created via `kubectl create secret generic` in namespace `lab11`
+- [ ] Secret viewed in YAML and base64 values decoded
+- [ ] base64-vs-encryption and etcd-at-rest implications documented
+
+**Task 2 — Helm-Managed Secrets (3 pts):**
+- [ ] `templates/secrets.yaml` added to the chart
+- [ ] Placeholder values in `values.yaml` (no real secrets)
+- [ ] Deployment consumes the secret as env vars
+- [ ] Env vars verified present in the pod; values absent from `describe`
+- [ ] Resource `requests`/`limits` configured from values
+
+**Task 3 — OpenBao Integration (3 pts):**
+- [ ] OpenBao 2.5 installed via Helm (server + injector `Running`)
+- [ ] KV-v2 engine enabled; `secret/lab11/db` written with ≥2 keys
+- [ ] Kubernetes auth enabled; read policy + role bound to `lab11-sa`
+- [ ] Agent annotations added; `serviceAccountName: lab11-sa` set
+- [ ] Rendered secret file present at `/vault/secrets/...` in the pod
+
+**Task 4 — Documentation (2 pts):**
+- [ ] `k8s/SECRETS.md` complete with all five sections and real evidence
+- [ ] Security analysis + Vault→OpenBao licensing note included
+
+### Bonus Task (2 points) — one option only
+- [ ] **A:** custom `agent-inject-template-*` renders multi-key file; reload command set; named template in `_helpers.tpl` used, **OR**
+- [ ] **B:** ESO installed; `SecretStore` + `ExternalSecret` produce a native `db-creds` Secret consumed by the app
+- [ ] Bonus documented in `k8s/SECRETS.md`
 
 ---
 
@@ -386,18 +521,18 @@ env:
 
 | Criteria | Points | Description |
 |----------|--------|-------------|
-| **K8s Secrets** | 2 pts | Create, view, decode, understand security |
-| **Helm Secrets** | 3 pts | Template, inject, verify, resource limits |
-| **Vault Integration** | 3 pts | Install, configure, auth, inject |
-| **Documentation** | 2 pts | Complete SECRETS.md with evidence |
-| **Bonus** | 2.5 pts | Templates, named templates, rotation |
-| **Total** | 12.5 pts | 10 pts required + 2.5 pts bonus |
+| **K8s Secrets Fundamentals** | 2 pts | Create, view, decode, security model documented |
+| **Helm-Managed Secrets** | 3 pts | Template, inject as env, verify, resource limits |
+| **OpenBao Integration** | 3 pts | Install, KV-v2, k8s auth + policy + role, Agent injection |
+| **Documentation** | 2 pts | Complete `SECRETS.md` with evidence + security analysis |
+| **Bonus** | 2 pts | Agent templating (A) **or** ESO sync (B) |
+| **Total** | 12 pts | 10 pts required + 2 pts bonus |
 
 **Grading:**
-- **10/10:** Working Vault injection, proper Helm secrets, good documentation
-- **8-9/10:** Vault working, minor issues with docs or config
-- **6-7/10:** K8s secrets work, Vault partially configured
-- **<6/10:** Secrets not properly implemented, missing Vault setup
+- **10/10:** Working OpenBao injection, proper Helm secrets, strong documentation
+- **8–9/10:** OpenBao working, minor docs/config issues
+- **6–7/10:** K8s + Helm secrets work, OpenBao partially configured
+- **<6/10:** Secrets not properly implemented, missing OpenBao setup
 
 ---
 
@@ -407,18 +542,20 @@ env:
 <summary>📚 Official Documentation</summary>
 
 - [Kubernetes Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)
-- [HashiCorp Vault](https://developer.hashicorp.com/vault/docs)
-- [Vault Helm Chart](https://developer.hashicorp.com/vault/docs/platform/k8s/helm)
-- [Vault K8s Injector](https://developer.hashicorp.com/vault/docs/platform/k8s/injector)
+- [Encrypting Data at Rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/)
+- [OpenBao docs](https://openbao.org/docs/)
+- [OpenBao 2.5.0 release notes](https://openbao.org/community/release-notes/2-5-0/)
+- [OpenBao Helm chart](https://github.com/openbao/openbao-helm)
+- [Helm 4 docs](https://helm.sh/docs/)
 
 </details>
 
 <details>
 <summary>🎓 Tutorials</summary>
 
-- [Vault on Kubernetes Deployment Guide](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-raft-deployment-guide)
-- [Injecting Secrets into Kubernetes Pods](https://developer.hashicorp.com/vault/tutorials/kubernetes/kubernetes-sidecar)
-- [Kubernetes Auth Method](https://developer.hashicorp.com/vault/docs/auth/kubernetes)
+- [OpenBao Kubernetes auth method](https://openbao.org/docs/auth/kubernetes/)
+- [Agent annotations reference (OpenBao injector compatible)](https://developer.hashicorp.com/vault/docs/platform/k8s/injector/annotations)
+- [External Secrets Operator quickstart](https://external-secrets.io/latest/introduction/getting-started/)
 
 </details>
 
@@ -426,8 +563,9 @@ env:
 <summary>🔐 Security Best Practices</summary>
 
 - [Kubernetes Secrets Best Practices](https://kubernetes.io/docs/concepts/security/secrets-good-practices/)
-- [Encrypting Data at Rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/)
-- [External Secrets Operator](https://external-secrets.io/) - Alternative approach
+- [External Secrets Operator](https://external-secrets.io/) — controller-synced alternative
+- [getsops.io](https://getsops.io/) and [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets) — GitOps-friendly fallbacks
+- [gitleaks](https://github.com/gitleaks/gitleaks) — scan every commit for leaked secrets
 
 </details>
 
@@ -436,7 +574,7 @@ env:
 ## Looking Ahead
 
 - **Lab 12:** ConfigMaps for non-sensitive configuration and persistent storage
-- **Lab 13:** ArgoCD will deploy your secured Helm charts via GitOps
+- **Lab 13:** ArgoCD deploys your secured Helm charts via GitOps
 - **Lab 14:** Progressive delivery with Argo Rollouts
 - **Lab 15:** StatefulSets with persistent storage
 
@@ -444,4 +582,4 @@ env:
 
 **Good luck!** 🔐
 
-> **Remember:** Never commit real secrets to version control. Use placeholder values and inject real secrets at deployment time. In production, always use an external secret manager like Vault.
+> **Remember:** Never commit real secrets to version control. Use placeholder values and inject real secrets at deploy time. In production, run a real secret manager like **OpenBao** — never dev mode.
