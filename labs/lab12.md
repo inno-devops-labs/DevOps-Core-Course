@@ -22,7 +22,7 @@ In Labs 9–10 you deployed your apps to Kubernetes and packaged them into a Hel
 
 **Tech Stack:** Kubernetes **1.36 "Haru"** | ConfigMaps | PersistentVolumeClaim + StorageClass | Helm **4** | CSI dynamic provisioning
 
-> **Cluster note:** This course standardizes on **Kubernetes 1.36** (released Apr 22 2026; 1.33–1.35 are still in support under the N-2 policy). Run all commands below against a 1.36 cluster. For local work, `kind` and `minikube` ship a default `StorageClass` backed by the **local-path-provisioner** (`rancher.io/local-path`) — RWO only, no snapshots, fine for the visits counter. On a real cloud cluster the same PVC binds to an **AWS EBS** (`ebs.csi.aws.com`) or **GCE PD** (`pd.csi.storage.gke.io`) volume via its CSI driver.
+> **Cluster note:** This course standardizes on **Kubernetes 1.36** via **k3d** (released Apr 22 2026; 1.33–1.35 are still in support under the N-2 policy). Run all commands below against your 1.36 k3d cluster. k3d (k3s) ships a default `StorageClass` backed by the **local-path-provisioner** (`rancher.io/local-path`) out of the box — RWO only, no snapshots, fine for the visits counter. On a real cloud cluster the same PVC binds to an **AWS EBS** (`ebs.csi.aws.com`) or **GCE PD** (`pd.csi.storage.gke.io`) volume via its CSI driver.
 
 ---
 
@@ -270,7 +270,7 @@ spec:
 persistence:
   enabled: true
   size: 100Mi
-  storageClass: ""   # "" => cluster default (local-path on kind/minikube, gp3/pd on cloud)
+  storageClass: ""   # "" => cluster default (local-path on k3d, gp3/pd on cloud)
 ```
 
 **Verify the claim binds (illustrative):**
@@ -279,7 +279,7 @@ kubectl get pvc
 # NAME             STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS
 # mychart-data     Bound    pvc-1a2b...   100Mi      RWO            standard
 ```
-> On `kind`/`minikube` with `WaitForFirstConsumer`, the PVC stays **Pending** until a pod mounts it — that's expected, not an error.
+> On k3d with `WaitForFirstConsumer`, the PVC stays **Pending** until a pod mounts it — that's expected, not an error.
 
 **Persistence test (illustrative):**
 ```bash
@@ -469,7 +469,7 @@ spec:
 
 - [Helm Files Function](https://helm.sh/docs/chart_template_guide/accessing_files/)
 - [Stakater Reloader](https://github.com/stakater/Reloader) — auto-restart on ConfigMap/Secret change
-- [local-path-provisioner](https://github.com/rancher/local-path-provisioner) — default in `kind`/k3d/minikube
+- [local-path-provisioner](https://github.com/rancher/local-path-provisioner) — the default StorageClass in k3d (k3s)
 - [AWS EBS CSI driver](https://github.com/kubernetes-sigs/aws-ebs-csi-driver)
 - [GCE PD CSI driver](https://github.com/kubernetes-sigs/gcp-compute-persistent-disk-csi-driver)
 

@@ -246,7 +246,7 @@ npx wrangler deploy                          # global rollout in seconds
 | Memory floor | container request (e.g. 128 Mi) | 128 MB | ~3 MB |
 | Global by default? | no — pick region(s) | no — pick region | **yes — all POPs** |
 | Pricing model | nodes 24/7 | per-request + GB-s | per-request, no per-region |
-| Free tier | minikube only | 1M req/mo | **100k req/day** |
+| Free tier | local (k3d) only | 1M req/mo | **100k req/day** |
 | Idle cost at 0 traffic | full node bill | ~$0 | ~$0 |
 | Long-running tasks | yes (any) | up to 15 min | 30 s wall-clock (paid; CPU 50 ms–5 min) |
 | Native binaries / Python wheels | yes | yes | limited (Python via Pyodide, no C extensions) |

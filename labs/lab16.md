@@ -24,7 +24,7 @@ You'll also learn **init containers**: short-lived containers that run *to compl
 
 **Tech Stack:** kube-prometheus-stack (Helm) | Prometheus Operator | Prometheus 3.x | Grafana 13 | Alertmanager | kube-state-metrics | node-exporter | Init Containers
 
-**Tested Versions:** Kubernetes **1.36 "Haru"** (minikube/kind) | Helm 4.1+ (Helm 3 also works) | kube-prometheus-stack chart **~v85** (May 2026) | Prometheus 3.x | Grafana 13
+**Tested Versions:** Kubernetes **1.36 "Haru"** (k3d) | Helm 4.1+ (Helm 3 also works) | kube-prometheus-stack chart **~v85** (May 2026) | Prometheus 3.x | Grafana 13
 
 > 📦 **Course plumbing recap:** `app-python` is **your** app (built in Labs 1–12). `echo` (`ghcr.io/inno-devops-labs/echo:v1`, container port **8081**) and `health` (`ghcr.io/inno-devops-labs/health:v1`, container port **8082**) are pre-built course services — **you do not build them**. All three expose `GET /metrics` in Prometheus text format, which is exactly what makes them scrape targets here.
 

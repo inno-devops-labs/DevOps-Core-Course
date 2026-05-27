@@ -341,7 +341,7 @@ flowchart LR
   CSI -->|NVMe| OE[⚡ OpenEBS Mayastor]
 ```
 
-> 🔧 **Course tie-in:** Lab 15 uses whatever default `StorageClass` your minikube/kind cluster ships with (it's a hostPath provisioner). The principles transfer; production swaps in EBS or Rook.
+> 🔧 **Course tie-in:** Lab 15 uses k3d's default `StorageClass` (the local-path-provisioner). The principles transfer; production swaps in EBS or Rook.
 
 ---
 

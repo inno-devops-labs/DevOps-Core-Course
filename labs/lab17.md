@@ -321,7 +321,7 @@ npx wrangler rollback <version-id>
 - Cold start: K8s pod = seconds (scheduling + image pull); Workers = **<5 ms** (V8 isolate).
 - Memory floor: K8s = container request (e.g. 128 Mi); Workers ≈ 3 MB/isolate.
 - Global: K8s = pick region(s); Workers = **all 330+ POPs by default**.
-- Free tier: K8s = minikube only; Workers = **100k requests/day**, 10 ms CPU (Paid $5/mo = 10M req + 50 ms CPU, burstable).
+- Free tier: K8s = local (k3d) only; Workers = **100k requests/day**, 10 ms CPU (Paid $5/mo = 10M req + 50 ms CPU, burstable).
 - Long-running/native: K8s = anything; Workers = short CPU budget, no native binaries, no filesystem.
 
 **Resources:**

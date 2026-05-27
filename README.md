@@ -156,7 +156,7 @@ The top-10 students in each window split that window's small point pool (≈1% e
 | Logs | Loki + Grafana Alloy | 3.7 / 1.16 |
 | Metrics | Prometheus + Grafana | 3.x / 13 |
 | Orchestration | Kubernetes | 1.36 "Haru" |
-| Local cluster | minikube / kind | 1.34 / 0.25 |
+| Local cluster | k3d (k3s-in-Docker) | 5.7 |
 | Packaging | Helm | 4.1 |
 | Secrets | OpenBao | 2.5 |
 | GitOps | ArgoCD | 3.4 |

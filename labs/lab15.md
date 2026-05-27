@@ -25,7 +25,7 @@ In this lab you convert your Lab 12 Helm chart from a `Deployment` to a `Statefu
 
 **Tech Stack:** Kubernetes **1.36 "Haru"** | Helm **4** | StatefulSet (`apps/v1`) | Headless Service | `volumeClaimTemplates` | PersistentVolumes
 
-> **Cluster note:** A local `minikube` or `kind` cluster on K8s 1.36 ships a default `StorageClass` (a hostPath provisioner) that dynamically provisions PVs. That is all this lab needs — production swaps in an EBS / GCE PD CSI driver, or a storage layer like Rook-Ceph or Longhorn. The principles transfer unchanged.
+> **Cluster note:** Your k3d cluster on K8s 1.36 ships a default `StorageClass` (the local-path-provisioner) that dynamically provisions PVs. That is all this lab needs — production swaps in an EBS / GCE PD CSI driver, or a storage layer like Rook-Ceph or Longhorn. The principles transfer unchanged.
 
 ---
 

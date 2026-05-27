@@ -5,7 +5,7 @@
 * 🌍 **Lectures 2 and 7-8 gave you a Docker image, logs, and metrics.** Now we orchestrate.
 * 🚢 **Kubernetes (K8s)** = the de-facto container orchestrator, born at Google in 2014, runs your image at scale, self-heals, rolls forward and back
 * 🎯 This lecture: the mental model + just enough API to deploy your Lab 2 image as a real *cloud-native* workload
-* 🔗 **Tie-in to Lab 9:** you'll spin up a local cluster (minikube or kind), deploy two pods (your Python service + a provided Go echo plumbing service), and meet them through `Service` and kube-DNS
+* 🔗 **Tie-in to Lab 9:** you'll spin up a local cluster with **k3d** (k3s-in-Docker), deploy two pods (your Python service + a provided Go echo plumbing service), and meet them through `Service` and kube-DNS
 
 ```mermaid
 flowchart LR
@@ -28,7 +28,7 @@ flowchart LR
 | 5 | 🌐 Reason about kube-DNS and inter-service networking (the *whole point* of running 2 pods) |
 | 6 | 🩺 Configure liveness, readiness, and startup probes |
 
-**Tech stack pinned for May 2026:** Kubernetes **1.36** "Haru" (released Apr 22 2026), **kubectl 1.36**, **minikube 1.34+** *or* **kind 0.25+** *or* **k3d 5.7+**, manifests in plain YAML (Helm comes next lecture).
+**Tech stack pinned for May 2026:** Kubernetes **1.36** "Haru" (released Apr 22 2026), **kubectl 1.36**, **k3d 5.7+** (k3s-in-Docker — the course's standard local cluster), manifests in plain YAML (Helm comes next lecture).
 
 ---
 
@@ -300,19 +300,24 @@ kubectl top pod                             # 📊 live CPU/mem (needs metrics-s
 
 ---
 
-## 📍 Slide 13 – 💻 Local Clusters: minikube vs kind vs k3d
+## 📍 Slide 13 – 💻 Local Clusters with k3d
 
-Production K8s runs on managed services (EKS, GKE, AKS). For learning and CI, you need a single-node cluster on your laptop.
+Production K8s runs on managed services (EKS, GKE, AKS). For learning and CI you need a cluster on your laptop. **This course standardizes on k3d** — it wraps **k3s** (Rancher's lightweight, CNCF-certified Kubernetes) inside Docker containers.
 
-| Tool | Approach | Pros | Cons |
-|------|---------|------|------|
-| 🪨 **minikube** (v1.34+) | Runs K8s in a VM or container | Most features (addons, dashboard, ingress one command), works everywhere | Heavier (Docker Desktop or VM driver) |
-| 🌀 **kind** (v0.25+) | "K8s IN Docker" — nodes are containers | Fast startup, lightweight, multi-node easy | Networking quirks; LoadBalancer needs `metallb` shim |
-| ⚡ **k3d** (v5.7+) | Wraps k3s (slim K8s) in Docker | Smallest footprint, fastest | Some 1.x APIs trimmed; not 100% upstream K8s |
+```bash
+k3d cluster create devops \
+  --image rancher/k3s:v1.36.1-k3s1 \
+  --agents 2 \
+  -p "8080:80@loadbalancer" -p "8443:443@loadbalancer"
+```
 
-**Lab 9 lets you pick minikube or kind.** Pick one and stay with it for the rest of the semester. SRE-Intro uses k3d if you want to compare.
+Why k3d over the alternatives:
+* ⚡ **Fastest + lightest** — a cluster comes up in seconds; far smaller footprint than minikube's VM
+* 🧱 **Free multi-node** — `--agents N` adds worker containers, so pod scheduling across nodes is observable
+* 🔋 **Batteries included** — built-in **Traefik** ingress and **klipper** LoadBalancer mean `Ingress` and `type: LoadBalancer` work with no extra install
+* 🔁 **Throwaway** — `k3d cluster delete devops` and start fresh
 
-> 💡 **Don't use Docker Desktop's bundled K8s.** It silently lags upstream by months and lacks addons. Install minikube or kind explicitly.
+> 💡 **Tradeoff to know:** k3d runs k3s, which trims some legacy APIs and ships **Traefik** (not ingress-nginx) plus klipper-lb. For everything in this course those differences are invisible; the one place it shows up is `ingressClassName: traefik`. Don't use Docker Desktop's bundled K8s — it lags upstream.
 
 ---
 
@@ -438,7 +443,7 @@ The N-2 support policy means clusters running **1.34, 1.35, 1.36** are in standa
 4. 🌐 **Service + kube-DNS is the killer feature.** It only makes sense once you have ≥ 2 services — which is exactly what Lab 9 sets up.
 5. 🩺 **Probes ≠ interchangeable.** Liveness restarts; readiness gates traffic; startup buys warmup time.
 6. ⚖️ **Always set requests; be surgical with limits.** CPU throttling is silent and painful.
-7. 🪨 **For local dev, pick minikube *or* kind and stick with it.**
+7. 🪨 **For local dev this course uses k3d** — k3s-in-Docker: fast, multi-node, batteries included.
 
 > 💡 **The pattern:** YAML → API → etcd → controllers → kubelet → containerd → your container. Every K8s mystery resolves to that chain.
 
@@ -468,7 +473,7 @@ The N-2 support policy means clusters running **1.34, 1.35, 1.36** are in standa
 * 🆕 Helm **4.1** — what changed vs Helm 3, and why we use 4 in Lab 10
 
 **🔬 Lab 9 deliverables:**
-* Stand up minikube or kind
+* Stand up a k3d cluster (1 server + 2 agents)
 * Deploy the Lab 2 Python image as a Deployment
 * Add the provided Go echo service (plumbing)
 * Wire both with `Service` + verify `curl http://echo:80/ping` from inside the Python pod

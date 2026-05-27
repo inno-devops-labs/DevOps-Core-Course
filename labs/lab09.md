@@ -25,7 +25,7 @@ The payoff task is **cross-service networking**: from inside the `web` pod you w
 - Service discovery via kube-DNS and inter-pod networking
 - Health checks (liveness / readiness probes), resource requests/limits, scaling and rolling updates
 
-**Tech Stack:** Kubernetes **1.36 "Haru"** | kubectl 1.36 | minikube 1.34+ **or** kind 0.25+ | plain YAML manifests
+**Tech Stack:** Kubernetes **1.36 "Haru"** | kubectl 1.36 | **k3d 5.7+** (k3s-in-Docker) | plain YAML manifests
 
 > 📚 This lab pairs with **Lecture 9 — Kubernetes Fundamentals**. Re-read slides 7–11 (Pod, Deployment, Service, kube-DNS, labels) before you start.
 
@@ -37,63 +37,63 @@ Main tasks total **10 pts**. The bonus adds **2 pts**.
 
 ### Task 1 — Local Kubernetes Setup (2 pts)
 
-**Objective:** Set up a local single-node Kubernetes cluster running version 1.36 and confirm it is healthy.
+**Objective:** Set up a local multi-node Kubernetes cluster running version 1.36 with **k3d** and confirm it is healthy.
 
 **Requirements:**
 
 1. **Install tools**
    - Install `kubectl` (pin **v1.36** to match the cluster)
-   - Install **one** local cluster tool — **minikube (1.34+)** *or* **kind (0.25+)**. Pick one and stay with it for the rest of the semester.
+   - Install **k3d (5.7+)** — it runs k3s (lightweight, CNCF-certified Kubernetes) inside Docker containers. Requires Docker.
 
-2. **Start a 1.36 cluster**
-   - minikube: `minikube start --kubernetes-version=v1.36.0`
-   - kind: create a cluster with the K8s 1.36 node image (e.g. `kindest/node:v1.36.0`)
+2. **Create a 1.36 cluster**
+   - One server + two agents, with the loadbalancer ports mapped to your host (you'll need them for the Ingress bonus).
 
 3. **Verify the cluster**
    - Run `kubectl version`, `kubectl cluster-info`, and `kubectl get nodes -o wide`
-   - Confirm the server version reports `v1.36.x`
+   - Confirm the server version reports `v1.36.x` and you see **3 nodes** (1 server + 2 agents)
 
 <details>
 <summary>💡 Cluster Bring-Up Commands</summary>
 
-**minikube**
 ```bash
-minikube start --kubernetes-version=v1.36.0
-kubectl get nodes
+k3d cluster create devops \
+  --image rancher/k3s:v1.36.1-k3s1 \
+  --agents 2 \
+  -p "8080:80@loadbalancer" \
+  -p "8443:443@loadbalancer"
+# k3d sets your kube-context to k3d-devops automatically
+kubectl config use-context k3d-devops
 ```
 
-**kind**
-```bash
-kind create cluster --name devops --image kindest/node:v1.36.0
-kubectl cluster-info --context kind-devops
-```
-
-> Check the exact patch tag available for your tool — `kind` and `minikube` ship node images shortly after each upstream release. Use the newest `v1.36.x` your tool offers.
+> k3s image tags append `-k3s1` to the Kubernetes version (e.g. `v1.36.1-k3s1`). Use the newest `v1.36.x-k3s1` tag on the `rancher/k3s` repo.
 
 **Sanity checks (output below is illustrative):**
 ```bash
 kubectl get nodes -o wide
-# NAME       STATUS   ROLES           AGE   VERSION
-# devops     Ready    control-plane   30s   v1.36.0   ...
+# NAME                 STATUS   ROLES                  AGE   VERSION
+# k3d-devops-server-0  Ready    control-plane,master   30s   v1.36.1+k3s1  ...
+# k3d-devops-agent-0   Ready    <none>                 25s   v1.36.1+k3s1  ...
+# k3d-devops-agent-1   Ready    <none>                 25s   v1.36.1+k3s1  ...
 ```
+
+Tear it down any time with `k3d cluster delete devops`.
 
 </details>
 
 <details>
-<summary>💡 Why a Local Cluster (and which one)?</summary>
+<summary>💡 Why k3d?</summary>
 
-| Tool | Approach | Good for |
-|------|----------|----------|
-| **minikube** | K8s in a VM or Docker container | Most batteries included — `addons enable ingress` is one command (handy for the bonus) |
-| **kind** | "K8s IN Docker" — nodes are containers | Fast startup, lightweight, the standard for CI |
+k3d wraps **k3s** (Rancher's lightweight Kubernetes) in Docker containers. You get:
+- **Fast, throwaway clusters** — create or delete in seconds
+- **Free multi-node** — `--agents N` adds worker containers, so you can watch pods schedule across nodes
+- **Batteries included** — a built-in **Traefik** ingress controller and **klipper** LoadBalancer, so `type: LoadBalancer` and `Ingress` work with no extra install (you'll use both in the bonus)
 
-Do **not** use Docker Desktop's bundled Kubernetes — it lags upstream and lacks the addons you'll need.
+Do **not** use Docker Desktop's bundled Kubernetes — it lags upstream.
 
 </details>
 
 **Documentation required:**
-- Output of `kubectl version` and `kubectl get nodes -o wide` (server version must be 1.36.x)
-- One or two sentences on why you chose minikube or kind
+- Output of `kubectl version` and `kubectl get nodes -o wide` (server version must be 1.36.x, 3 nodes total)
 
 ---
 
@@ -180,6 +180,12 @@ spec:
 <details>
 <summary>💡 Apply, Inspect, Reach It</summary>
 
+# If your Lab 2 image is pushed to a public registry (Docker Hub / GHCR), k3d pulls it
+# normally. If you only built it locally, import it into the cluster's containerd first:
+```bash
+k3d image import <your-image>:tag --cluster devops   # only needed for locally-built images
+```
+
 ```bash
 kubectl apply -f k8s/web-deployment.yaml
 kubectl apply -f k8s/web-service.yaml
@@ -190,11 +196,8 @@ kubectl get svc web
 kubectl get endpoints web        # should list 3 pod IPs once readiness passes
 ```
 
-Reach the service from your laptop:
+Reach the service from your laptop with `port-forward` (works for any Service type):
 ```bash
-# minikube
-minikube service web --url
-# kind (or anywhere)
 kubectl port-forward svc/web 8080:80
 curl -s localhost:8080/health
 ```
@@ -418,25 +421,22 @@ You already have two Services (`web` and `echo`). Route to them through a single
 
 **Requirements:**
 
-1. **Ingress controller** — enable/install ingress-nginx:
-   - minikube: `minikube addons enable ingress`
-   - kind: apply the kind provider manifest for ingress-nginx
-   Verify the controller pod is Running.
+1. **Ingress controller** — none to install. k3d ships **Traefik** built in, already reachable on the `8080`/`8443` host ports you mapped at `k3d cluster create`. Confirm it's running: `kubectl get pods -n kube-system | grep traefik`.
 
-2. **Self-signed TLS cert + Secret** for a local host such as `devops.local`:
+2. **Self-signed TLS cert + Secret** covering the two hostnames you'll route (the `*.localhost` TLD resolves to 127.0.0.1 automatically — no `/etc/hosts` edits needed):
    ```bash
    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
      -keyout tls.key -out tls.crt \
-     -subj "/CN=devops.local/O=devops.local"
-   kubectl create secret tls devops-tls --key tls.key --cert tls.crt
+     -subj "/CN=web.localhost" -addext "subjectAltName=DNS:web.localhost,DNS:echo.localhost"
+   kubectl create secret tls apps-tls --key tls.key --cert tls.crt
    ```
 
-3. **`k8s/ingress.yaml`** — path-based routing over TLS:
-   - `/` (or `/web`) → `web` Service
-   - `/echo` → `echo` Service
-   - `tls:` block referencing the `devops-tls` Secret
+3. **`k8s/ingress.yaml`** — host-based routing over TLS through Traefik:
+   - `web.localhost` → `web` Service
+   - `echo.localhost` → `echo` Service
+   - `ingressClassName: traefik` and a `tls:` block referencing the `apps-tls` Secret
 
-4. **Verify** with `curl -k https://devops.local/...` (add the cluster IP for `devops.local` to `/etc/hosts`).
+4. **Verify** over the mapped HTTPS port: `curl -k https://echo.localhost:8443/ping` → `pong`.
 
 <details>
 <summary>💡 Ingress Skeleton</summary>
@@ -446,42 +446,46 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: apps-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
+  ingressClassName: traefik        # k3d's built-in controller
   tls:
-    - hosts: [devops.local]
-      secretName: devops-tls
+    - hosts: [web.localhost, echo.localhost]
+      secretName: apps-tls
   rules:
-    - host: devops.local
+    - host: web.localhost
       http:
         paths:
-          - path: /echo
-            pathType: Prefix
-            backend:
-              service:
-                name: echo
-                port: {number: 80}
           - path: /
             pathType: Prefix
             backend:
               service:
                 name: web
                 port: {number: 80}
+    - host: echo.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: echo
+                port: {number: 80}
 ```
+
+Host-based routing (one Service per hostname) avoids path-rewrite middleware, so the request path reaches each backend unchanged — `https://echo.localhost:8443/ping` hits echo's `/ping`.
 
 ```bash
-# /etc/hosts:  <minikube-ip or 127.0.0.1>  devops.local
-curl -k https://devops.local/echo/ping   # -> pong (through Ingress + TLS)
+curl -k https://echo.localhost:8443/ping   # -> pong (through Traefik + TLS)
+curl -k https://web.localhost:8443/health  # -> your app's health response
 ```
 
-> ⚠️ ingress-nginx is winding down upstream; the **Gateway API** is the future of K8s traffic management. For this lab ingress-nginx is fine and the most documented. You'll meet Gateway API later in the program.
+> ⚠️ k3d's bundled controller is **Traefik**, not ingress-nginx — that's why there's no controller to install and why we use `ingressClassName: traefik`. The **Gateway API** is the future of K8s traffic management; you'll meet it later in the program.
 
 </details>
 
 **Documentation required:**
-- Ingress controller pod Running
-- `k8s/ingress.yaml` with TLS + path routing
+- `kubectl get pods -n kube-system | grep traefik` showing the controller Running
+- `k8s/ingress.yaml` with TLS + host-based routing through Traefik
 - `curl -k https://devops.local/...` output for both routes
 - One or two sentences on what Ingress buys you over a raw NodePort Service
 
@@ -512,7 +516,7 @@ curl -k https://devops.local/echo/ping   # -> pong (through Ingress + TLS)
 ## Acceptance Criteria
 
 ### Task 1 — Local Kubernetes Setup (2 pts)
-- [ ] `kubectl` and one local cluster tool (minikube/kind) installed
+- [ ] `kubectl` and `k3d` installed; `k3d cluster create` ran with the loadbalancer port maps
 - [ ] Cluster running on **Kubernetes 1.36** (server version verified)
 - [ ] `kubectl get nodes -o wide` output captured
 - [ ] Chosen tool justified (1–2 sentences)
@@ -588,8 +592,8 @@ curl -k https://devops.local/echo/ping   # -> pong (through Ingress + TLS)
 <summary>🛠️ Tools</summary>
 
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) — Kubernetes CLI
-- [minikube](https://minikube.sigs.k8s.io/docs/) — local Kubernetes
-- [kind](https://kind.sigs.k8s.io/) — Kubernetes in Docker
+- [k3d](https://k3d.io/) — k3s in Docker (local Kubernetes)
+- [k3s](https://docs.k3s.io/) — the lightweight Kubernetes k3d runs
 - [k9s](https://k9scli.io/) — terminal UI for Kubernetes
 - [kubectx/kubens](https://github.com/ahmetb/kubectx) — context & namespace switcher
 
@@ -608,7 +612,7 @@ curl -k https://devops.local/echo/ping   # -> pong (through Ingress + TLS)
 <summary>🌐 Ingress (Bonus)</summary>
 
 - [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
-- [Set up Ingress on Minikube](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
+- [k3d Ingress & exposing services](https://k3d.io/stable/usage/exposing_services/)
 - [Gateway API](https://gateway-api.sigs.k8s.io/) — next-generation traffic management
 
 </details>

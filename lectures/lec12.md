@@ -399,7 +399,7 @@ spec:
 | `rancher.io/local-path` | host disk | RWO | ❌ | ❌ | the default in `kind`/k3d/Rancher |
 
 * 🔌 **CSI (Container Storage Interface)** went GA in K8s 1.13. Every modern storage driver is CSI. In-tree drivers (`kubernetes.io/aws-ebs`, etc.) are all migrated or deprecated.
-* 🧪 **For Lab 12**, you'll use `local-path-provisioner` (default in `kind`/`minikube`). It's RWO-only, no snapshots — fine for the visits counter; not what you'd run in prod.
+* 🧪 **For Lab 12**, you'll use `local-path-provisioner` (k3d's default StorageClass). It's RWO-only, no snapshots — fine for the visits counter; not what you'd run in prod.
 
 ---
 
