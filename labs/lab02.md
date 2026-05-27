@@ -226,6 +226,10 @@ trivy image --severity HIGH,CRITICAL --exit-code 1 devops-info-service:lab02-mul
 echo "exit code: $?"
 ```
 
+> 🌐 **If the vulnerability-DB download fails** with a `ghcr.io ... DENIED` error (common on
+> rate-limited or restricted networks), point Trivy at a mirror:
+> `trivy image --db-repository public.ecr.aws/aquasecurity/trivy-db:2 <image>`.
+
 > A 2024 Snyk scan found ~80% of public images carry at least one HIGH-severity CVE — so finding some is normal. The goal is to **understand and reduce** them, not pretend they don't exist.
 
 **Requirements:**
