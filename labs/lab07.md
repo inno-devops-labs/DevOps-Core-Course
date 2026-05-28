@@ -185,7 +185,7 @@ The stack has **four** services. The image tags + ports are given (so versions a
 | `loki` | `grafana/loki:3.7.0` | `3100:3100` | Storage + query engine |
 | `alloy` | `grafana/alloy:v1.16.1` | `12345:12345` (live UI) | Collector — reads docker.sock, pushes to Loki |
 | `grafana` | `grafana/grafana:13.0.1` | `3000:3000` | Dashboards + Explore UI |
-| `app` | your Lab 2 image | `8000:8000` | Source of logs — Lab 1 service with JSON output (Task 2) |
+| `app` | your Lab 2 image | `8080:8080` | Source of logs — Lab 1 service with JSON output (Task 2) |
 
 `YOUR TASK`: write the compose file. Specifically you must figure out:
 
@@ -238,7 +238,7 @@ services:
   app:
     image: ___                                # YOUR TASK: your Lab 2 image (or `build:` block)
     ports:
-      - "8000:8000"
+      - "8080:8080"
     labels:
       ___: ___                                # YOUR TASK: opt into Alloy collection
       ___: ___                                # YOUR TASK: the `app` Loki label (matches §1.3 rule)
@@ -346,10 +346,10 @@ You already declared the `app` service in §1.4. Two labels are non-negotiable:
 
 ```bash
 # Generate at least 20 successful + 5 not-found + 1 error event
-for i in $(seq 1 20); do curl -s http://localhost:8000/ > /dev/null; done
-for i in $(seq 1 5);  do curl -s http://localhost:8000/nope > /dev/null; done
+for i in $(seq 1 20); do curl -s http://localhost:8080/ > /dev/null; done
+for i in $(seq 1 5);  do curl -s http://localhost:8080/nope > /dev/null; done
 # Force an error: hit an endpoint that raises (add a /boom route or trip a 500 deliberately)
-curl -s http://localhost:8000/boom > /dev/null
+curl -s http://localhost:8080/boom > /dev/null
 ```
 
 ### 2.4 — Write the LogQL queries (YOUR TASK)

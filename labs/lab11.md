@@ -239,13 +239,20 @@ bao status                                       # Sealed false, Storage Type in
 Skeleton:
 
 ```bash
-bao secrets enable -path=___ kv-v2              # YOUR-TASK: pick the mount path (convention: 'secret')
+# YOUR TASK lines below:
+#   -path=:  pick the mount path (convention: 'secret')
+#   put arg: the mount path you chose + a logical name (e.g. secret/lab11/db)
+#   first  field=value: a username (use a literal — never a real password)
+#   second field=value: a password (literal, not from env)
+#   get:     read back one field by name
 
-bao kv put ___/lab11/db \                       # YOUR-TASK: the mount path you chose, then a logical name
-  ___=app \                                     # YOUR-TASK: a field name
-  ___=$(YOUR-PASSWORD)                          # YOUR-TASK: the matching value (use a literal, not a real password)
+bao secrets enable -path=___ kv-v2
 
-bao kv get -field=___ ___/lab11/db              # YOUR-TASK: read back one field by name
+bao kv put ___/lab11/db \
+  ___=app \
+  ___=hunter2
+
+bao kv get -field=___ ___/lab11/db
 ```
 
 > ⚠️ **KV-v1 vs KV-v2 path gotcha.** `bao kv put secret/foo k=v` writes the *logical* path `secret/foo`, but the **API** path under KV-v2 is `secret/data/foo` (with a `data/` segment inserted). Policies and the Agent injector reference the API path — so an HCL rule must say `path "secret/data/lab11/db"`, not `path "secret/lab11/db"`. Forgetting this is the #1 way a "correct" policy denies a read.

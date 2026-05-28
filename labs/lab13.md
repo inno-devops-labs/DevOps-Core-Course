@@ -102,11 +102,14 @@ In `docs/LAB13.md`, write the **two** version numbers you chose and a sentence e
 Then install — fill in the chart version you picked:
 
 ```bash
+# YOUR TASK below:
+#   --version: the chart version you picked in 1.1
+#   --values:  path to your overrides file (e.g. k8s/argocd/install/argocd-values.yaml)
 kubectl create namespace argocd
 helm install argocd argo/argo-cd \
   --namespace argocd \
-  --version YOUR-TASK \                          # the chart version from 1.1
-  --values YOUR-TASK                             # path to your overrides file
+  --version YOUR-TASK \
+  --values YOUR-TASK
 # wait for the server with `kubectl rollout status deploy/argocd-server -n argocd --timeout=180s`
 ```
 

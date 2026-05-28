@@ -98,11 +98,16 @@ In `docs/LAB09.md` answer in 2–3 sentences each:
 `YOUR TASK`: bring up a cluster named `devops` with **1 server + 2 agents** on Kubernetes **1.36.1**, mapping the LoadBalancer ports `80→8080` and `443→8443` on your host so the bonus Ingress is reachable.
 
 ```bash
+# YOUR TASK lines below:
+#   --image:  which k3s tag = K8s 1.36.1?  (see hint after the block)
+#   --agents: how many agents for a multi-node cluster?
+#   first -p: host port that maps cluster :80
+#   second -p: host port that maps cluster :443
 k3d cluster create devops \
-  --image rancher/k3s:___-k3s1 \      # YOUR TASK: which k3s image tag = K8s 1.36.1?
-  --agents ___ \                      # YOUR TASK: how many agents for a multi-node cluster?
-  -p "___:80@loadbalancer" \          # YOUR TASK: host port that maps cluster :80
-  -p "___:443@loadbalancer"           # YOUR TASK: host port that maps cluster :443
+  --image rancher/k3s:___-k3s1 \
+  --agents ___ \
+  -p "___:80@loadbalancer" \
+  -p "___:443@loadbalancer"
 ```
 
 > 💡 k3s image tags **append** `-k3s1` to the upstream K8s version. Pick the newest `v1.36.x-k3s1` tag from [`rancher/k3s` on Docker Hub](https://hub.docker.com/r/rancher/k3s/tags).

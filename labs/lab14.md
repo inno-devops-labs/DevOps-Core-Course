@@ -378,7 +378,7 @@ kubectl get endpoints app-python                      # active flipped back to v
 
 **Objective:** Add an `AnalysisTemplate` that queries Prometheus and **auto-aborts** the canary when the metric regresses — no human intervention.
 
-The lecture (slides 10–11) showed the *shape* of an AnalysisTemplate. You write the actual query, success condition, failure limit, and cadence. Use the metrics you instrumented in **Lab 8** — `http_requests_total{status}` is the canonical RED-error-rate substrate.
+The lecture (slides 10–11) showed the *shape* of an AnalysisTemplate. You write the actual query, success condition, failure limit, and cadence. Use the metrics you instrumented in **Lab 8** — `app_requests_total{status}` is the canonical RED-error-rate substrate.
 
 ### Bonus.1 — Write the AnalysisTemplate
 
@@ -417,7 +417,7 @@ spec:
             ___                                    # YOUR TASK: PromQL for the
                                                    # "fraction of non-5xx requests" metric over a 2-minute window.
                                                    #
-                                                   # Use the Lab 8 metric: http_requests_total{status="..."}
+                                                   # Use the Lab 8 metric: app_requests_total{status="..."}
                                                    # The shape is:
                                                    #   sum(rate(<good>[2m])) / sum(rate(<all>[2m]))
                                                    # — see slide 10 for the literal template.
@@ -545,7 +545,7 @@ PR checklist:
 
 ### Bonus — Metric-driven auto-abort (2 pts)
 - ✅ `AnalysisTemplate` written from scratch — query, condition, interval, count, failureLimit all yours
-- ✅ Query uses the Lab 8 `http_requests_total` metric with `or on() vector(0)` guard
+- ✅ Query uses the Lab 8 `app_requests_total` metric with `or on() vector(0)` guard
 - ✅ Auto-abort demonstrated on a deliberately broken image — captures show `Degraded` with `RolloutAborted` from an analysis failure (no manual `abort`)
 - ✅ Option A or B extension shipped — second template OR second metric, with its own `AnalysisRun` evidence
 
@@ -598,7 +598,7 @@ PR checklist:
 
 - **`kubectl rollout restart deployment/app-python` does NOT work on a Rollout.** The core `kubectl rollout` subcommands target `Deployment` / `DaemonSet` / `StatefulSet`. The `Rollout` CRD is owned by Argo Rollouts, not the K8s rollout API. Use `kubectl argo rollouts restart <name>` instead — same verb, different binary. Symptom: `error: deployments.apps "app-python" not found` even though `kubectl get rollouts` shows it.
 
-- **AnalysisTemplate crashes on `result[0]` with NaN when there's no traffic.** When the canary pod has just started, no requests have hit it → `sum(rate(http_requests_total{...}[2m]))` returns an **empty vector**, not 0. The `successCondition` expression `result[0] >= 0.99` then errors out and the AnalysisRun shows `Inconclusive` or `Error` instead of evaluating. Fix: append `or on() vector(0)` to the PromQL — Prometheus then returns `0` for the empty case and the expression evaluates cleanly. This is the single most common bonus-task failure.
+- **AnalysisTemplate crashes on `result[0]` with NaN when there's no traffic.** When the canary pod has just started, no requests have hit it → `sum(rate(app_requests_total{...}[2m]))` returns an **empty vector**, not 0. The `successCondition` expression `result[0] >= 0.99` then errors out and the AnalysisRun shows `Inconclusive` or `Error` instead of evaluating. Fix: append `or on() vector(0)` to the PromQL — Prometheus then returns `0` for the empty case and the expression evaluates cleanly. This is the single most common bonus-task failure.
 
 - **`scaleDownDelaySeconds` is a foot-gun for traffic-still-on-preview surprises.** Setting it too high (e.g. `3600`) means every blue-green cutover leaves the **old** ReplicaSet running for an hour — burning compute and confusing anyone who sees stale pods. Setting it too low (e.g. `30`) means by the time you notice a v2 bug in production, there's no v1 ReplicaSet left to `undo` to. 300 seconds (5 min) is a sane default; document your choice.
 
