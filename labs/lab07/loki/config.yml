@@ -1,0 +1,35 @@
+# Loki 3.7 — single-binary, schema v13, 7-day retention.
+# Lab 7 plumbing: copy this file (unchanged) into monitoring/loki/config.yml.
+# You will EXPLAIN the choices in docs/LAB07.md §3 — not modify them.
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore: { store: inmemory }
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb               # replaces the old boltdb-shipper
+      object_store: filesystem  # swap to s3/gcs/minio in production
+      schema: v13               # latest stable schema
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  retention_period: 168h        # 7 days
+
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true       # REQUIRED — without this, retention is silently ignored
+  delete_request_store: filesystem
