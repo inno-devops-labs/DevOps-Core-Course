@@ -40,7 +40,7 @@ You will:
 **You should have from previous labs:**
 
 - A k3d cluster on Kubernetes 1.36 (Lab 9).
-- Your `app-python` Helm chart from Labs 10–13 deploying `app-python` (your code, port 5000, `/metrics` from Lab 8) plus the course plumbing `echo` (`ghcr.io/inno-devops-labs/echo:v1`, port 8081) and `health` (`ghcr.io/inno-devops-labs/health:v1`, port 8082). All three expose `GET /metrics` in Prometheus text format.
+- Your `lab10-app` Helm chart from Labs 10–13 deploying `app-python` (your code, port **8080**, `/metrics` from Lab 8) plus the course plumbing `echo` (`ghcr.io/inno-devops-labs/echo:v1`, port 8081) and `health` (`ghcr.io/inno-devops-labs/health:v1`, port 8082). All three expose `GET /metrics` in Prometheus text format. Throughout this lab, "app-python" refers to the conceptual *service* (the Python app you wrote); the actual K8s Service name from your chart will be `lab10-app-web` (chart fullname `lab10-app` + `-web` component suffix per Lab 10). Your ServiceMonitor will select by the **label** `app.kubernetes.io/name=lab10-app`, which is helper-independent of the Service name.
 - `kubectl`, `helm` v4.1.x, working `port-forward`.
 
 **This lab adds:**
@@ -471,6 +471,10 @@ Less hand-holding here.
    ports:
      - { name: http, port: ___, targetPort: ___ }      # YOUR TASK: existing app port
      - { name: ___, port: ___, targetPort: ___ }       # YOUR TASK: NAMED metrics port for the SM
+                                                      # (only needed if you separate /metrics onto a
+                                                      # different port; the simpler path is reusing the
+                                                      # existing `http` port since the app serves /metrics
+                                                      # on the same listener as the app endpoints)
    ```
 
 3. **Write a second ServiceMonitor (or edit the one from Task 2)** so it scrapes the new named port. Add a `relabelings:` block to set the `job` label to something readable. The shape:

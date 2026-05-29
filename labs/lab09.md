@@ -116,10 +116,12 @@ k3d cluster create devops \
 
 ```bash
 kubectl config use-context k3d-devops    # k3d sets this automatically — sanity-check
-kubectl version                          # client AND server must report 1.36.x
+kubectl version                          # server MUST report 1.36.x; client can be ±1 minor (skew is OK)
 kubectl cluster-info
 kubectl get nodes -o wide                # YOUR TASK: expect exactly THREE nodes — 1 server + 2 agents
 ```
+
+> 💡 If `kubectl` prints a `WARNING: version difference between client (1.34) and server (1.36) exceeds the supported version skew`, it's a warning, not an error — the lab still passes. To silence it, install kubectl 1.36.x to match the cluster.
 
 ### 1.4 — Proof of work
 
@@ -165,11 +167,17 @@ spec:
     spec:
       containers:
         - name: ___                   # YOUR TASK
-          image: ___                  # YOUR TASK: your Lab 2 image — registry/name:tag
+          image: ___                  # YOUR TASK: your Lab 2 image. Two valid forms:
+                                      #   - GHCR pull: ghcr.io/<you>/devops-info-service:1.0.0  (public package — Lab 2 Task 7)
+                                      #   - Local tag: devops-info-service:lab02-multi          (must `k3d image import` — see §2.3)
           imagePullPolicy: ___        # YOUR TASK: which policy lets a k3d-imported image work?
                                       #            (hint: see Setup note about local images + Common Pitfalls)
           ports:
-            - containerPort: ___      # YOUR TASK: the port your Lab 1 app listens on
+            - name: ___               # YOUR TASK: name this port (e.g. `http`). Lab 10's Helm chart
+                                      #            and Lab 16's ServiceMonitor both target the port BY NAME.
+                                      #            Pick a name now or rewrite both labs later.
+              containerPort: ___      # YOUR TASK: the port your Lab 1 app listens on
+              protocol: TCP
           resources:
             requests:
               cpu: ___                # YOUR TASK: scheduler reserves this — see lecture 9 slide 15
@@ -215,8 +223,12 @@ spec:
   selector:
     ___: ___                          # MUST match the Deployment pod labels — kube-proxy uses this to build endpoints
   ports:
-    - port: ___                       # YOUR TASK: the port the Service listens on (cluster-side)
-      targetPort: ___                 # YOUR TASK: the containerPort your app listens on
+    - name: ___                       # YOUR TASK: same name you gave the containerPort (e.g. `http`).
+                                      #            Lab 16's ServiceMonitor uses this string, not the number.
+      port: ___                       # YOUR TASK: the port the Service listens on (cluster-side)
+      targetPort: ___                 # YOUR TASK: prefer the port NAME (e.g. `http`) over a number —
+                                      #            keeps the Service stable when the container port changes
+      protocol: TCP
       # nodePort: ___                 # OPTIONAL: pin it (30000–32767), or let K8s pick
 ```
 
@@ -225,16 +237,25 @@ spec:
 - **Service `name`** — this is what kube-DNS resolves inside the cluster. `curl http://web/` from any other pod hits this Service. Pick something short and stable; renaming a Service is a footgun (DNS clients cache).
 - **`type`** — `ClusterIP` (default) is internal-only; `NodePort` exposes a high port on every node; `LoadBalancer` provisions a cloud LB (klipper-lb on k3d). For local dev a NodePort works once you've mapped the host port; `LoadBalancer` works on k3d too thanks to klipper. Pick one, justify it.
 - **`port` vs `targetPort`** — `port` is what *clients* hit on the Service IP; `targetPort` is what the **container** listens on. Mismatched here = endpoints exist but no connectivity. Don't blindly set them equal — they're different concepts.
+- **Named ports** — `ports[].name: http` (and `targetPort: http` referencing the container's `ports[].name`) is **not optional polish**. Lab 16's `ServiceMonitor.spec.endpoints[].port` is a **string** (the port *name*), not a number — a bare numeric port silently fails to resolve and the operator skips your service. Set the name now or rewrite this Service later.
 - **`selector`** — must match the pod labels exactly. `kubectl get endpoints web` is your debugging oracle: if it's empty, your selector doesn't match any pod.
 
 ### 2.3 — Load your image and apply
 
-If you only have your Lab 2 image **locally** (not pushed to a registry), import it into k3d's containerd:
+**Two paths** — pick one based on whether your Lab 2 image is public on GHCR:
+
+**Path A — GHCR (recommended).** Your `ghcr.io/<you>/devops-info-service:1.0.0` is public (per Lab 2 §7). k3d's containerd pulls it directly; **no `k3d image import` needed**. Skip to `kubectl apply`.
+
+**Path B — Local build only.** Your image only exists in your laptop's Docker (`devops-info-service:lab02-multi` or similar) — k3d's containerd has never heard of it. You **must** import it:
 
 ```bash
-docker images | grep <your-image>       # confirm it exists locally
-k3d image import ___ --cluster devops   # YOUR TASK: which image:tag to import?
+docker images | grep devops-info-service         # confirm the tag exists locally
+k3d image import ___ --cluster devops            # YOUR TASK: paste the exact `<name>:<tag>` from above
 ```
+
+> 💡 The k3d nodes run k3s in their own containers with their own containerd — your laptop's Docker daemon is invisible to them. `k3d image import` is how you bridge that gap (it `docker save | docker load`s into each k3d node). If `kubectl get pods` shows `ErrImagePull`/`ImagePullBackOff` and you're sure the tag is right, you forgot this step.
+
+Once the image is reachable (either path):
 
 ```bash
 kubectl apply -f k8s/web-deployment.yaml
@@ -302,7 +323,9 @@ spec:
         - name: ___
           image: ___                  # YOUR TASK: the published echo image — see plumbing/echo/README.md
           ports:
-            - containerPort: ___      # YOUR TASK: see echo README — what port?
+            - name: ___               # YOUR TASK: name the port (e.g. `http`). Same reason as the web Deployment.
+              containerPort: ___      # YOUR TASK: see echo README — what port?
+              protocol: TCP
           resources:
             requests: { cpu: ___, memory: ___ }    # YOUR TASK: echo is a tiny Go binary
             limits:   { cpu: ___, memory: ___ }
@@ -336,8 +359,10 @@ spec:
   selector:
     ___: ___                          # MUST match echo pod labels (NOT web's)
   ports:
-    - port: ___                       # YOUR TASK: HTTP-default port, so `http://echo/ping` works with no `:port`
-      targetPort: ___                 # YOUR TASK: echo's actual container port
+    - name: ___                       # YOUR TASK: same name you gave the containerPort
+      port: ___                       # YOUR TASK: HTTP-default port, so `http://echo/ping` works with no `:port`
+      targetPort: ___                 # YOUR TASK: prefer the port NAME (string) over the container port number
+      protocol: TCP
 ```
 
 > 💡 **Why service `port: 80`?** Because `http://echo/ping` (no port) defaults to 80. If you set `port: 8081`, callers have to write `http://echo:8081/ping` — works, but the lecture/docs/your future Helm chart all assume the clean form. The Service port and container port are **decoupled**; that's the whole point.
@@ -510,7 +535,8 @@ spec:
               service:
                 name: ___             # YOUR TASK: which Service is this rule routing to?
                 port:
-                  number: ___         # YOUR TASK: the Service's port (NOT the targetPort)
+                  number: ___         # YOUR TASK: the Service's port (NOT the targetPort).
+                                      #            Or use `name: http` to reference the named Service port.
     - host: ___                       # YOUR TASK: echo's hostname
       http:
         paths:
@@ -520,7 +546,7 @@ spec:
               service:
                 name: ___
                 port:
-                  number: ___
+                  number: ___         # (same options as above — number or name)
 ```
 
 3. **Verify** via the host port you mapped at cluster create:
@@ -577,6 +603,7 @@ PR checklist:
 ### Task 2 — web service (3 pts)
 - ✅ `web-deployment.yaml` and `web-service.yaml` written by hand
 - ✅ Label triangle consistent (Deployment labels = selector.matchLabels = template labels)
+- ✅ **Container port AND Service port both named** (e.g. `name: http`) — Lab 10/16 require this
 - ✅ 3 replicas Ready; `kubectl get endpoints web` shows **3 IPs**
 - ✅ Resource **requests AND limits** set; both probes wired to a `/health`-style endpoint, not the app root
 - ✅ Pods spread across all 3 nodes (`-o wide` capture)

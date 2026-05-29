@@ -40,9 +40,11 @@ By Lab 9 this service runs on Kubernetes; by Lab 13 ArgoCD deploys it. So the ch
 You need only:
 
 ```bash
-python --version          # 3.12+ (course standardizes on 3.13)
-pip --version
+python3 --version         # 3.12+ (course standardizes on 3.13)
+pip3 --version
 ```
+
+> 📝 **`python` vs `python3`**: on Debian/Ubuntu the binary is `python3`; on macOS/Windows it may be `python`. Pick whichever exists on your box — the rest of this lab writes `python app.py` for brevity, substitute `python3 app.py` if that's how your system spells it.
 
 Create the directory layout (you'll fill the files yourself):
 
@@ -122,11 +124,11 @@ Hint: cast `PORT` to `int` and `DEBUG` to `bool` by **lowercase string compariso
 
 **Paste into `docs/LAB01.md`:**
 
-- Three captures, with the **exact commands** you ran:
+- Four CLI captures, with the **exact commands** you ran:
   - `curl -s http://localhost:5000/ | jq .` — full JSON, your real hostname + uptime
   - `curl -s http://localhost:5000/health | jq .`
   - `curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:5000/nope` — proves the 404 handler
-- One capture proving env-var config: `PORT=8080 python app.py` started in another shell + a `curl` showing the new port served
+  - `PORT=8080 python app.py` started in another shell + a `curl` showing the new port served — proves env-var config
 - The framework comparison table from 1.1
 - 2–3 sentences on the biggest gotcha you hit and how you solved it
 
@@ -184,7 +186,7 @@ This is the social half of being a developer. The actions are public on your pro
 2. **Star** [`simple-container-com/api`](https://github.com/simple-container-com/api) — an open-source container management tool worth knowing about.
 3. **Follow** your professor [@Cre-eD](https://github.com/Cre-eD) and the TAs (the course page lists them).
 4. **Follow** ≥ 3 classmates from this course.
-5. In your `docs/LAB01.md` "GitHub Community" section, write 2–3 sentences answering: *Why does starring a project actually help its maintainers? What concrete benefit do you get from following other developers?* — your own words, not the lecture's.
+5. In your `docs/LAB01.md` "GitHub Community" section, **put your GitHub username on the first line** (so the TA can verify your stars/follows in <30s) then write 2–3 sentences answering: *Why does starring a project actually help its maintainers? What concrete benefit do you get from following other developers?* — your own words, not the lecture's.
 
 ### 2.5 — Proof of work
 
@@ -206,7 +208,11 @@ Why bother? Lab 2's multi-stage Docker bonus shrinks a Go service from ~900 MB t
 - Same two endpoints (`/`, `/health`)
 - Same JSON shape as your Python version (so the same `curl` calls work against both)
 - A README in the sibling dir explaining build + run
-- In `docs/LAB01.md`, add a one-line **binary size** for both: Python (venv + interpreter) vs your compiled binary. The size delta is the whole point.
+- A `go.mod` (and `go.sum` if you pull deps) — Lab 2's bonus needs them as the build context
+- In `docs/LAB01.md`, add a one-line **artifact size** for both. Measure the same way for each so the comparison is apples-to-apples:
+  - Python: `du -sh app_python/venv` (the venv carries everything beyond the interpreter)
+  - Compiled: `ls -lh app_go/<binary>` (the single static binary)
+  - The size delta is the whole point. The real Docker-image comparison comes in Lab 2.
 
 Choose one of:
 
@@ -269,7 +275,8 @@ PR checklist:
 ### Bonus Task (2 pts)
 - ✅ Sibling app builds and serves the same two endpoints
 - ✅ Wire-compatible JSON (same `curl … | jq` works against both)
-- ✅ Binary-size comparison documented
+- ✅ Artifact-size comparison documented (`du -sh venv` vs `ls -lh <binary>`)
+- ✅ Build manifest present (`go.mod` / `Cargo.toml` / `pom.xml` / `*.csproj`) so Lab 2's bonus has a build context to `COPY`
 
 ---
 
@@ -305,6 +312,9 @@ PR checklist:
 - **Flask 3 deprecation warning** on `flask.__version__` — use `importlib.metadata.version("flask")` if you need to print the framework version.
 - **Returning a dict directly from FastAPI vs Flask** — FastAPI auto-serializes; Flask needs `jsonify(...)`. Don't return a bare dict from a Flask handler.
 - **`socket.gethostname()` inside a container** later returns the container ID, not your laptop name — that's correct, not a bug. You'll see it again in Lab 2.
+- **Port 5000 occupied on macOS** — macOS Monterey+ runs the *AirPlay Receiver* on `:5000`. The Flask default conflicts; you'll see your `curl` hit Apple's service instead. Either turn AirPlay Receiver off (System Settings → General → AirDrop & Handoff) or pick `PORT=5050` for your default run.
+- **`pip install -r requirements.txt` outside the venv** — installs Flask system-wide, then `python app.py` may still pick up a stale Flask elsewhere. Always activate the venv (`source venv/bin/activate`) before `pip install` and before `python app.py`.
+- **Don't return a Response from `@app.errorhandler`'s default** — Flask's 500 handler must return a tuple `(body, status)`. Returning a bare `jsonify(...)` sends HTTP 200 with the error JSON — a subtle bug that breaks the Lab 9 probe later.
 
 </details>
 

@@ -6,7 +6,7 @@
 ![tech](https://img.shields.io/badge/tech-Argo%20Rollouts%201.8.4-informational)
 
 > **Goal:** Replace `kind: Deployment` with `kind: Rollout`. Write the canary `steps:` list yourself, write the active + preview `Service` manifests yourself, and (bonus) write the PromQL behind a metric gate that auto-aborts a regressing release.
-> **Deliverable:** A PR from `lab14` with `charts/app-python/templates/rollout.yaml`, the two blue-green `Service`s, optional `AnalysisTemplate`, and `docs/LAB14.md`.
+> **Deliverable:** A PR from `lab14` with `k8s/lab10-app/templates/rollout.yaml`, the two blue-green `Service`s, optional `AnalysisTemplate`, and `docs/LAB14.md`.
 
 ---
 
@@ -23,7 +23,7 @@ In this lab you will practice:
 
 > ⚠️ **Scope:** No traffic-router integration in the main path — `setWeight` approximates by replica ratio (lecture 14 slide 12). One traffic-router option lives in the bonus. No mesh, no notifications controller. Stick to the canary + blue-green core and write every line of strategy yourself.
 
-> 🪨 **Pedagogical core.** The headline proof of this lab is a single screen: `kubectl argo rollouts get rollout app-python` showing **`Status: ॥ Paused`**, **`Message: CanaryPauseStep`**, and **`SetWeight: 25, ActualWeight: 25`** at step 1/6 — then, after you run `promote --full`, the same command at **step 6/6 `Healthy`**. A `Rollout` that goes straight to 100% with no visible pause didn't exercise progressive delivery. **Save that capture.**
+> 🪨 **Pedagogical core.** The headline proof of this lab is a single screen: `kubectl argo rollouts get rollout lab10-app-web` showing **`Status: ॥ Paused`**, **`Message: CanaryPauseStep`**, and **`SetWeight: 25, ActualWeight: 25`** at step 1/6 — then, after you run `promote --full`, the same command at **step 6/6 `Healthy`**. A `Rollout` that goes straight to 100% with no visible pause didn't exercise progressive delivery. **Save that capture.**
 
 ---
 
@@ -31,17 +31,17 @@ In this lab you will practice:
 
 **You should have from previous labs:**
 - A k3d cluster on Kubernetes **1.36** (Lab 9)
-- The Helm chart at `charts/app-python/` from Lab 10 — your `Deployment` template, `Service` template, `_helpers.tpl`, and `values.yaml`
+- The Helm chart at `k8s/lab10-app/` from Lab 10 — your `Deployment` template, `Service` template, `_helpers.tpl`, and `values.yaml`
 - ArgoCD **3.4** managing that chart through an `ApplicationSet` (Lab 13)
 - The `echo` and `health` plumbing services from Labs 9 / 13 — `health` exposes `/metrics` you'll use in the bonus
 - A Prometheus instance from **Lab 8** (Docker-Compose) — see Setup for the in-cluster decision
 
 **This lab adds:**
-- `charts/app-python/templates/rollout.yaml` — **you write** (Task 2: canary strategy)
-- `charts/app-python/templates/service-active.yaml` — **you write** (Task 3: blue-green active)
-- `charts/app-python/templates/service-preview.yaml` — **you write** (Task 3: blue-green preview)
-- `charts/app-python/templates/analysistemplate.yaml` — **you write** (Bonus)
-- `charts/app-python/values-bluegreen.yaml` — toggle for the blue-green flow (Task 3)
+- `k8s/lab10-app/templates/rollout.yaml` — **you write** (Task 2: canary strategy)
+- `k8s/lab10-app/templates/service-active.yaml` — **you write** (Task 3: blue-green active)
+- `k8s/lab10-app/templates/service-preview.yaml` — **you write** (Task 3: blue-green preview)
+- `k8s/lab10-app/templates/analysistemplate.yaml` — **you write** (Bonus)
+- `k8s/lab10-app/values-bluegreen.yaml` — toggle for the blue-green flow (Task 3)
 - `docs/LAB14.md` — your submission report
 
 Course-repo plumbing for this lab:
@@ -76,7 +76,7 @@ kubectl argo rollouts version      # not installed yet — that's Task 1
 Directory layout you will produce:
 
 ```
-charts/app-python/
+k8s/lab10-app/
 ├── templates/
 │   ├── rollout.yaml                # YOU write — replaces deployment.yaml (Task 2)
 │   ├── service-active.yaml         # YOU write (Task 3)
@@ -157,31 +157,33 @@ Your Lab 10 chart has `templates/deployment.yaml`. **Rename it** to `templates/r
 `YOUR TASK`: write `templates/rollout.yaml`. The skeleton below shows the parts that are **identical to your Deployment** (so you don't reinvent the wheel) and **blanks the canary `steps:` list entirely** — you write each step.
 
 ```yaml
-# charts/app-python/templates/rollout.yaml
+# k8s/lab10-app/templates/rollout.yaml
 apiVersion: ___                                    # YOUR TASK: which apiGroup/version owns Rollout?
                                                    #            (hint: NOT apps/v1 — see lecture 14 slide 7)
 kind: ___                                          # YOUR TASK
 metadata:
-  name: {{ include "app-python.fullname" . }}
+  name: {{ include "lab10-app.fullname" . }}-web   # SAME -web suffix as Lab 10's Deployment
+                                                   # → rendered as `lab10-app-web` on the default release;
+                                                   # every CLI command below targets this name.
   labels:
-    {{- include "app-python.labels" . | nindent 4 }}
+    {{- include "lab10-app.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}             # keep your Lab 10 default — needs ≥ 4 for visible 25/50/75 weights
   selector:
     matchLabels:
-      {{- include "app-python.selectorLabels" . | nindent 6 }}
+      {{- include "lab10-app.selectorLabels" . | nindent 6 }}
   template:
     # ⬇️ IDENTICAL to your Lab 13 Deployment pod template
     metadata:
       labels:
-        {{- include "app-python.selectorLabels" . | nindent 8 }}
+        {{- include "lab10-app.selectorLabels" . | nindent 8 }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           # ⬇️ pod template body is IDENTICAL to your Lab 10 Deployment — copy it verbatim
           # ⬇️ (ports, probes, resources, env). Shown elided here for brevity.
-          # See your charts/app-python/templates/deployment.yaml for the body to paste.
+          # See your k8s/lab10-app/templates/deployment.yaml for the body to paste.
   strategy:
     canary:
       # YOUR TASK: write the 7-element step list for a 25 → 50 → 75 → 100 canary
@@ -220,14 +222,14 @@ spec:
 Apply the chart (via ArgoCD sync if you wired Lab 13's ApplicationSet, otherwise `helm upgrade`). The first `Rollout` apply creates the resource; the controller marks it `Healthy` at 100% without going through the steps (steps only run for **subsequent** revisions). Now bump the image to trigger a real canary:
 
 ```bash
-helm upgrade app-python ./charts/app-python --set image.tag=v2
+helm upgrade lab10-app ./k8s/lab10-app --set image.tag=v2
 # or commit values-dev.yaml with the new tag and let ArgoCD sync it
 ```
 
 Then watch:
 
 ```bash
-kubectl argo rollouts ___ rollout app-python --watch   # YOUR TASK: which verb shows live status?
+kubectl argo rollouts ___ rollout lab10-app-web --watch   # YOUR TASK: which verb shows live status?
                                                        #            (one of: get, describe, status, list)
 ```
 
@@ -236,26 +238,26 @@ kubectl argo rollouts ___ rollout app-python --watch   # YOUR TASK: which verb s
 ### 2.3 — Promote past every gate
 
 ```bash
-kubectl argo rollouts ___ app-python --full            # YOUR TASK: which verb advances past ALL remaining pauses?
+kubectl argo rollouts ___ lab10-app-web --full            # YOUR TASK: which verb advances past ALL remaining pauses?
                                                        #            (full = skip the manual gates AND wait for them)
 ```
 
-Then re-capture `kubectl argo rollouts get rollout app-python` showing **step 6/6, `Status: ✔ Healthy`, `SetWeight: 100`**.
+Then re-capture `kubectl argo rollouts get rollout lab10-app-web` showing **step 6/6, `Status: ✔ Healthy`, `SetWeight: 100`**.
 
 ### 2.4 — Abort mid-rollout
 
 `YOUR TASK`: trigger a third rollout (bump the tag to `v3`), wait for it to reach step 1/6 paused at 25%, and then abort it. Confirm traffic returns to the stable ReplicaSet and the rollout reports `Degraded`.
 
 ```bash
-helm upgrade app-python ./charts/app-python --set image.tag=v3
+helm upgrade lab10-app ./k8s/lab10-app --set image.tag=v3
 # wait for the paused 25% step:
-kubectl argo rollouts get rollout app-python
+kubectl argo rollouts get rollout lab10-app-web
 
-kubectl argo rollouts ___ app-python                   # YOUR TASK: which verb cancels the in-progress rollout?
-kubectl argo rollouts get rollout app-python           # expect: Status: ✖ Degraded, traffic on stable
+kubectl argo rollouts ___ lab10-app-web                   # YOUR TASK: which verb cancels the in-progress rollout?
+kubectl argo rollouts get rollout lab10-app-web           # expect: Status: ✖ Degraded, traffic on stable
 
 # Now resume from step 0 once you've "fixed" the image (e.g. re-bump back to v2):
-kubectl argo rollouts ___ rollout app-python           # YOUR TASK: which verb restarts a Degraded rollout?
+kubectl argo rollouts ___ rollout lab10-app-web           # YOUR TASK: which verb restarts a Degraded rollout?
 ```
 
 ### 2.5 — Proof of work
@@ -263,7 +265,7 @@ kubectl argo rollouts ___ rollout app-python           # YOUR TASK: which verb r
 **Paste into `docs/LAB14.md`:**
 
 - The contents of your `templates/rollout.yaml` `spec.strategy.canary` block (just the `steps:` list — 8–10 lines)
-- The **headline capture** from §2.2 — `kubectl argo rollouts get rollout app-python` showing `Paused`, `CanaryPauseStep`, `Step: 1/6`, `SetWeight: 25, ActualWeight: 25`
+- The **headline capture** from §2.2 — `kubectl argo rollouts get rollout lab10-app-web` showing `Paused`, `CanaryPauseStep`, `Step: 1/6`, `SetWeight: 25, ActualWeight: 25`
 - The **`promote --full`** capture from §2.3 — same command, now `Step: 6/6, Status: ✔ Healthy, SetWeight: 100`
 - The **abort + retry** captures from §2.4 — `Degraded` after abort, then `Healthy` after `retry`
 - 2–3 sentences on what you observed in the dashboard during the paused window — was 1 of 4 replicas on the new ReplicaSet? (lecture 14 slide 8)
@@ -290,7 +292,7 @@ Blue-green needs **two** Services pointing at the same pod label set — Argo Ro
 
 (No skeleton — you've written ~6 Service manifests by now in Labs 9, 10, 13. If you need the API shape, `kubectl explain service.spec` is one shell command away.)
 
-> 💡 **Naming matters.** The `activeService` name in your `Rollout` spec must match an existing `Service` *exactly*. A typo here results in `Rollout` errors like `service "app-python-actv" not found` — and the controller will not heal it. Reference the value via `include "app-python.fullname" .` from the same helper your Service uses.
+> 💡 **Naming matters.** The `activeService` name in your `Rollout` spec must match an existing `Service` *exactly*. A typo here results in `Rollout` errors like `service "app-python-actv" not found` — and the controller will not heal it. Reference the value via `include "lab10-app.fullname" .` from the same helper your Service uses.
 
 ### 3.3 — Configure the blue-green strategy
 
@@ -325,28 +327,28 @@ The blue-green outer shape below is the only part shown; the **four values** tha
 ### 3.4 — Run the blue-green cutover
 
 ```bash
-helm upgrade app-python ./charts/app-python -f values-bluegreen.yaml --set image.tag=v1
+helm upgrade lab10-app ./k8s/lab10-app -f values-bluegreen.yaml --set image.tag=v1
 # Confirm the active Service serves v1:
-kubectl port-forward svc/app-python 8080:80 &
+kubectl port-forward svc/lab10-app-web 8080:80 &
 curl -s localhost:8080/ | jq .service
 
 # Bump to v2 — the controller spins up the new ReplicaSet behind the PREVIEW Service:
-helm upgrade app-python ./charts/app-python -f values-bluegreen.yaml --set image.tag=v2
+helm upgrade lab10-app ./k8s/lab10-app -f values-bluegreen.yaml --set image.tag=v2
 
 # In another shell, validate v2 via the preview Service (prod still on v1):
-kubectl port-forward svc/app-python-preview 8081:80 &
+kubectl port-forward svc/lab10-app-web-preview 8081:80 &
 curl -s localhost:8081/ | jq .service       # YOUR TASK: confirm v2
 
 # Confirm the two Services have DIFFERENT pod IPs in their endpoints right now —
 # this is the proof the controller wrote two different selectors:
-kubectl get endpoints app-python app-python-preview -o wide
+kubectl get endpoints lab10-app-web lab10-app-web-preview -o wide
 
 # Promote — the active Service flips to v2 instantly (no new pods scheduled):
-kubectl argo rollouts ___ app-python                  # YOUR TASK: same verb as Task 2 manual gate
+kubectl argo rollouts ___ lab10-app-web                  # YOUR TASK: same verb as Task 2 manual gate
 
 # Test instant rollback BEFORE scaleDownDelaySeconds expires:
-kubectl argo rollouts ___ app-python                  # YOUR TASK: which verb rolls back to the previous ReplicaSet?
-kubectl get endpoints app-python                      # active flipped back to v1 pod IPs
+kubectl argo rollouts ___ lab10-app-web                  # YOUR TASK: which verb rolls back to the previous ReplicaSet?
+kubectl get endpoints lab10-app-web                   # active flipped back to v1 pod IPs
 ```
 
 ### 3.5 — Proof of work
@@ -355,7 +357,7 @@ kubectl get endpoints app-python                      # active flipped back to v
 
 - The two Service manifests in full (one per code block)
 - Your `blueGreen:` block with all four values filled in + a one-sentence justification for `scaleDownDelaySeconds`
-- The **two `kubectl get endpoints`** captures from §3.4 showing `app-python` and `app-python-preview` pointing at **different pod IPs** during the cutover window — this is the headline blue-green artifact
+- The **two `kubectl get endpoints`** captures from §3.4 showing `lab10-app-web` and `lab10-app-web-preview` pointing at **different pod IPs** during the cutover window — this is the headline blue-green artifact
 - The `promote` + `undo` captures showing the active Service IPs flipping
 - 2 sentences comparing the speed of blue-green `undo` vs canary `abort` — which is faster, and why
 
@@ -382,10 +384,10 @@ The lecture (slides 10–11) showed the *shape* of an AnalysisTemplate. You writ
 
 ### Bonus.1 — Write the AnalysisTemplate
 
-`YOUR TASK`: write `charts/app-python/templates/analysistemplate.yaml`. The kind + outer `spec.metrics:` shape is given; the **query, success condition, failure limit, and interval** are yours.
+`YOUR TASK`: write `k8s/lab10-app/templates/analysistemplate.yaml`. The kind + outer `spec.metrics:` shape is given; the **query, success condition, failure limit, and interval** are yours.
 
 ```yaml
-# charts/app-python/templates/analysistemplate.yaml
+# k8s/lab10-app/templates/analysistemplate.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ___                                          # YOUR TASK: which kind? (hint: slide 10)
 metadata:
@@ -465,7 +467,7 @@ spec:
 
 `YOUR TASK`: ship a deliberately broken image (e.g. add an `app.before_request` handler that returns `500` half the time) and trigger a rollout. Without touching the CLI, the rollout must go `Degraded` within `interval × failureLimit + count × interval` seconds. Capture:
 
-- `kubectl argo rollouts get rollout app-python` showing `Degraded` with `Message: RolloutAborted` after analysis failure
+- `kubectl argo rollouts get rollout lab10-app-web` showing `Degraded` with `Message: RolloutAborted` after analysis failure
 - `kubectl get analysisruns -o wide` showing the failed `AnalysisRun` with its `Phase: Failed` and the failed `MeasurementCount`
 
 ### Bonus.4 — Go further (required for the full 2 pts) — pick ONE
@@ -489,10 +491,10 @@ spec:
 
 ```bash
 git switch -c lab14
-git add charts/app-python/templates/rollout.yaml
-git add charts/app-python/templates/service-active.yaml charts/app-python/templates/service-preview.yaml
-git add charts/app-python/values-bluegreen.yaml
-git add charts/app-python/templates/analysistemplate.yaml  # bonus only
+git add k8s/lab10-app/templates/rollout.yaml
+git add k8s/lab10-app/templates/service-active.yaml k8s/lab10-app/templates/service-preview.yaml
+git add k8s/lab10-app/values-bluegreen.yaml
+git add k8s/lab10-app/templates/analysistemplate.yaml  # bonus only
 git add docs/LAB14.md
 git commit -m "feat(lab14): argo rollouts 1.8.4 — canary + blue-green + analysis"
 git push -u origin lab14
@@ -528,15 +530,15 @@ PR checklist:
 ### Task 2 — Canary (3 pts)
 - ✅ `templates/rollout.yaml` written from scratch — `apiVersion`, `kind`, full `spec.strategy.canary.steps:` list filled in
 - ✅ Step list is `25 → pause → 50 → pause → 75 → pause → 100` — **the pause after 25 must be `pause: {}` (manual)**
-- ✅ **Headline capture**: `kubectl argo rollouts get rollout app-python` showing `Status: ॥ Paused`, `Message: CanaryPauseStep`, `Step: 1/6`, `SetWeight: 25, ActualWeight: 25`
+- ✅ **Headline capture**: `kubectl argo rollouts get rollout lab10-app-web` showing `Status: ॥ Paused`, `Message: CanaryPauseStep`, `Step: 1/6`, `SetWeight: 25, ActualWeight: 25`
 - ✅ **Promotion capture**: same command after `promote --full` showing `Status: ✔ Healthy`, `Step: 6/6`, `SetWeight: 100`
 - ✅ Abort + retry demonstrated — captures show `Degraded` then `Healthy` again
 
 ### Task 3 — Blue-Green (3 pts)
 - ✅ `templates/service-active.yaml` and `templates/service-preview.yaml` **written from scratch** — no skeleton given in this lab
 - ✅ `blueGreen:` block with all four values filled in (`activeService`, `previewService`, `autoPromotionEnabled`, `scaleDownDelaySeconds`)
-- ✅ **Endpoints diff capture**: `kubectl get endpoints app-python app-python-preview` shows **different pod IPs** during the cutover window
-- ✅ Promote + undo demonstrated — `kubectl get endpoints app-python` shows the active selector flipping back
+- ✅ **Endpoints diff capture**: `kubectl get endpoints lab10-app-web lab10-app-web-preview` shows **different pod IPs** during the cutover window
+- ✅ Promote + undo demonstrated — `kubectl get endpoints lab10-app-web` shows the active selector flipping back
 
 ### Task 4 — Documentation (2 pts)
 - ✅ All six sections present in `docs/LAB14.md`
@@ -596,19 +598,19 @@ PR checklist:
 <details>
 <summary>⚠️ Common Pitfalls (from real dry-runs)</summary>
 
-- **`kubectl rollout restart deployment/app-python` does NOT work on a Rollout.** The core `kubectl rollout` subcommands target `Deployment` / `DaemonSet` / `StatefulSet`. The `Rollout` CRD is owned by Argo Rollouts, not the K8s rollout API. Use `kubectl argo rollouts restart <name>` instead — same verb, different binary. Symptom: `error: deployments.apps "app-python" not found` even though `kubectl get rollouts` shows it.
+- **`kubectl rollout restart deployment/lab10-app-web` does NOT work on a Rollout.** The core `kubectl rollout` subcommands target `Deployment` / `DaemonSet` / `StatefulSet`. The `Rollout` CRD is owned by Argo Rollouts, not the K8s rollout API. Use `kubectl argo rollouts restart lab10-app-web` instead — same verb, different binary. Symptom: `error: deployments.apps "lab10-app-web" not found` even though `kubectl get rollouts` shows it.
 
 - **AnalysisTemplate crashes on `result[0]` with NaN when there's no traffic.** When the canary pod has just started, no requests have hit it → `sum(rate(app_requests_total{...}[2m]))` returns an **empty vector**, not 0. The `successCondition` expression `result[0] >= 0.99` then errors out and the AnalysisRun shows `Inconclusive` or `Error` instead of evaluating. Fix: append `or on() vector(0)` to the PromQL — Prometheus then returns `0` for the empty case and the expression evaluates cleanly. This is the single most common bonus-task failure.
 
 - **`scaleDownDelaySeconds` is a foot-gun for traffic-still-on-preview surprises.** Setting it too high (e.g. `3600`) means every blue-green cutover leaves the **old** ReplicaSet running for an hour — burning compute and confusing anyone who sees stale pods. Setting it too low (e.g. `30`) means by the time you notice a v2 bug in production, there's no v1 ReplicaSet left to `undo` to. 300 seconds (5 min) is a sane default; document your choice.
 
-- **`kubectl set image` needs the plugin, not core kubectl.** `kubectl set image rollout/app-python web=ghcr.io/...:v2` errors with `the server doesn't have a resource type "rollout"`. Use `kubectl argo rollouts set image app-python web=ghcr.io/...:v2` instead. Or — better practice — drive image changes through Helm / GitOps and let ArgoCD sync, so the change is in Git.
+- **`kubectl set image` needs the plugin, not core kubectl.** `kubectl set image rollout/lab10-app-web web=ghcr.io/...:v2` errors with `the server doesn't have a resource type "rollout"`. Use `kubectl argo rollouts set image lab10-app-web web=ghcr.io/...:v2` instead. Or — better practice — drive image changes through Helm / GitOps and let ArgoCD sync, so the change is in Git.
 
 - **Prometheus not in-cluster → AnalysisTemplate can't reach it.** Lab 8's Prometheus runs in a Docker-Compose stack on your laptop. From inside k3d, `http://localhost:9090` resolves to the **pod's** localhost, not your host's. Three fixes documented in `labs/lab14/prometheus-pointer.md`: (a) `host.k3d.internal:9090` from inside k3d (works today, breaks in Lab 16 when you move on); (b) deploy a minimal Prometheus into the cluster's `monitoring` namespace; (c) wait for Lab 16's kube-prometheus-stack and skip the bonus until then.
 
 - **Selector pollution from the Lab 13 chart.** Argo Rollouts injects `rollouts-pod-template-hash` onto pod labels so it can distinguish stable from canary. If your `selectorLabels` helper from Lab 10 includes anything beyond `name` + `instance` (e.g. `version` — which is the lecture-15 anti-pattern), the controller's mutation fights your helper and the Service ends up selecting *both* ReplicaSets. Keep `selectorLabels` to the two-key minimum (this is the same rule from Lab 10's helpers).
 
-- **Promoting a manual gate before the canary is actually paused.** `kubectl argo rollouts promote app-python` returns immediately if there's no active pause — it does **not** wait for the next step. If you run it too eagerly in a script, the rollout skips your headline-capture moment and runs straight to 100%. Wait until `kubectl argo rollouts get` shows `Paused / CanaryPauseStep` before promoting.
+- **Promoting a manual gate before the canary is actually paused.** `kubectl argo rollouts promote lab10-app-web` returns immediately if there's no active pause — it does **not** wait for the next step. If you run it too eagerly in a script, the rollout skips your headline-capture moment and runs straight to 100%. Wait until `kubectl argo rollouts get` shows `Paused / CanaryPauseStep` before promoting.
 
 - **`autoPromotionEnabled: true` in blue-green silently skips the manual gate.** The default is `false`, but a lot of tutorials show `true` for CI demos. With `true`, the new ReplicaSet is promoted as soon as it goes Ready — your preview-Service-validation window is **zero seconds**. Always set this to `false` in your lab values; only ever `true` in fully automated pipelines with prePromotionAnalysis.
 

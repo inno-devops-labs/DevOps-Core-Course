@@ -20,7 +20,7 @@ In this lab you will practice:
 
 > ⚠️ **Scope:** one cloud VM (or one docker-provider stand-in — see note below). No Kubernetes, no app deploy yet. Lab 5 will SSH into whatever you build here.
 
-**Cloud or docker-provider?** Pick a free-tier cloud (recommended — that's the real skill), but if you can't open a card-protected account, the `kreuzwerker/docker` provider runs the *exact same lifecycle* locally against a container — Lab 5 still works because it'll SSH into a docker host instead. Either path scores full marks; document which you picked.
+**Cloud or docker-provider?** Pick a free-tier cloud (recommended — that's the real skill), but if you can't open a card-protected account, the `kreuzwerker/docker` provider runs the *exact same lifecycle* locally against a container. **Lab 5 cross-ref for docker users:** the container has no sshd; Lab 5 will use `ansible_connection: community.docker.docker` (or run Ansible with `connection: local` against `docker exec`) instead of SSH — same roles, different connection plugin. Either path scores full marks; document which you picked.
 
 ---
 
@@ -107,9 +107,9 @@ docs/LAB04.md
 
 **Goal:** a reachable VM, written in your own HCL, with clean state hygiene.
 
-### 1.1 — Write the four HCL building blocks
+### 1.1 — Write the HCL building blocks
 
-Lecture 4 told you HCL has five primitives you'll meet today: `terraform {}`, `provider`, `variable`, `data`, `resource`, `output`. This task is where you write them.
+Lecture 4 told you HCL has the six primitives you'll meet today: `terraform {}`, `provider`, `variable`, `data`, `resource`, `output`. This task is where you write them.
 
 `YOUR TASK`: produce `terraform/main.tf` covering **all** of the following. Don't pull a copy off Stack Overflow — that's how secrets end up in tfstate.
 
@@ -128,8 +128,10 @@ terraform {
 }
 
 provider "___" {
-  region = var.region
-  # ⛔ no access_key / secret_key here — env vars or profile only
+  region = var.region    # AWS shape; GCP needs `project` + `region` or `zone`,
+                         # Yandex needs `zone`, kreuzwerker/docker takes no region.
+                         # Adapt to your chosen provider — see Resources block.
+  # ⛔ no inline credentials (access_key/secret_key, JSON SA key body, etc.) — env vars or profile only
 }
 
 # YOUR TASK: a data source that returns the latest Ubuntu 24.04 image ID
@@ -432,7 +434,7 @@ PR checklist:
 - ✅ Provider chosen, authenticated via env/profile (no inline creds)
 - ✅ `data` source for the Ubuntu image (not a hardcoded AMI/ID)
 - ✅ Security group / firewall restricts **SSH 22 to your IP/32** only
-- ✅ All four primitives present: `terraform{}`, `provider`, `variable`, `resource`, `data`, `output`
+- ✅ All six primitives present: `terraform{}`, `provider`, `variable`, `resource`, `data`, `output`
 - ✅ `user_data` runs on first boot and writes to `/var/log/lab4-boot.log`
 - ✅ SSH session in `docs/LAB04.md` shows the boot log line + hostname
 - ✅ `.gitignore` correct: tfstate ignored, `.terraform.lock.hcl` committed

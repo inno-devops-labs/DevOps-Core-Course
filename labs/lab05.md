@@ -19,7 +19,9 @@ In this lab you will practice:
 - Encrypting secrets with **Ansible Vault** so they live in Git safely
 - Reading PLAY RECAP output: `changed=N` on run 1, `changed=0` on run 2 — the acceptance test of configuration management
 
-> ⚠️ **Scope:** Lab 4 *provisioned* the box (Terraform/Pulumi gave it an IP). Lab 5 *configures* what's inside. Lab 6 will add tags, blocks, Compose, and a CI workflow on top of the exact roles you write here — so make them tidy.
+> ⚠️ **Scope:** Lab 4 *provisioned* the box (Terraform/Pulumi gave it an IP). Lab 5 *configures* what's inside. Lab 6 will add tags, blocks, Compose, and a CI workflow on top of these roles — and will **rename `app_deploy` → `web_app`** via `git mv`. The role names you pick this week will not be permanent for `app_deploy`; everything else carries through unchanged.
+
+> 💡 **No cloud VM? You can target localhost** — set `ansible_connection: local` in the inventory and skip `become:` on tasks that need root in a sudo-less sandbox. The role *logic* is what's graded; running cleanly against localhost with `--check` (where `become` is the only blocker) is accepted as a deliverable. Capture both PLAY RECAPs the same way (`changed=N` then `changed=0`).
 
 > **A note on "LTS":** `ansible-core` has **no formal LTS label**. The open-source engine commits to ~6 months of security fixes per minor release; currently supported versions are **2.18, 2.19, 2.20, 2.21**. Use **2.21**. Red Hat's commercial *Ansible Automation Platform* offers extended support — that is a different product. Slides on the internet that say "2.17 LTS" predate the policy clarification.
 
@@ -109,12 +111,29 @@ Skeleton (fill the blanks; everything in `___` is yours):
 
 ```ini
 [webservers]
-lab-vm ansible_host=___ ansible_user=___        # YOUR TASK: VM IP + SSH user
+lab-vm ansible_host=___ ansible_user=___        # YOUR TASK: VM IP + SSH user (Lab 4: ubuntu)
 
 [webservers:vars]
-ansible_ssh_private_key_file=___                 # YOUR TASK: path to your Lab 4 private key
+ansible_ssh_private_key_file=___                 # YOUR TASK: path to your Lab 4 private key (Lab 4 default: ~/.ssh/lab04)
 ansible_python_interpreter=___                   # YOUR TASK: usually /usr/bin/python3
 ```
+
+<details>
+<summary>💡 Targeting localhost instead (sudo-less sandbox)</summary>
+
+If you don't have a Lab 4 VM handy and want to run on the control node itself:
+
+```ini
+[webservers]
+lab-vm ansible_host=localhost ansible_user=___ ansible_connection=local   # local exec, don't SSH
+
+[webservers:vars]
+ansible_python_interpreter=/usr/bin/python3
+```
+
+`ansible_connection: local` makes Ansible skip SSH entirely and `exec` modules in-process. The same roles run; tasks needing root (`apt`, `service`) require local `sudo`. If your sandbox has no passwordless sudo, accept that those tasks won't apply for real but their *logic* still validates in `--check` mode — note that explicitly in your `docs/LAB05.md` and capture the `--check` PLAY RECAPs as your idempotency proof.
+
+</details>
 
 ### 1.3 — `ansible.cfg`
 
@@ -347,6 +366,21 @@ Paste into `docs/LAB05.md`:
 ansible-vault create group_vars/all/vault.yml
 ```
 
+You'll be prompted for a Vault password. **Save that password now** in a gitignored file so the 4 reruns in Task 4 don't make you retype it:
+
+```bash
+echo 'your-vault-password' > .vault_pass
+chmod 600 .vault_pass
+# .vault_pass is already in your .gitignore (see "How to Submit")
+```
+
+Tell Ansible to use it (one of two ways — pick one):
+
+- Per-command: `ansible-playbook playbooks/deploy.yml --vault-password-file .vault_pass`
+- In `ansible.cfg`: add `vault_password_file = .vault_pass` under `[defaults]`
+
+(The `--ask-vault-pass` form in §3.4 below is the prompt-each-time alternative — use whichever you prefer.)
+
 `YOUR TASK`: put your Docker Hub credentials and app config inside (the file is AES-256 encrypted at rest — safe to commit; the password is NOT).
 
 ```yaml
@@ -452,8 +486,8 @@ The *whys* (one sentence each in `docs/LAB05.md`):
 ### 3.4 — Run and verify
 
 ```bash
-ansible-playbook playbooks/deploy.yml --ask-vault-pass
-curl http://<VM-IP>:<app_port>/health           # expect HTTP 200 + JSON
+ansible-playbook playbooks/deploy.yml --ask-vault-pass    # or --vault-password-file .vault_pass
+curl -fsS http://<VM-IP>:<app_port>/health | jq .         # expect HTTP 200 + JSON
 ```
 
 ### 3.5 — Proof of work
@@ -473,11 +507,14 @@ Paste into `docs/LAB05.md`:
 This is the headline acceptance test. Configuration management's killer feature is that running the same playbook twice has the same effect as running it once.
 
 ```bash
+# Vault password file in place (see Task 3.1) OR add --ask-vault-pass to each line
 ansible-playbook playbooks/provision.yml          # run #1
 ansible-playbook playbooks/provision.yml          # run #2
 ansible-playbook playbooks/deploy.yml             # run #1 (already done in Task 3)
 ansible-playbook playbooks/deploy.yml             # run #2
 ```
+
+> 💡 Once `group_vars/all/vault.yml` exists, **every** playbook (including `provision.yml`) loads it on start and needs the Vault password — even though `provision.yml` doesn't *use* the secrets. Either set `vault_password_file` in `ansible.cfg` once, or append `--ask-vault-pass` to all four commands above.
 
 The **second run of each must report `changed=0`**. (Illustrative.)
 
@@ -731,6 +768,7 @@ PR checklist:
 - **`append: true` forgotten on the user task** — Ansible *replaces* the user's group list, booting them out of `sudo`/`adm`. If you SSH'd in as `ubuntu` and ran that, the next login fails. Always `append: true` when adding to a group.
 - **`state: latest` on a package** — every new upstream release flips run #2 from `changed=0` to `changed=1`. Use `state: present` for reproducible runs.
 - **Vault file gets committed without `--encrypt`** — `git diff` shows your tokens in plaintext. Recovery: `git reset --hard HEAD~1`, rotate the token (it's burned), re-encrypt. Always `ansible-vault create` (not `vi`).
+- **`provision.yml` suddenly prompts for a Vault password.** Once `group_vars/all/vault.yml` exists, Ansible loads it on every play — even `provision.yml` that doesn't reference the secrets. Either set `vault_password_file = .vault_pass` in `ansible.cfg` once, or pass `--ask-vault-pass`/`--vault-password-file` to *all four* runs in Task 4. Skipping this is the #1 reason students retype their password 8 times during the idempotency proof.
 
 </details>
 

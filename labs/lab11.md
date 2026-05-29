@@ -184,12 +184,20 @@ containers:
 
 > ⚠️ **The `--set` CI-logs trap.** `helm upgrade --install ... --set secret.dbPassword='hunter2'` is fine on your laptop. In CI it ends up in the workflow log unless the variable is wrapped as a secret (`${{ secrets.DB_PASSWORD }}` in GHA) **and** you `helm upgrade ... --set secret.dbPassword="$DB_PASSWORD"` with no echo. Document in `docs/LAB11.md` which pattern you'd use in a real GitHub Action.
 
+> 🔮 **Lab 13 preview — `--set` does NOT survive ArgoCD.** Next week ArgoCD will sync this same chart from Git, and it only honors `helm.valueFiles` / `helm.valuesObject` on the `Application` CR — there is **no `--set` knob** on a GitOps reconcile. That's why the bonus task installs **OpenBao Agent Injector** or **ESO**: they deliver the secret out-of-band so the chart in Git can ship with placeholders forever. If you skip the bonus, the lab 13 workaround is `helm.valuesObject` referencing an externally-managed Secret — never a real value in Git.
+
 Verification commands (illustrative — your output will differ):
 
 ```bash
 helm upgrade --install lab10-app k8s/lab10-app -n lab11 \
   --set secret.dbPassword='YOUR-PASSWORD'         # YOUR-TASK: pick a value
-kubectl exec -n lab11 deploy/lab10-app-web -- env | grep '^DB_'
+
+# Find the actual web Deployment name — your fullname helper decides it; don't
+# guess it. The `app.kubernetes.io/name=lab10-app` label matches both web and echo
+# (they share the chart), so filter on the `-web` suffix in the name to get only web:
+WEB=$(kubectl get deploy -n lab11 -l app.kubernetes.io/name=lab10-app \
+       -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' | grep -- '-web$' | head -1)
+kubectl exec -n lab11 deploy/"$WEB" -- env | grep '^DB_'
 # DB_USERNAME=app
 # DB_PASSWORD=YOUR-PASSWORD                       # ← present in pod env
 kubectl describe pod -n lab11 -l app.kubernetes.io/name=lab10-app | grep -A1 -i secret
@@ -219,14 +227,19 @@ Skeleton (fill the YOUR-TASK markers — and yes, the **point** of the blanks is
 
 ```bash
 # Start the dev server in the background. -dev = unsealed + in-memory.
-bao server -dev -dev-root-token-id=___ &        # YOUR-TASK: pick a token id (e.g. 'devroot')
+# Redirect output to a log file so server lines don't tangle with your prompt.
+bao server -dev -dev-root-token-id=___ >/tmp/bao.log 2>&1 &   # YOUR-TASK: pick a token id (e.g. 'devroot')
 
 # Two env vars EVERY bao command needs:
 export BAO_ADDR=___                              # YOUR-TASK: the dev server URL (default port is 8200)
 export BAO_TOKEN=___                             # YOUR-TASK: must match the -dev-root-token-id above
 
+# Give the listener ~1s to come up before the first call, or poll bao status.
+sleep 1
 bao status                                       # Sealed false, Storage Type inmem, Version 2.5.0
 ```
+
+> 🧹 **Stopping the dev server.** It's the most recent background job in your shell — `kill %1` (or `kill $(pgrep -f 'bao server -dev')`) when you're done. Restarting wipes every secret (INMEM); that's the whole point.
 
 > 💡 **The contract:** every `bao` (or `vault`) client — your CLI, your apps, the ESO provider, the Agent injector — authenticates by `BAO_ADDR` + a token. In dev mode the token is the root token. In production the token comes from an **auth method** (Kubernetes ServiceAccount JWT, AppRole, OIDC), is short-lived, and is scoped by a policy. The env-var names are the same.
 

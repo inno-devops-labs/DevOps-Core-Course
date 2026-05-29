@@ -51,7 +51,7 @@ By Lab 14 the same six Applications get progressive-delivery `Rollout` CRDs in f
 
 | Service | Origin | Image | Port | You build it? |
 |---|---|---|---|---|
-| 🐍 **app-python** | Your Lab 1 → Lab 12 service | from your CI | 5000 | ✅ Yes — your code |
+| 🐍 **app-python** | Your Lab 1 → Lab 12 service | from your CI | 8080 | ✅ Yes — your code |
 | 🦫 **echo** | Course plumbing (Lab 9+) | `ghcr.io/inno-devops-labs/echo:v1` | 8081 | ❌ No — pre-built |
 | 💚 **health** | Course plumbing — **new this lab** | `ghcr.io/inno-devops-labs/health:v1` | 8082 | ❌ No — pre-built |
 
@@ -388,8 +388,12 @@ If a standalone Application has the same name as a generated one, ArgoCD will re
 
 `YOUR TASK`: trigger ArgoCD self-healing in **dev** and capture the evidence. Two scenarios:
 
-1. **Delete a workload** — `kubectl delete deploy app-python-dev -n dev`. With `selfHeal: true`, ArgoCD recreates it within the next reconcile cycle (default 3 min; click REFRESH in the UI to do it sooner). This is **ArgoCD self-healing** (config drift → revert), distinct from Kubernetes self-healing (a deleted Pod gets recreated by its ReplicaSet).
-2. **Drift a label** — `kubectl label deploy echo-dev -n dev owner=me --overwrite`. Watch the diff in the UI and the revert.
+1. **Delete a workload** — select by label, not name (the rendered Deployment name is helper-dependent — for `app-python` with release `app-python-dev` and chart `lab10-app`, the canonical helper renders `app-python-dev-lab10-app-web`, not `app-python-dev`):
+   ```bash
+   kubectl delete deploy -l app.kubernetes.io/instance=app-python-dev -n dev
+   ```
+   With `selfHeal: true`, ArgoCD recreates the Deployment within the next reconcile cycle (default 3 min; click REFRESH in the UI to do it sooner). This is **ArgoCD self-healing** (config drift → revert), distinct from Kubernetes self-healing (a deleted Pod gets recreated by its ReplicaSet).
+2. **Drift a label** — `kubectl label deploy -l app.kubernetes.io/instance=echo-dev -n dev owner=me --overwrite`. Watch the diff in the UI and the revert.
 
 In `docs/LAB13.md`, explain the difference between Kubernetes self-healing (ReplicaSet → Pod) and ArgoCD self-healing (Git → cluster state). They operate at different layers; selfHeal would not save you from a CrashLoopBackOff.
 

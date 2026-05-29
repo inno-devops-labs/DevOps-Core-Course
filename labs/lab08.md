@@ -180,8 +180,21 @@ Hints — *not* full code:
 
 ### 1.5 — Test locally
 
+You can test in either of two ways — pick one and be consistent:
+
+- **In the Lab 7 Compose stack** (recommended): rebuild + restart just the `app` service so the new image + `prometheus-client` are running on `localhost:8080`.
+- **Standalone Python**: `pip install -r requirements.txt` into a venv first, then `python app.py`.
+
 ```bash
-python app.py                                 # or however you run your Lab 1 app
+# Option A — through the Compose stack (recommended; matches Task 2 below).
+# Run from repo root; the stack listens on host port 8080:
+docker compose -f monitoring/docker-compose.yml up -d --build app    # picks up new app.py + requirements
+
+# Option B — standalone Python (run from repo root; Lab 1 default port is 5000).
+# Either keep the curls below on :5000, or set PORT=8080 to match Option A:
+# PORT=8080 python app_python/app.py
+
+# Generate traffic and inspect /metrics (Option A → :8080; Option B unchanged → :5000):
 for i in $(seq 1 20); do curl -s localhost:8080/ > /dev/null; done
 for i in $(seq 1 5);  do curl -s localhost:8080/health > /dev/null; done
 curl -s localhost:8080/metrics | grep -E "^app_(requests_total|request_duration)"
@@ -484,9 +497,11 @@ The healthcheck block from §2.2 should be filled in. Verify it works:
 
 ```bash
 docker compose ps                              # prometheus reports (healthy) once start_period elapses
-docker compose down && docker compose up -d
+docker compose down && docker compose up -d    # NOTE: no `-v` — that would wipe the named volumes
+sleep 30                                       # wait for the first post-restart scrape (≥ one scrape_interval + start_period)
 curl -s 'http://localhost:9090/api/v1/query?query=app_requests_total' | jq '.data.result | length'
-# (illustrative — non-zero means your TSDB volume persisted history through the restart)
+# (illustrative — non-zero means your TSDB volume persisted the series through the restart;
+#  exactly 0 means either the volume wasn't mounted or `down -v` was used by mistake)
 ```
 
 ### 4.4 — Proof of work

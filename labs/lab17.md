@@ -164,6 +164,8 @@ npx wrangler whoami        # confirms account + lists your workers.dev subdomain
 npx wrangler deploy
 ```
 
+> ⚠️ **Headless / remote-VM gotcha:** `wrangler login` opens a browser locally and listens on `127.0.0.1:8976` for the OAuth callback. If you're SSH'd into a remote VM with no local browser, the callback never reaches your browser. Two options: (a) `ssh -L 8976:localhost:8976 <user@host>` to port-forward the OAuth callback to your laptop, or (b) export `CLOUDFLARE_API_TOKEN=<token>` from a token you create in the dashboard (Account → API Tokens → "Edit Cloudflare Workers" template). Document the path you took in §1.6.
+
 The output prints `https://<worker-name>.<your-subdomain>.workers.dev`. Hit it with `curl` and confirm the same JSON — except `edge.colo` is now a **real** PoP code (`"FRA"`, `"WAW"`, `"SVO"`, ...).
 
 ### 1.6 — Proof of work

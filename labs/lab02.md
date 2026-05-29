@@ -23,7 +23,7 @@ In this lab you will practice:
 
 > ⚠️ **Scope:** Compose, Kubernetes, and CI gates come later. This lab is one service, one image, one registry.
 
-**Tech stack (May 2026):** Docker Engine 29.x (containerd image store default) · BuildKit on-by-default · `python:3.13-slim` · Trivy v0.69.3+
+**Tech stack (May 2026):** Docker Engine 29.x recommended (containerd image store default); **23+ also works** — BuildKit was on by default in 23 and `# syntax=docker/dockerfile:1` is honoured · `python:3.13-slim` · Trivy v0.69.3+
 
 ---
 
@@ -47,7 +47,7 @@ By Lab 9 Kubernetes pulls this image; by Lab 13 ArgoCD ships new versions of it.
 ## Setup
 
 ```bash
-docker version              # Engine 29.x; rootless OK
+docker version              # Engine 29.x recommended; 23+ works (BuildKit on by default since 23); rootless OK
 docker buildx version       # BuildKit is required (bundled)
 trivy --version             # v0.69.3 or newer — NOT v0.69.4 (see warning below)
 ```
@@ -212,7 +212,13 @@ CMD [___]                     # YOUR TASK: exec form
 ### 3.2 — Build and compare
 
 ```bash
+# If you replaced Dockerfile in-place:
 docker build -t devops-info-service:lab02-multi ./app_python
+
+# If you kept the single-stage as Dockerfile and put the multi-stage in Dockerfile.multi,
+# pass it explicitly with -f (otherwise docker build picks the default Dockerfile):
+docker build -f app_python/Dockerfile.multi -t devops-info-service:lab02-multi ./app_python
+
 docker images devops-info-service --format '{{.Tag}}\t{{.Size}}'
 ```
 
@@ -314,10 +320,19 @@ Reference: [Trivy docs](https://trivy.dev/) · [Trivy `image` command](https://t
 For **GHCR** (recommended): create a Personal Access Token (classic) with the `write:packages` scope, then:
 
 ```bash
+# Put your token in a shell variable FIRST — do NOT paste the token onto the docker login
+# line (it would land in your shell history). --password-stdin reads from stdin only.
+export GHCR_PAT='ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+
 echo "$GHCR_PAT" | docker login ghcr.io -u <github-username> --password-stdin
 docker tag devops-info-service:lab02-multi ghcr.io/<github-username>/devops-info-service:___   # YOUR TASK: real version tag
 docker push ghcr.io/<github-username>/devops-info-service:___                                  # YOUR TASK: same tag
 ```
+
+> 🤖 **In CI (Lab 3), don't use a PAT.** GitHub Actions provides an ephemeral `GITHUB_TOKEN` per run that has `write:packages` for the repo's own GHCR namespace. The Lab 3 docker job uses
+> `password: ${{ secrets.GITHUB_TOKEN }}` — no long-lived PAT to leak. PATs are only for *your laptop today*.
+
+> 📢 **GHCR packages are PRIVATE by default after first push.** The Acceptance Criteria below require *publicly pullable* — after `docker push` succeeds the first time, go to **your GitHub profile → Packages → `devops-info-service` → Package settings (right side) → Change visibility → Public**. Confirm by typing the package name. Without this step the `docker pull` from a clean cache below will work only because your login is still cached; a grader running `docker pull` without your token will get `401 Unauthorized`.
 
 `YOUR TASK`: pick a tagging strategy and put the real tag in both blanks above. **Not `:latest`** — see slide 20. Pick one:
 
@@ -327,12 +342,15 @@ docker push ghcr.io/<github-username>/devops-info-service:___                   
 | Git SHA    | `git-3a7f29c` | CI builds; always unique |
 | CalVer     | `2026.05.0`   | Time-driven release cadence |
 
-Verify it's actually pullable from a clean state:
+Verify it's actually pullable from a **truly clean state** — `docker logout` first so cached credentials don't mask a private-package mistake:
 
 ```bash
+docker logout ghcr.io                                            # forget the PAT so we test the public path
 docker rmi  ghcr.io/<github-username>/devops-info-service:___   # YOUR TASK: your tag
-docker pull ghcr.io/<github-username>/devops-info-service:___   # YOUR TASK: must succeed from a clean cache
+docker pull ghcr.io/<github-username>/devops-info-service:___   # YOUR TASK: must succeed anonymously (package must be Public)
 ```
+
+If `docker pull` returns `unauthorized` after `docker logout`, your package is still private — flip its visibility to Public per the note above, then re-pull.
 
 ### 5.2 — Update `app_python/README.md`
 
@@ -380,6 +398,9 @@ COPY go.mod go.sum* ./
 RUN go mod download
 COPY . .
 RUN ___                       # YOUR TASK: build a FULLY STATIC binary. Which env var disables cgo? (slide 17)
+                              # WHY this matters: cgo links against the build image's libc dynamically.
+                              # A static binary (no libc dep) is what makes `FROM scratch` / distroless/static
+                              # viable — those images literally don't ship libc.
 
 # ---------- final stage: ~nothing but the binary ----------
 FROM ___                      # YOUR TASK: gcr.io/distroless/static-debian12 OR scratch — choose + defend in docs

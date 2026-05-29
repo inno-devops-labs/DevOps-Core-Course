@@ -276,11 +276,11 @@ curl -s http://localhost:3100/loki/api/v1/labels | jq -c .data
 # (illustrative — your set will differ)
 # ["container","service_name"]
 
-# Alloy live component graph
-open http://localhost:12345
+# Alloy live component graph — open in your browser
+#   macOS:  open http://localhost:12345
+#   Linux:  xdg-open http://localhost:12345   (or just paste the URL)
 
-# Grafana
-open http://localhost:3000
+# Grafana — open in your browser at http://localhost:3000
 # Add data source: Connections → Data sources → Loki → URL http://loki:3100 → Save & Test
 ```
 
@@ -288,7 +288,7 @@ open http://localhost:3000
 
 **Paste into `docs/LAB07.md`:**
 
-- `docker compose ps` output showing all four services `Up` (and after Task 4, `healthy`)
+- `docker compose ps` output showing all four services `Up` (after Task 4, loki + grafana must additionally report `(healthy)`; alloy + app are not required to define healthchecks)
 - `curl -s http://localhost:3100/ready` output — literally the word `ready`
 - `curl -s http://localhost:3100/loki/api/v1/labels | jq -c .data` — must include `container` (and `app` after §2.2)
 - Screenshot of the Alloy live UI at `:12345` showing the four blocks wired with no red edges
@@ -360,7 +360,7 @@ For each row below, write the LogQL that answers it. Don't copy from the lecture
 |---|---|---|
 | Q1 | All logs from your Python app | Stream selector on the `app` label, nothing else |
 | Q2 | Only the JSON lines where `level` is `ERROR` | Stream selector → `\| json` → field equality on `level` |
-| Q3 | Rate of errors per minute, per container | Metric query: `sum by (container) (rate(... [1m]))` — apply the error filter inside the selector before `rate` |
+| Q3 | Rate of errors per minute, per container | Metric query: `sum by (container) (rate(... [1m]))` — chain `\| json \| level="ERROR"` after the stream selector, then wrap the whole log expression in `rate(...[1m])` |
 | Q4 | All requests to a path containing `health` (filter on the **JSON field `path`**, not a substring of the raw line) | `\| json` then a field-equality / regex filter on `path` |
 
 > 💡 **Performance order:** stream selector → line filter → parser → field filter → metric. The cheapest filter goes first. Filters cascade left-to-right.
@@ -622,6 +622,8 @@ PR checklist:
 - **Returning a dict from FastAPI's middleware vs Flask's `after_request`.** FastAPI middleware is awaited; Flask hooks aren't. Don't `await` `request.json()` inside a Flask after_request — it's blocking. Pick one framework's pattern and stay consistent.
 - **JSON log line split by `docker logs`.** If you pretty-print JSON (`json.dumps(obj, indent=2)`), `docker logs` (and therefore Alloy) treats each indented line as a separate log entry — and your `| json` parser will fail on every one of them. Always one JSON object per line, no indentation.
 - **Anonymous Grafana left enabled in Task 4 "by accident".** You said "I'll remember to turn it off" in §1.4. You won't — the comment in your compose file is the only thing that will save you. Leave it.
+- **Port 8080 collides with Lab 6.** Lab 6's Compose stack defaults to host port 8080 too. If you didn't `docker compose down` it before starting this lab, `docker compose up -d` errors with *"Bind for 0.0.0.0:8080 failed: port is already allocated"*. Either bring Lab 6 down (`cd ../app_python && docker compose down`), or pick a different host port for Lab 6's stack (`app_host_port: 8084` in your Lab 6 group_vars). The container labels — `logging=alloy` and `app=devops-python` — must live on **this** lab's `app` container regardless.
+- **Loki's `/ready` returns 503 before `(healthy)` shows up.** The healthcheck in Task 4 polls `/ready`; until Loki's ingester comes up (~15s after process start), `/ready` 503s and `docker compose ps` reports `(starting)`. Set `start_period: 30s` so compose doesn't flap to `(unhealthy)` then back to `(healthy)` and confuse you about whether the stack works.
 
 </details>
 

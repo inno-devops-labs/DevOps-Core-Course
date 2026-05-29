@@ -144,16 +144,16 @@ The minimum surface (you may add more):
 replicaCount: ___                # default replicas for `web`
 
 image:
-  repository: ___                # your Lab 2 image, e.g. docker.io/<you>/devops-info
+  repository: ___                # your Lab 2 image (GHCR or Docker Hub), e.g. ghcr.io/<you>/devops-info-service
   tag: ""                        # empty → templates fall back to .Chart.AppVersion
-  pullPolicy: ___                # IfNotPresent | Always | Never
+  pullPolicy: ___                # IfNotPresent | Always | Never (Lab 9's pitfalls call out the k3d-import case)
 
 service:
   type: ___                      # NodePort for local k3d; LoadBalancer in prod
   port: ___                      # the Service port (clients hit this)
   # the container's listen port lives under `containerPort` below
 
-containerPort: ___               # what your Lab 2 app listens on (8000? 5000?)
+containerPort: ___               # what your Lab 2 app listens on (Lab 9 set this — match it)
 
 resources:
   requests:
@@ -176,7 +176,7 @@ ingress:
   enabled: false                 # not used in this lab; reserved for Lab 16
 
 echo:
-  replicaCount: ___              # default replicas for the echo sidecar service
+  replicaCount: ___              # default replicas for the echo sidecar service (Lab 9 had a specific count)
   image:
     repository: ghcr.io/inno-devops-labs/echo
     tag: v1
@@ -184,6 +184,13 @@ echo:
     type: ClusterIP
     port: 80
     targetPort: 8081
+  resources:                     # echo is a tiny Go binary — size it smaller than web (Lab 9 §3.1)
+    requests:
+      cpu: ___
+      memory: ___
+    limits:
+      cpu: ___
+      memory: ___
 
 # Hook config (Task 4)
 hooks:
@@ -211,9 +218,17 @@ Named templates avoid copy-pasting label blocks across every manifest. You will 
 {{- /* your body — hint: `default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-"` is the canonical form */ -}}
 {{- end }}
 
-{{/* YOUR TASK: return <release-name>-<chart-name>, truncated to 63, no trailing dash */}}
+{{/* YOUR TASK: return a unique-per-release name, truncated to 63, no trailing dash.
+     IMPORTANT: when the release name already contains the chart name (e.g. you ran
+     `helm install lab10-app k8s/lab10-app`), the canonical helper collapses to JUST
+     the release name — otherwise you'd get `lab10-app-lab10-app`. Lab 11 references
+     `deploy/lab10-app-web`, so your fullname helper MUST handle the collapse. The
+     `helm create` boilerplate has the canonical form; cribbing the pattern (not the
+     whole file) is fair game.
+     Shape: `if contains $name .Release.Name → .Release.Name`, else
+            `printf "%s-%s" .Release.Name $name`, then `| trunc 63 | trimSuffix "-"` */}}
 {{- define "lab10-app.fullname" -}}
-{{- /* your body — hint: `printf "%s-%s" .Release.Name (chart-name) | trunc 63 | trimSuffix "-"` */ -}}
+{{- /* your body */ -}}
 {{- end }}
 
 {{/* YOUR TASK: return the full label set (5 labels including the helm.sh/chart line) */}}
@@ -234,11 +249,13 @@ Reference functions you'll need (all from Sprig): `default`, `trunc`, `trimSuffi
 
 `YOUR TASK`: templatize your Lab 9 web Deployment. The YAML shape is given so you don't reinvent the wheel — each `{{ ___ }}` is a token you must fill (and many of those will need pipelines like `| nindent 4` or `| default ...`).
 
+> 💡 **Name web and echo distinctly.** Both Deployments are in the same release; if `metadata.name` resolves to the same value on both, the second `helm install` errors out with a conflict. Convention: append a component suffix to the fullname (e.g. `{{ include "lab10-app.fullname" . }}-web` here, `-echo` on the echo manifests in 2.6). Lab 11 will reference `deploy/lab10-app-web` directly — keep the suffix.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ ___ }}                                # YOUR TASK: `include` your fullname template
+  name: {{ ___ }}-web                            # YOUR TASK: `include` your fullname template (suffix already present)
   labels:
     {{- ___ | nindent 4 }}                       # YOUR TASK: `include` your labels template
 spec:
@@ -286,7 +303,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ ___ }}                                # YOUR TASK: fullname template
+  name: {{ ___ }}-web                            # YOUR TASK: fullname template (`-web` suffix mirrors the Deployment)
   labels:
     {{- ___ | nindent 4 }}                       # YOUR TASK: labels template
 spec:
@@ -316,8 +333,13 @@ Take a moment to decide which — both are valid.
 Run, in this order: `helm lint <chart>`, `helm template <release> <chart>` (eyeball the rendered YAML), `helm install <release> <chart> --dry-run --debug`, then a real `helm install --create-namespace` into a fresh namespace. Finish with `helm list` (expect `REVISION 1`) and `kubectl get deploy,svc,pods` to confirm both pods are Ready.
 
 ```bash
-helm install demo k8s/lab10-app -n helm-demo --create-namespace
+# Release name MUST be `lab10-app` (matches chart name). Lab 11 references `deploy/lab10-app-web`;
+# if your fullname helper has the canonical collapse-when-contained branch (see 2.3), this works.
+# If you used a too-simple fullname (just `printf "%s-%s" .Release.Name .Chart.Name`), you'll get
+# `lab10-app-lab10-app-web` and Lab 11 won't find your Deployment. Run `helm template` first to verify.
+helm install lab10-app k8s/lab10-app -n helm-demo --create-namespace
 # expected: helm list shows STATUS deployed, REVISION 1
+# expected (verify with `kubectl get deploy -n helm-demo`): deploy/lab10-app-web and deploy/lab10-app-echo
 ```
 
 ### 2.8 — Proof of work
@@ -325,9 +347,9 @@ helm install demo k8s/lab10-app -n helm-demo --create-namespace
 Paste into `HELM.md`:
 
 - `helm lint k8s/lab10-app` output (must say `0 chart(s) failed`)
-- The first ~30 lines of `helm template demo k8s/lab10-app` showing your values flowing into the rendered Deployment (image, replicas, probes, resources)
-- `helm list -n helm-demo` showing **REVISION 1** for release `demo`
-- `kubectl get deploy,svc,pods -n helm-demo` showing both web and echo pods Ready
+- The first ~30 lines of `helm template lab10-app k8s/lab10-app` showing your values flowing into the rendered Deployment (image, replicas, probes, resources)
+- `helm list -n helm-demo` showing **REVISION 1** for release `lab10-app`
+- `kubectl get deploy,svc,pods -n helm-demo` showing both web and echo pods Ready (deploy names: `lab10-app-web`, `lab10-app-echo`)
 
 ---
 
@@ -354,14 +376,14 @@ For ≥ 3 envs, add `values-staging.yaml` between them.
 This is the **headline proof** of Task 3 — the same chart, the same release, going from REVISION 1 to REVISION 2 because `-f` layered a prod override on top of the base.
 
 ```bash
-helm upgrade demo k8s/lab10-app -n helm-demo \
+helm upgrade lab10-app k8s/lab10-app -n helm-demo \
   -f k8s/lab10-app/values.yaml \
   -f k8s/lab10-app/values-prod.yaml
 # expected: STATUS deployed, REVISION 2
-# expected: deploy/demo-lab10-app spec.replicas = your prod override (was 1 at REV 1)
+# expected: deploy/lab10-app-web spec.replicas = your prod override (was 1 at REV 1)
 ```
 
-Then run `helm list`, `kubectl get deploy ... -o jsonpath='{.spec.replicas}'`, and `helm history` to capture the evidence.
+Then run `helm list`, `kubectl get deploy lab10-app-web -n helm-demo -o jsonpath='{.spec.replicas}'`, and `helm history` to capture the evidence.
 
 > **Values precedence (lowest → highest):**
 > 1. `values.yaml` (chart default, **always loaded** — you don't have to pass it explicitly)
@@ -376,7 +398,7 @@ Then run `helm list`, `kubectl get deploy ... -o jsonpath='{.spec.replicas}'`, a
 
 ### 3.4 — Rollback
 
-`YOUR TASK`: `helm rollback demo 1 -n helm-demo`, then re-query the deployment's replica count — it must return to the dev default. Capture `helm history` showing REVISION 3 with the rollback description.
+`YOUR TASK`: `helm rollback lab10-app 1 -n helm-demo`, then re-query the deployment's replica count — it must return to the dev default. Capture `helm history` showing REVISION 3 with the rollback description.
 
 ### 3.5 — Proof of work
 
@@ -384,8 +406,8 @@ Paste into `HELM.md`:
 
 - The contents of `values-prod.yaml` (deltas only — should be short)
 - `helm list -n helm-demo` **at REVISION 2**, captured after the upgrade
-- `kubectl get deploy ... -o jsonpath='{.spec.replicas}'` returning the prod value
-- `helm history demo` showing REVISION 1 superseded by REVISION 2
+- `kubectl get deploy lab10-app-web -n helm-demo -o jsonpath='{.spec.replicas}'` returning the prod value
+- `helm history lab10-app -n helm-demo` showing REVISION 1 superseded by REVISION 2
 - The first 20 lines of the `diff` from 3.3 — the visible delta between rendered envs
 
 ---
@@ -472,12 +494,13 @@ Paste into `HELM.md`:
 `YOUR TASK`: less hand-holding here.
 
 1. `helm package` your chart into `lab10-app-<version>.tgz`.
-2. Log in to `ghcr.io` with a GitHub PAT (scope `write:packages`). In CI you'd use `GITHUB_TOKEN`; locally use a PAT. **Never paste the PAT in a committed file.**
-3. `helm push <tgz> oci://ghcr.io/<your-username>/charts`.
-4. Make the GHCR package **public** (Package settings → Change visibility) so your grader can pull it.
-5. In a fresh namespace, `helm install … oci://ghcr.io/<your-username>/charts/lab10-app --version <ver>` — and prove the install came **from the registry**, not your local directory (the `STATUS` will show the OCI source).
+2. Create a **classic** GitHub PAT (Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token) with the **`write:packages`** scope. Fine-grained tokens don't support OCI pushes yet (May 2026). In CI you'd use the auto-injected `GITHUB_TOKEN` instead; locally use the PAT. **Never paste the PAT in a committed file or on the CLI.**
+3. `echo $CR_PAT | helm registry login ghcr.io -u <your-username> --password-stdin` — the PAT comes via stdin so it doesn't land in shell history.
+4. `helm push <tgz> oci://ghcr.io/<your-username>/charts`.
+5. Make the GHCR package **public** (Your profile → Packages → `charts/lab10-app` → Package settings → Change visibility → Public) so your grader can pull it without credentials.
+6. In a fresh namespace, `helm install … oci://ghcr.io/<your-username>/charts/lab10-app --version <ver>` — and prove the install came **from the registry**, not your local directory (the `STATUS` will show the OCI source).
 
-Commands you'll need (look them up — `helm package`, `helm registry login`, `helm push`, `helm install oci://...`). Pipe the PAT to login via `--password-stdin`; **never** put it on the command line (lands in shell history).
+Commands you'll need (look them up — `helm package`, `helm registry login`, `helm push`, `helm install oci://...`).
 
 Paste into `HELM.md`:
 
@@ -605,6 +628,7 @@ PR checklist:
 <summary>⚠️ Common Pitfalls (from real dry-runs)</summary>
 
 - **`helm create` overwrites your work.** Running it inside an existing chart directory clobbers your hand-written `Chart.yaml`, `values.yaml`, and helpers without asking. Don't run it. Write the files yourself — this lab grades that skill.
+- **Fullname helper missing the collapse branch.** A naive `printf "%s-%s" .Release.Name .Chart.Name` produces `lab10-app-lab10-app` when release name and chart name match (which they do — release is `lab10-app`). Then `-web` appends to give `lab10-app-lab10-app-web`. Lab 11 references `deploy/lab10-app-web`, so this breaks the next lab silently. The canonical `if contains $name .Release.Name` branch (cribbed from `helm create`) is what makes the collapse work. Test with `helm template lab10-app k8s/lab10-app | grep '^  name:'` BEFORE installing.
 - **Replacing the whole `helm create` `values.yaml` breaks `helm lint`.** The generated boilerplate ships a `templates/serviceaccount.yaml` that references `.Values.serviceAccount.create`. The moment you blow away that block in `values.yaml`, `helm lint` errors out because the referenced key vanished. Either edit the defaults in place **or** (recommended) skip `helm create` entirely. *(This is the exact self-inflicted snag from the lab's own reference run.)*
 - **`indent` vs `nindent`.** `nindent N` = newline + N spaces; `indent N` = N spaces only. When a `{{- ... -}}` action has already eaten the previous newline, `indent` produces invalid YAML that `helm lint` will catch and `helm install` will refuse. Use `nindent` unless you're sure.
 - **Mutable selector labels break rolling updates.** Once a `Deployment` exists, K8s rejects changes to `spec.selector.matchLabels`. If `version` is in your selector labels, every `appVersion` bump triggers a chart upgrade that K8s refuses — you'll have to `kubectl delete deploy ...` and lose zero-downtime. Keep `selectorLabels` to `name` + `instance` only.

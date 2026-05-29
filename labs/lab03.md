@@ -197,23 +197,34 @@ jobs:
         with:
           python-version: ___          # YOUR TASK: reference the matrix value
           cache: ___                   # YOUR TASK: which cache mode does setup-python provide?
-          cache-dependency-path: ___   # YOUR TASK: which file does the cache key hash?
+          cache-dependency-path: ___   # YOUR TASK: which file(s) does the cache key hash?
+                                       #            (you install BOTH requirements.txt + requirements-dev.txt —
+                                       #             cache must invalidate on either; YAML accepts a multi-line list)
 
       - name: ___                      # YOUR TASK: human-readable step name
+        working-directory: ___         # YOUR TASK: which dir holds requirements*.txt + tests/?
         run: |
           # YOUR TASK: install both runtime and dev requirements
-          # Hint: cd into the app dir first; pip install -r ... -r ...
+          # Hint: pip install -r requirements.txt -r requirements-dev.txt
 
       - name: ___                      # YOUR TASK: lint step name
+        working-directory: ___         # YOUR TASK: same dir as install — ruff scans the code, not the repo root
         run: ___                       # YOUR TASK: ruff/flake8/pylint command
 
       - name: ___                      # YOUR TASK: test step name
+        working-directory: ___         # YOUR TASK: same dir — without this, pytest finds 0 tests
         run: ___                       # YOUR TASK: pytest command (quiet mode? cov?)
 ```
 
+> 💡 **Why `working-directory:` on every step?** A fresh runner starts at the repo root (`$GITHUB_WORKSPACE`). Without `working-directory:`, `pytest -q` runs at the repo root and reports **`collected 0 items`** — a green-but-meaningless run. Set the dir on each step that touches the app (or set it once at the job level via `defaults.run.working-directory`).
+
 ### 2.3 — Add a status badge
 
-`YOUR TASK`: once the workflow runs once on your fork, GitHub generates a badge URL of the form `https://github.com/<user>/<repo>/actions/workflows/python-ci.yml/badge.svg`. Add it to `app_python/README.md` at the top.
+`YOUR TASK`: once the workflow runs once on your fork, GitHub generates a badge URL of the form `https://github.com/<user>/<repo>/actions/workflows/python-ci.yml/badge.svg`. Add it to `app_python/README.md` at the top as a markdown image with a link back to the Actions tab — e.g.
+
+```md
+[![Python CI](https://github.com/<user>/<repo>/actions/workflows/python-ci.yml/badge.svg)](https://github.com/<user>/<repo>/actions/workflows/python-ci.yml)
+```
 
 ### 2.4 — Validate locally with `act` before pushing
 
@@ -278,7 +289,11 @@ In `docs/LAB03.md`, justify your choice in 2–3 sentences.
       - uses: docker/metadata-action@___
         id: meta
         with:
-          images: ___                  # YOUR TASK: ghcr.io/<owner>/<repo> expression
+          images: ___                  # YOUR TASK: ghcr.io/<owner>/<image-name>
+                                       # Tip: `ghcr.io/${{ github.repository }}` gives `ghcr.io/<owner>/<repo>`,
+                                       # which is fine. If you want the image name to match the `devops-info-service`
+                                       # tag you pushed by hand in Lab 2 (so Lab 9's Deployment can pin one name),
+                                       # use `ghcr.io/${{ github.repository_owner }}/devops-info-service` instead.
           tags: |
             # YOUR TASK: at least TWO tag patterns.
             # Pick from: type=sha,prefix=git-  |  type=semver,pattern={{version}}
@@ -321,6 +336,10 @@ A scan that only warns gets ignored. Make Trivy a **gate**: a HIGH/CRITICAL find
 ### 4.1 — Wire Trivy into the test job
 
 `YOUR TASK`: add a Trivy step *inside* the `test` job (or a dedicated `scan` job that `docker` `needs:`). It must run **before** the docker job — a vulnerable dep cannot make it into a published image.
+
+> 💡 **Matrix vs scan:** if you add Trivy inside the matrixed `test` job, it runs twice (once per Python version) — wasteful but harmless. To run it once, either gate it with `if: matrix.python-version == '3.13'` or factor it into a separate `scan` job that the `docker` job `needs:`.
+>
+> 🌐 **DB mirror on restricted networks:** if your runner can't reach `ghcr.io/aquasecurity/trivy-db`, set `TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2` in the step's `env:` — Aqua publishes an anonymous mirror there (see Lab 2's note).
 
 ```yaml
       - name: ___                                  # YOUR TASK: descriptive step name

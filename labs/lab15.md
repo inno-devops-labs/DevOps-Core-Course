@@ -122,7 +122,9 @@ The headline manifest. Below is the **skeleton** — the parts that are essentia
 apiVersion: apps/v1                                     # GA since K8s 1.9 — the only group/version
 kind: StatefulSet
 metadata:
-  name: {{ include "lab10-app.fullname" . }}
+  name: {{ include "lab10-app.fullname" . }}-web        # same `-web` component suffix as your Lab 10 Deployment;
+                                                        # rendered name on the default release will be `lab10-app-web`,
+                                                        # pods will be `lab10-app-web-0`, `lab10-app-web-1`, `lab10-app-web-2`.
   labels:
     {{- include "lab10-app.labels" . | nindent 4 }}
 spec:
@@ -340,8 +342,8 @@ If the marker comes back **different / empty** → you're not using `volumeClaim
 Your Lab 12 `/visits` counter now lives on a per-pod PVC. Drive traffic to each pod individually and show that the counters are *independent*:
 
 ```bash
-kubectl port-forward -n lab15 pod/<sts>-0 8080:5000 &
-kubectl port-forward -n lab15 pod/<sts>-1 8081:5000 &
+kubectl port-forward -n lab15 pod/<sts>-0 8080:8080 &
+kubectl port-forward -n lab15 pod/<sts>-1 8081:8080 &
 # YOUR TASK: curl localhost:8080/visits   — pod-0's counter only
 # YOUR TASK: curl localhost:8081/visits   — pod-1's counter only
 # YOUR TASK: hit pod-0 a few extra times; pod-1's count must NOT change

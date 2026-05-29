@@ -115,7 +115,7 @@ Paste into `docs/LAB12.md`:
 
 ## Task 2 — ConfigMaps: Three Patterns, One Decision Per Value (3 pts)
 
-The lecture covered three ways to inject a ConfigMap into a pod. **Your job isn't to use all three** — it's to pick the right one for each value, write it down, and defend the choice.
+The lecture covered three ways to inject a ConfigMap into a pod. **One pattern per *value* — not all three for every value.** You'll ship two ConfigMaps (one shaped as files, one shaped as env vars), wire each into the pod with the pattern that fits its shape, and defend the choice for the three example values in the decision table below.
 
 ### 2.1 — Author the two ConfigMaps
 
@@ -147,7 +147,7 @@ data:                            # YOUR TASK: ≥3 K/V pairs from .Values
 
 ### 2.2 — Pick an injection pattern per value
 
-Three injection patterns exist (Lecture 12, slides 6–8). Below is the skeleton of each as a separate Deployment-patch block — **keep the ones you need, delete the others**, then justify your choices in `docs/LAB12.md`.
+Three injection patterns exist (Lecture 12, slides 6–8). Below is the skeleton of each as a separate Deployment-patch block — **keep the ones you need, delete the others**, then justify your choices in `docs/LAB12.md`. At minimum your Deployment ends up using Pattern B (the env-shaped CM) **and** Pattern C (the file-shaped CM); Pattern A is optional and only earns points if you can defend a specific reason to rename or single-pick a key.
 
 **Pattern A — single env, renamed/optional control.** Use when you want ONE value, possibly RENAMED into the container.
 
@@ -194,7 +194,7 @@ Pick the right pattern for each of these values and document the choice in `docs
 
 ### 2.3 — Proof of work
 
-`YOUR TASK`: after `helm upgrade --install lab10-app ./lab10-app -n lab12 --create-namespace`, capture:
+`YOUR TASK`: after `helm upgrade --install lab10-app k8s/lab10-app -n lab12 --create-namespace` (same chart path as Lab 10/11), capture:
 
 ```bash
 # YOUR TASK: get the pod name into $POD
@@ -293,13 +293,15 @@ volumes:
 
 This is the heart of the lab. **A `Bound` PVC means a volume exists, NOT that your data survived a pod restart.** You prove persistence by writing, deleting the pod, and reading from the new pod.
 
-`YOUR TASK`: figure out the four steps yourself. You'll need `kubectl exec ... -- sh -c 'echo ... > /data/marker'`, `kubectl delete pod`, `kubectl wait`, and a final `kubectl exec ... cat /data/marker`.
+`YOUR TASK`: figure out the four steps yourself. You'll need `kubectl exec ... -- sh -c 'echo ... > $DATA_DIR/marker'`, `kubectl delete pod`, `kubectl wait`, and a final `kubectl exec ... cat $DATA_DIR/marker`.
+
+Use a **separate file** called `marker` for this proof — don't reuse `/data/visits`. The counter increments naturally and you want a constant string to compare. Both files live on the same PVC, so the proof for `marker` is also the proof for `visits`.
 
 ```bash
-# YOUR TASK: write a unique marker (e.g. epoch seconds) to a file inside /data
-#            inside the running pod
+# YOUR TASK: write a unique marker (e.g. epoch seconds) to $DATA_DIR/marker
+#            inside the running pod (DATA_DIR defaults to /data — adjust if you changed it)
 # YOUR TASK: delete the pod and wait for the Deployment to spin up a fresh one
-# YOUR TASK: read /data/marker from the NEW pod
+# YOUR TASK: read $DATA_DIR/marker from the NEW pod
 # YOUR TASK: prove the marker is the SAME — the write survived the pod's death
 ```
 
@@ -358,7 +360,7 @@ These three behaviors are why every team eventually picks a hot-reload strategy.
 
 ```bash
 git switch -c lab12
-git add app_python/ lab10-app/ docs/LAB12.md
+git add app_python/ k8s/lab10-app/ docs/LAB12.md
 git commit -m "feat(lab12): configmaps + persistence with hot-reload strategy"
 git push -u origin lab12
 ```
@@ -453,6 +455,7 @@ PR checklist:
 - **Deleting a PVC may NOT delete the PV (or the data).** Depends on `reclaimPolicy`: `Delete` (default for cloud SCs) wipes the volume; `Retain` keeps the PV and the disk after the PVC is gone — you must clean up manually. Set `Retain` for anything you'd cry over losing, and write the cleanup runbook **before** the day you need it.
 - **Invalid env-var names from `envFrom` are silently skipped.** A ConfigMap key `feature.x.enabled` won't appear as an env var — `envFrom` only emits keys matching `[A-Z_][A-Z0-9_]*`. No error, no warning, just missing.
 - **`hostPath` for "real" persistence ties a pod to a node.** Demo only. Use a PVC even for local clusters — the local-path provisioner gives you a real PVC backed by a host directory, with proper rescheduling semantics.
+- **Don't overwrite `/data/visits` with your marker.** Use a *separate* file (e.g. `/data/marker`) for the 3.5 persistence proof. The visit counter is rewriting `visits` on every `GET /`, which makes side-by-side comparison flaky.
 
 </details>
 
@@ -464,7 +467,7 @@ PR checklist:
 - `kubectl describe pod <name> | grep -A4 'Mounts\|Volumes'` — what's actually mounted
 - `kubectl exec <pod> -- mount | grep /data` — confirm the volume is mounted
 - `kubectl get events --field-selector involvedObject.name=<pvc>` — provisioning errors
-- For the persistence proof: write a marker with `kubectl exec ... -- sh -c 'echo $(date +%s) > /data/marker'`, then `kubectl delete pod`, then `kubectl wait --for=condition=Ready pod -l ... --timeout=60s`, then `kubectl exec deploy/<name> -- cat /data/marker`
+- For the persistence proof: write a marker with `kubectl exec deploy/<name> -- sh -c 'echo $(date +%s) > /data/marker'` (NOT `/data/visits` — the counter overwrites that), then `kubectl delete pod -l <selector>`, then `kubectl wait --for=condition=Ready pod -l <selector> --timeout=60s`, then `kubectl exec deploy/<name> -- cat /data/marker`
 
 </details>
 

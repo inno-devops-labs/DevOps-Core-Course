@@ -31,7 +31,7 @@ In this lab you will practice:
 
 **This is an Exam Alternative Lab.** Complete both Lab 17 (Cloudflare Workers) and Lab 18 (Nix) to the required bar to replace the final exam. See Lab 17 for the exam-alternative deadline and minimum-score rules. Taken on its own, Lab 18 is a **bonus** lab: **10 pts** of main tasks (6 + 4) + a **2 pt** bonus = **12 pts max**.
 
-**Tech stack (May 2026):** Nix **2.25+** (flakes stable since 2.18; Determinate / official installer) · `nixos/nix` container as the WSL-friendly path · nixpkgs `nixos-24.11` (release branch, pinned via flake input) · `dockerTools.buildLayeredImage` · Docker (to `docker load` the resulting image)
+**Tech stack (May 2026):** Nix **2.25+** (flakes stable since 2.18; Determinate / official installer) · `nixos/nix` container as the WSL-friendly path · nixpkgs `nixos-25.11` (release branch, pinned via flake input) · `dockerTools.buildLayeredImage` · Docker (to `docker load` the resulting image)
 
 > **Lix:** a community fork of Nix (forked March 2024) is a drop-in `nix` replacement with faster evaluation and friendlier governance. Either Nix 2.25+ or current Lix works for this lab.
 
@@ -136,7 +136,7 @@ A flake is a Nix expression with three top-level fields: `description`, `inputs`
 
   inputs = {
     # YOUR TASK: pick a NIXPKGS REVISION AND PIN IT.
-    # The lab tests `nixos-24.11` (the Nov-2024 release branch). NOT `nixpkgs-unstable`
+    # The lab tests `nixos-25.11` (the Nov-2024 release branch). NOT `nixpkgs-unstable`
     # — unstable means non-reproducible across days. Use a release tag.
     # Format: github:NixOS/nixpkgs/<branch-or-rev>
     nixpkgs.url = ___;
@@ -161,7 +161,7 @@ A flake is a Nix expression with three top-level fields: `description`, `inputs`
 **Why each line is a rubric line:**
 
 - **`description`** — one sentence; appears in `nix flake show` and `nix flake metadata`. Make it useful.
-- **`inputs.nixpkgs.url`** — *the* reproducibility anchor. A release tag (`nixos-24.11`) or a specific commit SHA freezes the entire dependency tree. **`nixpkgs-unstable` is wrong here** — its tip moves daily and is the most common "reproducible build that isn't" mistake.
+- **`inputs.nixpkgs.url`** — *the* reproducibility anchor. A release tag (`nixos-25.11`) or a specific commit SHA freezes the entire dependency tree. **`nixpkgs-unstable` is wrong here** — its tip moves daily and is the most common "reproducible build that isn't" mistake.
 - **`system`** — flake outputs are per-system. Pick the one you'll demo on; classmates on other systems can add their own to your flake.
 - **`pkgs`** — `nixpkgs.legacyPackages.${system}` is the canonical handle for "the package set, evaluated for this system." Memorise it.
 - **`packages.${system}.default`** — what `nix build` (no `.#attr`) builds. This is your service.
@@ -228,7 +228,7 @@ Pick **one** builder and defend the choice in `submission18.md` — TA grading d
 
 ### 1.3 — Generate `flake.lock` and commit it
 
-`flake.lock` records the exact git SHA of every flake input. Without it, `nixpkgs/nixos-24.11` resolves to *whatever the branch tip is today* — fine for a few weeks, drifting silently over months. The lock file is what makes "build in 2026" identical to "build in 2036".
+`flake.lock` records the exact git SHA of every flake input. Without it, `nixpkgs/nixos-25.11` resolves to *whatever the branch tip is today* — fine for a few weeks, drifting silently over months. The lock file is what makes "build in 2026" identical to "build in 2036".
 
 ```bash
 cd labs/lab18
@@ -297,8 +297,11 @@ packages.${system}.dockerImg = pkgs.dockerTools.buildLayeredImage {
                                      # Point at the binary your Task-1 derivation produced —
                                      # e.g. "${app}/bin/<name>". Shell form would re-introduce the PID-1 trap
                                      # you learned to avoid in Lab 2.
-    ExposedPorts = { ___ = {}; };    # YOUR TASK: the port your service listens on (Lab 1 default: 5000/tcp).
-                                     # The key is a string like "5000/tcp".
+    ExposedPorts = { ___ = {}; };    # YOUR TASK: the port your service listens on (Lab 1 default: 5000/tcp;
+                                     # Lab 2's container overrode this via PORT=8080 env var, but a fresh Nix
+                                     # build with writeShellApplication honors Lab 1's PORT default).
+                                     # The key is a string like "5000/tcp". If you want 8080, also add
+                                     # `Env = [ "PORT=8080" ];` to this config block.
   };
 
   # THE reproducibility trick. Nix gives you a knob most container builders don't:
@@ -329,7 +332,9 @@ file result                            # confirms it's a gzip'd tar
 
 # From inside the Nix container, the docker.sock mount lets this work; on host, you have docker directly
 docker load < result                   # loads <your-name>:<your-tag>
-docker run -d -p 5001:5000 --name lab18 <your-name>:<your-tag>
+docker run -d -p 5001:5000 --name lab18 <your-name>:<your-tag>      # if you exposed 5000/tcp
+# or, if you set Env = [ "PORT=8080" ] AND ExposedPorts = { "8080/tcp" = {}; }:
+# docker run -d -p 5001:8080 --name lab18 <your-name>:<your-tag>
 curl http://localhost:5001/health      # behaves like the Lab 2 container
 ```
 
@@ -424,7 +429,7 @@ Include in the PR description: **the store path** you reproduced (`/nix/store/<h
 
 ### Task 1 — Flake builds the app (6 pts)
 - ✅ `labs/lab18/flake.nix` written from the skeleton (`description`, `inputs`, `outputs` all filled)
-- ✅ `inputs.nixpkgs.url` pinned to a **release tag** (e.g. `nixos-24.11`) — **not** `nixpkgs-unstable`
+- ✅ `inputs.nixpkgs.url` pinned to a **release tag** (e.g. `nixos-25.11`) — **not** `nixpkgs-unstable`
 - ✅ `packages.${system}.default` builds with one of `writeShellApplication`, `mkDerivation`, `buildPythonApplication`, or `buildGoModule` — choice defended in `submission18.md`
 - ✅ `flake.lock` present, **committed**, and shown in the submission with the `locked.rev` field highlighted
 - ✅ `nix build` produces a working binary at `result/bin/<name>` that runs the Lab 1 service logic
@@ -502,7 +507,7 @@ Include in the PR description: **the store path** you reproduced (`/nix/store/<h
 - **Flakes only see git-tracked files** — if you `nix build` before `git add flake.nix flake.lock app/`, Nix reports `path 'flake.nix' does not exist` or evaluates against an empty source tree. **Always `git add` first**, then build. This is THE most common Lab-18 mistake. (Reference dry-run hit it.)
 - **`safe.directory` inside the `nixos/nix` container** — the container runs as `root` (uid 0); your bind-mounted repo on the host is owned by your uid. `nix build` invokes libgit2, which refuses with `repository path '/work/' is not owned by current user`. Fix once: `git config --global --add safe.directory /work` inside the container. This is a **containerized-Nix artifact**, not a flake defect; host-Nix doesn't hit it.
 - **`dockerTools.buildLayeredImage` with `created = "now"` defeats reproducibility** — every build will produce a different image hash. Reading the docs you'll see `"now"` mentioned as the default for `buildImage`; that's exactly what you must override. Use `"1970-01-01T00:00:01Z"` (one second past the epoch — the literal epoch is rejected by some tooling).
-- **`inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable"`** — the branch tip moves daily, so today's build won't match next week's. The whole point of reproducibility is gone. Use a release tag (`nixos-24.11`) or pin a specific commit SHA.
+- **`inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable"`** — the branch tip moves daily, so today's build won't match next week's. The whole point of reproducibility is gone. Use a release tag (`nixos-25.11`) or pin a specific commit SHA.
 - **`nix flake update` rewrites `flake.lock`** — don't run it casually before a proof of reproducibility, or you'll change the closure under your own feet. Run it once after writing `flake.nix`, commit `flake.lock`, then leave it alone for the rest of the lab.
 - **`writeShellApplication` rejects unset variables** — it injects `set -euo pipefail` for you. If your script reads `$HOSTNAME` and you forgot to add `runtimeInputs = [ pkgs.inetutils ];` (or set the variable explicitly), the build passes but the script fails at runtime. Cleaner to use a Nix-resolved value.
 - **`nix-store --delete` to "force a rebuild" is brittle** — Nix may legitimately recover the cached output from elsewhere. Use `nix build --rebuild` for the Bonus proof; it explicitly does what you want (real rebuild + output-equality check).
@@ -518,7 +523,7 @@ Include in the PR description: **the store path** you reproduced (`/nix/store/<h
 2. `nix-shell -p <pkg>` (classic CLI) or `nix shell nixpkgs#<pkg>` (new CLI) drops you into a shell with that package on `$PATH` — great for testing a dep before adding it to your derivation.
 3. `nix-collect-garbage -d` frees disk space taken by old builds.
 4. Builds are sandboxed with **no network** — every dependency must be declared. If the build mysteriously needs internet, you're missing an input.
-5. Use a **release branch** for `nixpkgs` (`nixos-24.11`, `nixos-24.05`) — *not* unstable. The release tag is what makes "build today and in 2036" make sense.
+5. Use a **release branch** for `nixpkgs` (`nixos-25.11`, `nixos-24.05`) — *not* unstable. The release tag is what makes "build today and in 2036" make sense.
 6. `nix flake show` lists every output your flake exposes. Useful when your `packages.${system}` block grows.
 
 </details>

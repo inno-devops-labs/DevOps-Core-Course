@@ -56,6 +56,8 @@ cd ansible/roles && git mv app_deploy web_app
 # update every reference: playbook roles:, group_vars keys, docs
 ```
 
+> ⚠️ **More than a `mv`.** Lab 5's `app_deploy` used `community.docker.docker_container` to run a single container. Task 2 replaces that with a Compose deployment, so `tasks/main.yml` and `handlers/main.yml` get **rewritten**, not edited. Keep the Vault file + the role's `defaults/main.yml` skeleton — but expect to **rename variables** to match Lab 6's new keys (`app_port` → `app_host_port` / `app_internal_port`, `docker_image_tag` → `docker_tag`, `app_container_name` → `app_name`). Grep `group_vars/` and `inventory/` for the old names after you write `defaults/main.yml` in §2.4.
+
 ---
 
 ## Task 1 — Refactor with Blocks & Tags (2 pts)
@@ -130,21 +132,31 @@ Apply the same shape with these requirements:
 
 It's easy to write `rescue:` and never exercise it — and an unproven rescue path is worse than no rescue at all (you'll find out it doesn't work the day you need it).
 
-`YOUR TASK`: deliberately break a task inside one of your blocks **once** (e.g. point an `apt_repository` at `http://does-not-exist.example.com/` for a single run), confirm the rescue runs, then revert. Capture the **rescue task's output** in the proof section — the recap line `rescued=1` alone is not enough.
+`YOUR TASK`: deliberately break a task inside one of your blocks **once**, confirm the rescue runs, then revert. Capture the **rescue task's output** in the proof section — the recap line `rescued=1` alone is not enough.
+
+Two safe ways to force a failure (pick one — both fail the *block* task, both let `rescue` catch it, both revert cleanly):
+
+1. **Edit the role for one run.** Point `apt_repository:` at `http://does-not-exist.example.com/` (or set an apt key URL to a 404), run, then `git checkout roles/<role>/tasks/main.yml` to revert. Pro: most realistic — it's the exact failure mode rescue exists for.
+2. **Use `--extra-vars` + a dummy assertion.** Add `ansible.builtin.fail: msg="forced"` gated by `when: simulate_failure | default(false) | bool` inside the block; run once with `-e simulate_failure=true`, capture proof, run again without it. Pro: no `git checkout` dance; the trigger lives in the role and you can re-run the proof on demand.
+
+> **Do not** comment out a task or run with `--check` — neither exercises the rescue path. The block's task must actually FAIL (`failed=1` on a task line before the rescue line).
 
 ### 1.5 Verify selective execution
 
 ```bash
-ansible-playbook playbooks/provision.yml --list-tags
-ansible-playbook playbooks/provision.yml --tags docker_install
-ansible-playbook playbooks/provision.yml --skip-tags common
-ansible-playbook playbooks/provision.yml --tags docker --check     # dry-run
+ansible-playbook playbooks/provision.yml --list-tags                # shows the union of all tags
+ansible-playbook playbooks/provision.yml --list-tasks --tags docker # tasks the next --tags docker run would run
+ansible-playbook playbooks/provision.yml --tags install             # action axis: install-only across roles
+ansible-playbook playbooks/provision.yml --skip-tags common         # component axis: everything but common
+ansible-playbook playbooks/provision.yml --tags docker --check      # dry-run, component axis
 ```
+
+> `--list-tags` only prints the union — it does **not** prove your taxonomy is three-axis (component / action / risk-gate). Pair it with `--list-tasks --tags <axis>` from each axis to show selective filtering actually reaches the right slice. The taxonomy table from §1.1 carries the explanation.
 
 ### 1.6 Proof of work — paste into `docs/LAB06.md`
 
-- The **`--list-tags` output**, unedited. Must show your three-axis taxonomy.
-- One **selective `--tags`** run showing **most tasks skipped** (not "all 12 ran with tag=docker_install").
+- The **`--list-tags` output**, unedited. Tags from all three axes (component / action / risk-gate) must be present in the union.
+- One **selective `--tags`** run from EACH axis (e.g. `--tags docker`, `--tags install`, plus a `--tags web_app_wipe` dry-run) showing **most tasks skipped** in each — not "all 12 ran with tag=docker_install".
 - The **rescue path output** from 1.4 — the actual task name + result, not just `PLAY RECAP`.
 - Your taxonomy table from 1.1.
 
@@ -279,13 +291,19 @@ Setup notes (these don't need YOUR-TASK; they are plumbing):
 
 `YOUR TASK`: declare the defaults. The keys you need: `app_name`, `docker_image`, `docker_tag`, `app_host_port`, `app_internal_port`, `compose_project_dir`, `restart_policy`, `app_env`. Use sensible defaults. **Do not** default `docker_tag` to `latest` for prod — pin it per-env in `group_vars`. Keep real secrets in your Lab 5 Vault file (`group_vars/.../vault.yml`) and merge them into `app_env` from there.
 
+> ⚠️ **Migrate the Lab 5 names** at the same time. Lab 5 used `app_port`, `app_container_name`, `docker_image_tag` — those collide or just plain confuse against Lab 6's `app_host_port` / `app_internal_port`, `app_name`, `docker_tag`. After you write `defaults/main.yml`, `grep -RIn 'app_port\|app_container_name\|docker_image_tag' ansible/` and rename anything still using the old keys (group_vars, host_vars, vault). Leaving both around silently breaks templating.
+
 ### 2.5 Verify
 
 ```bash
-ansible-playbook playbooks/deploy.yml --tags deploy     # run #1: changed
-ansible-playbook playbooks/deploy.yml --tags deploy     # run #2: ok (changed=0)
-docker compose -f /opt/<app>/docker-compose.yml ps      # (healthy)
-curl -fsS http://<VM-IP>:<port>/health | jq .
+ansible-playbook playbooks/deploy.yml --tags deploy            # run #1: changed
+ansible-playbook playbooks/deploy.yml --tags deploy            # run #2: ok (changed=0)
+# On the target VM. Substitute YOUR values from group_vars/all.yml (not Jinja —
+# Jinja is only rendered inside Ansible-managed files, not in your shell).
+docker compose -f "<compose_project_dir>/docker-compose.yml" ps   # (healthy)
+curl -fsS "http://<VM-IP>:<app_host_port>/health" | jq .
+# Or run the same checks via Ansible, where {{...}} IS rendered:
+# ansible all -m shell -a 'docker compose -f {{ compose_project_dir }}/docker-compose.yml ps'
 ```
 
 ### 2.6 Proof of work — paste into `docs/LAB06.md`
@@ -317,7 +335,7 @@ Two **independent** gates: a `when:` variable check **and** an opt-in tag. Both 
 | `deploy.yml -e web_app_wipe=true` | Yes — wipe **then** deploy | clean reinstall |
 | `deploy.yml -e web_app_wipe=true --tags web_app_wipe` | Yes — wipe **only** | deploy tasks skipped by tag |
 
-> The special `never` tag alone is not enough — a typo in `--tags never` is one character away from `--tags ever`. Two **independent** gates: a typo in one cannot also flip the other.
+> Why two gates and not just the special `never` tag? `never` is a single gate — anyone who passes `--tags web_app_wipe` (or, with `never`, anyone who passes `--tags never`) triggers the wipe. A second, independent gate (the variable) means a typo or a CI mistake in **either** dimension alone is harmless: the other gate still blocks. Defence in depth, not cleverness in one place.
 
 ### 3.2 Implement
 
@@ -333,8 +351,9 @@ The shape:
       ___:                                     # YOUR TASK: which module?
         project_src: "{{ compose_project_dir }}"
         state: ___                             # YOUR TASK: which state removes it?
-      failed_when: ___                         # YOUR TASK: be tolerant when dir doesn't exist yet
-                                               #            (already-clean case)
+      failed_when: ___                         # YOUR TASK: tolerate the already-clean case
+                                               #            (hint: `false` is one answer; a list
+                                               #             of conditions is the better one)
 
     - name: ___                                # YOUR TASK: remove the project dir
       ___:
@@ -425,11 +444,15 @@ jobs:
 
 ### 4.2 Pick an auth tier
 
+> ⚠️ **First, the easy mistake:** the auto-injected `secrets.GITHUB_TOKEN` authenticates to **GitHub** (the API, GHCR). It is **not** an SSH key, it cannot log in to your VM. Plain SSH-to-VM always needs *something* — a key, or a federated mechanism that ultimately produces a key/session.
+
+> ⚠️ **OIDC for SSH-to-VM, honestly.** OIDC's win is "no long-lived secret in GitHub" — but the VM at the far end has to accept the federated identity. That means: AWS SSM Session Manager / EC2 Instance Connect, GCP IAP TCP-tunnel, or a cloud-provisioned short-lived SSH cert (e.g. Teleport, HashiCorp Boundary, Smallstep). **Raw `ssh user@ip` against a hand-built VM with `authorized_keys` does NOT speak OIDC.** Pick OIDC only if your Lab 4 cloud supports one of these paths; otherwise the honest answer is Tier 2 (Environment secret + a deploy key) and the lab grades you on **justifying the choice**, not on picking OIDC for cosmetics.
+
 | Tier | Mechanism | Trade-off |
 |------|-----------|-----------|
 | Repo secret as env | `secrets.SSH_KEY` → `~/.ssh/id_ed25519` | Simple; a long-lived key is the new "password in source" |
-| GitHub Environment | Per-env secrets + manual approval | Needed for prod; small ops overhead |
-| **OIDC + cloud IAM** | Short-lived federated token, no static key | Recommended where the target supports it |
+| GitHub Environment | Per-env secrets (deploy key per env) + manual approval | Needed for prod; small ops overhead |
+| **OIDC + cloud IAM** | Short-lived federated token → cloud-mediated SSH (SSM / IAP / cert) | No static key in CI; requires the target to support a federated SSH path |
 
 `YOUR TASK`: pick one, implement it. Justify your choice in the docs in 2–3 sentences referencing the trade-offs above. The skeletons:
 
@@ -449,11 +472,14 @@ jobs:
 
 ```yaml
       - env:
-          VAULT: ${{ secrets.VAULT_PASS }}
-          SSH:   ${{ secrets.SSH_KEY }}
+          VAULT:  ${{ secrets.VAULT_PASS }}
+          SSH:    ${{ secrets.SSH_KEY }}
+          VM_IP:  ${{ secrets.VM_IP }}        # secret: target VM IP or DNS name from your Lab 4 / inventory
         run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
           install -m 600 /dev/stdin ~/.ssh/id_ed25519 <<< "$SSH"
           install -m 600 /dev/stdin /tmp/vault        <<< "$VAULT"
+          ssh-keyscan -H "$VM_IP" >> ~/.ssh/known_hosts    # avoids host-key prompts
           ___                                  # YOUR TASK: ansible-playbook with --vault-password-file
 ```
 
@@ -463,7 +489,7 @@ jobs:
 
 `ansible-playbook` returning 0 only means the playbook ran without errors — it does **not** mean the app responds. Add a smoke-test step.
 
-`YOUR TASK`: write a step that polls `/health` up to N times (you pick a bounded N), exits 0 on first 200, exits 1 if it never comes up. Use plain shell, not a third-party action. Hint: `curl -fsS` returns non-zero on non-2xx; pair it with a small retry loop.
+`YOUR TASK`: write a step that polls `/health` **on the deployed VM** (not `localhost` on the runner — that's just curling GitHub's runner) up to N times (you pick a bounded N), exits 0 on first 200, exits 1 if it never comes up. Use plain shell, not a third-party action. Hint: `curl -fsS http://<VM-IP>:<app_host_port>/health` returns non-zero on non-2xx; pair it with a small retry loop. Get the VM address from the same source the playbook used (inventory variable, GH variable, or `terraform output -json`).
 
 Add the status badge to your repo `README.md`:
 
@@ -473,7 +499,7 @@ Add the status badge to your repo `README.md`:
 
 ### 4.4 Deployment strategy
 
-`serial:` on a play caps how many hosts deploy **at the same moment**. It does NOT mean "deploy to 25% of hosts and stop" — see Common Pitfalls.
+`serial:` on a play caps how many hosts deploy **at the same moment**. It does **NOT** mean "deploy to 50% of hosts and stop." With 10 hosts and `serial: "50%"`, Ansible runs **two batches of 5** — every host eventually gets the new version. The lever controls *concurrency*, not *coverage*. For a true canary that stops to observe, use a list: `serial: [1, 5, "100%"]` — first batch is 1, then 5, then the rest.
 
 ```yaml
 - name: Deploy web tier
@@ -515,12 +541,12 @@ Build on your Task 4 workflow. The whole point: the identical image (pinned by S
 
 `YOUR TASK`:
 
-1. **Two inventories** with per-env pinned `docker_tag` (staging leads, prod lags):
+1. **Two inventories** with per-env pinned `docker_tag` (staging leads, prod lags). Both tags must point at the **same `docker_image`** that exists in your registry — promotion means "same image, newer environment", never a rebuild:
 
    ```
    ansible/inventories/
-     staging/hosts.ini   group_vars/all.yml   docker_tag: ___        # YOUR TASK: rc tag
-     prod/hosts.ini      group_vars/all.yml   docker_tag: ___        # YOUR TASK: pinned older tag
+     staging/hosts.ini   group_vars/all.yml   docker_tag: ___   # YOUR TASK: the newer SemVer or :sha-abc123 — what staging is testing
+     prod/hosts.ini      group_vars/all.yml   docker_tag: ___   # YOUR TASK: the SemVer / SHA that already passed staging — what prod is running
    ```
 
    Per-env Vault files. Do **not** branch the playbook on `inventory_hostname == 'prod'` — branch on **variables only**.
@@ -662,9 +688,10 @@ PR checklist:
 - **Compose v2 vs v1 module names.** `community.docker.docker_compose` (v1, deprecated) and `community.docker.docker_compose_v2` (current) look one underscore apart. v1 shells out to the dead `docker-compose` Python CLI and errors with *"docker-compose: command not found"* on a fresh Ubuntu 24.04. **Always use `docker_compose_v2`.**
 - **FQCN vs bare module name.** `ansible-lint` flags `apt:` / `file:` / `template:` as `fqcn[action-core]`. Use `ansible.builtin.apt`, `ansible.builtin.file`, `ansible.builtin.template`. CI will fail your PR otherwise.
 - **`serial: "50%"` semantics.** `serial` caps **concurrent** hosts, not total. With 10 hosts and `serial: "50%"`, Ansible runs **two batches of 5** — every host eventually gets the new version. It is **not** "deploy to 50% and stop." For a true canary, use `serial: [1, 5, "100%"]` (a list — first batch is 1, then 5, then the rest).
-- **`-e web_app_wipe=true` is a STRING.** Without `| bool`, the `when` evaluates `"true"` — which is truthy as a non-empty string, so `when: web_app_wipe` would also pass `when: web_app_wipe="false"`. The `| bool` filter coerces `"true"`/`"false"`/`"yes"`/`"no"` to real booleans. Forget it and the gate is broken in the most dangerous direction.
+- **`-e web_app_wipe=true` is a STRING.** Ansible passes `--extra-vars key=value` as a Python `str`, not a `bool`. Without `| bool`, `when: web_app_wipe` evaluates the truthiness of the **string** — and *both* `"true"` and `"false"` are non-empty strings, so both pass. The gate that's supposed to keep prod safe fires on `-e web_app_wipe=false` too. The `| bool` filter coerces `"true"` / `"false"` / `"yes"` / `"no"` / `"1"` / `"0"` to real booleans. Forget it and the gate is broken **in the most dangerous direction** — wipe runs when you typed "false".
 - **`| default('latest')` in production.** Convenient for dev, fatal in prod — re-deploying with `docker_tag=latest` silently picks up whatever was pushed to the registry since. Pin per-env in `group_vars`. The Bonus task makes this explicit.
 - **`become: true` repeated per task.** Lift it to the `block`; tagging the block also tags every task inside. Less noise, fewer drift bugs.
+- **Lab 7 reuses port 8080.** Next lab's Compose stack defines an `app` service on host port 8080 too. If you keep Lab 6's stack running while you start Lab 7, the second `docker compose up -d` errors with *"port is already allocated"*. Pick a non-conflicting `app_host_port` here (e.g. 8084), or `docker compose down` Lab 6 before starting Lab 7. Lab 7 expects an `app=devops-python` container label — if you're keeping both alive, set that label on this lab's container too so Lab 7's relabel rule sees it.
 
 </details>
 
