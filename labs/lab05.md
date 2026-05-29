@@ -2,958 +2,782 @@
 
 ![difficulty](https://img.shields.io/badge/difficulty-beginner-success)
 ![topic](https://img.shields.io/badge/topic-Configuration%20Management-blue)
-![points](https://img.shields.io/badge/points-10%2B2.5-orange)
-![tech](https://img.shields.io/badge/tech-Ansible-informational)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
+![tech](https://img.shields.io/badge/tech-Ansible--core%202.21-informational)
 
-> Learn configuration management fundamentals by building reusable Ansible roles for infrastructure provisioning and application deployment.
+> **Goal:** Configure the VM you provisioned in Lab 4 by writing three reusable Ansible roles (`common`, `docker`, `app_deploy`), then prove the whole thing is idempotent — second run, `changed=0`.
+> **Deliverable:** A PR from `lab05` with the `ansible/` project (three roles, two playbooks, encrypted Vault file, docs).
+
+---
 
 ## Overview
 
-Master the basics of Ansible by creating a professional role-based automation system. You'll build roles for system provisioning (Docker, common packages) and application deployment, demonstrating idempotency, handlers, and secure credential management with Ansible Vault.
+In this lab you will practice:
+- Writing **idempotent** tasks with FQCN modules (`ansible.builtin.*`, `community.docker.*`)
+- Organising tasks into **roles** (`tasks/`, `handlers/`, `defaults/`, `templates/`) instead of one giant playbook
+- Using **handlers** so a service restarts only when its config actually changed
+- Encrypting secrets with **Ansible Vault** so they live in Git safely
+- Reading PLAY RECAP output: `changed=N` on run 1, `changed=0` on run 2 — the acceptance test of configuration management
 
-**What You'll Learn:**
-- Ansible roles architecture and best practices
-- Role-based code organization for reusability
-- Writing tasks, handlers, and defaults
-- Idempotency and why it matters
-- Ansible Vault for secure credential management
-- Handlers for efficient service management
-- Infrastructure verification and health checks
-- Basic application deployment with Docker
+> ⚠️ **Scope:** Lab 4 *provisioned* the box (Terraform/Pulumi gave it an IP). Lab 5 *configures* what's inside. Lab 6 will add tags, blocks, Compose, and a CI workflow on top of these roles — and will **rename `app_deploy` → `web_app`** via `git mv`. The role names you pick this week will not be permanent for `app_deploy`; everything else carries through unchanged.
 
-**Tech Stack:** Ansible 2.16+ | Ansible Vault | Docker | YAML
+> 💡 **No cloud VM? You can target localhost** — set `ansible_connection: local` in the inventory and skip `become:` on tasks that need root in a sudo-less sandbox. The role *logic* is what's graded; running cleanly against localhost with `--check` (where `become` is the only blocker) is accepted as a deliverable. Capture both PLAY RECAPs the same way (`changed=N` then `changed=0`).
 
-**Connection to Previous Labs:**
-- **Lab 4:** Use the VM you created (cloud or local)
-- **Labs 1-3:** Deploy your containerized Python app with CI/CD-built images
-- **Lab 6:** Add advanced features (blocks, tags, Docker Compose, CI/CD)
+> **A note on "LTS":** `ansible-core` has **no formal LTS label**. The open-source engine commits to ~6 months of security fixes per minor release; currently supported versions are **2.18, 2.19, 2.20, 2.21**. Use **2.21**. Red Hat's commercial *Ansible Automation Platform* offers extended support — that is a different product. Slides on the internet that say "2.17 LTS" predate the policy clarification.
 
 ---
 
-## Prerequisites
+## Project State
 
-You need a target VM from Lab 4:
-- **Option A:** Cloud VM from Lab 4 (Terraform/Pulumi)
-- **Option B:** Local VM (VirtualBox/Vagrant)
-- **Option C:** Recreate VM using your Lab 4 code
+**You should have from previous labs:**
+- Lab 2: a Docker image of your Python service pushed to Docker Hub (or any registry)
+- Lab 4: a reachable Ubuntu VM (cloud or local libvirt) with passwordless `sudo` for your login user
 
-**VM Requirements:**
-- Ubuntu 24.04 LTS or 22.04 LTS
-- SSH access configured
-- Your SSH key added
-- Sudo access (passwordless recommended for automation)
-- Python 3 installed (usually pre-installed on Ubuntu)
+**This lab adds:**
+- `ansible/` — three roles, two playbooks, static inventory, encrypted Vault, docs
+
+By Lab 6 these same roles get tags + blocks + a CI workflow; by Lab 9 the same image runs on Kubernetes. The decisions you make this week — role granularity, variable layout, FQCN — outlive Lab 5.
 
 ---
 
-## Tasks
+## Setup
 
-### Task 1 — Ansible Setup & Role Structure (2 pts)
+Control node (your laptop or CI runner):
 
-**Objective:** Install Ansible locally, create proper role-based project structure, and configure inventory.
-
-#### 1.1 Install Ansible
-
-Install Ansible on your local machine (control node):
-
-**Ubuntu/Debian:**
 ```bash
-sudo apt update
-sudo apt install ansible
+python3 --version          # 3.11+
+python3 -m venv .venv && source .venv/bin/activate
+pip install "ansible-core==2.21.*"
+ansible --version          # expect: ansible [core 2.21.x] / python 3.11+
+ansible-galaxy collection install community.docker community.general
 ```
 
-**macOS:**
-```bash
-brew install ansible
-```
+Target VM (from Lab 4):
+- Ubuntu 24.04 LTS (or 22.04)
+- SSH access with your key
+- **Passwordless `sudo`** for the login user (cloud-init's default — `become:` fails without it)
+- Python 3 present (default on Ubuntu)
 
-**Windows:**
-- Use WSL2 and install in Linux environment
-- OR use Ansible via Docker
-
-Verify installation: `ansible --version`
-
-#### 1.2 Create Role-Based Project Structure
-
-Create this structure:
+Create the directory layout (you'll fill the files yourself):
 
 ```
 ansible/
+├── ansible.cfg
 ├── inventory/
-│   └── hosts.ini              # Static inventory
-├── roles/
-│   ├── common/                # Common system tasks
-│   │   ├── tasks/
-│   │   │   └── main.yml
-│   │   └── defaults/
-│   │       └── main.yml
-│   ├── docker/                # Docker installation
-│   │   ├── tasks/
-│   │   │   └── main.yml
-│   │   ├── handlers/
-│   │   │   └── main.yml
-│   │   └── defaults/
-│   │       └── main.yml
-│   └── app_deploy/            # Application deployment
-│       ├── tasks/
-│       │   └── main.yml
-│       ├── handlers/
-│       │   └── main.yml
-│       └── defaults/
-│           └── main.yml
-├── playbooks/
-│   ├── site.yml               # Main playbook
-│   ├── provision.yml          # System provisioning
-│   └── deploy.yml             # App deployment
+│   └── hosts.ini
 ├── group_vars/
-│   └── all.yml               # Encrypted variables (Vault)
-├── ansible.cfg               # Ansible configuration
+│   └── all/
+│       └── vault.yml             # encrypted; created in Task 3
+├── roles/
+│   ├── common/
+│   │   ├── tasks/main.yml
+│   │   └── defaults/main.yml
+│   ├── docker/
+│   │   ├── tasks/main.yml
+│   │   ├── handlers/main.yml
+│   │   ├── defaults/main.yml
+│   │   └── templates/daemon.json.j2
+│   └── app_deploy/
+│       ├── tasks/main.yml
+│       ├── handlers/main.yml
+│       └── defaults/main.yml
+├── playbooks/
+│   ├── provision.yml             # applies common + docker
+│   └── deploy.yml                # applies app_deploy
 └── docs/
-    └── LAB05.md              # Your documentation
+    └── LAB05.md                  # your submission report
 ```
 
-<details>
-<summary>💡 Why Ansible Roles?</summary>
+> Only create the subdirectories you actually use. A role with no handlers needs no `handlers/`.
 
-**What are Roles?**
+---
 
-Roles are the standard way to organize Ansible code for reusability and maintainability.
+## Task 1 — Inventory & Role Scaffolding (2 pts)
 
-**Benefits of Roles:**
+### 1.1 — Why FQCN, and why now
 
-1. **Reusability**: Use same role across projects
-2. **Organization**: Clear structure, easy to navigate
-3. **Maintainability**: Changes in one place
-4. **Sharing**: Share roles via Ansible Galaxy
-5. **Testing**: Test roles independently
-6. **Modularity**: Mix and match roles
+Since the 2021 `ansible-core` / `ansible` split, modules are referenced by their **Fully-Qualified Collection Name**: `ansible.builtin.apt`, not bare `apt`; `community.docker.docker_container`, not bare `docker_container`. Two reasons it matters:
 
-**Role Structure:**
+1. **Disambiguation.** Two collections can ship a module with the same short name. Bare names silently resolve to whichever loaded first — a Heisenbug waiting to happen on a CI runner with a different collection set.
+2. **Future-proofing.** The short-name shortcut is deprecated; new modules ship FQCN-only. Lab 6's CI workflow will lint your roles for bare names.
 
-Each role has a standard structure:
+Bare names "work" in 2026 the way `from __future__ import ...` "worked" in Python 2 — until the day they don't. Use FQCN everywhere.
 
-```
-role_name/
-├── tasks/           # Main task list
-│   └── main.yml
-├── handlers/        # Handler definitions
-│   └── main.yml
-├── defaults/        # Default variables (low priority)
-│   └── main.yml
-├── vars/            # Role variables (high priority)
-│   └── main.yml
-├── files/           # Static files to copy
-├── templates/       # Jinja2 templates
-└── meta/            # Role metadata and dependencies
-    └── main.yml
-```
+### 1.2 — Static inventory
 
-**Only create directories you need!** Empty directories can be omitted.
+`YOUR TASK`: write `inventory/hosts.ini` that puts your Lab 4 VM in a `webservers` group. Required keys per host: `ansible_host` (the IP), `ansible_user` (`ubuntu`), and a `[webservers:vars]` block with `ansible_ssh_private_key_file` (path to your Lab 4 key) and `ansible_python_interpreter=/usr/bin/python3`.
 
-**Resources:**
-- [Ansible Roles Documentation](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html)
-- [Role Directory Structure](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html#role-directory-structure)
-
-</details>
-
-#### 1.3 Configure Inventory
-
-Create `inventory/hosts.ini` with your VM details:
+Skeleton (fill the blanks; everything in `___` is yours):
 
 ```ini
 [webservers]
-your-vm-name ansible_host=<VM-IP-ADDRESS> ansible_user=<username>
+lab-vm ansible_host=___ ansible_user=___        # YOUR TASK: VM IP + SSH user (Lab 4: ubuntu)
+
+[webservers:vars]
+ansible_ssh_private_key_file=___                 # YOUR TASK: path to your Lab 4 private key (Lab 4 default: ~/.ssh/lab04)
+ansible_python_interpreter=___                   # YOUR TASK: usually /usr/bin/python3
 ```
 
 <details>
-<summary>💡 Inventory Configuration</summary>
+<summary>💡 Targeting localhost instead (sudo-less sandbox)</summary>
 
-**Static Inventory Format:**
+If you don't have a Lab 4 VM handy and want to run on the control node itself:
+
 ```ini
-[group_name]
-hostname ansible_host=192.168.1.100 ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
+[webservers]
+lab-vm ansible_host=localhost ansible_user=___ ansible_connection=local   # local exec, don't SSH
 
-[group_name:vars]
+[webservers:vars]
 ansible_python_interpreter=/usr/bin/python3
 ```
 
-**Common Connection Parameters:**
-- `ansible_host` - IP address or hostname
-- `ansible_user` - SSH username
-- `ansible_port` - SSH port (default: 22)
-- `ansible_ssh_private_key_file` - Path to SSH key
-- `ansible_python_interpreter` - Python path on target
-
-**Testing Connectivity:**
-```bash
-ansible all -i inventory/hosts.ini -m ping
-ansible webservers -i inventory/hosts.ini -a "uptime"
-```
-
-**Resources:**
-- [Ansible Inventory Documentation](https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html)
+`ansible_connection: local` makes Ansible skip SSH entirely and `exec` modules in-process. The same roles run; tasks needing root (`apt`, `service`) require local `sudo`. If your sandbox has no passwordless sudo, accept that those tasks won't apply for real but their *logic* still validates in `--check` mode — note that explicitly in your `docs/LAB05.md` and capture the `--check` PLAY RECAPs as your idempotency proof.
 
 </details>
 
-#### 1.4 Create Ansible Configuration
+### 1.3 — `ansible.cfg`
 
-Create `ansible.cfg`:
+`YOUR TASK`: write `ansible.cfg` with these keys (look up the exact section headers in the docs — don't copy from Stack Overflow, half the answers there set `host_key_checking=False` globally which is a lab convenience, not a prod practice):
+
+- `[defaults]`: `inventory` (path to your inventory), `roles_path` (path to your roles dir), `host_key_checking` (False for lab; understand why prod sets it to True), `retry_files_enabled` (False)
+- `[privilege_escalation]`: `become`, `become_method`, `become_user`
 
 ```ini
 [defaults]
-inventory = inventory/hosts.ini
-roles_path = roles
-host_key_checking = False
-remote_user = ubuntu
-retry_files_enabled = False
+inventory = ___                                   # YOUR TASK
+roles_path = ___                                  # YOUR TASK
+host_key_checking = ___                           # YOUR TASK (lab: False; explain why prod is True)
+retry_files_enabled = ___                         # YOUR TASK
 
 [privilege_escalation]
-become = True
-become_method = sudo
-become_user = root
+become = ___                                      # YOUR TASK
+become_method = ___                               # YOUR TASK
+become_user = ___                                 # YOUR TASK
 ```
 
-#### 1.5 Test Connectivity
-
-Verify Ansible can connect to your VM:
+### 1.4 — Test connectivity
 
 ```bash
 cd ansible/
-ansible all -m ping
+ansible all -m ansible.builtin.ping
 ansible webservers -a "uname -a"
 ```
 
-You should see successful responses (green "SUCCESS" messages).
+The ping must return `pong` (illustrative — your hostname will differ):
+
+```text
+lab-vm | SUCCESS => { "changed": false, "ping": "pong" }
+```
+
+### 1.5 — Proof of work
+
+Paste into `docs/LAB05.md`:
+
+- `ansible --version` output (must show 2.21.x)
+- `ansible all -m ansible.builtin.ping` output (the `pong`)
+- `ansible webservers -a "uname -a"` output (proves SSH + shell access)
+- Two sentences on **why FQCN matters** (in your own words)
 
 ---
 
-### Task 2 — System Provisioning Roles (4 pts)
+## Task 2 — Provisioning Roles: `common` + `docker` (3 pts)
 
-**Objective:** Create dedicated roles for system provisioning and demonstrate idempotency.
+A *role* is a directory tree with conventional subfolders. Drop one into a playbook with one line. The rule: if you'd copy-paste the same tasks between two playbooks, it's a role.
 
-#### 2.1 Create Common Role
+### 2.1 — `common` role — base packages + timezone
 
-Create `roles/common/tasks/main.yml`:
+`YOUR TASK`: write `roles/common/defaults/main.yml` and `roles/common/tasks/main.yml`. The defaults file holds *variables a user might want to override*; the tasks file holds the actual work.
 
-**Required Tasks:**
-- Update apt cache
-- Install essential packages (python3-pip, curl, git, vim, htop, etc.)
-- Set timezone (optional but good practice)
+`roles/common/defaults/main.yml`:
 
-**Create `roles/common/defaults/main.yml`:**
-Define default variables for packages to install.
-
-<details>
-<summary>💡 Common Role Pattern</summary>
-
-**Purpose:**
-Basic system setup that every server needs.
-
-**Typical Tasks:**
-- Update package cache
-- Install essential tools
-- Configure system settings
-- Set up logging
-- Create users/groups
-
-**Example pattern to research:**
 ```yaml
 ---
-- name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
-
-- name: Install common packages
-  apt:
-    name: "{{ common_packages }}"
-    state: present
+common_packages:                                  # YOUR TASK: list at least 4 base packages
+  - ___                                           #   (curl/git/vim/htop/ca-certificates — pick a sensible set)
+  - ___
+  - ___
+  - ___
+common_timezone: ___                              # YOUR TASK: Etc/UTC or your region
 ```
 
-**Questions:**
-- What does `cache_valid_time` do?
-- How do you define a list of packages in defaults?
-- Should you use `state: present` or `state: latest`?
+`roles/common/tasks/main.yml` — module names given (those are *the lecture's choice*); args are yours:
 
-**Resources:**
-- [apt module](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html)
-- [timezone module](https://docs.ansible.com/ansible/latest/collections/community/general/timezone_module.html)
-
-</details>
-
-#### 2.2 Create Docker Role
-
-Create `roles/docker/tasks/main.yml`:
-
-**Required Tasks:**
-1. Add Docker GPG key
-2. Add Docker repository
-3. Install Docker packages (docker-ce, docker-ce-cli, containerd.io)
-4. Ensure Docker service is running and enabled
-5. Add user to docker group
-6. Install python3-docker (for Ansible docker modules)
-
-**Create `roles/docker/handlers/main.yml`:**
-- Handler to restart Docker service
-
-**Create `roles/docker/defaults/main.yml`:**
-- Docker version constraints (if any)
-- User to add to docker group
-
-<details>
-<summary>💡 Docker Installation Pattern</summary>
-
-**Docker Installation Steps:**
-
-You need to research the official Docker installation for Ubuntu and translate it to Ansible tasks.
-
-**Key Modules:**
-- `apt_key` - Manage APT repository keys
-- `apt_repository` - Manage APT repositories
-- `apt` - Manage packages
-- `service` - Manage services
-- `user` - Manage users and groups
-
-**Questions to Research:**
-- What's Docker's official GPG key URL?
-- What repository URL should you use for Ubuntu?
-- How do you use Ansible facts like `{{ ansible_distribution_release }}`?
-- Why add user to docker group?
-- When should the handler be triggered?
-
-**Handler Pattern:**
 ```yaml
 ---
-- name: restart docker
-  service:
-    name: docker
-    state: restarted
+- name: ___                                       # YOUR TASK: one-line action description
+  ansible.builtin.apt:                            # module given
+    update_cache: ___                             # YOUR TASK
+    cache_valid_time: ___                         # YOUR TASK: why a value > 0? read the apt module's doc
+  when: ___                                       # YOUR TASK: limit to Debian-family hosts (hint: ansible_os_family)
+
+- name: ___                                       # YOUR TASK
+  ansible.builtin.package:                        # module given — note: NOT `apt:`; see Common Pitfalls
+    name: ___                                     # YOUR TASK: reference the variable from defaults
+    state: ___                                    # YOUR TASK: present? latest? justify your choice in docs/LAB05.md
+  become: ___                                     # YOUR TASK: true or false? why?
+  tags: [___]                                     # YOUR TASK: pick a tag — Lab 6 will leverage tag taxonomy
+
+- name: ___                                       # YOUR TASK: set system timezone
+  community.general.timezone:                     # module given
+    name: ___                                     # YOUR TASK: reference common_timezone
+  become: ___                                     # YOUR TASK
+  tags: [___]                                     # YOUR TASK
 ```
 
-**Trigger handler with:**
+A few of the *whys* you must answer in `docs/LAB05.md` (one sentence each):
+
+- **`become: true` is selective, not blanket.** Why does the timezone task need root but a `ping` doesn't? Why is `become: true` on the *play* a code smell when a single task is the only privilege escalator? (Hint: blast radius + readability.)
+- **`state: present` vs `state: latest`.** Both install the package. Why does `present` produce reproducible runs and `latest` quietly break idempotency the moment upstream publishes a new version?
+- **Why tag tasks now?** Lab 6 will run `ansible-playbook --tags docker` to deploy only the Docker bits. If you don't tag now, Lab 6's first step is "go back and tag everything." Build the habit.
+
+### 2.2 — `docker` role — install Docker engine
+
+`roles/docker/defaults/main.yml`:
+
 ```yaml
-- name: Some task
-  module: ...
-  notify: restart docker
+---
+docker_user: ___                                  # YOUR TASK: the login user to add to the docker group
+docker_log_max_size: ___                          # YOUR TASK: a sane value, e.g. "10m"
 ```
 
-**Resources:**
-- [Install Docker on Ubuntu (Official)](https://docs.docker.com/engine/install/ubuntu/)
-- [Ansible Handlers](https://docs.ansible.com/ansible/latest/user_guide/playbooks_handlers.html)
+`roles/docker/templates/daemon.json.j2` — Jinja2 template rendered to `/etc/docker/daemon.json`:
 
-</details>
+```jinja
+{
+  "log-driver": "___",                            # YOUR TASK: choose a driver (json-file or local)
+  "log-opts": { "max-size": "{{ ___ }}" }         # YOUR TASK: reference your default
+}
+```
 
-#### 2.3 Create Provisioning Playbook
+`roles/docker/handlers/main.yml`:
 
-Create `playbooks/provision.yml`:
+```yaml
+---
+- name: ___                                       # YOUR TASK: handler name — keep it short, you'll `notify:` it
+  ansible.builtin.service:                        # module given
+    name: ___                                     # YOUR TASK
+    state: ___                                    # YOUR TASK: restarted? reloaded? why?
+```
+
+`roles/docker/tasks/main.yml` — the heavy lifting. Module names are given (those follow the lecture's slide-20 example); the args are the skill:
+
+```yaml
+---
+- name: ___                                       # YOUR TASK: install prerequisites
+  ansible.builtin.apt:                            # module given
+    name: ___                                     # YOUR TASK: list — apt-transport-https, ca-certificates, curl, gnupg, lsb-release
+    state: ___                                    # YOUR TASK
+    update_cache: ___                             # YOUR TASK
+
+- name: ___                                       # YOUR TASK: add Docker's official APT key
+  ansible.builtin.get_url:                        # module given (deb822_repository is also valid — pick one and justify)
+    url: ___                                      # YOUR TASK: the Docker download URL for the gpg key
+    dest: ___                                     # YOUR TASK: a path under /etc/apt/keyrings/
+    mode: ___                                     # YOUR TASK: file mode (string, e.g. "0644")
+
+- name: ___                                       # YOUR TASK: add the Docker APT repository
+  ansible.builtin.apt_repository:                 # module given
+    repo: ___                                     # YOUR TASK — use {{ ansible_distribution_release }} so it works on jammy + noble
+    state: ___                                    # YOUR TASK
+    filename: ___                                 # YOUR TASK: a stable filename in /etc/apt/sources.list.d/
+
+- name: ___                                       # YOUR TASK: install docker-ce + cli + containerd.io
+  ansible.builtin.apt:                            # module given
+    name: ___                                     # YOUR TASK: list of three packages
+    state: ___                                    # YOUR TASK
+    update_cache: ___                             # YOUR TASK
+  notify: ___                                     # YOUR TASK: name your handler from above
+
+- name: ___                                       # YOUR TASK: render daemon.json
+  ansible.builtin.template:                       # module given
+    src: ___                                      # YOUR TASK: filename in templates/
+    dest: ___                                     # YOUR TASK: /etc/docker/daemon.json
+    mode: ___                                     # YOUR TASK
+  notify: ___                                     # YOUR TASK: fires ONLY if the rendered file differs
+
+- name: ___                                       # YOUR TASK: ensure docker service is started + enabled
+  ansible.builtin.service:                        # module given
+    name: ___                                     # YOUR TASK
+    state: ___                                    # YOUR TASK
+    enabled: ___                                  # YOUR TASK
+
+- name: ___                                       # YOUR TASK: add the user to the docker group
+  ansible.builtin.user:                           # module given
+    name: ___                                     # YOUR TASK: {{ docker_user }}
+    groups: ___                                   # YOUR TASK
+    append: ___                                   # YOUR TASK: true — why is `append` critical here? what does the default do?
+
+- name: ___                                       # YOUR TASK: install the Docker SDK for Python
+  ansible.builtin.pip:                            # module given — without this, community.docker.* modules fail
+    name: ___                                     # YOUR TASK: package name (it's not "docker-py" anymore)
+    state: ___                                    # YOUR TASK
+```
+
+The *whys* you must answer:
+
+- **Why `{{ ansible_distribution_release }}`?** It resolves to `noble` on Ubuntu 24.04 and `jammy` on 22.04 — one role, both distros. (Comes from `gather_facts: true` — leave it on.)
+- **Why the `notify:` on the template task, not the apt task?** A package install is a one-shot. A config-file change should restart Docker only when the file *actually changes*. That's the handler's purpose: a fresh first run restarts Docker once; the second run sees the file unchanged and skips the handler entirely. No `changed`, no restart, no downtime.
+- **Why `append: true` on the user task?** Without it, Ansible *replaces* the user's group list — booting them out of `sudo`, `adm`, every group they were already in. This is the single most common Ansible footgun on shared boxes.
+
+### 2.3 — Provisioning playbook
+
+`playbooks/provision.yml` — thin by design, all logic lives in the roles:
 
 ```yaml
 ---
 - name: Provision web servers
-  hosts: webservers
-  become: yes
-
+  hosts: ___                                      # YOUR TASK: target group
+  become: ___                                     # YOUR TASK: true at play level, OR false + per-task become — argue your choice
+  gather_facts: ___                               # YOUR TASK: needed for ansible_distribution_release
   roles:
-    - common
-    - docker
+    - ___                                         # YOUR TASK
+    - ___                                         # YOUR TASK
 ```
 
-**That's it!** The playbook is clean because all logic is in roles.
+### 2.4 — Run and verify
 
-#### 2.4 Run Provisioning and Demonstrate Idempotency
-
-**First Run:**
 ```bash
-ansible-playbook playbooks/provision.yml
+ansible-playbook playbooks/provision.yml          # first real run
 ```
 
-Observe the output - tasks should show "changed" status (yellow).
+First run is mostly yellow (illustrative; your `changed` count will differ):
 
-**Second Run:**
-```bash
-ansible-playbook playbooks/provision.yml
+```text
+PLAY RECAP **********************************************************
+lab-vm : ok=11  changed=8  unreachable=0  failed=0
 ```
 
-**CRITICAL:** Tasks should show "ok" status (green), not "changed". This demonstrates idempotency!
+### 2.5 — Proof of work
 
-<details>
-<summary>💡 Understanding Idempotency</summary>
+Paste into `docs/LAB05.md`:
 
-**What is Idempotency?**
-
-An idempotent operation produces the same result whether executed once or multiple times.
-
-**In Ansible:**
-- Running a playbook multiple times should be safe
-- Only makes changes when needed
-- Doesn't break if run repeatedly
-- Converges to desired state
-
-**Ansible Output Colors:**
-- **Green (ok):** Task ran, no change needed (desired state already achieved)
-- **Yellow (changed):** Task made a change to reach desired state
-- **Red (failed):** Task failed
-- **Dark (skipped):** Task was skipped
-
-**Why Idempotency Matters:**
-
-1. **Safety:** Can re-run playbooks without fear
-2. **Reliability:** Consistent results
-3. **Recovery:** Re-run after partial failure
-4. **Drift Detection:** Changes only when state drifts
-5. **Confidence:** Know exactly what will change
-
-**Making Tasks Idempotent:**
-
-**Use Stateful Modules:**
-- `apt: state=present` (not just `apt: name=package`)
-- `service: state=started` (not `command: systemctl start`)
-- `file: state=directory` (not `command: mkdir`)
-
-**Testing Idempotency:**
-
-1. Run playbook first time → many "changed"
-2. Run playbook second time → all "ok", zero "changed"
-3. If tasks show "changed" on second run, investigate why
-
-**Resources:**
-- [Ansible Idempotency](https://docs.ansible.com/ansible/latest/reference_appendices/glossary.html)
-
-</details>
-
-**What to Document:**
-- Terminal output from BOTH runs
-- Analysis: Which tasks changed first time? Why?
-- Explanation: Why nothing changed second time?
+- Both files' content (`common/tasks/main.yml`, `docker/tasks/main.yml`) — fenced as YAML
+- The **full PLAY RECAP** line from `ansible-playbook playbooks/provision.yml`
+- `ansible webservers -a "docker --version"` output proving Docker is on the box
+- Your one-paragraph answer to each *why* in 2.1 and 2.2
 
 ---
 
-### Task 3 — Application Deployment Role (2 pts)
+## Task 3 — Application Deployment Role + Vault (3 pts)
 
-**Objective:** Create a deployment role that securely pulls and runs your Python containerized app using Ansible Vault for credentials.
-
-#### 3.1 Initialize Ansible Vault
-
-Create encrypted file for sensitive data:
+### 3.1 — Encrypt credentials with Ansible Vault
 
 ```bash
-ansible-vault create group_vars/all.yml
+ansible-vault create group_vars/all/vault.yml
 ```
 
-You'll be prompted for a vault password. **Remember this password!**
-
-Add your Docker Hub credentials and app configuration:
-
-```yaml
----
-# Docker Hub credentials
-dockerhub_username: your-username
-dockerhub_password: your-access-token
-
-# Application configuration
-app_name: devops-app
-docker_image: "{{ dockerhub_username }}/{{ app_name }}"
-docker_image_tag: latest
-app_port: 5000
-app_container_name: "{{ app_name }}"
-```
-
-Save and exit.
-
-<details>
-<summary>💡 Ansible Vault Best Practices</summary>
-
-**What is Ansible Vault?**
-
-Ansible Vault encrypts sensitive data so it can be safely stored in version control.
-
-**Vault Commands:**
+You'll be prompted for a Vault password. **Save that password now** in a gitignored file so the 4 reruns in Task 4 don't make you retype it:
 
 ```bash
-# Create encrypted file
-ansible-vault create filename.yml
-
-# Edit encrypted file
-ansible-vault edit filename.yml
-
-# View encrypted file
-ansible-vault view filename.yml
-
-# Encrypt existing file
-ansible-vault encrypt filename.yml
-
-# Decrypt file (careful!)
-ansible-vault decrypt filename.yml
-```
-
-**Using Vaulted Files:**
-
-**Option 1: Prompt for password:**
-```bash
-ansible-playbook playbook.yml --ask-vault-pass
-```
-
-**Option 2: Password file:**
-```bash
-echo "your-password" > .vault_pass
+echo 'your-vault-password' > .vault_pass
 chmod 600 .vault_pass
-# Add .vault_pass to .gitignore!
-
-ansible-playbook playbook.yml --vault-password-file .vault_pass
+# .vault_pass is already in your .gitignore (see "How to Submit")
 ```
 
-**Option 3: In ansible.cfg:**
-```ini
-[defaults]
-vault_password_file = .vault_pass
-```
+Tell Ansible to use it (one of two ways — pick one):
 
-**Best Practices:**
+- Per-command: `ansible-playbook playbooks/deploy.yml --vault-password-file .vault_pass`
+- In `ansible.cfg`: add `vault_password_file = .vault_pass` under `[defaults]`
 
-1. **Never commit unencrypted secrets**
-2. **Use separate file for vault password** (add to .gitignore)
-3. **Rotate vault password regularly**
-4. **Don't decrypt files permanently**
-5. **Use `no_log: true` for tasks with secrets**
+(The `--ask-vault-pass` form in §3.4 below is the prompt-each-time alternative — use whichever you prefer.)
 
-**Resources:**
-- [Ansible Vault Documentation](https://docs.ansible.com/ansible/latest/user_guide/vault.html)
+`YOUR TASK`: put your Docker Hub credentials and app config inside (the file is AES-256 encrypted at rest — safe to commit; the password is NOT).
 
-</details>
-
-#### 3.2 Create Application Deployment Role
-
-Create `roles/app_deploy/tasks/main.yml`:
-
-**Required Tasks:**
-1. Log in to Docker Hub (using vaulted credentials)
-2. Pull Docker image
-3. Stop existing container (if running)
-4. Remove old container (if exists)
-5. Run new container with:
-   - Proper port mapping (5000:5000)
-   - Environment variables (if any)
-   - Restart policy (unless-stopped)
-   - Container name
-6. Wait for application to be ready (port check)
-7. Verify health endpoint
-
-**Create `roles/app_deploy/handlers/main.yml`:**
-- Handler to restart application container
-
-**Create `roles/app_deploy/defaults/main.yml`:**
-- Default port
-- Default restart policy
-- Default environment variables
-
-<details>
-<summary>💡 Docker Deployment with Ansible</summary>
-
-**Key Modules:**
-
-**docker_login:**
-Authenticate with Docker registry.
-
-**Questions:**
-- How do you pass credentials from vaulted variables?
-- What's the `no_log` parameter for?
-
-**docker_image:**
-Manage Docker images (pull, build, remove).
-
-**Questions:**
-- How do you pull an image?
-- What's the `source: pull` parameter?
-
-**docker_container:**
-Manage Docker containers.
-
-**Questions:**
-- How do you ensure a container is running?
-- What restart policies exist?
-- How do you map ports?
-- How do you set environment variables?
-- What's the difference between `state: started` and `state: present`?
-
-**wait_for:**
-Wait for port to be available.
-
-**uri:**
-Make HTTP requests (for health checks).
-
-**Security Note:**
-Always use `no_log: true` for tasks with credentials:
 ```yaml
-- name: Login
-  docker_login:
-    username: "{{ dockerhub_username }}"
-    password: "{{ dockerhub_password }}"
-  no_log: true  # Prevents credentials in logs
+---
+dockerhub_username: ___                           # YOUR TASK: your Docker Hub username
+dockerhub_password: ___                           # YOUR TASK: an ACCESS TOKEN (dckr_pat_…), not your login password
+docker_image: ___                                 # YOUR TASK: e.g. "{{ dockerhub_username }}/devops-info-service"
+docker_image_tag: ___                             # YOUR TASK: prefer an immutable tag (a SHA) over "latest"
+app_port: ___                                     # YOUR TASK
+app_container_name: ___                           # YOUR TASK
 ```
 
-**Resources:**
-- [docker_login module](https://docs.ansible.com/ansible/latest/collections/community/docker/docker_login_module.html)
-- [docker_image module](https://docs.ansible.com/ansible/latest/collections/community/docker/docker_image_module.html)
-- [docker_container module](https://docs.ansible.com/ansible/latest/collections/community/docker/docker_container_module.html)
-- [wait_for module](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/wait_for_module.html)
-- [uri module](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html)
+Confirm it decrypts:
 
-</details>
+```bash
+ansible-vault view group_vars/all/vault.yml
+```
 
-#### 3.3 Create Deployment Playbook
+> Why a Docker Hub *access token*, not your account password? An access token is scoped (read-only / read-write / admin), revocable per-token, and shows up in your DH audit log. A password leak compromises the whole account.
 
-Create `playbooks/deploy.yml`:
+### 3.2 — `app_deploy` role
+
+`roles/app_deploy/defaults/main.yml`:
+
+```yaml
+---
+app_restart_policy: ___                           # YOUR TASK: unless-stopped or on-failure — why?
+app_health_path: ___                              # YOUR TASK: /health (matches your Lab 1 service)
+```
+
+`roles/app_deploy/handlers/main.yml`:
+
+```yaml
+---
+- name: ___                                       # YOUR TASK: handler name (`restart app` is fine)
+  community.docker.docker_container:              # module given
+    name: ___                                     # YOUR TASK: {{ app_container_name }}
+    state: ___                                    # YOUR TASK
+    restart: ___                                  # YOUR TASK
+```
+
+`roles/app_deploy/tasks/main.yml` — module names given (this is the lecture's `community.docker.*` choice); args are the skill:
+
+```yaml
+---
+- name: ___                                       # YOUR TASK: log in to Docker Hub
+  community.docker.docker_login:                  # module given
+    username: ___                                 # YOUR TASK
+    password: ___                                 # YOUR TASK
+  no_log: ___                                     # YOUR TASK: true — why?
+
+- name: ___                                       # YOUR TASK: pull the image
+  community.docker.docker_image:                  # module given
+    name: ___                                     # YOUR TASK: {{ docker_image }}
+    tag: ___                                      # YOUR TASK
+    source: ___                                   # YOUR TASK: pull
+    force_source: ___                             # YOUR TASK: false — defend your answer (idempotency)
+
+- name: ___                                       # YOUR TASK: run the container
+  community.docker.docker_container:              # module given
+    name: ___                                     # YOUR TASK
+    image: ___                                    # YOUR TASK: "{{ docker_image }}:{{ docker_image_tag }}"
+    state: ___                                    # YOUR TASK
+    restart_policy: ___                           # YOUR TASK
+    ports:
+      - ___                                       # YOUR TASK: "host:container" — e.g. "{{ app_port }}:5000"
+    pull: ___                                     # YOUR TASK: never/always/missing — why never on rerun?
+
+- name: ___                                       # YOUR TASK: wait for the port to accept connections
+  ansible.builtin.wait_for:                       # module given
+    host: ___                                     # YOUR TASK
+    port: ___                                     # YOUR TASK
+    timeout: ___                                  # YOUR TASK
+
+- name: ___                                       # YOUR TASK: verify /health returns HTTP 200
+  ansible.builtin.uri:                            # module given
+    url: ___                                      # YOUR TASK: full URL ending in {{ app_health_path }}
+    status_code: ___                              # YOUR TASK
+    return_content: ___                           # YOUR TASK
+  register: ___                                   # YOUR TASK: capture the response so docs can show it
+```
+
+The *whys* (one sentence each in `docs/LAB05.md`):
+
+- **`no_log: true` on the login task** — without it, your Docker Hub token shows up plaintext in the CI build log. CI logs are world-readable on public repos. There is no "delete" button.
+- **`pull: never` on the run task** — the previous pull step already fetched the right image. `pull: always` on `docker_container` re-pulls every run, which (a) breaks idempotency cosmetically and (b) wastes a registry round-trip.
+- **Why the `community.docker` collection and not `community.general`?** Docker modules were forked into a dedicated collection in 2020 for faster release cadence. `community.general.docker_*` doesn't exist anymore — bare-Stack-Overflow answers may still reference it; they're stale.
+
+### 3.3 — Deployment playbook
+
+`playbooks/deploy.yml`:
 
 ```yaml
 ---
 - name: Deploy application
-  hosts: webservers
-  become: yes
-
+  hosts: ___                                      # YOUR TASK
+  become: ___                                     # YOUR TASK: why true? what does the docker_container module need root for?
+  gather_facts: ___                               # YOUR TASK
   roles:
-    - app_deploy
+    - ___                                         # YOUR TASK
 ```
 
-#### 3.4 Run Deployment
+### 3.4 — Run and verify
 
 ```bash
-ansible-playbook playbooks/deploy.yml --ask-vault-pass
+ansible-playbook playbooks/deploy.yml --ask-vault-pass    # or --vault-password-file .vault_pass
+curl -fsS http://<VM-IP>:<app_port>/health | jq .         # expect HTTP 200 + JSON
 ```
 
-Or if using password file:
-```bash
-ansible-playbook playbooks/deploy.yml
-```
+### 3.5 — Proof of work
 
-**Verify:**
-- Container is running: `ansible webservers -a "docker ps"`
-- App is accessible: `curl http://<VM-IP>:5000/health`
-- Check main endpoint: `curl http://<VM-IP>:5000/`
+Paste into `docs/LAB05.md`:
 
-**What to Document:**
-- Terminal output from deployment
-- Container status: `docker ps` output
-- Health check verification
-- Handler execution (if any)
+- `app_deploy/tasks/main.yml` content (fenced YAML)
+- The PLAY RECAP from `ansible-playbook playbooks/deploy.yml` (run #1)
+- `ansible webservers -a "docker ps --format '{% raw %}{{.Names}}\t{{.Status}}{% endraw %}'"` output (your container running)
+- `curl -s http://<VM-IP>:<port>/health | jq .` against the VM (HTTP 200, the real JSON your Lab 1 service emits)
+- Proof Vault file is encrypted: `head -1 group_vars/all/vault.yml` showing `$ANSIBLE_VAULT;1.1;AES256`
 
 ---
 
-### Task 4 — Documentation (2 pts)
+## Task 4 — Idempotency Proof (1 pt)
 
-**Objective:** Document your Ansible implementation and demonstrate understanding.
+This is the headline acceptance test. Configuration management's killer feature is that running the same playbook twice has the same effect as running it once.
 
-Create `ansible/docs/LAB05.md` with these sections:
+```bash
+# Vault password file in place (see Task 3.1) OR add --ask-vault-pass to each line
+ansible-playbook playbooks/provision.yml          # run #1
+ansible-playbook playbooks/provision.yml          # run #2
+ansible-playbook playbooks/deploy.yml             # run #1 (already done in Task 3)
+ansible-playbook playbooks/deploy.yml             # run #2
+```
 
-#### 1. Architecture Overview
-- Ansible version used
-- Target VM OS and version
-- Role structure diagram or explanation
-- Why roles instead of monolithic playbooks?
+> 💡 Once `group_vars/all/vault.yml` exists, **every** playbook (including `provision.yml`) loads it on start and needs the Vault password — even though `provision.yml` doesn't *use* the secrets. Either set `vault_password_file` in `ansible.cfg` once, or append `--ask-vault-pass` to all four commands above.
 
-#### 2. Roles Documentation
+The **second run of each must report `changed=0`**. (Illustrative.)
 
-For each role (common, docker, app_deploy):
-- **Purpose**: What does this role do?
-- **Variables**: Key variables and defaults
-- **Handlers**: What handlers are defined?
-- **Dependencies**: Does it depend on other roles?
+```text
+# provision.yml, run #1
+lab-vm : ok=11  changed=8  unreachable=0  failed=0
+# provision.yml, run #2
+lab-vm : ok=11  changed=0  unreachable=0  failed=0       # ← changed=0 = idempotent ✓
 
-#### 3. Idempotency Demonstration
-- Terminal output from FIRST provision.yml run
-- Terminal output from SECOND provision.yml run
-- Analysis: What changed first time? What didn't change second time?
-- Explanation: What makes your roles idempotent?
+# deploy.yml, run #1
+lab-vm : ok=6   changed=4  unreachable=0  failed=0
+# deploy.yml, run #2
+lab-vm : ok=6   changed=0  unreachable=0  failed=0       # ← changed=0 = idempotent ✓
+```
 
-#### 4. Ansible Vault Usage
-- How you store credentials securely
-- Vault password management strategy
-- Example of encrypted file (show it's encrypted!)
-- Why Ansible Vault is important
+If anything still changes on run #2, **the task is not idempotent — fix it**. Usual culprits:
 
-#### 5. Deployment Verification
-- Terminal output from deploy.yml run
-- Container status: `docker ps` output
-- Health check verification: `curl` outputs
-- Handler execution (if any)
+- A stray `ansible.builtin.shell` or `command` (no state model). Wrap with `creates:`/`removes:`, or replace with the proper module.
+- A template that renders a timestamp or random value.
+- `state: latest` on a package — the moment the upstream repo gets a new version, you'll see `changed=1` forever.
+- `force_source: true` on `docker_image` — always re-pulls.
 
-#### 6. Key Decisions
-Answer briefly (2-3 sentences each):
-- **Why use roles instead of plain playbooks?**
-- **How do roles improve reusability?**
-- **What makes a task idempotent?**
-- **How do handlers improve efficiency?**
-- **Why is Ansible Vault necessary?**
+Confirm there's no drift with a dry-run:
 
-#### 7. Challenges (Optional)
-- Issues encountered and solutions
-- Keep it brief - bullet points OK
+```bash
+ansible-playbook playbooks/provision.yml --check --diff
+```
+
+### 4.1 — Proof of work
+
+Paste into `docs/LAB05.md`:
+
+- Both PLAY RECAPs from `provision.yml` (run #1 changed=N, run #2 changed=0)
+- Both PLAY RECAPs from `deploy.yml` (same shape)
+- Output of the `--check --diff` dry-run (no changes, no diffs)
+- A one-paragraph analysis: which tasks changed on run #1, why they reported `ok` on run #2, and if anything stayed `changed=1` — what you fixed
 
 ---
 
-## Bonus Task — Dynamic Inventory with Cloud Plugins (2.5 pts)
+## Task 5 — Documentation (1 pt)
 
-**Objective:** Use Ansible's built-in inventory plugins to dynamically discover your cloud VMs instead of hardcoding IPs.
+`ansible/docs/LAB05.md` — required sections, in order:
 
-<details>
-<summary>💡 Why Dynamic Inventory?</summary>
+1. **Architecture** — `ansible-core` version, target OS, why three roles (not one monolithic playbook)
+2. **Roles** — for each of `common`, `docker`, `app_deploy`: purpose, key variables, handler behaviour
+3. **The *why* answers** from Tasks 2 and 3 (FQCN, selective `become`, `state: present` vs `latest`, `append: true`, handler on template vs on apt, `no_log`, `pull: never`)
+4. **Idempotency proof** — both PLAY RECAPs (Task 4) with one-paragraph analysis
+5. **Vault** — how credentials are stored, password-handling strategy, the encrypted-header proof
+6. **Deployment verification** — `docker ps` and the `/health` `curl` output
 
-**The Problem with Static Inventory:**
-```ini
-[webservers]
-vm ansible_host=192.168.1.100 ansible_user=ubuntu
-```
-- IP changes? Must update manually
-- Multiple VMs? Update each one
-- Scaling? Very tedious
+---
 
-**Dynamic Inventory Solution:**
-- Query cloud provider API automatically
-- Always up-to-date IPs
-- Filter by tags/labels
-- Group automatically
-- Scale to hundreds of VMs
+## Bonus Task — Dynamic Inventory (2 pts)
 
-**Ansible Inventory Plugins:**
-Ansible has official plugins for major clouds.
+Discover your Lab 4 VM(s) automatically via a cloud inventory plugin instead of hardcoding the IP. A static list rots the moment a VM is recreated and gets a new address — the inventory has to know that *before* Ansible can configure anything.
 
-**Available Plugins:**
-- `yandex.cloud.yandex_compute` - Yandex Cloud
-- `amazon.aws.aws_ec2` - Amazon EC2
-- `google.gcp.gcp_compute` - Google Cloud
-- `azure.azcollection.azure_rm` - Microsoft Azure
-- `community.digitalocean.digitalocean` - DigitalOcean
+`YOUR TASK`:
 
-</details>
-
-**Requirements:**
-
-1. **Install the collection for your cloud provider** from Lab 4
-
-2. **Create inventory plugin configuration file** - `ansible/inventory/<cloud>.yml`
-   - Must specify plugin name
-   - Must configure authentication
-   - Must set `ansible_host` to public IP (use `compose` parameter)
-   - Must set `ansible_user` (use `compose` parameter)
-   - Should filter running VMs only
-   - Should create groups (like `webservers`)
-
-3. **Update ansible.cfg** to use the plugin
-
-4. **Test the inventory:**
+1. Install the collection for your Lab 4 cloud:
    ```bash
-   ansible-inventory --graph    # Show discovered hosts
-   ansible all -m ping          # Test connectivity
+   ansible-galaxy collection install ___        # YOUR TASK: amazon.aws / google.cloud / azure.azcollection / yandex.cloud
+   ```
+2. Write `inventory/<cloud>.yml` that:
+   - Sets `plugin:` to the FQCN inventory plugin (e.g. `amazon.aws.aws_ec2`)
+   - Filters to **running** instances tagged for this course (use `filters:`)
+   - Uses `compose:` to set `ansible_host` to the public IP (the field name varies — see hints below)
+   - Uses `keyed_groups:` to build a group automatically (e.g. `webservers` from a `Role` tag)
+3. Point Ansible at it (`-i inventory/<cloud>.yml` or update `ansible.cfg`)
+4. Run:
+   ```bash
+   ansible-inventory -i inventory/<cloud>.yml --graph
+   ansible all -i inventory/<cloud>.yml -m ansible.builtin.ping
+   ansible-playbook -i inventory/<cloud>.yml playbooks/provision.yml --check --diff
    ```
 
-5. **Run your playbooks** with dynamic inventory
+Skeleton (AWS — adapt field names for your cloud):
+
+```yaml
+# inventory/aws.yml
+plugin: ___                                       # YOUR TASK: amazon.aws.aws_ec2
+regions:
+  - ___                                           # YOUR TASK
+filters:
+  ___: ___                                        # YOUR TASK: tag:Project=devops-core
+  instance-state-name: ___                        # YOUR TASK: running
+keyed_groups:
+  - key: ___                                      # YOUR TASK: tags.Role
+    prefix: ___                                   # YOUR TASK
+compose:
+  ansible_host: ___                               # YOUR TASK: public_ip_address (for AWS)
+```
 
 <details>
-<summary>💡 Research Path</summary>
+<summary>💡 Per-cloud field hints</summary>
 
-**Steps to Complete:**
+| Cloud | Collection | Plugin | Public-IP field |
+|---|---|---|---|
+| AWS | `amazon.aws` | `aws_ec2` | `public_ip_address` |
+| GCP | `google.cloud` | `gcp_compute` | `networkInterfaces[0].accessConfigs[0].natIP` |
+| Azure | `azure.azcollection` | `azure_rm` | `public_ipv4_addresses[0]` |
+| Yandex | `yandex.cloud` | `yandex_compute` | nested under `network_interfaces[0]` |
 
-1. **Find the right plugin** for your cloud provider
-   - Search: "ansible [your-cloud] inventory plugin"
-   - Official documentation link
-
-2. **Install collection:**
-   - Use `ansible-galaxy collection install <collection-name>`
-   - Some require additional Python packages
-
-3. **Understand required parameters:**
-   - Authentication: How does plugin authenticate?
-   - Connection: How to set `ansible_host` from cloud metadata?
-   - Grouping: How to organize hosts?
-   - Filtering: How to select only your VMs?
-
-4. **Create YAML config file:**
-   - Must start with `plugin: <plugin-name>`
-   - Research what each cloud calls their fields
-   - Example: AWS uses `public_ip_address`, GCP uses `networkInterfaces[0]...`, etc.
-
-5. **Key Questions to Research:**
-   - What authentication method to use?
-   - What's the API field name for public IP?
-   - How to filter only running VMs?
-   - How to create host groups?
-
-**Hints by Cloud:**
-
-**Yandex Cloud:**
-- Collection: `yandex.cloud`
-- Key parameters: `auth_kind`, `folder_id`, `compose`
-- IP field is nested: `network_interfaces[0]...`
-
-**AWS:**
-- Collection: `amazon.aws`
-- Key parameters: `regions`, `filters`, `compose`
-- IP field: `public_ip_address`
-- Filter by tags: `"tag:Name": value`
-
-**GCP:**
-- Collection: `google.gcp`
-- Key parameters: `projects`, `auth_kind`, `compose`
-- IP field: `networkInterfaces[0].accessConfigs[0].natIP`
-
-**Azure:**
-- Collection: `azure.azcollection`
-- Key parameters: `include_vm_resource_groups`, `compose`
-- IP field: `public_ipv4_addresses[0]`
-
-**Documentation Links:**
-- [Ansible Inventory Plugins](https://docs.ansible.com/ansible/latest/plugins/inventory.html)
-- [Dynamic Inventory Guide](https://docs.ansible.com/ansible/latest/user_guide/intro_dynamic_inventory.html)
-- Search: "ansible [cloud] inventory plugin" for specific docs
+Docs: [Inventory plugins](https://docs.ansible.com/ansible-core/2.21/plugins/inventory.html) · [aws_ec2](https://docs.ansible.com/ansible/latest/collections/amazon/aws/aws_ec2_inventory.html)
 
 </details>
 
-**What to Document:**
-- Which cloud plugin you chose and why
-- How you configured authentication
-- How you mapped cloud metadata to Ansible variables
-- Terminal output from `ansible-inventory --graph` showing auto-discovered hosts
-- Terminal output from running playbooks with dynamic inventory
-- Explanation: What happens when VM IP changes? (No manual updates needed!)
-- Benefits compared to static inventory
+### Bonus proof of work
+
+Paste into `docs/LAB05.md`:
+
+- The full `inventory/<cloud>.yml` (no secrets — auth is via env vars / IAM role)
+- `ansible-inventory --graph` output showing the auto-discovered host(s)
+- `ansible all -i inventory/<cloud>.yml -m ansible.builtin.ping` PLAY RECAP
+- One paragraph: which plugin you used and why, how you authenticated (env vars? IAM instance profile? cloud SDK config?), and what happens when a VM's IP changes (nothing — no manual edits)
 
 ---
 
 ## How to Submit
 
-1. **Create Branch:**
-   ```bash
-   git checkout -b lab05
-   ```
+```bash
+git switch -c lab05
 
-2. **Commit Work:**
-   - Add Ansible project (`ansible/` directory with roles)
-   - Add documentation (`ansible/docs/LAB05.md`)
-   - **IMPORTANT:** Add to `.gitignore`:
-     ```
-     # Ansible
-     *.retry
-     .vault_pass
-     ansible/inventory/*.pyc
-     __pycache__/
-     ```
-   - Commit: `git commit -m "feat: complete lab05 - ansible fundamentals"`
+# Keep secrets out of Git
+cat >> .gitignore <<'EOF'
+# Ansible
+*.retry
+.vault_pass
+__pycache__/
+EOF
 
-3. **Verify No Secrets:**
-   - ✅ Check vault password not committed
-   - ✅ Check `.vault_pass` not committed
-   - ✅ Encrypted vault files OK to commit (they're encrypted!)
-   - ✅ SSH private keys not committed
+git add ansible/ .gitignore
+git commit -m "feat(lab05): ansible roles — common, docker, app_deploy + idempotency proof"
+git push -u origin lab05
+```
 
-4. **Create Pull Requests:**
-   - **PR #1:** `your-fork:lab05` → `course-repo:master`
-   - **PR #2:** `your-fork:lab05` → `your-fork:master`
+**Verify before pushing:** `.vault_pass` absent, SSH private keys absent, only the *encrypted* `vault.yml` committed.
+
+Open **two** PRs:
+
+- `your-fork:lab05` → `course-repo:master` *(reviewed)*
+- `your-fork:lab05` → `your-fork:master` *(merges into your own main when done)*
+
+PR checklist:
+
+```text
+- [ ] Task 1 done — inventory + ansible.cfg + ping succeeds
+- [ ] Task 2 done — common + docker roles applied; PLAY RECAP captured
+- [ ] Task 3 done — app_deploy role + encrypted Vault; /health curl is HTTP 200
+- [ ] Task 4 done — idempotency: both run #2 PLAY RECAPs show changed=0
+- [ ] Task 5 done — docs/LAB05.md covers all six sections with the *why* answers
+- [ ] Bonus — dynamic inventory: ansible-inventory --graph + ping against it
+```
 
 ---
 
 ## Acceptance Criteria
 
-### Main Tasks (10 points)
+### Task 1 (2 pts)
+- ✅ `ansible-core` 2.21 installed (`ansible --version`)
+- ✅ Three roles scaffolded (`common`, `docker`, `app_deploy`) with conventional subdirs
+- ✅ Static inventory + `ansible.cfg` configured
+- ✅ `ansible all -m ansible.builtin.ping` returns `pong`
 
-**Setup & Structure (2 pts):**
-- [ ] Proper role-based directory structure created
-- [ ] All three roles created (common, docker, app_deploy)
-- [ ] Each role has appropriate tasks, handlers, and defaults
-- [ ] Ansible.cfg configured correctly
-- [ ] Inventory configured and connectivity tested
+### Task 2 (3 pts)
+- ✅ `common` role installs base packages, sets timezone — passes with `become: true` only where root is needed
+- ✅ `docker` role installs Docker Engine, renders `daemon.json`, manages the service, adds the user to the `docker` group with `append: true`
+- ✅ All tasks use FQCN modules
+- ✅ Handler restarts Docker **only** on template change (`notify:` on the template task)
+- ✅ `provision.yml` applies both roles cleanly
 
-**System Provisioning (4 pts):**
-- [ ] Common role implemented
-- [ ] Docker role implemented with all required tasks
-- [ ] Provision playbook uses roles correctly
-- [ ] **Idempotency demonstrated** (two runs, second shows no changes)
-- [ ] Terminal output from both runs provided
-- [ ] Handlers used appropriately
+### Task 3 (3 pts)
+- ✅ Credentials stored in an encrypted Vault file (`head -1` shows `$ANSIBLE_VAULT;1.1;AES256`)
+- ✅ `app_deploy` role pulls the Lab 2 image and runs it as a container
+- ✅ `no_log: true` on the login task
+- ✅ `/health` returns HTTP 200; `curl` output captured
 
-**Application Deployment (2 pts):**
-- [ ] Ansible Vault used for credentials
-- [ ] Vault file encrypted (verify with `ansible-vault view`)
-- [ ] App_deploy role complete with all required tasks
-- [ ] Deploy playbook uses role correctly
-- [ ] Container running with proper configuration
-- [ ] Health check verification included
-- [ ] Handlers defined in role
+### Task 4 (1 pt)
+- ✅ Run #1 PLAY RECAP shows `changed > 0`
+- ✅ Run #2 PLAY RECAP shows `changed=0` — for **both** `provision.yml` and `deploy.yml`
+- ✅ `--check --diff` shows no drift
 
-**Documentation (2 pts):**
-- [ ] `ansible/docs/LAB05.md` complete with all sections
-- [ ] Architecture and role structure explained
-- [ ] Each role documented (purpose, variables, handlers)
-- [ ] Idempotency analysis included
-- [ ] Vault usage documented
-- [ ] Key decisions explained
+### Task 5 (1 pt)
+- ✅ `docs/LAB05.md` covers all six sections
 
-### Bonus Task (2.5 points)
-
-**Dynamic Inventory (2.5 pts):**
-- [ ] Cloud inventory plugin configured
-- [ ] Integrates with your cloud provider from Lab 4
-- [ ] Playbooks work with dynamic inventory
-- [ ] Terminal output showing `ansible-inventory --graph`
-- [ ] Benefits documented
+### Bonus Task (2 pts)
+- ✅ Cloud inventory plugin configured for the Lab 4 provider
+- ✅ `ansible-inventory --graph` shows auto-discovered hosts
+- ✅ A playbook runs successfully against the dynamic inventory
 
 ---
 
 ## Rubric
 
-| Criteria | Points | Description |
-|----------|--------|-------------|
-| **Setup & Structure** | 2 pts | Proper role architecture, clean organization |
-| **System Provisioning** | 4 pts | All roles working, idempotent, handlers used |
-| **Application Deployment** | 2 pts | Vault used, role-based deployment, app running |
-| **Documentation** | 2 pts | Complete, clear, justifies decisions |
-| **Bonus: Dynamic Inventory** | 2.5 pts | Cloud plugin working |
-| **Total** | 12.5 pts | 10 pts required + 2.5 pts bonus |
+| Task | Points | Criteria |
+|------|-------:|----------|
+| **Task 1** — Inventory & scaffolding | **2** | FQCN ping, cfg, three-role layout |
+| **Task 2** — `common` + `docker` roles | **3** | Idempotent tasks, handler on template, FQCN, `append: true`, *whys* documented |
+| **Task 3** — `app_deploy` + Vault | **3** | Lab 2 image runs, `/health` 200, encrypted Vault, `no_log` |
+| **Task 4** — Idempotency | **1** | Run #2 `changed=0` on both playbooks |
+| **Task 5** — Documentation | **1** | All six sections complete |
+| **Bonus** — Dynamic inventory | **2** | Cloud plugin auto-discovers hosts |
+| **Total** | **12** | 10 main + 2 bonus |
 
-**Grading:**
-- **10/10:** Perfect role structure, deep understanding, excellent idempotency demo
-- **8-9/10:** Working roles, good practices, solid understanding
-- **6-7/10:** Basic roles work, some understanding, missing best practices
-- **<6/10:** Roles don't work properly, no idempotency, poor structure
-
-**Critical Requirements:**
-- ✅ MUST use role-based structure (not monolithic playbooks)
-- ✅ MUST demonstrate idempotency (two runs documented)
-- ✅ MUST use Ansible Vault for credentials
-- ✅ MUST NOT commit vault password or unencrypted secrets
+**Critical requirements:**
+- MUST use role-based structure (not a monolithic playbook)
+- MUST use FQCN modules everywhere
+- MUST demonstrate idempotency (run #2 changed=0 for both playbooks — this is the lab's headline)
+- MUST use Ansible Vault; MUST NOT commit `.vault_pass` or plaintext secrets
 
 ---
 
 ## Resources
 
 <details>
-<summary>📚 Ansible Core</summary>
+<summary>📚 Ansible Core 2.21</summary>
 
-- [Ansible Documentation](https://docs.ansible.com/)
-- [Ansible Roles](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html)
-- [Best Practices](https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html)
-
-</details>
-
-<details>
-<summary>🔒 Security</summary>
-
-- [Ansible Vault](https://docs.ansible.com/ansible/latest/user_guide/vault.html)
-- [Security Best Practices](https://docs.ansible.com/ansible/latest/user_guide/playbooks_best_practices.html#best-practices-for-security)
+- [ansible-core 2.21 docs](https://docs.ansible.com/ansible-core/2.21/)
+- [Roles](https://docs.ansible.com/ansible-core/2.21/playbook_guide/playbooks_reuse_roles.html)
+- [Handlers](https://docs.ansible.com/ansible-core/2.21/playbook_guide/playbooks_handlers.html)
+- [Inventory](https://docs.ansible.com/ansible-core/2.21/inventory_guide/intro_inventory.html)
+- [FQCN](https://docs.ansible.com/ansible-core/2.21/reference_appendices/glossary.html#term-FQCN)
+- *Ansible for DevOps* — Jeff Geerling (2024 ed.)
 
 </details>
 
 <details>
-<summary>🐳 Docker with Ansible</summary>
+<summary>🔒 Vault & secrets</summary>
 
-- [Docker Modules](https://docs.ansible.com/ansible/latest/collections/community/docker/index.html)
-- [Docker Scenario Guide](https://docs.ansible.com/ansible/latest/scenario_guides/guide_docker.html)
+- [Ansible Vault](https://docs.ansible.com/ansible-core/2.21/vault_guide/index.html)
+- [no_log](https://docs.ansible.com/ansible-core/2.21/reference_appendices/logging.html)
 
 </details>
 
 <details>
-<summary>🔄 Dynamic Inventory</summary>
+<summary>🐳 Docker modules & dynamic inventory</summary>
 
-- [Dynamic Inventory](https://docs.ansible.com/ansible/latest/user_guide/intro_dynamic_inventory.html)
-- [Inventory Plugins](https://docs.ansible.com/ansible/latest/plugins/inventory.html)
+- [community.docker collection](https://docs.ansible.com/ansible/latest/collections/community/docker/index.html)
+- [docker_login](https://docs.ansible.com/ansible/latest/collections/community/docker/docker_login_module.html) · [docker_image](https://docs.ansible.com/ansible/latest/collections/community/docker/docker_image_module.html) · [docker_container](https://docs.ansible.com/ansible/latest/collections/community/docker/docker_container_module.html)
+- [Install Docker on Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
+- [Inventory plugins](https://docs.ansible.com/ansible-core/2.21/plugins/inventory.html)
+
+</details>
+
+<details>
+<summary>⚠️ Common Pitfalls (from real dry-runs)</summary>
+
+- **`become: true` without passwordless sudo** — the play fails with `sudo: a password is required`. Fix on the VM (cloud-init usually creates the login user with `NOPASSWD: ALL` in `/etc/sudoers.d/`); on hand-built hosts, add the user yourself. Bare-bones containers won't have it at all.
+- **`ansible.builtin.apt` on a non-Debian host** — fails immediately on RHEL/Fedora/Alpine. If your `common` role might ever target a non-Debian box, use `ansible.builtin.package` (auto-dispatches to apt/dnf/yum/zypper) and let the module pick. For Debian-specifics (PPA, repo files), keep `apt:` but gate with `when: ansible_os_family == "Debian"`.
+- **`community.docker.docker_container` fails with `Failed to import the required Python library (Docker SDK for Python)`** — the *target* needs `pip install docker`. That's why the `docker` role's last task installs it via `ansible.builtin.pip`. Without it, `docker_container` errors before doing anything.
+- **Dynamic inventory says `No inventory was parsed`** — the cloud collection isn't installed (`ansible-galaxy collection install amazon.aws`), the file isn't named `*.aws_ec2.yml` / `*.yml` matching `plugin:`, or your auth env vars (`AWS_ACCESS_KEY_ID` / `GOOGLE_APPLICATION_CREDENTIALS` / `AZURE_*`) aren't set. Run `ansible-inventory -i inventory/<cloud>.yml --list -vvv` to see the real error — `--graph` swallows it.
+- **`append: true` forgotten on the user task** — Ansible *replaces* the user's group list, booting them out of `sudo`/`adm`. If you SSH'd in as `ubuntu` and ran that, the next login fails. Always `append: true` when adding to a group.
+- **`state: latest` on a package** — every new upstream release flips run #2 from `changed=0` to `changed=1`. Use `state: present` for reproducible runs.
+- **Vault file gets committed without `--encrypt`** — `git diff` shows your tokens in plaintext. Recovery: `git reset --hard HEAD~1`, rotate the token (it's burned), re-encrypt. Always `ansible-vault create` (not `vi`).
+- **`provision.yml` suddenly prompts for a Vault password.** Once `group_vars/all/vault.yml` exists, Ansible loads it on every play — even `provision.yml` that doesn't reference the secrets. Either set `vault_password_file = .vault_pass` in `ansible.cfg` once, or pass `--ask-vault-pass`/`--vault-password-file` to *all four* runs in Task 4. Skipping this is the #1 reason students retype their password 8 times during the idempotency proof.
+
+</details>
+
+<details>
+<summary>🛠️ Dev tools worth knowing</summary>
+
+- [ansible-lint](https://ansible.readthedocs.io/projects/lint/) — catches FQCN violations, missing `name:`, `state: latest` smells. Lab 6's CI uses this.
+- [Molecule](https://ansible.readthedocs.io/projects/molecule/) — spins each role in a container and tests it in isolation.
+- `ansible-playbook -vvv` — three v's print the SSH command + module JSON. Indispensable for debugging "why did it say `changed`?"
 
 </details>
 
@@ -961,16 +785,19 @@ Ansible has official plugins for major clouds.
 
 ## Looking Ahead
 
-**Lab 6:** Advanced Ansible features (blocks, tags, Docker Compose, CI/CD automation)
+| Lab | What it adds to these roles |
+|---:|---|
+| 6 | Tags (`--tags docker`), blocks + `rescue:`/`always:`, Compose templates, CI workflow |
+| 9 / 10 | Same image deployed to k3d via Helm — Ansible becomes the bootstrapper, not the deployer |
+| 11 | Replace Ansible Vault with OpenBao as the runtime secret store |
 
-You'll build on these roles by:
-- Adding blocks and tags for better control
-- Upgrading to Docker Compose
-- Implementing wipe logic
-- Automating deployment with GitHub Actions
+```mermaid
+flowchart LR
+  Lab4[🌍 Lab 4: VM] --> Lab5[🔧 Lab 5: roles + idempotency] --> Lab6[🚀 Lab 6: tags + Compose + CI] --> Lab9[☸️ Lab 9: K8s]
+```
 
 ---
 
-**Good luck!** 🚀
+**Good luck.** 🚀
 
-> **Remember:** Roles are the foundation of Ansible. Focus on creating clean, idempotent roles with proper structure. Use handlers efficiently. Secure your credentials with Vault. Document your decisions, not just your code. This foundation will be essential for Lab 6!
+> **Remember:** Tell the server *where to end up*, not *how* to get there. The acceptance test is `changed=0` on run #2. Keep credentials in Vault, keep roles small, document the *why*.

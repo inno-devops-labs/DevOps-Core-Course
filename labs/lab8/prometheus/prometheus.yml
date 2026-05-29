@@ -1,0 +1,34 @@
+# Prometheus 3.x scrape config — Lab 8 scaffold.
+# Copy to monitoring/prometheus/prometheus.yml and FILL THE BLANKS.
+# The structure (global / scrape_configs / one job per target) is given.
+# What's blank is the skill: scrape cadence, target hosts, job names.
+
+global:
+  scrape_interval:      # YOUR TASK: how often Prometheus scrapes every target by default
+                        #   — see lecture §15 "≥ 4× the scrape interval" floor for [Xm] windows
+  evaluation_interval:  # YOUR TASK: how often recording/alert rules are evaluated
+                        #   — match scrape_interval unless you have a reason not to
+
+scrape_configs:
+  # 1) Prometheus scrapes itself — the self-monitoring job
+  - job_name:              # YOUR TASK: a short, lowercase name for this job
+    static_configs:
+      - targets:           # YOUR TASK: Prometheus's own /metrics — host:port from INSIDE the container
+                           #   (this is the ONE target that uses localhost — every other target uses
+                           #    the Docker Compose service name)
+
+  # 2) Your instrumented Python app
+  - job_name:              # YOUR TASK: a name you'll filter on later (e.g. up{job="..."})
+    static_configs:
+      - targets:           # YOUR TASK: the Compose service name + port that serves /metrics
+                           #   — NOT localhost; Prometheus runs in a different container
+
+  # 3) Loki self-metrics — Loki exposes /metrics natively (no exporter needed)
+  - job_name:              # YOUR TASK
+    static_configs:
+      - targets:           # YOUR TASK: Loki's HTTP port on the shared logging network
+
+  # 4) Grafana self-metrics — same deal
+  - job_name:              # YOUR TASK
+    static_configs:
+      - targets:           # YOUR TASK: Grafana's HTTP port on the shared logging network

@@ -1,1 +1,23 @@
-test
+# Student-produced artifacts — live in fork, not upstream
+app_python/
+app_go/
+k8s/
+ansible/
+terraform/
+monitoring/
+submissions/
+.github/workflows/
+
+# Instructor-only reference submissions (dry-run outputs)
+refs/
+
+# Old / scratch
+test/
+
+# Dev artifacts
+.venv/
+venv/
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store

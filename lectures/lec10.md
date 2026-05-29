@@ -1,840 +1,456 @@
 # 📌 Lecture 10 — Helm Package Management: Templating Kubernetes
 
-## 📍 Slide 1 – 🚀 Welcome to Helm
+## 📍 Slide 1 – 📦 Welcome to Helm
 
-* 🌍 **Kubernetes manifests are powerful** — but repetitive
-* 😰 Copy-pasting YAML for different environments is error-prone
-* ⛵ **Helm** = the package manager for Kubernetes
-* 🎯 This lecture: master charts, templating, and values management
+* 🌍 **Lecture 9 left you with raw YAML** — a Deployment + Service per environment, copied and edited by hand. That scales to maybe two environments before it bites.
+* 📦 **Helm** = the package manager for Kubernetes. It bundles your manifests into a **chart**, parameterizes them with **values**, and tracks installs as **releases**.
+* 🎯 This lecture: write a chart, template it cleanly, and ship the same chart through dev/stage/prod with one value file change per environment.
+* 🔗 **Tie-in to Lab 10:** convert your Lab 9 manifests into a Helm chart, support 3 environments via values, add pre/post-install hooks, push the chart to GHCR as an OCI artifact.
 
 ```mermaid
 flowchart LR
-  Manifests[📝 Raw YAML] -->|⛵ Helm| Charts[📦 Charts]
-  Charts --> Templating[🔧 Templating]
-  Templating --> Environments[🌍 Any Environment]
+  YAML[📄 Raw YAML × N envs] -->|Helm| Chart[📦 One chart<br/>+ values.yaml per env]
+  Chart -->|helm install| Release[🚀 Release]
+  Release --> K8s[☸️ Kubernetes]
 ```
 
 ---
 
-## 📍 Slide 2 – 🎯 What You Will Learn
+## 📍 Slide 2 – 🎯 Learning Outcomes
 
-* ✅ Understand Helm architecture and concepts
-* ✅ Create production-ready Helm charts
-* ✅ Use templating for multi-environment deployments
-* ✅ Implement lifecycle hooks for advanced scenarios
-
-**🎓 Learning Outcomes:**
 | # | Outcome |
 |---|---------|
-| 1 | 🧠 Explain charts, releases, and repositories |
-| 2 | 🔍 Create charts with proper templating |
-| 3 | 🛠️ Manage values for different environments |
-| 4 | 🗺️ Implement hooks for lifecycle management |
+| 1 | 🧱 Read & write Helm 4 chart structure: `Chart.yaml`, `values.yaml`, `templates/`, `_helpers.tpl`, `charts/` |
+| 2 | 🎨 Use Go templates + Sprig functions, named templates, `tpl`, `include` |
+| 3 | 🚦 Drive releases with `install / upgrade / rollback / uninstall / template / lint / test` |
+| 4 | 🌳 Compose charts with dependencies and library charts |
+| 5 | 🪝 Use hooks for pre-install / post-upgrade / pre-delete logic |
+| 6 | 🌐 Push and pull charts via OCI registry (GHCR) |
+
+**Tech stack pinned for May 2026:** **Helm 4.1.4** (released April 8 2026). Helm 3 is in support mode through July 8 2026 (bug fixes) / November 11 2026 (security only). New work uses Helm 4.
 
 ---
 
-## 📍 Slide 3 – 📋 How This Lecture Works
+## 📍 Slide 3 – ❓ Why Helm Exists
 
-* 📚 **Concepts + Go templates** — hands-on focus
-* 🎮 **Real-world scenarios** — multi-environment challenges
-* 📝 **3 quiz checkpoints**: PRE / MID / POST
-* 🛠️ **Best practices**: DRY, hooks, library charts
+You wrote three manifests in Lab 9 (Deployment, Service, ConfigMap). Now imagine:
+* 🌳 Three environments — dev, staging, prod — each needs different replica counts, image tags, resource limits
+* 🔁 Twelve services — same shape, different names
 
-**⏱️ Lecture Structure:**
-```
-Section 0: Introduction (now)     → 📝 PRE Quiz
-Section 1: The Manifest Problem
-Section 2: Helm Fundamentals
-Section 3: Templating Deep Dive   → 📝 MID Quiz
-Section 4: Hooks & Advanced
-Section 5: Production Helm
-Section 6: Reflection             → 📝 POST Quiz
-```
+**Without Helm:** copy-and-edit YAML, eyeball diffs, hope no env drifts. Fails by service 4.
+
+**With Helm:** *one* set of templates, *one* `values.yaml` per environment, one command per install. Templates render to YAML; Helm pushes through `kubectl apply`.
+
+> 🔥 **Hot take:** Helm is not the only K8s templating tool (Kustomize, Jsonnet, cdk8s, Carvel ytt). It's the most popular by ~5x because charts are *shareable artifacts* — `helm pull oci://…` and you have someone else's working stack.
 
 ---
 
-## 📍 Slide 4 – ❓ The Big Question
+## 📍 Slide 4 – 📜 Helm Evolution: 1 → 2 → 3 → 4
 
-* 📊 **89%** of Kubernetes users use Helm
-* ⏱️ Managing 100+ YAML files manually is **chaos**
-* 💥 Different configs per environment = **copy-paste errors**
+* 📅 **2015** — Helm 1 created by Deis (acquired by Microsoft 2017). Client-side templating only.
+* 📅 **2016** — Helm 2 introduces **Tiller** — an in-cluster server-side component. Loved for power, hated for cluster-wide RBAC.
+* 📅 **2019** — Helm 3 **drops Tiller**, stores release state in K8s Secrets/ConfigMaps. The default everyone uses today.
+* 📅 **2022** — OCI registries become first-class for chart distribution (charts pushed/pulled like Docker images).
+* 📅 **2026 (Apr 8)** — Helm **4.1.4** released. Backwards-compatible chart format for `apiVersion: v2`; engine rewrites + better dependency resolution + WASM plugin support.
 
-> 💬 *"Is this the dev or prod manifest? Why are they different?"* — Every DevOps engineer
-
-**🤔 Think about it:**
-* How do you manage configs for dev, staging, and prod?
-* How do you share common patterns across applications?
-* How do you version your Kubernetes deployments?
+> 📝 **Migration story:** most Helm 3 charts work unmodified on Helm 4. Helm 3's CLI is still available; expect both in shops through mid-2026. The labs in this course use Helm 4.
 
 ---
 
-## 📍 Slide 5 – 📝 QUIZ — DEVOPS_L10_PRE
+## 📍 Slide 5 – 🧱 Chart Anatomy
 
----
-
-## 📍 Slide 6 – 🔥 Section 1: The Manifest Problem
-
-* 📝 **Raw YAML** works for one environment
-* 📋 Need different values for dev, staging, prod
-* 🔧 Copy-paste → divergence → bugs
-* 💥 Result: **manifest sprawl**
-
-```mermaid
-flowchart LR
-  Base[📝 Base YAML] --> Dev[📝 Dev YAML]
-  Base --> Staging[📝 Staging YAML]
-  Base --> Prod[📝 Prod YAML]
-  Dev --> Drift1[😱 Drift]
-  Staging --> Drift2[😱 Drift]
-  Prod --> Drift3[😱 Drift]
-```
-
----
-
-## 📍 Slide 7 – 😱 YAML Duplication
-
-* 📋 Same deployment, different image tags
-* 📊 Same service, different replicas
-* 🔧 Same ingress, different domains
-* 💀 Changes require updating multiple files
-
-```yaml
-# 😰 dev-deployment.yaml
-replicas: 1
-image: myapp:latest
-
-# 😰 staging-deployment.yaml
-replicas: 2
-image: myapp:v1.2.3
-
-# 😰 prod-deployment.yaml
-replicas: 5
-image: myapp:v1.2.3
-```
-
-**📊 The Problem:**
-* 🔍 Fix a bug? Update 3 files
-* 🆕 New field? Add to all files
-* 😰 Easy to miss one file
-
----
-
-## 📍 Slide 8 – 🔧 Manual Substitution Problems
-
-* 📝 `sed` and `envsubst` are fragile
-* 🔍 No validation of resulting YAML
-* 📊 No understanding of Kubernetes resources
-* 💀 Silent failures
-
-> ⚠️ **sed is not a package manager**
-
-```bash
-# 😰 This is fragile
-sed -i "s/REPLICAS/3/g" deployment.yaml
-envsubst < deployment.yaml.template > deployment.yaml
-```
-
-**💬 Discussion:** How do you currently manage environment differences?
-
----
-
-## 📍 Slide 9 – 😨 Version Chaos
-
-* 📅 "Which version is deployed in prod?"
-* 🔧 No rollback mechanism
-* 📋 No deployment history
-* 💀 Can't reproduce past deployments
-
-> ⚠️ **Without versioning, you can't roll back safely**
-
-```mermaid
-flowchart TD
-  Deploy1[📦 Deploy v1] --> Deploy2[📦 Deploy v2]
-  Deploy2 --> Deploy3[📦 Deploy v3]
-  Deploy3 --> Broken[💥 Broken!]
-  Broken --> Question[❓ What was v2?]
-```
-
----
-
-## 📍 Slide 10 – 💸 The Cost of Manifest Sprawl
-
-| 🔥 Problem | 💥 Impact |
-|------------|-----------|
-| 🐢 Update all files | Slow, error-prone |
-| 📋 Inconsistency | "Works in dev, not prod" |
-| 👉 No history | Can't audit changes |
-| 🙈 No versioning | Risky rollbacks |
-
-**📈 Real Numbers:**
-* 🏢 **Average K8s app**: 5-20 YAML files
-* 🔄 **Environments**: 3-5 (dev, staging, prod, etc.)
-* 📊 **Total files**: 15-100 per app (without Helm)
-* ⛵ **With Helm**: 1 chart, unlimited environments
-
----
-
-## 📍 Slide 11 – 💡 Section 2: What Helm Is
-
-* ⛵ **Package manager** for Kubernetes
-* 📦 **Charts** = packages of K8s resources
-* 🔧 **Templating** = dynamic manifest generation
-* 🔄 **Releases** = installed chart instances
-
-```mermaid
-flowchart LR
-  Chart[📦 Chart] -->|🔧 + Values| Template[🔄 Templating]
-  Template --> Manifest[📝 K8s Manifests]
-  Manifest --> Release[🚀 Release]
-```
-
-**📖 Definition:**
-> *Helm is a package manager for Kubernetes that helps you define, install, and upgrade complex Kubernetes applications using charts (packages of pre-configured resources).*
-
----
-
-## 📍 Slide 12 – 📦 Core Concepts
-
-```mermaid
-flowchart TD
-  Chart[📦 Chart] --> Templates[📝 Templates]
-  Chart --> Values[📊 Values]
-  Chart --> ChartYaml[📋 Chart.yaml]
-  Templates -->|+| Values
-  Values --> Release[🚀 Release]
-```
-
-| 📦 Concept | 🎯 Purpose |
-|-----------|----------|
-| 📦 **Chart** | Package of K8s resources |
-| 🚀 **Release** | Installed instance of chart |
-| 📊 **Values** | Configuration parameters |
-| 📁 **Repository** | Collection of charts |
-
----
-
-## 📍 Slide 13 – 📁 Chart Structure
+A chart is a directory with this shape:
 
 ```
 mychart/
-├── Chart.yaml          # 📋 Chart metadata
-├── values.yaml         # 📊 Default values
-├── charts/             # 📦 Dependencies
-└── templates/          # 📝 K8s manifests
-    ├── deployment.yaml
-    ├── service.yaml
-    ├── _helpers.tpl    # 🔧 Template helpers
-    └── NOTES.txt       # 📝 Post-install notes
+├── Chart.yaml          # 📇 Metadata: name, version, appVersion, dependencies
+├── values.yaml         # 🎚️ Default values (overridable per install)
+├── values.schema.json  # 📐 (Optional) JSON schema for values validation
+├── templates/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── ingress.yaml
+│   ├── configmap.yaml
+│   ├── _helpers.tpl    # 🛠️ Named template definitions (no underscore = file is rendered)
+│   ├── NOTES.txt       # 📋 Printed after install/upgrade
+│   └── tests/
+│       └── test-connection.yaml
+├── charts/             # 📦 Subcharts (dependencies)
+└── README.md
 ```
 
-**🔑 Key Files:**
-* 📋 `Chart.yaml` — Name, version, description
-* 📊 `values.yaml` — Default configuration
-* 📝 `templates/` — Go templates for manifests
-* 🔧 `_helpers.tpl` — Reusable template snippets
+Key rules:
+* 📁 Files starting with `_` are **partials** — included via `{{ include ... }}`, never rendered as standalone YAML
+* 🧪 Files in `templates/tests/` run only on `helm test <release>`
+* 🔒 Anything under `charts/` is a vendored subchart (managed by `helm dependency update`)
 
 ---
 
-## 📍 Slide 14 – 📋 Chart.yaml
+## 📍 Slide 6 – 📇 Chart.yaml
 
 ```yaml
-apiVersion: v2
-name: my-web-app
-description: A Helm chart for my web application
-type: application
+apiVersion: v2                # ⚠️ Helm 3+; Helm 4 reads v2; v1 is Helm 2 (deprecated)
+name: lab10-app
+description: DevOps Core lab 10 — Python service + Go echo
+type: application             # 'application' (default) or 'library'
+version: 1.3.0                # 📌 Chart version (SemVer) — bumped on chart changes
+appVersion: "1.0.0"           # 📌 App version (string) — bumped on image changes
+kubeVersion: ">=1.33.0"       # 🚦 Refuse install on older clusters
 
-# 📊 Chart version (SemVer)
-version: 0.1.0
-
-# 📦 Application version
-appVersion: "1.0.0"
-
-# 📦 Dependencies
 dependencies:
-  - name: common
-    version: 0.1.0
-    repository: "file://../common"
+  - name: postgresql
+    version: 16.x
+    repository: oci://registry-1.docker.io/bitnamicharts
+    condition: postgresql.enabled
 ```
 
-**🔑 Important Fields:**
-* `version` — Chart version (bump when chart changes)
-* `appVersion` — Application version (your app's version)
-* `dependencies` — Other charts this depends on
+* 🎯 **Two versions** matter: `version` (the chart YOU publish) and `appVersion` (the image it deploys). They evolve independently.
+* 🔧 `type: library` charts contribute only `_helpers.tpl` templates — they don't install anything themselves.
 
 ---
 
-## 📍 Slide 15 – ⚡ Before vs After Helm
+## 📍 Slide 7 – 🎨 Go Templates + Sprig
 
-| 😰 Before | 🚀 After |
-|----------|---------|
-| 📅 Multiple YAML files per env | 📊 One values file per env |
-| 📋 Manual substitution | 🔧 Go templating |
-| 👉 No versioning | 📦 SemVer releases |
-| 😨 Risky rollbacks | 🔙 `helm rollback` |
-| 🐌 Copy-paste changes | ⚡ Single source of truth |
-| 📝 No sharing | 📁 Chart repositories |
-
-> 🤔 Ready to package your Kubernetes apps?
-
----
-
-## 📍 Slide 16 – 🎮 Section 3: Templating Deep Dive
-
-## 🔧 Go Template Basics
+Helm uses Go's `text/template` package + the **Sprig** function library (~200 extra helpers).
 
 ```yaml
-# templates/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-app
+  name: {{ include "lab10-app.fullname" . }}
   labels:
-    app: {{ .Values.appName }}
+    {{- include "lab10-app.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.replicaCount | default 2 }}
   template:
     spec:
       containers:
-      - name: {{ .Chart.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        - name: web
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          env:
+            - name: ECHO_URL
+              value: "http://{{ include "lab10-app.fullname" . }}-echo:80"
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
 ```
 
-**🔧 Template Syntax:**
-* `{{ }}` — Template action
-* `.Values` — From values.yaml
-* `.Release` — Release information
-* `.Chart` — From Chart.yaml
+Common idioms:
+* `{{ include "name" . }}` — invoke a named template (better than `template` because it returns a string you can pipe)
+* `| nindent N` — indent a block by N spaces *after* a newline (the most common formatting bug fix)
+* `| default X` — fallback when the value is absent
+* `{{- ... -}}` — strip whitespace on the left/right of the action
+* `{{ toYaml . | nindent N }}` — render a structure as YAML
+
+> 🔥 **The #1 Helm bug:** indentation. `nindent` (newline + indent) is what you want 90% of the time. `indent` produces invalid YAML if the action is on its own line.
 
 ---
 
-## 📍 Slide 17 – 📊 Values Management
+## 📍 Slide 8 – 🛠️ `_helpers.tpl` — Named Templates Done Right
 
-```yaml
-# values.yaml (defaults)
-replicaCount: 1
-appName: my-app
+Avoid copy-pasting label blocks. Define once, include everywhere.
 
-image:
-  repository: myuser/myapp
-  tag: latest
-  pullPolicy: IfNotPresent
-
-service:
-  type: ClusterIP
-  port: 80
-
-resources:
-  limits:
-    cpu: 200m
-    memory: 256Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
-```
-
-**🔧 Override Values:**
-```bash
-# File override
-helm install myrelease ./mychart -f values-prod.yaml
-
-# Command line override
-helm install myrelease ./mychart --set replicaCount=5
-```
-
----
-
-## 📍 Slide 18 – 🌍 Multi-Environment Values
-
-```yaml
-# values-dev.yaml
-replicaCount: 1
-image:
-  tag: latest
-resources:
-  limits:
-    cpu: 100m
-    memory: 128Mi
-
-# values-prod.yaml
-replicaCount: 5
-image:
-  tag: v1.2.3
-resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
-```
-
-**🚀 Deploy to Different Environments:**
-```bash
-# Development
-helm install myapp-dev ./mychart -f values-dev.yaml
-
-# Production
-helm install myapp-prod ./mychart -f values-prod.yaml
-```
-
----
-
-## 📍 Slide 19 – 🔧 Template Functions
-
-```yaml
-# Using functions
-name: {{ .Values.name | lower | trunc 63 }}
-
-# Default values
-tag: {{ .Values.image.tag | default .Chart.AppVersion }}
-
-# Conditional
-{{- if .Values.ingress.enabled }}
-# ... ingress resource
-{{- end }}
-
-# Range (loop)
-{{- range .Values.env }}
-- name: {{ .name }}
-  value: {{ .value | quote }}
-{{- end }}
-```
-
-**🔧 Common Functions:**
-| 🔧 Function | 🎯 Purpose |
-|------------|----------|
-| `default` | Provide fallback value |
-| `quote` | Add quotes |
-| `lower/upper` | Case conversion |
-| `trunc` | Truncate string |
-| `include` | Include template |
-
----
-
-## 📍 Slide 20 – 🔧 Helper Templates
-
-```yaml
-# templates/_helpers.tpl
+```handlebars
 {{/*
-Create chart name and version as used by the chart label.
+Standard labels — matches the K8s recommended labels namespace.
 */}}
-{{- define "mychart.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Common labels
-*/}}
-{{- define "mychart.labels" -}}
-helm.sh/chart: {{ include "mychart.chart" . }}
+{{- define "lab10-app.labels" -}}
+helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 app.kubernetes.io/name: {{ .Chart.Name }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
+
+{{/*
+Selector labels — subset that should never change after install.
+*/}}
+{{- define "lab10-app.selectorLabels" -}}
+app.kubernetes.io/name: {{ .Chart.Name }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
 ```
 
-**🔧 Using Helpers:**
-```yaml
-metadata:
-  labels:
-    {{- include "mychart.labels" . | nindent 4 }}
-```
+Selector labels are a strict subset of `.labels` because **Service/Deployment selectors are immutable after creation**. Don't put `version` in selector labels or you'll break rolling updates.
 
 ---
 
-## 📍 Slide 21 – 📊 Built-in Objects
-
-```mermaid
-flowchart TD
-  Objects[📦 Built-in Objects]
-  Objects --> Values[.Values]
-  Objects --> Chart[.Chart]
-  Objects --> Release[.Release]
-  Objects --> Template[.Template]
-  Objects --> Files[.Files]
-```
-
-| 📦 Object | 🎯 Contains |
-|----------|----------|
-| `.Values` | Values from values.yaml + overrides |
-| `.Chart` | Contents of Chart.yaml |
-| `.Release` | Release name, namespace, revision |
-| `.Template` | Current template info |
-| `.Files` | Access to non-template files |
-
----
-
-## 📍 Slide 22 – 🧪 Testing Charts
+## 📍 Slide 9 – 🚦 The Release Lifecycle
 
 ```bash
-# 📋 Lint chart for errors
-helm lint ./mychart
+helm install web ./mychart -n dev \
+  -f values-dev.yaml \
+  --create-namespace
 
-# 📝 Render templates locally
-helm template myrelease ./mychart
+helm upgrade web ./mychart -n dev \
+  -f values-dev.yaml \
+  --set image.tag=v1.0.5
 
-# 🔍 Dry run against cluster
-helm install --dry-run --debug myrelease ./mychart
+helm rollback web 3 -n dev          # ⏪ to revision 3
+helm history web -n dev             # 📜 every revision is in K8s Secrets
+helm uninstall web -n dev           # 🗑️ removes everything Helm tracked
 
-# 📊 Show computed values
-helm get values myrelease
-
-# 📝 Show rendered manifests
-helm get manifest myrelease
+helm template ./mychart -f values-prod.yaml  # 🔍 render to stdout (CI / GitOps friendly)
+helm lint ./mychart                          # 🔍 syntax + schema check
+helm test web -n dev                         # 🧪 run templates/tests/ pods
 ```
 
-**🧪 Testing Workflow:**
-1. 📋 `helm lint` — syntax check
-2. 📝 `helm template` — verify output
-3. 🔍 `--dry-run` — validate against cluster
-4. 🚀 `helm install` — deploy
+* 📜 Every `install` and `upgrade` creates a **revision** stored as a `helm.sh/release.v1` Secret in the release's namespace. `helm rollback` is just "apply the manifests from revision N".
+* 🔍 `helm template` is the gateway to GitOps: render once, commit the YAML, let ArgoCD apply.
 
 ---
 
-## 📍 Slide 23 – 📊 Helm Commands
+## 📍 Slide 10 – 🌳 Multi-Environment via Values Hierarchy
 
-```bash
-# 📦 Create new chart
-helm create mychart
-
-# 🚀 Install chart
-helm install myrelease ./mychart
-
-# 📋 List releases
-helm list
-
-# 🔄 Upgrade release
-helm upgrade myrelease ./mychart
-
-# 🔙 Rollback release
-helm rollback myrelease 1
-
-# 🗑️ Uninstall release
-helm uninstall myrelease
-
-# 📊 Show release history
-helm history myrelease
-```
-
----
-
-## 📍 Slide 24 – 🔗 Chart Dependencies
+The flexible pattern is a base `values.yaml` + an override per environment.
 
 ```yaml
-# Chart.yaml
-dependencies:
-  - name: postgresql
-    version: 12.0.0
-    repository: https://charts.bitnami.com/bitnami
-    condition: postgresql.enabled
+# values.yaml (defaults)
+replicaCount: 2
+image:
+  repository: ghcr.io/innodevops/lab2-app
+  tag: ""                            # falls back to .Chart.AppVersion
+resources:
+  requests: {cpu: 100m, memory: 64Mi}
+  limits:   {cpu: 500m, memory: 256Mi}
+ingress:
+  enabled: false
+```
+
+```yaml
+# values-prod.yaml (overrides)
+replicaCount: 5
+image:
+  tag: v1.2.0
+resources:
+  requests: {cpu: 500m, memory: 256Mi}
+  limits:   {cpu: 2000m, memory: 1Gi}
+ingress:
+  enabled: true
+  host: app.prod.example.com
 ```
 
 ```bash
-# Download dependencies
-helm dependency update ./mychart
-
-# Build dependencies
-helm dependency build ./mychart
+helm upgrade --install web ./mychart -n prod -f values.yaml -f values-prod.yaml
 ```
 
-**🔗 Dependency Features:**
-* 📦 Include other charts as sub-charts
-* 🔧 Override sub-chart values
-* 🔀 Conditional inclusion
+Order of precedence (lowest → highest):
+1. `values.yaml` (chart default)
+2. `-f file.yaml` (later files override earlier)
+3. `--set key=value` (explicit on CLI)
 
 ---
 
-## 📍 Slide 25 – 📝 QUIZ — DEVOPS_L10_MID
+## 📍 Slide 11 – 🪝 Hooks: pre-install, post-upgrade, …
 
----
-
-## 📍 Slide 26 – 🎣 Section 4: Lifecycle Hooks
-
-## 🎣 What Are Hooks?
-
-* 🎯 **Execute actions** at specific points
-* 📦 Run jobs before/after install/upgrade
-* 🗑️ Cleanup after completion
-* 🔧 Database migrations, tests, notifications
-
-```mermaid
-flowchart LR
-  PreInstall[🎣 pre-install] --> Install[🚀 Install]
-  Install --> PostInstall[🎣 post-install]
-```
-
----
-
-## 📍 Slide 27 – 🎣 Hook Types
-
-| 🎣 Hook | ⏱️ When |
-|--------|--------|
-| `pre-install` | Before resources installed |
-| `post-install` | After all resources ready |
-| `pre-upgrade` | Before upgrade |
-| `post-upgrade` | After upgrade complete |
-| `pre-delete` | Before deletion |
-| `post-delete` | After deletion |
-| `pre-rollback` | Before rollback |
-| `post-rollback` | After rollback |
-
----
-
-## 📍 Slide 28 – 📝 Hook Example
+Hooks let you run a Job, Pod, or any resource at a specific point in the release lifecycle.
 
 ```yaml
-# templates/pre-install-job.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ .Release.Name }}-pre-install
+  name: {{ include "lab10-app.fullname" . }}-db-migrate
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-upgrade,pre-install
     "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": hook-succeeded
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   template:
     spec:
       restartPolicy: Never
       containers:
-      - name: pre-install
-        image: busybox
-        command: ['sh', '-c', 'echo Pre-install running && sleep 5']
+        - name: migrate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["python", "manage.py", "migrate"]
 ```
 
-**🔑 Hook Annotations:**
-* `helm.sh/hook` — Hook type
-* `helm.sh/hook-weight` — Execution order (lower first)
-* `helm.sh/hook-delete-policy` — When to delete
+Common hook points: `pre-install`, `post-install`, `pre-upgrade`, `post-upgrade`, `pre-delete`, `post-delete`, `test`.
+
+`hook-weight` orders multiple hooks (lower runs first; ties broken alphabetically).
+`hook-delete-policy` controls cleanup: `before-hook-creation` (default), `hook-succeeded`, `hook-failed`.
+
+> ⚠️ **Hook gotcha:** hook resources are *not* tracked in the release — `helm uninstall` won't delete a hook Job. Use `hook-delete-policy: hook-succeeded` for cleanup.
 
 ---
 
-## 📍 Slide 29 – 🏗️ Library Charts
+## 📍 Slide 12 – 📦 Dependencies & Subcharts
 
-```mermaid
-flowchart TD
-  Library[📚 Library Chart] --> App1[📦 App 1]
-  Library --> App2[📦 App 2]
-  Library --> App3[📦 App 3]
-```
-
-**📚 Library Chart:**
-* 🚫 Cannot be installed directly
-* 📝 Contains only templates
-* 🔄 Shared across multiple charts
+Charts can depend on other charts. Run `helm dependency update` to fetch them into `charts/`.
 
 ```yaml
 # Chart.yaml
-apiVersion: v2
-name: common-lib
-type: library  # 📚 Library type
-version: 0.1.0
+dependencies:
+  - name: postgresql
+    version: 16.x
+    repository: oci://registry-1.docker.io/bitnamicharts
+    condition: postgresql.enabled
+    alias: db                        # 🏷️ rename in values
 ```
-
----
-
-## 📍 Slide 30 – 📊 Helm Metrics
-
-| 📊 Metric | 📏 Measures | 🏆 Target |
-|-----------|------------|---------|
-| 📦 **Chart Version** | Tracking | SemVer |
-| 🔄 **Release Revision** | Upgrade count | Documented |
-| ⏱️ **Deploy Time** | Chart install | < 5 min |
-| 🧪 **Lint Errors** | Chart quality | 0 |
-
-> 📚 Version everything!
-
-**🤔 Question:** How do you track what's deployed?
-
----
-
-## 📍 Slide 31 – 🏢 Section 5: Production Helm
-
-## 📅 A Day with Helm
-
-**☀️ Morning:**
-* 📋 Review chart PR
-* 🧪 `helm lint` and `helm template`
-* ✅ Merge changes
-
-**🌤️ Afternoon:**
-* 📊 Update values-prod.yaml
-* 🚀 `helm upgrade myapp ./mychart -f values-prod.yaml`
-* 📈 Watch rollout: `kubectl rollout status`
-
-**🌙 Evening:**
-* 💥 Issue detected
-* 🔙 `helm rollback myapp 3`
-* ⏱️ **Rollback in 30 seconds**
-
----
-
-## 📍 Slide 32 – 👥 Team Helm Workflow
-
-| 👤 Role | 🎯 Helm Responsibility |
-|---------|----------------------|
-| 👨‍💻 **Developer** | Define values requirements |
-| 🔧 **DevOps** | Create and maintain charts |
-| 🛡️ **SRE** | Manage releases, rollbacks |
-| 📊 **Platform** | Build chart standards |
-
-**🔗 GitOps Flow:**
-```mermaid
-flowchart LR
-  PR[📝 Chart PR] --> Lint[🧪 Lint]
-  Lint --> Review[👀 Review]
-  Review --> Merge[✅ Merge]
-  Merge --> ArgoCD[🔄 ArgoCD]
-  ArgoCD --> Helm[⛵ Helm Install]
-```
-
----
-
-## 📍 Slide 33 – 🔐 Production Best Practices
 
 ```yaml
-# ✅ Good: Specific versions
-image:
-  tag: v1.2.3  # Not 'latest'
-
-# ✅ Good: Resource limits always
-resources:
-  limits:
-    cpu: 500m
-    memory: 512Mi
-
-# ✅ Good: Health probes always
-livenessProbe:
+# values.yaml
+postgresql:                          # 🎚️ subchart values nest under its alias
   enabled: true
-readinessProbe:
-  enabled: true
+  auth:
+    username: app
+    database: lab10
 ```
 
-**🛡️ Production Checklist:**
-* ✅ Specific image tags (not `latest`)
-* ✅ Resource limits defined
-* ✅ Health probes enabled
-* ✅ Values documented
-* ✅ Chart versioned with SemVer
+Helm 4 added improved dependency resolution — multiple charts can pull the same transitive dep without conflicts.
 
 ---
 
-## 📍 Slide 34 – 📈 Career Path: Helm Skills
+## 📍 Slide 13 – 📚 Library Charts
+
+A chart with `type: library` contributes only `_helpers.tpl` templates. Use it when 10 application charts share boilerplate (labels, security context, image-pull secrets).
+
+```yaml
+# common-lib/Chart.yaml
+apiVersion: v2
+name: common-lib
+type: library                        # 🚫 no templates rendered, only helpers contributed
+version: 1.0.0
+```
+
+```yaml
+# mychart/Chart.yaml
+dependencies:
+  - name: common-lib
+    version: 1.x
+    repository: oci://ghcr.io/innodevops/charts
+```
+
+```handlebars
+# mychart/templates/deployment.yaml
+{{ include "common-lib.labels" . | nindent 4 }}    # 🔁 reused from the library
+```
+
+> 🔗 **Lab 10 bonus** asks you to extract `_helpers.tpl` into a library chart and consume it from your app chart.
+
+---
+
+## 📍 Slide 14 – 🌐 OCI Registries — Charts as OCI Artifacts
+
+Since 2022, Helm pushes charts to OCI registries (same protocol as Docker images). GHCR / Docker Hub / Harbor / ECR all support OCI artifacts.
+
+```bash
+# 📦 Package
+helm package ./mychart                       # produces mychart-1.3.0.tgz
+
+# 🔑 Auth (GHCR uses GitHub PAT or GITHUB_TOKEN in CI)
+echo $GITHUB_TOKEN | helm registry login ghcr.io -u $GITHUB_ACTOR --password-stdin
+
+# 📤 Push
+helm push mychart-1.3.0.tgz oci://ghcr.io/innodevops/charts
+
+# 📥 Pull (in another repo / cluster)
+helm install web oci://ghcr.io/innodevops/charts/mychart --version 1.3.0
+```
+
+> 🔥 **Why OCI:** one auth model, one registry, one set of access controls for images *and* charts. Drops the legacy `helm repo add` HTTP indexing model.
+
+---
+
+## 📍 Slide 15 – 🧪 Testing Charts
+
+* 🔍 `helm lint ./mychart` — schema + YAML parse check
+* 📐 `values.schema.json` — JSON Schema validates `values.yaml`. Helm errors out before install if values are wrong.
+* 🧪 `helm template ./mychart | kubectl apply --dry-run=server -f -` — server-side validation
+* ✅ `helm test <release>` — runs Pods in `templates/tests/` against the live release
+
+A typical `templates/tests/test-connection.yaml`:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "lab10-app.fullname" . }}-test"
+  annotations:
+    "helm.sh/hook": test
+spec:
+  restartPolicy: Never
+  containers:
+    - name: curl
+      image: curlimages/curl:8.10.1
+      args: ["-fsS", "http://{{ include "lab10-app.fullname" . }}:80/healthz"]
+```
+
+---
+
+## 📍 Slide 16 – 🚫 Anti-Patterns and Common Bugs
+
+1. ❌ **Hard-coding image tags in templates** — put them in `values.yaml` so upgrades flow through `--set image.tag=...`
+2. ❌ **`indent` instead of `nindent`** — produces invalid YAML when the action is on its own line
+3. ❌ **Mutable selector labels** — once a Deployment exists, K8s rejects selector changes; use a stable subset
+4. ❌ **Skipping `helm lint` in CI** — every chart change should fail CI on lint error
+5. ❌ **Hooks that don't clean up** — set `hook-delete-policy: hook-succeeded` or you accumulate failed Jobs
+6. ❌ **Putting secrets in `values.yaml`** — git-tracked. Use **OpenBao + the secrets injector** (Lab 11) or `helm secrets` plugin
+7. ❌ **One huge umbrella chart for 12 services** — each service should have its own chart; share via library chart
+8. ❌ **Using `latest` in `appVersion`** — kills reproducibility. Pin a SemVer or git SHA.
+
+---
+
+## 📍 Slide 17 – 🌍 Helm in the Wild
+
+* 📦 **Artifact Hub** indexes **15,000+ Helm charts** across hundreds of publishers
+* 🏢 **Bitnami** ships production-grade charts for ~150 popular open-source apps (Postgres, MongoDB, Redis, RabbitMQ, Kafka …) — though IPO/license changes in 2024 led many to move to community forks
+* 🎬 **Netflix, Shopify, Spotify** all publish internal Helm charts as the standard packaging unit
+* 🪐 **Crossplane, ArgoCD, kube-prometheus-stack** are all distributed as Helm charts — the K8s ecosystem assumes you have Helm
+
+> 📊 **CNCF survey 2024:** Helm is the #1 K8s package manager by margin. The "K8s deployment story" is still mostly Helm + ArgoCD + Kustomize in 2026.
+
+---
+
+## 📍 Slide 18 – 🎯 Key Takeaways
+
+1. 📦 **Helm = templating + packaging + release lifecycle** — three jobs in one tool
+2. 🧱 **Chart structure is rigid** — `Chart.yaml`, `values.yaml`, `templates/`, `_helpers.tpl`. Memorize.
+3. 🎨 **Go templates + Sprig + named templates** — `nindent`, `include`, `default` cover 80% of use cases
+4. 🌳 **One chart, N value files** — the multi-environment story; never copy-edit YAML
+5. 🪝 **Hooks** run Jobs/Pods at lifecycle moments — set `hook-delete-policy` to clean up
+6. 📚 **Library charts** share helpers across application charts
+7. 🌐 **OCI artifacts** are the modern distribution path — same registry as your images
+8. ✅ **`helm lint` + `values.schema.json` + `helm template` in CI** — catch errors before the cluster does
+
+> 💡 **The Helm 4 reality:** the syntax you write today will install fine on Helm 3.x clusters too. Adopt Helm 4 now; you're already future-proof.
+
+---
+
+## 📍 Slide 19 – 🚀 What Comes Next
+
+**📚 Next lecture: *Secret Management with Kubernetes + OpenBao*** — because `values.yaml` is git-tracked and your DB password isn't.
+
+* 🔐 K8s `Secret` — what it actually does (and doesn't)
+* 🪦 HashiCorp Vault → OpenBao migration (BSL fallout, August 2023)
+* 🤖 External Secrets Operator (ESO)
+* 🎯 Vault Agent Injector for templated config
+
+**🔬 Lab 10 deliverables:**
+* Package your Lab 9 manifests into a `lab10-app` chart
+* Support `values-dev.yaml` / `values-staging.yaml` / `values-prod.yaml`
+* Add a pre-install hook for DB migration (even if fake)
+* Push the chart to GHCR via `helm push oci://`
+* Bonus 2 pts: extract `_helpers.tpl` into a library chart consumed by your app chart
 
 ```mermaid
 flowchart LR
-  Junior[🌱 Junior: Using charts] --> Mid[💼 Mid: Creating charts]
-  Mid --> Senior[⭐ Senior: Library charts & standards]
-  Senior --> Principal[🏆 Principal: Chart ecosystem]
+  Lab9[☸️ Lab 9 manifests] --> Lab10[📦 Lab 10 chart]
+  Lab10 --> Lab11[🔐 Lab 11: Secrets/OpenBao]
+  Lab11 --> Lab12[💾 Lab 12: Config + Storage]
 ```
 
-**🛠️ Skills to Build:**
-* 📝 Go template fluency
-* 📦 Chart design patterns
-* 🔗 Dependency management
-* 🎣 Hook implementation
-* 📁 Repository management
+> 🌊 From YAML to packages — one template at a time.
 
 ---
 
-## 📍 Slide 35 – 🌍 Real Company Examples
+## 📚 Resources
 
-**🏢 Helm at Scale:**
-* 📦 **Bitnami**: 100+ production charts
-* 🔍 **Google**: GKE uses Helm internally
-* 🎬 **Netflix**: Custom chart ecosystem
+* 📕 *Learning Helm* (2e, 2024) — Butcher, Farina, Dolitsky (O'Reilly). The canonical reference.
+* 📕 *Mastering Helm* — Sumesh Kumar (2023) — chart patterns
+* 🌐 [helm.sh/docs](https://helm.sh/docs/) — official docs (Helm 4)
+* 🌐 [helm.sh/docs/chart_best_practices](https://helm.sh/docs/chart_best_practices/) — chart authoring conventions
+* 🌐 [Artifact Hub](https://artifacthub.io/) — search public charts
+* 🌐 [Sprig functions](https://masterminds.github.io/sprig/) — the function reference you'll consult weekly
+* 🌐 [Helm 4 release notes](https://helm.sh/blog/) — what changed from 3
 
-**☁️ Public Charts:**
-* 📊 **Prometheus**: helm-charts/prometheus
-* 📋 **Grafana**: helm-charts/grafana
-* 🐘 **PostgreSQL**: bitnami/postgresql
-
-**📊 Stats:**
-* ⛵ **10,000+** public charts
-* 📦 **89%** K8s users use Helm
-* 🏢 **Standard** for K8s packaging
-
----
-
-## 📍 Slide 36 – 🎯 Section 6: Reflection
-
-## 📝 Key Takeaways
-
-1. ⛵ **Helm is the package manager** for Kubernetes
-2. 📦 **Charts package** related K8s resources
-3. 🔧 **Templating** enables multi-environment deploys
-4. 📊 **Values** customize without changing templates
-5. 🎣 **Hooks** handle lifecycle events
-
-> 💡 Never hardcode in templates — parametrize everything.
-
----
-
-## 📍 Slide 37 – 🧠 The Mindset Shift
-
-| 😰 Old Mindset | ⛵ Helm Mindset |
-|---------------|------------------|
-| 🙅 "Copy YAML for each env" | 📊 "Different values, same chart" |
-| 🚫 "sed for substitution" | 🔧 "Go templates" |
-| 👉 "Manual versioning" | 📦 "SemVer releases" |
-| 😨 "Risky rollbacks" | 🔙 "helm rollback" |
-| 💻 "My chart, my rules" | 📚 "Shared libraries" |
-
-> ❓ Which mindset describes your team?
-
----
-
-## 📍 Slide 38 – ✅ Your Progress
-
-## 🎓 What You Now Understand
-
-* ✅ Helm architecture and concepts
-* ✅ Chart creation and structure
-* ✅ Go template syntax
-* ✅ Multi-environment values management
-* ✅ Lifecycle hooks
-
-> 🚀 **You're ready for Lab 10: Helm Charts**
-
----
-
-## 📍 Slide 39 – 📝 QUIZ — DEVOPS_L10_POST
-
----
-
-## 📍 Slide 40 – 🚀 What Comes Next
-
-## 📚 Course Continuation
-
-* 🔐 Lab 11: Secrets with Vault
-* ⚙️ Lab 12: ConfigMaps
-* 🔄 Lab 13: ArgoCD GitOps
-* 📊 Lab 14: StatefulSets
-* 🔍 Lab 15: K8s Monitoring
-
-**🎉 You've completed the Helm fundamentals!**
-
-> ⛵ From raw YAML to packaged charts — one template at a time.
-
-```mermaid
-flowchart LR
-  You[👤 You] --> Helm[⛵ Helm Skills]
-  Helm --> Packaging[📦 K8s Packaging]
-  Packaging --> Career[🚀 Career Growth]
-```
-
-**👋 Continue your DevOps journey!**
-
----
-
-## 📚 Resources & Further Reading
-
-**📕 Books:**
-* 📖 *Learning Helm* — Matt Butcher
-* 📖 *Helm in Action* — Matt Palmer
-* 📖 *Kubernetes Patterns* — Bilgin Ibryam
-
-**🔗 Links:**
-* 🌐 [Helm Documentation](https://helm.sh/docs/)
-* 🌐 [Chart Best Practices](https://helm.sh/docs/chart_best_practices/)
-* 🌐 [Artifact Hub](https://artifacthub.io/)
-
----
+**🎓 Quiz:** post-lecture quiz feeds the weeks 10-12 leaderboard window.

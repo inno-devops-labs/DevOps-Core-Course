@@ -2,10 +2,10 @@
 
 ## 📍 Slide 1 – 🐳 Welcome to Containerization
 
-* 🌍 **"Works on my machine"** — the most expensive phrase in software
-* 📦 **Containers** = package your app + all dependencies together
-* 🚀 **Docker** = the tool that made containers mainstream
-* 🎯 This lecture: build production-ready containers from scratch
+* 🌍 **"Works on my machine"** — the most expensive phrase in software (Lecture 1's running joke, now we fix it)
+* 📦 **Containers** = package your app + dependencies + runtime into a single shippable unit
+* 🚀 **Docker** = the tool that made containers mainstream in 2013
+* 🎯 This lecture: build production-grade containers — small, secure, reproducible
 
 ```mermaid
 flowchart LR
@@ -13,1043 +13,504 @@ flowchart LR
   Solution --> Value[💎 Consistent Deployments]
 ```
 
+> 🔗 **Tie-in to Lab 2:** you'll containerize the Python service from Lab 1. By the end you'll have a multi-stage Dockerfile under 100MB final image.
+
 ---
 
 ## 📍 Slide 2 – 🎯 Learning Outcomes
 
-* ✅ Understand containers vs VMs and why containers win
-* ✅ Write production-ready Dockerfiles
-* ✅ Apply security best practices (rootless, distroless)
-* ✅ Optimize images with multi-stage builds
-* ✅ Publish images to Docker Hub
+| # | Outcome |
+|---|---------|
+| 1 | 🧠 Explain how Linux namespaces and cgroups make containers possible |
+| 2 | 📝 Write production-ready Dockerfiles |
+| 3 | 🔐 Apply rootless and distroless patterns |
+| 4 | 📦 Cut image size with multi-stage builds |
+| 5 | 🚀 Push and pull from Docker Hub or GHCR |
 
-**🎓 By the end of this lecture:**
-
-| # | 🎯 Outcome |
-|---|-----------|
-| 1 | 🧠 Explain container architecture and benefits |
-| 2 | 📝 Write optimized, secure Dockerfiles |
-| 3 | 🔐 Implement rootless containers |
-| 4 | 📦 Use multi-stage builds for smaller images |
-| 5 | 🚀 Push/pull images from Docker Hub |
+**Tech stack pinned for May 2026:** Docker Engine **29.5+** (released May 2026; containerd image store is now default), BuildKit on by default, Compose v2 in Go (Python compose v1 reached EOL July 2023).
 
 ---
 
-## 📍 Slide 3 – 📋 Lecture Overview
+## 📍 Slide 3 – ❓ The Big Question
 
-* 📚 **Concepts + Diagrams** — how containers work
-* 🛠️ **Dockerfile deep dive** — instructions and best practices
-* 🔐 **Security patterns** — rootless and distroless
-* 📦 **Optimization** — multi-stage builds
-* 🌐 **Registry workflow** — Docker Hub
+* 📊 **~65%** of organizations run containers in production (CNCF Annual Survey 2024)
+* 🐳 Docker Hub holds **15M+** public images, serves **~17B** pulls per month
+* 💥 Yet a 2024 Snyk scan found **~80%** of public images contain at least one HIGH-severity CVE
 
-**⏱️ Lecture Structure:**
-```
-Section 0: Introduction           → 📝 PRE Quiz
-Section 1: The Dependency Problem
-Section 2: Container Fundamentals
-Section 3: Dockerfile Scenarios   → 📝 MID Quiz
-Section 4: Advanced Patterns
-Section 5: Real World Usage
-Section 6: Reflection             → 📝 POST Quiz
-```
+> 💬 *"Containers are the new deployment unit."* — Kelsey Hightower
+
+**🤔 Discussion:** if every image is potentially vulnerable, what makes a "good" Dockerfile?
 
 ---
 
-## 📍 Slide 4 – ❓ The Big Question
+## 📍 Slide 4 – 🔥 The Dependency Problem
 
-* 📊 **65%** of organizations use containers in production (2024)
-* 🐳 **Docker Hub**: 14+ million images, 13+ billion pulls/month
-* 💥 Yet most Dockerfiles have **security vulnerabilities**
-
-> 💬 *"Containers are the new deployment unit"* — Kelsey Hightower
-
-**🤔 Think about it:**
-* Why do apps work locally but fail in production?
-* What's inside a container that makes it portable?
-* How small can a container image be?
-
----
-
-## 📍 Slide 5 – 📝 QUIZ — DEVOPS_L2_PRE
-
----
-
-## 📍 Slide 6 – 🔥 Section 1: The Dependency Problem
-
-* 👨‍💻 **Developer**: "It works on my machine!"
-* ⚙️ **Ops**: "Well, we're not shipping your machine!"
-* 🧩 **The real problem**: dependencies, versions, configurations
-* 💥 **Result**: deployment failures, debugging nightmares
+* 👨‍💻 **Dev box:** Python 3.13, glibc 2.40, OpenSSL 3.3
+* 🖥️ **Prod box:** Python 3.10, glibc 2.31, OpenSSL 1.1
+* 💥 App crashes in prod with `GLIBC_2.34 not found` — and nobody can reproduce locally
 
 ```mermaid
 flowchart LR
-  Dev[👨‍💻 Dev Machine] -->|Different| Prod[🌐 Production]
-  Dev -->|Python 3.11| V1[📦 Version]
-  Prod -->|Python 3.9| V2[📦 Version]
-  V1 -.->|💥 Conflict| V2
+  Dev[👨‍💻 Dev: Python 3.13] -.->|❌ Mismatch| Prod[🖥️ Prod: Python 3.10]
+  Dev --> Container[🐳 Container] --> Prod
+  Container -->|✅ Works everywhere| Run[🚀 Run]
 ```
+
+The container freezes the *entire userspace* — interpreter, libraries, system tools — into one immutable artifact. Only the kernel is shared.
 
 ---
 
-## 📍 Slide 7 – 🧩 The Dependency Hell
+## 📍 Slide 5 – 😱 The VM Solution (and Why Containers Won)
 
-* 🐍 **Python version**: 3.9 vs 3.11 vs 3.12
-* 📚 **Library versions**: requests 2.28 vs 2.31
-* 🖥️ **OS differences**: Ubuntu vs Alpine vs macOS
-* ⚙️ **System libraries**: OpenSSL, libffi, glibc
+VMs solved isolation in the 2000s by virtualizing **hardware**: a full OS per app.
+
+| 📊 | 🖥️ VM | 🐳 Container |
+|----|------|-------------|
+| Boot time | minutes | seconds |
+| Overhead | full OS per app (~GB) | shared kernel (~MB) |
+| Density per host | tens | hundreds to thousands |
+| Image size | 1–10 GB | 5 MB – 1 GB |
+| Isolation | hardware-level | process-level + namespaces |
+
+> 🔥 **The trade-off:** containers are weaker isolation. A kernel CVE escapes containers but not VMs. That's why production K8s clusters often run on VMs.
+
+---
+
+## 📍 Slide 6 – 📜 A Brief History of Containers
+
+* 📅 **1979** — `chroot()` added to Unix V7. The ancestor of all containers.
+* 📅 **2000** — FreeBSD Jails: chroot + process isolation.
+* 📅 **2008** — **LXC** (Linux Containers): namespaces + cgroups together.
+* 📅 **2013** — **Docker** open-sourced by dotCloud (renamed). Solomon Hykes's PyCon demo goes viral.
+* 📅 **2015** — Docker donates the container runtime spec (OCI). Containerd separates from Docker.
+* 📅 **2016** — Kubernetes hits 1.0; container orchestration becomes the production story.
+* 📅 **2020** — Kubernetes deprecates Docker as a runtime (uses containerd directly). Docker images still work — they're OCI.
+* 📅 **2023** — Docker Compose v1 (Python) reaches EOL July 2023. **Compose v2 (Go)** is the standard.
+* 📅 **2026** — Docker Engine **29** released (May 2026). Containerd image store becomes the default for new installs — finishes the "Docker is becoming containerd + tooling" trajectory that started in 2015.
+
+---
+
+## 📍 Slide 7 – 🐧 The Kernel Primitives That Make It Work
+
+Containers are not a feature — they're a *composition* of Linux features:
+
+| Primitive | What it isolates |
+|-----------|------------------|
+| 🏷️ **Namespaces** (PID, NET, MNT, UTS, IPC, USER, CGROUP) | Process trees, networks, mounts, hostname, IPC, UIDs, cgroup view |
+| 🎛️ **cgroups (v2)** | CPU, memory, block I/O, PIDs — *quotas*, not isolation |
+| 📂 **Union filesystems** (overlay2) | Stacked read-only layers + one R/W layer = the image model |
+| 🛡️ **Capabilities + seccomp + AppArmor** | What syscalls a container is allowed to make |
 
 ```mermaid
 flowchart TD
-  App[📱 Your App] --> Py[🐍 Python 3.11]
-  App --> Lib1[📚 Flask 2.3]
-  App --> Lib2[📚 Requests 2.31]
-  Py --> OS[🖥️ Ubuntu 22.04]
-  Lib1 --> SSL[🔐 OpenSSL 3.0]
-  OS --> Kernel[🧠 Linux Kernel]
+  Container[🐳 Container] --> NS[🏷️ Namespaces<br/>isolation]
+  Container --> CG[🎛️ cgroups<br/>resource limits]
+  Container --> UF[📂 overlay2<br/>image layers]
+  Container --> SC[🛡️ seccomp/AppArmor<br/>syscall guard]
 ```
 
-> 🤔 **Think:** How many things can go wrong?
+> 📖 *Containers from Scratch* (Liz Rice talk, 2017) — builds a container in 100 lines of Go using these primitives.
 
 ---
 
-## 📍 Slide 8 – 😱 The VM Solution (Heavy)
-
-* 🖥️ **Virtual Machines** = entire OS per application
-* 💾 **Size**: 10-50 GB per VM
-* ⏱️ **Boot time**: minutes
-* 🔧 **Resource overhead**: hypervisor, guest OS kernel
-
-```mermaid
-flowchart TD
-  subgraph VM1["🖥️ VM 1 - 15GB"]
-    direction TD
-    App1[📱 App] --> OS1[🖥️ Full OS]
-    OS1 --> Kernel1[🧠 Kernel]
-  end
-  subgraph VM2["🖥️ VM 2 - 15GB"]
-    direction TD
-    App2[📱 App] --> OS2[🖥️ Full OS]
-    OS2 --> Kernel2[🧠 Kernel]
-  end
-  VM1 --> Hyper[⚙️ Hypervisor]
-  VM2 --> Hyper
-  Hyper --> Host[🖥️ Host OS]
-```
-
-**😰 Problems:**
-* 🐌 Slow to start
-* 💸 Expensive (RAM, CPU, storage)
-* 🔧 Hard to manage at scale
-
----
-
-## 📍 Slide 9 – 🐳 The Container Solution (Light)
-
-* 📦 **Containers** = isolated processes sharing host kernel
-* 💾 **Size**: 5-500 MB typically
-* ⏱️ **Start time**: milliseconds
-* 🚀 **Density**: 10-100x more containers than VMs
-
-```mermaid
-flowchart TD
-  subgraph Containers
-    C1[📦 Container 1 - 50MB]
-    C2[📦 Container 2 - 50MB]
-    C3[📦 Container 3 - 50MB]
-  end
-  C1 --> Docker[🐳 Docker Engine]
-  C2 --> Docker
-  C3 --> Docker
-  Docker --> Host[🖥️ Host OS + Kernel]
-```
-
-**🚀 Benefits:**
-* ⚡ Start in milliseconds
-* 💰 Efficient resource usage
-* 📦 Portable across environments
-
----
-
-## 📍 Slide 10 – 💸 VMs vs Containers
-
-| 🔍 Aspect | 🖥️ Virtual Machine | 🐳 Container |
-|-----------|-------------------|--------------|
-| 💾 **Size** | 10-50 GB | 10-500 MB |
-| ⏱️ **Boot Time** | Minutes | Milliseconds |
-| 🧠 **Kernel** | Own kernel | Shared kernel |
-| 🔒 **Isolation** | Strong (hardware) | Process-level |
-| 📦 **Density** | 10-20 per host | 100s per host |
-| 🎯 **Use Case** | Full OS needed | App deployment |
-
-**📈 Real Numbers:**
-* 🖥️ **VM**: 1 app = ~2GB RAM overhead
-* 🐳 **Container**: 1 app = ~50MB overhead
-* 🚀 **Result**: 40x more efficient!
-
----
-
-## 📍 Slide 11 – 📜 History of Containerization
-
-* 🕰️ **1979**: `chroot` — change root directory (Unix V7)
-* 🔒 **2000**: FreeBSD Jails — first true isolation
-* 🐧 **2006**: cgroups — Google contributes to Linux kernel
-* 📦 **2008**: LXC (Linux Containers) — combines namespaces + cgroups
-* 🐳 **2013**: **Docker** — makes containers accessible to everyone
-* ☸️ **2014**: Kubernetes — container orchestration at scale
-* 📦 **2015**: OCI (Open Container Initiative) — standardization
+## 📍 Slide 8 – 🏗️ Docker Architecture
 
 ```mermaid
 flowchart LR
-  Chroot[🕰️ 1979: chroot] --> Jails[🔒 2000: Jails]
-  Jails --> Cgroups[🐧 2006: cgroups]
-  Cgroups --> LXC[📦 2008: LXC]
-  LXC --> Docker[🐳 2013: Docker]
-  Docker --> K8s[☸️ 2014: K8s]
+  CLI[💻 docker CLI] -->|REST API| Daemon[🛠️ dockerd]
+  Daemon --> Containerd[📦 containerd]
+  Containerd --> Runc[🏃 runc]
+  Runc --> Kernel[🐧 Linux kernel]
+  Daemon -->|pull/push| Registry[🌐 Registry]
 ```
 
-> 💡 Docker didn't invent containers — it made them **usable**.
+* **`docker` CLI** — what you type
+* **`dockerd`** — the daemon; talks to containerd via gRPC
+* **`containerd`** — the OCI runtime manager (also used directly by K8s)
+* **`runc`** — the actual process spawner that calls the kernel
+* **Registry** — Docker Hub, GHCR, ECR, GAR, Harbor — stores images
+
+> 📝 **Rootless Docker** (default since Docker 23): `dockerd` runs as your user, not root. Adopt it.
 
 ---
 
-## 📍 Slide 12 – 🐧 Linux Kernel: Namespaces
+## 📍 Slide 9 – 🔁 Docker 29 and the containerd Image Store
 
-* 🎯 **Namespaces** = isolate what a process **can see**
-* 🔒 Each container gets its own "view" of the system
+For a decade, Docker had its own image store (the *graph driver* — `overlay2`, `aufs`, etc.). containerd had a *different* image store. Same OCI images on disk, but two databases describing them. Docker 23 introduced the containerd image store as a feature flag in 2023; **Docker 29 (May 2026) makes it the default for new installs**.
 
-| 🏷️ Namespace | 🔒 Isolates | 📝 Example |
-|--------------|------------|-----------|
-| **PID** | Process IDs | Container sees PID 1 as its init |
-| **NET** | Network stack | Own IP, ports, routing |
-| **MNT** | Mount points | Own filesystem view |
-| **UTS** | Hostname | Own hostname |
-| **IPC** | Inter-process comm | Own message queues |
-| **USER** | User/Group IDs | UID 0 in container ≠ root on host |
-
-```mermaid
-flowchart TD
-  subgraph Host["🖥️ Host System"]
-    subgraph NS1["📦 Container 1 Namespace"]
-      P1[PID 1: app]
-      Net1[eth0: 172.17.0.2]
-    end
-    subgraph NS2["📦 Container 2 Namespace"]
-      P2[PID 1: app]
-      Net2[eth0: 172.17.0.3]
-    end
-  end
-```
-
----
-
-## 📍 Slide 13 – 🎛️ Linux Kernel: cgroups
-
-* 🎯 **cgroups** (Control Groups) = limit what a process **can use**
-* 📊 Resource limits prevent one container from killing the host
-
-| 🎛️ cgroup | 🔧 Controls | 📝 Example |
-|-----------|------------|-----------|
-| **cpu** | CPU time | Max 50% of one core |
-| **memory** | RAM usage | Max 512MB |
-| **blkio** | Disk I/O | Max 100MB/s read |
-| **pids** | Process count | Max 100 processes |
+Why students should care:
+* 🪞 **Lazy pulls** — pull only the layers you actually need (eStargz / SOCI)
+* 🖥️ **Multi-platform images locally** — `docker buildx build --platform linux/amd64,linux/arm64` finally works without registry round-trips
+* 📦 **Better disk reclamation** — image GC matches what `nerdctl` and Kubernetes already do
+* 🧹 **One image database** on the host instead of two
 
 ```mermaid
 flowchart LR
-  Container[🐳 Container] --> Cgroups[🎛️ cgroups]
-  Cgroups --> CPU[🖥️ CPU: 50%]
-  Cgroups --> RAM[💾 RAM: 512MB]
-  Cgroups --> IO[💿 I/O: 100MB/s]
-```
-
-**🛡️ Why it matters:**
-* ✅ Prevent runaway processes
-* ✅ Fair resource sharing
-* ✅ Predictable performance
-
----
-
-## 📍 Slide 14 – 📂 Linux Kernel: Union Filesystems
-
-* 🎯 **Union FS** = layer multiple filesystems as one
-* 📚 Docker uses **overlay2** (default on Linux)
-* 💾 Layers are **read-only**, changes go to top layer
-
-```mermaid
-flowchart TD
-  subgraph Image["📦 Image Layers - Read Only"]
-    L1[🐧 Layer 1: Base OS]
-    L2[📦 Layer 2: Dependencies]
-    L3[📁 Layer 3: App Code]
+  subgraph "Docker ≤ 22"
+    A[Graph driver<br/>own DB]
   end
-  subgraph Container["🏃 Container Layer - Read/Write"]
-    L4[✏️ Layer 4: Runtime Changes]
+  subgraph "Docker 23-28 (flag)"
+    B[containerd image store<br/>opt-in]
   end
-  L1 --> L2 --> L3 --> L4
-```
-
-**💡 Benefits:**
-* ✅ **Shared layers** — 10 containers can share base image
-* ✅ **Fast startup** — no copying, just add thin layer
-* ✅ **Efficient storage** — only differences stored
-
----
-
-## 📍 Slide 15 – 🧩 How It All Fits Together
-
-```mermaid
-flowchart TD
-  subgraph Docker["🐳 Docker Engine"]
-    CLI[🖥️ Docker CLI]
-    Daemon[⚙️ dockerd]
-    Containerd[📦 containerd]
-    Runc[🏃 runc]
+  subgraph "Docker 29+"
+    C[containerd image store<br/>default]
   end
-  subgraph Kernel["🐧 Linux Kernel"]
-    NS[🔒 Namespaces]
-    CG[🎛️ cgroups]
-    UFS[📂 overlay2]
-  end
-  CLI --> Daemon --> Containerd --> Runc
-  Runc --> NS
-  Runc --> CG
-  Runc --> UFS
+  A --> B --> C
 ```
 
-**🔧 The Stack:**
-* 🖥️ **Docker CLI** — user interface
-* ⚙️ **dockerd** — Docker daemon (API)
-* 📦 **containerd** — container lifecycle management
-* 🏃 **runc** — OCI runtime (creates containers)
-* 🐧 **Kernel** — namespaces + cgroups + filesystem
+> 🔥 **Hot take:** Docker the engine is now mostly a polished UX on top of containerd + BuildKit. That's a *good* thing for the ecosystem; it means Kubernetes, nerdctl, podman and Docker agree on the runtime.
 
 ---
 
-## 📍 Slide 16 – 💡 Section 2: Docker Fundamentals
+## 📍 Slide 10 – 📚 Image Layers — The Mental Model
 
-* 🐳 **Docker** = platform for building, shipping, running containers
-* 📦 **Image** = blueprint (read-only template)
-* 🏃 **Container** = running instance of an image
-* 📝 **Dockerfile** = recipe to build an image
+Every Dockerfile instruction creates a **read-only layer**. Layers are stacked via overlayfs; the running container adds one R/W layer on top.
 
 ```mermaid
-flowchart LR
-  Dockerfile[📝 Dockerfile] -->|build| Image[📦 Image]
-  Image -->|run| Container[🏃 Container]
-  Image -->|push| Registry[🌐 Registry]
-  Registry -->|pull| Image2[📦 Image]
+flowchart TB
+  L4[Layer 4: COPY app.py<br/>R/W layer at runtime]
+  L3[Layer 3: pip install -r requirements.txt]
+  L2[Layer 2: COPY requirements.txt]
+  L1[Layer 1: python:3.13-slim base]
+  L4 --> L3 --> L2 --> L1
 ```
 
-**📖 Definition:**
-> *A container is a standard unit of software that packages code and all its dependencies so the application runs quickly and reliably across environments.*
+**Why this matters:**
+* 🚀 Layers are **cached** — unchanged steps don't rebuild
+* 📦 Layers are **shared** — three images using the same base each store the base once
+* 💀 Layers are **additive** — deleting a file in a later layer hides it but the layer above still has it
+
+> 🔥 **Anti-pattern:** `COPY secrets.env / && rm secrets.env` does NOT remove the secret. It's still in the earlier layer. Treat every layer as forever.
 
 ---
 
-## 📍 Slide 17 – 🏗️ Docker Architecture
-
-* 🖥️ **Docker Client** = CLI commands (`docker build`, `docker run`)
-* ⚙️ **Docker Daemon** = background service managing containers
-* 📦 **Images** = layered filesystem snapshots
-* 🌐 **Registry** = image storage (Docker Hub, ECR, GCR)
-
-```mermaid
-flowchart LR
-  CLI[🖥️ Docker CLI] -->|API| Daemon[⚙️ Docker Daemon]
-  Daemon --> Images[📦 Images]
-  Daemon --> Containers[🏃 Containers]
-  Daemon <-->|push/pull| Registry[🌐 Registry]
-```
-
-**🔧 Key Commands:**
-* 🔨 `docker build` — create image from Dockerfile
-* 🏃 `docker run` — start container from image
-* 📤 `docker push` — upload image to registry
-* 📥 `docker pull` — download image from registry
-
----
-
-## 📍 Slide 18 – 📚 Image Layers
-
-* 🎂 **Images are layered** = each instruction creates a layer
-* 💾 **Layers are cached** = faster rebuilds
-* 🔄 **Layers are shared** = efficient storage
-* 📝 **Order matters** = for cache efficiency
-
-```mermaid
-flowchart TD
-  L1[🐧 Layer 1: Base OS - python:3.12-slim]
-  L2[📦 Layer 2: Install dependencies]
-  L3[📁 Layer 3: Copy application code]
-  L4[⚙️ Layer 4: Configure runtime]
-  L1 --> L2 --> L3 --> L4
-  L4 --> Image[📦 Final Image]
-```
-
-**💡 Key Insight:**
-* ✅ Change code → only Layer 3-4 rebuild
-* ❌ Change base → ALL layers rebuild
-
----
-
-## 📍 Slide 19 – 📝 Dockerfile Basics
+## 📍 Slide 11 – 📝 Dockerfile Basics — Read This Twice
 
 ```dockerfile
-# 🐍 Start from base image
-FROM python:3.12-slim
+# 🏗️ Base image — alpine, debian-slim, distroless, scratch
+FROM python:3.13-slim
 
-# 📁 Set working directory
-WORKDIR /app
+# 👤 Don't run as root (we'll harden this later)
+RUN useradd --create-home --shell /bin/bash app
+USER app
+WORKDIR /home/app
 
-# 📦 Copy and install dependencies FIRST (caching!)
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 📦 Dependencies FIRST (changes rarely → cached)
+COPY --chown=app:app requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
 
-# 📁 Copy application code
-COPY . .
+# 💻 App code LAST (changes often → only this layer rebuilds)
+COPY --chown=app:app . .
 
-# 🚀 Define startup command
+# 🚪 Document the port
+EXPOSE 8080
+
+# 🚀 Use exec form (PID 1 = your app → signals work)
 CMD ["python", "app.py"]
 ```
 
-**📝 Key Instructions:**
-| Instruction | 🎯 Purpose |
-|-------------|-----------|
-| `FROM` | 🐧 Base image |
-| `WORKDIR` | 📁 Set directory |
-| `COPY` | 📄 Copy files |
-| `RUN` | ⚙️ Execute commands |
-| `CMD` | 🚀 Default command |
-| `EXPOSE` | 🔌 Document port |
+> ⚠️ **PID 1 trap:** shell form (`CMD python app.py`) makes `/bin/sh` PID 1 and your app PID 2 — signals (SIGTERM) never reach it. Always use exec form `CMD ["python", "app.py"]`.
 
 ---
 
-## 📍 Slide 20 – ⚡ Before vs After Docker
+## 📍 Slide 12 – ⚡ Before vs After Docker
 
-| 😰 Before Docker | 🐳 After Docker |
-|-----------------|-----------------|
-| 📋 Manual server setup | 📝 Dockerfile defines everything |
-| 🔧 "Install Python 3.11, then..." | 🐳 `FROM python:3.11` |
-| 😱 "Works on my machine" | ✅ Works everywhere |
-| 📅 Deploy monthly (scary) | 🚀 Deploy daily (confident) |
-| 🐛 "Which version is prod?" | 📦 Image tag = version |
-| 💀 Snowflake servers | 🐄 Immutable containers |
-
-> 🤔 Which column describes your current workflow?
+| 😰 Without Docker | 🚀 With Docker |
+|---|---|
+| README has 14 steps of `apt-get install` | `docker run myapp` |
+| "Works on Linux, not Windows" | Works the same on Linux/macOS/Windows (with Linux containers) |
+| Production drift accumulates | Image is immutable; rebuilds are reproducible |
+| Onboarding a new dev takes hours | `docker compose up` and code |
+| One bad dependency = whole-server reinstall | `docker stop && docker rm && docker run` — done |
 
 ---
 
-## 📍 Slide 21 – 🎮 Section 3: Dockerfile Scenarios
+## 📍 Slide 13 – 🎮 Scenario 1: Running as Root
 
-## 🕹️ Lab Preview: Containerize Your App
-
-* 🏢 **Scenario**: You have a Python Flask app from Lab 1
-* 🎯 **Goal**: Package it in a production-ready container
-* 📋 **Requirements**: Security, optimization, best practices
-
-**❓ What could go wrong?**
-
-> 💀 **A lot.** Let's see common mistakes and fixes.
-
-🎮 **Let's build it right.**
-
----
-
-## 📍 Slide 22 – 💥 Scenario 1: Running as Root
-
-**😰 The Problem:**
+**The failure:**
 ```dockerfile
-FROM python:3.12
+FROM python:3.13-slim
 COPY . /app
-CMD ["python", "app.py"]
-# 💀 Running as root by default!
+CMD ["python", "/app/server.py"]
+```
+This runs as **root inside the container**. A kernel CVE (e.g., CVE-2022-0185, the FILESYSTEM\_MOUNT escape) lets the process become root on the host. That's container escape.
+
+**The fix — drop privileges:**
+```dockerfile
+FROM python:3.13-slim
+RUN useradd --uid 10001 --create-home --shell /bin/bash app
+WORKDIR /home/app
+COPY --chown=app:app . .
+USER 10001     # 👤 numeric UID survives renames
+CMD ["python", "server.py"]
 ```
 
-* 🔓 Container runs as **root** (UID 0)
-* 💥 If attacker escapes container → **root on host**
-* 🚨 Kubernetes blocks root containers by default
-
-```mermaid
-flowchart LR
-  Attack[🔓 Container Escape] --> Root[👑 Root Access]
-  Root --> Host[💀 Host Compromised]
-```
-
-> ❓ **Why is this dangerous?**
+> 🔒 **Bonus:** add `--read-only` and `--cap-drop=ALL` at `docker run` time. Lab 2 walks through this.
 
 ---
 
-## 📍 Slide 23 – ✅ Solution: Rootless Containers
+## 📍 Slide 14 – 🐌 Scenario 2: Slow Builds (Bad Layer Order)
 
-## 🛠️ Fix: Create Non-Root User
-
+**Wrong order — every code change re-installs all dependencies (5 minute build):**
 ```dockerfile
-FROM python:3.12-slim
-
-# 👤 Create non-root user
-RUN useradd --create-home --shell /bin/bash appuser
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-
-# 🔒 Switch to non-root user
-USER appuser
-
-CMD ["python", "app.py"]
+COPY . /app                 # 🚫 Every change invalidates everything below
+RUN pip install -r /app/requirements.txt
 ```
 
-**🎯 Result:** Container runs as `appuser`, not root
-
-**🔐 Security Benefits:**
-* ✅ Limited privileges inside container
-* ✅ Can't modify system files
-* ✅ Container escape = unprivileged user
-* ✅ Kubernetes-compatible
-
----
-
-## 📍 Slide 24 – 🐌 Scenario 2: Slow Builds (Bad Layer Order)
-
-**😰 The Problem:**
+**Correct order — dependency layer cached until `requirements.txt` changes:**
 ```dockerfile
-FROM python:3.12-slim
-WORKDIR /app
-
-# ❌ Copy EVERYTHING first
-COPY . .
-
-# 📦 Then install dependencies
+COPY requirements.txt .     # ✅ Rarely changes
 RUN pip install -r requirements.txt
-
-CMD ["python", "app.py"]
+COPY . .                    # ✅ Code changes don't bust the deps layer
 ```
 
-* 🔄 **Any code change** → reinstall ALL dependencies
-* ⏱️ Build time: **5 minutes** every time
-* 💸 Wasted CI/CD minutes
-
-```mermaid
-flowchart TD
-  Change[📝 Change 1 line of code] --> Copy[❌ COPY invalidated]
-  Copy --> Pip[❌ pip install runs again]
-  Pip --> Slow[🐌 5 min rebuild]
-```
+**Rule of thumb:** order layers from **least-frequently-changing** to **most**. Base → system packages → language deps → app code.
 
 ---
 
-## 📍 Slide 25 – ✅ Solution: Optimized Layer Order
+## 📍 Slide 15 – 📦 Scenario 3: Bloated Images
 
-## 🛠️ Fix: Dependencies Before Code
+A naive Python image is **~1.2 GB**. That's a problem:
+* 🐢 Slow `docker pull` → slow deploys, slow autoscale
+* 💸 Storage and egress costs scale with image size
+* 🛡️ Bigger image = more packages = more CVEs
 
-```dockerfile
-FROM python:3.12-slim
-WORKDIR /app
-
-# 📦 Copy ONLY requirements first
-COPY requirements.txt .
-
-# 📦 Install dependencies (cached if requirements unchanged)
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 📁 THEN copy application code
-COPY . .
-
-CMD ["python", "app.py"]
-```
-
-**🎯 Result:** Change code → only last layer rebuilds
-
-```mermaid
-flowchart TD
-  Change[📝 Change code] --> Skip1[✅ FROM cached]
-  Skip1 --> Skip2[✅ requirements cached]
-  Skip2 --> Skip3[✅ pip install cached]
-  Skip3 --> Rebuild[🔨 Only COPY . . rebuilds]
-  Rebuild --> Fast[⚡ 10 sec rebuild]
-```
-
-**⚡ Build time: 5 min → 10 sec**
+**Slim it:**
+| Base image | Size | Trade-off |
+|------------|-----:|-----------|
+| `python:3.13` (debian) | ~1.2 GB | comprehensive |
+| `python:3.13-slim` | ~150 MB | no man pages, fewer system libs |
+| `python:3.13-alpine` | ~60 MB | musl libc — some wheels break |
+| `gcr.io/distroless/python3` | ~50 MB | no shell, no package manager |
+| `scratch` (for Go/Rust) | ~10 MB | nothing but your binary |
 
 ---
 
-## 📍 Slide 26 – 📦 Scenario 3: Bloated Images
+## 📍 Slide 16 – 📁 Scenario 4: No `.dockerignore`
 
-**😰 The Problem:**
-```dockerfile
-FROM python:3.12
-# 💾 Full Python image = 1.0 GB!
-```
+Without `.dockerignore`, `COPY . .` ships your local `node_modules/`, `.git`, `.venv`, IDE configs, and **secrets** into the image. The build context can be hundreds of MB.
 
-* 💾 Image size: **1+ GB**
-* 🐌 Slow to pull/push
-* 💸 Storage costs
-* 🔓 Larger attack surface
-
-**📊 Python Image Sizes:**
-| Image | 💾 Size |
-|-------|--------|
-| `python:3.12` | 1.0 GB |
-| `python:3.12-slim` | 150 MB |
-| `python:3.12-alpine` | 50 MB |
-
-> 🤔 **Do you need the full image?**
-
----
-
-## 📍 Slide 27 – ✅ Solution: Slim Base Images
-
-## 🛠️ Fix: Use Minimal Base Images
-
-```dockerfile
-# ✅ Use slim variant
-FROM python:3.12-slim
-
-# ✅ No cache for pip (smaller image)
-RUN pip install --no-cache-dir -r requirements.txt
-
-# ✅ Only copy what's needed
-COPY app.py .
-COPY templates/ templates/
-```
-
-**🎯 Result:** 1 GB → 150 MB (85% reduction!)
-
-**📦 Base Image Guide:**
-| Image Type | 🎯 Use Case | 💾 Size |
-|------------|------------|--------|
-| `python:3.12` | Need compilation tools | 1.0 GB |
-| `python:3.12-slim` | Most apps (recommended) | 150 MB |
-| `python:3.12-alpine` | Size-critical, simple apps | 50 MB |
-
-**⚠️ Alpine Warning:** Uses musl libc, may break some packages
-
----
-
-## 📍 Slide 28 – 📁 Scenario 4: No .dockerignore
-
-**😰 The Problem:**
-```bash
-# Build context includes EVERYTHING
-Sending build context to Docker daemon  500MB
-```
-
-* 📁 `.git/` folder (100+ MB)
-* 📁 `node_modules/` or `venv/`
-* 📁 `__pycache__/` files
-* 📄 `.env` with secrets! 💀
-
-**💥 Consequences:**
-* 🐌 Slow builds
-* 💾 Bloated images
-* 🔓 Secrets leaked into image
-
----
-
-## 📍 Slide 29 – ✅ Solution: .dockerignore
-
-## 🛠️ Fix: Exclude Unnecessary Files
-
-```dockerignore
-# 🐙 Version control
+```gitignore
+# .dockerignore — same syntax as .gitignore
 .git
-.gitignore
-
-# 🐍 Python
-__pycache__
-*.pyc
-*.pyo
+.venv
 venv/
-.venv/
-
-# 🔐 Secrets (NEVER include!)
+__pycache__/
+node_modules/
 .env
-*.pem
-secrets/
-
-# 📝 Documentation
-*.md
+*.pyc
 docs/
-
-# 🧪 Tests (if not needed in container)
 tests/
+README.md
+.idea/
+.vscode/
 ```
 
-**🎯 Result:**
-* ⚡ Build context: 500 MB → 5 MB
-* 🔐 No secrets in image
-* 🚀 Faster builds
+> 🔍 **Real story:** in 2022, Toyota leaked customer data because a `.git` folder was included in a deployed container. Always have a `.dockerignore`.
 
 ---
 
-## 📍 Slide 30 – 📝 QUIZ — DEVOPS_L2_MID
+## 📍 Slide 17 – 🚀 Multi-Stage Builds: The Big Trick
 
----
-
-## 📍 Slide 31 – 🚀 Section 4: Advanced Patterns
-
-## 🏗️ Multi-Stage Builds
-
-* 🎯 **Problem**: Build tools bloat final image
-* 💡 **Solution**: Separate build and runtime stages
-* 📦 **Result**: Tiny production images
-
-```mermaid
-flowchart LR
-  subgraph Stage1["🔨 Builder Stage"]
-    SDK[📦 Full SDK]
-    Compile[⚙️ Compile]
-  end
-  subgraph Stage2["🚀 Runtime Stage"]
-    Binary[📦 Binary Only]
-    Minimal[🐧 Minimal OS]
-  end
-  Stage1 -->|copy binary| Stage2
-```
-
-**📊 Size Impact:**
-* 🔨 Builder: 1+ GB (SDK, compilers)
-* 🚀 Runtime: 10-50 MB (binary only)
-
----
-
-## 📍 Slide 32 – 📝 Multi-Stage Dockerfile
+Compile in a heavy image, **copy only the artifact** into a tiny final image.
 
 ```dockerfile
-# 🔨 Stage 1: Builder
-FROM golang:1.21 AS builder
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
+# 🏗️ Build stage: full toolchain
+FROM golang:1.23 AS build
+WORKDIR /src
 COPY . .
-RUN CGO_ENABLED=0 go build -o myapp
+RUN CGO_ENABLED=0 go build -o /app ./cmd/server
 
-# 🚀 Stage 2: Runtime
-FROM alpine:3.18
-RUN adduser -D appuser
-WORKDIR /app
-COPY --from=builder /app/myapp .
-USER appuser
-CMD ["./myapp"]
-```
-
-**🔍 Key Points:**
-* 🏷️ `AS builder` — name the stage
-* 📦 `COPY --from=builder` — copy from previous stage
-* 🗑️ Builder stage discarded in final image
-
-**📊 Result:** 1.2 GB → 15 MB
-
----
-
-## 📍 Slide 33 – 🔐 Distroless Images
-
-## 🛡️ Ultimate Minimal Images
-
-* 🚫 **No shell** — can't exec into container
-* 🚫 **No package manager** — can't install malware
-* 🚫 **No unnecessary files** — minimal attack surface
-* ✅ **Only your app** — and runtime dependencies
-
-```dockerfile
-# 🔨 Build stage
-FROM golang:1.21 AS builder
-WORKDIR /app
-COPY . .
-RUN CGO_ENABLED=0 go build -o myapp
-
-# 🔐 Distroless runtime
+# 🚀 Final stage: just the binary
 FROM gcr.io/distroless/static-debian12
-COPY --from=builder /app/myapp /
-CMD ["/myapp"]
+COPY --from=build /app /app
+USER nonroot:nonroot
+ENTRYPOINT ["/app"]
 ```
 
-**📊 Distroless Options:**
-| Image | 🎯 For | 💾 Size |
-|-------|-------|--------|
-| `distroless/static` | Go, Rust (static) | 2 MB |
-| `distroless/base` | C/C++ apps | 20 MB |
-| `distroless/python3` | Python apps | 50 MB |
-| `distroless/java` | Java apps | 190 MB |
+Result for a typical Go service:
+* Single-stage `golang:1.23` image: **~900 MB**
+* Multi-stage distroless image: **~15 MB**
+* Same binary, **60× smaller**, **zero shell**, **zero package manager**
+
+> 🔗 **Lab 2 bonus:** rewrite your Lab 1 Go app as a multi-stage distroless build.
 
 ---
 
-## 📍 Slide 34 – 📊 Image Size Comparison
+## 📍 Slide 18 – 🔐 Distroless and `scratch`
 
-## 📈 Same App, Different Images
+**Distroless** (Google, 2018): images with your runtime + your app, but **no shell, no apt, no busybox**. Drastically reduces attack surface.
 
-| 🏗️ Build Strategy | 💾 Image Size | 🔐 Security |
-|-------------------|--------------|-------------|
-| `FROM python:3.12` | 1.0 GB | 😰 Large attack surface |
-| `FROM python:3.12-slim` | 150 MB | 😊 Better |
-| Multi-stage + slim | 100 MB | 😄 Good |
-| Multi-stage + alpine | 50 MB | 😄 Good |
-| Multi-stage + distroless | 20 MB | 🔐 Excellent |
-| `FROM scratch` (Go) | 5 MB | 🔐 Maximum |
+```dockerfile
+# ❌ Standard slim — debug-friendly, larger, more CVEs
+FROM python:3.13-slim
+COPY . /app
+CMD ["python", "/app/server.py"]
 
-```mermaid
-flowchart LR
-  Full[📦 1 GB] --> Slim[📦 150 MB]
-  Slim --> Multi[📦 50 MB]
-  Multi --> Distroless[📦 20 MB]
-  Distroless --> Scratch[📦 5 MB]
+# ✅ Distroless — production
+FROM gcr.io/distroless/python3-debian12
+COPY --from=build /app /app
+CMD ["/app/server.py"]
 ```
 
-**🎯 Goal:** As small as possible while functional
+**`scratch`** — the empty image. Use only for statically-linked binaries (Go with `CGO_ENABLED=0`, Rust with musl). 0 CVEs because there's literally nothing else.
+
+> 📖 **Liz Rice's *Container Security* (O'Reilly, 2020)** — the reference on hardening images.
 
 ---
 
-## 📍 Slide 35 – 🌐 Docker Hub & Registries
-
-## 📦 Publishing Your Images
+## 📍 Slide 19 – 🌐 Docker Hub & Registries
 
 ```mermaid
 flowchart LR
-  Build[🔨 Build] --> Tag[🏷️ Tag]
-  Tag --> Push[📤 Push]
-  Push --> Registry[🌐 Docker Hub]
-  Registry --> Pull[📥 Pull]
-  Pull --> Run[🏃 Run]
+  Build[🛠️ docker build] -->|tag| Local[📦 Local image]
+  Local -->|docker push| Registry[🌐 Registry]
+  Registry -->|docker pull| Prod[🖥️ Production]
 ```
 
-**🔧 Workflow:**
+| Registry | Notes |
+|----------|-------|
+| 🐳 **Docker Hub** | Default; 1 free private repo; rate limits hurt CI |
+| 🐙 **GHCR** (ghcr.io) | Free for public, integrated with GitHub Actions |
+| ☁️ **ECR / GAR / ACR** | Cloud-native; IAM-gated; recommended for AWS/GCP/Azure prod |
+| 🏠 **Harbor** | Self-hosted; CNCF graduated; image signing + vuln scan built in |
+
+**Image references:** `[registry/]namespace/repo[:tag][@digest]`
+- `nginx` → `docker.io/library/nginx:latest`
+- `ghcr.io/innodevops/lab2-app:v1.2.3@sha256:abc…` — pin by digest for production
+
+---
+
+## 📍 Slide 20 – 🏷️ Tagging Strategies
+
+> 🚫 **Never deploy `:latest` to production.** It's mutable; you can't reproduce yesterday's deploy.
+
+| Strategy | Example | When |
+|----------|---------|------|
+| 📌 **SemVer** | `v1.4.2` | Library or product release |
+| 🔢 **Git SHA** | `git-3a7f29c` | CI builds; always unique |
+| 📅 **CalVer** | `2026.04.0` | Time-driven release cadence |
+| 🌿 **Branch** | `main`, `develop` | Dev-time only |
+| 🔒 **Digest pin** | `@sha256:…` | Production — immutable |
+
+**Recommended:** push two tags per build — a SemVer-or-SHA tag for reproducibility, plus a moving `main` tag for convenience. Production references the immutable one.
+
+---
+
+## 📍 Slide 21 – 🛡️ Container Security Best Practices
+
+A checklist you can apply to any Dockerfile:
+
+1. ✅ **Pin base image versions** — `python:3.13-slim`, not `python:slim` or `python:latest`
+2. ✅ **Drop to a non-root UID** — `USER 10001`
+3. ✅ **Add a `HEALTHCHECK`** so the orchestrator knows when your app is alive
+4. ✅ **Don't bake secrets in** — `--build-arg` is visible in `docker history`; use BuildKit secrets or runtime env
+5. ✅ **Set `WORKDIR`** explicitly — `/app`, not `/` or `~`
+6. ✅ **Use `COPY` not `ADD`** unless you specifically need URL fetching or tar auto-extract
+7. ✅ **Scan images** — Trivy, Grype, or Snyk in CI; gate the build on HIGH/CRITICAL CVEs
+8. ✅ **Sign images** — cosign + Sigstore; verify in admission controller (covered in DevSecOps elective)
+
 ```bash
-# 🔨 Build image
-docker build -t myapp:1.0 .
-
-# 🏷️ Tag for registry
-docker tag myapp:1.0 username/myapp:1.0
-
-# 🔐 Login to Docker Hub
-docker login
-
-# 📤 Push to registry
-docker push username/myapp:1.0
+# 🔍 Lab 2 will use this
+trivy image --severity HIGH,CRITICAL --exit-code 1 myapp:v1.0.0
 ```
-
-**📦 Registries:**
-* 🐳 Docker Hub — public/private
-* ☁️ AWS ECR — AWS integrated
-* 🌐 GCP GCR — Google integrated
-* 🦊 GitLab Registry — GitLab integrated
 
 ---
 
-## 📍 Slide 36 – 🏢 Section 5: Real World Usage
+## 📍 Slide 22 – 🐙 Compose: Multi-Container Locally
 
-## 📅 Docker in Production
+`docker-compose.yml` describes a multi-container stack declaratively — perfect for local dev and CI smoke tests.
 
-**🔨 Build Phase:**
-* 📝 Dockerfile in repo
-* 🤖 CI builds image on every commit
-* 🏷️ Tag with git SHA or semantic version
-* 📤 Push to registry
+```yaml
+services:
+  app:
+    build: ./app_python
+    ports: ["8080:8080"]
+    environment:
+      DATABASE_URL: postgres://db:5432/app
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: postgres:17
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+    environment:
+      POSTGRES_PASSWORD: dev
+```
 
-**🚀 Deploy Phase:**
-* 📥 Pull image to servers
-* 🏃 Run containers
-* 📊 Monitor health
-* 🔄 Rolling updates
+> 🔗 **You'll use Compose in Labs 6, 7, 8.** For production multi-container workloads, Kubernetes (Lab 9+) takes over.
+
+---
+
+## 📍 Slide 23 – 🌍 Container Patterns at Real Companies
+
+* 🎬 **Netflix** — every microservice ships as a container image; thousands of builds/day pushed to S3-backed internal registry.
+* 📦 **Amazon (Bottlerocket)** — container-optimized OS, the host runs almost nothing else.
+* 🔍 **Google** — invented containers in production (Borg, 2003); pushes ~2 billion containers/week internally.
+* 💬 **GitHub** — *every* PR runs in a container via Actions; ~100 million containers/month.
+* 🏦 **Capital One** — moved core banking from VMs to containers on EKS; cut compute costs ~40%.
+
+> 🔥 **Common thread:** containers are how modern engineering organisations ship at scale.
+
+---
+
+## 📍 Slide 24 – 🎯 Key Takeaways
+
+1. 📦 **Containers are not magic** — namespaces + cgroups + overlayfs + a registry
+2. 🏗️ **Order layers from stable to volatile** — keep caches warm
+3. 👤 **Never run as root** — drop to a non-zero UID, ideally numeric
+4. 🛡️ **Multi-stage + distroless** — smaller image, fewer CVEs, faster pulls
+5. 🏷️ **Tag by SemVer or SHA; never deploy `:latest`**
+6. 🔍 **Scan every image in CI** — Trivy or Grype, gate on HIGH/CRITICAL
+7. 📄 **`.dockerignore` is not optional** — keeps secrets and `.git` out
+
+> 💡 **A good Dockerfile is small, secure, and reproducible. Two out of three is a bug.**
+
+---
+
+## 📍 Slide 25 – 🧠 The Mindset Shift
+
+| 😰 Old | 🚀 Container-native |
+|-------|---------------------|
+| "Set up the server" | Define the environment in a `Dockerfile` |
+| "Update the production box" | Build a new image, redeploy |
+| "Works on my machine" | Works in the image, image works everywhere |
+| "Big monolith on a VM" | Many small services, each a container |
+| Image is a black box | Image is a versioned artifact, scanned and signed |
+
+---
+
+## 📍 Slide 26 – 🚀 What Comes Next
+
+**📚 Next lecture: *Continuous Integration*** — every push runs tests, builds an image, and scans it before merging.
+
+* 🔄 Why CI prevents the failures you saw in Lecture 1
+* 🛠️ GitHub Actions workflow syntax
+* 🧪 Testing pyramid: unit → integration → end-to-end
+* 🐳 Building and pushing your Lab 2 image automatically
+
+**🔬 Lab 2:** containerize your Lab 1 service with a multi-stage Dockerfile, scan it with Trivy, push to GHCR. The image you build this week will follow your service through every remaining lab — K8s deploys it (Lab 9), Helm packages it (Lab 10), ArgoCD ships it (Lab 13).
 
 ```mermaid
 flowchart LR
-  Code[📝 Code] --> CI[🤖 CI Build]
-  CI --> Registry[🌐 Registry]
-  Registry --> K8s[☸️ Kubernetes]
-  K8s --> Prod[🌐 Production]
+  Lab1[🐍 Lab 1 app] --> Lab2[🐳 Lab 2 image] --> Lab3[🤖 Lab 3 CI]
+  Lab3 --> Future[🚀 Labs 9+: K8s]
 ```
 
----
-
-## 📍 Slide 37 – 🏷️ Tagging Strategies
-
-| 🏷️ Strategy | 📝 Example | 🎯 Use Case |
-|-------------|-----------|-------------|
-| **Semantic** | `myapp:1.2.3` | Releases |
-| **Git SHA** | `myapp:a1b2c3d` | Traceability |
-| **Branch** | `myapp:develop` | Dev environments |
-| **Latest** | `myapp:latest` | ⚠️ Avoid in prod! |
-| **Date** | `myapp:2024-01-15` | Daily builds |
-
-**⚠️ Never use `latest` in production:**
-* 🤷 Which version is "latest"?
-* 🔄 Changes without notice
-* 🐛 Can't rollback reliably
-
-**✅ Best Practice:**
-```bash
-# 🏷️ Immutable tags
-docker tag myapp:1.0.0 registry/myapp:1.0.0
-docker tag myapp:1.0.0 registry/myapp:sha-a1b2c3d
-```
+**👋 See you in Lecture 3.**
 
 ---
 
-## 📍 Slide 38 – 🔐 Security Best Practices
+## 📚 Resources
 
-```mermaid
-flowchart TD
-  Scan[🔍 Scan Images] --> Base[📦 Minimal Base]
-  Base --> User[👤 Non-root User]
-  User --> Secrets[🔐 No Secrets in Image]
-  Secrets --> Update[🔄 Update Regularly]
-  Update --> Sign[✍️ Sign Images]
-```
+* 📕 *Docker Deep Dive* — Nigel Poulton (latest ed. covers BuildKit + Compose v2)
+* 📕 *Container Security* — Liz Rice, O'Reilly 2020 (free PDF at aquasec.com)
+* 🎥 *Containers from Scratch* — Liz Rice GopherCon talk (YouTube, 2017)
+* 🌐 [docs.docker.com](https://docs.docker.com) — official Docker docs (Engine 27.x)
+* 🌐 [distroless](https://github.com/GoogleContainerTools/distroless) — Google's distroless images
+* 🌐 [opencontainers.org](https://opencontainers.org) — OCI spec (image + runtime + distribution)
+* 🌐 [CIS Docker Benchmark](https://www.cisecurity.org/benchmark/docker) — hardening checklist
 
-**🔐 Security Checklist:**
-* ✅ Run as non-root user (`USER appuser`)
-* ✅ Use minimal base images (slim, distroless)
-* ✅ Scan for vulnerabilities (Trivy, Snyk)
-* ✅ Never store secrets in images
-* ✅ Pin base image versions
-* ✅ Update base images regularly
-
-**🛠️ Scanning Tools:**
-* 🔍 **Trivy** — open source, fast
-* 🔍 **Snyk** — developer-friendly
-* 🔍 **Docker Scout** — built into Docker
-
----
-
-## 📍 Slide 39 – 📈 Career Skills
-
-```mermaid
-flowchart LR
-  Docker[🐳 Docker Basics] --> Compose[📦 Docker Compose]
-  Compose --> K8s[☸️ Kubernetes]
-  K8s --> GitOps[🔄 GitOps]
-  GitOps --> Platform[🏗️ Platform Engineering]
-```
-
-**🛠️ Docker Skills Progression:**
-* 🐳 **Level 1**: Write Dockerfiles, build/run containers
-* 📦 **Level 2**: Multi-stage builds, optimization
-* 🔐 **Level 3**: Security hardening, distroless
-* 📊 **Level 4**: Registry management, scanning
-* ☸️ **Level 5**: Container orchestration (K8s)
-
-**📊 Job Market (2024):**
-* 🐳 Docker required in **80%** of DevOps jobs
-* ☸️ Kubernetes in **65%** of container jobs
-* 💰 Container skills = **+15-20%** salary
-
----
-
-## 📍 Slide 40 – 🌍 Real Company Examples
-
-**🎬 Netflix:**
-* 🐳 Millions of containers daily
-* 📦 Custom base images (hardened)
-* 🔄 Immutable deployments
-
-**🛒 Shopify:**
-* 🐳 Containerized entire platform
-* ⚡ Deploy 80x/day
-* 📦 Standardized Dockerfiles
-
-**🚗 Uber:**
-* 🐳 4,000+ microservices in containers
-* 🔐 Strict security policies
-* 📊 Custom image scanning
-
-**📊 Common Patterns:**
-* ✅ Standardized base images
-* ✅ Automated security scanning
-* ✅ Multi-stage builds everywhere
-* ✅ No root containers
-
----
-
-## 📍 Slide 41 – 🎯 Section 6: Reflection
-
-## 📝 Key Takeaways
-
-1. 🐳 **Containers = lightweight, portable app packaging**
-2. 📝 **Dockerfile order matters** — dependencies before code
-3. 👤 **Always run as non-root** — security first
-4. 🏗️ **Multi-stage builds** — separate build from runtime
-5. 📦 **Smaller is better** — less attack surface, faster deploys
-
-> 💡 A good Dockerfile is secure, optimized, and maintainable.
-
----
-
-## 📍 Slide 42 – 🧠 The Mindset Shift
-
-| 😰 Old Mindset | 🐳 Container Mindset |
-|---------------|---------------------|
-| 🖥️ "Configure servers manually" | 📝 "Define in Dockerfile" |
-| 🔧 "Install dependencies on host" | 📦 "Bundle in container" |
-| 👑 "Run as root, it's easier" | 👤 "Run as non-root always" |
-| 💾 "Bigger image = more features" | ⚡ "Smaller = faster & safer" |
-| 🏷️ "Just use :latest" | 🔖 "Pin versions always" |
-
-> ❓ Which mindset will you adopt?
-
----
-
-## 📍 Slide 43 – ✅ Your Progress
-
-## 🎓 What You Now Understand
-
-* ✅ Why containers beat VMs for app deployment
-* ✅ Docker architecture: images, containers, registries
-* ✅ How to write optimized Dockerfiles
-* ✅ Security: rootless containers, minimal images
-* ✅ Multi-stage builds for smaller images
-* ✅ Docker Hub publishing workflow
-
-> 🚀 **You're ready for Lab 2!**
-
----
-
-## 📍 Slide 44 – 📝 QUIZ — DEVOPS_L2_POST
-
----
-
-## 📍 Slide 45 – 🚀 What Comes Next
-
-## 📚 Lab 2: Containerize Your App
-
-* 🐳 Write Dockerfile for your Python app
-* 👤 Implement non-root user
-* 📦 Optimize with layer ordering
-* 🌐 Push to Docker Hub
-* 🏆 Bonus: Multi-stage build for Go app
-
-**🔮 Future Lectures:**
-* 📦 **Lecture 3**: CI/CD with GitHub Actions
-* ☸️ **Lecture 9**: Kubernetes deployment
-* 🔄 **Lecture 13**: GitOps with ArgoCD
-
-```mermaid
-flowchart LR
-  You[👤 You] --> Docker[🐳 Docker Skills]
-  Docker --> K8s[☸️ Kubernetes]
-  K8s --> GitOps[🔄 GitOps]
-  GitOps --> Career[🚀 DevOps Career]
-```
-
-**👋 See you in the lab!**
-
----
-
-## 📚 Resources & Further Reading
-
-**📕 Books:**
-* 📖 *Docker Deep Dive* — Nigel Poulton
-* 📖 *Container Security* — Liz Rice
-* 📖 *Docker in Action* — Jeff Nickoloff
-
-**🔗 Links:**
-* 🌐 [Dockerfile Best Practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
-* 🌐 [Distroless Images](https://github.com/GoogleContainerTools/distroless)
-* 🌐 [Docker Security](https://docs.docker.com/engine/security/)
-* 🌐 [Multi-Stage Builds](https://docs.docker.com/build/building/multi-stage/)
-
-**🛠️ Tools:**
-* 🔍 [Hadolint](https://github.com/hadolint/hadolint) — Dockerfile linter
-* 🔍 [Dive](https://github.com/wagoodman/dive) — Explore image layers
-* 🔍 [Trivy](https://github.com/aquasecurity/trivy) — Security scanner
-
----
+**🎓 Quiz:** post-lecture quiz feeds the weeks 1–3 leaderboard window.

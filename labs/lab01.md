@@ -2,674 +2,328 @@
 
 ![difficulty](https://img.shields.io/badge/difficulty-beginner-success)
 ![topic](https://img.shields.io/badge/topic-Web%20Development-blue)
-![points](https://img.shields.io/badge/points-10%2B2.5-orange)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
 ![languages](https://img.shields.io/badge/languages-Python%20|%20Go-informational)
 
-> Build a DevOps info service that reports system information and health status. This service will evolve throughout the course into a comprehensive monitoring tool.
+> **Goal:** Build the seed of your DevOps Info Service — a small HTTP service that reports its own metadata + the host it runs on. Every later lab grows this same service.
+> **Deliverable:** A PR from `lab01` with `app_python/` (and optionally `app_go/`). The image you build over the next 16 weeks starts here.
+
+---
 
 ## Overview
 
-Create a **DevOps Info Service** - a web application providing detailed information about itself and its runtime environment. This foundation will grow throughout the course as you add containerization, CI/CD, monitoring, and persistence.
+In this lab you will practice:
+- Picking a Python web framework and justifying the choice
+- Reading host/runtime info from `platform`, `socket`, `os`
+- Wiring HTTP routes that return JSON (not HTML)
+- Pinning dependencies, configuring via environment variables, writing real docs
 
-**What You'll Learn:**
-- Web framework selection and implementation
-- System introspection and API design
-- Python best practices and documentation
-- Foundation for future DevOps tooling
-
-**Tech Stack:** Python 3.11+ | Flask 3.1 or FastAPI 0.115
+> ⚠️ **Scope:** no database, no auth, no Docker yet. That comes in Lab 2+. Don't get clever — keep the code short and obvious.
 
 ---
 
-## Tasks
+## Project State
 
-### Task 1 — Python Web Application (6 pts)
+**You should have from previous labs:**
+- Nothing — this is week 1.
 
-Build a production-ready Python web service with comprehensive system information.
+**This lab adds:**
+- `app_python/` — Python service with `GET /` (info) and `GET /health` (probe)
+- *(optional bonus)* `app_go/` — compiled-language sibling with the same endpoints
 
-#### 1.1 Project Structure
+By Lab 9 this service runs on Kubernetes; by Lab 13 ArgoCD deploys it. So the choices you make this week — framework, layout, env-var config — outlive Lab 1.
 
-Create this structure:
+---
+
+## Setup
+
+You need only:
+
+```bash
+python3 --version         # 3.12+ (course standardizes on 3.13)
+pip3 --version
+```
+
+> 📝 **`python` vs `python3`**: on Debian/Ubuntu the binary is `python3`; on macOS/Windows it may be `python`. Pick whichever exists on your box — the rest of this lab writes `python app.py` for brevity, substitute `python3 app.py` if that's how your system spells it.
+
+Create the directory layout (you'll fill the files yourself):
 
 ```
 app_python/
-├── app.py                    # Main application
-├── requirements.txt          # Dependencies
-├── .gitignore               # Git ignore
-├── README.md                # App documentation
-├── tests/                   # Unit tests (Lab 3)
-│   └── __init__.py
-└── docs/                    # Lab documentation
-    ├── LAB01.md            # Your lab submission
-    └── screenshots/        # Proof of work
-        ├── 01-main-endpoint.png
-        ├── 02-health-check.png
-        └── 03-formatted-output.png
-```
-
-#### 1.2 Choose Web Framework
-
-Select and justify your choice:
-- **Flask** - Lightweight, easy to learn
-- **FastAPI** - Modern, async, auto-documentation
-- **Django** - Full-featured, includes ORM
-
-Document your decision in `app_python/docs/LAB01.md`.
-
-#### 1.3 Implement Main Endpoint: `GET /`
-
-Return comprehensive service and system information:
-
-```json
-{
-  "service": {
-    "name": "devops-info-service",
-    "version": "1.0.0",
-    "description": "DevOps course info service",
-    "framework": "Flask"
-  },
-  "system": {
-    "hostname": "my-laptop",
-    "platform": "Linux",
-    "platform_version": "Ubuntu 24.04",
-    "architecture": "x86_64",
-    "cpu_count": 8,
-    "python_version": "3.13.1"
-  },
-  "runtime": {
-    "uptime_seconds": 3600,
-    "uptime_human": "1 hour, 0 minutes",
-    "current_time": "2026-01-07T14:30:00.000Z",
-    "timezone": "UTC"
-  },
-  "request": {
-    "client_ip": "127.0.0.1",
-    "user_agent": "curl/7.81.0",
-    "method": "GET",
-    "path": "/"
-  },
-  "endpoints": [
-    {"path": "/", "method": "GET", "description": "Service information"},
-    {"path": "/health", "method": "GET", "description": "Health check"}
-  ]
-}
-```
-
-<details>
-<summary>💡 Implementation Hints</summary>
-
-**Get System Information:**
-```python
-import platform
-import socket
-from datetime import datetime
-
-hostname = socket.gethostname()
-platform_name = platform.system()
-architecture = platform.machine()
-python_version = platform.python_version()
-```
-
-**Calculate Uptime:**
-```python
-start_time = datetime.now()
-
-def get_uptime():
-    delta = datetime.now() - start_time
-    seconds = int(delta.total_seconds())
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    return {
-        'seconds': seconds,
-        'human': f"{hours} hours, {minutes} minutes"
-    }
-```
-
-**Request Information:**
-```python
-# Flask
-request.remote_addr  # Client IP
-request.headers.get('User-Agent')  # User agent
-request.method  # HTTP method
-request.path  # Request path
-
-# FastAPI
-request.client.host
-request.headers.get('user-agent')
-request.method
-request.url.path
-```
-
-</details>
-
-#### 1.4 Implement Health Check: `GET /health`
-
-Simple health endpoint for monitoring:
-
-```json
-{
-  "status": "healthy",
-  "timestamp": "2024-01-15T14:30:00.000Z",
-  "uptime_seconds": 3600
-}
-```
-
-Return HTTP 200 for healthy status. This will be used for Kubernetes probes in Lab 9.
-
-<details>
-<summary>💡 Implementation Hints</summary>
-
-```python
-# Flask
-@app.route('/health')
-def health():
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now(timezone.utc).isoformat(),
-        'uptime_seconds': get_uptime()['seconds']
-    })
-
-# FastAPI
-@app.get("/health")
-def health():
-    return {
-        'status': 'healthy',
-        'timestamp': datetime.now(timezone.utc).isoformat(),
-        'uptime_seconds': get_uptime()['seconds']
-    }
-```
-
-</details>
-
-#### 1.5 Configuration
-
-Make your app configurable via environment variables:
-
-```python
-import os
-
-HOST = os.getenv('HOST', '0.0.0.0')
-PORT = int(os.getenv('PORT', 5000))
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-```
-
-**Test:**
-```bash
-python app.py                    # Default: 0.0.0.0:5000
-PORT=8080 python app.py          # Custom port
-HOST=127.0.0.1 PORT=3000 python app.py
-```
-
----
-
-### Task 2 — Documentation & Best Practices (4 pts)
-
-#### 2.1 Application README (`app_python/README.md`)
-
-Create user-facing documentation:
-
-**Required Sections:**
-1. **Overview** - What the service does
-2. **Prerequisites** - Python version, dependencies
-3. **Installation**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-4. **Running the Application**
-   ```bash
-   python app.py
-   # Or with custom config
-   PORT=8080 python app.py
-   ```
-5. **API Endpoints**
-   - `GET /` - Service and system information
-   - `GET /health` - Health check
-6. **Configuration** - Environment variables table
-
-#### 2.2 Best Practices
-
-Implement these in your code:
-
-**1. Clean Code Organization**
-- Clear function names
-- Proper imports grouping
-- Comments only where needed
-- Follow PEP 8
-
-<details>
-<summary>💡 Example Structure</summary>
-
-```python
-"""
-DevOps Info Service
-Main application module
-"""
-import os
-import socket
-import platform
-from datetime import datetime, timezone
-from flask import Flask, jsonify, request
-
-app = Flask(__name__)
-
-# Configuration
-HOST = os.getenv('HOST', '0.0.0.0')
-PORT = int(os.getenv('PORT', 5000))
-
-# Application start time
-START_TIME = datetime.now(timezone.utc)
-
-def get_system_info():
-    """Collect system information."""
-    return {
-        'hostname': socket.gethostname(),
-        'platform': platform.system(),
-        'architecture': platform.machine(),
-        'python_version': platform.python_version()
-    }
-
-@app.route('/')
-def index():
-    """Main endpoint - service and system information."""
-    # Implementation
-```
-
-</details>
-
-**2. Error Handling**
-
-<details>
-<summary>💡 Implementation</summary>
-
-```python
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({
-        'error': 'Not Found',
-        'message': 'Endpoint does not exist'
-    }), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({
-        'error': 'Internal Server Error',
-        'message': 'An unexpected error occurred'
-    }), 500
-```
-
-</details>
-
-**3. Logging**
-
-<details>
-<summary>💡 Implementation</summary>
-
-```python
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-logger.info('Application starting...')
-logger.debug(f'Request: {request.method} {request.path}')
-```
-
-</details>
-
-**4. Dependencies (`requirements.txt`)**
-
-```txt
-# Web Framework
-Flask==3.1.0
-# or
-fastapi==0.115.0
-uvicorn[standard]==0.32.0  # Includes performance extras
-```
-
-Pin exact versions for reproducibility.
-
-**5. Git Ignore (`.gitignore`)**
-
-```gitignore
-# Python
-__pycache__/
-*.py[cod]
-venv/
-*.log
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-```
-
-#### 2.3 Lab Submission (`app_python/docs/LAB01.md`)
-
-Document your implementation:
-
-**Required Sections:**
-1. **Framework Selection**
-   - Your choice and why
-   - Comparison table with alternatives
-2. **Best Practices Applied**
-   - List practices with code examples
-   - Explain importance of each
-3. **API Documentation**
-   - Request/response examples
-   - Testing commands
-4. **Testing Evidence**
-   - Screenshots showing endpoints work
-   - Terminal output
-5. **Challenges & Solutions**
-   - Problems encountered
-   - How you solved them
-
-**Required Screenshots:**
-- Main endpoint showing complete JSON
-- Health check response
-- Formatted/pretty-printed output
-
-#### 2.4 GitHub Community Engagement
-
-**Objective:** Explore GitHub's social features that support collaboration and discovery.
-
-**Actions Required:**
-1. **Star** the course repository
-2. **Star** the [simple-container-com/api](https://github.com/simple-container-com/api) project — a promising open-source tool for container management
-3. **Follow** your professor and TAs on GitHub:
-   - Professor: [@Cre-eD](https://github.com/Cre-eD)
-   - TA: [@marat-biriushev](https://github.com/marat-biriushev)
-   - TA: [@pierrepicaud](https://github.com/pierrepicaud)
-4. **Follow** at least 3 classmates from the course
-
-**Document in LAB01.md:**
-
-Add a "GitHub Community" section (after Challenges & Solutions) with 1-2 sentences explaining:
-- Why starring repositories matters in open source
-- How following developers helps in team projects and professional growth
-
-<details>
-<summary>💡 GitHub Social Features</summary>
-
-**Why Stars Matter:**
-
-**Discovery & Bookmarking:**
-- Stars help you bookmark interesting projects for later reference
-- Star count indicates project popularity and community trust
-- Starred repos appear in your GitHub profile, showing your interests
-
-**Open Source Signal:**
-- Stars encourage maintainers (shows appreciation)
-- High star count attracts more contributors
-- Helps projects gain visibility in GitHub search and recommendations
-
-**Professional Context:**
-- Shows you follow best practices and quality projects
-- Indicates awareness of industry tools and trends
-
-**Why Following Matters:**
-
-**Networking:**
-- See what other developers are working on
-- Discover new projects through their activity
-- Build professional connections beyond the classroom
-
-**Learning:**
-- Learn from others' code and commits
-- See how experienced developers solve problems
-- Get inspiration for your own projects
-
-**Collaboration:**
-- Stay updated on classmates' work
-- Easier to find team members for future projects
-- Build a supportive learning community
-
-**Career Growth:**
-- Follow thought leaders in your technology stack
-- See trending projects in real-time
-- Build visibility in the developer community
-
-**GitHub Best Practices:**
-- Star repos you find useful (not spam)
-- Follow developers whose work interests you
-- Engage meaningfully with the community
-- Your GitHub activity shows employers your interests and involvement
-
-</details>
-
----
-
-## Bonus Task — Compiled Language (2.5 pts)
-
-Implement the same service in a compiled language to prepare for multi-stage Docker builds (Lab 2).
-
-**Choose One:**
-- **Go** (Recommended) - Small binaries, fast compilation
-- **Rust** - Memory safety, modern features
-- **Java/Spring Boot** - Enterprise standard
-- **C#/ASP.NET Core** - Cross-platform .NET
-
-**Structure:**
-
-```
-app_go/  (or app_rust, app_java, etc.)
-├── main.go
-├── go.mod
+├── app.py
+├── requirements.txt
+├── .gitignore
 ├── README.md
+├── tests/
+│   └── __init__.py            # empty; tests come in Lab 3
 └── docs/
-    ├── LAB01.md              # Implementation details
-    ├── GO.md                 # Language justification
-    └── screenshots/
+    └── LAB01.md               # your submission report
 ```
 
-**Requirements:**
-- Same two endpoints: `/` and `/health`
-- Same JSON structure
-- Document build process
-- Compare binary size to Python
+---
+
+## Task 1 — Python Web Application (6 pts)
+
+### 1.1 — Pick a framework and justify it
+
+You may use **Flask 3.1**, **FastAPI 0.136**, or **Django 5.2** (overkill for this; do it if you want the practice). In `docs/LAB01.md`, give your one-paragraph reasoning + a small comparison table covering at least: footprint, async support, OpenAPI/docs, learning curve.
+
+### 1.2 — `GET /` returns the full info JSON
+
+`YOUR TASK`: write a handler at the root path that returns JSON with **five** top-level keys: `service`, `system`, `runtime`, `request`, `endpoints`.
+
+Requirements:
+
+- `service`: `name`, `version`, `description`, `framework` (your choice from 1.1)
+- `system`: `hostname`, `platform`, `platform_version`, `architecture`, `cpu_count`, `python_version`
+- `runtime`: `uptime_seconds` (int), `uptime_human` (e.g. `"1 hour, 3 minutes"`), `current_time` (ISO 8601 UTC), `timezone`
+- `request`: `client_ip`, `user_agent`, `method`, `path`
+- `endpoints`: list of `{path, method, description}` for every route you publish
+
+Hints:
+
+- `platform.system()`, `platform.machine()`, `platform.python_version()` cover most of `system`
+- `socket.gethostname()` for the hostname
+- Uptime = `datetime.now(timezone.utc) - START_TIME` captured at module import — be **timezone-aware** throughout (mixing naive + aware datetimes raises `TypeError`)
+- Per-framework request access: Flask → `request.remote_addr` / `request.headers.get('User-Agent')`; FastAPI → `request.client.host` / `request.headers.get('user-agent')`
 
 <details>
-<summary>💡 Go Example Skeleton</summary>
+<summary>💡 Stuck on the structure?</summary>
 
-```go
-package main
+Sketch — no Python code given, intentionally:
 
-import (
-    "encoding/json"
-    "net/http"
-    "os"
-    "runtime"
-    "time"
-)
-
-type ServiceInfo struct {
-    Service  Service  `json:"service"`
-    System   System   `json:"system"`
-    Runtime  Runtime  `json:"runtime"`
-    Request  Request  `json:"request"`
-}
-
-var startTime = time.Now()
-
-func mainHandler(w http.ResponseWriter, r *http.Request) {
-    info := ServiceInfo{
-        Service: Service{
-            Name:    "devops-info-service",
-            Version: "1.0.0",
-        },
-        System: System{
-            Platform:     runtime.GOOS,
-            Architecture: runtime.GOARCH,
-            CPUCount:     runtime.NumCPU(),
-        },
-        // ... implement rest
-    }
-
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(info)
-}
-
-func main() {
-    http.HandleFunc("/", mainHandler)
-    http.HandleFunc("/health", healthHandler)
-
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "8080"
-    }
-
-    http.ListenAndServe(":"+port, nil)
-}
+```
+imports → app object → constants (SERVICE_NAME, START_TIME, ...) → helper get_system_info() → helper get_uptime() → route handler returning the 5-key dict → error handlers → __main__ block
 ```
 
+Lecture 1 slide on the lifecycle, lecture 2 on configuration — both apply here.
+
 </details>
+
+### 1.3 — `GET /health` returns a small JSON + HTTP 200
+
+`YOUR TASK`: write a second handler that returns `{status, timestamp, uptime_seconds}` and status code **200**. This will be your Kubernetes liveness/readiness target in Lab 9 — keep it cheap (no DB calls, no external HTTP).
+
+### 1.4 — Configurable via environment variables
+
+`YOUR TASK`: read `HOST`, `PORT`, `DEBUG` from the environment with sensible defaults (`0.0.0.0`, `5000`, `False`). The app must run unchanged with:
+
+```bash
+python app.py                            # default 0.0.0.0:5000
+PORT=8080 python app.py                  # custom port
+HOST=127.0.0.1 PORT=3000 python app.py   # both
+```
+
+Hint: cast `PORT` to `int` and `DEBUG` to `bool` by **lowercase string comparison** (`os.getenv("DEBUG","False").lower() == "true"`) — `bool("False")` is `True` in Python; that's the easy way to ship a debug-mode bug to production.
+
+### 1.5 — Error handlers and logging
+
+`YOUR TASK`: register handlers for **404** and **500** that return JSON (matching the rest of the API), and configure stdlib `logging` at INFO level with a format including timestamp/level. Don't `print()`.
+
+### 1.6 — Proof of work
+
+**Paste into `docs/LAB01.md`:**
+
+- Four CLI captures, with the **exact commands** you ran:
+  - `curl -s http://localhost:5000/ | jq .` — full JSON, your real hostname + uptime
+  - `curl -s http://localhost:5000/health | jq .`
+  - `curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:5000/nope` — proves the 404 handler
+  - `PORT=8080 python app.py` started in another shell + a `curl` showing the new port served — proves env-var config
+- The framework comparison table from 1.1
+- 2–3 sentences on the biggest gotcha you hit and how you solved it
+
+<details>
+<summary>💡 Hints if you're stuck</summary>
+
+- Make the framework choice early — switching mid-lab burns time.
+- Build `GET /` last. Build `GET /health` first (5 lines), then incrementally add system info, uptime, request info.
+- If JSON output looks "weird" (e.g., bytes prefix `b'...'`), you're returning a string instead of a dict — let the framework jsonify.
+
+</details>
+
+---
+
+## Task 2 — Documentation & Best Practices (4 pts)
+
+### 2.1 — `app_python/README.md`
+
+`YOUR TASK`: write the user-facing README with these sections (no fluff, prefer commands over prose):
+
+1. **Overview** — one paragraph
+2. **Prerequisites** — Python version, OS
+3. **Installation** — `python -m venv venv` … `pip install -r requirements.txt`
+4. **Running** — default + custom-port examples
+5. **API Endpoints** — table of `Method | Path | Description`
+6. **Configuration** — table of env vars + defaults + purpose
+
+### 2.2 — Code-quality hygiene
+
+`YOUR TASK`: ship the things every Python service needs.
+
+| File | Must contain |
+|---|---|
+| `requirements.txt` | The framework **pinned to an exact patch** (e.g. `Flask==3.1.3`, not `Flask>=3`). One framework only — drop the rest. |
+| `.gitignore` | `__pycache__/`, `*.pyc`, `venv/`, `*.log`, IDE dirs (`.vscode/`, `.idea/`), `.DS_Store` |
+| Imports in `app.py` | Grouped (stdlib → third-party → local), PEP 8 compliant |
+
+### 2.3 — `app_python/docs/LAB01.md` — your submission report
+
+Required sections, in order:
+
+1. **Framework Selection** — your choice + comparison table
+2. **Best Practices Applied** — bulleted list, each with one sentence of *why*
+3. **API Documentation** — request + response example per endpoint
+4. **Testing Evidence** — the four CLI captures from 1.6
+5. **Challenges & Solutions** — at least one real one (not "I was new to Python")
+6. **GitHub Community** — one paragraph; see 2.4
+
+### 2.4 — GitHub community engagement
+
+This is the social half of being a developer. The actions are public on your profile.
+
+`YOUR TASK`:
+1. **Star** the course repository.
+2. **Star** [`simple-container-com/api`](https://github.com/simple-container-com/api) — an open-source container management tool worth knowing about.
+3. **Follow** your professor [@Cre-eD](https://github.com/Cre-eD) and the TAs (the course page lists them).
+4. **Follow** ≥ 3 classmates from this course.
+5. In your `docs/LAB01.md` "GitHub Community" section, **put your GitHub username on the first line** (so the TA can verify your stars/follows in <30s) then write 2–3 sentences answering: *Why does starring a project actually help its maintainers? What concrete benefit do you get from following other developers?* — your own words, not the lecture's.
+
+### 2.5 — Proof of work
+
+**Paste into `docs/LAB01.md`:**
+
+- The `docs/LAB01.md` itself satisfies all six required sections — that *is* the proof.
+- Output of `find app_python -maxdepth 2 -type f | sort` showing every required file is present.
+
+---
+
+## Bonus Task — Compiled-Language Sibling (2 pts)
+
+Re-implement the same service in a **compiled language**, in a sibling directory (e.g. `app_go/`).
+
+Why bother? Lab 2's multi-stage Docker bonus shrinks a Go service from ~900 MB to ~15 MB — that doesn't work without a static binary to start with.
+
+`YOUR TASK`:
+
+- Same two endpoints (`/`, `/health`)
+- Same JSON shape as your Python version (so the same `curl` calls work against both)
+- A README in the sibling dir explaining build + run
+- A `go.mod` (and `go.sum` if you pull deps) — Lab 2's bonus needs them as the build context
+- In `docs/LAB01.md`, add a one-line **artifact size** for both. Measure the same way for each so the comparison is apples-to-apples:
+  - Python: `du -sh app_python/venv` (the venv carries everything beyond the interpreter)
+  - Compiled: `ls -lh app_go/<binary>` (the single static binary)
+  - The size delta is the whole point. The real Docker-image comparison comes in Lab 2.
+
+Choose one of:
+
+| Language | Idiomatic HTTP | Notes |
+|---|---|---|
+| **Go** *(recommended)* | `net/http` | Single static binary; instant compile; smallest distroless image later |
+| Rust | `actix-web` / `axum` | Strong types; longer compile; great for the security-minded |
+| Java + Spring Boot | `spring-boot-starter-web` | Industry-standard for enterprise — heavier runtime |
+| C# + ASP.NET Core | `WebApplication.Create` | Cross-platform .NET; comparable to Java but newer ergonomics |
+
+Hints (no full code):
+
+- For Go, `runtime.NumCPU()`, `runtime.GOOS`, `runtime.GOARCH`, `os.Hostname()` mirror Python's `os`/`platform`. JSON keys differ in casing — use struct tags (`json:"hostname"`) to keep the same wire shape.
+- For Java/C#, start from `spring init` / `dotnet new web` — don't hand-write `pom.xml`/`csproj`.
 
 ---
 
 ## How to Submit
 
-1. **Create Branch:**
-   ```bash
-   git checkout -b lab01
-   ```
+```bash
+git switch -c lab01
+git add app_python/
+git add app_go/                   # only if you did the bonus
+git commit -m "feat(lab01): devops info service — python (+ go bonus)"
+git push -u origin lab01
+```
 
-2. **Commit Work:**
-   ```bash
-   git add app_python/
-   git commit -m "feat: implement lab01 devops info service"
-   git push -u origin lab01
-   ```
+Open **two** PRs:
 
-3. **Create Pull Requests:**
-   - **PR #1:** `your-fork:lab01` → `course-repo:master`
-   - **PR #2:** `your-fork:lab01` → `your-fork:master`
+- `your-fork:lab01` → `course-repo:master` *(reviewed)*
+- `your-fork:lab01` → `your-fork:master` *(merges into your own main when done)*
 
-4. **Verify:**
-   - All files present
-   - Screenshots included
-   - Documentation complete
+PR checklist:
+
+```text
+- [ ] Task 1 done — /, /health, env config, error handlers, logging
+- [ ] Task 2 done — README, requirements.txt, .gitignore, docs/LAB01.md, GitHub social
+- [ ] Bonus done — app_go/ (or other) with same endpoints + size comparison
+```
 
 ---
 
 ## Acceptance Criteria
 
-### Main Tasks (10 points)
+### Task 1 (6 pts)
+- ✅ Service starts with `python app.py` and serves on `0.0.0.0:5000`
+- ✅ `GET /` returns HTTP 200 with all five top-level keys populated from *your real machine*
+- ✅ `GET /health` returns HTTP 200 with the three required fields
+- ✅ 404 handler returns JSON (not HTML)
+- ✅ `PORT` env var overrides the port
+- ✅ Logging is configured (you'll see startup log line in stdout)
 
-**Application Functionality (3 pts):**
-- [ ] Service runs without errors
-- [ ] `GET /` returns all required fields:
-  - [ ] Service metadata (name, version, description, framework)
-  - [ ] System info (hostname, platform, architecture, CPU, Python version)
-  - [ ] Runtime info (uptime, current time, timezone)
-  - [ ] Request info (client IP, user agent, method, path)
-  - [ ] Endpoints list
-- [ ] `GET /health` returns status and uptime
-- [ ] Configurable via environment variables (PORT, HOST)
+### Task 2 (4 pts)
+- ✅ `README.md` has all six sections
+- ✅ `requirements.txt` pins an **exact** version
+- ✅ `.gitignore` covers Python + IDE + OS artifacts
+- ✅ `docs/LAB01.md` has all six sections including the GitHub Community paragraph
+- ✅ Stars + follows visible on student's GitHub profile
 
-**Code Quality (2 pts):**
-- [ ] Clean code structure
-- [ ] PEP 8 compliant
-- [ ] Error handling implemented
-- [ ] Logging configured
-
-**Documentation (3 pts):**
-- [ ] `app_python/README.md` complete with all sections
-- [ ] `app_python/docs/LAB01.md` includes:
-  - [ ] Framework justification
-  - [ ] Best practices documentation
-  - [ ] API examples
-  - [ ] Testing evidence
-  - [ ] Challenges solved
-  - [ ] GitHub Community section (why stars/follows matter)
-- [ ] All 3 required screenshots present
-- [ ] Course repository starred
-- [ ] simple-container-com/api repository starred
-- [ ] Professor and TAs followed on GitHub
-- [ ] At least 3 classmates followed on GitHub
-
-**Configuration (2 pts):**
-- [ ] `requirements.txt` with pinned versions
-- [ ] `.gitignore` properly configured
-- [ ] Environment variables working
-
-### Bonus Task (2.5 points)
-
-- [ ] Compiled language app implements both endpoints
-- [ ] Same JSON structure as Python version
-- [ ] `app_<language>/README.md` with build/run instructions
-- [ ] `app_<language>/docs/GO.md` with language justification
-- [ ] `app_<language>/docs/LAB01.md` with implementation details
-- [ ] Screenshots showing compilation and execution
+### Bonus Task (2 pts)
+- ✅ Sibling app builds and serves the same two endpoints
+- ✅ Wire-compatible JSON (same `curl … | jq` works against both)
+- ✅ Artifact-size comparison documented (`du -sh venv` vs `ls -lh <binary>`)
+- ✅ Build manifest present (`go.mod` / `Cargo.toml` / `pom.xml` / `*.csproj`) so Lab 2's bonus has a build context to `COPY`
 
 ---
 
 ## Rubric
 
-| Criteria | Points | Description |
-|----------|--------|-------------|
-| **Functionality** | 3 pts | Both endpoints work with complete, correct data |
-| **Code Quality** | 2 pts | Clean, organized, follows Python standards |
-| **Documentation** | 3 pts | Complete README and lab submission docs |
-| **Configuration** | 2 pts | Dependencies, environment vars, .gitignore |
-| **Bonus** | 2.5 pts | Compiled language implementation |
-| **Total** | 12.5 pts | 10 pts required + 2.5 pts bonus |
-
-**Grading Scale:**
-- **10/10:** Perfect implementation, excellent documentation
-- **8-9/10:** All works, good docs, minor improvements possible
-- **6-7/10:** Core functionality present, basic documentation
-- **<6/10:** Missing features or documentation, needs revision
+| Task | Points | Criteria |
+|------|-------:|----------|
+| **Task 1** — Python web app | **6** | Both routes correct, env-var config, error handlers, logging |
+| **Task 2** — Docs & hygiene | **4** | All file/section requirements met; pinned deps; complete LAB01.md |
+| **Bonus** — Compiled sibling | **2** | Same endpoints, wire-compatible JSON, size comparison |
+| **Total** | **12** | 10 main + 2 bonus |
 
 ---
 
 ## Resources
 
 <details>
-<summary>📚 Python Web Frameworks</summary>
+<summary>📚 Documentation</summary>
 
-- [Flask 3.1 Documentation](https://flask.palletsprojects.com/en/latest/)
-- [Flask Quickstart](https://flask.palletsprojects.com/en/latest/quickstart/)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [FastAPI Tutorial](https://fastapi.tiangolo.com/tutorial/first-steps/)
-- [Django 5.1 Documentation](https://docs.djangoproject.com/en/5.1/)
-
-</details>
-
-<details>
-<summary>🐍 Python Best Practices</summary>
-
-- [PEP 8 Style Guide](https://pep8.org/)
-- [Python Logging Tutorial](https://docs.python.org/3/howto/logging.html)
-- [Python platform module](https://docs.python.org/3/library/platform.html)
-- [Python socket module](https://docs.python.org/3/library/socket.html)
+- [Flask 3.1](https://flask.palletsprojects.com/en/latest/) — the canonical micro-framework
+- [FastAPI](https://fastapi.tiangolo.com/) — async, OpenAPI free
+- [Django 5.2](https://docs.djangoproject.com/en/stable/) — full-stack; overkill for this lab
+- [Python `platform`](https://docs.python.org/3/library/platform.html) / [`socket`](https://docs.python.org/3/library/socket.html)
+- [PEP 8](https://pep8.org/), [PEP 660](https://peps.python.org/pep-0660/)
 
 </details>
 
 <details>
-<summary>🔧 Compiled Languages (Bonus)</summary>
+<summary>⚠️ Common Pitfalls (from real dry-runs)</summary>
 
-- [Go Web Development](https://golang.org/doc/articles/wiki/)
-- [Go net/http Package](https://pkg.go.dev/net/http)
-- [Rust Web Frameworks](https://www.arewewebyet.org/)
-- [Spring Boot Quickstart](https://spring.io/quickstart)
-- [ASP.NET Core Tutorial](https://docs.microsoft.com/aspnet/core/)
+- **Naive vs aware datetimes** — `datetime.now() - START_TIME` raises `TypeError` if one is timezone-aware and the other isn't. Pick one (use `datetime.now(timezone.utc)` everywhere) and stay there.
+- **`bool("False") == True`** — never write `DEBUG = bool(os.getenv("DEBUG", "False"))`. Use a lowercase string compare.
+- **Flask 3 deprecation warning** on `flask.__version__` — use `importlib.metadata.version("flask")` if you need to print the framework version.
+- **Returning a dict directly from FastAPI vs Flask** — FastAPI auto-serializes; Flask needs `jsonify(...)`. Don't return a bare dict from a Flask handler.
+- **`socket.gethostname()` inside a container** later returns the container ID, not your laptop name — that's correct, not a bug. You'll see it again in Lab 2.
+- **Port 5000 occupied on macOS** — macOS Monterey+ runs the *AirPlay Receiver* on `:5000`. The Flask default conflicts; you'll see your `curl` hit Apple's service instead. Either turn AirPlay Receiver off (System Settings → General → AirDrop & Handoff) or pick `PORT=5050` for your default run.
+- **`pip install -r requirements.txt` outside the venv** — installs Flask system-wide, then `python app.py` may still pick up a stale Flask elsewhere. Always activate the venv (`source venv/bin/activate`) before `pip install` and before `python app.py`.
+- **Don't return a Response from `@app.errorhandler`'s default** — Flask's 500 handler must return a tuple `(body, status)`. Returning a bare `jsonify(...)` sends HTTP 200 with the error JSON — a subtle bug that breaks the Lab 9 probe later.
 
 </details>
 
 <details>
-<summary>🛠️ Development Tools</summary>
+<summary>🛠️ Dev tools worth knowing</summary>
 
-- [Postman](https://www.postman.com/) - API testing
-- [HTTPie](https://httpie.io/) - Command-line HTTP client
-- [curl](https://curl.se/) - Data transfer tool
-- [jq](https://stedolan.github.io/jq/) - JSON processor
+- [jq](https://jqlang.github.io/jq/) — JSON CLI; `curl ... | jq .` is your friend
+- [HTTPie](https://httpie.io/) — friendlier than `curl` for ad-hoc testing
+- [Ruff](https://docs.astral.sh/ruff/) — fast Python linter (used in Lab 3 CI)
 
 </details>
 
@@ -677,17 +331,13 @@ func main() {
 
 ## Looking Ahead
 
-This service evolves throughout the course:
+| Lab | What it adds to this service |
+|---:|---|
+| 2 | Multi-stage Dockerfile, image scan, push to a registry |
+| 3 | CI: pytest + lint + image build + Trivy gate on every PR |
+| 7 / 8 | Structured JSON logs (Loki + Alloy) and a `/metrics` endpoint (Prometheus) |
+| 9 / 10 | Deploy to Kubernetes (k3d) + Helm 4 chart |
+| 11 / 12 | OpenBao for secrets, ConfigMaps + PVCs for state |
+| 13 / 14 | ArgoCD GitOps + canary rollouts |
 
-- **Lab 2:** Containerize with Docker, multi-stage builds
-- **Lab 3:** Add unit tests and CI/CD pipeline
-- **Lab 8:** Add `/metrics` endpoint for Prometheus
-- **Lab 9:** Deploy to Kubernetes using `/health` probes
-- **Lab 12:** Add `/visits` endpoint with file persistence
-- **Lab 13:** Multi-environment deployment with GitOps
-
----
-
-**Good luck!** 🚀
-
-> **Remember:** Keep it simple, write clean code, and document thoroughly. This foundation will carry through all 16 labs!
+Keep the code simple. You'll come back and rewrite parts of it; that's the point.

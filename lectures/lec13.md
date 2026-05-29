@@ -1,834 +1,570 @@
 # 📌 Lecture 13 — GitOps with ArgoCD: Git as the Source of Truth
 
-> 🎯 **From manual deployments to automated, auditable, self-healing infrastructure**
-
----
-
 ## 📍 Slide 1 – 🚀 Welcome to GitOps
 
-We've learned to store configuration in **ConfigMaps** and **Secrets**. But who deploys them?
-
-* 👨‍💻 **Manual kubectl?** — "Who ran that command?"
-* 🔄 **CI/CD pipeline?** — Push-based, fragile
-* 🤔 **What about drift?** — Reality vs desired state
-
-```mermaid
-flowchart LR
-  A[😰 Manual Deploys] --> B[🔄 CI/CD Push]
-  B --> C[🚀 GitOps Pull]
-  C --> D[💎 Self-healing Infrastructure]
-```
-
-> 🎯 **Goal:** Git becomes the single source of truth for your entire infrastructure
-
----
-
-## 📍 Slide 2 – 📚 Learning Outcomes
-
-By the end of this lecture, you will:
-
-| # | 🎯 Outcome |
-|---|-----------|
-| 1 | ✅ Understand **GitOps principles** and benefits |
-| 2 | ✅ Differentiate **push vs pull** deployment models |
-| 3 | ✅ Deploy applications using **ArgoCD** |
-| 4 | ✅ Configure **sync policies** and **auto-healing** |
-| 5 | ✅ Handle **secrets** in GitOps workflows |
-| 6 | ✅ Implement **multi-environment** deployments |
-
----
-
-## 📍 Slide 3 – 🗺️ Lecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  SECTION 0: Introduction                    (Slides 1-4)   │
-├─────────────────────────────────────────────────────────────┤
-│  📝 PRE QUIZ                                (Slide 5)      │
-├─────────────────────────────────────────────────────────────┤
-│  SECTION 1: The Deployment Problem          (Slides 6-10)  │
-├─────────────────────────────────────────────────────────────┤
-│  SECTION 2: GitOps Principles               (Slides 11-15) │
-├─────────────────────────────────────────────────────────────┤
-│  SECTION 3: ArgoCD in Action                (Slides 16-24) │
-├─────────────────────────────────────────────────────────────┤
-│  📝 MID QUIZ                                (Slide 25)     │
-├─────────────────────────────────────────────────────────────┤
-│  SECTION 4: Advanced Patterns               (Slides 26-32) │
-├─────────────────────────────────────────────────────────────┤
-│  SECTION 5: Production GitOps               (Slides 33-37) │
-├─────────────────────────────────────────────────────────────┤
-│  📝 POST QUIZ                               (Slide 38)     │
-├─────────────────────────────────────────────────────────────┤
-│  FINAL: What's Next                         (Slide 39)     │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 📍 Slide 4 – 🤔 The Big Question
-
-> 💬 *"If it's not in Git, it doesn't exist."*
-> — GitOps Mantra
-
-**Consider this scenario:**
-
-* 🌙 **3 AM alert:** Production is down
-* 🔍 **Investigation:** Someone changed a deployment
-* ❓ **Questions:** Who? When? What changed? How to rollback?
-* 😱 **Answer:** Nobody knows...
-
-> 🤔 **Think:** How do we ensure every change is tracked, auditable, and reversible?
-
----
-
-## 📍 Slide 5 – 📝 QUIZ — DEVOPS_L13_PRE
-
----
-
-## 📍 Slide 6 – ⚠️ Section 1: The Deployment Problem
-
-**Traditional Deployment Models:**
+* 🌍 **Lectures 9-12 left you with a real cluster** running a Helm-packaged Python service plus a Go echo sidecar, with secrets in OpenBao and persistent state on PVCs. Deployment is still you typing `helm upgrade` from a laptop.
+* 🤖 **GitOps** moves that "laptop" *inside* the cluster: an agent watches Git, pulls the desired state, and reconciles continuously. No more out-of-band `kubectl` from human hands.
+* 🎯 This lecture: the GitOps mental model + **ArgoCD 3.4** (May 2026) architecture, Application + ApplicationSet CRDs, sync policies, the App-of-Apps pattern, and why this only becomes interesting once you have **three** services.
+* 🔗 **Tie-in to Lab 13:** install ArgoCD via Helm, declare Application manifests for `app-python`, `app-go-echo`, **and a third `app-go-health` plumbing service**, and let an `ApplicationSet` generate dev + prod copies from one template.
 
 ```mermaid
 flowchart LR
-  subgraph "🔄 CI/CD Push"
+  Dev[👨‍💻 Developer] -->|git push| Repo[📝 Git]
+  Repo -->|pull every 3m| Argo[🤖 ArgoCD in cluster]
+  Argo -->|reconcile| K8s[☸️ Kubernetes]
+  K8s -->|status| Argo
+```
+
+---
+
+## 📍 Slide 2 – 🎯 Learning Outcomes
+
+| # | Outcome |
+|---|---------|
+| 1 | 📜 Name the **four OpenGitOps principles** and explain why each matters |
+| 2 | 🔁 Contrast **push vs pull** deployment models on credential surface, drift, audit |
+| 3 | 🏗️ Sketch the **ArgoCD 3.4 architecture**: argocd-server, application-controller, repo-server, redis, Dex |
+| 4 | 📝 Read & write an **Application** CRD with `source`, `destination`, `syncPolicy` |
+| 5 | 🌳 Compose deployments with the **App-of-Apps pattern** and **ApplicationSet** generators |
+| 6 | 🛡️ Reason about **sync waves, hooks, self-heal, prune**, and when manual sync wins |
+
+**Tech stack pinned for May 2026:** **ArgoCD 3.4.x** (GA early May 2026; **2.x is EOL since November 2025 with the 3.2 release**), Kubernetes **1.36** "Haru", a single GitOps repo on GitHub, deployments driven from your Lab 10 Helm chart.
+
+---
+
+## 📍 Slide 3 – ❓ Why Pull Beats Push
+
+You shipped Lab 12 with a CI workflow that runs `helm upgrade` against the cluster. It works. So why move?
+
+* 🔑 **Credentials.** CI needs a kubeconfig with cluster-admin to apply. That kubeconfig lives in GitHub secrets, on developer laptops, in scripts. Every leak is a cluster compromise.
+* 🌊 **Drift.** Someone `kubectl edit`s a Deployment at 3am to "fix" a prod incident. The Helm chart in Git no longer matches reality. Next `helm upgrade` silently overwrites the fix.
+* 🕵️ **Audit.** "Who scaled the prod ingress to 12 replicas?" — the answer lives in shell history, not Git.
+* 🚑 **Recovery.** Cluster gone? With push CI/CD you re-run pipelines; with GitOps you `helm install argo-cd && kubectl apply -f root.yaml` and the cluster rebuilds itself.
+
+> 🔥 **Hot take:** GitOps is not a tool, it's an *inversion of control*. The cluster reaches out to Git; nothing reaches into the cluster.
+
+---
+
+## 📍 Slide 4 – 📜 The Four OpenGitOps Principles
+
+The CNCF **OpenGitOps** working group ratified four principles (v1.0.0). Memorize them — every GitOps tool implements these or it isn't GitOps.
+
+1. 📝 **Declarative** — the desired state is described in declarative form (YAML, HCL, …), never imperative commands.
+2. 🔒 **Versioned and Immutable** — that desired state is stored with full history; you can always check out commit `abc123` and know what was deployed.
+3. 🤖 **Pulled Automatically** — software agents *inside* the target system pull the desired state. Nobody pushes from outside.
+4. ♾️ **Continuously Reconciled** — agents compare actual to desired and automatically act to converge them. Forever.
+
+> 💡 **Litmus test:** if you removed the agent, would the cluster drift from Git? If yes, you have GitOps. If no (because nothing was reconciling), you just had "YAML in Git".
+
+---
+
+## 📍 Slide 5 – 🔄 Push vs Pull, Side by Side
+
+```mermaid
+flowchart LR
+  subgraph Push["🔄 Push Model (classic CI/CD)"]
     direction LR
-    D[📝 Git Push] --> E[🔧 CI Pipeline]
-    E --> F[⌨️ kubectl apply]
-    F --> G[☸️ Cluster]
+    G1[📝 Git] --> CI1[🔧 CI runner]
+    CI1 -->|kubeconfig + apply| K1[☸️ Cluster]
   end
-
-  subgraph "😰 Manual"
+  subgraph Pull["🚀 Pull Model (GitOps)"]
     direction LR
-    A[👨‍💻 Developer] --> B[⌨️ kubectl apply]
-    B --> C[☸️ Cluster]
+    G2[📝 Git] -.->|polled / webhook| A2[🤖 Agent in cluster]
+    A2 -->|apply locally| K2[☸️ Cluster]
   end
 ```
 
-* 😰 **Manual:** No audit trail, human error, inconsistent
-* 🔄 **CI/CD Push:** Better, but credentials in pipeline, cluster access
+| Aspect | 🔄 Push CI/CD | 🚀 Pull GitOps |
+|--------|--------------|----------------|
+| Cluster credentials | Live in CI secrets | Stay inside the cluster |
+| Drift detection | None — CI runs and forgets | Continuous, every 3 minutes |
+| Audit trail | CI logs (rotated) | `git log` (immutable) |
+| Disaster recovery | Re-run pipeline against new cluster | Install agent, point at Git |
+| What blocks deploy | CI runner availability | Git availability |
 
 ---
 
-## 📍 Slide 7 – 🔥 Pain Point 1: The "It Works on My Machine" Problem
+## 📍 Slide 6 – 🛠️ The GitOps Tools Landscape
 
-**Symptoms:**
+| Tool | Lineage | Sweet spot |
+|------|---------|-----------|
+| **ArgoCD** | CNCF graduated (Intuit, 2018) | UI-first, declarative `Application` CRD, sync waves |
+| **Flux CD v2** | CNCF graduated (Weaveworks, 2020) | CLI-first, controller-per-resource (Kustomization, HelmRelease, GitRepository) |
+| **Rancher Fleet** | SUSE/Rancher | Massive multi-cluster fleets (edge, retail) |
+| **Codefresh GitOps** | Octopus (commercial) | ArgoCD under the hood + dashboards, drift, multi-team RBAC |
+| **Jenkins X** | CD Foundation | If you must keep Jenkins |
 
-* 👨‍💻 **Dev:** "I deployed it, it's working!"
-* 🏭 **Prod:** "It's completely broken!"
-* 🔍 **Investigation:** Configs don't match
+The course uses **ArgoCD** because (a) it's the most-adopted GitOps tool, (b) the UI makes drift visible to non-Kubernetes humans, and (c) the `Application` + `ApplicationSet` CRDs map cleanly onto multi-environment + multi-service teaching.
 
-```mermaid
-flowchart LR
-  A[👨‍💻 Local kubectl] --> B[🎭 Staging]
-  C[👨‍💻 Different kubectl] --> D[🏭 Production]
-  B --> E[😵 Different States]
-  D --> E
-```
-
-* 🔧 **No single source of truth**
-* 📋 **Manual processes** lead to drift
-* 😱 **"Emergency fixes"** bypass procedures
+> 🔥 **Honest take:** Flux is genuinely good — lighter, more Unix-y, no UI to keep alive. Pick it for a homelab. ArgoCD wins in enterprises because dashboards are how non-engineers tell that deploys worked.
 
 ---
 
-## 📍 Slide 8 – 🔥 Pain Point 2: Configuration Drift
-
-**Drift:** When actual state ≠ desired state
-
-| 📅 Time | 📝 Git (Desired) | ☸️ Cluster (Actual) | 😱 Drift |
-|---------|------------------|---------------------|----------|
-| Day 1 | replicas: 3 | replicas: 3 | ✅ None |
-| Day 5 | replicas: 3 | replicas: 5 (scaled manually) | ⚠️ Drift! |
-| Day 10 | replicas: 3 | replicas: 5, extra env var | 🔥 More drift! |
-| Day 30 | 🤷 Unknown | 🤷 Unknown | 💀 Chaos |
-
-**Real impact:**
-* 🔄 **Deployments fail** because actual state differs
-* 📋 **Documentation lies** — cluster is reality
-* 🔍 **Debugging nightmare** — which version is deployed?
-
----
-
-## 📍 Slide 9 – 🔥 Pain Point 3: Credential Sprawl
-
-**Push-based CI/CD security concerns:**
+## 📍 Slide 7 – 🏗️ ArgoCD Architecture
 
 ```mermaid
 flowchart TD
-  A[🔐 Cluster Credentials] --> B[📦 CI Server]
-  A --> C[💻 Dev Machines]
-  A --> D[🔧 Scripts]
-  A --> E[📋 Pipeline Configs]
-
-  B --> F[😱 Breach Vector]
-  C --> F
-  D --> F
-  E --> F
-```
-
-* 🔐 **Credentials everywhere** — CI servers, dev machines
-* 🎯 **Attack surface** expands with each tool
-* 🔑 **Shared secrets** — who has access?
-
----
-
-## 📍 Slide 10 – 💰 The Cost of Manual Deployments
-
-| 🔥 Problem | 💥 Impact | 📊 Data |
-|-----------|----------|---------|
-| No audit trail | Compliance failures | 73% fail audits without GitOps |
-| Manual errors | Outages | 70% of outages are human error |
-| Credential sprawl | Security breaches | Average breach cost: $4.45M |
-| Slow recovery | Downtime | MTTR 4x longer without GitOps |
-
-> 💬 *"The cost of a breach is not the breach itself, but the inability to respond quickly."*
-
----
-
-## 📍 Slide 11 – ✅ Section 2: GitOps Principles
-
-**What is GitOps?**
-
-* 📝 **Git as single source of truth** — declarative desired state
-* 🔄 **Continuous reconciliation** — actual → desired
-* 🔀 **Pull-based deployment** — agent pulls from Git
-* 🔒 **Immutable, auditable** — every change tracked
-
-```mermaid
-flowchart LR
-  A[📝 Git Repo] --> |Pull| B[🤖 ArgoCD Agent]
-  B --> |Reconcile| C[☸️ Cluster]
-  C --> |Report Status| B
-```
-
-> 💡 **Key Insight:** The cluster pulls changes, no credentials leave the cluster!
-
----
-
-## 📍 Slide 12 – 🚫 GitOps: What It's NOT
-
-| 🚫 Myth | ✅ Reality |
-|---------|----------|
-| Just using Git for YAML files | A complete operational model with reconciliation |
-| Another CI/CD tool | Continuous deployment, not continuous integration |
-| Only for Kubernetes | Works for any declarative infrastructure |
-| Complicated to adopt | Can start simple, grow incrementally |
-
-> 🔥 **Hot take:** "Putting YAML in Git is not GitOps. GitOps is about the reconciliation loop."
-
-**The Four Principles (from OpenGitOps):**
-1. 📝 **Declarative** — Desired state expressed declaratively
-2. 🔄 **Versioned and Immutable** — Stored in Git
-3. 🤖 **Pulled Automatically** — Agents pull desired state
-4. ♾️ **Continuously Reconciled** — Agents ensure actual = desired
-
----
-
-## 📍 Slide 13 – 🔄 Push vs Pull Deployment
-
-```mermaid
-flowchart LR
-  subgraph "🚀 Pull Model - GitOps"
-    direction LR
-    D[📝 Git] --> |Pull| E[🤖 Agent in Cluster]
-    E --> |Apply| F[☸️ Same Cluster]
+  subgraph cluster["☸️ Kubernetes cluster (argocd namespace)"]
+    API[🌐 argocd-server<br/>UI · gRPC · REST · webhook]
+    Ctrl[🔄 application-controller<br/>StatefulSet · the reconciler]
+    Repo[📦 repo-server<br/>clones Git · renders Helm/Kustomize]
+    Redis[(⚡ redis<br/>manifest + cluster cache)]
+    Dex[🔐 dex-server<br/>OIDC broker · optional]
+    AS[♾️ applicationset-controller<br/>generates Apps from templates]
   end
-
-  subgraph "🔄 Push Model"
-    direction LR
-    A[📝 Git] --> B[🔧 CI/CD]
-    B --> |Push credentials needed| C[☸️ Cluster]
-  end
+  User[👨‍💻 User] -->|UI / CLI / API| API
+  API <--> Redis
+  Ctrl <--> Repo
+  Ctrl <--> Redis
+  Repo --> Git[📝 Git repo]
+  Ctrl --> Kube[K8s API]
+  AS --> Ctrl
+  API -.->|SSO| Dex
 ```
 
-| 📋 Aspect | 🔄 Push | 🚀 Pull (GitOps) |
-|----------|--------|------------------|
-| Credentials | CI needs cluster creds | Agent has local access |
-| Drift detection | None | Continuous |
-| Audit trail | CI logs (external) | Git history |
-| Recovery | Re-run pipeline | Automatic reconciliation |
+* 🌐 **argocd-server** — UI + gRPC/REST API; what humans and CI talk to. Stateless, horizontally scalable.
+* 🔄 **application-controller** — the heart. Reconciles every `Application` CR against the cluster. StatefulSet for sharding across many clusters.
+* 📦 **repo-server** — clones Git, runs `helm template` / `kustomize build`, returns rendered manifests to the controller. Stateless, cache-heavy.
+* ⚡ **redis** — caches manifests, cluster state, Git revisions. Lose it and reconciliation gets slow, not wrong.
+* 🔐 **dex-server** — OIDC broker for GitHub/Google/Okta SSO. Optional; you can use local users for labs.
+* ♾️ **applicationset-controller** — turns one template + a generator into many `Application` CRs.
 
 ---
 
-## 📍 Slide 14 – 🛠️ GitOps Tools Landscape
+## 📍 Slide 8 – 📝 The Application CRD
 
-| 🛠️ Tool | 📝 Description | ⭐ Best For |
-|---------|---------------|------------|
-| **ArgoCD** | Declarative GitOps for K8s | Most Kubernetes use cases |
-| **Flux** | Toolkit approach, CNCF project | Composable, extensible setups |
-| **Jenkins X** | CI/CD + GitOps combined | Jenkins-heavy organizations |
-| **Rancher Fleet** | Multi-cluster GitOps | Managing many clusters |
-
-**Why ArgoCD?**
-* 🎯 Most adopted (70%+ of GitOps users)
-* 🖥️ Excellent UI for visualization
-* 🔧 Rich feature set out of the box
-* 📚 Large community, good documentation
-
----
-
-## 📍 Slide 15 – 📊 Before vs After: Deployment
-
-| 📋 Aspect | 😰 Before (Manual/Push) | 🚀 After (GitOps) |
-|----------|-------------------------|-------------------|
-| Change process | kubectl, scripts, pipelines | Git PR → merge → auto-sync |
-| Audit trail | Scattered logs | Complete Git history |
-| Rollback | "Which version was before?" | `git revert` |
-| Drift | Undetected until failure | Detected immediately |
-| Credentials | Spread across tools | Stay in cluster |
-| Recovery | Manual intervention | Self-healing |
-
-> 🤔 **Think:** How would GitOps have helped in your last deployment issue?
-
----
-
-## 📍 Slide 16 – 🎮 Section 3: ArgoCD in Action
-
-**ArgoCD Architecture:**
-
-```mermaid
-flowchart TD
-  A[📝 Git Repository] --> B[🤖 ArgoCD Server]
-  B --> C[🔄 Application Controller]
-  C --> D[☸️ Kubernetes API]
-  E[👨‍💻 User] --> F[🖥️ ArgoCD UI / CLI]
-  F --> B
-  D --> C
-```
-
-**Components:**
-* 🖥️ **API Server:** UI, CLI, webhook endpoints
-* 🔄 **Application Controller:** Reconciliation engine
-* 📦 **Repository Server:** Caches Git repos, renders manifests
-* 🔗 **Dex:** SSO authentication (optional)
-
----
-
-## 📍 Slide 17 – 💥 Scenario 1: First ArgoCD Deployment
-
-**Situation:** Deploy your first application with ArgoCD
+The atomic unit of ArgoCD is one `Application` — a pointer to "this folder in this repo at this revision goes into this namespace on this cluster".
 
 ```yaml
-# Application manifest
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: my-app
+  name: app-python-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io   # 🗑️ cascade-delete K8s resources on app delete
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/innodevops/student-repo.git
+    targetRevision: main                         # 📌 branch, tag, or commit SHA
+    path: k8s/charts/app-python
+    helm:
+      valueFiles:
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc        # in-cluster
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true                                 # 🗑️ delete resources removed from Git
+      selfHeal: true                              # 💚 revert manual cluster edits
+    syncOptions:
+      - CreateNamespace=true
+```
+
+Key concepts:
+* 📌 **`targetRevision: main`** vs **a SHA**: branch tracks moving HEAD (fine for dev), SHA pins exactly (use for prod releases).
+* 🗑️ **`finalizers:`** without this, deleting the `Application` leaves K8s resources orphaned.
+* 🔄 **`automated`** turns on auto-sync; *omitting it* makes the app **manual-sync** (click the button or `argocd app sync`).
+
+---
+
+## 📍 Slide 9 – 🔄 Sync, Health, and Operation States
+
+Every `Application` tracks two orthogonal states, plus a transient operation.
+
+| Sync state | Meaning |
+|------------|---------|
+| 🟢 **Synced** | Live cluster matches the rendered manifests |
+| 🟡 **OutOfSync** | Drift between Git and cluster (good — you can see it!) |
+| ❓ **Unknown** | Repo unreachable or controller hasn't checked yet |
+
+| Health state | Meaning |
+|--------------|---------|
+| 💚 **Healthy** | All resources report ready (Deployment available, Pod running, etc.) |
+| 🔵 **Progressing** | Rollout in flight, give it a minute |
+| 🔴 **Degraded** | Something failed (CrashLoopBackOff, schema error) |
+| ⚪ **Suspended** | Hooks paused or app paused |
+| 🚫 **Missing** | Resource not in cluster |
+
+> 💡 An app can be **Synced + Degraded** (Git correctly says "deploy this broken Pod") or **OutOfSync + Healthy** (cluster runs fine but doesn't match Git). Both states are diagnostic.
+
+ArgoCD 3.4 added an **Operation Status** filter alongside Sync and Health, so the UI now shows "what's actively syncing right now" — useful during incident response.
+
+---
+
+## 📍 Slide 10 – 🎚️ Sync Policies: Manual, Auto, Self-Heal, Prune
+
+```yaml
+syncPolicy:
+  automated:
+    prune: true
+    selfHeal: true
+    allowEmpty: false       # 🛡️ refuse to apply if rendering produced 0 manifests
+  syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+    - PruneLast=true
+    - ApplyOutOfSyncOnly=true
+  retry:
+    limit: 5
+    backoff:
+      duration: 5s
+      factor: 2
+      maxDuration: 3m
+```
+
+* 🔄 **No `automated:` block → manual sync.** The UI shows a big "SYNC" button. Standard for prod.
+* 🤖 **`automated:` → auto-sync** on every Git change *and* every periodic reconcile (default 3 min).
+* 💚 **`selfHeal: true`** — revert manual cluster edits back to Git state. Disable if a controller owns the resource (e.g., HPA writing `replicas`).
+* 🗑️ **`prune: true`** — delete resources that were *removed* from Git. Without it, deleting a file in Git leaves an orphan running.
+* ⚙️ **`ServerSideApply=true`** uses K8s server-side apply (avoids the "last-applied-configuration" annotation problem and plays nice with HPA/VPA).
+
+> ⚠️ **Sane default for prod:** manual sync, `prune: false`, `selfHeal: false`. Humans review every change. Dev environments turn everything on.
+
+---
+
+## 📍 Slide 11 – 🌊 Sync Waves and Hooks
+
+Some resources must come up *before* others — CRDs before custom resources, namespaces before everything, DB migrations before the app.
+
+```yaml
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"           # 🌊 negative = earlier, positive = later (default 0)
+    argocd.argoproj.io/hook: PreSync             # 🪝 PreSync | Sync | PostSync | SyncFail | PostDelete
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+```
+
+```mermaid
+flowchart LR
+  PreSync[🪝 PreSync hooks] --> W0[wave -1: CRDs]
+  W0 --> W1[wave 0: namespaces, ConfigMaps]
+  W1 --> W2[wave 1: Deployments]
+  W2 --> W3[wave 2: Services, Ingress]
+  W3 --> Post[🪝 PostSync hooks]
+```
+
+* 🪝 **Hooks** are arbitrary K8s resources (typically Jobs) that run at lifecycle points. Classic use: a `pre-sync` Job that runs `flyway migrate` before the new app pods start.
+* 🌊 **Waves** order Sync-phase resources. The controller applies everything at wave `N`, waits for health, then proceeds to `N+1`.
+* 🧹 **`hook-delete-policy`** keeps the cluster tidy — `HookSucceeded` deletes the Job once it finishes green.
+
+---
+
+## 📍 Slide 12 – 🌳 The App-of-Apps Pattern
+
+Bootstrap problem: ArgoCD manages your apps via `Application` CRs in the `argocd` namespace. But who manages *those* `Application` CRs? Answer: another `Application`.
+
+```
+gitops-repo/
+└── apps/
+    ├── root.yaml              # 👈 the "App-of-Apps" — points at ./apps
+    ├── app-python.yaml        # Application CR for the Python service
+    ├── app-go-echo.yaml       # Application CR for the Go echo service
+    └── app-go-health.yaml     # Application CR for the Go health service
+```
+
+```yaml
+# root.yaml — the seed
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://github.com/org/app-manifests
-    path: environments/dev
+    repoURL: https://github.com/innodevops/student-repo.git
     targetRevision: main
+    path: apps                                # 📂 directory full of Application YAMLs
   destination:
     server: https://kubernetes.default.svc
-    namespace: dev
-```
-
-```mermaid
-flowchart LR
-  A[📝 Create App] --> B[🔄 ArgoCD Syncs]
-  B --> C[📦 Resources Created]
-  C --> D[✅ App Running]
-```
-
----
-
-## 📍 Slide 18 – ✅ Solution 1: Understanding Sync
-
-**Sync States:**
-
-| 🔄 State | 📝 Meaning | 🎯 Action |
-|----------|-----------|----------|
-| **Synced** | Cluster matches Git | ✅ Good! |
-| **OutOfSync** | Cluster differs from Git | 🔄 Sync needed |
-| **Unknown** | Can't determine state | 🔍 Check connection |
-| **Missing** | Resources don't exist yet | 🔄 Initial sync |
-
-**Health States:**
-
-| 💚 Health | 📝 Meaning |
-|----------|-----------|
-| **Healthy** | All resources running correctly |
-| **Progressing** | Resources being updated |
-| **Degraded** | Some resources have issues |
-| **Suspended** | Manually paused |
-
----
-
-## 📍 Slide 19 – 💥 Scenario 2: Handling Drift
-
-**Situation:** Someone manually changed replicas in the cluster
-
-```mermaid
-flowchart TD
-  A[📝 Git: replicas=3] --> B[🤖 ArgoCD]
-  C[👨‍💻 kubectl scale replicas=5] --> D[☸️ Cluster]
-  B --> |Detects| E[⚠️ OutOfSync]
-  E --> |Auto-sync enabled| F[🔄 Restore to 3]
-```
-
-**ArgoCD detects drift immediately!**
-* 🔍 **Visibility:** Shows exactly what differs
-* 🔄 **Options:** Manual sync or auto-sync
-* 📋 **Audit:** Who changed Git matters, not who ran kubectl
-
----
-
-## 📍 Slide 20 – ✅ Solution 2: Sync Policies
-
-**Configure automatic reconciliation:**
-
-```yaml
-spec:
+    namespace: argocd
   syncPolicy:
-    automated:
-      prune: true        # Delete resources not in Git
-      selfHeal: true     # Revert manual changes
-    syncOptions:
-      - CreateNamespace=true
-      - PruneLast=true
+    automated: { prune: true, selfHeal: true }
 ```
 
-**Options explained:**
-* 🔄 **automated:** Enable auto-sync on Git changes
-* 🗑️ **prune:** Delete resources removed from Git
-* 💚 **selfHeal:** Revert manual cluster changes
-* 📦 **CreateNamespace:** Create namespace if missing
+One `kubectl apply -f root.yaml` and ArgoCD discovers and syncs every child `Application`. The cluster is now self-managing — recovery = reinstall ArgoCD + reapply `root.yaml`.
 
 ---
 
-## 📍 Slide 21 – 💥 Scenario 3: Multi-Environment Deployment
-
-**Situation:** Same app, different configs for dev/staging/prod
-
-```
-repo/
-├── base/
-│   ├── deployment.yaml
-│   └── service.yaml
-└── overlays/
-    ├── dev/
-    │   └── kustomization.yaml
-    ├── staging/
-    │   └── kustomization.yaml
-    └── prod/
-        └── kustomization.yaml
-```
+## 📍 Slide 13 – 🧬 The 3-Service ArgoCD Topology
 
 ```mermaid
 flowchart TD
-  A[📝 Git Repo] --> B[🤖 ArgoCD]
-  B --> C[📦 App-Dev]
-  B --> D[📦 App-Staging]
-  B --> E[📦 App-Prod]
-  C --> F[☸️ Dev Cluster]
-  D --> G[☸️ Staging Cluster]
-  E --> H[☸️ Prod Cluster]
+  Git[📝 GitHub repo<br/>k8s/charts + apps/]
+  Git --> Root[🌱 root Application<br/>App-of-Apps]
+  Root --> AS[♾️ ApplicationSet<br/>List generator: dev, prod]
+
+  AS --> AP_D[🐍 app-python-dev]
+  AS --> AG_D[🦫 app-go-echo-dev]
+  AS --> AH_D[💚 app-go-health-dev]
+  AS --> AP_P[🐍 app-python-prod]
+  AS --> AG_P[🦫 app-go-echo-prod]
+  AS --> AH_P[💚 app-go-health-prod]
+
+  AP_D & AG_D & AH_D --> NSdev[☸️ namespace: dev]
+  AP_P & AG_P & AH_P --> NSprod[☸️ namespace: prod]
 ```
+
+* 🐍 **app-python** — your Lab 2 → Lab 10 service (FastAPI).
+* 🦫 **app-go-echo** — Lab 9's plumbing companion (Go HTTP echo).
+* 💚 **app-go-health** — **new in Lab 13** — a tiny Go health/static service shipped as plumbing. It exists *specifically* so that ApplicationSet and App-of-Apps stop being toy patterns.
+
+> 💡 **Pedagogical point:** ApplicationSet with one service is just `kubectl apply` with extra steps. With **two** services in **two** environments it starts to earn its keep. With **three services × two environments = six Applications** generated from one 30-line template, the value is obvious. Hence Lab 13 introduces `app-go-health`.
 
 ---
 
-## 📍 Slide 22 – ✅ Solution 3: ApplicationSet
-
-**Deploy to multiple environments with one definition:**
+## 📍 Slide 14 – ♾️ ApplicationSet: One Template, Many Apps
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: my-app
+  name: all-apps
+  namespace: argocd
 spec:
   generators:
-    - list:
-        elements:
-          - env: dev
-            namespace: dev
-          - env: staging
-            namespace: staging
-          - env: prod
-            namespace: prod
+    - matrix:
+        generators:
+          - list:                       # 1️⃣ which apps
+              elements:
+                - { svc: app-python,     path: k8s/charts/app-python }
+                - { svc: app-go-echo,    path: k8s/charts/app-go-echo }
+                - { svc: app-go-health,  path: k8s/charts/app-go-health }
+          - list:                       # 2️⃣ which environments
+              elements:
+                - { env: dev,  autoSync: "true" }
+                - { env: prod, autoSync: "false" }
   template:
     metadata:
-      name: 'my-app-{{env}}'
+      name: '{{svc}}-{{env}}'
     spec:
+      project: default
       source:
-        repoURL: https://github.com/org/manifests
-        path: 'overlays/{{env}}'
+        repoURL: https://github.com/innodevops/student-repo.git
+        targetRevision: main
+        path: '{{path}}'
+        helm:
+          valueFiles:
+            - 'values-{{env}}.yaml'
       destination:
-        namespace: '{{namespace}}'
+        server: https://kubernetes.default.svc
+        namespace: '{{env}}'
+      syncPolicy:
+        syncOptions: [CreateNamespace=true]
 ```
+
+The **matrix** generator cross-joins two **list** generators → 3 services × 2 envs = **6 `Application` CRs** materialized automatically. Add a fourth service? One line in the first list.
 
 ---
 
-## 📍 Slide 23 – 💥 Scenario 4: Secrets in GitOps
+## 📍 Slide 15 – 🧰 The Other ApplicationSet Generators
 
-**Problem:** Secrets shouldn't be in Git... but GitOps needs everything in Git!
+| Generator | What it iterates over | Use when |
+|-----------|----------------------|----------|
+| **List** | Inline literals | Small, stable set (dev/staging/prod) |
+| **Cluster** | All clusters registered with ArgoCD | Multi-cluster fleet rollouts |
+| **Git (Directory)** | Folders under a path in a repo | One folder per app — auto-discover new apps |
+| **Git (File)** | YAML/JSON files at a path | One config file per tenant |
+| **Matrix** | Cross-join of two generators | Apps × environments, services × clusters |
+| **Merge** | Inner-join + override | Layer cluster-specific overrides onto a base list |
+| **SCM Provider** | Repos in a GitHub/GitLab org | Org-wide GitOps for many service repos |
+| **Pull Request** | Open PRs in a repo | Ephemeral preview environments per PR |
+| **Cluster Decision** | A CRD that picks clusters | External logic decides where apps land |
+| **Plugin** | An HTTP service you write | Anything the above can't express |
 
-```mermaid
-flowchart TD
-  A[🔐 Secret] --> B{Where to store?}
-  B --> |❌ Plain Git| C[😱 Security breach]
-  B --> |✅ Encrypted| D[🔒 Sealed Secrets]
-  B --> |✅ External| E[🔐 Vault + ESO]
-```
-
-**The dilemma:**
-* 📝 GitOps: Everything in Git
-* 🔐 Security: Secrets NOT in Git
-* 🤔 How to reconcile?
-
----
-
-## 📍 Slide 24 – ✅ Solution 4: Secrets Management Patterns
-
-**Option 1: Sealed Secrets**
-```yaml
-apiVersion: bitnami.com/v1alpha1
-kind: SealedSecret
-metadata:
-  name: my-secret
-spec:
-  encryptedData:
-    password: AgBghY8... # Encrypted, safe to commit!
-```
-
-**Option 2: External Secrets Operator + Vault**
-```yaml
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
-metadata:
-  name: my-secret
-spec:
-  secretStoreRef:
-    name: vault-backend
-  target:
-    name: my-secret
-  data:
-    - secretKey: password
-      remoteRef:
-        key: app/database
-        property: password
-```
-
-* ✅ **Encrypted in Git** (Sealed Secrets)
-* ✅ **Reference only in Git** (External Secrets)
+> 💡 **Lab 13 uses List + Matrix.** Bonus: try the Git Directory generator pointed at `k8s/charts/` — adding a new chart folder automatically creates an Application.
 
 ---
 
-## 📍 Slide 25 – 📝 QUIZ — DEVOPS_L13_MID
+## 📍 Slide 16 – 🔐 RBAC and AppProjects
 
----
+Out of the box, every `Application` lands in the `default` project, which can deploy anywhere. In production, you carve up access with **AppProject** CRs.
 
-## 📍 Slide 26 – 🔧 Section 4: Advanced ArgoCD Patterns
-
-**Sync Waves & Hooks:**
-
-```yaml
-metadata:
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"  # Order of deployment
-    argocd.argoproj.io/hook: PreSync   # Run before main sync
-```
-
-```mermaid
-flowchart LR
-  A[🔄 PreSync Hooks] --> B[📦 Wave 0]
-  B --> C[📦 Wave 1]
-  C --> D[📦 Wave 2]
-  D --> E[✅ PostSync Hooks]
-```
-
-**Use cases:**
-* 📊 **Database migrations** before app deploy
-* 🧹 **Cleanup jobs** after deployment
-* 🔍 **Health checks** between phases
-
----
-
-## 📍 Slide 27 – 🔄 Sync Options Deep Dive
-
-| 🔧 Option | 📝 Purpose |
-|----------|-----------|
-| `Replace` | Replace instead of apply (for immutable fields) |
-| `PruneLast` | Delete resources after all others sync |
-| `ApplyOutOfSyncOnly` | Only apply changed resources |
-| `ServerSideApply` | Use server-side apply (K8s 1.22+) |
-| `FailOnSharedResource` | Fail if resource owned by another app |
-
-```yaml
-syncPolicy:
-  syncOptions:
-    - CreateNamespace=true
-    - PrunePropagationPolicy=foreground
-    - PruneLast=true
-```
-
----
-
-## 📍 Slide 28 – 🏗️ Repository Structure Patterns
-
-**Pattern 1: Monorepo**
-```
-repo/
-├── apps/
-│   ├── app1/
-│   └── app2/
-└── infrastructure/
-    ├── prometheus/
-    └── argocd/
-```
-
-**Pattern 2: Repo per App**
-```
-app1-config/     # App 1 manifests
-app2-config/     # App 2 manifests
-infrastructure/  # Shared infra
-```
-
-**Pattern 3: Environment Repos**
-```
-dev-cluster/     # All dev apps
-prod-cluster/    # All prod apps
-```
-
-> 💡 **Recommendation:** Start with monorepo, split when it gets complex
-
----
-
-## 📍 Slide 29 – 📊 ArgoCD Metrics & Monitoring
-
-**Key metrics to watch:**
-
-| 📊 Metric | 📝 Meaning | ⚠️ Alert When |
-|----------|-----------|--------------|
-| `argocd_app_sync_total` | Total syncs | Unusually high |
-| `argocd_app_health_status` | App health | Not healthy |
-| `argocd_app_reconcile_duration` | Sync time | > 5 minutes |
-| `argocd_cluster_api_resource_objects` | Total objects | Growing unexpectedly |
-
-**Dashboard integration:**
-* 📊 Grafana dashboards available
-* 🔔 Alertmanager integration
-* 📝 Slack/Teams notifications
-
----
-
-## 📍 Slide 30 – 🔐 RBAC & Multi-tenancy
-
-**ArgoCD RBAC:**
-
-```yaml
-# argocd-rbac-cm ConfigMap
-policy.csv: |
-  p, role:dev-team, applications, get, dev-project/*, allow
-  p, role:dev-team, applications, sync, dev-project/*, allow
-  p, role:ops-team, applications, *, */*, allow
-
-  g, dev-group, role:dev-team
-  g, ops-group, role:ops-team
-```
-
-**Projects for isolation:**
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: dev-project
+  name: team-payments
+  namespace: argocd
 spec:
   sourceRepos:
-    - 'https://github.com/org/dev-*'
+    - https://github.com/innodevops/payments-*    # 🔒 only these repos
   destinations:
-    - namespace: 'dev-*'
+    - namespace: payments-*                       # 🔒 only these namespaces
       server: https://kubernetes.default.svc
+  clusterResourceWhitelist:                       # 🔒 only these cluster-scoped kinds
+    - group: ''
+      kind: Namespace
+  namespaceResourceBlacklist:
+    - group: ''
+      kind: ResourceQuota
+  roles:
+    - name: deployer
+      policies:
+        - p, proj:team-payments:deployer, applications, sync, team-payments/*, allow
+      groups: [innodevops:payments]
 ```
 
----
-
-## 📍 Slide 31 – 🚨 Disaster Recovery
-
-**Git is your backup!**
-
-```mermaid
-flowchart TD
-  A[💀 Cluster Gone] --> B[🆕 New Cluster]
-  B --> C[📦 Install ArgoCD]
-  C --> D[🔗 Connect to Git]
-  D --> E[🔄 Sync All Apps]
-  E --> F[✅ Fully Restored]
-```
-
-**Recovery steps:**
-1. 🆕 Create new cluster
-2. 📦 Install ArgoCD
-3. 🔗 Point to Git repository
-4. ☕ Wait for sync
-5. ✅ Everything restored!
-
-> 💡 **Key insight:** If Git has everything, recovery is just a sync away
+The user-facing **argocd-rbac-cm** ConfigMap maps OIDC groups → roles → permissions. Pattern: one project per team, no `default` use in prod, OIDC groups for human role bindings.
 
 ---
 
-## 📍 Slide 32 – 📋 GitOps Workflow Summary
+## 📍 Slide 17 – 🔒 Secrets in a GitOps World
 
-```mermaid
-flowchart TD
-  A[👨‍💻 Developer] --> |PR| B[📝 Git Repo]
-  B --> |Review| C[✅ Merge]
-  C --> |Webhook| D[🤖 ArgoCD]
-  D --> |Sync| E[☸️ Cluster]
-  E --> |Status| D
-  D --> |Notify| F[💬 Slack]
+GitOps demands "everything in Git" — but plaintext secrets in Git are an immediate breach. Three production-grade answers:
 
-  G[🔍 Drift Detection] --> D
-  D --> |Self-heal| E
-```
+| Pattern | How it works | Tradeoff |
+|---------|--------------|----------|
+| **Sealed Secrets** (Bitnami) | Controller in cluster has a keypair; you `kubeseal` a `Secret` into a `SealedSecret` (cipher in YAML); controller decrypts on apply | Per-cluster key — re-seal on rotation |
+| **External Secrets Operator + OpenBao** | Git holds only an `ExternalSecret` *reference*; ESO pulls the actual value from OpenBao/Vault/SSM at sync time | Operational dependency on the secret store |
+| **SOPS + KMS / age** | Files encrypted in Git with `sops`; ArgoCD plugin (`argocd-vault-plugin`, `helm-secrets`) decrypts at render time | Plugin install + key management |
 
-**The complete loop:**
-1. 📝 **Change:** Developer creates PR
-2. 👀 **Review:** Team reviews and approves
-3. 🔀 **Merge:** Changes merge to main
-4. 🤖 **Detect:** ArgoCD detects new commit
-5. 🔄 **Sync:** Resources deployed to cluster
-6. 💚 **Verify:** Health checks pass
-7. 📢 **Notify:** Team informed of deployment
+Your **Lab 11** already wired OpenBao + ESO — that's the pattern Lab 13 keeps using. The `Secret` resources never appear in Git; only `ExternalSecret` references do.
+
+> 🔥 **Never** put plaintext secrets in the GitOps repo, even private. Git history is forever.
 
 ---
 
-## 📍 Slide 33 – 🏭 Section 5: Production GitOps
+## 📍 Slide 18 – 🌐 Multi-Cluster GitOps
 
-**Enterprise Patterns:**
-
-```mermaid
-flowchart TD
-  subgraph Git
-    A[📝 Feature Branch] --> B[📝 Main Branch]
-    B --> C[📝 Release Branch]
-  end
-
-  subgraph ArgoCD
-    D[🤖 Dev App] --> E[🤖 Staging App]
-    E --> F[🤖 Prod App]
-  end
-
-  B --> D
-  C --> F
-```
-
-* 🔀 **Branch strategy:** Main for dev, release for prod
-* 🎯 **Progressive delivery:** Dev → Staging → Prod
-* ✅ **Promotion:** PR from main to release
-
----
-
-## 📍 Slide 34 – 🏢 Real-World GitOps: Intuit
-
-**Case Study: Intuit's GitOps Journey**
-
-* 📊 **Scale:** 2,000+ applications
-* 🔄 **Deployments:** 500+ per day
-* ⏱️ **MTTR:** Reduced by 80%
-
-**What they learned:**
-* 📋 Start small, grow incrementally
-* 🔧 Standardize templates early
-* 👥 Train teams on Git workflows
-* 📊 Monitor everything
-
-> 💬 *"GitOps turned our deployment from a ceremony into a non-event."* — Intuit Engineer
-
----
-
-## 📍 Slide 35 – 🔧 Migration Strategy
-
-**Adopting GitOps incrementally:**
-
-```mermaid
-flowchart TD
-  A[1️⃣ Non-critical app] --> B[2️⃣ Dev environment]
-  B --> C[3️⃣ More apps]
-  C --> D[4️⃣ Staging]
-  D --> E[5️⃣ Production]
-```
-
-**Phases:**
-1. 🧪 **Pilot:** One non-critical app in dev
-2. 📚 **Learn:** Document patterns, train team
-3. 📦 **Expand:** More apps, still dev
-4. 🎭 **Staging:** Full staging environment
-5. 🏭 **Production:** Controlled rollout
-
----
-
-## 📍 Slide 36 – 🎯 Key Takeaways
-
-1. 📝 **Git is the source of truth** — not the cluster, not CI/CD
-2. 🔄 **Pull > Push** — credentials stay in cluster
-3. 💚 **Self-healing** — drift is detected and corrected
-4. 🔍 **Complete audit trail** — git log is your history
-5. ↩️ **Easy rollback** — `git revert` reverts infrastructure
-6. 🔐 **Secrets need special handling** — Sealed Secrets or External Secrets
-
-> 💬 *"Operations by Pull Request"*
-> — Kelsey Hightower
-
----
-
-## 📍 Slide 37 – 🧠 Mindset Shift
-
-| 😰 Old Mindset | 🚀 New Mindset |
-|---------------|----------------|
-| "I'll just kubectl this" | "Let me create a PR" |
-| "The cluster is truth" | "Git is truth" |
-| "We need cluster access" | "We need Git access" |
-| "Rollback is scary" | "Rollback is git revert" |
-| "Who changed what?" | "Check git log" |
-| "Emergency fix!" | "Emergency PR with fast review" |
-
-> 🤔 **Question:** Which mindset do you operate with today?
-
----
-
-## 📍 Slide 38 – 📝 QUIZ — DEVOPS_L13_POST
-
----
-
-## 📍 Slide 39 – 🚀 What's Next?
-
-**Coming up: Lecture 14 — Progressive Delivery with Argo Rollouts**
+ArgoCD running in **one** "control plane" cluster can manage **many** workload clusters.
 
 ```mermaid
 flowchart LR
-  A[📦 v1] --> B[🚀 Canary 10%]
-  B --> C[🚀 Canary 50%]
-  C --> D[🚀 Full Rollout]
+  Git[📝 Git] --> Argo[🤖 ArgoCD<br/>control-plane cluster]
+  Argo -->|kubeconfig in Secret| C1[☸️ dev cluster]
+  Argo -->|kubeconfig in Secret| C2[☸️ staging cluster]
+  Argo -->|kubeconfig in Secret| C3[☸️ prod cluster]
+  Argo -->|kubeconfig in Secret| C4[☸️ edge cluster]
 ```
 
-* 🐤 **Canary deployments** — test with small traffic
-* 🔵 **Blue-green deployments** — instant switchover
-* 📊 **Automated analysis** — metrics-driven promotion
-* ↩️ **Automatic rollback** — on failure
+* 🔑 Each target cluster is registered with `argocd cluster add <context>`, which creates a `Secret` with its kubeconfig in the `argocd` namespace.
+* ♾️ The **Cluster generator** in an ApplicationSet pairs this with one template → "deploy this app to every cluster labelled `tier=edge`".
+* ⏸️ **ArgoCD 3.4 added Pause Reconciliation per cluster** — flip a toggle to freeze a misbehaving cluster mid-incident without touching others.
 
-> 🎯 **Lab 13:** Set up ArgoCD and deploy your application using GitOps!
+> 💡 **Hub-and-spoke vs federated:** the hub model is simpler; for >50 clusters or strict network isolation, consider **Argo CD Argocd in each cluster** + a higher-level fleet controller (Fleet, Cluster API).
+
+---
+
+## 📍 Slide 19 – 🩺 Observing ArgoCD Itself
+
+ArgoCD ships Prometheus metrics out of the box (your Lab 8 stack scrapes them).
+
+| Metric | Watch for |
+|--------|-----------|
+| `argocd_app_info{sync_status="OutOfSync"}` | Persistent drift |
+| `argocd_app_info{health_status="Degraded"}` | Broken apps |
+| `argocd_app_sync_total{phase="Failed"}` | Failing syncs |
+| `argocd_app_reconcile_bucket` | Reconcile latency histogram |
+| `argocd_cluster_api_resource_objects` | Object count growth (scaling signal) |
+| `argocd_redis_request_total` | Cache load |
+
+Wire these into your Lab 8 Grafana stack and alert on **Degraded > 5 minutes** and **OutOfSync > 30 minutes** (auto-sync clusters should never sit OutOfSync that long; if they do, something is wedged).
+
+---
+
+## 📍 Slide 20 – 🚨 Disaster Recovery: Git Is Your Backup
+
+The clean GitOps recovery story:
+
+```mermaid
+flowchart LR
+  Dead[💀 Cluster gone] --> New[🆕 Fresh cluster]
+  New -->|helm install argo-cd| Argo[🤖 ArgoCD]
+  Argo -->|kubectl apply -f root.yaml| Root[🌱 App-of-Apps]
+  Root --> All[♾️ All apps reconciled]
+  All --> Back[✅ Back online]
+```
+
+1. 🆕 Provision a new cluster (Terraform / kubeadm / kOps).
+2. 📦 `helm install argo-cd argo/argo-cd -n argocd --create-namespace`.
+3. 🌱 `kubectl apply -f apps/root.yaml`.
+4. ☕ Wait. Everything else is in Git.
+
+> ⚠️ **What's *not* recovered:** stateful data (PVCs, databases). GitOps restores **configuration**, not **state**. Pair with PV snapshots / Velero / database backups. This is the same lesson Labs 11 (secrets) and 12 (PVCs) hammered.
+
+---
+
+## 📍 Slide 21 – 🧰 Anti-Patterns and Common Bugs
+
+1. ❌ **`kubectl apply` to a GitOps-managed namespace** — self-heal reverts it in 3 minutes and you wasted everyone's afternoon debugging. Make the change in Git.
+2. ❌ **`prune: true` on first install** — if your `path:` is wrong, ArgoCD happily deletes everything it doesn't see. Start with `prune: false`, verify, then turn it on.
+3. ❌ **Pointing `targetRevision` at `HEAD`** for prod — silent rollouts on every commit to `main`. Use a tag or `release/*` branch.
+4. ❌ **Storing plaintext `Secret` YAML in Git** — even in a private repo. Use Sealed Secrets / ESO / SOPS.
+5. ❌ **One giant `Application` for "everything"** — you lose per-app sync, per-app status, per-app RBAC. One Application per (service × env).
+6. ❌ **Mixing repo concerns** — keep **app code** and **GitOps manifests** in *different* repos (or at least different paths). CI builds the image; GitOps repo references the new tag.
+7. ❌ **Forgetting the finalizer** — orphan resources on `kubectl delete app` are how rogue Pods survive in production for a year.
+8. ❌ **selfHeal on resources with HPA** — the HPA writes `spec.replicas`, ArgoCD reverts it, fight ensues. Use `ignoreDifferences:` on `/spec/replicas`.
+
+---
+
+## 📍 Slide 22 – 🌍 GitOps in the Wild
+
+* 🏢 **Intuit** open-sourced ArgoCD in 2018 to manage ~2,000 microservices; they run hundreds of deploys/day off Git.
+* 🛒 **BlackRock, Adobe, Tesla, Red Hat OpenShift GitOps** all ship ArgoCD in production at large scale.
+* 📊 **CNCF Annual Survey 2024:** GitOps adoption is the #1-growing K8s practice; **ArgoCD** is the dominant tool in survey responses.
+* 🏷️ **Argo project graduated CNCF** in December 2022 — same maturity tier as Kubernetes, Prometheus, Envoy.
+* 🚀 **ArgoCD 3.4** (early May 2026) doubled down on Day-2 ops: pause-per-cluster, richer UI filters, K8s version stored as Major.Minor.Patch, OpenTelemetry tracing through the OIDC flow.
+
+> 📊 **One number:** Codefresh's 2024 "State of GitOps" survey put **ArgoCD at ~70% of GitOps deployments**, Flux at ~25%, the rest in the long tail.
+
+---
+
+## 📍 Slide 23 – 🎯 Key Takeaways
+
+1. 📜 **GitOps = the four OpenGitOps principles** — declarative, versioned, pulled, continuously reconciled. Everything else is implementation detail.
+2. 🚀 **Pull beats push** on credential surface, drift detection, and disaster recovery.
+3. 🏗️ **ArgoCD = 5 components** — argocd-server, application-controller, repo-server, redis, dex (+ applicationset-controller). Memorize their jobs.
+4. 📝 **Application CRD** is the atomic unit; **App-of-Apps** bootstraps the whole cluster from one seed.
+5. ♾️ **ApplicationSet** with Matrix(List × List) generates N services × M environments from one template — the lab pattern.
+6. 🎚️ **Sync policy = manual for prod, automated+selfHeal+prune for dev** is a sane default.
+7. 🌊 **Sync waves + hooks** order DB migrations before app pods and cleanup jobs after.
+8. 🔒 **Secrets stay out of Git** — Sealed Secrets / ESO + OpenBao / SOPS. Forever.
+
+> 💬 *"Operations by Pull Request."* — Kelsey Hightower
+
+---
+
+## 📍 Slide 24 – 🚀 What Comes Next
+
+**📚 Next lecture: *Progressive Delivery with Argo Rollouts*** — because once GitOps deploys instantly on merge, the next question is *"how do we deploy **carefully**?"* Canary, blue-green, automated analysis.
+
+* 🐤 **Canary deployments** — 10% → 50% → 100%, gated by Prometheus queries
+* 🔵 **Blue-green** — two full stacks, instant switch, instant rollback
+* 📊 **AnalysisTemplate** — metric-driven promotion / rollback
+* 🔄 **Argo Rollouts** vs Flagger — the two contenders
+
+**🔬 Lab 13 deliverables:**
+* Install ArgoCD 3.4 via Helm in your cluster
+* Add a **third service** — `app-go-health` (plumbing files shipped in `app_go_health/`)
+* Declare an `Application` for each of the **three** services, in **two** environments (dev + prod) — six Applications total
+* Replace the six with one **ApplicationSet** using a Matrix(List, List) generator
+* Wrap the lot in an **App-of-Apps** root Application
+* Auto-sync dev with selfHeal + prune; keep prod **manual**
+* Bonus 2.5 pts: switch to the Git Directory generator that auto-discovers new charts under `k8s/charts/*`
+
+```mermaid
+flowchart LR
+  Lab10[📦 Lab 10: Helm chart] --> Lab13[🤖 Lab 13: ArgoCD<br/>+ 3rd service]
+  Lab13 --> Lab14[🚀 Lab 14: Argo Rollouts<br/>progressive delivery]
+```
+
+> 🌊 From "I deployed it" to "Git deployed it" — one merge at a time.
 
 ---
 
 ## 📚 Resources
 
-**Documentation:**
-* 📖 [ArgoCD Docs](https://argo-cd.readthedocs.io/)
-* 📖 [OpenGitOps](https://opengitops.dev/)
-* 📖 [Sealed Secrets](https://sealed-secrets.netlify.app/)
-* 📖 [External Secrets Operator](https://external-secrets.io/)
+* 📕 *GitOps and Kubernetes* — Yuen, Matyushentsev, Ekenstam, Suen (Manning, 2021) — canonical book on the pattern
+* 📕 *The Path to GitOps* — Christian Hernandez (Red Hat e-book, 2024) — short, practitioner-focused
+* 🌐 [argo-cd.readthedocs.io](https://argo-cd.readthedocs.io/en/stable/) — official ArgoCD docs
+* 🌐 [opengitops.dev](https://opengitops.dev/) — the four principles, ratified
+* 🌐 [github.com/argoproj/argo-cd](https://github.com/argoproj/argo-cd) — source + releases
+* 🌐 [fluxcd.io](https://fluxcd.io/) — the other CNCF GitOps tool worth knowing
+* 🌐 [Codefresh "State of GitOps" survey](https://codefresh.io/) — annual adoption numbers
+* 🎙️ KubeCon 2023 keynote — *"GitOps at Intuit"* (Hong Wang) — origin story of ArgoCD at scale
 
-**Tools:**
-* 🔧 [ArgoCD](https://argoproj.github.io/cd/)
-* 🔧 [Flux](https://fluxcd.io/)
-* 🔧 [Kustomize](https://kustomize.io/)
-
-**Books:**
-* 📕 *GitOps and Kubernetes* by Billy Yuen, et al.
-* 📕 *Continuous Delivery* by Jez Humble & David Farley
+**🎓 Quiz:** Post-lecture quiz feeds the weeks 13-16 leaderboard window.

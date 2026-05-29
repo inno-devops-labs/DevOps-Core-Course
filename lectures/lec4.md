@@ -1,805 +1,538 @@
-# 📌 Lecture 4 — Infrastructure as Code: From Snowflakes to Cattle
+# 📌 Lecture 4 — Infrastructure as Code with Terraform & Pulumi
 
-## 📍 Slide 1 – 🚀 Welcome to Infrastructure as Code
+## 📍 Slide 1 – 🏗️ Welcome to Infrastructure as Code
 
-* 🌍 **Infrastructure used to be physical** — racks, cables, manual configuration
-* 😰 Manual setup leads to inconsistency, drift, and undocumented "snowflakes"
-* 🏗️ **Infrastructure as Code (IaC)** treats infrastructure like software
-* 🎯 This lecture: learn to define, version, and automate your infrastructure
+* 🐶 **Lecture 1 promised cattle, not pets** — today we deliver
+* 📝 **IaC** = your cloud lives in Git, not in someone's browser tabs
+* 🌍 **Terraform + Pulumi** = the two ways modern teams provision infrastructure
+* 🎯 By the end: you can spin up (and tear down) a VM with one command — and review the diff before applying
 
 ```mermaid
 flowchart LR
-  Manual[🔧 Manual Setup] -->|IaC| Code[📝 Code-Defined]
-  Code --> Reproducible[🔄 Reproducible Infrastructure]
+  Manual[🖱️ Console clicks] -->|IaC| Code[📝 Code in Git]
+  Code --> Plan[📋 plan]
+  Plan --> Apply[🚀 apply]
+  Apply --> Cloud[☁️ Reproducible cloud]
 ```
+
+> 🔗 **Tie-in to Lab 4:** you'll build the *same* VM twice — once with Terraform, once with Pulumi — and feel the trade-offs first hand. The bonus task adds a GitHub Actions workflow that runs `plan` on every PR.
 
 ---
 
-## 📍 Slide 2 – 🎯 What You Will Learn
+## 📍 Slide 2 – 🎯 Learning Outcomes
 
-* ✅ Understand Infrastructure as Code principles
-* ✅ Compare declarative vs imperative IaC approaches
-* ✅ Apply Terraform workflows to real cloud infrastructure
-* ✅ Manage infrastructure state securely
-
-**🎓 Learning Outcomes:**
 | # | Outcome |
 |---|---------|
-| 1 | 🧠 Define IaC and explain its benefits |
-| 2 | 🔍 Distinguish between Terraform and Pulumi |
-| 3 | 🛠️ Write basic Terraform configurations |
-| 4 | 🗺️ Understand state management and security |
+| 1 | 🧠 Explain why snowflake servers are a business risk |
+| 2 | 📝 Write a working Terraform configuration with provider, resource, variable, output |
+| 3 | 🔄 Run the `init → plan → apply → destroy` lifecycle confidently |
+| 4 | 📦 Move state from local disk to a remote, locked backend — and explain why |
+| 5 | 🐍 Provision the same infrastructure with Pulumi in Python |
+| 6 | ⚖️ Pick Terraform vs Pulumi vs OpenTofu based on team and use case |
 
 ---
 
-## 📍 Slide 3 – 📋 How This Lecture Works
+## 📍 Slide 3 – 🔧 Tech Stack Pinned for May 2026
 
-* 📚 **Concepts + Code examples** — hands-on focus
-* 🎮 **Real-world scenarios** — cloud provisioning challenges
-* 📝 **3 quiz checkpoints**: PRE / MID / POST
-* 🛠️ **Tool comparison**: Terraform vs Pulumi
+| Tool | Version | Notes |
+|------|---------|-------|
+| 🌍 **Terraform** | **1.15.3** | Released May 13 2026; BSL-1.1 since **August 10, 2023** |
+| 🌱 **OpenTofu** | **1.12.0** | Released May 14 2026; MPL-2.0, Linux Foundation; 1:1 drop-in CLI |
+| 📦 **Pulumi** | **3.243.0** | May 2026; Apache-2.0 throughout |
+| ☁️ **AWS provider** | v5.x | Used in most Lab 4 examples |
+| ☁️ **GCP provider** | v6.x | Alternative for Lab 4 |
+| ☁️ **Yandex provider** | v0.115+ | Default for Russia-only labs |
 
-**⏱️ Lecture Structure:**
-```
-Section 0: Introduction (now)     → 📝 PRE Quiz
-Section 1: The Infrastructure Problem
-Section 2: IaC Fundamentals
-Section 3: Terraform Deep Dive    → 📝 MID Quiz
-Section 4: State & Security
-Section 5: Real World IaC
-Section 6: Reflection             → 📝 POST Quiz
-```
+> 🔧 **You can swap `terraform` for `tofu` in every command on these slides.** The HCL is identical. Choose based on license preference and team norms — labs accept both.
 
 ---
 
 ## 📍 Slide 4 – ❓ The Big Question
 
-* 📊 **73%** of organizations report configuration drift as a major issue
-* ⏱️ Average time to provision a server manually: **hours to days**
-* 💥 Most outages caused by **configuration changes**
+* 📊 The 2024 Flexera *State of the Cloud* report: **89%** of enterprises run multi-cloud — and **70%+** report uncontrolled drift between intended and actual config
+* ⏱️ Manual VM provisioning: **hours to days** for one server, then days more to make a copy match
+* 💥 Most outages are caused by **changes** — and untracked changes are the worst kind
 
-> 💬 *"It works in staging but not production"* — Every ops engineer, ever
+> 💬 *"It worked in staging — staging was different."* — Every ops engineer, ever
 
-**🤔 Think about it:**
-* How do you recreate your production environment?
-* What happens when the person who set it up leaves?
-* Can you spin up a new environment in minutes?
-
----
-
-## 📍 Slide 5 – 📝 QUIZ — DEVOPS_L4_PRE
+**🤔 Think:**
+* Could you recreate your production cloud from scratch tomorrow?
+* If the person who built it left this morning, how long until you're stuck?
 
 ---
 
-## 📍 Slide 6 – 🔥 Section 1: The Infrastructure Problem
+## 📍 Slide 5 – 🐶 Pets vs. Cattle (Bill Baker, Microsoft, 2012)
 
-* 🐶 **Pet Servers** = unique, hand-crafted, irreplaceable
-* 🔧 Manual configuration via SSH and console clicks
-* 📋 Documentation gets outdated immediately
-* 💥 Result: **snowflake infrastructure** — no two servers are the same
+* 🐶 **Pets** — named (`web-prod-01`), nursed, irreplaceable, downtime if sick
+* 🐄 **Cattle** — numbered (`web-001..099`), identical, disposable, replaced if sick
+* ☁️ **Cloud-native = cattle mindset.** Lecture 1 foreshadowed this; today we make it real.
 
 ```mermaid
 flowchart LR
-  Server1[🖥️ Server 1: Ubuntu 20 + patches]
-  Server2[🖥️ Server 2: Ubuntu 22 + different patches]
-  Server3[🖥️ Server 3: ???]
-  Server1 --> Chaos[😱 Configuration Chaos]
-  Server2 --> Chaos
-  Server3 --> Chaos
+  Pets[🐶 Pets<br/>SSH'd into, hand-tuned]
+  Cattle[🐄 Cattle<br/>Defined in code, replaced in minutes]
+  Pets -.->|IaC + immutable infra| Cattle
 ```
 
----
-
-## 📍 Slide 7 – 🐶 Pets vs Cattle
-
-* 🐶 **Pets**: Named servers, nursed back to health when sick
-* 🐄 **Cattle**: Numbered, identical, replaced when broken
-* 🌍 Cloud-native = cattle mindset
-
-```mermaid
-flowchart TD
-  subgraph Pets["🐶 Pets"]
-    P1[web-prod-01]
-    P2[db-master]
-    P3[app-legacy]
-  end
-  subgraph Cattle["🐄 Cattle"]
-    C1[instance-001]
-    C2[instance-002]
-    C3[instance-003]
-  end
-  Pets -->|😰 Unique, fragile| Problem[Hard to scale]
-  Cattle -->|🔄 Identical, disposable| Solution[Easy to scale]
-```
-
-> 🤔 **Think:** Are your servers pets or cattle?
+> 📖 Bill Baker coined this metaphor in a 2012 internal Microsoft talk later popularized by Randy Bias of CloudScaling. Twelve years later, every cloud architecture book still uses it. It works because it's true.
 
 ---
 
-## 📍 Slide 8 – 😱 Configuration Drift
+## 📍 Slide 6 – 😱 Snowflakes, Drift, and Bus Factor
 
-* 📅 Server configured once, modified many times
-* 🔧 "Quick fixes" applied directly in production
-* 📋 No record of what changed
-* 💀 Disaster recovery = guesswork
+The three failure modes IaC fixes:
 
-```mermaid
-flowchart TD
-  Initial[✅ Initial Setup] --> Month1[📅 Month 1: Hotfix applied]
-  Month1 --> Month3[📅 Month 3: Security patch]
-  Month3 --> Month6[📅 Month 6: Unknown changes]
-  Month6 --> Drift[😱 Configuration Drift]
-  Drift --> Unknown[❓ What's actually running?]
-```
+| Failure | What it looks like | What it costs |
+|---------|---------------------|---------------|
+| ❄️ **Snowflake server** | "Don't touch web-03, only Petya knows what's on it" | Can't scale, can't reproduce, can't replace |
+| 📉 **Configuration drift** | Staging and prod were identical 6 months ago — not anymore | Bugs that only repro in prod, hours debugging |
+| 🚌 **Bus factor = 1** | One person holds the cloud architecture in their head | Project halts when they're on vacation or quit |
 
-**📊 The Numbers:**
-* 🔍 **65%** of downtime caused by configuration issues
-* ⏱️ Average recovery time: **4+ hours**
-* 💰 Cost per hour of downtime: **$300,000** (enterprise)
+> 🔥 **Hot take:** if you can't *delete and recreate* your production environment from a Git tag, you don't have IaC — you have an `aws` CLI history.
 
 ---
 
-## 📍 Slide 9 – 😨 The Bus Factor
+## 📍 Slide 7 – 💡 What Infrastructure as Code Actually Is
 
-* 👤 One person knows how the infrastructure works
-* 🚌 They leave, get sick, or go on vacation
-* 🙈 Nobody can recreate or fix the environment
-* 💀 Business continuity at risk
-
-> ⚠️ **Bus Factor = 1** means your infrastructure is fragile
-
-**😰 Signs of Low Bus Factor:**
-* 🔇 "Ask John, he set that up"
-* 📝 Documentation is outdated or missing
-* 🐌 Changes require specific people
-* 🚪 Knowledge walks out the door
-
-**💬 Discussion:** What's your infrastructure bus factor?
-
----
-
-## 📍 Slide 10 – 💸 The Cost of Manual Infrastructure
-
-| 🔥 Problem | 💥 Impact |
-|------------|-----------|
-| 🐢 Slow provisioning | Days to spin up new environments |
-| 📋 Manual processes | Human error, inconsistency |
-| 👉 No audit trail | Compliance violations |
-| 🙈 Configuration drift | Unpredictable behavior |
-
-**📈 Real Numbers:**
-* 🏢 **Manual provisioning**: 2-4 hours per server
-* 🚀 **With IaC**: 2-4 minutes per server
-* 🔄 **Environment recreation**: hours vs seconds
-
-**💰 Time Cost:**
-* 👨‍💻 Engineer time: **$75-150/hour**
-* 🖥️ 10 servers manually: **$1,500-3,000**
-* 🤖 10 servers with IaC: **$15-30**
-
----
-
-## 📍 Slide 11 – 💡 Section 2: What Infrastructure as Code Is
-
-* 📝 **IaC** = defining infrastructure in version-controlled files
-* 🔄 Infrastructure becomes **reproducible** and **auditable**
-* 🚫 No more clicking through consoles
-* 🎯 Same infrastructure, every time
+* 📝 **Definition:** managing and provisioning infrastructure through *machine-readable, version-controlled* config files instead of manual console clicks or ad-hoc scripts.
+* 🔄 The cloud becomes a **build artifact**, not a hand-crafted environment
+* 📜 Every change goes through the same process you use for application code: PR → review → CI → merge → deploy
 
 ```mermaid
 flowchart LR
-  Code[📝 Code] -->|🔄 Apply| Cloud[☁️ Cloud]
-  Cloud --> Infra[🏗️ Infrastructure]
-  Code -->|📜 Git| Version[Version Control]
+  Code[📝 .tf / .py in Git] --> CI[🧪 CI: plan]
+  CI --> Review[👀 PR review]
+  Review --> Merge[🚀 Merge → apply]
+  Merge --> Cloud[☁️ Real infrastructure]
+  Cloud -->|diff| Code
 ```
 
-**📖 Definition:**
-> *Infrastructure as Code is the practice of managing and provisioning infrastructure through machine-readable configuration files rather than through manual processes or interactive tools.*
+> 📖 *Infrastructure as Code* — Kief Morris (2nd ed., 2020). The reference text; defines the four core principles below.
 
 ---
 
-## 📍 Slide 12 – 🚫 What IaC is NOT
+## 📍 Slide 8 – 📐 The Four Principles (Morris)
 
-| ❌ Myth | ✅ Reality |
-|---------|-----------|
-| "Just automation scripts" | 📝 Declarative desired state |
-| "Only for cloud" | 🖥️ Works for any infrastructure |
-| "Replaces ops people" | 🤝 Empowers ops teams |
-| "Too complex for small teams" | 🎯 Benefits scale to any size |
-| "One-time setup" | 🔄 Continuous lifecycle management |
+1. ♻️ **Reproducibility** — same code → same infrastructure, every time
+2. 🔁 **Disposability** — destroy and rebuild should be routine, not heroic
+3. 📜 **Consistency** — dev, staging, prod differ only in variables
+4. 🔍 **Visibility** — `git log` answers "who changed what, when, why"
 
-> 🔥 **Hot take:** If you can't recreate your infrastructure from code, you don't have IaC.
-
-**🎯 IaC is about:**
-* 🧠 Declarative definitions
-* 🤝 Team collaboration on infrastructure
-* 🔄 Repeatable, consistent environments
-* 📊 Audit trails and compliance
+> 💡 **If any one of these is missing, you have automation — not IaC.** Bash scripts that create a VM are not IaC; they're a recipe nobody can replay safely.
 
 ---
 
-## 📍 Slide 13 – 🔀 Declarative vs Imperative
-
-```mermaid
-flowchart TD
-  subgraph Declarative
-    direction TD
-    D1[📝 Define desired state]
-    D2[🤖 Tool figures out how]
-    D1 --> D2
-  end
-  subgraph Imperative
-    direction TD
-    I1[📝 Define exact steps]
-    I2[🔧 Execute step by step]
-    I1 --> I2
-  end
-```
-
-| 📋 Aspect | 🌍 Declarative | 🔧 Imperative |
-|-----------|---------------|---------------|
-| 📝 What you write | Desired end state | Exact steps |
-| 🛠️ Tool | Terraform, CloudFormation | Pulumi, Scripts |
-| 🔄 Idempotency | Built-in | You implement |
-| 📚 Example | "3 VMs exist" | "Create VM 1, 2, 3" |
-
-**📚 Source:** Terraform documentation
-
----
-
-## 📍 Slide 14 – 🛠️ IaC Tool Landscape
-
-```mermaid
-graph TD
-  IaC[🏗️ Infrastructure as Code]
-  IaC --> Prov[📦 Provisioning]
-  IaC --> Config[⚙️ Configuration]
-  Prov --> Terraform[🌍 Terraform]
-  Prov --> Pulumi[📦 Pulumi]
-  Prov --> Cloud[☁️ CloudFormation/ARM]
-  Config --> Ansible[🔧 Ansible]
-  Config --> Chef[👨‍🍳 Chef]
-  Config --> Puppet[🎭 Puppet]
-```
-
-| 🛠️ Tool | 🎯 Focus | 📝 Language |
-|---------|---------|------------|
-| 🌍 **Terraform** | Provisioning | HCL (declarative) |
-| 📦 **Pulumi** | Provisioning | Python, TS, Go |
-| 🔧 **Ansible** | Configuration | YAML |
-| ☁️ **CloudFormation** | AWS only | YAML/JSON |
-
----
-
-## 📍 Slide 15 – ⚡ Before vs After IaC
-
-| 😰 Before | 🚀 After |
-|----------|---------|
-| 📅 Days to provision | ⚡ Minutes to provision |
-| 📋 Manual documentation | 📝 Code IS documentation |
-| 👉 "Who changed that?" | 📜 Git history shows all |
-| 😨 Fear of recreation | 💪 Confident rebuilds |
-| 🐶 Unique snowflakes | 🐄 Identical cattle |
-| 🙅 "Don't touch prod" | 🔄 Infrastructure is disposable |
-
-> 🤔 How confident are you in recreating your infrastructure?
-
----
-
-## 📍 Slide 16 – 🎮 Section 3: Terraform Deep Dive
-
-## 🌍 Why Terraform?
-
-* 🌐 **Multi-cloud**: AWS, GCP, Azure, Yandex, and 3000+ providers
-* 📝 **HCL**: Human-readable configuration language
-* 🔄 **State management**: Tracks what exists
-* 🏢 **Industry standard**: Most widely adopted IaC tool
-
-**🎮 Let's build infrastructure.**
-
----
-
-## 📍 Slide 17 – 📝 Terraform Workflow
+## 📍 Slide 9 – 🔀 Declarative vs. Imperative
 
 ```mermaid
 flowchart LR
-  Write[📝 Write] --> Init[🔧 Init]
-  Init --> Plan[📋 Plan]
-  Plan --> Apply[🚀 Apply]
-  Apply --> Destroy[💥 Destroy]
+  Decl[📝 Declarative<br/>'I want 3 VMs'] --> Tool1[🤖 Tool figures out HOW]
+  Imp[🔧 Imperative<br/>'Create VM 1, then VM 2, then VM 3'] --> Tool2[🏃 You define each step]
 ```
 
-* 📝 **Write**: Define resources in `.tf` files
-* 🔧 **Init**: Download provider plugins
-* 📋 **Plan**: Preview changes (dry run)
-* 🚀 **Apply**: Create/update infrastructure
-* 💥 **Destroy**: Remove all resources
+| Aspect | 📝 Declarative | 🔧 Imperative |
+|--------|---------------|---------------|
+| You write | Desired end state | Sequence of steps |
+| Idempotency | Built in — re-run is safe | You implement it |
+| Examples | Terraform HCL, CloudFormation, Kubernetes YAML | Bash scripts, AWS SDK calls, Pulumi (mostly) |
+| Failure mode | Tool can't figure out a tricky migration | Step 7 fails on re-run |
 
-**🛠️ Commands:**
+> 🤔 **Pulumi twist:** code is imperative, but the Pulumi engine resolves it into a *declarative* desired-state graph before talking to the cloud. Best of both worlds.
+
+---
+
+## 📍 Slide 10 – 🛠️ The IaC Tool Landscape (May 2026)
+
+| Tool | License | Language | Multi-cloud | State |
+|------|---------|----------|-------------|-------|
+| 🌍 **Terraform 1.15.3** | BSL-1.1 (HashiCorp) | HCL | ✅ 3000+ providers | Local / S3 / TF Cloud |
+| 🌱 **OpenTofu 1.12.0** | MPL-2.0 (Linux Foundation) | HCL (Terraform-compatible) | ✅ Same providers | Local / S3 / OCI |
+| 📦 **Pulumi 3.243** | Apache-2.0 | Python, TS, Go, C#, Java, YAML | ✅ AWS, GCP, Azure, K8s, … | Pulumi Cloud / S3 / local |
+| ☁️ **AWS CloudFormation** | Proprietary | YAML / JSON | ❌ AWS only | Managed by AWS |
+| ☁️ **AWS CDK / GCP CDK** | Apache-2.0 | TS, Python, Java, Go | ❌ Per-cloud | Underlying CloudFormation / Deployment Manager |
+| ☸️ **Crossplane** | Apache-2.0 | Kubernetes YAML | ✅ via providers | Kubernetes etcd |
+
+> 🔗 **This lecture focuses on Terraform and Pulumi** — the two tools Lab 4 uses. OpenTofu shows up in slide 21.
+
+---
+
+## 📍 Slide 11 – 📜 A Brief History
+
+* 📅 **July 2014** — Mitchell Hashimoto and Armon Dadgar release **Terraform v0.1** at HashiCorp. First serious multi-cloud IaC tool.
+* 📅 **September 2019** — **Pulumi v1.0** released by Joe Duffy's team. First IaC tool to embrace general-purpose programming languages.
+* 📅 **August 10, 2023** — HashiCorp re-licenses Terraform from MPL-2.0 to the **Business Source License (BSL)**. Vendors building products on Terraform suddenly need a paid agreement.
+* 📅 **August 2023** — Gruntwork, env0, Spacelift, and Terragrunt fork Terraform 1.5 → **OpenTofu**.
+* 📅 **September 2023** — OpenTofu is **donated to the Linux Foundation** for vendor-neutral governance; first stable 1.6 release in January 2024.
+* 📅 **December 2023** — Linux Foundation announces **OpenBao**, the parallel community fork of Vault (same BSL backstory).
+* 📅 **May 2026 (now)** — Terraform 1.15.3 and OpenTofu 1.12.0 are CLI-compatible; most enterprises use one or the other, never both.
+
+> 🔥 The BSL change is the single most consequential IaC event of the decade. It's why this lecture treats OpenTofu as first-class.
+
+---
+
+## 📍 Slide 12 – 🌍 Terraform Workflow
+
+```mermaid
+flowchart LR
+  Write[📝 Write .tf] --> Init[🔧 init]
+  Init --> Plan[📋 plan]
+  Plan --> Apply[🚀 apply]
+  Apply --> Destroy[💥 destroy]
+  Plan -.->|review| Plan
+```
+
 ```bash
-terraform init      # Download providers
-terraform plan      # Preview changes
-terraform apply     # Apply changes
-terraform destroy   # Remove everything
+terraform init      # ⬇️ download provider binaries to .terraform/
+terraform plan      # 🔍 diff between code, state, and reality
+terraform apply     # 🚀 make reality match code
+terraform destroy   # 💥 delete everything in this state
 ```
+
+> ⚠️ **`plan` is sacred.** Read it. Every time. Especially before `apply` in production. CI should post the plan into the PR — Lab 4 bonus wires this up.
 
 ---
 
-## 📍 Slide 18 – 🧱 Terraform Building Blocks
-
-```mermaid
-flowchart TD
-  Config[📁 Configuration]
-  Config --> Provider[☁️ Provider]
-  Config --> Resource[🏗️ Resource]
-  Config --> Variable[📊 Variable]
-  Config --> Output[📤 Output]
-  Config --> Data[🔍 Data Source]
-```
-
-* ☁️ **Provider**: Cloud API connection (AWS, GCP, Yandex)
-* 🏗️ **Resource**: Infrastructure component (VM, network, firewall)
-* 📊 **Variable**: Configurable inputs
-* 📤 **Output**: Values to display/export
-* 🔍 **Data Source**: Query existing infrastructure
-
----
-
-## 📍 Slide 19 – 💻 Terraform Example: VM Creation
+## 📍 Slide 13 – 🧱 HCL Building Blocks
 
 ```hcl
-# ☁️ Provider configuration
-provider "yandex" {
-  zone = "ru-central1-a"
+# ☁️ provider — which cloud and how to authenticate
+provider "aws" {
+  region = var.region
 }
 
-# 🏗️ Virtual machine resource
-resource "yandex_compute_instance" "web" {
-  name        = "web-server"
-  platform_id = "standard-v2"
-
-  resources {
-    cores  = 2
-    memory = 2
-  }
-
-  boot_disk {
-    initialize_params {
-      image_id = "fd8vmcue7aajqdge3bp0"  # Ubuntu 22.04
-    }
-  }
-}
-```
-
-**🎯 Result:** One command creates a VM in the cloud
-
----
-
-## 📍 Slide 20 – 📊 Variables and Outputs
-
-```hcl
-# 📊 Input variables
-variable "instance_count" {
-  description = "Number of VMs to create"
-  type        = number
-  default     = 1
-}
-
-variable "environment" {
-  description = "Environment name"
+# 📊 variable — input
+variable "region" {
+  description = "AWS region"
   type        = string
+  default     = "eu-central-1"
 }
 
-# 📤 Output values
-output "vm_ip" {
-  description = "Public IP of the VM"
-  value       = yandex_compute_instance.web.network_interface.0.nat_ip_address
+# 🏗️ resource — something we create and own
+resource "aws_instance" "web" {
+  ami           = "ami-0c55b159cbfafe1f0"   # Ubuntu 22.04 LTS, eu-central-1
+  instance_type = "t3.micro"
+  tags = { Name = "lab4-web", Env = "lab" }
+}
+
+# 🔍 data — read-only lookup of something we don't own
+data "aws_vpc" "default" { default = true }
+
+# 📤 output — value to surface after apply (and for other modules)
+output "public_ip" {
+  value = aws_instance.web.public_ip
 }
 ```
 
-**🛠️ Usage:**
-```bash
-terraform apply -var="instance_count=3" -var="environment=prod"
-```
+> 📝 Five primitives — `provider`, `resource`, `variable`, `output`, `data` — cover **90%** of real Terraform code. Modules are just bundles of these.
 
 ---
 
-## 📍 Slide 21 – 🔄 Terraform Plan
+## 📍 Slide 14 – 🔄 `plan` Output — Read It Like A Diff
 
-```mermaid
-flowchart LR
-  Code[📝 Config] --> Plan[📋 terraform plan]
-  State[📦 State] --> Plan
-  Plan --> Diff[🔍 Difference]
-  Diff --> Preview[👀 What will change?]
-```
+```text
+$ terraform plan
 
-**📋 Plan Output Example:**
-```
-# yandex_compute_instance.web will be created
-+ resource "yandex_compute_instance" "web" {
-    + name        = "web-server"
-    + platform_id = "standard-v2"
-    + status      = (known after apply)
+Terraform will perform the following actions:
 
-    + resources {
-        + cores  = 2
-        + memory = 2
-      }
-  }
+  # aws_instance.web will be created
+  + resource "aws_instance" "web" {
+      + ami           = "ami-0c55b159cbfafe1f0"
+      + instance_type = "t3.micro"
+      + public_ip     = (known after apply)
+      + tags          = {
+          + "Env"  = "lab"
+          + "Name" = "lab4-web"
+        }
+    }
 
 Plan: 1 to add, 0 to change, 0 to destroy.
 ```
 
-**🎯 Always review the plan before applying!**
+| Symbol | Meaning |
+|:------:|---------|
+| `+` | Create |
+| `-` | Destroy (data loss risk!) |
+| `~` | Update in place |
+| `-/+` | Destroy and recreate (data loss risk!) |
+
+> 🚨 **`-/+` on a database resource = your data is about to die.** Read every plan, every time, in production.
 
 ---
 
-## 📍 Slide 22 – 📦 Pulumi Alternative
+## 📍 Slide 15 – 📦 State: The Thing That Makes Terraform Work
+
+* 🗺️ **State** = a JSON map from your code (`aws_instance.web`) to a real cloud object (`i-0abc123…`)
+* 🔍 Without state, Terraform has no idea what already exists — every apply would try to create everything
+* ⚠️ State contains **sensitive data**: passwords, private IPs, sometimes private keys — treat it like a secret
 
 ```mermaid
 flowchart LR
-  Terraform[🌍 Terraform] -->|HCL| Declarative[📝 Declarative]
-  Pulumi[📦 Pulumi] -->|Python/TS/Go| Imperative[💻 Imperative]
+  Code[📝 .tf code] --> TF[🌍 terraform]
+  State[📦 terraform.tfstate] --> TF
+  Cloud[☁️ Real cloud] --> TF
+  TF -->|plan diff| You[👀 You]
 ```
 
-**📦 Pulumi Python Example:**
+> ⚠️ **Never edit `terraform.tfstate` by hand.** Use `terraform state` subcommands (`mv`, `rm`, `import`).
+
+---
+
+## 📍 Slide 16 – 🌐 Local vs. Remote State
+
+| | 📁 Local (`terraform.tfstate` on disk) | 🌐 Remote (S3, GCS, TF Cloud, …) |
+|-|----------------------------------------|----------------------------------|
+| Solo prototyping | ✅ Fine | Overkill |
+| Team of 2+ | ❌ Two engineers apply → race condition, corrupted state | ✅ Locking serializes applies |
+| Disaster recovery | ❌ Laptop dies → state lost → cloud orphaned | ✅ Versioned object storage |
+| Secrets in state | 🟡 Plaintext on disk | ✅ Encrypted at rest (KMS) |
+| CI/CD | ❌ Each runner has stale state | ✅ Shared canonical state |
+
+**📦 Remote backend example (S3 + DynamoDB lock):**
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "acme-tf-state"
+    key            = "lab4/terraform.tfstate"
+    region         = "eu-central-1"
+    dynamodb_table = "tf-locks"     # 🔒 prevents concurrent applies
+    encrypt        = true           # 🔐 SSE-KMS
+  }
+}
+```
+
+> 🔗 **Lab 4 starts with local state on purpose** — so the failure mode of two students applying at once is visible. The bonus task migrates to S3.
+
+---
+
+## 📍 Slide 17 – 🚨 State Pitfalls (Where Students and Pros Both Screw Up)
+
+1. 🙅 **Committing `terraform.tfstate` to Git** — it has secrets, and merge conflicts on JSON are unrecoverable. Add it to `.gitignore` on day one.
+2. 🔓 **No locking on remote state** — two simultaneous `apply`s race; state ends up corrupt; recovery is manual.
+3. 📉 **Drift** — someone clicks in the AWS console; Terraform doesn't know; next `apply` reverts or fails.
+   * Catch it: `terraform plan` in a nightly CI job — any non-zero diff = drift.
+4. 🔄 **Orphaned resources** — you `rm -rf` a module; Terraform forgets about its resources; they bill forever.
+   * Use `terraform state list` before deleting code.
+5. 📥 **Need to manage existing cloud objects you didn't create with Terraform?**
+
+```bash
+# Adopt an existing EC2 instance into Terraform state
+terraform import aws_instance.web i-0abc123def456
+
+# Or, with Terraform 1.5+, declare it once and let TF import on apply
+import {
+  to = aws_instance.web
+  id = "i-0abc123def456"
+}
+```
+
+> 🔥 **Drift detection is half the value of IaC.** Cattle that wander off the ranch are still cattle — until somebody renames them.
+
+---
+
+## 📍 Slide 18 – 📦 Pulumi — Infrastructure in Your Favorite Language
+
+* 🐍 Write infrastructure in **Python, TypeScript, Go, C#, Java**, or YAML
+* 🔧 Loops, conditionals, functions, classes, unit tests — your normal dev tools work
+* 📦 State stored in Pulumi Cloud (free for individuals, paid for teams) or self-hosted (S3, Azure Blob)
+* 🔐 Secrets **encrypted by default** in state (no opt-in needed)
+
 ```python
+# 🐍 pulumi/__main__.py — same VM as the Terraform example
 import pulumi
-import pulumi_yandex as yandex
+import pulumi_aws as aws
 
-# 🏗️ Create VM using Python
-vm = yandex.ComputeInstance("web",
-    name="web-server",
-    platform_id="standard-v2",
-    resources=yandex.ComputeInstanceResourcesArgs(
-        cores=2,
-        memory=2,
-    ))
+web = aws.ec2.Instance("web",
+    ami="ami-0c55b159cbfafe1f0",
+    instance_type="t3.micro",
+    tags={"Name": "lab4-web", "Env": "lab"})
 
-# 📤 Export IP address
-pulumi.export("ip", vm.network_interfaces[0].nat_ip_address)
+pulumi.export("public_ip", web.public_ip)
 ```
 
-**🎯 Same result, real programming language**
+```bash
+pulumi up        # equivalent to terraform plan + apply
+pulumi preview   # plan only
+pulumi destroy   # tear down
+```
+
+> 🔗 **Lab 4 Task 2** reimplements your Terraform VM in Pulumi Python — you'll feel the difference in 30 minutes.
 
 ---
 
-## 📍 Slide 23 – ⚖️ Terraform vs Pulumi
+## 📍 Slide 19 – 🧠 Why Code-as-Infrastructure Matters
 
-| 📋 Aspect | 🌍 Terraform | 📦 Pulumi |
-|-----------|-------------|----------|
-| 📝 Language | HCL (domain-specific) | Python, TS, Go, C# |
-| 📚 Learning curve | New syntax to learn | Familiar languages |
-| 🔄 Logic | Limited (count, for_each) | Full programming |
-| 🧪 Testing | External tools | Native unit tests |
-| 📦 State | Local or S3 | Pulumi Cloud (free tier) |
-| 🔐 Secrets | Plain in state | Encrypted by default |
+```python
+# 🐍 Loops, conditionals, and reuse — natural in Python
+for env in ["dev", "staging", "prod"]:
+    aws.ec2.Instance(f"web-{env}",
+        ami="ami-0c55b159cbfafe1f0",
+        instance_type="t3.micro" if env != "prod" else "t3.large",
+        tags={"Env": env})
+```
 
-> ❓ **When to use which?**
-> * 🌍 **Terraform**: Larger community, more examples, declarative simplicity
-> * 📦 **Pulumi**: Complex logic, existing codebase, testing requirements
+```hcl
+# 🌍 The same thing in HCL — works, but the syntax is less natural
+locals {
+  envs = { dev = "t3.micro", staging = "t3.micro", prod = "t3.large" }
+}
+resource "aws_instance" "web" {
+  for_each      = local.envs
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = each.value
+  tags          = { Env = each.key }
+}
+```
+
+> 💡 **The right tool depends on the team.** Python shops with strong dev culture often prefer Pulumi. Platform teams that touch dozens of providers and need HashiCorp's ecosystem usually pick Terraform/OpenTofu. **Lab 4 makes you do both so you can decide for yourself.**
 
 ---
 
-## 📍 Slide 24 – 🔐 Security Best Practices
+## 📍 Slide 20 – ⚖️ Terraform vs. Pulumi vs. OpenTofu
 
-```yaml
-# ❌ NEVER do this
+| Aspect | 🌍 Terraform 1.15.3 | 🌱 OpenTofu 1.12.0 | 📦 Pulumi 3.243 |
+|--------|--------------------|------------------|------------------|
+| 📜 License | BSL-1.1 | MPL-2.0 | Apache-2.0 |
+| 🏢 Steward | HashiCorp (IBM, 2025) | Linux Foundation | Pulumi Corp |
+| 📝 Language | HCL | HCL (Terraform-compatible) | Python, TS, Go, C#, Java, YAML |
+| 🧠 Paradigm | Declarative | Declarative | Imperative → declarative graph |
+| 🔄 Logic | `for_each`, `count`, `dynamic` | Same + `for_each` improvements | Full programming language |
+| 🧪 Unit testing | Terratest (Go) | Same | Native (pytest, jest, go test) |
+| 📦 Default state | Local / S3 / TF Cloud | Local / S3 / OCI | Pulumi Cloud / S3 |
+| 🔐 Secrets in state | Plaintext (unless backend encrypts) | Plaintext + native encryption in 1.7+ | Encrypted by default |
+| 🌐 Community | Largest (millions of users) | Growing fast (LF-backed) | Smaller but loyal |
+
+> 🎯 **Course default:** Lab 4 accepts any of the three. Use whichever your team uses in real life.
+
+---
+
+## 📍 Slide 21 – 🌱 OpenTofu: Why You Care About the Fork
+
+* 📅 **August 10, 2023** — HashiCorp changes Terraform's license from MPL-2.0 (permissive) to BSL-1.1 (source-available but commercial use restricted)
+* 😡 Companies whose products *depend on* Terraform (Spacelift, env0, Gruntwork) face existential risk
+* 🍴 **August 2023:** they fork Terraform 1.5 → publish as **OpenTofu** under MPL-2.0
+* 🏛️ **September 2023:** OpenTofu is **donated to the Linux Foundation** → vendor-neutral governance
+* 🏛️ **December 2023:** Linux Foundation announces **OpenBao** — the same fork pattern, applied to Vault
+* ✅ **Today:** OpenTofu 1.12.0 is a 1:1 drop-in for Terraform 1.15.3 — same HCL, same providers, same registry (mostly)
+* 💼 **2025:** IBM acquires HashiCorp; Terraform stays BSL — the fork is permanent
+
+```bash
+# Identical workflows
+terraform init && terraform plan && terraform apply
+tofu init && tofu plan && tofu apply
+
+# Yes, you can copy a Terraform repo and run `tofu` against it
+```
+
+> 🔥 The right answer in 2026 is *probably* OpenTofu for new projects, Terraform for existing ones with paid HashiCorp support. Pick deliberately.
+
+---
+
+## 📍 Slide 22 – 🔐 Security: Don't Be a Headline
+
+**Five rules. Memorize them.**
+
+1. 🚫 **Never commit credentials.** Not in `.tf`, not in `.tfvars`, not in `provider {}` blocks.
+
+```hcl
+# ❌ NEVER
 provider "aws" {
-  access_key = "AKIAIOSFODNN7EXAMPLE"    # 💀 Hardcoded secret!
-  secret_key = "wJalrXUtnFEMI/..."       # 💀 Hardcoded secret!
+  access_key = "AKIAIOSFODNN7EXAMPLE"
+  secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 }
 
-# ✅ Use environment variables
-# export AWS_ACCESS_KEY_ID="..."
-# export AWS_SECRET_ACCESS_KEY="..."
+# ✅ Let the provider read env vars or AWS profile
 provider "aws" {
-  # Automatically uses env vars
+  region = var.region
 }
 ```
 
-**🔐 Security Rules:**
-* 🚫 Never commit secrets to Git
-* 📁 Use `.gitignore` for state and tfvars
-* 🔑 Use environment variables or secret managers
-* 🔒 Encrypt state file at rest
+2. 🙈 **Never commit `terraform.tfstate` or `*.tfstate.backup`** — they contain decrypted secrets. Add to `.gitignore` line 1.
+3. 🌐 **Use a remote backend with encryption + locking** — S3 + SSE-KMS + DynamoDB lock, GCS with versioning, or Pulumi Cloud.
+4. 🔑 **Use OIDC for CI cloud auth, not long-lived keys.** GitHub Actions → AWS / GCP via `aws-actions/configure-aws-credentials` or `google-github-actions/auth` — no secrets in repo, ever.
+5. 🔍 **Scan IaC code.** `tfsec`, `checkov`, `terrascan` — wire them into CI. Catches public S3 buckets, missing encryption, IAM wildcards.
+
+> 🔗 **Course tie-in:** Lab 4 bonus adds a `terraform plan` + `checkov` step on every PR. DevSecOps elective goes deeper.
 
 ---
 
-## 📍 Slide 25 – 📝 QUIZ — DEVOPS_L4_MID
+## 📍 Slide 23 – 💥 Real Incidents — Why These Rules Exist
+
+* 🏦 **Code Spaces (2014)** — credentials in a repo → AWS console takeover → attacker deleted S3 + EC2 + RDS → company *literally shut down* in 12 hours. The textbook "don't commit credentials" story.
+* 🚗 **Uber (2016)** — AWS keys hardcoded in a private GitHub repo → 57M user records exfiltrated → $148M settlement. Private ≠ safe.
+* 🏭 **2024 SAP Concur** — internal Terraform state in an unencrypted S3 bucket leaked employee PII for years.
+* 🐍 **2025 SnakeKeylogger / Codefinger** — attackers found leaked Pulumi Cloud tokens in public repos and used them to enumerate and ransom S3 buckets via SSE-C.
+* 📉 **Knight Capital (2012, pre-IaC)** — manual deploy to 7 of 8 servers, the 8th still had old code → $440M loss in 45 minutes. Manual = drift = catastrophe.
+
+> 💡 **Every one of these would have been prevented by following the rules on slide 22.** The rules are paid for in real money.
 
 ---
 
-## 📍 Slide 26 – 📦 Section 4: State Management
+## 📍 Slide 24 – 🎯 Key Takeaways
 
-## 🗃️ What is Terraform State?
+1. 🏗️ **Infrastructure as Code = your cloud lives in Git** — reproducible, disposable, consistent, visible
+2. 🐄 **Cattle, not pets** — name servers by role + number, never as individuals
+3. 🔄 **Read the `plan`** — every time, especially before production apply
+4. 📦 **Remote, locked, encrypted state from day one** in any team setting
+5. 🌍 **Terraform/OpenTofu** for big ecosystems and declarative simplicity; **Pulumi** for code-heavy teams and complex logic
+6. 🌱 **OpenTofu exists because licensing matters** — know the story, pick deliberately
+7. 🔐 **No secrets in code. No state in Git. OIDC for CI.** Three rules; non-negotiable.
 
-* 📝 Maps configuration to real-world resources
-* 🔍 Tracks what Terraform manages
-* 🔄 Determines what changes are needed
-* ⚠️ Contains sensitive data
+> 💡 **If you can't `git clone && terraform apply` from scratch, it's not IaC — it's a haunted spreadsheet of clicks.**
+
+---
+
+## 📍 Slide 25 – 🧠 The Mindset Shift
+
+| 😰 Old | 🚀 IaC-native |
+|--------|--------------|
+| 🙅 "SSH and fix it" | 📝 "Change the code, plan, apply" |
+| 🚫 "Don't touch web-03" | 💪 "Destroy web-03 and let TF rebuild it" |
+| 👉 "Who set this up?" | 📜 `git blame` answers it |
+| 😨 "Manual is faster" | ⚡ "Manual is faster *once*. IaC is faster forever." |
+| 💻 "Works on my cloud" | 🌍 "Works in any account that runs the code" |
+| 🤷 "We'll document it later" | 📝 "The code IS the documentation" |
+
+> ❓ Which column describes the team you want to work on?
+
+---
+
+## 📍 Slide 26 – 🚀 What Comes Next
+
+**📚 Next lecture: *Configuration Management with Ansible.*** Terraform builds the VM; Ansible configures what runs *inside* it. The two complete each other.
+
+* 🔧 Idempotent playbooks over SSH
+* 📦 Roles, inventories, and Ansible Galaxy
+* 🤖 Provisioning Docker on the VMs you'll create in Lab 4
+
+**🔬 Lab 4 this week:** create a cloud VM with both Terraform *and* Pulumi, compare the experience, and (bonus) wire `terraform plan` into a GitHub Actions PR check. Keep the VM running — **Lab 5 will SSH into it**.
 
 ```mermaid
 flowchart LR
-  Config[📝 Config Files] --> TF[🌍 Terraform]
-  State[📦 State File] --> TF
-  TF --> Cloud[☁️ Real Infrastructure]
-  Cloud --> State
+  Lab4[🏗️ Lab 4: TF + Pulumi VM] --> Lab5[🔧 Lab 5: Ansible configures it]
+  Lab5 --> Lab9[☸️ Lab 9: K8s on similar VMs]
+  Lab9 --> Future[🚀 Labs 13+: GitOps on top]
 ```
 
----
+**👋 See you in Lecture 5.**
 
-## 📍 Slide 27 – 📁 State File Contents
-
-```json
-{
-  "version": 4,
-  "terraform_version": "1.9.0",
-  "resources": [
-    {
-      "type": "yandex_compute_instance",
-      "name": "web",
-      "instances": [
-        {
-          "attributes": {
-            "id": "fhm1234567890",
-            "name": "web-server",
-            "network_interface": [
-              {
-                "ip_address": "192.168.1.10",
-                "nat_ip_address": "51.250.1.100"
-              }
-            ]
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
-**⚠️ Never edit state manually!**
-
----
-
-## 📍 Slide 28 – 🌐 Remote State
-
-```mermaid
-flowchart TD
-  Dev1[👨‍💻 Developer 1] --> Remote[🌐 Remote State]
-  Dev2[👨‍💻 Developer 2] --> Remote
-  Dev3[👨‍💻 Developer 3] --> Remote
-  Remote --> Cloud[☁️ Cloud Infrastructure]
-```
-
-**🌐 Remote State Benefits:**
-* 🤝 Team collaboration
-* 🔒 Locking prevents conflicts
-* 🔐 Encrypted at rest
-* 📜 Versioning and backup
-
-**📦 Backend Options:**
-* ☁️ **S3/GCS**: Object storage
-* 🏢 **Terraform Cloud**: HashiCorp managed
-* 🔐 **Consul**: HashiCorp Consul
-
----
-
-## 📍 Slide 29 – 📊 IaC Metrics
-
-| 📊 Metric | 📏 Measures | 🏆 Target |
-|-----------|------------|---------|
-| ⏱️ **Provisioning Time** | Time to create env | < 15 minutes |
-| 🔄 **Environment Parity** | Dev = Staging = Prod | 100% |
-| ❌ **Drift Detection** | Config drift incidents | 0 per month |
-| 📜 **Audit Compliance** | Changes tracked in Git | 100% |
-
-> 📚 These metrics indicate IaC maturity.
-
-**🤔 Question:** How long does it take to spin up a new environment?
-
----
-
-## 📍 Slide 30 – 🌊 From Snowflakes to Cattle
-
-```mermaid
-flowchart TD
-  subgraph Snowflakes["😱 Snowflakes"]
-    Manual[🔧 Manual Setup]
-    Unique[❄️ Unique Servers]
-    Drift[📋 Configuration Drift]
-    Manual --> Unique --> Drift
-  end
-  subgraph Cattle["🐄 Cattle"]
-    Code[📝 Code-Defined]
-    Identical[🔄 Identical Servers]
-    Reproducible[✅ Reproducible]
-    Code --> Identical --> Reproducible
-  end
-  Snowflakes -->|🚀 IaC| Cattle
-```
-
-**🎯 Goal State:**
-* ⚡ Any environment recreatable in minutes
-* 🔄 All changes through code review
-* 📈 Teams deploy infrastructure confidently
-
----
-
-## 📍 Slide 31 – 🏢 Section 5: IaC in Real Life
-
-## 📅 A Day with IaC
-
-**☀️ Morning:**
-* 📊 Review infrastructure PR
-* 👀 Check `terraform plan` output
-* ✅ Approve and merge
-
-**🌤️ Afternoon:**
-* 🚨 Need new test environment
-* 🔧 Copy `terraform.tfvars`
-* 🚀 `terraform apply` — **done in 10 minutes**
-
-**🌙 Evening:**
-* 🗑️ `terraform destroy` test environment
-* 💰 No resources running overnight
-
----
-
-## 📍 Slide 32 – 👥 IaC Team Workflow
-
-| 👤 Role | 🎯 IaC Responsibility |
-|---------|----------------------|
-| 🔧 **DevOps/Platform** | Write and maintain IaC modules |
-| 👨‍💻 **Developer** | Use modules, request infrastructure |
-| 🛡️ **Security** | Review IaC for compliance |
-| 📊 **FinOps** | Monitor infrastructure costs |
-
-**🔗 Common Workflow:**
-* 📝 Create branch with IaC changes
-* 🔍 CI runs `terraform plan`
-* 👀 Team reviews the plan
-* ✅ Merge triggers `terraform apply`
-
----
-
-## 📍 Slide 33 – 🤝 GitOps for Infrastructure
-
-```mermaid
-flowchart TD
-  Dev[👨‍💻 Developer] -->|📝 PR| Git[🐙 Git Repository]
-  Git -->|🔄 CI/CD| Plan[📋 Terraform Plan]
-  Plan -->|👀 Review| Approve[✅ Approve]
-  Approve -->|🚀 Merge| Apply[🌍 Terraform Apply]
-  Apply --> Cloud[☁️ Infrastructure]
-```
-
-**🤝 GitOps Practices:**
-* 📟 All changes through pull requests
-* 📝 Plan output in PR comments
-* 👥 Required approvals
-* 🔓 Protected main branch
-
----
-
-## 📍 Slide 34 – 📈 Career Path: IaC Skills
-
-```mermaid
-flowchart LR
-  Junior[🌱 Junior: Basic Terraform] --> Mid[💼 Mid: Modules & CI/CD]
-  Mid --> Senior[⭐ Senior: Multi-cloud & Architecture]
-  Senior --> Principal[🏆 Principal: Platform Strategy]
-```
-
-**🛠️ Skills to Build:**
-* 🌍 Terraform HCL fluency
-* ☁️ Cloud provider APIs
-* 🔐 Security best practices
-* 📦 Module design
-* 🔄 CI/CD integration
-
----
-
-## 📍 Slide 35 – 🌍 Real Company Examples
-
-**🏢 HashiCorp Customers:**
-* 🏦 **Stripe**: Terraform for AWS infrastructure
-* 🎮 **Riot Games**: Multi-cloud with Terraform
-* 🛒 **Shopify**: Thousands of resources managed
-
-**☁️ Cloud Native:**
-* 🔍 **Google**: Uses Terraform internally
-* 📦 **Spotify**: IaC for Kubernetes infrastructure
-* 🎬 **Netflix**: Custom tooling built on IaC principles
-
-**📊 Stats:**
-* 🌍 **2M+** Terraform users worldwide
-* 📦 **3000+** providers available
-* 🏢 **Fortune 500**: 85% use IaC
-
----
-
-## 📍 Slide 36 – 🎯 Section 6: Reflection
-
-## 📝 Key Takeaways
-
-1. 🏗️ **IaC = Infrastructure defined in code**
-2. 🐄 **Cattle not pets** — servers are disposable
-3. 📝 **Version control everything** — Git for infrastructure
-4. 📋 **Plan before apply** — always review changes
-5. 🔐 **Never commit secrets** — use environment variables
-
-> 💡 If you can't recreate it from code, it's not really infrastructure as code.
-
----
-
-## 📍 Slide 37 – 🧠 The Mindset Shift
-
-| 😰 Old Mindset | 🚀 IaC Mindset |
-|---------------|------------------|
-| 🙅 "SSH and fix it" | 📝 "Change the code" |
-| 🚫 "Don't touch that server" | 💪 "Destroy and recreate" |
-| 👉 "Who set this up?" | 📜 "Git blame shows history" |
-| 😨 "Manual is faster" | ⚡ "Automation is faster at scale" |
-| 💻 "Works on my cloud" | 🌍 "Works on any cloud" |
-
-> ❓ Which mindset describes your team?
-
----
-
-## 📍 Slide 38 – ✅ Your Progress
-
-## 🎓 What You Now Understand
-
-* ✅ Why IaC is essential for modern infrastructure
-* ✅ The difference between declarative and imperative
-* ✅ How Terraform and Pulumi work
-* ✅ State management and security practices
-* ✅ Real-world IaC workflows
-
-> 🚀 **You're ready for Lab 4: Terraform & Pulumi**
-
----
-
-## 📍 Slide 39 – 📝 QUIZ — DEVOPS_L4_POST
-
----
-
-## 📍 Slide 40 – 🚀 What Comes Next
-
-## 📚 Next Lecture: Configuration Management with Ansible
-
-* 🔧 Ansible fundamentals
-* 📦 Roles and playbooks
-* 🤖 Automating server configuration
-* 💻 Hands-on: Deploying Docker with Ansible
-
-**🎉 Your IaC journey begins.**
-
-> 🐄 From snowflakes to cattle — one terraform apply at a time.
-
-```mermaid
-flowchart LR
-  You[👤 You] --> IaC[🏗️ IaC Skills]
-  IaC --> Reproducible[🔄 Reproducible Infra]
-  Reproducible --> Career[🚀 Career Growth]
-```
-
-**👋 See you in the next lecture!**
+> 🐄 From snowflakes to cattle — one `terraform apply` at a time.
 
 ---
 
 ## 📚 Resources & Further Reading
 
 **📕 Books:**
-* 📖 *Terraform: Up & Running* — Yevgeniy Brikman
-* 📖 *Infrastructure as Code* — Kief Morris
-* 📖 *The DevOps Handbook* — Gene Kim et al.
+* *Terraform: Up & Running* — Yevgeniy Brikman, O'Reilly (3rd ed., 2022; 4th ed. covers OpenTofu, late 2025)
+* *Infrastructure as Code* — Kief Morris, O'Reilly (2nd ed., 2020). The reference text.
+* *Pulumi: Up & Running* — Adam Gordon Bell, O'Reilly (2024).
+* *The Phoenix Project* — Kim, Behr, Spafford. Still the best dramatization of the problems IaC solves.
 
 **🔗 Links:**
-* 🌐 [Terraform Documentation](https://developer.hashicorp.com/terraform/docs)
-* 🌐 [Pulumi Documentation](https://www.pulumi.com/docs/)
-* 🌐 [Terraform Registry](https://registry.terraform.io/)
+* 🌐 [developer.hashicorp.com/terraform](https://developer.hashicorp.com/terraform) — official Terraform docs (1.10)
+* 🌐 [opentofu.org](https://opentofu.org) — OpenTofu docs and migration guide
+* 🌐 [pulumi.com/docs](https://www.pulumi.com/docs/) — official Pulumi docs (3.140)
+* 🌐 [registry.terraform.io](https://registry.terraform.io/) — providers + community modules (works for OpenTofu too)
+* 🌐 [github.com/aquasecurity/tfsec](https://github.com/aquasecurity/tfsec) — IaC security scanner
 
----
+**🎓 Quiz:** post-lecture quiz feeds the weeks 4–6 leaderboard window.

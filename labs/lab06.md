@@ -1,1336 +1,707 @@
-# Lab 6 — Advanced Ansible & CI/CD
+# Lab 6 — Advanced Ansible & Continuous Deployment
 
 ![difficulty](https://img.shields.io/badge/difficulty-intermediate-yellow)
 ![topic](https://img.shields.io/badge/topic-Ansible%20%26%20CI%2FCD-blue)
-![points](https://img.shields.io/badge/points-10%2B2.5-orange)
-![tech](https://img.shields.io/badge/tech-Ansible%20|%20Docker%20Compose%20|%20GitHub%20Actions-informational)
+![points](https://img.shields.io/badge/points-10%2B2-orange)
+![tech](https://img.shields.io/badge/tech-Ansible%202.21%20|%20Docker%20Compose%20v2%20|%20GitHub%20Actions-informational)
 
-> Enhance your Ansible automation with advanced features including blocks, tags, Docker Compose, role dependencies, wipe logic, and CI/CD integration.
+> **Goal:** Turn the Lab 5 playbooks into a real deployment pipeline — refactor with `block`/`rescue`/`always`, template a Compose stack with Jinja2, add a double-gated wipe, and push-button deploy from GitHub Actions.
+> **Deliverable:** A PR from `lab06` with refactored `ansible/roles/{common,docker,web_app}`, `.github/workflows/ansible-deploy.yml`, and `ansible/docs/LAB06.md` showing real proof (list-tags, rescue fired, idempotent PLAY RECAP).
+
+---
 
 ## Overview
 
-Build on Lab 5 by enhancing your Ansible automation with production-ready features. You'll refactor roles with blocks and tags, upgrade to Docker Compose, implement safe cleanup logic, and fully automate deployments with CI/CD.
+In Lab 5 you built roles that **configure** a server. In Lab 6 you make those same roles **deliver** an application — repeatedly, safely, and from CI. You will:
 
-**What You'll Learn:**
-- Blocks for error handling and task grouping
-- Tags for selective Ansible execution
-- Docker Compose templating with Jinja2
-- Role dependencies and execution order
-- Safe wipe logic with double-gating (variable + tag)
-- GitHub Actions for Ansible automation
-- Multi-app deployment patterns (Bonus)
+- Refactor `common` and `docker` with `block`/`rescue`/`always` and a deliberate tag taxonomy
+- Replace `docker run` with a Jinja2-templated Compose stack via `community.docker.docker_compose_v2`
+- Add a clean-reinstall button (`web_app_wipe`) that is gated **twice** so a single typo can't destroy prod
+- Wire `.github/workflows/ansible-deploy.yml` to lint → deploy → verify on every push to `ansible/**`
 
-**Tech Stack:** Ansible 2.16+ | Docker Compose v2 | GitHub Actions | Jinja2
+> ⚠️ **Scope:** the lab targets one VM (yours from Lab 4) plus localhost for offline practice. Multi-host rolling rollouts are discussed but proven only structurally — same patterns transfer.
 
-**Prerequisites:** Lab 5 completed (Ansible roles, playbooks, Vault), containerized app from Lab 2, GitHub Actions knowledge from Lab 3
+**What stays from Lab 5:** YAML, role layout, inventory, group_vars, Vault. We do **not** re-teach them.
 
 ---
 
-## Tasks
+## Project State
 
-### Task 1 — Refactor with Blocks & Tags (2 pts)
+**You have from previous labs:**
+- The DevOps Info Service (Lab 1) on a registry (Lab 2/3)
+- A target VM with SSH access (Lab 4)
+- Ansible roles `common`, `docker`, `app_deploy`, an inventory, group_vars + Vault (Lab 5)
 
-#### 1.1 Understanding Blocks
+**This lab adds:**
+- `ansible/roles/{common,docker}` refactored with blocks + tags
+- `ansible/roles/web_app/` (renamed from `app_deploy`) with `meta/main.yml`, `templates/docker-compose.yml.j2`, `tasks/main.yml`, `tasks/wipe.yml`, `defaults/main.yml`
+- `.github/workflows/ansible-deploy.yml`
+- `ansible/docs/LAB06.md` — your proof report
 
-Blocks allow you to:
-- **Group tasks** logically (e.g., all Docker installation tasks)
-- **Apply directives** once to multiple tasks (when, become, tags)
-- **Handle errors** with rescue and always sections
-- **Improve readability** by showing task relationships
+---
 
-**Example Block Pattern:**
-```yaml
-- name: Install package with error handling
-  block:
-    - name: Update apt cache
-      # task 1
+## Setup
 
-    - name: Install package
-      # task 2
-
-  rescue:
-    - name: Handle installation failure
-      # runs only if block fails
-
-  always:
-    - name: Cleanup temp files
-      # runs regardless of success/failure
-
-  when: ansible_os_family == "Debian"
-  become: true
-  tags:
-    - packages
-```
-
-#### 1.2 Understanding Tags
-
-Tags enable selective execution:
 ```bash
-# Run only tagged tasks
-ansible-playbook provision.yml --tags "docker"
-
-# Skip specific tags
-ansible-playbook provision.yml --skip-tags "common"
-
-# Multiple tags
-ansible-playbook provision.yml --tags "packages,docker"
-
-# List all available tags
-ansible-playbook provision.yml --list-tags
+ansible --version | head -1                  # ansible-core 2.21.x
+ansible-galaxy collection install community.docker    # 4.x
+ansible-lint --version
+docker compose version                       # v2.x (the plugin, NOT docker-compose v1)
 ```
 
-#### 1.3 Refactor `common` Role
+Rename the Lab 5 role before you start — the new name lines up with the wipe variable in Task 3:
 
-**File:** `roles/common/tasks/main.yml`
+```bash
+cd ansible/roles && git mv app_deploy web_app
+# update every reference: playbook roles:, group_vars keys, docs
+```
 
-**Requirements:**
-1. Group package installation tasks in a block with tag `packages`
-2. Group user creation tasks in a block with tag `users`
-3. Add error handling with rescue for apt cache update failures
-4. Use always block to log completion
+> ⚠️ **More than a `mv`.** Lab 5's `app_deploy` used `community.docker.docker_container` to run a single container. Task 2 replaces that with a Compose deployment, so `tasks/main.yml` and `handlers/main.yml` get **rewritten**, not edited. Keep the Vault file + the role's `defaults/main.yml` skeleton — but expect to **rename variables** to match Lab 6's new keys (`app_port` → `app_host_port` / `app_internal_port`, `docker_image_tag` → `docker_tag`, `app_container_name` → `app_name`). Grep `group_vars/` and `inventory/` for the old names after you write `defaults/main.yml` in §2.4.
 
-**Tag Strategy:**
-- `packages` - all package installation tasks
-- `users` - all user management tasks
-- `common` - entire role (applied at role level)
+---
 
-**Hints:**
-- Add rescue block that runs `apt-get update --fix-missing` on failure
-- Use always block to create a log file in /tmp indicating completion
-- Apply `become: true` at block level instead of per task
+## Task 1 — Refactor with Blocks & Tags (2 pts)
 
-**Research Questions:**
-- Q: What happens if rescue block also fails?
-- Q: Can you have nested blocks?
-- Q: How do tags inherit to tasks within blocks?
+Lab 5's `common` and `docker` were linear task lists. You will restructure them so that (a) a transient apt/GPG flake doesn't kill the run, (b) you can target a single phase from the CLI, and (c) the `systemd` enable step runs **even when the install fails**.
 
-#### 1.4 Refactor `docker` Role
+### 1.1 Tag strategy (three axes)
+
+Adopt three orthogonal tag axes and apply them consistently across both roles. This is the single decision that decides whether `--tags` is useful or noise.
+
+| Axis | Tag names you must use | Used for |
+|------|------------------------|----------|
+| Component | `common`, `docker`, `web_app` | "Touch one role only" |
+| Action | `install`, `config`, `deploy`, `wipe` | "Run one phase across roles" |
+| Risk gate | `web_app_wipe` | Dangerous, opt-in only (Task 3) |
+
+`YOUR TASK`: in `ansible/docs/LAB06.md`, write a 3-line table showing which two-or-three tags each block gets. Example row: *"`roles/docker` install block → `[docker, docker_install, install]`."* This forces you to commit to the taxonomy **before** sprinkling tags.
+
+### 1.2 Refactor the `docker` role
 
 **File:** `roles/docker/tasks/main.yml`
 
-**Requirements:**
-1. Group Docker installation tasks in block with tag `docker_install`
-2. Group Docker configuration tasks in block with tag `docker_config`
-3. Add rescue block to retry apt update on GPG key failure
-4. Use always block to ensure Docker service is enabled
+Group the apt-key + repo + `docker-ce` install in a block. Give it a `rescue` that handles a flaky mirror/GPG fetch, and an `always` that guarantees the service is enabled — cleanup is sacred, it must run whether the install succeeded or not.
 
-**Additional Tags:**
-- `docker` - entire role
-- `docker_install` - installation only
-- `docker_config` - configuration only
+`YOUR TASK`: fill in the shape below. Hints in the comments — do not paste solutions from Lab 5 unchanged; you are restructuring them.
 
-**Hints:**
-- Docker GPG key addition may fail on first try (network timeout)
-- Rescue block should wait 10 seconds and retry
-- Always block should ensure Docker service is enabled and started
+```yaml
+- name: ___                                    # YOUR TASK: name the parent block
+  block:
+    - name: ___                                # YOUR TASK: add Docker apt GPG key
+      ___:                                     # YOUR TASK: pick the right ansible.builtin module
+        ___                                    # YOUR TASK: its args
 
-#### 1.5 Testing Blocks & Tags
+    - name: ___                                # YOUR TASK: add Docker apt repo
+      ___:
+        ___
 
-**Test Commands:**
-```bash
-# Test provision with only docker
-ansible-playbook playbooks/provision.yml --tags "docker"
-
-# Skip common role
-ansible-playbook playbooks/provision.yml --skip-tags "common"
-
-# Install packages only across all roles
-ansible-playbook playbooks/provision.yml --tags "packages"
-
-# Check mode to see what would run
-ansible-playbook playbooks/provision.yml --tags "docker" --check
-
-# Run only docker installation tasks
-ansible-playbook playbooks/provision.yml --tags "docker_install"
+    - name: Install docker-ce
+      ansible.builtin.apt:
+        name: docker-ce
+        update_cache: true
+  rescue:
+    - name: ___                                # YOUR TASK: what's a sensible recovery
+                                               #            for a flaky mirror/GPG fetch?
+      ___:
+        ___
+      retries: ___                             # YOUR TASK: pick a small int, justify in docs
+      delay: ___
+  always:
+    - name: ___                                # YOUR TASK: ensure dockerd enabled + started
+      ___:
+        ___
+  become: true
+  tags: [___, ___, ___]                        # YOUR TASK: pick three tags from the taxonomy
 ```
 
-**Evidence Required:**
-- Output showing selective execution with --tags
-- Output showing error handling with rescue block triggered
-- List of all available tags (--list-tags output)
+> A tag on a `block` inherits to every task inside — do **not** re-tag each task. Lift `become: true` to the block, do not repeat it. If the `rescue` also fails, the host is marked failed and `always` still runs.
+
+### 1.3 Refactor the `common` role
+
+**File:** `roles/common/tasks/main.yml`
+
+Apply the same shape with these requirements:
+- The block installs your Lab 5 baseline packages (curl, gnupg, ca-certificates, …).
+- `rescue` runs `apt-get update --fix-missing` then retries.
+- `always` writes a small completion marker to `/tmp/lab6-common-ran` so you can prove the block executed end-to-end.
+- Tags follow the taxonomy. Lift `become: true` to the block.
+
+`YOUR TASK`: write the file. Same shape as 1.2, different module choices (`apt` package list, `command`/`shell` for the marker — pick the right one and justify).
+
+### 1.4 Prove a `rescue` actually fires
+
+It's easy to write `rescue:` and never exercise it — and an unproven rescue path is worse than no rescue at all (you'll find out it doesn't work the day you need it).
+
+`YOUR TASK`: deliberately break a task inside one of your blocks **once**, confirm the rescue runs, then revert. Capture the **rescue task's output** in the proof section — the recap line `rescued=1` alone is not enough.
+
+Two safe ways to force a failure (pick one — both fail the *block* task, both let `rescue` catch it, both revert cleanly):
+
+1. **Edit the role for one run.** Point `apt_repository:` at `http://does-not-exist.example.com/` (or set an apt key URL to a 404), run, then `git checkout roles/<role>/tasks/main.yml` to revert. Pro: most realistic — it's the exact failure mode rescue exists for.
+2. **Use `--extra-vars` + a dummy assertion.** Add `ansible.builtin.fail: msg="forced"` gated by `when: simulate_failure | default(false) | bool` inside the block; run once with `-e simulate_failure=true`, capture proof, run again without it. Pro: no `git checkout` dance; the trigger lives in the role and you can re-run the proof on demand.
+
+> **Do not** comment out a task or run with `--check` — neither exercises the rescue path. The block's task must actually FAIL (`failed=1` on a task line before the rescue line).
+
+### 1.5 Verify selective execution
+
+```bash
+ansible-playbook playbooks/provision.yml --list-tags                # shows the union of all tags
+ansible-playbook playbooks/provision.yml --list-tasks --tags docker # tasks the next --tags docker run would run
+ansible-playbook playbooks/provision.yml --tags install             # action axis: install-only across roles
+ansible-playbook playbooks/provision.yml --skip-tags common         # component axis: everything but common
+ansible-playbook playbooks/provision.yml --tags docker --check      # dry-run, component axis
+```
+
+> `--list-tags` only prints the union — it does **not** prove your taxonomy is three-axis (component / action / risk-gate). Pair it with `--list-tasks --tags <axis>` from each axis to show selective filtering actually reaches the right slice. The taxonomy table from §1.1 carries the explanation.
+
+### 1.6 Proof of work — paste into `docs/LAB06.md`
+
+- The **`--list-tags` output**, unedited. Tags from all three axes (component / action / risk-gate) must be present in the union.
+- One **selective `--tags`** run from EACH axis (e.g. `--tags docker`, `--tags install`, plus a `--tags web_app_wipe` dry-run) showing **most tasks skipped** in each — not "all 12 ran with tag=docker_install".
+- The **rescue path output** from 1.4 — the actual task name + result, not just `PLAY RECAP`.
+- Your taxonomy table from 1.1.
+
+**Research (answer in your docs):**
+- How do tags inherit from a `block` into its tasks? Do tags on the role import combine or override?
+- Difference between the special `never` tag and a normal opt-in tag like `web_app_wipe`?
+- What happens to a host's downstream tasks when its `rescue` also fails?
 
 ---
 
-### Task 2 — Upgrade to Docker Compose (3 pts)
+## Task 2 — Upgrade to Docker Compose (3 pts)
 
-#### 2.1 Why Docker Compose?
+Replace the Lab 5 `docker run` with a Jinja2-templated Compose stack, applied via `community.docker.docker_compose_v2`. The win is declarative state + free idempotency: re-running with the same rendered file shows `changed=0`.
 
-**Advantages over `docker run`:**
-- **Declarative configuration** - define desired state, not commands
-- **Multi-container management** - networks, volumes, dependencies
-- **Environment variable management** - .env files, variable substitution
-- **Easy updates** - change config file and recreate
-- **Better for production** - consistent, reproducible deployments
-
-#### 2.2 Rename Role
-
-**Action Required:**
-```bash
-cd ansible/roles
-mv app_deploy web_app
-```
-
-**Update all references:**
-- Playbook imports: `roles/app_deploy` → `roles/web_app`
-- Documentation: app_deploy → web_app
-- Variable prefixes: Consider `web_app_*` for consistency
-
-**Why rename?**
-- `web_app` is more specific and descriptive
-- Prepares for potential other app types (database_app, cache_app)
-- Better aligns with wipe logic variable naming
-
-#### 2.3 Create Docker Compose Template
-
-**File:** `roles/web_app/templates/docker-compose.yml.j2`
-
-**Requirements:**
-1. Use Jinja2 templating for dynamic values
-2. Define service name, image, ports, environment variables
-3. Include restart policy
-4. Use networks if needed
-5. Support variable substitution for app-specific config
-
-**Template Pattern:**
-```yaml
-version: '3.8'
-
-services:
-  {{ app_name }}:
-    image: {{ docker_image }}:{{ docker_tag }}
-    container_name: {{ app_name }}
-    ports:
-      - "{{ app_port }}:{{ app_internal_port }}"
-    environment:
-      # Add environment variables here
-      # Use Vault-encrypted secrets
-    restart: unless-stopped
-    # Add other configuration
-```
-
-**Variables to support:**
-- `app_name` - service/container name (default: devops-app)
-- `docker_image` - Docker Hub image
-- `docker_tag` - image version (default: latest)
-- `app_port` - host port (default: 8000)
-- `app_internal_port` - container port (default: 8000)
-- Environment variables for app configuration
-
-**Research Questions:**
-- Q: What's the difference between `restart: always` and `restart: unless-stopped`?
-- Q: How do Docker Compose networks differ from Docker bridge networks?
-- Q: Can you reference Ansible Vault variables in the template?
-
-#### 2.4 Define Role Dependencies
+### 2.1 Declare the role dependency
 
 **File:** `roles/web_app/meta/main.yml`
 
-**Purpose:** Ensure Docker is installed before deploying web app.
+A `meta/main.yml` dependency makes `web_app` pull in `docker` automatically, in the right order, exactly once per play. You do not need a second `roles:` entry in your playbook.
 
-**Pattern:**
+`YOUR TASK`: write this file. The shape:
+
 ```yaml
 ---
 dependencies:
-  - role: role_name
-    # Optional variables to pass
+  - role: ___                                  # YOUR TASK: which role must run first?
     vars:
-      var_name: value
+      ___: ["{{ ansible_user }}"]              # YOUR TASK: variable name from your
+                                               #            Lab 5 docker role
 ```
 
-**Requirements:**
-1. Add `docker` role as dependency
-2. Ensure correct execution order automatically
-3. Document why dependency is needed
+### 2.2 Template the Compose file
 
-**Test:** Run only `web_app` role - Docker should install automatically:
-```bash
-ansible-playbook playbooks/deploy.yml
-# Should automatically run docker role first
+**File:** `roles/web_app/templates/docker-compose.yml.j2`
+
+**Target render:** a working `docker-compose.yml` for **one** service that:
+- pulls `{{ docker_image }}:{{ docker_tag }}`,
+- publishes `{{ app_host_port }}:{{ app_internal_port }}`,
+- injects every key/value from `{{ app_env }}` (a dict from group_vars) as environment variables,
+- restarts per `{{ restart_policy }}` (default `unless-stopped` — use a Jinja filter),
+- ships a **healthcheck** hitting `/health` on `{{ app_internal_port }}` so `docker compose ps` shows `(healthy)`.
+
+You must use **all three** Jinja2 mechanisms:
+1. `{{ var }}` interpolation
+2. At least one `{% if %}` block (e.g. skip `environment:` when `app_env` is empty)
+3. At least one filter chain (e.g. `| default('...')` or `| to_nice_yaml`)
+
+`YOUR TASK`: write the template. The shape (intentionally incomplete — fill the body):
+
+```jinja
+{# Compose v2 — NO top-level `version:` field (dropped in 2023) #}
+services:
+  {{ ___ }}:                                   # YOUR TASK: service name var
+    image: ___                                 # YOUR TASK: image:tag, two vars
+    container_name: ___
+    ports:
+      - "___:___"                              # YOUR TASK: host:container, two vars
+{% if ___ %}                                   # YOUR TASK: only render env block when app_env non-empty
+    environment:
+{% for ___, ___ in ___ %}                      # YOUR TASK: iterate the dict
+      ___: "___"
+{% endfor %}
+{% endif %}
+    restart: {{ ___ | default('___') }}        # YOUR TASK: var + the default value
+    healthcheck:
+      test: ___                                # YOUR TASK: curl/wget the in-container /health
+      interval: ___                            # YOUR TASK: sensible default
+      timeout: ___
+      retries: ___
 ```
 
-#### 2.5 Implement Docker Compose Deployment
+> Compose v2 dropped the top-level `version:` key — if a tutorial still writes `version: '3.8'`, it predates 2023. Leave it off. Test the render locally with `ansible all -i localhost, -m template -a "src=... dest=/tmp/out.yml"` before running the full play.
+
+### 2.3 Implement the deploy tasks
 
 **File:** `roles/web_app/tasks/main.yml`
 
-**Requirements:**
-1. Create application directory (e.g., /opt/{{ app_name }})
-2. Template docker-compose.yml to the directory
-3. Use `docker_compose` module (or `community.docker.docker_compose`)
-4. Ensure idempotency (check if already running)
-5. Add appropriate tags: `app_deploy`, `compose`
+The shape — fill the bodies:
 
-**Deployment Block Pattern:**
 ```yaml
-- name: Deploy application with Docker Compose
+---
+- name: Include wipe tasks (gated — Task 3)
+  ansible.builtin.include_tasks: wipe.yml
+  tags: [web_app, web_app_wipe]
+
+- name: ___                                    # YOUR TASK: name the deploy block
   block:
-    - name: Create app directory
-      # Use file module
+    - name: Create project directory
+      ansible.builtin.file:
+        path: "{{ compose_project_dir }}"
+        state: directory
+        mode: "0755"
+      # NOTE: an aborted previous run can leave /tmp/<project> as a FILE — see Common Pitfalls
 
-    - name: Template docker-compose file
-      # Use template module
+    - name: Render compose file
+      ansible.builtin.template:
+        src: ___                               # YOUR TASK: which template?
+        dest: "___/docker-compose.yml"         # YOUR TASK: where on the target?
+        mode: "0644"
 
-    - name: Deploy with docker-compose
-      # Use docker_compose module
-      # state: present (or up)
+    - name: ___                                # YOUR TASK: name this — "docker compose up -d"
+      ___:                                     # YOUR TASK: the FQCN module — NOT the v1 module
+                                               #            (Common Pitfalls: v1 vs v2)
+        project_src: "{{ compose_project_dir }}"
+        state: ___                             # YOUR TASK: which state means "up"?
+        pull: ___
+        remove_orphans: ___
 
+    - name: Smoke test /health
+      ansible.builtin.uri:
+        url: "___"                             # YOUR TASK: build the URL from app_host_port
+        status_code: 200
+      register: hc
+      retries: ___                             # YOUR TASK: bounded, not infinite
+      delay: ___
+      until: ___                               # YOUR TASK: condition on hc
   rescue:
-    - name: Handle deployment failure
-      # Log error, optionally rollback
-
-  tags:
-    - app_deploy
-    - compose
+    - name: ___                                # YOUR TASK: surface the failure
+                                               #            (debug, fail, slack — your call)
+      ___:
+  tags: [___, ___, ___]                        # YOUR TASK: three tags from the taxonomy
 ```
 
-**Hints:**
-- Install docker-compose Python library: `pip3 install docker-compose`
-- Or use `community.docker` collection (requires installation)
-- Set `pull: yes` to always get latest image
-- Use `project_src` to specify directory with docker-compose.yml
+Setup notes (these don't need YOUR-TASK; they are plumbing):
+- Collection installed on the **controller**: `ansible-galaxy collection install community.docker`.
+- `python3-docker` on the **target** (your `docker` role does this).
+- Re-running the same play with no changes must show `changed=0`. If it doesn't, something in your template depends on a mutable input (timestamp, random, unsorted dict iteration).
+
+### 2.4 Variables
+
+**File:** `roles/web_app/defaults/main.yml`
+
+`YOUR TASK`: declare the defaults. The keys you need: `app_name`, `docker_image`, `docker_tag`, `app_host_port`, `app_internal_port`, `compose_project_dir`, `restart_policy`, `app_env`. Use sensible defaults. **Do not** default `docker_tag` to `latest` for prod — pin it per-env in `group_vars`. Keep real secrets in your Lab 5 Vault file (`group_vars/.../vault.yml`) and merge them into `app_env` from there.
+
+> ⚠️ **Migrate the Lab 5 names** at the same time. Lab 5 used `app_port`, `app_container_name`, `docker_image_tag` — those collide or just plain confuse against Lab 6's `app_host_port` / `app_internal_port`, `app_name`, `docker_tag`. After you write `defaults/main.yml`, `grep -RIn 'app_port\|app_container_name\|docker_image_tag' ansible/` and rename anything still using the old keys (group_vars, host_vars, vault). Leaving both around silently breaks templating.
+
+### 2.5 Verify
+
+```bash
+ansible-playbook playbooks/deploy.yml --tags deploy            # run #1: changed
+ansible-playbook playbooks/deploy.yml --tags deploy            # run #2: ok (changed=0)
+# On the target VM. Substitute YOUR values from group_vars/all.yml (not Jinja —
+# Jinja is only rendered inside Ansible-managed files, not in your shell).
+docker compose -f "<compose_project_dir>/docker-compose.yml" ps   # (healthy)
+curl -fsS "http://<VM-IP>:<app_host_port>/health" | jq .
+# Or run the same checks via Ansible, where {{...}} IS rendered:
+# ansible all -m shell -a 'docker compose -f {{ compose_project_dir }}/docker-compose.yml ps'
+```
+
+### 2.6 Proof of work — paste into `docs/LAB06.md`
+
+- The **rendered** `docker-compose.yml` (post-template) — at least the first 20 lines.
+- Both PLAY RECAPs side-by-side — run #1 `changed≥1`, run #2 `changed=0`. **This is the idempotency proof.** A second run that still shows `changed=2` means your template renders differently each time (sort your dict keys, drop timestamps).
+- `docker compose ps` showing `(healthy)`.
+- `curl /health` output with your real hostname/uptime.
 
 **Research:**
-- Look up `community.docker.docker_compose_v2` module
-- Compare `state: present` vs other state options
-- Understand `recreate` parameter options
-
-#### 2.6 Variables Configuration
-
-**File:** `group_vars/all.yml` (or role defaults)
-
-**Required Variables:**
-```yaml
-# Application Configuration
-app_name: devops-app
-docker_image: your_dockerhub_username/devops-info-service
-docker_tag: latest
-app_port: 8000
-app_internal_port: 8000
-
-# Docker Compose Config
-compose_project_dir: "/opt/{{ app_name }}"
-docker_compose_version: "3.8"
-
-# Secrets (use Vault)
-app_secret_key: !vault |
-          $ANSIBLE_VAULT;1.1;AES256
-          ...
-```
-
-**Encrypt sensitive values:**
-```bash
-ansible-vault encrypt_string 'secret_value' --name 'app_secret_key'
-```
-
-#### 2.7 Testing Docker Compose Deployment
-
-**Test Commands:**
-```bash
-# Full deployment
-ansible-playbook playbooks/deploy.yml
-
-# Check idempotency (run twice, second should show no changes)
-ansible-playbook playbooks/deploy.yml
-ansible-playbook playbooks/deploy.yml
-
-# Verify on target VM
-ssh user@vm_ip
-docker ps
-docker-compose -f /opt/devops-app/docker-compose.yml ps
-curl http://localhost:8000
-```
-
-**Evidence Required:**
-- Output showing Docker Compose deployment success
-- Idempotency proof (second run shows "ok" not "changed")
-- Application running and accessible
-- Contents of templated docker-compose.yml
+- `restart: always` vs `unless-stopped` — when does the difference actually bite?
+- Why does `python3-docker` go on the **target**, not the controller?
+- Why is one templated Compose file better than N `docker run` tasks?
 
 ---
 
-### Task 3 — Wipe Logic Implementation (1 pt)
+## Task 3 — Double-Gated Wipe Logic (2 pts)
 
-#### 3.1 Understanding Wipe Logic
+A clean reinstall is sometimes the only safe rollback: corrupted volume, rotated secret, broken cache. You need the button, **and** you need it gated so a sleepy 2am `--tags` typo can't destroy prod.
 
-**Purpose:** Clean removal of deployed applications for:
-- **Clean reinstallation** (wipe old → deploy new)
-- Testing from fresh state
-- Rolling back to clean slate
-- Decommissioning applications
-- Resource cleanup before upgrades
+### 3.1 The double gate
 
-**Implementation Requirements:**
-- ✅ Controlled by variable: `web_app_wipe: true`
-- ✅ Gated by specific tag: `web_app_wipe`
-- ❌ NOT using the special "never" tag
-- Default behavior: wipe tasks do NOT run
-- Explicit invocation required
+Two **independent** gates: a `when:` variable check **and** an opt-in tag. Both must align for the wipe to run.
 
-#### 3.2 Create Wipe Tasks
+| Invocation | Wipe? | Why |
+|------------|-------|-----|
+| `deploy.yml` | No | var false, tag not requested |
+| `deploy.yml --tags web_app_wipe` | No | `when` blocks it (var still false) |
+| `deploy.yml -e web_app_wipe=true` | Yes — wipe **then** deploy | clean reinstall |
+| `deploy.yml -e web_app_wipe=true --tags web_app_wipe` | Yes — wipe **only** | deploy tasks skipped by tag |
+
+> Why two gates and not just the special `never` tag? `never` is a single gate — anyone who passes `--tags web_app_wipe` (or, with `never`, anyone who passes `--tags never`) triggers the wipe. A second, independent gate (the variable) means a typo or a CI mistake in **either** dimension alone is harmless: the other gate still blocks. Defence in depth, not cleverness in one place.
+
+### 3.2 Implement
 
 **File:** `roles/web_app/tasks/wipe.yml`
 
-**Requirements:**
-1. Stop and remove containers (Docker Compose down)
-2. Remove docker-compose.yml file
-3. Remove application directory
-4. Optionally remove Docker images (consider disk space)
-5. Log wipe completion
+The shape:
 
-**Implementation Pattern:**
 ```yaml
 ---
 - name: Wipe web application
   block:
-    - name: Stop and remove containers
-      ...
+    - name: ___                                # YOUR TASK: name it — "compose down"
+      ___:                                     # YOUR TASK: which module?
+        project_src: "{{ compose_project_dir }}"
+        state: ___                             # YOUR TASK: which state removes it?
+      failed_when: ___                         # YOUR TASK: tolerate the already-clean case
+                                               #            (hint: `false` is one answer; a list
+                                               #             of conditions is the better one)
 
-    - name: Remove docker-compose file
-      ...
+    - name: ___                                # YOUR TASK: remove the project dir
+      ___:
+        path: "___"
+        state: ___
 
-    - name: Remove application directory
-      ...
-
-    - name: Log wipe completion
-      debug:
-        msg: "Application {{ app_name }} wiped successfully"
-
-  when: ...
-  tags:
-    - web_app_wipe
+    - name: ___                                # YOUR TASK: small completion debug
+      ___:
+        msg: "___"
+  when: ___ | bool                             # YOUR TASK: gate #1 — variable
+                                               #            (why is `| bool` mandatory?
+                                               #             see Common Pitfalls)
+  tags: [___, ___]                             # YOUR TASK: gate #2 — opt-in tag
 ```
 
-**Key Points:**
-- `when` condition checks variable (default: false)
-- `tags` enables selective execution
-- `ignore_errors` prevents failure if already clean
-- `| bool` ensures proper boolean evaluation
+**File:** `roles/web_app/defaults/main.yml` — add:
 
-#### 3.3 Include Wipe in Main Tasks
-
-**File:** `roles/web_app/tasks/main.yml`
-
-**Add at the beginning (before deployment tasks):**
 ```yaml
----
-# Wipe logic runs first (when explicitly requested)
-- name: Include wipe tasks
-  include_tasks: wipe.yml
-  tags:
-    - web_app_wipe
-
-# Deployment tasks follow...
-- name: Deploy application with Docker Compose
-  block:
-    # ... your deployment tasks
+web_app_wipe: ___                              # YOUR TASK: safe default — what should it be?
 ```
 
-**Why at the beginning?**
-- Enables clean reinstallation: wipe → deploy
-- Logical flow: remove old → install new
-- Tag isolation still prevents accidental wipe during normal deployment
-- Supports use case: `ansible-playbook deploy.yml -e "web_app_wipe=true"`
+The `include_tasks: wipe.yml` line from Task 2.3 sits **before** the deploy block, so `-e web_app_wipe=true` gives you wipe-then-deploy in one run.
 
-#### 3.4 Configure Wipe Variable
+### 3.3 Verify all four rows
 
-**File:** `roles/web_app/defaults/main.yml`
+`YOUR TASK`: run each of the four invocations in §3.1 and capture the output. For each, prove what you claim:
+- Row 1 (plain `deploy.yml`) — search the recap or `--list-tasks` output for the wipe tasks; they should be skipped.
+- Row 2 (`--tags web_app_wipe` alone) — the wipe tasks **enter** the play but the `when:` skips them. The recap shows `skipped`, not `ok`.
+- Row 3 (`-e web_app_wipe=true`) — `docker ps` before (running) → `docker ps` after the wipe inside the run (gone) → after deploy (running again, fresh container ID).
+- Row 4 (`-e ... --tags web_app_wipe`) — wipe runs, deploy tasks skipped by tag, `docker ps` ends empty.
 
-**Add:**
-```yaml
-# Wipe Logic Control
-web_app_wipe: false  # Default: do not wipe
-```
+### 3.4 Proof of work — paste into `docs/LAB06.md`
 
-**Documentation comment:**
-```yaml
-# Set to true to remove application completely
-# Wipe only:    ansible-playbook deploy.yml -e "web_app_wipe=true" --tags web_app_wipe
-# Clean install: ansible-playbook deploy.yml -e "web_app_wipe=true"
-```
-
-#### 3.5 Testing Wipe Logic
-
-**Test Scenarios:**
-
-**Scenario 1: Normal deployment (wipe should NOT run)**
-```bash
-ansible-playbook playbooks/deploy.yml
-
-# Verify: app deploys normally, wipe tasks skipped (tag not specified)
-ssh user@vm_ip "docker ps"
-```
-
-**Scenario 2: Wipe only (remove existing deployment)**
-```bash
-ansible-playbook playbooks/deploy.yml \
-  -e "web_app_wipe=true" \
-  --tags web_app_wipe
-
-# Verify: app should be removed, deployment skipped
-ssh user@vm_ip "docker ps"  # Should not show app
-ssh user@vm_ip "ls /opt"    # Should not have app directory
-```
-
-**Scenario 3: Clean reinstallation (wipe → deploy)**
-```bash
-# This is the KEY use case: fresh start
-ansible-playbook playbooks/deploy.yml \
-  -e "web_app_wipe=true"
-
-# What happens:
-# 1. Wipe tasks run first (remove old installation)
-# 2. Deployment tasks run second (install fresh)
-# Result: clean reinstallation
-
-# Verify: old app removed, new app running
-ssh user@vm_ip "docker ps"
-```
-
-**Scenario 4: Safety checks (should NOT wipe)**
-```bash
-# 4a: Tag specified but variable false (when condition blocks it)
-ansible-playbook playbooks/deploy.yml --tags web_app_wipe
-# Result: wipe tasks skipped, deployment runs normally
-
-# 4b: Variable true, deployment skipped (only wipe runs)
-ansible-playbook playbooks/deploy.yml \
-  -e "web_app_wipe=true" \
-  --tags web_app_wipe
-# Result: only wipe, no deployment
-```
-
-**Evidence Required:**
-- Output of Scenario 1 showing normal deployment (wipe skipped)
-- Output of Scenario 2 showing wipe-only operation
-- Output of Scenario 3 showing clean reinstall (wipe → deploy)
-- Output of Scenario 4a showing wipe blocked by when condition
-- Screenshot of application running after clean reinstall
-
-#### 3.6 Research Questions
-
-Answer these in your documentation:
-1. **Why use both variable AND tag?** (Double safety mechanism)
-2. **What's the difference between `never` tag and this approach?**
-3. **Why must wipe logic come BEFORE deployment in main.yml?** (Clean reinstall scenario)
-4. **When would you want clean reinstallation vs. rolling update?**
-5. **How would you extend this to wipe Docker images and volumes too?**
+- Four terminal captures, one per row, each labelled with the invocation.
+- `docker ps --filter name=<app>` immediately before and immediately after the wipe-only run.
+- A one-line note explaining **why `| bool` is mandatory** on the `when:`. (Spoiler in Common Pitfalls if you're stuck.)
 
 ---
 
-### Task 4 — CI/CD with GitHub Actions (3 pts)
+## Task 4 — CI/CD with GitHub Actions (3 pts)
 
-#### 4.1 Why Automate Ansible?
+Automate the whole thing: push to `main` → lint → deploy → verify. Prefer **OIDC short-lived credentials** to a long-lived SSH key where the target supports it.
 
-**Benefits:**
-- **Consistency** - same process every time
-- **Speed** - automatic deployments on push
-- **Safety** - linting catches errors before execution
-- **Auditability** - GitHub logs every deployment
-- **Integration** - combines with testing, building, scanning
-
-**CI/CD Flow:**
-```
-Code Push → Lint Ansible → Run Ansible Playbook → Verify Deployment
-```
-
-#### 4.2 Install GitHub Actions Runner (Optional)
-
-**Two Approaches:**
-
-**Approach A: Self-hosted runner on target VM (Recommended)**
-- More realistic for production
-- Direct access to target server
-- Faster (no SSH overhead)
-- Setup: GitHub Repo → Settings → Actions → Runners → Add runner
-
-**Approach B: GitHub-hosted runner with SSH**
-- Easier setup
-- Requires SSH key configuration
-- Uses GitHub Secrets for credentials
-- Slower but simpler
-
-Choose based on your infrastructure preference.
-
-#### 4.3 Create Ansible Workflow
+### 4.1 Workflow skeleton
 
 **File:** `.github/workflows/ansible-deploy.yml`
 
-**Requirements:**
-1. Trigger on push to ansible directory
-2. Run ansible-lint for syntax checking
-3. Execute Ansible playbook
-4. Verify deployment success
-5. Use path filters to avoid unnecessary runs
+The shape — fill the bodies:
 
-**Workflow Structure:**
 ```yaml
-name: Ansible Deployment
+name: Ansible Deploy
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main]
     paths:
-      - 'ansible/**'
-      - '.github/workflows/ansible-deploy.yml'
-  pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'ansible/**'
+      - '___'                                  # YOUR TASK: trigger on ansible/** changes
+      - '!___'                                 # YOUR TASK: exclude docs-only changes
+      - '___'                                  # YOUR TASK: self-test on workflow file edits
+  workflow_dispatch:                           # manual deploys
+
+permissions:
+  contents: read
+  id-token: ___                                # YOUR TASK: which value enables OIDC?
 
 jobs:
   lint:
-    name: Ansible Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          pip install ansible ansible-lint
-
-      - name: Run ansible-lint
-        run: |
-          cd ansible
-          ansible-lint playbooks/*.yml
-
-  deploy:
-    name: Deploy Application
-    needs: lint
-    runs-on: ubuntu-latest  # or self-hosted
-    steps:
-      # Add deployment steps
-      # - Setup Ansible
-      # - Configure SSH (if needed)
-      # - Decrypt Vault (use GitHub Secrets)
-      # - Run playbook
-      # - Verify deployment
-```
-
-#### 4.4 Configure GitHub Secrets
-
-**Required Secrets:** (Settings → Secrets and variables → Actions)
-
-1. `ANSIBLE_VAULT_PASSWORD` - Vault password for decryption
-2. `SSH_PRIVATE_KEY` - SSH key for target VM (if using remote runner)
-3. `VM_HOST` - Target VM IP/hostname
-4. `VM_USER` - SSH username
-
-**Using Secrets in Workflow:**
-```yaml
-- name: Deploy with Ansible
-  env:
-    ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
-  run: |
-    echo "$ANSIBLE_VAULT_PASSWORD" > /tmp/vault_pass
-    ansible-playbook playbooks/deploy.yml \
-      --vault-password-file /tmp/vault_pass
-    rm /tmp/vault_pass
-```
-
-#### 4.5 Implement Deployment Step
-
-**For self-hosted runner:**
-```yaml
-deploy:
-  runs-on: self-hosted
-  steps:
-    - uses: actions/checkout@v4
-
-    - name: Deploy with Ansible
-      run: |
-        cd ansible
-        echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
-        ansible-playbook playbooks/deploy.yml \
-          --vault-password-file /tmp/vault_pass \
-          --tags "app_deploy"
-        rm /tmp/vault_pass
-```
-
-**For GitHub-hosted runner:**
-```yaml
-deploy:
-  runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-
-    - name: Install Ansible
-      run: pip install ansible
-
-    - name: Setup SSH
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
-
-    - name: Deploy with Ansible
-      run: |
-        cd ansible
-        echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
-        ansible-playbook playbooks/deploy.yml \
-          -i inventory/hosts.ini \
-          --vault-password-file /tmp/vault_pass
-        rm /tmp/vault_pass
-```
-
-#### 4.6 Add Verification Step
-
-**After deployment, verify it worked:**
-```yaml
-- name: Verify Deployment
-  run: |
-    sleep 10  # Wait for app to start
-    curl -f http://${{ secrets.VM_HOST }}:8000 || exit 1
-    curl -f http://${{ secrets.VM_HOST }}:8000/health || exit 1
-```
-
-#### 4.7 Path Filters Best Practice
-
-**Why path filters?**
-- Don't run Ansible workflow when changing docs
-- Separate workflows for different concerns
-- Faster CI, lower costs
-
-**Example:**
-```yaml
-on:
-  push:
-    paths:
-      - 'ansible/**'           # Ansible code
-      - '!ansible/docs/**'     # Exclude docs
-      - '.github/workflows/ansible-deploy.yml'  # Workflow changes
-```
-
-#### 4.8 Add Status Badge
-
-**File:** `README.md` (or ansible/README.md)
-
-**Add badge:**
-```markdown
-[![Ansible Deployment](https://github.com/your-username/your-repo/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/your-username/your-repo/actions/workflows/ansible-deploy.yml)
-```
-
-#### 4.9 Testing CI/CD
-
-**Test Sequence:**
-1. Make a change to ansible code (e.g., update variable in group_vars)
-2. Commit and push to GitHub
-3. Watch Actions tab for workflow execution
-4. Verify lint job passes
-5. Verify deploy job succeeds
-6. Check application is updated on target VM
-
-**Evidence Required:**
-- Screenshot of successful workflow run
-- Output logs showing ansible-lint passing
-- Output logs showing ansible-playbook execution
-- Verification step output showing app responding
-- Status badge in README showing passing
-
-#### 4.10 Research Questions
-
-Answer in documentation:
-1. **What are the security implications of storing SSH keys in GitHub Secrets?**
-2. **How would you implement a staging → production deployment pipeline?**
-3. **What would you add to make rollbacks possible?**
-4. **How does self-hosted runner improve security compared to GitHub-hosted?**
-
----
-
-### Task 5 — Documentation (1 pt)
-
-Create `ansible/docs/LAB06.md` with the following:
-
-**Required Sections:**
-1. **Overview** - What you accomplished and technologies used
-2. **Blocks & Tags** - Block usage in each role, tag strategy, execution examples with screenshots
-3. **Docker Compose Migration** - Template structure, role dependencies, before/after comparison
-4. **Wipe Logic** - Implementation details, variable + tag approach, test results
-5. **CI/CD Integration** - Workflow architecture, setup steps, evidence of automated deployments
-6. **Testing Results** - All test scenarios, idempotency verification, application accessibility
-7. **Challenges & Solutions** - Difficulties encountered and how you solved them
-8. **Research Answers** - All research questions answered with analysis
-
-**Code Documentation:**
-- Add clear comments in all modified Ansible files
-- Document variables in templates
-- Explain safety mechanisms in wipe logic
-- Document workflow steps in CI/CD files
-
-**Evidence:**
-- Terminal outputs showing tagged execution
-- Wipe logic test results (all 4 scenarios)
-- CI/CD workflow logs and screenshots
-- Application accessibility verification
-
----
-
-### Bonus Part 1 — Multi-App Deployment (1.5 pts)
-
-#### Bonus 1.1 Prerequisites
-
-**Required:**
-- Completed Lab 1 Bonus (compiled language app: Go/Rust/Java/C#)
-- Completed Lab 2 Bonus (multi-stage Docker build)
-- Completed Lab 3 Bonus Part 1 (multi-app CI/CD)
-
-**You should have:**
-- Python web app (everyone has this)
-- Compiled language web app (Go/Rust/Java/C#)
-- Both apps containerized and on Docker Hub
-- Both apps with similar endpoints (/, /health)
-
-#### Bonus 1.2 Role Reusability Pattern
-
-**Key Concept:** Use the same `web_app` role for both apps with different variables.
-
-**Directory Structure:**
-```
-ansible/
-├── inventory/
-│   └── hosts.ini
-├── group_vars/
-│   └── all.yml
-├── host_vars/          # Optional: per-host vars
-├── vars/
-│   ├── app_python.yml  # NEW: Python app variables
-│   └── app_bonus.yml   # NEW: Bonus app variables
-├── roles/
-│   └── web_app/        # Reused for both apps
-└── playbooks/
-    ├── provision.yml
-    ├── deploy_python.yml    # NEW
-    ├── deploy_bonus.yml     # NEW
-    └── deploy_all.yml       # NEW: Deploy both
-```
-
-#### Bonus 1.3 Create Variable Files
-
-**File:** `ansible/vars/app_python.yml`
-```yaml
----
-app_name: devops-python
-docker_image: your_username/devops-info-service
-docker_tag: latest
-app_port: 8000
-app_internal_port: 8000
-compose_project_dir: "/opt/{{ app_name }}"
-```
-
-**File:** `ansible/vars/app_bonus.yml`
-```yaml
----
-app_name: devops-go  # or rust, java, csharp
-docker_image: your_username/devops-info-service-go
-docker_tag: latest
-app_port: 8001  # Different port!
-app_internal_port: 8080  # Go apps often use 8080
-compose_project_dir: "/opt/{{ app_name }}"
-```
-
-**Important:** Use different ports to run both apps simultaneously.
-
-#### Bonus 1.4 Create Deployment Playbooks
-
-**File:** `ansible/playbooks/deploy_python.yml`
-```yaml
----
-- name: Deploy Python Application
-  hosts: all
-  become: true
-  vars_files:
-    - ../vars/app_python.yml
-
-  roles:
-    - web_app
-```
-
-**File:** `ansible/playbooks/deploy_bonus.yml`
-```yaml
----
-- name: Deploy Bonus Application
-  hosts: all
-  become: true
-  vars_files:
-    - ../vars/app_bonus.yml
-
-  roles:
-    - web_app
-```
-
-**File:** `ansible/playbooks/deploy_all.yml`
-```yaml
----
-- name: Deploy All Applications
-  hosts: all
-  become: true
-
-  tasks:
-    - name: Deploy Python App
-      include_role:
-        name: web_app
-      vars:
-        app_name: devops-python
-        docker_image: your_username/devops-info-service
-        app_port: 8000
-
-    - name: Deploy Bonus App
-      include_role:
-        name: web_app
-      vars:
-        app_name: devops-go
-        docker_image: your_username/devops-info-service-go
-        app_port: 8001
-        app_internal_port: 8080
-```
-
-#### Bonus 1.5 Extend Wipe Logic
-
-**Wipe logic should support app-specific wipe:**
-
-**Usage:**
-```bash
-# Wipe only Python app
-ansible-playbook playbooks/deploy_python.yml \
-  -e "web_app_wipe=true" \
-  --tags web_app_wipe
-
-# Wipe only Bonus app
-ansible-playbook playbooks/deploy_bonus.yml \
-  -e "web_app_wipe=true" \
-  --tags web_app_wipe
-
-# Wipe both apps
-ansible-playbook playbooks/deploy_all.yml \
-  -e "web_app_wipe=true" \
-  --tags web_app_wipe
-```
-
-**The role automatically handles different apps because `app_name` and `compose_project_dir` are different!**
-
-#### Bonus 1.6 Testing Multi-App Deployment
-
-**Test Commands:**
-```bash
-# Deploy both apps
-ansible-playbook playbooks/deploy_all.yml
-
-# Verify both running
-ssh user@vm_ip "docker ps"
-curl http://vm_ip:8000        # Python app
-curl http://vm_ip:8001        # Bonus app
-
-# Test independent deployment
-ansible-playbook playbooks/deploy_python.yml  # Should not affect bonus app
-ansible-playbook playbooks/deploy_bonus.yml   # Should not affect python app
-
-# Test independent wipe
-ansible-playbook playbooks/deploy_python.yml \
-  -e "web_app_wipe=true" --tags web_app_wipe
-# Verify: Python app removed, bonus app still running
-
-# Test idempotency
-ansible-playbook playbooks/deploy_all.yml
-ansible-playbook playbooks/deploy_all.yml  # Should show minimal changes
-```
-
-**Evidence Required:**
-- Output showing both apps deployed
-- `docker ps` output showing both containers
-- Curl outputs from both apps
-- Proof of independent wipe functionality
-- Idempotency verification for multi-app deployment
-
-#### Bonus 1.7 Documentation
-
-**Add to LAB06.md:**
-- Multi-app architecture explanation
-- Variable file strategy
-- Role reusability benefits
-- Port conflict resolution
-- Independent vs. combined deployment trade-offs
-
----
-
-### Bonus Part 2 — Multi-App CI/CD (1 pt)
-
-#### Bonus 2.1 Prerequisites
-
-**Required:**
-- Bonus Part 1 completed (multi-app deployment working)
-- Task 4 completed (single app CI/CD working)
-
-#### Bonus 2.2 Workflow Strategy
-
-**Two Approaches:**
-
-**Approach A: Separate Workflows**
-- One workflow per app
-- Path filters for each app's code
-- Independent deployment
-- More control, more files
-
-**Approach B: Matrix Strategy**
-- Single workflow with matrix
-- Deploys both apps
-- Simpler, less flexible
-
-Choose based on your preference (Approach A recommended).
-
-#### Bonus 2.3 Create Workflow for Bonus App
-
-**File:** `.github/workflows/ansible-deploy-bonus.yml`
-
-**Requirements:**
-1. Trigger on bonus app code changes
-2. Run ansible-lint
-3. Deploy bonus app only
-4. Verify bonus app responds
-5. Independent from Python app workflow
-
-**Path Filters:**
-```yaml
-on:
-  push:
-    branches: [ main, master ]
-    paths:
-      - 'ansible/vars/app_bonus.yml'
-      - 'ansible/playbooks/deploy_bonus.yml'
-      - 'ansible/roles/web_app/**'
-      - '.github/workflows/ansible-deploy-bonus.yml'
-```
-
-**Deployment Step:**
-```yaml
-- name: Deploy Bonus Application
-  run: |
-    cd ansible
-    echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
-    ansible-playbook playbooks/deploy_bonus.yml \
-      --vault-password-file /tmp/vault_pass
-    rm /tmp/vault_pass
-```
-
-**Verification:**
-```yaml
-- name: Verify Bonus App Deployment
-  run: |
-    sleep 10
-    curl -f http://${{ secrets.VM_HOST }}:8001 || exit 1
-    curl -f http://${{ secrets.VM_HOST }}:8001/health || exit 1
-```
-
-#### Bonus 2.4 Update Python App Workflow
-
-**File:** `.github/workflows/ansible-deploy.yml`
-
-**Update path filters to be more specific:**
-```yaml
-on:
-  push:
-    paths:
-      - 'ansible/vars/app_python.yml'
-      - 'ansible/playbooks/deploy_python.yml'
-      - 'ansible/playbooks/deploy.yml'  # If this deploys Python
-      - 'ansible/roles/web_app/**'
-      - '.github/workflows/ansible-deploy.yml'
-```
-
-**Update deployment to use specific playbook:**
-```yaml
-- name: Deploy Python Application
-  run: |
-    cd ansible
-    ansible-playbook playbooks/deploy_python.yml \
-      --vault-password-file /tmp/vault_pass
-```
-
-#### Bonus 2.5 Matrix Strategy Alternative
-
-**File:** `.github/workflows/ansible-deploy-matrix.yml`
-
-**Using matrix to deploy both:**
-```yaml
-name: Ansible Multi-App Deployment
-
-on:
-  push:
-    branches: [ main, master ]
-    paths:
-      - 'ansible/**'
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        app:
-          - name: python
-            playbook: deploy_python.yml
-            port: 8000
-          - name: bonus
-            playbook: deploy_bonus.yml
-            port: 8001
-
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install '___' ___             # YOUR TASK: pin ansible-core to 2.21.* + ansible-lint
+      - run: ___                               # YOUR TASK: lint the ansible/ tree
 
-      - name: Deploy ${{ matrix.app.name }}
+  deploy:
+    needs: ___                                 # YOUR TASK: depend on lint
+    runs-on: ubuntu-24.04
+    environment: ___                           # YOUR TASK: GH Environment name
+                                               #            (gives you approval + per-env secrets)
+    steps:
+      - uses: actions/checkout@v4
+      # YOUR TASK: pick ONE auth tier from §4.2 and run the playbook + smoke test
+```
+
+> Pin `ansible-core==2.21.*` so CI matches your local lockfile. ansible-core has **no LTS label** — pin the exact minor that matches your `community.docker` 4.x collection.
+
+### 4.2 Pick an auth tier
+
+> ⚠️ **First, the easy mistake:** the auto-injected `secrets.GITHUB_TOKEN` authenticates to **GitHub** (the API, GHCR). It is **not** an SSH key, it cannot log in to your VM. Plain SSH-to-VM always needs *something* — a key, or a federated mechanism that ultimately produces a key/session.
+
+> ⚠️ **OIDC for SSH-to-VM, honestly.** OIDC's win is "no long-lived secret in GitHub" — but the VM at the far end has to accept the federated identity. That means: AWS SSM Session Manager / EC2 Instance Connect, GCP IAP TCP-tunnel, or a cloud-provisioned short-lived SSH cert (e.g. Teleport, HashiCorp Boundary, Smallstep). **Raw `ssh user@ip` against a hand-built VM with `authorized_keys` does NOT speak OIDC.** Pick OIDC only if your Lab 4 cloud supports one of these paths; otherwise the honest answer is Tier 2 (Environment secret + a deploy key) and the lab grades you on **justifying the choice**, not on picking OIDC for cosmetics.
+
+| Tier | Mechanism | Trade-off |
+|------|-----------|-----------|
+| Repo secret as env | `secrets.SSH_KEY` → `~/.ssh/id_ed25519` | Simple; a long-lived key is the new "password in source" |
+| GitHub Environment | Per-env secrets (deploy key per env) + manual approval | Needed for prod; small ops overhead |
+| **OIDC + cloud IAM** | Short-lived federated token → cloud-mediated SSH (SSM / IAP / cert) | No static key in CI; requires the target to support a federated SSH path |
+
+`YOUR TASK`: pick one, implement it. Justify your choice in the docs in 2–3 sentences referencing the trade-offs above. The skeletons:
+
+**OIDC (recommended):**
+
+```yaml
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ___                  # YOUR TASK: an IAM role ARN trusting GH OIDC
+          aws-region: ___
+      - name: Deploy
         run: |
-          cd ansible
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/vault_pass
-          ansible-playbook playbooks/${{ matrix.app.playbook }} \
-            --vault-password-file /tmp/vault_pass
-          rm /tmp/vault_pass
+          ___                                  # YOUR TASK: ansible-playbook against your inventory
+```
 
-      - name: Verify ${{ matrix.app.name }}
+**SSH-in-secret (fallback):**
+
+```yaml
+      - env:
+          VAULT:  ${{ secrets.VAULT_PASS }}
+          SSH:    ${{ secrets.SSH_KEY }}
+          VM_IP:  ${{ secrets.VM_IP }}        # secret: target VM IP or DNS name from your Lab 4 / inventory
         run: |
-          sleep 10
-          curl -f http://${{ secrets.VM_HOST }}:${{ matrix.app.port }}
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          install -m 600 /dev/stdin ~/.ssh/id_ed25519 <<< "$SSH"
+          install -m 600 /dev/stdin /tmp/vault        <<< "$VAULT"
+          ssh-keyscan -H "$VM_IP" >> ~/.ssh/known_hosts    # avoids host-key prompts
+          ___                                  # YOUR TASK: ansible-playbook with --vault-password-file
 ```
 
-#### Bonus 2.6 Testing Multi-App CI/CD
+> Never echo a secret to the log (no `run: echo "$SSH"` for debugging — pipe it into a file with redirected stdin, like the install above). A self-hosted runner on the target network removes the SSH key entirely — but it is a trust boundary, **never** run it on PRs from forks.
 
-**Test Scenarios:**
+### 4.3 Verify in CI, not just exit 0
 
-**Test 1: Python app change should deploy only Python**
-```bash
-# Change ansible/vars/app_python.yml
-git add ansible/vars/app_python.yml
-git commit -m "Update Python app config"
-git push
+`ansible-playbook` returning 0 only means the playbook ran without errors — it does **not** mean the app responds. Add a smoke-test step.
 
-# Watch Actions - only ansible-deploy.yml should run
-# Verify only Python app redeployed
-```
+`YOUR TASK`: write a step that polls `/health` **on the deployed VM** (not `localhost` on the runner — that's just curling GitHub's runner) up to N times (you pick a bounded N), exits 0 on first 200, exits 1 if it never comes up. Use plain shell, not a third-party action. Hint: `curl -fsS http://<VM-IP>:<app_host_port>/health` returns non-zero on non-2xx; pair it with a small retry loop. Get the VM address from the same source the playbook used (inventory variable, GH variable, or `terraform output -json`).
 
-**Test 2: Bonus app change should deploy only Bonus**
-```bash
-# Change ansible/vars/app_bonus.yml
-git add ansible/vars/app_bonus.yml
-git commit -m "Update Bonus app config"
-git push
-
-# Watch Actions - only ansible-deploy-bonus.yml should run
-```
-
-**Test 3: Role change should deploy both**
-```bash
-# Change ansible/roles/web_app/tasks/main.yml
-git add ansible/roles/web_app/
-git commit -m "Update web_app role"
-git push
-
-# Watch Actions - both workflows should run
-```
-
-**Evidence Required:**
-- Screenshots showing independent workflow triggers
-- Logs proving only affected app deployed
-- Verification of both apps working after role change
-- Status badges for both workflows
-
-#### Bonus 2.7 Documentation
-
-**Add to LAB06.md:**
-- Multi-app CI/CD architecture
-- Workflow triggering logic
-- Path filter strategy
-- Matrix vs separate workflows comparison
-- Evidence of independent deployments
-
----
-
-## Submission Guidelines
-
-### What to Submit
-
-Submit a single markdown file: **`ansible/docs/LAB06.md`**
-
-### Required Structure
+Add the status badge to your repo `README.md`:
 
 ```markdown
-# Lab 6: Advanced Ansible & CI/CD - Submission
-
-**Name:** Your Name
-**Date:** YYYY-MM-DD
-**Lab Points:** 10 + X bonus
-
----
-
-## Task 1: Blocks & Tags (2 pts)
-[Your implementation details]
-[Evidence: terminal outputs, tag listings]
-[Research answers]
-
-## Task 2: Docker Compose (3 pts)
-[Your implementation]
-[Template code]
-[Before/after comparison]
-[Evidence: deployments, idempotency]
-
-## Task 3: Wipe Logic (1 pt)
-[Implementation explanation]
-[Test results for all scenarios]
-[Evidence proving correct behavior]
-
-## Task 4: CI/CD (3 pts)
-[Workflow setup]
-[Secrets configuration]
-[Evidence: successful runs, badges]
-
-## Task 5: Documentation
-[This file serves as documentation]
-
-## Bonus Part 1: Multi-App (1.5 pts)
-[If completed]
-
-## Bonus Part 2: Multi-App CI/CD (1 pt)
-[If completed]
-
----
-
-## Summary
-[Overall reflection]
-[Total time spent]
-[Key learnings]
+[![Ansible Deploy](https://github.com/<you>/<repo>/actions/workflows/ansible-deploy.yml/badge.svg)](https://github.com/<you>/<repo>/actions/workflows/ansible-deploy.yml)
 ```
 
-### GitHub Repository Requirements
+### 4.4 Deployment strategy
 
-**Commit all code:**
+`serial:` on a play caps how many hosts deploy **at the same moment**. It does **NOT** mean "deploy to 50% of hosts and stop." With 10 hosts and `serial: "50%"`, Ansible runs **two batches of 5** — every host eventually gets the new version. The lever controls *concurrency*, not *coverage*. For a true canary that stops to observe, use a list: `serial: [1, 5, "100%"]` — first batch is 1, then 5, then the rest.
+
+```yaml
+- name: Deploy web tier
+  hosts: webservers
+  serial: "___"                                # YOUR TASK: pick one — explain the meaning
+                                               #            in your docs (rolling vs canary vs all)
+  max_fail_percentage: ___                     # YOUR TASK: pick a small int, justify
+  roles: [web_app]
+```
+
+| Strategy | Typical `serial:` | When |
+|----------|-------------------|------|
+| Rolling | `1` or `25%` | Zero-downtime behind a load balancer |
+| Canary | `1` (first batch, then observe) | Test on one host before continuing |
+| All-at-once | omit `serial:` | Dev/staging only |
+
+In your docs: which strategy did you pick for prod, and why?
+
+### 4.5 Proof of work — paste into `docs/LAB06.md`
+
+- A screenshot (or pasted log block) of a green workflow run.
+- Log lines showing **ansible-lint passing** (not skipped, not all-warnings).
+- The smoke-test step output (curl 200).
+- The passing status badge URL.
+- 2–3 sentences justifying your `serial:` + auth-tier choices.
+
+**Research:**
+- Security implications: long-lived SSH key in a repo secret vs OIDC + cloud IAM. What's the blast radius if each leaks?
+- How would you add a rollback job that triggers on the verify step failing? Sketch the YAML.
+- Why must a self-hosted runner never execute jobs from fork PRs?
+
+---
+
+## Bonus — Multi-Environment Promotion (2 pts)
+
+> Single bonus task (2 pts). Promote **one immutable image** through `staging` → `prod` using per-environment inventories and a manual approval gate. Same artifact, never rebuilt, never retagged.
+
+Build on your Task 4 workflow. The whole point: the identical image (pinned by SHA or SemVer, **not** `:latest`) flows to staging automatically, then to prod only after a human approves.
+
+`YOUR TASK`:
+
+1. **Two inventories** with per-env pinned `docker_tag` (staging leads, prod lags). Both tags must point at the **same `docker_image`** that exists in your registry — promotion means "same image, newer environment", never a rebuild:
+
+   ```
+   ansible/inventories/
+     staging/hosts.ini   group_vars/all.yml   docker_tag: ___   # YOUR TASK: the newer SemVer or :sha-abc123 — what staging is testing
+     prod/hosts.ini      group_vars/all.yml   docker_tag: ___   # YOUR TASK: the SemVer / SHA that already passed staging — what prod is running
+   ```
+
+   Per-env Vault files. Do **not** branch the playbook on `inventory_hostname == 'prod'` — branch on **variables only**.
+
+2. **Promotion workflow** — extend `ansible-deploy.yml` (or add `ansible-promote.yml`):
+   - `deploy-staging` runs automatically on push to `main` against `inventories/staging`.
+   - `deploy-prod` `needs: deploy-staging`, uses `environment: production` with a **required reviewer**, targets `inventories/prod`.
+   - The **same** `docker_image` flows to both; only `docker_tag` differs per env.
+   - Prod uses `serial:` + `max_fail_percentage:` from Task 4.4.
+
+   Skeleton:
+
+   ```yaml
+   deploy-prod:
+     needs: ___                                # YOUR TASK
+     environment: ___                          # YOUR TASK: env name with required reviewer
+     runs-on: ubuntu-24.04
+     steps:
+       - uses: actions/checkout@v4
+       # YOUR TASK: assume creds (auth tier from Task 4.2), then:
+       #   - run deploy.yml -i ansible/inventories/prod
+       #   - smoke-test /health on a prod host
+   ```
+
+3. **Verify** end to end:
+   - Staging deploy auto-runs on push.
+   - Prod job **pauses** for approval (screenshot the GitHub UI showing the gate).
+   - Both envs serve the expected (different) tags via `/health` or a `?version=` field.
+
+**Proof:** the two `group_vars/all.yml` files with different pinned tags, the prod approval gate screenshot, and `curl` output proving each env runs its pinned version.
+
+---
+
+## How to Submit
+
 ```bash
-git add ansible/
-git add .github/workflows/
-git add ansible/docs/LAB06.md
-git commit -m "Complete Lab 6: Advanced Ansible & CI/CD"
-git push
+git switch -c lab06
+git add ansible/ .github/workflows/ansible-deploy.yml ansible/docs/LAB06.md
+git commit -m "feat(lab06): advanced ansible — blocks, tags, compose, CI"
+git push -u origin lab06
 ```
 
-**Repository should contain:**
-- ✅ Updated roles with blocks and tags
-- ✅ Docker Compose templates
-- ✅ Wipe logic implementation
-- ✅ CI/CD workflows
-- ✅ Documentation with evidence
-- ✅ Working deployments (apps accessible)
+Confirm `.vault_pass` and any unencrypted secret are **not** staged. Encrypted Vault files are fine to commit.
 
-### Evidence Checklist
+Open **two** PRs:
+- `your-fork:lab06` → `course-repo:master` *(reviewed)*
+- `your-fork:lab06` → `your-fork:master` *(merges into your own main when done)*
 
-**Required Proof:**
-- [ ] Ansible playbook output with selective tags
-- [ ] Rescue block triggered output
-- [ ] Docker Compose deployment success
-- [ ] Idempotency verification (2nd run)
-- [ ] Wipe logic test results (all 4 scenarios)
-- [ ] GitHub Actions successful workflow
-- [ ] ansible-lint passing
-- [ ] Status badge(s) in README
-- [ ] Application(s) accessible via curl
+PR checklist:
 
-**Bonus Proof (if applicable):**
-- [ ] Both apps deployed and accessible
-- [ ] Independent wipe functionality
-- [ ] Separate workflow runs for each app
-- [ ] Path filter effectiveness demonstrated
+```text
+- [ ] Task 1 — roles refactored, --list-tags + selective --tags captured, rescue fired
+- [ ] Task 2 — Compose templated, idempotent (changed=0 on run #2), /health 200
+- [ ] Task 3 — all four wipe rows verified, | bool justified
+- [ ] Task 4 — workflow green, ansible-lint, smoke test, badge
+- [ ] Bonus — two-env promotion behind required reviewer (optional)
+```
 
 ---
 
-## Checklist
+## Acceptance Criteria
 
-**Before submitting, ensure you have:**
-- [ ] All three roles refactored with blocks and tags
-- [ ] Docker Compose deployment working with templated config
-- [ ] Role dependencies correctly configured
-- [ ] Wipe logic implemented with variable + tag safety
-- [ ] All 4 wipe scenarios tested successfully
-- [ ] GitHub Actions workflow running and passing
-- [ ] ansible-lint integrated and passing
-- [ ] Path filters configured for efficient CI/CD
-- [ ] Complete documentation in `ansible/docs/LAB06.md`
-- [ ] All research questions answered
-- [ ] Terminal outputs and screenshots included
-- [ ] Application(s) accessible and verified
+### Main Tasks (10 pts)
 
-**Bonus (if attempting):**
-- [ ] Second app deployed using role reusability
-- [ ] Independent wipe logic for each app
-- [ ] Separate CI/CD workflows or matrix strategy
-- [ ] Path filters for independent triggering
+**Blocks & Tags (2 pts):**
+- ✅ `docker` and `common` refactored with `block`/`rescue`/`always`
+- ✅ Three-axis tag taxonomy applied to every block
+- ✅ `--list-tags` output + one selective `--tags` run captured
+- ✅ Rescue path demonstrably **fired** (task output, not just `rescued=1`)
+
+**Docker Compose (3 pts):**
+- ✅ `app_deploy` renamed to `web_app`, all references updated
+- ✅ `meta/main.yml` declares the `docker` dependency
+- ✅ Jinja2 template uses interpolation **+** `{% if %}` **+** at least one filter
+- ✅ Deployed via `community.docker.docker_compose_v2`; both runs captured (changed → 0)
+- ✅ App reachable on `/health`; container shows `(healthy)`
+
+**Wipe Logic (2 pts):**
+- ✅ Gated by `when: web_app_wipe | bool` **and** the `web_app_wipe` tag
+- ✅ Included **before** the deploy block (clean reinstall works in one run)
+- ✅ All four invocation rows captured
+
+**CI/CD (3 pts):**
+- ✅ Workflow runs `ansible-lint` then deploy
+- ✅ Path filters configured (docs excluded; workflow self-test)
+- ✅ Auth via OIDC or GitHub Environment secret (no secret echoed)
+- ✅ Smoke-test step + passing badge
+- ✅ `serial:` chosen and justified
+
+### Bonus (2 pts)
+- ✅ Separate `staging` / `prod` inventories with per-env pinned `docker_tag`
+- ✅ Same immutable image promoted (no rebuild, no `:latest`)
+- ✅ Prod behind a required-reviewer Environment
+- ✅ Rolling rollout with `serial:` + `max_fail_percentage:`
+- ✅ Evidence both envs serve their pinned versions
 
 ---
 
 ## Rubric
 
-| Criteria | Points | Description |
-|----------|--------|-------------|
-| **Blocks & Tags** | 2 pts | All roles refactored with blocks, rescue/always, comprehensive tag strategy |
-| **Docker Compose** | 3 pts | Working templated deployment, role dependencies, idempotent |
-| **Wipe Logic** | 1 pt | Variable + tag implementation, all scenarios tested |
-| **CI/CD** | 3 pts | Automated workflow with linting, deployment, verification |
-| **Documentation** | 1 pt | Complete LAB06.md with evidence and analysis |
-| **Bonus: Multi-App** | 1.5 pts | Role reusability, independent deployment and wipe |
-| **Bonus: Multi-App CI/CD** | 1 pt | Separate workflows or matrix, independent triggering |
-| **Total** | 12.5 pts | 10 pts required + 2.5 pts bonus |
+| Task | Points | Criteria |
+|------|-------:|----------|
+| **Task 1** — Blocks & Tags | **2** | block/rescue/always; three-axis tags; rescue fired with output |
+| **Task 2** — Docker Compose | **3** | renamed role + meta dep; Jinja2 (vars+if+filter); idempotent |
+| **Task 3** — Wipe Logic | **2** | double-gated; all four rows verified |
+| **Task 4** — CI/CD | **3** | lint → deploy → verify; OIDC/Environment auth; serial justified |
+| **Bonus** — Multi-Env Promotion | **2** | immutable image; required-reviewer gate; both envs proven |
+| **Total** | **12** | 10 main + 2 bonus |
 
-**Grading Scale:**
-- **10/10:** All tasks working, excellent documentation, proper implementation
-- **8-9/10:** All works, good docs, minor improvements possible
-- **6-7/10:** Core functionality present, basic documentation
-- **<6/10:** Missing features or documentation, needs revision
+**Grading scale:**
+- **10/10:** Everything works; rescue + wipe + idempotency all proven; CI verifies; sharp docs.
+- **8–9/10:** All works; minor gaps in proof or docs.
+- **6–7/10:** Core deploy works; weak tag strategy, missing rescue proof, or thin CI verify.
+- **<6/10:** Missing Compose deploy, ungated wipe, or no working workflow.
 
 ---
 
 ## Resources
 
 <details>
-<summary>📚 Ansible Documentation</summary>
+<summary>📚 Documentation</summary>
 
-- [Ansible Blocks](https://docs.ansible.com/ansible/latest/user_guide/playbooks_blocks.html)
-- [Ansible Tags](https://docs.ansible.com/ansible/latest/user_guide/playbooks_tags.html)
-- [Ansible Role Dependencies](https://docs.ansible.com/ansible/latest/user_guide/playbooks_reuse_roles.html#using-role-dependencies)
-- [Ansible Variables](https://docs.ansible.com/ansible/latest/user_guide/playbooks_variables.html)
-- [Ansible Vault](https://docs.ansible.com/ansible/latest/user_guide/vault.html)
-
-</details>
-
-<details>
-<summary>🐳 Docker Compose</summary>
-
-- [Docker Compose File Reference](https://docs.docker.com/compose/compose-file/)
-- [Docker Compose Module](https://docs.ansible.com/ansible/latest/collections/community/docker/docker_compose_module.html)
-- [community.docker Collection](https://docs.ansible.com/ansible/latest/collections/community/docker/)
-- [Compose Best Practices](https://docs.docker.com/compose/production/)
+- [Ansible Blocks (error handling)](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_blocks.html)
+- [Ansible Tags](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_tags.html)
+- [Role dependencies](https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_reuse_roles.html#using-role-dependencies)
+- [`community.docker.docker_compose_v2`](https://docs.ansible.com/ansible/latest/collections/community/docker/docker_compose_v2_module.html)
+- [Compose file reference](https://docs.docker.com/reference/compose-file/)
+- [Jinja2 templating](https://jinja.palletsprojects.com/)
+- [GHA `paths` filters](https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#using-filters)
+- [GitHub OIDC for cloud deploys](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+- [Environments & required reviewers](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment)
 
 </details>
 
 <details>
-<summary>🔄 CI/CD & GitHub Actions</summary>
+<summary>⚠️ Common Pitfalls (from real dry-runs)</summary>
 
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [GitHub Actions: Workflow Syntax](https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions)
-- [Self-hosted Runners](https://docs.github.com/en/actions/hosting-your-own-runners)
-- [Encrypted Secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
+- **Stale `/tmp/<project>` as a file blocks `state: directory`.** An aborted previous run can leave the project path as a file (or a symlink to one). The `file: state=directory` task fails with *"file exists, refusing to overwrite"*. Fix: `rm -rf <dir>` once, then re-run; or add an explicit `file: state=absent` before the create (only safe if your wipe doesn't depend on contents).
+- **Compose v2 vs v1 module names.** `community.docker.docker_compose` (v1, deprecated) and `community.docker.docker_compose_v2` (current) look one underscore apart. v1 shells out to the dead `docker-compose` Python CLI and errors with *"docker-compose: command not found"* on a fresh Ubuntu 24.04. **Always use `docker_compose_v2`.**
+- **FQCN vs bare module name.** `ansible-lint` flags `apt:` / `file:` / `template:` as `fqcn[action-core]`. Use `ansible.builtin.apt`, `ansible.builtin.file`, `ansible.builtin.template`. CI will fail your PR otherwise.
+- **`serial: "50%"` semantics.** `serial` caps **concurrent** hosts, not total. With 10 hosts and `serial: "50%"`, Ansible runs **two batches of 5** — every host eventually gets the new version. It is **not** "deploy to 50% and stop." For a true canary, use `serial: [1, 5, "100%"]` (a list — first batch is 1, then 5, then the rest).
+- **`-e web_app_wipe=true` is a STRING.** Ansible passes `--extra-vars key=value` as a Python `str`, not a `bool`. Without `| bool`, `when: web_app_wipe` evaluates the truthiness of the **string** — and *both* `"true"` and `"false"` are non-empty strings, so both pass. The gate that's supposed to keep prod safe fires on `-e web_app_wipe=false` too. The `| bool` filter coerces `"true"` / `"false"` / `"yes"` / `"no"` / `"1"` / `"0"` to real booleans. Forget it and the gate is broken **in the most dangerous direction** — wipe runs when you typed "false".
+- **`| default('latest')` in production.** Convenient for dev, fatal in prod — re-deploying with `docker_tag=latest` silently picks up whatever was pushed to the registry since. Pin per-env in `group_vars`. The Bonus task makes this explicit.
+- **`become: true` repeated per task.** Lift it to the `block`; tagging the block also tags every task inside. Less noise, fewer drift bugs.
+- **Lab 7 reuses port 8080.** Next lab's Compose stack defines an `app` service on host port 8080 too. If you keep Lab 6's stack running while you start Lab 7, the second `docker compose up -d` errors with *"port is already allocated"*. Pick a non-conflicting `app_host_port` here (e.g. 8084), or `docker compose down` Lab 6 before starting Lab 7. Lab 7 expects an `app=devops-python` container label — if you're keeping both alive, set that label on this lab's container too so Lab 7's relabel rule sees it.
 
 </details>
 
 <details>
-<summary>🛠️ Tools & Best Practices</summary>
+<summary>🛠️ Dev tools worth knowing</summary>
 
-- [ansible-lint](https://ansible-lint.readthedocs.io/) - Best practices checker
-- [Ansible Galaxy](https://galaxy.ansible.com/) - Community roles
-- [Jinja2 Templating](https://jinja.palletsprojects.com/) - Template engine
-- [YAML Syntax](https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html)
+- `ansible-lint` — runs in CI; matches it locally first to save round-trips
+- `ansible-playbook --list-tasks --list-tags --list-hosts` — three flags, no execution; ideal for pre-flight checks
+- `ansible-doc -t filter -l` — every Jinja2 filter that ships with ansible-core
+- `jq` — pair with `community.docker.docker_compose_v2` `register:`-ed output
 
 </details>
 
@@ -1338,15 +709,17 @@ git push
 
 ## Looking Ahead
 
-Your Ansible automation evolves throughout the course:
+You've shipped the app — next labs see and measure it:
 
-- **Lab 7:** Logging Stack - Deploy Loki, Promtail, and Grafana
-- **Lab 8:** Metrics Stack - Add Prometheus metrics to your app
-- **Lab 9:** Kubernetes Basics - Migrate from Docker Compose to K8s deployments
-- **Lab 10:** Helm charts for templated K8s deployments
-- **Lab 11-12:** Secrets with Vault, ConfigMaps, and persistent storage
-- **Lab 13:** GitOps with ArgoCD - Declarative Kubernetes deployments
+| Lab | What it adds to this service |
+|---:|---|
+| 7 | Loki + Alloy logging — deploy the stack with the very patterns from this lab |
+| 8 | Prometheus `/metrics`, instrumented endpoints, RED-method PromQL |
+| 9 | Kubernetes (k3d) — migrate from Compose to K8s, reusing `/health` |
+| 10 | Helm 4 charts for templated K8s deploys |
+| 13 | ArgoCD — declarative, pull-based GitOps |
+| 14 | Argo Rollouts — canary + blue/green for the same service |
 
 ---
 
-**Good luck!** 🚀
+**Good luck.** Block gives you the error boundary, tag gives you the scalpel, Compose gives you the declarative state, CI gives you the button — and the double gate keeps the button from going off by itself.
