@@ -183,8 +183,11 @@ This is the social half of being a developer. The actions are public on your pro
 
 `YOUR TASK`:
 1. **Star** the course repository.
-2. **Star** [`simple-container-com/api`](https://github.com/simple-container-com/api) — an open-source container management tool worth knowing about.
-3. **Follow** your professor [@Cre-eD](https://github.com/Cre-eD) and the TAs (the course page lists them).
+2. **Star** the [simple-container-com/api](https://github.com/simple-container-com/api) project — a promising open-source tool for container management.
+3. **Follow** your professor and TAs on GitHub:
+   - Professor: [@Cre-eD](https://github.com/Cre-eD)
+   - TA: [@Naghme98](https://github.com/Naghme98)
+   - TA: [@pierrepicaud](https://github.com/pierrepicaud)
 4. **Follow** ≥ 3 classmates from this course.
 5. In your `docs/LAB01.md` "GitHub Community" section, **put your GitHub username on the first line** (so the TA can verify your stars/follows in <30s) then write 2–3 sentences answering: *Why does starring a project actually help its maintainers? What concrete benefit do you get from following other developers?* — your own words, not the lecture's.
 
