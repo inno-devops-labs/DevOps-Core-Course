@@ -87,7 +87,7 @@ nix --version            # expect 2.25.x or newer
 ```
 
 <details>
-<summary>🐧 Alternative: official Nix installer (flakes must be enabled by hand)</summary>
+<summary>🐧 Alternative: official Nix installer — use this if `install.determinate.systems` is unreachable or times out from your network (flakes must be enabled by hand)</summary>
 
 ```bash
 sh <(curl -L https://nixos.org/nix/install) --daemon
